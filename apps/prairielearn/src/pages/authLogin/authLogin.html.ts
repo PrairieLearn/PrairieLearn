@@ -1,6 +1,7 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { assetPath } from '../../lib/assets';
 import { config } from '../../lib/config';
 import { isEnterprise } from '../../lib/license';
 
@@ -125,7 +126,7 @@ function LoginPageContainer({ children, service, resLocals }: LoginPageContainer
         </style>
       </head>
       <body class="d-flex bg-dark">
-        <div class="login-container-wrapper">
+        <main class="login-container-wrapper">
           <div class="login-container">
             <div>
               <h1 class="text-center">PrairieLearn</h1>
@@ -135,7 +136,7 @@ function LoginPageContainer({ children, service, resLocals }: LoginPageContainer
               ${children}
             </div>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `;
@@ -155,7 +156,7 @@ function ShibLoginButton() {
 function GoogleLoginButton() {
   return html`
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login" role="button">
-      <img src="/images/google_logo.svg" class="social-icon" />
+      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Google</span>
     </a>
   `;
@@ -164,7 +165,7 @@ function GoogleLoginButton() {
 function MicrosoftLoginButton() {
   return html`
     <a class="btn btn-dark d-block position-relative" href="/pl/azure_login" role="button">
-      <img src="/images/ms_logo.svg" class="social-icon" />
+      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Microsoft</span>
     </a>
   `;

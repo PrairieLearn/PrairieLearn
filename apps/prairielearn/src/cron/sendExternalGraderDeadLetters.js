@@ -9,6 +9,7 @@ const {
 } = require('@aws-sdk/client-sqs');
 const { logger } = require('@prairielearn/logger');
 
+const { makeAwsClientConfig } = require('../lib/aws');
 const { config } = require('../lib/config');
 const opsbot = require('../lib/opsbot');
 
@@ -24,10 +25,7 @@ module.exports.run = (callback) => {
     return callback(null);
   }
 
-  const sqs = new SQSClient({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const sqs = new SQSClient(makeAwsClientConfig());
 
   let msg;
   async.series(

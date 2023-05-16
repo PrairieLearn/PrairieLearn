@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
 const { SQSClient, GetQueueUrlCommand } = require('@aws-sdk/client-sqs');
-const AWS = require('aws-sdk');
+const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 const { z } = require('zod');
 const {
   ConfigLoader,
@@ -48,7 +48,6 @@ const ConfigSchema = z.object({
   instanceId: z.string().nullable().default(null),
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().nullable().default(null),
-  awsConfig: z.any().default(null),
   awsRegion: z.string().default('us-east-2'),
 });
 
@@ -74,9 +73,9 @@ function makeAutoScalingGroupConfigSource() {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
 
       logger.info('Detecting AutoScalingGroup...');
-      var autoscaling = new AWS.AutoScaling({ region: existingConfig.awsRegion });
+      var autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
       var params = { InstanceIds: [existingConfig.instanceId] };
-      const data = await autoscaling.describeAutoScalingInstances(params).promise();
+      const data = await autoscaling.describeAutoScalingInstances(params);
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
         logger.info('Not running inside an AutoScalingGroup');
         return {};
@@ -102,8 +101,6 @@ module.exports.loadConfig = function (callback) {
           makeSecretsManagerConfigSource('ConfSecret'),
           makeAutoScalingGroupConfigSource(),
         ]);
-
-        AWS.config.update({ region: loader.config.awsRegion });
 
         // Initialize CloudWatch logging if it's enabled
         if (module.exports.config.useCloudWatchLogging) {

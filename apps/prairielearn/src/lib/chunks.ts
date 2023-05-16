@@ -1,4 +1,5 @@
-import AWS = require('aws-sdk');
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import async = require('async');
 import child_process = require('child_process');
 import fs = require('fs-extra');
@@ -12,6 +13,7 @@ import { logger } from '@prairielearn/logger';
 import namedLocks = require('@prairielearn/named-locks');
 import sqldb = require('@prairielearn/postgres');
 
+import aws = require('./aws');
 import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import type { Job } from './server-jobs-legacy';
@@ -618,13 +620,15 @@ export async function createAndUploadChunks(
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
-    const params = {
-      Bucket: config.chunksS3Bucket,
-      Key: `${chunkUuid}.tar.gz`,
-      Body: passthrough,
-    };
-    const s3 = new AWS.S3();
-    await s3.upload(params).promise();
+    const s3 = new S3(aws.makeS3ClientConfig());
+    await new Upload({
+      client: s3,
+      params: {
+        Bucket: config.chunksS3Bucket,
+        Key: `${chunkUuid}.tar.gz`,
+        Body: passthrough,
+      },
+    }).done();
 
     generatedChunks.push({ ...chunk, uuid: chunkUuid });
   });
@@ -913,22 +917,8 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
 
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
-  const params = {
-    Bucket: config.chunksS3Bucket,
-    Key: `${chunk.uuid}.tar.gz`,
-  };
   await fs.ensureDir(path.dirname(downloadPath));
-  const s3 = new AWS.S3();
-  await new Promise((resolve, reject) => {
-    s3.getObject(params)
-      .createReadStream()
-      .on('error', (err) => {
-        logger.error(`Could not download chunk ${chunk.uuid}: ${err}`);
-        reject(err);
-      })
-      .on('end', () => resolve(null))
-      .pipe(fs.createWriteStream(downloadPath));
-  });
+  await aws.downloadFromS3Async(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
