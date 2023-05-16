@@ -611,18 +611,17 @@ function uploadResults(info, callback) {
 
   async.series(
     [
-      (callback) => {
+      async () => {
         // Now we can send the results back to S3
         logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
-        const params = {
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, 2)),
-        };
-        s3.putObject(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/results.json`,
+            Body: Buffer.from(JSON.stringify(results, null, 2)),
+          },
+        }).done();
       },
       async () => {
         // Let's send the results back to PrairieLearn now; the archive will
