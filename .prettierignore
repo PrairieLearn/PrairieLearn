@@ -8,6 +8,7 @@ coverage/
 
 # Transpiled code
 apps/*/dist/
+apps/prairielearn/public/build/
 packages/*/dist/
 
 # Built assets

@@ -1,16 +1,19 @@
-const ERR = require('async-stacktrace');
+// @ts-check
 const async = require('async');
 const EventEmitter = require('events');
 const fs = require('fs-extra');
 const tar = require('tar');
 const _ = require('lodash');
-const AWS = require('aws-sdk');
+const { Upload } = require('@aws-sdk/lib-storage');
+const { S3 } = require('@aws-sdk/client-s3');
 const PassThroughStream = require('stream').PassThrough;
-
-const { config: globalConfig } = require('./config');
-const externalGraderCommon = require('./externalGraderCommon');
+const { SQSClient, GetQueueUrlCommand, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
+
+const aws = require('./aws');
+const { config: globalConfig } = require('./config');
+const externalGraderCommon = require('./externalGraderCommon');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -31,7 +34,7 @@ class Grader {
         (callback) => {
           externalGraderCommon.buildDirectory(dir, submission, variant, question, course, callback);
         },
-        (callback) => {
+        async () => {
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
           let tarball = tar.create(
@@ -51,30 +54,21 @@ class Grader {
             Body: passthrough,
           };
 
-          const s3 = new AWS.S3(config.awsServiceGlobalOptions);
-          s3.upload(params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          const s3 = new S3(aws.makeS3ClientConfig());
+          await new Upload({
+            client: s3,
+            params,
+          }).done();
         },
-        (callback) => {
+        async () => {
           // Store S3 info for this job
-          const params = {
+          sqldb.queryAsync(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,
-          };
-          sqldb.query(sql.update_s3_info, params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
           });
         },
-        (callback) => {
-          sendJobToQueue(grading_job.id, question, config, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
-        },
+        async () => sendJobToQueue(grading_job.id, question, config),
       ],
       (err) => {
         fs.remove(dir);
@@ -94,55 +88,43 @@ function getS3RootKey(jobId) {
   return `job_${jobId}`;
 }
 
-function sendJobToQueue(jobId, question, config, callback) {
-  const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
-  async.series(
-    [
-      (callback) => {
-        if (QUEUE_URL) {
-          callback(null);
-        } else {
-          const params = {
-            QueueName: config.externalGradingJobsQueueName,
-          };
-          sqs.getQueueUrl(params, (err, data) => {
-            if (ERR(err, callback)) return;
-            QUEUE_URL = data.QueueUrl;
-            callback(null);
-          });
-        }
-      },
-      (callback) => {
-        const messageBody = {
-          jobId: jobId,
-          image: question.external_grading_image,
-          entrypoint: question.external_grading_entrypoint,
-          s3Bucket: config.externalGradingS3Bucket,
-          s3RootKey: getS3RootKey(jobId),
-          timeout: question.external_grading_timeout || config.externalGradingDefaultTimeout,
-          enableNetworking: question.external_grading_enable_networking || false,
-          environment: question.external_grading_environment || {},
-        };
-        const params = {
+async function sendJobToQueue(jobId, question, config) {
+  const sqs = new SQSClient(aws.makeAwsClientConfig());
+
+  await async.series([
+    async () => {
+      if (QUEUE_URL) return;
+
+      const data = await sqs.send(
+        new GetQueueUrlCommand({
+          QueueName: config.externalGradingJobsQueueName,
+        })
+      );
+      QUEUE_URL = data.QueueUrl;
+    },
+    async () => {
+      const messageBody = {
+        jobId: jobId,
+        image: question.external_grading_image,
+        entrypoint: question.external_grading_entrypoint,
+        s3Bucket: config.externalGradingS3Bucket,
+        s3RootKey: getS3RootKey(jobId),
+        timeout: question.external_grading_timeout || config.externalGradingDefaultTimeout,
+        enableNetworking: question.external_grading_enable_networking || false,
+        environment: question.external_grading_environment || {},
+      };
+      await sqs.send(
+        new SendMessageCommand({
           QueueUrl: QUEUE_URL,
           MessageBody: JSON.stringify(messageBody),
-        };
-        sqs.sendMessage(params, (err) => {
-          if (ERR(err, callback)) return;
-          logger.verbose('Queued external grading job', {
-            grading_job_id: jobId,
-            queueName: config.externalGradingJobsQueueName,
-            ...params,
-          });
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    }
-  );
+        })
+      );
+      logger.verbose('Queued external grading job', {
+        grading_job_id: jobId,
+        queueName: config.externalGradingJobsQueueName,
+      });
+    },
+  ]);
 }
 
 module.exports = Grader;

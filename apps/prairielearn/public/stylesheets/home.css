@@ -9,7 +9,7 @@
 }
 
 .bg-flourish {
-  background-image: url('/images/grassy_landscape.svg');
+  background-image: var(--flourish-image-url);
   background-size: auto 8rem;
   background-repeat: repeat-x;
   background-position: bottom left;

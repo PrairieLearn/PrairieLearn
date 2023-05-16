@@ -27,7 +27,9 @@ logger.initCloudWatchLogging = function (groupName, streamName) {
       createLogStream: true,
       submissionInterval: 500,
       batchSize: 100,
-      awsConfig: config.awsConfig,
+      awsConfig: {
+        region: config.awsRegion,
+      },
     })
   );
 };

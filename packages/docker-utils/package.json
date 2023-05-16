@@ -22,8 +22,8 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@aws-sdk/client-ecr": "^3.332.0",
     "@prairielearn/logger": "workspace:^",
-    "aws-sdk": "^2.1369.0",
     "date-fns": "^2.30.0"
   }
 }

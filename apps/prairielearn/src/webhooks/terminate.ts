@@ -1,10 +1,11 @@
-// @ts-check
-const router = require('express').Router();
-const jose = require('jose');
-const crypto = require('crypto');
+import { Router } from 'express';
+import jose = require('jose');
+import crypto = require('crypto');
+import { logger } from '@prairielearn/logger';
 
-const { config } = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
+import { config } from '../lib/config';
+
+const router = Router();
 
 /**
  * This is a webhook that can be called when infrastructure wants this instance
@@ -66,4 +67,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,65 +1,66 @@
-// @ts-check
-const AWS = require('aws-sdk');
-const async = require('async');
-const child_process = require('child_process');
-const fs = require('fs-extra');
-const path = require('path');
-const PassThroughStream = require('stream').PassThrough;
-const tar = require('tar');
-const util = require('util');
-const { v4: uuidv4 } = require('uuid');
-const { chalk, chalkDim } = require('../lib/chalk');
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import async = require('async');
+import child_process = require('child_process');
+import fs = require('fs-extra');
+import path = require('path');
+import { PassThrough as PassThroughStream } from 'stream';
+import tar = require('tar');
+import util = require('util');
+import { v4 as uuidv4 } from 'uuid';
 
-const { logger } = require('@prairielearn/logger');
-const serverJobs = require('../lib/server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const courseDB = require('../sync/course-db');
-const sqldb = require('@prairielearn/postgres');
+import namedLocks = require('@prairielearn/named-locks');
+import sqldb = require('@prairielearn/postgres');
 
-const { config } = require('./config');
+import aws = require('./aws');
+import { chalk, chalkDim } from './chalk';
+import { createServerJob, ServerJob } from './server-jobs';
+import courseDB = require('../sync/course-db');
+import type { CourseData } from '../sync/course-db';
+import { config } from './config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/** @typedef {"elements" | "elementExtensions" | "clientFilesCourse" | "serverFilesCourse" | "clientFilesCourseInstance" | "clientFilesAssessment" | "question"} ChunkType */
+type ChunkType =
+  | 'elements'
+  | 'elementExtensions'
+  | 'clientFilesCourse'
+  | 'serverFilesCourse'
+  | 'clientFilesCourseInstance'
+  | 'clientFilesAssessment'
+  | 'question';
 
-/**
- * @typedef {Object} ElementsChunkMetadata
- * @property {"elements"} type
- */
+type ElementsChunkMetadata = {
+  type: 'elements';
+};
 
-/**
- * @typedef {Object} ElementExtensionsChunkMetadata
- * @property {"elementExtensions"} type
- */
+type ElementExtensionsChunkMetadata = {
+  type: 'elementExtensions';
+};
 
-/**
- * @typedef {Object} ClientFilesCourseChunkMetadata
- * @property {"clientFilesCourse"} type
- */
+type ClientFilesCourseChunkMetadata = {
+  type: 'clientFilesCourse';
+};
 
-/**
- * @typedef {Object} ServerFilesCourseChunkMetadata
- * @property {"serverFilesCourse"} type
- */
+type ServerFilesCourseChunkMetadata = {
+  type: 'serverFilesCourse';
+};
 
-/**
- * @typedef {Object} ClientFilesCourseInstanceChunkMetadata
- * @property {"clientFilesCourseInstance"} type
- * @property {string} courseInstanceName The course instance name of this chunk
- */
+type ClientFilesCourseInstanceChunkMetadata = {
+  type: 'clientFilesCourseInstance';
+  courseInstanceName: string;
+};
 
-/**
- * @typedef {Object} ClientFilesAssessmentChunkMetadata
- * @property {"clientFilesAssessment"} type
- * @property {string} courseInstanceName The course instance name of this chunk
- * @property {string} assessmentName The assessment name (TID) of this chunk
- */
+type ClientFilesAssessmentChunkMetadata = {
+  type: 'clientFilesAssessment';
+  courseInstanceName: string;
+  assessmentName: string;
+};
 
-/**
- * @typedef {Object} QuestionChunkMetadata
- * @property {"question"} type
- * @property {string} questionName The question name (QID) of this chunk
- */
+type QuestionChunkMetadata = {
+  type: 'question';
+  questionName: string;
+};
 
 /**
  * {@link ChunkMetadata} objects are used to refer to chunks according to their
@@ -69,47 +70,47 @@ const sql = sqldb.loadSqlEquiv(__filename);
  *
  * For chunks that are identified by database IDs instead, see {@link Chunk}.
  *
- * @typedef {ElementsChunkMetadata | ElementExtensionsChunkMetadata | ClientFilesCourseChunkMetadata | ServerFilesCourseChunkMetadata | ClientFilesCourseInstanceChunkMetadata | ClientFilesAssessmentChunkMetadata | QuestionChunkMetadata} ChunkMetadata
  */
+type ChunkMetadata =
+  | ElementsChunkMetadata
+  | ElementExtensionsChunkMetadata
+  | ClientFilesCourseChunkMetadata
+  | ServerFilesCourseChunkMetadata
+  | ClientFilesCourseInstanceChunkMetadata
+  | ClientFilesAssessmentChunkMetadata
+  | QuestionChunkMetadata;
 
-/**
- * @typedef {Object} ElementsChunk
- * @property {"elements"} type
- */
+type ElementsChunk = {
+  type: 'elements';
+};
 
-/**
- * @typedef {Object} ElementExtensionsChunk
- * @property {"elementExtensions"} type
- */
+type ElementExtensionsChunk = {
+  type: 'elementExtensions';
+};
 
-/**
- * @typedef {Object} ClientFilesCourseChunk
- * @property {"clientFilesCourse"} type
- */
+type ClientFilesCourseChunk = {
+  type: 'clientFilesCourse';
+};
 
-/**
- * @typedef {Object} ServerFilesCourseChunk
- * @property {"serverFilesCourse"} type
- */
+type ServerFilesCourseChunk = {
+  type: 'serverFilesCourse';
+};
 
-/**
- * @typedef {Object} ClientFilesCourseInstanceChunk
- * @property {"clientFilesCourseInstance"} type
- * @property {string | number} courseInstanceId
- */
+type ClientFilesCourseInstanceChunk = {
+  type: 'clientFilesCourseInstance';
+  courseInstanceId: string | number;
+};
 
-/**
- * @typedef {Object} ClientFilesAssessmentChunk
- * @property {"clientFilesAssessment"} type
- * @property {string | number} courseInstanceId
- * @property {string | number} assessmentId
- */
+type ClientFilesAssessmentChunk = {
+  type: 'clientFilesAssessment';
+  courseInstanceId: string | number;
+  assessmentId: string | number;
+};
 
-/**
- * @typedef {Object} QuestionChunk
- * @property {"question"} type
- * @property {string | number} questionId
- */
+type QuestionChunk = {
+  type: 'question';
+  questionId: string | number;
+};
 
 /**
  * {@link Chunk} objects are used to identify chunks by the IDs of their
@@ -119,51 +120,55 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * For chunks that are identified by human-readable names instead, see
  * {@link ChunkMetadata}.
  *
- * @typedef {ElementsChunk | ElementExtensionsChunk | ClientFilesCourseChunk | ServerFilesCourseChunk | ClientFilesCourseInstanceChunk | ClientFilesAssessmentChunk | QuestionChunk} Chunk
  */
+export type Chunk =
+  | ElementsChunk
+  | ElementExtensionsChunk
+  | ClientFilesCourseChunk
+  | ServerFilesCourseChunk
+  | ClientFilesCourseInstanceChunk
+  | ClientFilesAssessmentChunk
+  | QuestionChunk;
 
 /**
  * {@link DatabaseChunk} objects represent chunks that we've fetched from the
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
- *
- * @typedef {Object} DatabaseChunk
- * @property {string | number | null} id
- * @property {ChunkType} type
- * @property {string} uuid
- * @property {string | number} course_id
- * @property {string | number} [course_instance_id]
- * @property {string} [course_instance_name]
- * @property {string | number} [assessment_id]
- * @property {string} [assessment_name]
- * @property {string | number} [question_id]
- * @property {string} [question_name]
  */
+type DatabaseChunk = {
+  id: string | number | null;
+  type: ChunkType;
+  uuid: string;
+  course_id: string | number;
+  course_instance_id?: string | number;
+  course_instance_name?: string;
+  assessment_id?: string | number;
+  assessment_name?: string;
+  question_id?: string | number;
+  question_name?: string;
+};
 
-/**
- * @typedef {Object} CourseInstanceChunks
- * @property {boolean} clientFilesCourseInstance
- * @property {Set<string>} assessments
- */
+type CourseInstanceChunks = {
+  clientFilesCourseInstance: boolean;
+  assessments: Set<string>;
+};
 
-/**
- * @typedef {Object} CourseChunks
- * @property {boolean} elements
- * @property {boolean} elementExtensions
- * @property {boolean} clientFilesCourse
- * @property {boolean} serverFilesCourse
- * @property {Set<string>} questions
- * @property {{ [id: string]: CourseInstanceChunks }} courseInstances
- */
+type CourseChunks = {
+  elements: boolean;
+  elementExtensions: boolean;
+  clientFilesCourse: boolean;
+  serverFilesCourse: boolean;
+  questions: Set<string>;
+  courseInstances: {
+    [id: string]: CourseInstanceChunks;
+  };
+};
 
 /**
  * Constructs a {@link ChunkMetadata} object from the given {@link DatabaseChunk}
  * object.
- *
- * @param {DatabaseChunk} chunk
- * @returns {ChunkMetadata}
  */
-module.exports.chunkMetadataFromDatabaseChunk = function (chunk) {
+export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetadata {
   switch (chunk.type) {
     case 'elements':
     case 'elementExtensions':
@@ -201,14 +206,12 @@ module.exports.chunkMetadataFromDatabaseChunk = function (chunk) {
         questionName: chunk.question_name,
       };
   }
-};
+}
 
 /**
  * Returns the path for a given chunk relative to the course's root directory.
- *
- * @param {ChunkMetadata} chunkMetadata
  */
-module.exports.pathForChunk = function (chunkMetadata) {
+export function pathForChunk(chunkMetadata: ChunkMetadata): string {
   switch (chunkMetadata.type) {
     case 'elements':
     case 'elementExtensions':
@@ -232,47 +235,49 @@ module.exports.pathForChunk = function (chunkMetadata) {
         'clientFilesAssessment'
       );
   }
-};
+}
 
 /**
  * Returns the absolute path for a course's chunk within the course's runtime
  * directory.
- *
- * @param {string} coursePath
- * @param {ChunkMetadata} chunkMetadata
  */
-module.exports.coursePathForChunk = function (coursePath, chunkMetadata) {
-  return path.join(coursePath, module.exports.pathForChunk(chunkMetadata));
-};
+export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetadata): string {
+  return path.join(coursePath, pathForChunk(chunkMetadata));
+}
 
 /**
  * Identifies the files that changes between two commits in a given course.
  *
- * @param {string} coursePath The course directory to diff
- * @param {string} oldHash The old (previous) hash for the diff
- * @param {string} newHash The new (current) hash for the diff
- * @returns {Promise<string[]>} List of changed files
+ * @param coursePath The course directory to diff
+ * @param oldHash The old (previous) hash for the diff
+ * @param newHash The new (current) hash for the diff
+ * @returns List of changed files
  */
-module.exports.identifyChangedFiles = async (coursePath, oldHash, newHash) => {
+export async function identifyChangedFiles(
+  coursePath: string,
+  oldHash: string,
+  newHash: string
+): Promise<string[]> {
   const { stdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
     { cwd: coursePath }
   );
   return stdout.trim().split('\n');
-};
+}
 
 /**
  * Given a list of files that have changed (such as that produced by
  * `git diff --name-only`), returns a data structure describing the chunks
  * that need to be generated.
  *
- * @param {string[]} changedFiles A list of files that changed in a given sync.
- * @param {import('../sync/course-db').CourseData} courseData The "full course" that was loaded from disk.
- * @returns {CourseChunks}
+ * @param changedFiles A list of files that changed in a given sync.
+ * @param courseData The "full course" that was loaded from disk.
  */
-module.exports.identifyChunksFromChangedFiles = (changedFiles, courseData) => {
-  /** @type {CourseChunks} */
-  const courseChunks = {
+export function identifyChunksFromChangedFiles(
+  changedFiles: string[],
+  courseData: CourseData
+): CourseChunks {
+  const courseChunks: CourseChunks = {
     elements: false,
     elementExtensions: false,
     clientFilesCourse: false,
@@ -301,7 +306,7 @@ module.exports.identifyChunksFromChangedFiles = (changedFiles, courseData) => {
       const pathComponents = changedFile.split(path.sep).slice(1);
       // Progressively join more and more path components until we get
       // something that corresponds to an actual question
-      let questionId = null;
+      let questionId: string | null = null;
       for (let i = 1; i < pathComponents.length; i++) {
         const candidateQuestionId = path.join(...pathComponents.slice(0, i));
         if (courseData.questions[candidateQuestionId]) {
@@ -377,38 +382,45 @@ module.exports.identifyChunksFromChangedFiles = (changedFiles, courseData) => {
   });
 
   return courseChunks;
-};
+}
 
 /**
  * Returns all the chunks the are currently stored for the given course.
- *
- * @param {string} courseId
  */
-module.exports.getAllChunksForCourse = async (courseId) => {
+export async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryAsync(sql.select_course_chunks, {
     course_id: courseId,
   });
   return result.rows;
-};
+}
+
+interface DiffChunksOptions {
+  coursePath: string;
+  courseId: string;
+  courseData: CourseData;
+  changedFiles: string[];
+}
+
+interface ChunksDiff {
+  updatedChunks: ChunkMetadata[];
+  deletedChunks: ChunkMetadata[];
+}
 
 /**
  * Given a course ID, computes a list of all chunks that need to be
  * (re)generated.
- *
- * @param {Object} options
- * @param {string} options.coursePath
- * @param {string} options.courseId
- * @param {import('../sync/course-db').CourseData} options.courseData
- * @param {string[]} options.changedFiles
- * @returns {Promise<{ updatedChunks: ChunkMetadata[], deletedChunks: ChunkMetadata[] }>}
  */
-module.exports.diffChunks = async ({ coursePath, courseId, courseData, changedFiles }) => {
-  const rawCourseChunks = await module.exports.getAllChunksForCourse(courseId);
+export async function diffChunks({
+  coursePath,
+  courseId,
+  courseData,
+  changedFiles,
+}: DiffChunksOptions): Promise<ChunksDiff> {
+  const rawCourseChunks = await getAllChunksForCourse(courseId);
 
   // Build a data structure from the result of getAllChunksForCourse so that
   // we can efficiently query to see if a given chunk exists
-  /** @type {CourseChunks} */
-  const existingCourseChunks = {
+  const existingCourseChunks: CourseChunks = {
     elements: false,
     elementExtensions: false,
     serverFilesCourse: false,
@@ -454,34 +466,26 @@ module.exports.diffChunks = async ({ coursePath, courseId, courseData, changedFi
     }
   });
 
-  const changedCourseChunks = module.exports.identifyChunksFromChangedFiles(
-    changedFiles,
-    courseData
-  );
+  const changedCourseChunks = identifyChunksFromChangedFiles(changedFiles, courseData);
 
   // Now, let's compute the set of chunks that we need to update or delete.
-  /** @type {ChunkMetadata[]} */
-  const updatedChunks = [];
-  /** @type {ChunkMetadata[]} */
-  const deletedChunks = [];
+  const updatedChunks: ChunkMetadata[] = [];
+  const deletedChunks: ChunkMetadata[] = [];
 
   // First: elements, clientFilesCourse, and serverFilesCourse
-  await async.each(
-    ['elements', 'elementExtensions', 'clientFilesCourse', 'serverFilesCourse'],
-    async (
-      /** @type {"elements" | "elementExtensions" | "clientFilesCourse" | "serverFilesCourse"} */ chunkType
-    ) => {
-      const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-      if (
-        hasChunkDirectory &&
-        (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])
-      ) {
-        updatedChunks.push({ type: chunkType });
-      } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
-        deletedChunks.push({ type: chunkType });
-      }
+  for (const chunkType of [
+    'elements',
+    'elementExtensions',
+    'clientFilesCourse',
+    'serverFilesCourse',
+  ] as const) {
+    const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
+    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+      updatedChunks.push({ type: chunkType });
+    } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
+      deletedChunks.push({ type: chunkType });
     }
-  );
+  }
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
@@ -587,19 +591,17 @@ module.exports.diffChunks = async ({ coursePath, courseId, courseData, changedFi
   );
 
   return { updatedChunks, deletedChunks };
-};
+}
 
-/**
- *
- * @param {string} coursePath
- * @param {string} courseId
- * @param {ChunkMetadata[]} chunksToGenerate
- */
-module.exports.createAndUploadChunks = async (coursePath, courseId, chunksToGenerate) => {
-  const generatedChunks = [];
+export async function createAndUploadChunks(
+  coursePath: string,
+  courseId: string,
+  chunksToGenerate: ChunkMetadata[]
+) {
+  const generatedChunks: (ChunkMetadata & { uuid: string })[] = [];
 
   await async.eachLimit(chunksToGenerate, config.chunksMaxParallelUpload, async (chunk) => {
-    const chunkDirectory = module.exports.coursePathForChunk(coursePath, chunk);
+    const chunkDirectory = coursePathForChunk(coursePath, chunk);
 
     // Generate a UUId for this chunk
     const chunkUuid = uuidv4();
@@ -616,13 +618,15 @@ module.exports.createAndUploadChunks = async (coursePath, courseId, chunksToGene
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
-    const params = {
-      Bucket: config.chunksS3Bucket,
-      Key: `${chunkUuid}.tar.gz`,
-      Body: passthrough,
-    };
-    const s3 = new AWS.S3();
-    await s3.upload(params).promise();
+    const s3 = new S3(aws.makeS3ClientConfig());
+    await new Upload({
+      client: s3,
+      params: {
+        Bucket: config.chunksS3Bucket,
+        Key: `${chunkUuid}.tar.gz`,
+        Body: passthrough,
+      },
+    }).done();
 
     generatedChunks.push({ ...chunk, uuid: chunkUuid });
   });
@@ -634,16 +638,13 @@ module.exports.createAndUploadChunks = async (coursePath, courseId, chunksToGene
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.
     chunks: JSON.stringify(generatedChunks),
   });
-};
+}
 
 /**
  * Deletes the specified chunks from the database. Note that they are not
  * deleted from S3 at this time.
- *
- * @param {string} courseId
- * @param {ChunkMetadata[]} chunksToDelete
  */
-module.exports.deleteChunks = async function (courseId, chunksToDelete) {
+export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
   if (chunksToDelete.length === 0) {
     // Avoid a round-trip to the DB if there's nothing to delete.
     return;
@@ -655,7 +656,7 @@ module.exports.deleteChunks = async function (courseId, chunksToDelete) {
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.
     chunks: JSON.stringify(chunksToDelete),
   });
-};
+}
 
 /**
  * Returns the paths to the chunks directories for the given course
@@ -674,9 +675,9 @@ module.exports.deleteChunks = async function (courseId, chunksToDelete) {
  * Otherwise, when we mount the course directory into a container, the symlinks
  * won't be resolvable.
  *
- * @param {string} courseId The ID of the course in question
+ * @param courseId The ID of the course in question
  */
-module.exports.getChunksDirectoriesForCourseId = (courseId) => {
+export function getChunksDirectoriesForCourseId(courseId: string) {
   const baseDirectory = path.join(config.chunksConsumerDirectory, `course-${courseId}`);
   return {
     base: baseDirectory,
@@ -685,7 +686,14 @@ module.exports.getChunksDirectoriesForCourseId = (courseId) => {
     chunks: path.join(baseDirectory, '__chunks', 'chunks'),
     unpacked: path.join(baseDirectory, '__chunks', 'unpacked'),
   };
-};
+}
+
+interface CourseWithRuntimeDirectory {
+  /** The database ID of the course. */
+  id: string;
+  /** The path to the course source (not the chunks) */
+  path: string;
+}
 
 /**
  * Returns the absolute path to the course directory that should be used at
@@ -698,139 +706,79 @@ module.exports.getChunksDirectoriesForCourseId = (courseId) => {
  * This function is designed to take a course object like one would get from
  * `res.locals.course`. If such an object isn't readily available, you can
  * just construct one with a course ID and course path.
- *
- * @param {Object} course The course object
- * @param {string} course.id The database ID of the course
- * @param {string} course.path The path to the course source (not the chunks)
  */
-module.exports.getRuntimeDirectoryForCourse = (course) => {
+export function getRuntimeDirectoryForCourse(course: CourseWithRuntimeDirectory): string {
   if (config.chunksConsumer) {
-    return module.exports.getChunksDirectoriesForCourseId(course.id).course;
+    return getChunksDirectoriesForCourseId(course.id).course;
   } else {
     return course.path;
   }
-};
+}
 
-/**
- *
- * @param {Object} options
- * @param {string} options.coursePath
- * @param {string} options.courseId
- * @param {import('../sync/course-db').CourseData} options.courseData
- * @param {string} [options.oldHash]
- * @param {string} [options.newHash]
- *
- * @returns {Promise<{ updatedChunks: ChunkMetadata[], deletedChunks: ChunkMetadata[] }>}
- */
-module.exports.updateChunksForCourse = async ({
+interface UpdateChunksForCourseOptions {
+  coursePath: string;
+  courseId: string;
+  courseData: CourseData;
+  oldHash?: string | null;
+  newHash?: string | null;
+}
+
+export async function updateChunksForCourse({
   coursePath,
   courseId,
   courseData,
   oldHash,
   newHash,
-}) => {
-  let changedFiles = [];
+}: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
+  let changedFiles: string[] = [];
   if (oldHash && newHash) {
-    changedFiles = await module.exports.identifyChangedFiles(coursePath, oldHash, newHash);
+    changedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
   }
 
-  const { updatedChunks, deletedChunks } = await module.exports.diffChunks({
+  const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
     changedFiles,
   });
 
-  await module.exports.createAndUploadChunks(coursePath, courseId, updatedChunks);
-  await module.exports.deleteChunks(courseId, deletedChunks);
+  await createAndUploadChunks(coursePath, courseId, updatedChunks);
+  await deleteChunks(courseId, deletedChunks);
 
   return { updatedChunks, deletedChunks };
-};
+}
 
 /**
  * Generates all chunks for a list of courses.
- *
- * @param {number[]} course_ids
- * @param {number} authn_user_id
  */
-module.exports.generateAllChunksForCourseList = async (course_ids, authn_user_id) => {
-  const jobSequenceOptions = {
-    user_id: authn_user_id,
-    authn_user_id: authn_user_id,
+export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
+  const serverJob = await createServerJob({
+    userId: authn_user_id,
+    authnUserId: authn_user_id,
     type: 'generate_all_chunks',
     description: 'Generate all chunks for a list of courses',
-  };
-  const job_sequence_id = await serverJobs.createJobSequenceAsync(jobSequenceOptions);
+  });
 
-  // don't await this, we want it to run in the background
-  module.exports._generateAllChunksForCourseListWithJobSequence(
-    course_ids,
-    authn_user_id,
-    job_sequence_id
-  );
-
-  // return immediately, while the generation is still running
-  return job_sequence_id;
-};
-
-/**
- * Helper function to actually generate all chunks for a list of courses.
- *
- * @param {number[]} course_ids
- * @param {number} authn_user_id
- * @param {number} job_sequence_id
- */
-module.exports._generateAllChunksForCourseListWithJobSequence = async (
-  course_ids,
-  authn_user_id,
-  job_sequence_id
-) => {
-  try {
-    for (let i = 0; i < course_ids.length; i++) {
-      const course_id = course_ids[i];
-      const jobOptions = {
-        course_id: null /* Set the job's course_id to null so we can find it from the admin page */,
-        type: 'generate_all_chunks',
-        description: `Generate all chunks for course ID = ${course_id}`,
-        job_sequence_id,
-        user_id: authn_user_id,
-        authn_user_id,
-        last_in_sequence: i === course_ids.length - 1,
-      };
-      const job = await serverJobs.createJobAsync(jobOptions);
-      job.info(chalkDim(`Course ID = ${course_id}`));
-
-      try {
-        await module.exports._generateAllChunksForCourseWithJob(course_id, job);
-        job.succeed();
-      } catch (err) {
-        job.error(chalk.red(JSON.stringify(err)));
-        await job.failAsync(err);
-        throw err;
-      }
+  serverJob.executeInBackground(async (job) => {
+    for (const [i, courseId] of course_ids.entries()) {
+      job.info(`Generating chunks for course ${courseId} [${i + 1}/${course_ids.length}]`);
+      await _generateAllChunksForCourseWithJob(courseId, job);
     }
-  } catch (err) {
-    try {
-      await serverJobs.failJobSequenceAsync(job_sequence_id);
-    } catch (err) {
-      logger.error(`Failed to fail job_sequence_id=${job_sequence_id}`);
-    }
-  }
-};
+  });
+
+  return serverJob.jobSequenceId;
+}
 
 /**
  * Helper function to generate all chunks for a single course.
- *
- * @param {number} course_id
- * @param {object} job
  */
-module.exports._generateAllChunksForCourseWithJob = async (course_id, job) => {
+async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold(`Looking up course directory`));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
-  job.info(chalkDim(`Found course directory = ${courseDir}`));
+  job.info(chalkDim(`Found course directory: ${courseDir}`));
   courseDir = path.resolve(process.cwd(), courseDir);
-  job.info(chalkDim(`Resolved course directory = ${courseDir}`));
+  job.info(chalkDim(`Resolved course directory: ${courseDir}`));
 
   const lockName = `coursedir:${courseDir}`;
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
@@ -848,23 +796,18 @@ module.exports._generateAllChunksForCourseWithJob = async (course_id, job) => {
       courseId: String(course_id),
       courseData,
     };
-    const chunkChanges = await module.exports.updateChunksForCourse(chunkOptions);
-    module.exports.logChunkChangesToJob(chunkChanges, job);
+    const chunkChanges = await updateChunksForCourse(chunkOptions);
+    logChunkChangesToJob(chunkChanges, job);
     job.info(chalkDim(`Generated all chunks`));
   });
 
   job.info(chalkDim(`Released lock`));
 
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
-};
+}
 
-/**
- *
- * @param {string} courseId
- * @param {DatabaseChunk} chunk
- */
-const ensureChunk = async (courseId, chunk) => {
-  const courseChunksDirs = module.exports.getChunksDirectoriesForCourseId(courseId);
+const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
+  const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   const downloadPath = path.join(courseChunksDirs.downloads, `${chunk.uuid}.tar.gz`);
   const chunkPath = path.join(courseChunksDirs.chunks, `${chunk.uuid}.tar.gz`);
   const unpackPath = path.join(courseChunksDirs.unpacked, chunk.uuid);
@@ -932,22 +875,8 @@ const ensureChunk = async (courseId, chunk) => {
 
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
-  const params = {
-    Bucket: config.chunksS3Bucket,
-    Key: `${chunk.uuid}.tar.gz`,
-  };
   await fs.ensureDir(path.dirname(downloadPath));
-  const s3 = new AWS.S3();
-  await new Promise((resolve, reject) => {
-    s3.getObject(params)
-      .createReadStream()
-      .on('error', (err) => {
-        logger.error(`Could not download chunk ${chunk.uuid}: ${err}`);
-        reject(err);
-      })
-      .on('end', () => resolve(null))
-      .pipe(fs.createWriteStream(downloadPath));
-  });
+  await aws.downloadFromS3Async(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
   await fs.move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
@@ -995,8 +924,7 @@ const ensureChunk = async (courseId, chunk) => {
   await fs.rename(tmpPath, targetPath);
 };
 
-/** @type {Map<string, Promise>} */
-const pendingChunksMap = new Map();
+const pendingChunksMap = new Map<string, Promise<void>>();
 
 /**
  * Ensures that specific chunks for a course are loaded. These chunks will either be pulled
@@ -1006,10 +934,10 @@ const pendingChunksMap = new Map();
  * For each requested chunk, if the chunk exists on disk but does not exist in
  * the database, the chunk will be removed from the course's runtime directory.
  *
- * @param {string} courseId
- * @param {Chunk | Chunk[]} chunks to load.  This can either be a single chunk or an array of chunks.
+ * @param courseId The ID of the course to load chunks for.
+ * @param chunks One or more chunks to load.
  */
-module.exports.ensureChunksForCourseAsync = async (courseId, chunks) => {
+export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk | Chunk[]) {
   if (!config.chunksConsumer) {
     // We only need to worry if we are a chunk consumer server
     return;
@@ -1020,8 +948,7 @@ module.exports.ensureChunksForCourseAsync = async (courseId, chunks) => {
   }
 
   // First, query the database to identify the UUID + associated name(s) of each desired chunk
-  // "Names" in this case referrs to question/course instance/assessment names.
-  /** @type {import('pg').QueryResult<DatabaseChunk>} */
+  // "Names" in this case refers to question/course instance/assessment names.
   const dbChunks = await sqldb.queryAsync(sql.select_metadata_for_chunks, {
     course_id: courseId,
     chunks_arr: JSON.stringify(chunks),
@@ -1072,55 +999,59 @@ module.exports.ensureChunksForCourseAsync = async (courseId, chunks) => {
   // the chunk from the course's runtime directory.
   //
   // See https://github.com/PrairieLearn/PrairieLearn/issues/4692 for more details.
-  const courseChunksDirs = module.exports.getChunksDirectoriesForCourseId(courseId);
+  const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   await Promise.all(
     missingChunks.map(async (chunk) => {
       // Blindly remove this chunk from disk - if it doesn't exist, `fs.remove`
       // will silently no-op.
-      const chunkMetadata = module.exports.chunkMetadataFromDatabaseChunk(chunk);
-      await fs.remove(module.exports.coursePathForChunk(courseChunksDirs.course, chunkMetadata));
+      const chunkMetadata = chunkMetadataFromDatabaseChunk(chunk);
+      await fs.remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
     })
   );
-};
-module.exports.ensureChunksForCourse = util.callbackify(module.exports.ensureChunksForCourseAsync);
+}
+export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
+
+interface QuestionWithTemplateDirectory {
+  id: string;
+  template_directory: null | string;
+}
 
 /**
  * Get the list of template question IDs for a given question.
  *
- * @param {Object} question - A question object.
- * @returns {Promise<string[]>} - Array of question IDs that are (recursive) templates for the given question (may be an empty array).
+ * @param question A question object.
+ * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
-module.exports.getTemplateQuestionIdsAsync = async (question) => {
+export async function getTemplateQuestionIdsAsync(
+  question: QuestionWithTemplateDirectory
+): Promise<string[]> {
   if (!question.template_directory) return [];
   const result = await sqldb.queryAsync(sql.select_template_question_ids, {
     question_id: question.id,
   });
   const questionIds = result.rows.map((r) => r.id);
   return questionIds;
-};
-module.exports.getTemplateQuestionIds = util.callbackify(
-  module.exports.getTemplateQuestionIdsAsync
-);
+}
+export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsync);
 
 /**
  * Logs the changes to chunks for a given job.
- *
- * @param {{ updatedChunks: ChunkMetadata[], deletedChunks: ChunkMetadata[] }} chunkMetadata
- * @param {import('./server-jobs').Job} job
- * @returns
  */
-module.exports.logChunkChangesToJob = ({ updatedChunks, deletedChunks }, job) => {
+export function logChunkChangesToJob(
+  { updatedChunks, deletedChunks }: ChunksDiff,
+  job: Pick<ServerJob, 'verbose'>
+) {
   if (updatedChunks.length === 0 && deletedChunks.length === 0) {
     job.verbose('No chunks changed.');
     return;
   }
 
-  const lines = [];
+  const lines: string[] = [];
 
   if (updatedChunks.length > 0) {
     lines.push('Generated chunks for the following paths:');
     updatedChunks.forEach((chunk) => {
-      lines.push(`  ${module.exports.pathForChunk(chunk)}`);
+      lines.push(`  ${pathForChunk(chunk)}`);
     });
   } else {
     lines.push('No chunks were generated.');
@@ -1129,11 +1060,11 @@ module.exports.logChunkChangesToJob = ({ updatedChunks, deletedChunks }, job) =>
   if (deletedChunks.length > 0) {
     lines.push('Deleted chunks for the following paths:');
     deletedChunks.forEach((chunk) => {
-      lines.push(`  ${module.exports.pathForChunk(chunk)}`);
+      lines.push(`  ${pathForChunk(chunk)}`);
     });
   } else {
     lines.push('No chunks were deleted.');
   }
 
   job.verbose(lines.join('\n'));
-};
+}
