@@ -1,12 +1,13 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
-const router = express.Router();
+const { callbackify } = require('node:util');
 const debug = require('debug')('prairielearn:instructorAssessment');
-
 const error = require('@prairielearn/error');
-const scoreUpload = require('../../lib/score-upload');
 const sqldb = require('@prairielearn/postgres');
 
+const scoreUpload = require('../../lib/score-upload');
+
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
@@ -31,7 +32,7 @@ router.post('/', function (req, res, next) {
   }
 
   if (req.body.__action === 'upload_instance_question_scores') {
-    scoreUpload.uploadInstanceQuestionScores(
+    callbackify(scoreUpload.uploadInstanceQuestionScores)(
       res.locals.assessment.id,
       req.file,
       res.locals.user.user_id,
