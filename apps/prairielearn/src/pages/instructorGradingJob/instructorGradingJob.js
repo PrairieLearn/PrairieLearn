@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
-const { pipeline } = require('node:stream');
+const { pipeline } = require('node:stream/promises');
 const { S3, NoSuchKey } = require('@aws-sdk/client-s3');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
