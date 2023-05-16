@@ -125,7 +125,6 @@ export const InstitutionAdminSso = ({
 
               // Sync disabled state of default provider option.
               var defaultProviderOption = $('#defaultProvider option[value="' + providerId + '"]');
-              console.log(defaultProviderOption);
               defaultProviderOption.prop('disabled', !e.target.checked);
             });
           });
