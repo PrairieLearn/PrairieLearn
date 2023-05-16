@@ -2,10 +2,8 @@
 const ERR = require('async-stacktrace');
 const util = require('util');
 const _ = require('lodash');
-const path = require('path');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const sqldb = require('@prairielearn/postgres');
 
 const { createServerJob } = require('./server-jobs');
@@ -17,12 +15,11 @@ module.exports = {
    * Update question instance scores from a CSV file.
    *
    * @param {string} assessment_id - The assessment to update.
-   * @param {{ originalname: string, size: number, buffer: Buffer }} csvFile - An object with keys {originalname, size, buffer}.
+   * @param {{ originalname: string, size: number, buffer: Buffer } | null | undefined} csvFile - An object with keys {originalname, size, buffer}.
    * @param {string} user_id - The current user performing the update.
    * @param {string} authn_user_id - The current authenticated user.
    */
   async uploadInstanceQuestionScores(assessment_id, csvFile, user_id, authn_user_id) {
-    debug('uploadInstanceQuestionScores()');
     if (csvFile == null) {
       throw new Error('No CSV file uploaded');
     }
@@ -138,12 +135,11 @@ module.exports = {
    * Update assessment instance scores from a CSV file.
    *
    * @param {string} assessment_id - The assessment to update.
-   * @param {{ originalname: string, size: number, buffer: Buffer }} csvFile - An object with keys {originalname, size, buffer}.
+   * @param {{ originalname: string, size: number, buffer: Buffer } | null | undefined} csvFile - An object with keys {originalname, size, buffer}.
    * @param {string} user_id - The current user performing the update.
    * @param {string} authn_user_id - The current authenticated user.
    */
   async uploadAssessmentInstanceScores(assessment_id, csvFile, user_id, authn_user_id) {
-    debug('uploadAssessmentInstanceScores()');
     if (csvFile == null) {
       throw new Error('No CSV file uploaded');
     }

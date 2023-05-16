@@ -3402,6 +3402,7 @@ __metadata:
     "@types/memorystream": ^0.3.1
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
+    "@types/multer": ^1.4.7
     "@types/node": ^18.16.3
     "@types/node-fetch": ^2.6.3
     "@types/object-hash": ^3.0.2
@@ -4329,6 +4330,15 @@ __metadata:
   version: 0.7.31
   resolution: "@types/ms@npm:0.7.31"
   checksum: daadd354aedde024cce6f5aa873fefe7b71b22cd0e28632a69e8b677aeb48ae8caa1c60e5919bb781df040d116b01cb4316335167a3fc0ef6a63fa3614c0f6da
+  languageName: node
+  linkType: hard
+
+"@types/multer@npm:^1.4.7":
+  version: 1.4.7
+  resolution: "@types/multer@npm:1.4.7"
+  dependencies:
+    "@types/express": "*"
+  checksum: 680cb0710aa25264d20cdcdaf34c212b636b55ea141310f06c25354ab1401193c7aa6839f9d22abf64a223fab1f2b8287f2512b0bef7e1628c4e9ffe54b4aeb2
   languageName: node
   linkType: hard
 
