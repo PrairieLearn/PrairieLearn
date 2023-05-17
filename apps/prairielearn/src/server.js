@@ -18,6 +18,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -62,6 +63,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 
@@ -126,6 +128,23 @@ module.exports.initExpress = function () {
     setLocalsFromConfig(res.locals);
     next();
   });
+
+  app.use(
+    session({
+      secret: config.secretKey,
+      store: new SessionStore({
+        expireSeconds: config.sessionStoreExpireSeconds,
+      }),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        maxAge: config.sessionStoreExpireSeconds,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none', // needed for iframes, Canvas LTI
+      },
+    })
+  );
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
