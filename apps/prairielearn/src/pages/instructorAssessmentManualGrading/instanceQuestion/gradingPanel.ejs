@@ -37,6 +37,13 @@
       <%- include('autoPointsSection'); %>
     </li>
     <li class="list-group-item">
+      <% if (locals.context === 'main' && locals.rubric_settings_visible && locals.rubric_data?.replace_auto_points && authz_data.has_course_instance_permission_edit) { %>
+      <span class="float-right btn-group btn-group-sm ml-1" role="group">
+        <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
+          <i class="fas fa-list-check"></i> Rubric
+        </button>
+      </span>
+      <% } %>
       <div class="form-group js-manual-grading-points w-100">
         Total Points:
         <span class="float-right">
