@@ -347,10 +347,7 @@ WITH
       ri.description
     FROM
       inserted_rubric_grading AS irg
-      JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari (
-        rubric_item_id BIGINT,
-        score DOUBLE PRECISION
-      ) ON (TRUE)
+      JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari (rubric_item_id BIGINT, score DOUBLE PRECISION) ON (TRUE)
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id
         AND ri.rubric_id = $rubric_id
