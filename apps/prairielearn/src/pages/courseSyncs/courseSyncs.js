@@ -1,4 +1,6 @@
+// @ts-check
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const { ECR } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const async = require('async');
@@ -105,46 +107,36 @@ router.get('/', function (req, res, next) {
   });
 });
 
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied (must be course editor)');
+    }
 
-  if (req.body.__action === 'pull') {
-    syncHelpers
-      .pullAndUpdate(res.locals)
-      .then((job_sequence_id) => {
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      })
-      .catch((err) => ERR(err, next));
-  } else if (req.body.__action === 'status') {
-    syncHelpers
-      .gitStatus(res.locals)
-      .then((job_sequence_id) => {
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      })
-      .catch((err) => ERR(err, next));
-  } else if (req.body.__action === 'syncImages') {
-    const params = { course_id: res.locals.course.id };
-    sqldb.query(sql.question_images, params, (err, result) => {
-      if (ERR(err, next)) return;
-      res.locals.images = result.rows;
-      if ('single_image' in req.body) {
-        res.locals.images = _.filter(result.rows, ['image', req.body.single_image]);
-      }
-      syncHelpers.ecrUpdate(res.locals, function (err, job_sequence_id) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+    if (req.body.__action === 'pull') {
+      const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'status') {
+      const jobSequenceId = await syncHelpers.gitStatus(res.locals);
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'syncImages') {
+      const result = await sqldb.queryAsync(sql.question_images, {
+        course_id: res.locals.course.id,
       });
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
+      let images = result.rows;
+      if ('single_image' in req.body) {
+        images = _.filter(result.rows, ['image', req.body.single_image]);
+      }
+      const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else {
+      throw error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
-    );
-  }
-});
+      });
+    }
+  })
+);
 
 module.exports = router;

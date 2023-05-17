@@ -110,6 +110,11 @@ module.exports = {
         module: require('./cleanTimeSeries'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
       },
+      {
+        name: 'sessionStoreExpire',
+        module: require('./sessionStoreExpire'),
+        intervalSec: 'daily',
+      },
     ];
 
     if (isEnterprise()) {
