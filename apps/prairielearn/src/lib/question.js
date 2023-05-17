@@ -241,6 +241,7 @@ module.exports = {
           authn_user_id,
           group_work,
           require_open,
+          course.id,
         ];
         sqldb.callOneRow('variants_insert', params, (err, result) => {
           if (ERR(err, callback)) return;

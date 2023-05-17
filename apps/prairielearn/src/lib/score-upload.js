@@ -1,15 +1,13 @@
+// @ts-check
+const ERR = require('async-stacktrace');
 const util = require('util');
 const _ = require('lodash');
-const path = require('path');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
-const manualGrading = require('./manualGrading');
-const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs-legacy');
-const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
+
+const { createServerJob } = require('./server-jobs');
+const manualGrading = require('./manualGrading');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -17,57 +15,47 @@ module.exports = {
   /**
    * Update question instance scores from a CSV file.
    *
-   * @param {number} assessment_id - The assessment to update.
-   * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
-   * @param {number} user_id - The current user performing the update.
-   * @param {number} authn_user_id - The current authenticated user.
-   * @return {Promise<number>} The job sequence id
+   * @param {string} assessment_id - The assessment to update.
+   * @param {{ originalname: string, size: number, buffer: Buffer } | null | undefined} csvFile - An object with keys {originalname, size, buffer}.
+   * @param {string} user_id - The current user performing the update.
+   * @param {string} authn_user_id - The current authenticated user.
    */
-  async uploadInstanceQuestionScoresAsync(assessment_id, csvFile, user_id, authn_user_id) {
-    debug('uploadInstanceQuestionScores()');
+  async uploadInstanceQuestionScores(assessment_id, csvFile, user_id, authn_user_id) {
     if (csvFile == null) {
       throw new Error('No CSV file uploaded');
     }
 
-    const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, { assessment_id });
+    const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, {
+      assessment_id,
+    });
+
     const assessment_label = result.rows[0].assessment_label;
     const course_instance_id = result.rows[0].course_instance_id;
     const course_id = result.rows[0].course_id;
 
-    const job_sequence_id = await serverJobs.createJobSequenceAsync({
-      course_id: course_id,
-      course_instance_id: course_instance_id,
-      assessment_id: assessment_id,
-      user_id: user_id,
-      authn_user_id: authn_user_id,
+    const serverJob = await createServerJob({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      assessmentId: assessment_id,
+      userId: user_id,
+      authnUserId: authn_user_id,
       type: 'upload_instance_question_scores',
       description: 'Upload question scores for ' + assessment_label,
     });
 
-    (async () => {
-      // We continue executing below in the background to launch the jobs themselves.
+    serverJob.executeInBackground(async (job) => {
+      job.info('Uploading question scores for ' + assessment_label);
 
-      const job = await serverJobs.createJobAsync({
-        course_id: course_id,
-        course_instance_id: course_instance_id,
-        assessment_id: assessment_id,
-        user_id: user_id,
-        authn_user_id: authn_user_id,
-        type: 'upload_instance_question_scores',
-        description: 'Upload question scores for ' + assessment_label,
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
-      });
-      job.verbose('Uploading question scores for ' + assessment_label);
-
-      // acculumate output lines in the "output" variable and actually
+      // accumulate output lines in the "output" variable and actually
       // output put them in blocks, to avoid spamming the updates
       let output = null;
       let outputCount = 0;
       let outputThreshold = 100;
 
-      job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-      job.verbose(`----------------------------------------`);
+      let successCount = 0;
+      let errorCount = 0;
+
+      job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
       const csvStream = streamifier.createReadStream(csvFile.buffer, {
         encoding: 'utf8',
       });
@@ -84,8 +72,7 @@ module.exports = {
         },
         maxRowLength: 10000,
       });
-      let successCount = 0,
-        errorCount = 0;
+
       try {
         await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
           // Replace all keys with their lower-case values
@@ -120,84 +107,66 @@ module.exports = {
             outputThreshold *= 2; // exponential backoff
           }
         });
+      } finally {
+        // Log output even in the case of failure.
         if (output != null) {
           job.verbose(output);
         }
-        job.verbose(`----------------------------------------`);
-        if (errorCount === 0) {
-          job.verbose(`Successfully updated scores for ${successCount} questions, with no errors`);
-          job.succeed();
-        } else {
-          job.verbose(`Successfully updated scores for ${successCount} questions`);
-          job.fail(`Error updating ${errorCount} questions`);
-        }
-      } catch (err) {
-        if (output != null) job.verbose(output);
-        job.fail(error.newMessage(err, 'Error processing CSV'));
       }
-    })().catch((err) => {
-      logger.error('Error in createJob()', err);
-      serverJobs.failJobSequence(job_sequence_id);
+
+      if (errorCount === 0) {
+        job.info(`Successfully updated scores for ${successCount} questions, with no errors`);
+      } else {
+        job.info(`Successfully updated scores for ${successCount} questions`);
+        job.error(`Error updating ${errorCount} questions`);
+      }
     });
 
-    // This is returned before the async code above completes, since there's no await.
-    return job_sequence_id;
+    return serverJob.jobSequenceId;
   },
 
   /**
    * Update assessment instance scores from a CSV file.
    *
-   * @param {number} assessment_id - The assessment to update.
-   * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
-   * @param {number} user_id - The current user performing the update.
-   * @param {number} authn_user_id - The current authenticated user.
-   * @return {Promise<number>} The job sequence id
+   * @param {string} assessment_id - The assessment to update.
+   * @param {{ originalname: string, size: number, buffer: Buffer } | null | undefined} csvFile - An object with keys {originalname, size, buffer}.
+   * @param {string} user_id - The current user performing the update.
+   * @param {string} authn_user_id - The current authenticated user.
    */
-  async uploadAssessmentInstanceScoresAsync(assessment_id, csvFile, user_id, authn_user_id) {
-    debug('uploadAssessmentInstanceScores()');
+  async uploadAssessmentInstanceScores(assessment_id, csvFile, user_id, authn_user_id) {
     if (csvFile == null) {
       throw new Error('No CSV file uploaded');
     }
-
-    const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, { assessment_id });
+    const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, {
+      assessment_id,
+    });
     const assessment_label = result.rows[0].assessment_label;
     const course_instance_id = result.rows[0].course_instance_id;
     const course_id = result.rows[0].course_id;
 
-    const job_sequence_id = await serverJobs.createJobSequenceAsync({
-      course_id: course_id,
-      course_instance_id: course_instance_id,
-      assessment_id: assessment_id,
-      user_id: user_id,
-      authn_user_id: authn_user_id,
+    const serverJob = await createServerJob({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      assessmentId: assessment_id,
+      userId: user_id,
+      authnUserId: authn_user_id,
       type: 'upload_assessment_instance_scores',
       description: 'Upload total scores for ' + assessment_label,
     });
 
-    (async () => {
-      // We continue executing below in the background to launch the jobs themselves.
-
-      const job = await serverJobs.createJobAsync({
-        course_id: course_id,
-        course_instance_id: course_instance_id,
-        assessment_id: assessment_id,
-        user_id: user_id,
-        authn_user_id: authn_user_id,
-        type: 'upload_assessment_instance_scores',
-        description: 'Upload total scores for ' + assessment_label,
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
-      });
+    serverJob.executeInBackground(async (job) => {
       job.verbose('Uploading total scores for ' + assessment_label);
 
-      // acculumate output lines in the "output" variable and actually
+      // accumulate output lines in the "output" variable and actually
       // output put them in blocks, to avoid spamming the updates
       let output = null;
       let outputCount = 0;
       let outputThreshold = 100;
 
-      job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-      job.verbose(`----------------------------------------`);
+      let successCount = 0;
+      let errorCount = 0;
+
+      job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
       const csvStream = streamifier.createReadStream(csvFile.buffer, {
         encoding: 'utf8',
       });
@@ -209,8 +178,7 @@ module.exports = {
         },
         maxRowLength: 1000,
       });
-      let successCount = 0,
-        errorCount = 0;
+
       try {
         await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
           // Replace all keys with their lower-case values
@@ -224,11 +192,7 @@ module.exports = {
             output += '\n' + msg;
           }
           try {
-            await module.exports._updateAssessmentInstanceFromJson(
-              json,
-              assessment_id,
-              authn_user_id
-            );
+            module.exports._updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
             successCount++;
           } catch (err) {
             errorCount++;
@@ -247,32 +211,24 @@ module.exports = {
             outputThreshold *= 2; // exponential backoff
           }
         });
+      } finally {
+        // Log output even in the case of failure.
         if (output != null) {
           job.verbose(output);
         }
-        job.verbose(`----------------------------------------`);
-        if (errorCount === 0) {
-          job.verbose(
-            `Successfully updated scores for ${successCount} assessment instances, with no errors`
-          );
-          job.succeed();
-        } else {
-          job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
-          job.fail(`Error updating ${errorCount} assessment instances`);
-        }
-      } catch (err) {
-        if (output != null) {
-          job.verbose(output);
-        }
-        job.fail(error.newMessage(err, 'Error processing CSV'));
       }
-    })().catch((err) => {
-      logger.error('Error in createJob()', err);
-      serverJobs.failJobSequence(job_sequence_id);
+
+      if (errorCount === 0) {
+        job.verbose(
+          `Successfully updated scores for ${successCount} assessment instances, with no errors`
+        );
+      } else {
+        job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+        job.error(`Error updating ${errorCount} assessment instances`);
+      }
     });
 
-    // This is returned before the async code above completes, since there's no await.
-    return job_sequence_id;
+    return serverJob.jobSequenceId;
   },
 
   // missing values and empty strings get mapped to null
@@ -420,29 +376,3 @@ module.exports = {
     });
   },
 };
-
-/**
- * Update question instance scores from a CSV file.
- *
- * @param {number} assessment_id - The assessment to update.
- * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
- * @param {number} user_id - The current user performing the update.
- * @param {number} authn_user_id - The current authenticated user.
- * @param {function} callback - A callback(err, job_sequence_id) function.
- */
-module.exports.uploadInstanceQuestionScores = util.callbackify(
-  module.exports.uploadInstanceQuestionScoresAsync
-);
-
-/**
- * Update assessment instance scores from a CSV file.
- *
- * @param {number} assessment_id - The assessment to update.
- * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
- * @param {number} user_id - The current user performing the update.
- * @param {number} authn_user_id - The current authenticated user.
- * @param {function} callback - A callback(err, job_sequence_id) function.
- */
-module.exports.uploadAssessmentInstanceScores = util.callbackify(
-  module.exports.uploadAssessmentInstanceScoresAsync
-);

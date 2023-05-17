@@ -40,7 +40,6 @@ const {
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
-const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
@@ -114,6 +113,9 @@ module.exports.initExpress = function () {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
     res.locals.compiled_script_tag = assets.compiledScriptTag;
+    res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
+    res.locals.compiled_script_path = assets.compiledScriptPath;
+    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
     next();
   });
   app.use(function (req, res, next) {
@@ -426,7 +428,7 @@ module.exports.initExpress = function () {
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
-  app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
@@ -440,7 +442,7 @@ module.exports.initExpress = function () {
   }
 
   // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -1619,7 +1621,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/features',
-    require('./pages/administratorFeatures/administratorFeatures')
+    require('./pages/administratorFeatures/administratorFeatures').default
   );
   app.use(
     '/pl/administrator/queries',
@@ -1837,7 +1839,6 @@ if (require.main === module && config.startServer) {
 
         // Load config immediately so we can use it configure everything else.
         await loadConfig(configPaths);
-        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.

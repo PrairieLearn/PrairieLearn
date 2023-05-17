@@ -1,16 +1,24 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
+const { S3 } = require('@aws-sdk/client-s3');
+const {
+  SQSClient,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+} = require('@aws-sdk/client-sqs');
 const error = require('@prairielearn/error');
-const AWS = require('aws-sdk');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
+const Sentry = require('@prairielearn/sentry');
 
+const { makeS3ClientConfig, makeAwsClientConfig } = require('./aws');
 const { config } = require('./config');
-const sql = sqldb.loadSqlEquiv(__filename);
 const externalGradingSocket = require('./externalGradingSocket');
 const assessment = require('./assessment');
 const externalGraderCommon = require('./externalGraderCommon');
-const { logger } = require('@prairielearn/logger');
 const { deferredPromise } = require('./deferred');
-const Sentry = require('@prairielearn/sentry');
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
@@ -19,7 +27,7 @@ module.exports.init = async function () {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
-  const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await loadQueueUrl(sqs);
 
   // Start work in an IIFE so we can keep going asynchronously
@@ -39,13 +47,13 @@ module.exports.init = async function () {
         }
 
         try {
-          const data = await sqs
-            .receiveMessage({
+          const data = await sqs.send(
+            new ReceiveMessageCommand({
               MaxNumberOfMessages: 10,
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
             })
-            .promise();
+          );
           messages = data.Messages;
         } catch (err) {
           logger.error('Error receiving messages from SQS', err);
@@ -66,12 +74,12 @@ module.exports.init = async function () {
 
             await processMessage(parsedMessage);
 
-            await sqs
-              .deleteMessage({
+            await sqs.send(
+              new DeleteMessageCommand({
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
               })
-              .promise();
+            );
           } catch (err) {
             logger.error('Error processing external grader results', err);
             Sentry.captureException(err);
@@ -99,17 +107,16 @@ module.exports.stop = async function () {
 };
 
 /**
- *
- * @param {import('aws-sdk').SQS} sqs
+ * @param {SQSClient} sqs
  * @returns {Promise<string>} The URL of the results queue.
  */
 async function loadQueueUrl(sqs) {
   logger.verbose(
     `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`
   );
-  const data = await sqs
-    .getQueueUrl({ QueueName: config.externalGradingResultsQueueName })
-    .promise();
+  const data = await sqs.send(
+    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName })
+  );
   const queueUrl = data.QueueUrl;
   if (!queueUrl) {
     throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
@@ -155,15 +162,14 @@ async function processMessage(data) {
       return;
     } else {
       // We should fetch it from S3, and then process it
-      const s3Client = new AWS.S3(config.awsServiceGlobalOptions);
-      const data = await s3Client
-        .getObject({
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          ResponseContentType: 'application/json',
-        })
-        .promise();
-      await processResults(jobId, data.Body);
+      const s3Client = new S3(makeS3ClientConfig());
+      const data = await s3Client.getObject({
+        Bucket: s3Bucket,
+        Key: `${s3RootKey}/results.json`,
+        ResponseContentType: 'application/json',
+      });
+      if (!data.Body) throw new Error('No body in S3 response');
+      await processResults(jobId, data.Body.transformToString());
       return;
     }
   } else {

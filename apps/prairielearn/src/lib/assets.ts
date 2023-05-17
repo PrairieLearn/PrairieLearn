@@ -130,12 +130,19 @@ export async function init() {
   await Promise.all([computeElementsHash(), computePublicHash()]);
   assetsPrefix = config.assetsPrefix;
 
-  compiledAssets.init({
+  await compiledAssets.init({
     dev: config.devMode,
     sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,
   });
+}
+
+/**
+ * Shuts down the development assets compiler if it is running.
+ */
+export async function close() {
+  await compiledAssets.close();
 }
 
 /**
@@ -248,4 +255,16 @@ export function courseElementExtensionAssetPath(
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledScriptTag(sourceFile);
+}
+
+export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
+  return compiledAssets.compiledStylesheetTag(sourceFile);
+}
+
+export function compiledScriptPath(sourceFile: string): string {
+  return compiledAssets.compiledScriptPath(sourceFile);
+}
+
+export function compiledStylesheetPath(sourceFile: string): string {
+  return compiledAssets.compiledStylesheetPath(sourceFile);
 }

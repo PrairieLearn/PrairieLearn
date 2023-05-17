@@ -1,5 +1,5 @@
 // @ts-check
-const AWS = require('aws-sdk');
+const { ECR } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
@@ -8,6 +8,7 @@ const Docker = require('dockerode');
 const { logger } = require('@prairielearn/logger');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
+const { makeAwsClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs');
@@ -39,7 +40,7 @@ module.exports.pullAndUpdate = async function (locals) {
   serverJob.executeInBackground(async (job) => {
     let startGitHash = null;
     const coursePathExists = await fs.pathExists(locals.course.path);
-    if (coursePathExists) {
+    if (!coursePathExists) {
       // path does not exist, start with 'git clone'
       job.info('Clone from remote git repository');
       await job.exec(
@@ -158,7 +159,7 @@ function locateImage(image, callback) {
 }
 
 function confirmOrCreateECRRepo(repo, job, callback) {
-  const ecr = new AWS.ECR();
+  const ecr = new ECR(makeAwsClientConfig());
   job.info(`Describing repositories with name: ${repo}`);
   ecr.describeRepositories({ repositoryNames: [repo] }, (err, data) => {
     let repositoryFound = false;
@@ -303,7 +304,7 @@ module.exports.ecrUpdate = function (locals, callback) {
     return callback(new Error('cacheImageRegistry not defined'));
   }
 
-  setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
+  setupDockerAuth(config.awsRegion, (err, auth) => {
     if (ERR(err, callback)) return;
 
     const options = {
