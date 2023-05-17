@@ -1,6 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const util = require('util');
 const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
