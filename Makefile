@@ -25,7 +25,7 @@ start-workspace-host: start-support kill-running-workspaces
 start-executor:
 	@node apps/prairielearn/dist/executor.js
 
-describe-database:
+update-database-description:
 	@yarn --cwd apps/prairielearn pg-describe postgres -o ../../database
 
 kill-running-workspaces:
