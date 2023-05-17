@@ -211,23 +211,24 @@ function checkRubricItemTotals() {
   const maxPoints =
     Number(form.querySelector('[name="max_extra_points"]').value) +
     Number(form.querySelector('.js-negative-grading').value);
-  document.querySelectorAll('.js-rubric-item-total-warning').forEach((alert) => alert.remove());
+  form.querySelector('.js-settings-points-warning-placeholder').innerHTML = '';
 
   if (totalPositive < maxPoints) {
     addAlert(
-      form,
+      form.querySelector('.js-settings-points-warning-placeholder'),
       `Rubric item points reach at most ${totalPositive} points. ${
         maxPoints - totalPositive
       } left to reach maximum.`,
-      ['alert-warning', 'js-rubric-item-total-warning']
+      ['alert-warning']
     );
   }
 
   if (totalNegative > minPoints) {
-    addAlert(form, `Minimum grade from rubric item penalties is ${totalNegative} points.`, [
-      'alert-warning',
-      'js-rubric-item-total-warning',
-    ]);
+    addAlert(
+      form.querySelector('.js-settings-points-warning-placeholder'),
+      `Minimum grade from rubric item penalties is ${totalNegative} points.`,
+      ['alert-warning']
+    );
   }
 }
 
@@ -260,7 +261,7 @@ function submitSettings(e, use_rubric) {
       const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
       if (data.err) {
         console.error(data);
-        return addAlert(this, data.err);
+        return addAlert(this.querySelector('.js-settings-error-alert-placeholder'), data.err);
       }
       $(modal).modal('hide');
       if (data.gradingPanel) {
@@ -295,8 +296,7 @@ function submitSettings(e, use_rubric) {
     });
 }
 
-function addAlert(parent, msg, classes = ['alert-danger']) {
-  const alertPH = parent.querySelector('.js-settings-error-alert-placeholder');
+function addAlert(placeholder, msg, classes = ['alert-danger']) {
   const alert = document.createElement('div');
   alert.classList.add('alert', 'alert-dismissible', 'fade', 'show');
   if (classes) {
@@ -310,7 +310,7 @@ function addAlert(parent, msg, classes = ['alert-danger']) {
   closeBtn.setAttribute('aria-label', 'Close');
   closeBtn.innerHTML = '<span aria-hidden="true">&times;</span>';
   alert.appendChild(closeBtn);
-  alertPH.appendChild(alert);
+  placeholder.appendChild(alert);
 }
 
 function resetRubricItemRowsListeners() {
