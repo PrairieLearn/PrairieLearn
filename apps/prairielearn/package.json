@@ -181,6 +181,7 @@
     "@types/memorystream": "^0.3.1",
     "@types/mime": "^3.0.1",
     "@types/mocha": "^10.0.1",
+    "@types/multer": "^1.4.7",
     "@types/node": "^18.16.3",
     "@types/node-fetch": "^2.6.3",
     "@types/object-hash": "^3.0.2",
