@@ -44,11 +44,8 @@ CREATE TABLE IF NOT EXISTS
     score DOUBLE PRECISION NOT NULL DEFAULT 1,
     points DOUBLE PRECISION NOT NULL,
     description VARCHAR(100) NOT NULL,
-    note VARCHAR(10000)
+    UNIQUE (rubric_grading_id, rubric_item_id)
   );
-
-ALTER TABLE rubric_grading_items
-ADD CONSTRAINT rubric_grading_items_rubric_grading_id_rubric_item_id_key UNIQUE (rubric_grading_id, rubric_item_id);
 
 ALTER TABLE assessment_questions
 ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics (id) ON DELETE SET NULL ON UPDATE CASCADE;
