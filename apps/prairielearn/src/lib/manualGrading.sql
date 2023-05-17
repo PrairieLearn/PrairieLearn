@@ -337,22 +337,19 @@ WITH
         rubric_item_id,
         score,
         points,
-        description,
-        note
+        description
       )
     SELECT
       irg.id,
       ari.rubric_item_id,
       COALESCE(ari.score, 1),
       ri.points,
-      ri.description,
-      ari.note
+      ri.description
     FROM
       inserted_rubric_grading AS irg
       JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari (
         rubric_item_id BIGINT,
-        score DOUBLE PRECISION,
-        note TEXT
+        score DOUBLE PRECISION
       ) ON (TRUE)
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id

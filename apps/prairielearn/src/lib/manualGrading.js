@@ -14,7 +14,6 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @typedef {Object} AppliedRubricItem
  * @property {number} rubric_item_id - ID of the rubric item to be applied.
  * @property {number} [score=1] - Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item.
- * @property {string} [note] - Note to be applied to the rubric item, optional.
  */
 
 /** Builds the URL of an instance question tagged to be manually graded for a particular
