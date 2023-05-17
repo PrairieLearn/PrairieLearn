@@ -3,7 +3,7 @@ import { subHours, isFuture } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
 
-interface DockerAuth {
+export interface DockerAuth {
   username: string;
   password: string;
 }
@@ -26,7 +26,7 @@ function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   };
 }
 
-export async function setupDockerAuthAsync(region: string): Promise<DockerAuth | null> {
+export async function setupDockerAuthAsync(region: string): Promise<DockerAuth> {
   // If we have cached data that's not within an hour of expiring, use it.
   if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
