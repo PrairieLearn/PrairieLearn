@@ -21,7 +21,7 @@
     });
   </script>
   <%- include('../partials/navbar'); %>
-  <div id="content" class="container-fluid">
+  <main id="content" class="container-fluid">
     <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
     <% if (typeof errormsg !== 'undefined' && errormsg.length > 0) { %>
@@ -42,7 +42,7 @@
 
     <% } else { %>
     <% if (authz_data.has_course_instance_permission_edit) { %>
-    <div id="content" class="container-fluid">
+    <div class="container-fluid">
       <div class="modal fade" id="uploadAssessmentGroupsModal" tabindex="-1" role="dialog"
         aria-labelledby="uploadAssessmentGroupsModalLabel">
         <div class="modal-dialog" role="document">
@@ -89,7 +89,7 @@
           </div>
         </div>
       </div>
-      <div id="content" class="container-fluid">
+      <div class="container-fluid">
         <div class="modal fade" id="autoAssessmentGroupsModal" tabindex="-1" role="dialog"
           aria-labelledby="autoAssessmentGroupsModalLabel">
           <div class="modal-dialog" role="document">
@@ -394,7 +394,7 @@
     </div>
     <% } %>
 
-  </div>
+  </main>
 </body>
 
 </html>

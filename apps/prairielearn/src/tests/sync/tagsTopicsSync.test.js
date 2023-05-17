@@ -1,11 +1,7 @@
 // @ts-check
-const chaiAsPromised = require('chai-as-promised');
-const chai = require('chai');
-chai.use(chaiAsPromised);
+const { assert } = require('chai');
 const util = require('./util');
 const helperDb = require('../helperDb');
-
-const { assert } = chai;
 
 /**
  * Topics and tags are currently almost identical, so we test them together

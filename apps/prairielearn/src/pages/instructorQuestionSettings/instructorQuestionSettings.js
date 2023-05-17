@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
@@ -21,64 +22,61 @@ const { encodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
-router.post('/test', function (req, res, next) {
-  // We use a separate `test/` POST route so that we can always use the
-  // route to distinguish between pages that need to execute course code
-  // (this `test/` handler) and pages that need access to course content
-  // editing (here the plain '/' POST hander).
-  if (req.body.__action === 'test_once') {
-    if (!res.locals.authz_data.has_course_permission_view) {
-      return next(error.make(403, 'Access denied (must be a course Viewer)'));
-    }
-    const count = 1;
-    const showDetails = true;
-    const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
-    question.startTestQuestion(
-      count,
-      showDetails,
-      res.locals.question,
-      assessmentGroupWork,
-      res.locals.course_instance,
-      res.locals.course,
-      res.locals.authn_user.user_id,
-      (err, job_sequence_id) => {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+router.post(
+  '/test',
+  asyncHandler(async (req, res) => {
+    // We use a separate `test/` POST route so that we can always use the
+    // route to distinguish between pages that need to execute course code
+    // (this `test/` handler) and pages that need access to course content
+    // editing (here the plain '/' POST handler).
+    if (req.body.__action === 'test_once') {
+      if (!res.locals.authz_data.has_course_permission_view) {
+        throw error.make(403, 'Access denied (must be a course Viewer)');
       }
-    );
-  } else if (req.body.__action === 'test_100') {
-    if (!res.locals.authz_data.has_course_permission_view) {
-      return next(error.make(403, 'Access denied (must be a course Viewer)'));
-    }
-    if (res.locals.question.grading_method !== 'External') {
-      const count = 100;
-      const showDetails = false;
+      const count = 1;
+      const showDetails = true;
       const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
-      question.startTestQuestion(
+      const jobSequenceId = await question.startTestQuestion(
         count,
         showDetails,
         res.locals.question,
         assessmentGroupWork,
         res.locals.course_instance,
         res.locals.course,
-        res.locals.authn_user.user_id,
-        (err, job_sequence_id) => {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        res.locals.authn_user.user_id
       );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'test_100') {
+      if (!res.locals.authz_data.has_course_permission_view) {
+        throw error.make(403, 'Access denied (must be a course Viewer)');
+      }
+      if (res.locals.question.grading_method !== 'External') {
+        const count = 100;
+        const showDetails = false;
+        const assessmentGroupWork = res.locals.assessment
+          ? res.locals.assessment.group_work
+          : false;
+        const jobSequenceId = await question.startTestQuestion(
+          count,
+          showDetails,
+          res.locals.question,
+          assessmentGroupWork,
+          res.locals.course_instance,
+          res.locals.course,
+          res.locals.authn_user.user_id
+        );
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      } else {
+        throw new Error('Not supported for externally-graded questions');
+      }
     } else {
-      next(new Error('Not supported for externally-graded questions'));
-    }
-  } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
+      throw error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
-    );
-  }
-});
+      });
+    }
+  })
+);
 
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'change_id') {

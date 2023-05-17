@@ -20,7 +20,7 @@
   </script>
   <body>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
@@ -39,7 +39,7 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th></th>
+                <th><span class="sr-only">Name</span></th>
                 <th>QID</th>
                 <th>Topic</th>
                 <th>Tags</th>
@@ -172,6 +172,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

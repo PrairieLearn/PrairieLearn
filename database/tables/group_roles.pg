@@ -17,4 +17,4 @@ foreign-key constraints
 
 referenced by
     assessment_question_role_permissions: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_user_roles: FOREIGN KEY (group_role_id) REFERENCES group_roles(id)

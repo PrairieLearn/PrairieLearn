@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
-    "typescript-cp": "^0.1.7"
+    "typescript-cp": "^0.1.8"
   },
   "dependencies": {
     "@prairielearn/error": "workspace:^",

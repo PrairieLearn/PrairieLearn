@@ -36,13 +36,19 @@ const ConfigSchema = z.object({
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
+  assetsPrefix: z
+    .string()
+    .default('/assets')
+    .refine((s) => s.startsWith('/') && !s.endsWith('/'), {
+      message: 'must be an absolute path and not end with a slash',
+    }),
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-trust-auth']).default('none'),
+  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
   /** Overrides the user UID in development with `authType: 'none'` */
   authUid: z.string().nullable().default('dev@illinois.edu'),
   /** Overrides the user name in development with `authType: 'none'` */
@@ -467,6 +473,7 @@ const ConfigSchema = z.object({
     .default(
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000'
     ),
+  features: z.record(z.string(), z.boolean()).default({}),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */
