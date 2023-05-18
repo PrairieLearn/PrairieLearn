@@ -23,8 +23,18 @@ WITH
     INSERT INTO
       course_instances (id, uuid, course_id, display_timezone)
     VALUES
-      (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1, 'UTC'),
-      (2, '5159a291-566f-4463-8f11-b07c931ad72b', 1, 'UTC')
+      (
+        1,
+        '5159a291-566f-4463-8f11-b07c931ad72a',
+        1,
+        'UTC'
+      ),
+      (
+        2,
+        '5159a291-566f-4463-8f11-b07c931ad72b',
+        1,
+        'UTC'
+      )
   ),
   setup_ciars AS (
     INSERT INTO

@@ -1,6 +1,12 @@
 -- BLOCK insert_course_instance
 INSERT INTO
-  course_instances AS dest (course_id, short_name, uuid, display_timezone, deleted_at)
+  course_instances AS dest (
+    course_id,
+    short_name,
+    uuid,
+    display_timezone,
+    deleted_at
+  )
 SELECT
   ci.course_id,
   'UNAVAILABLE',
