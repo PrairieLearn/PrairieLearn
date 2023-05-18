@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <%- include('../../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
+    <%# instance_question_info is reset to keep the default title from showing the student question number %>
+    <%- include('../../partials/head', {pageNote: `Instance - question ${instance_question_info.instructor_question_number}`, instance_question_info: undefined}); %>
     <%- include('../../partials/mathjax'); %>
     <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>

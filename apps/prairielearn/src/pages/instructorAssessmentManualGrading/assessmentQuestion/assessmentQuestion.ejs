@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <%- include('../../partials/head'); %>
+    <%- include('../../partials/head', { pageNote: `Question ${number_in_alternative_group}` }); %>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
