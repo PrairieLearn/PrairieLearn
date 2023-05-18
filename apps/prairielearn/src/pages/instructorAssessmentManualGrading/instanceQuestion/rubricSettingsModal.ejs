@@ -26,10 +26,10 @@
                          <% if (!(locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points)) { %>checked<% } %>>
                   Apply rubric to manual points (out of <%= assessment_question.max_manual_points %>, keep auto points)
                 </label>
-                <span data-toggle="tooltip" data-placement="bottom"
+                <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom"
                       title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results.">
                   <i class="text-info fas fa-circle-info"></i>
-                </span>
+                </button>
               </div>
             </div>
             <div class="col-6">
@@ -42,10 +42,10 @@
                          <% if (locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points) { %>checked<% } %>>
                   Apply rubric to total points (out of <%= assessment_question.max_points %>, ignore auto points)
                 </label>
-                <span data-toggle="tooltip" data-placement="bottom"
+                <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom"
                       title="If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (<%= assessment_question.max_points %> points).">
                   <i class="text-info fas fa-circle-info"></i>
-                </span>
+                </button>
               </div>
             </div>
           </div>
@@ -69,19 +69,19 @@
                          <% if (locals.rubric_data?.starting_points) { %>checked<% } %>>
                   Negative grading (start at <span class="js-rubric-max-points-info"></span>, subtract penalties)
                 </label>
-                <span data-toggle="tooltip" data-placement="bottom"
+                <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom"
                       title="This setting only affects starting points. Rubric items may always be added with positive or negative points.">
                   <i class="text-info fas fa-circle-info"></i>
-                </span>
+                </button>
               </div>
             </div>
             <div class="form-group col-3">
               <label>
                 Minimum rubric score
-                <span data-toggle="tooltip" data-placement="bottom"
+                <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom"
                       title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole.">
                   <i class="text-info fas fa-circle-info"></i>
-                </span>
+                </button>
                 <input class="form-control js-rubric-item-limits"
                        name="min_points" type="number" required
                        value="<%= locals.rubric_data?.min_points ?? 0 %>">
@@ -90,10 +90,10 @@
             <div class="form-group col-3">
               <label>
                 Maximum extra credit
-                <span data-toggle="tooltip" data-placement="bottom"
+                <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="bottom"
                       title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit.">
                   <i class="text-info fas fa-circle-info"></i>
-                </span>
+                </button>
                 <input class="form-control js-rubric-item-limits"
                        name="max_extra_points" type="number" required
                        value="<%= locals.rubric_data?.max_extra_points ?? 0 %>">
@@ -247,10 +247,10 @@
                      name="tag_for_manual_grading">
               Require all graded submissions to be manually graded/reviewed
             </label>
-            <span data-toggle="tooltip" data-placement="top"
+            <button type="button" class="btn btn-sm" data-toggle="tooltip" data-placement="top"
                   title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader.">
               <i class="text-info fas fa-circle-info"></i>
-            </span>
+            </button>
           </div>
         </div>
         <div class="js-settings-error-alert-placeholder"></div>
