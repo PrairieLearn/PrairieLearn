@@ -172,6 +172,7 @@
     "@types/chai-as-promised": "^7.1.5",
     "@types/cheerio": "^0.22.31",
     "@types/dockerode": "^3.3.16",
+    "@types/express-session": "^1.17.7",
     "@types/folder-hash": "^4.0.2",
     "@types/fs-extra": "^11.0.1",
     "@types/jquery": "^3.5.16",
