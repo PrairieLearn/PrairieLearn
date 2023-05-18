@@ -113,7 +113,9 @@ SELECT
     'advance_score_perc',
     aq.effective_advance_score_perc,
     'sequence_locked',
-    iqi.sequence_locked
+    iqi.sequence_locked,
+    'instructor_question_number',
+    admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(q) AS question,
