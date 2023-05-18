@@ -2,7 +2,7 @@ columns
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
     deleted_at: timestamp with time zone
-    display_timezone: text
+    display_timezone: text not null
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
