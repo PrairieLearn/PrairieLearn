@@ -1,12 +1,11 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const util = require('util');
 const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const sqldb = require('@prairielearn/postgres');
 
 const { createServerJob } = require('./server-jobs');
+const manualGrading = require('./manualGrading');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -73,45 +72,38 @@ module.exports = {
       });
 
       try {
-        await csvConverter.fromStream(csvStream).subscribe((json, number) => {
-          return new Promise((resolve, _reject) => {
-            // Replace all keys with their lower-case values
-            json = _.mapKeys(json, (v, k) => {
-              return k.toLowerCase();
-            });
-            const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+        await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
+          // Replace all keys with their lower-case values
+          json = _.mapKeys(json, (_v, k) => k.toLowerCase());
+          const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+          if (output == null) {
+            output = msg;
+          } else {
+            output += '\n' + msg;
+          }
+          try {
+            await module.exports._updateInstanceQuestionFromJson(
+              json,
+              assessment_id,
+              authn_user_id
+            );
+            successCount++;
+          } catch (err) {
+            errorCount++;
+            const msg = String(err);
             if (output == null) {
               output = msg;
             } else {
               output += '\n' + msg;
             }
-            module.exports._updateInstanceQuestionFromJson(
-              json,
-              assessment_id,
-              authn_user_id,
-              (err) => {
-                if (err) {
-                  errorCount++;
-                  const msg = String(err);
-                  if (output == null) {
-                    output = msg;
-                  } else {
-                    output += '\n' + msg;
-                  }
-                } else {
-                  successCount++;
-                }
-                outputCount++;
-                if (outputCount >= outputThreshold) {
-                  job.verbose(output);
-                  output = null;
-                  outputCount = 0;
-                  outputThreshold *= 2; // exponential backoff
-                }
-                resolve();
-              }
-            );
-          });
+          }
+          outputCount++;
+          if (outputCount >= outputThreshold) {
+            job.verbose(output);
+            output = null;
+            outputCount = 0;
+            outputThreshold *= 2; // exponential backoff
+          }
         });
       } finally {
         // Log output even in the case of failure.
@@ -186,45 +178,36 @@ module.exports = {
       });
 
       try {
-        await csvConverter.fromStream(csvStream).subscribe((json, number) => {
-          return new Promise((resolve, _reject) => {
-            // Replace all keys with their lower-case values
-            json = _.mapKeys(json, (v, k) => {
-              return k.toLowerCase();
-            });
-            const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+        await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
+          // Replace all keys with their lower-case values
+          json = _.mapKeys(json, (v, k) => {
+            return k.toLowerCase();
+          });
+          const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+          if (output == null) {
+            output = msg;
+          } else {
+            output += '\n' + msg;
+          }
+          try {
+            module.exports._updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
+            successCount++;
+          } catch (err) {
+            errorCount++;
+            const msg = String(err);
             if (output == null) {
               output = msg;
             } else {
               output += '\n' + msg;
             }
-            module.exports._updateAssessmentInstanceFromJson(
-              json,
-              assessment_id,
-              authn_user_id,
-              (err) => {
-                if (err) {
-                  errorCount++;
-                  const msg = String(err);
-                  if (output == null) {
-                    output = msg;
-                  } else {
-                    output += '\n' + msg;
-                  }
-                } else {
-                  successCount++;
-                }
-                outputCount++;
-                if (outputCount >= outputThreshold) {
-                  job.verbose(output);
-                  output = null;
-                  outputCount = 0;
-                  outputThreshold *= 2; // exponential backoff
-                }
-                resolve();
-              }
-            );
-          });
+          }
+          outputCount++;
+          if (outputCount >= outputThreshold) {
+            job.verbose(output);
+            output = null;
+            outputCount = 0;
+            outputThreshold *= 2; // exponential backoff
+          }
         });
       } finally {
         // Log output even in the case of failure.
@@ -247,11 +230,9 @@ module.exports = {
   },
 
   // missing values and empty strings get mapped to null
-  _getJsonPropertyOrNull(json, key, default_value = null) {
-    const value = _.get(json, key, default_value);
-    if (value === '') {
-      return default_value;
-    }
+  _getJsonPropertyOrNull(json, key) {
+    const value = _.get(json, key, null);
+    if (value === '') return null;
     return value;
   },
 
@@ -297,35 +278,60 @@ module.exports = {
     return partial_scores;
   },
 
-  _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id, callback) {
-    util.callbackify(async () => {
-      const params = [
+  async _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id) {
+    const submission_id = module.exports._getJsonPropertyOrNull(json, 'submission_id');
+    const uid_or_group =
+      module.exports._getJsonPropertyOrNull(json, 'group_name') ??
+      module.exports._getJsonPropertyOrNull(json, 'uid');
+    const ai_number = module.exports._getJsonPropertyOrNull(json, 'instance');
+    const qid = module.exports._getJsonPropertyOrNull(json, 'qid');
+
+    await sqldb.runInTransactionAsync(async () => {
+      const submission_data = await sqldb.queryZeroOrOneRowAsync(sql.select_submission_to_update, {
         assessment_id,
-        module.exports._getJsonPropertyOrNull(json, 'submission_id'),
-        null, // instance_question_id
-        module.exports._getJsonPropertyOrNull(
-          json,
-          'group_name',
-          module.exports._getJsonPropertyOrNull(json, 'uid')
-        ),
-        module.exports._getJsonPropertyOrNull(json, 'instance'),
-        module.exports._getJsonPropertyOrNull(json, 'qid'),
+        submission_id,
+        uid_or_group,
+        ai_number,
+        qid,
+      });
+
+      if (submission_data.rowCount === 0) {
+        throw new Error(
+          `Could not locate submission with id=${submission_id}, instance=${ai_number}, uid/group=${uid_or_group}, qid=${qid} for this assessment.`
+        );
+      }
+      if (uid_or_group !== null && submission_data.rows[0].uid_or_group !== uid_or_group) {
+        throw new Error(
+          `Found submission with id=${submission_id}, but uid/group does not match ${uid_or_group}.`
+        );
+      }
+      if (qid !== null && submission_data.rows[0].qid !== qid) {
+        throw new Error(
+          `Found submission with id=${submission_id}, but QID does not match ${qid}.`
+        );
+      }
+
+      await manualGrading.updateInstanceQuestionScore(
+        assessment_id,
+        submission_data.rows[0].instance_question_id,
+        submission_data.rows[0].submission_id,
         null, // modified_at
-        module.exports._getJsonPropertyOrNull(json, 'score_perc'),
-        module.exports._getJsonPropertyOrNull(json, 'points'),
-        module.exports._getJsonPropertyOrNull(json, 'manual_score_perc'),
-        module.exports._getJsonPropertyOrNull(json, 'manual_points'),
-        module.exports._getJsonPropertyOrNull(json, 'auto_score_perc'),
-        module.exports._getJsonPropertyOrNull(json, 'auto_points'),
-        module.exports._getFeedbackOrNull(json),
-        module.exports._getPartialScoresOrNull(json),
-        authn_user_id,
-      ];
-      await sqldb.callAsync('instance_questions_update_score', params);
-    })(callback);
+        {
+          score_perc: module.exports._getJsonPropertyOrNull(json, 'score_perc'),
+          points: module.exports._getJsonPropertyOrNull(json, 'points'),
+          manual_score_perc: module.exports._getJsonPropertyOrNull(json, 'manual_score_perc'),
+          manual_points: module.exports._getJsonPropertyOrNull(json, 'manual_points'),
+          auto_score_perc: module.exports._getJsonPropertyOrNull(json, 'auto_score_perc'),
+          auto_points: module.exports._getJsonPropertyOrNull(json, 'auto_points'),
+          feedback: module.exports._getFeedbackOrNull(json),
+          partial_scores: module.exports._getPartialScoresOrNull(json),
+        },
+        authn_user_id
+      );
+    });
   },
 
-  _updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id, callback) {
+  async _updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id) {
     let query, id;
     if (_.has(json, 'uid')) {
       query = sql.select_assessment_instance_uid;
@@ -334,34 +340,36 @@ module.exports = {
       query = sql.select_assessment_instance_group;
       id = json.group_name;
     } else {
-      return callback(new Error('"uid" or "group_name" not found'));
+      throw new Error('"uid" or "group_name" not found');
     }
-    if (!_.has(json, 'instance')) return callback(new Error('"instance" not found'));
+    if (!_.has(json, 'instance')) throw new Error('"instance" not found');
 
-    const params = {
-      assessment_id,
-      uid: json.uid,
-      group_name: json.group_name,
-      instance_number: json.instance,
-    };
-    sqldb.queryOneRow(query, params, function (err, result) {
-      if (err) return callback(new Error(`unable to locate instance ${json.instance} for ${id}`));
+    await sqldb.runInTransactionAsync(async () => {
+      const result = await sqldb.queryZeroOrOneRowAsync(query, {
+        assessment_id,
+        uid: json.uid,
+        group_name: json.group_name,
+        instance_number: json.instance,
+      });
+      if (result.rowCount === 0) {
+        throw new Error(`unable to locate instance ${json.instance} for ${id}`);
+      }
       const assessment_instance_id = result.rows[0].assessment_instance_id;
 
       if (_.has(json, 'score_perc')) {
-        const params = [assessment_instance_id, json.score_perc, authn_user_id];
-        sqldb.call('assessment_instances_update_score_perc', params, (err, _result) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await sqldb.callAsync('assessment_instances_update_score_perc', [
+          assessment_instance_id,
+          json.score_perc,
+          authn_user_id,
+        ]);
       } else if (_.has(json, 'points')) {
-        const params = [assessment_instance_id, json.points, authn_user_id];
-        sqldb.call('assessment_instances_update_points', params, (err, _result) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await sqldb.callAsync('assessment_instances_update_points', [
+          assessment_instance_id,
+          json.points,
+          authn_user_id,
+        ]);
       } else {
-        return callback(new Error('must specify either "score_perc" or "points"'));
+        throw new Error('must specify either "score_perc" or "points"');
       }
     });
   },
