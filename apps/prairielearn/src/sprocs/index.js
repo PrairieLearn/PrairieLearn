@@ -89,7 +89,6 @@ module.exports.init = function (callback) {
       'instance_questions_lock.sql',
       'instance_questions_ensure_open.sql',
       'instance_questions_select_variant.sql',
-      'instance_questions_update_score.sql',
       'instance_questions_next_allowed_grade.sql',
       'submissions_lock.sql',
       'submissions_select.sql',
