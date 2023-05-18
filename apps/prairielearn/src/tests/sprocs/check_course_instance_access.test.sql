@@ -15,16 +15,16 @@ WITH
   ),
   setup_course AS (
     INSERT INTO
-      pl_courses (id)
+      pl_courses (id, display_timezone)
     VALUES
-      (1)
+      (1, 'UTC')
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id)
+      course_instances (id, uuid, course_id, display_timezone)
     VALUES
-      (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1),
-      (2, '5159a291-566f-4463-8f11-b07c931ad72b', 1)
+      (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1, 'UTC'),
+      (2, '5159a291-566f-4463-8f11-b07c931ad72b', 1, 'UTC')
   ),
   setup_ciars AS (
     INSERT INTO
