@@ -148,8 +148,8 @@ module.exports.initExpress = function () {
       cookie: {
         maxAge: config.sessionStoreExpireSeconds * 1000,
         httpOnly: true,
-        secure: true,
-        sameSite: 'none', // needed for iframes, Canvas LTI
+        secure: 'auto', // uses Express "trust proxy"
+        sameSite: config.sessionCookieSameSite,
       },
     })
   );
