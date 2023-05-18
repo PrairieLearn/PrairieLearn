@@ -59,7 +59,7 @@ const ConfigSchema = z.object({
   sessionStoreExpireSeconds: z.number().default(86400),
   sessionCookieSameSite: z
     .string()
-    .default(process.env.NODE_ENV === 'development' ? 'lax' : 'none'),
+    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
