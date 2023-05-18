@@ -13,7 +13,7 @@ const { logger } = require('@prairielearn/logger');
 const question = require('../lib/question');
 const externalGrader = require('./externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
-const serverJobs = require('../lib/server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const sqldb = require('@prairielearn/postgres');
 const ltiOutcomes = require('../lib/ltiOutcomes');
 
@@ -67,23 +67,16 @@ module.exports = {
    *
    * @param {Object} assessment - The assessment to render the text for.
    * @param {string} urlPrefix - The current server urlPrefix.
-   * @param {function} callback - A callback(err, html) function.
    */
-  renderText(assessment, urlPrefix, callback) {
-    if (!assessment.text) return callback(null, null);
+  renderText(assessment, urlPrefix) {
+    if (!assessment.text) return null;
 
     var context = {
       clientFilesCourse: urlPrefix + '/clientFilesCourse',
       clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
       clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessment',
     };
-    var assessment_text_templated;
-    try {
-      assessment_text_templated = ejs.render(assessment.text, context);
-    } catch (e) {
-      return ERR(e, callback);
-    }
-    callback(null, assessment_text_templated);
+    return ejs.render(assessment.text, context);
   },
 
   /**

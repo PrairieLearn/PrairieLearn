@@ -204,7 +204,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
-    return doWithLock(this.lockName, {}, async () => {
+    return tryWithLock(this.lockName, {}, async () => {
       let migration = await queryValidatedZeroOrOneRow(
         sql.select_running_migration,
         { project: this.options.project },

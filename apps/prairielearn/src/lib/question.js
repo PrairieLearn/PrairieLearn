@@ -9,20 +9,20 @@ const { differenceInMilliseconds, parseISO } = require('date-fns');
 const fs = require('fs');
 const unzipper = require('unzipper');
 const fg = require('fast-glob');
+const util = require('util');
 const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-utils');
 
-const markdown = require('./markdown');
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const externalGrader = require('./externalGrader');
-const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs');
+const manualGrading = require('./manualGrading');
 const ltiOutcomes = require('../lib/ltiOutcomes');
 const sqldb = require('@prairielearn/postgres');
 const questionServers = require('../question-servers');
 const workspaceHelper = require('./workspace');
 const issues = require('./issues');
 const error = require('@prairielearn/error');
+const { createServerJob } = require('./server-jobs');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -241,6 +241,7 @@ module.exports = {
           authn_user_id,
           group_work,
           require_open,
+          course.id,
         ];
         sqldb.callOneRow('variants_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
@@ -1215,84 +1216,55 @@ module.exports = {
    * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
    * @param {Object} course - The course for the variant.
    * @param {number} authn_user_id - The currently authenticated user.
-   * @param {function} callback - A callback(err, job_sequence_id) function.
+   * @return {string} The job sequence ID.
    */
-  startTestQuestion(
+  async startTestQuestion(
     count,
     showDetails,
     question,
     group_work,
     course_instance,
     course,
-    authn_user_id,
-    callback
+    authn_user_id
   ) {
     let success = true;
-    const options = {
-      course_id: course.id,
-      course_instance_id: null,
-      assessment_id: null,
-      user_id: authn_user_id,
-      authn_user_id: authn_user_id,
+    const test_types = ['correct', 'incorrect', 'invalid'];
+
+    const serverJob = await createServerJob({
+      courseId: course.id,
+      userId: authn_user_id,
+      authnUserId: authn_user_id,
       type: 'test_question',
       description: 'Test ' + question.qid,
-    };
-    let test_types = ['correct', 'incorrect', 'invalid'];
+    });
 
-    serverJobs.createJobSequence(options, (err, job_sequence_id) => {
-      if (ERR(err, callback)) return;
-      callback(null, job_sequence_id);
-
-      // We've now triggered the callback to our caller, but we
-      // continue executing below to launch the jobs themselves.
-
-      var jobOptions = {
-        course_id: course.id,
-        course_instance_id: null,
-        assessment_id: null,
-        user_id: authn_user_id,
-        authn_user_id: authn_user_id,
-        type: 'test_question',
-        description: 'Test ' + question.qid,
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
-      };
-      serverJobs.createJob(jobOptions, (err, job) => {
-        if (err) {
-          logger.error('Error in createJob()', err);
-          serverJobs.failJobSequence(job_sequence_id);
-          return;
-        }
-
-        async.eachSeries(
-          _.range(count * test_types.length),
-          (iter, callback) => {
-            let type = test_types[iter % test_types.length];
-            job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
-            module.exports._runTest(
-              job,
-              showDetails,
-              question,
-              group_work,
-              course_instance,
-              course,
-              type,
-              authn_user_id,
-              (err, ret_success) => {
-                if (ERR(err, callback)) return;
-                success = success && ret_success;
-                callback(null);
-              }
-            );
-          },
-          (err) => {
-            if (ERR(err, () => {})) return job.fail(err);
-            if (!success) return job.fail('Some tests failed. See the "Errors" page for details.');
-            job.succeed();
+    serverJob.executeInBackground(async (job) => {
+      await async.eachSeries(_.range(count * test_types.length), (iter, callback) => {
+        let type = test_types[iter % test_types.length];
+        job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
+        module.exports._runTest(
+          job,
+          showDetails,
+          question,
+          group_work,
+          course_instance,
+          course,
+          type,
+          authn_user_id,
+          (err, ret_success) => {
+            if (ERR(err, callback)) return;
+            success = success && ret_success;
+            callback(null);
           }
         );
       });
+
+      if (!success) {
+        throw new Error('Some tests failed. See the "Errors" page for details.');
+      }
     });
+
+    return serverJob.jobSequenceId;
   },
 
   /**
@@ -1672,13 +1644,6 @@ module.exports = {
                 ? detailedSubmissionResult.rows[idx]
                 : {}),
             }));
-            await async.each(locals.submissions, async (s) => {
-              if (s.feedback?.manual) {
-                s.feedback_manual_html = await markdown.processContent(
-                  s.feedback.manual.toString() || ''
-                );
-              }
-            });
             locals.submission = locals.submissions[0]; // most recent submission
 
             locals.showSubmissions = true;
@@ -1735,6 +1700,12 @@ module.exports = {
             load_system_data: loadExtraData,
           });
           locals.issues = result.rows;
+        },
+        async () => {
+          if (locals.instance_question) {
+            await manualGrading.populateRubricData(locals);
+            await async.each(locals.submissions, manualGrading.populateManualGradingData);
+          }
         },
         async () => {
           if (locals.question.type !== 'Freeform') {
@@ -1893,12 +1864,12 @@ module.exports = {
 
       async.parallel(
         [
-          (callback) => {
+          async () => {
             // Render the submission panel
             submission.submission_number = submission_index;
             const submissions = [submission];
 
-            module.exports._render(
+            const htmls = await util.promisify(module.exports._render)(
               renderSelection,
               variant,
               question,
@@ -1906,58 +1877,42 @@ module.exports = {
               submissions,
               course,
               course_instance,
-              locals,
-              (err, htmls) => {
-                if (ERR(err, callback)) return;
-                submission.grading_job_id = grading_job_id;
-                submission.grading_job_status = grading_job_status;
-                submission.formatted_date = formatted_date;
-                submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
+              locals
+            );
+            submission.grading_job_id = grading_job_id;
+            submission.grading_job_status = grading_job_status;
+            submission.formatted_date = formatted_date;
+            submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
 
-                markdown
-                  .processContent(submission.feedback?.manual?.toString() || '')
-                  .then((html) => {
-                    submission.feedback_manual_html = html;
+            await manualGrading.populateRubricData(locals);
+            await manualGrading.populateManualGradingData(submission);
 
-                    const renderParams = {
-                      course,
-                      course_instance,
-                      question,
-                      submission,
-                      submissionHtml: htmls.submissionHtmls[0],
-                      submissionCount: submission_count,
-                      expanded: true,
-                      urlPrefix,
-                      plainUrlPrefix: config.urlPrefix,
-                    };
-                    const templatePath = path.join(
-                      __dirname,
-                      '..',
-                      'pages',
-                      'partials',
-                      'submission.ejs'
-                    );
-                    ejs.renderFile(templatePath, renderParams, (err, html) => {
-                      if (ERR(err, callback)) return;
-                      panels.submissionPanel = html;
-                      callback(null);
-                    });
-                  })
-                  .catch((err) => ERR(err, callback));
-              }
+            const renderParams = {
+              course,
+              course_instance,
+              question,
+              submission,
+              submissionHtml: htmls.submissionHtmls[0],
+              submissionCount: submission_count,
+              expanded: true,
+              urlPrefix,
+              plainUrlPrefix: config.urlPrefix,
+            };
+            const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
+            // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+            // latter would require all includes in EJS to be translated to await recursively.
+            panels.submissionPanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
             );
           },
-          (callback) => {
+          async () => {
             // Render the question score panel
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
             // The score panel can and should only be rendered for
             // questions that are part of an assessment
-            if (variant.instance_question_id == null) {
-              // If the variant does not have an instance question,
-              // it's not part of an assessment
-              return callback(null);
-            }
+            if (variant.instance_question_id == null) return;
 
             const renderParams = {
               instance_question,
@@ -1976,21 +1931,18 @@ module.exports = {
               'partials',
               'questionScorePanel.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionScorePanel = html;
-              callback(null);
-            });
+            panels.questionScorePanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
+          async () => {
             // Render the assessment score panel
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
-            // As usual, only render if this variant is part of an
-            // assessment
-            if (variant.instance_question_id == null) {
-              return callback(null);
-            }
+            // As usual, only render if this variant is part of an assessment
+            if (variant.instance_question_id == null) return;
+
             const renderParams = {
               assessment_instance,
               assessment,
@@ -2005,15 +1957,14 @@ module.exports = {
               'partials',
               'assessmentScorePanel.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.assessmentScorePanel = html;
-              callback(null);
-            });
+            panels.assessmentScorePanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
+          async () => {
             // Render the question panel footer
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
             const renderParams = {
               variant,
@@ -2033,19 +1984,16 @@ module.exports = {
               'partials',
               'questionFooter.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionPanelFooter = html;
-              callback(null);
-            });
+            panels.questionPanelFooter = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
-            if (!renderScorePanels) return callback(null);
+          async () => {
+            if (!renderScorePanels) return;
 
             // only render if variant is part of assessment
-            if (variant.instance_question_id == null) {
-              return callback(null);
-            }
+            if (variant.instance_question_id == null) return;
 
             // Render the next question nav link
             // NOTE: This must be kept in sync with the corresponding code in
@@ -2068,11 +2016,10 @@ module.exports = {
               'partials',
               'questionNavSideButton.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionNavNextButton = html;
-              callback(null);
-            });
+            panels.questionNavNextButton = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
         ],
         (err) => {

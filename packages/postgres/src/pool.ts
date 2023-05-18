@@ -862,6 +862,78 @@ export class PostgresPool {
     }
   }
 
+  async queryRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model: Model
+  ): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      const rawData = results.rows.map((row) => row[columnName]);
+      return z.array(model).parse(rawData);
+    } else {
+      return z.array(model).parse(results.rows);
+    }
+  }
+
+  async queryRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model: Model
+  ): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryOneRowAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
+  async queryOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model
+  ): Promise<z.infer<Model> | null>;
+  async queryOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model: Model
+  ): Promise<z.infer<Model> | null>;
+  async queryOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: QueryParams | Model,
+    maybeModel?: Model
+  ) {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.queryZeroOrOneRowAsync(sql, params);
+    if (results.rows.length === 0) {
+      return null;
+    } else if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
   /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.

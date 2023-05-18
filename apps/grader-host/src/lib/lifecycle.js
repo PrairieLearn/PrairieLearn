@@ -1,5 +1,5 @@
 const assert = require('assert');
-const AWS = require('aws-sdk');
+const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 
 const logger = require('./logger');
 const { config } = require('./config');
@@ -38,7 +38,7 @@ module.exports.inService = async () => {
   lifecycleState = 'InService';
   logger.info(`lifecycle.inService(): changing to state ${lifecycleState}`);
 
-  const autoscaling = new AWS.AutoScaling();
+  const autoscaling = new AutoScaling({ region: config.awsRegion });
   const params = {
     AutoScalingGroupName: config.autoScalingGroupName,
     LifecycleActionResult: 'CONTINUE',
@@ -46,7 +46,7 @@ module.exports.inService = async () => {
     InstanceId: config.instanceId,
   };
   try {
-    await autoscaling.completeLifecycleAction(params).promise();
+    await autoscaling.completeLifecycleAction(params);
     logger.info('lifecycle.inService(): completed action', params);
   } catch (e) {
     // don't return the error, because there is nothing to be done about it
@@ -64,7 +64,7 @@ module.exports.abandonLaunch = async () => {
     lifecycleState = 'AbandoningLaunch';
     logger.info(`lifecycle.abandonLaunch(): changing to state ${lifecycleState}`);
 
-    const autoscaling = new AWS.AutoScaling();
+    const autoscaling = new AutoScaling();
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleActionResult: 'ABANDON',
@@ -72,7 +72,7 @@ module.exports.abandonLaunch = async () => {
       InstanceId: config.instanceId,
     };
     try {
-      await autoscaling.completeLifecycleAction(params).promise();
+      await autoscaling.completeLifecycleAction(params);
       logger.info('lifecycle.abandonLaunch(): completed action', params);
     } catch (e) {
       // don't return the error, because there is nothing to be done about it
@@ -86,7 +86,7 @@ module.exports.abandonLaunch = async () => {
 function heartbeat() {
   if (lifecycleState === 'Launching') {
     logger.info('lifecycle.heartbeat(): sending heartbeat...');
-    const autoscaling = new AWS.AutoScaling();
+    const autoscaling = new AutoScaling();
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleHookName: 'launching',

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
+    <%- compiled_stylesheet_tag('instructorIssues.css') %>
     <script>
       $(() => {
           $('[data-toggle=tooltip]').tooltip();
