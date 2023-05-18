@@ -3392,6 +3392,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/cheerio": ^0.22.31
     "@types/dockerode": ^3.3.16
+    "@types/express-session": ^1.17.7
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
     "@types/jquery": ^3.5.16
@@ -4118,6 +4119,15 @@ __metadata:
     "@types/qs": "*"
     "@types/range-parser": "*"
   checksum: 009bfbe1070837454a1056aa710d0390ee5fb8c05dfe5a1691cc3e2ca88dc256f80e1ca27cb51a978681631d2f6431bfc9ec352ea46dd0c6eb183d0170bde5df
+  languageName: node
+  linkType: hard
+
+"@types/express-session@npm:^1.17.7":
+  version: 1.17.7
+  resolution: "@types/express-session@npm:1.17.7"
+  dependencies:
+    "@types/express": "*"
+  checksum: 4764eafaf4e26842e891e83fa9fee30b92cc3724d91987aac3a658322f9a69fb544dae24fc3aba6e15fe9575ed862760ebecd7ff97a947afb695284967434a65
   languageName: node
   linkType: hard
 
