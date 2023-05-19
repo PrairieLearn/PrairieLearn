@@ -56,10 +56,7 @@ SELECT
     to_jsonb(ai),
     '{formatted_date}',
     to_jsonb(
-      format_date_full_compact (
-        ai.date,
-        COALESCE(ci.display_timezone, c.display_timezone)
-      )
+      format_date_full_compact (ai.date, ci.display_timezone)
     )
   ) AS assessment_instance,
   CASE
@@ -96,10 +93,7 @@ SELECT
     'last_grader_name',
     COALESCE(ulg.name, ulg.uid),
     'modified_at_formatted',
-    format_date_short (
-      iq.modified_at,
-      COALESCE(ci.display_timezone, c.display_timezone)
-    )
+    format_date_short (iq.modified_at, ci.display_timezone)
   ) AS instance_question,
   jsonb_build_object(
     'id',
@@ -132,7 +126,6 @@ FROM
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN groups AS g ON (
     g.id = ai.group_id
