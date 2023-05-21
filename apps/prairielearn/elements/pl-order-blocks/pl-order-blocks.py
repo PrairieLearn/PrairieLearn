@@ -432,7 +432,6 @@ def render(element_html, data):
         score = None
         feedback = None
         if answer_name in data["submitted_answers"]:
-            print(data["partial_scores"][answer_name]["first_wrong"])
             student_submission = [
                 {
                     "inner_html": attempt["inner_html"],
