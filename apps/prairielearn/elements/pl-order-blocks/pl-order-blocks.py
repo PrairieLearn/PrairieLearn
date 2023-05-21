@@ -166,18 +166,19 @@ def prepare(element_html, data):
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "ranking", "indent"],
+                optional_attribs=["correct", "ranking", "indent", "distractor-for"],
             )
         elif grading_method == "dag":
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "tag", "depends", "comment", "indent"],
+                optional_attribs=["correct", "tag", "depends", "comment", "indent", "distractor-for"],
             )
 
         is_correct = pl.get_boolean_attrib(
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", "None")
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
@@ -216,6 +217,7 @@ def prepare(element_html, data):
             "tag": tag,  # set by HTML with DAG grader, set internally for ranking grader
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
+            "distractor-for": distractor_for,
         }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -339,6 +341,24 @@ def render(element_html, data):
 
         mcq_options = data["params"][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid"])
+
+        # visual pairing
+        correct_tags = set(block['tag'] for block in mcq_options + student_previous_submission if block['tag'].isdigit())
+        incorrect_tags = set(block['distractor-for'] for block in mcq_options + student_previous_submission if str(block.get('distractor_for', None)).isdigit()) 
+
+        if not incorrect_tags.issubset(correct_tags):
+            raise Exception("The following distractor-for tags do not have matching correct answer tags: " + str(incorrect_tags - correct_tags))
+
+        for block in student_previous_submission + mcq_options:
+            if block.get('distractor-for') is not None:
+                continue
+            distractors = [block2 for block2 in student_previous_submission + mcq_options if block['tag'] == block2.get('distractor_for', None)]
+            if len(distractors) == 0:
+                continue
+            distractor_bin = pl.get_uuid()
+            block['distractor_bin'] = distractor_bin
+            for distractor in distractors: 
+                distractor['distractor_bin'] = distractor_bi
 
         if answer_name in data["submitted_answers"]:
             student_previous_submission = filter_multiple_from_array(
