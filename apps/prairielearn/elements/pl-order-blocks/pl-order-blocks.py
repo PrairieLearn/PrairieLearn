@@ -131,7 +131,7 @@ def prepare(element_html, data):
 
     if (grading_method not in ["dag", "ranking"] and feedback_type != "none") or (
         grading_method in ["dag", "ranking"]
-        and feedback_type not in ["none", "first-wrong"]
+        and feedback_type not in ["none", "first-wrong", "first-wrong-verbose"]
     ):
         raise Exception(
             'feedback type "'
@@ -189,7 +189,7 @@ def prepare(element_html, data):
         is_correct = pl.get_boolean_attrib(html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT)
 
         if (distractor_info == 'none') and (distractor_feedback is not None):
-            raise Exception("distractor-info must be either 'show-distractors' or 'show-feedback' for the distractor-feedback tag to be used in <pl-answer>")
+            raise Exception("distractor-info must be 'show-distractors' for the distractor-feedback tag to be used in <pl-answer>")
 
         tag, depends = get_graph_info(html_tags)
         if grading_method == "ranking":
@@ -536,7 +536,7 @@ def render(element_html, data):
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
             "distractor-feedback": all_distractors,
-            "has-distractors": len(all_distractors) > 0,
+            "show-distractors": (len(all_distractors) > 0) and (distractor_info == "show-distractors"),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
