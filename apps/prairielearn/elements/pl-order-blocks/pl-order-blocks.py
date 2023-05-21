@@ -351,7 +351,7 @@ def render(element_html, data):
         mcq_options = data["params"][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid"])
 
-        if answer_name in data["submitted_answers"]:
+        if answer_name in data["submitted_answers"]: 
             student_previous_submission = filter_multiple_from_array(
                 data["submitted_answers"][answer_name], ["inner_html", "uuid", "indent"]
             )
@@ -513,7 +513,7 @@ def render(element_html, data):
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        distractor_info = pl.get_string_attrib(element, 'indentation', INDENTION_DEFAULT)
+        distractor_info = pl.get_string_attrib(element, 'distractor-info', DISTRACTOR_INFO_DEFAULT)
         if distractor_info != 'none':
             all_distractors = [item for item in data['params'][answer_name] if not item['is_correct']]
             for distractor in all_distractors:
@@ -528,7 +528,7 @@ def render(element_html, data):
             }
             for solution in data["correct_answers"][answer_name]
         ]
-
+        
         html_params = {
             "true_answer": True,
             "question_solution": question_solution,
@@ -683,6 +683,7 @@ def grade(element_html, data):
         depends_graph = {}
         group_belonging = {}
 
+
         if grading_mode == "ranking":
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
@@ -705,6 +706,23 @@ def grade(element_html, data):
 
         elif grading_mode == "dag":
             depends_graph, group_belonging = extract_dag(true_answer_list)
+
+        num_initial_correct, true_answer_length = grade_dag(submission, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
+
+        if feedback_type.startswith('first-wrong'):
+            for i, block in enumerate(student_answer):
+                if i >= num_initial_correct: break
+                block["badge_type"] = "badge-success"
+                block["icon"] = "fa-check"
+
+            if first_wrong != -1:
+                student_answer[first_wrong]["badge_type"] = "badge-danger"
+                student_answer[first_wrong]["icon"] = "fa-xmark"
+
+                for block in student_answer[first_wrong + 1: ]:
+                    block["badge_type"] = ""
+                    block["icon"] = ""
 
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
