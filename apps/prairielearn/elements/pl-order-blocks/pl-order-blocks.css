@@ -99,7 +99,6 @@ ul.submission_table .badge{
 
 .pl-order-block, ul.answer_table li, ul.submission_table li {
   margin-bottom: 5px;
-  border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
   padding: 0.6em;
@@ -147,7 +146,7 @@ div.column {
 .feedback_badge_container_white {
   display: flex;
   align-items: center;
-  /* background-color: white !important; */
+  background-color: white !important; 
   padding: 5px !important;
   border-radius: inherit;
   border: 1px solid grey;
@@ -157,4 +156,10 @@ div.column {
 .feedback-tag{
     color: #6c757d;
     margin-right: 10px;
+}
+
+/* pl-code overrides for inclusion in blocks */
+
+.pl-code .mb-3{
+  margin-bottom: 0px !important;
 }
