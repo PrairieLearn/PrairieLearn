@@ -57,24 +57,24 @@ $(function() {
             {{#student_submission}}
             	<li class="{{block_formatting}}" style="margin-left: {{indent}}px;">
                     {{#first-wrong}}
-                    {{#has-distractor-feedback}}
-                    <div class="feedback_badge_container_white">
-                        <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                        <span>{{{inner_html}}}</span>
-                    </div>
-                    <div style="margin: 10px" >
-                        <div >
-                            <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                            {{distractor-feedback}}
-                        </div>
-                    </div>
-                    {{/has-distractor-feedback}}
-                    {{^has-distractor-feedback}}
-                    <div class="feedback_badge_container">
-                        <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                        <span>{{{inner_html}}}</span>
-                    </div>
-                    {{/has-distractor-feedback}}
+                        {{#show-distractor-feedback}}
+                            <div class="feedback_badge_container_white">
+                                <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                <span>{{{inner_html}}}</span>
+                            </div>
+                            <div style="margin: 10px" >
+                                <div >
+                                    <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                                    {{distractor-feedback}}
+                                </div>
+                            </div>
+                            {{/show-distractor-feedback}}
+                            {{^show-distractor-feedback}}
+                            <div class="feedback_badge_container">
+                                <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                <span>{{{inner_html}}}</span>
+                            </div>
+                        {{/show-distractor-feedback}}
                     {{/first-wrong}}
                     {{^first-wrong}}
                         {{{inner_html}}}

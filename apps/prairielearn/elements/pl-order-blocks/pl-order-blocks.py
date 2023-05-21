@@ -159,7 +159,7 @@ def prepare(element_html, data):
 
         if grading_method == "external":
             pl.check_attribs(
-                html_tags, required_attribs=[], optional_attribs=["correct", "distractor-feedback"]
+                html_tags, required_attribs=[], optional_attribs=["correct"]
             )
         elif grading_method in ["unordered", "ordered"]:
             pl.check_attribs(
@@ -363,7 +363,6 @@ def render(element_html, data):
                     student_previous_submission, ["inner_html", "uuid"]
                 )
             ]
-
         for index, option in enumerate(student_previous_submission):
             submission_indent = option.get("indent", None)
             distractor_feedback = option.get("distractor-feedback", None)
@@ -433,24 +432,21 @@ def render(element_html, data):
         score = None
         feedback = None
         if answer_name in data["submitted_answers"]:
+            print(data["partial_scores"][answer_name]["first_wrong"])
             student_submission = [
                 {
                     "inner_html": attempt["inner_html"],
                     "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
-                    "badge_type": attempt["badge_type"] if (feedback_type.startswith("first-wrong")) and ("badge_type" in attempt) else "",
-                    "icon": attempt["icon"] if (feedback_type.startswith("first-wrong")) and ("icon" in attempt) else "",
+                    "badge_type": attempt["badge_type"] if (feedback_type.startswith("first-wrong")) else "",
+                    "icon": attempt["icon"] if (feedback_type.startswith("first-wrong")) else "",
                     "first-wrong": feedback_type.startswith("first-wrong"),
                     "distractor-feedback": attempt.get("distractor-feedback"),
+                    "show-distractor-feedback": (attempt.get("distractor-feedback", None) is not None) 
+                    and (i <= data["partial_scores"][answer_name]["first_wrong"])
+                    and (feedback_type == "first-wrong-verbose"),
                 }
-                for attempt in data["submitted_answers"][answer_name]
+                for i, attempt in enumerate(data["submitted_answers"][answer_name])
             ]
-
-            # Tags whether a block has feedback associated with it or not rendering in the mustache file
-            for block in student_submission:
-                if block['badge_type'] != '':
-                    block['has-distractor-feedback'] = block['distractor-feedback'] is not None
-                else:
-                    block['has-distractor-feedback'] = None
 
         if answer_name in data["partial_scores"]:
             score = data["partial_scores"][answer_name]["score"]
@@ -514,12 +510,11 @@ def render(element_html, data):
                 indentation_message = ", some blocks require correct indentation"
 
         distractor_info = pl.get_string_attrib(element, 'distractor-info', DISTRACTOR_INFO_DEFAULT)
+        all_distractors = []
         if distractor_info != 'none':
             all_distractors = [item for item in data['params'][answer_name] if not item['is_correct']]
             for distractor in all_distractors:
                 distractor['has-distractor-feedback'] = distractor['distractor-feedback'] is not None
-        else:
-            all_distractors = []
 
         question_solution = [
             {
@@ -562,6 +557,7 @@ def parse(element_html, data):
         element, "grading-method", GRADING_METHOD_DEFAULT
     )
     correct_answers = data["correct_answers"][answer_name]
+    mcq_options = data['params'][answer_name]
 
     if grading_mode == "ranking":
         for answer in student_answer:
@@ -575,7 +571,16 @@ def parse(element_html, data):
             )
             answer["ranking"] = search["ranking"] if search is not None else None
             answer["tag"] = search["tag"] if search is not None else None
-            answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
+            if search is None:
+                search = next(
+                    (
+                        item
+                        for item in mcq_options
+                        if item["inner_html"] == answer["inner_html"]
+                    ),
+                    None,
+                )
+                answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
     elif grading_mode == "dag":
         for answer in student_answer:
             search = next(
@@ -588,6 +593,16 @@ def parse(element_html, data):
             )
             answer["tag"] = search["tag"] if search is not None else None
             answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
+            if search is None:
+                search = next(
+                    (
+                        item
+                        for item in mcq_options
+                        if item["inner_html"] == answer["inner_html"]
+                    ),
+                    None,
+                )
+                answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
         for html_tags in element:
@@ -747,7 +762,7 @@ def grade(element_html, data):
         if final_score < 1:
             if feedback_type == "none":
                 feedback = ""
-            elif feedback_type == "first-wrong":
+            elif feedback_type.startswith("first-wrong"):
                 if first_wrong == -1:
                     feedback = FIRST_WRONG_FEEDBACK["incomplete"]
                 elif feedback_type.endswith('verbose') and student_answer[first_wrong]["inner_html"] in distractor_feedback:
