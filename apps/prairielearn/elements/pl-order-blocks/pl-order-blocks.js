@@ -112,7 +112,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
-    items: '.pl-order-block',
+    items: 'li:not(.info-fixed)',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
     cancel: 'input,textarea,button,select,option,a',

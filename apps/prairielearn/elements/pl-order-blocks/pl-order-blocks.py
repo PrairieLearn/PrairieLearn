@@ -186,8 +186,11 @@ def prepare(element_html, data):
         tag = pl.get_string_attrib(html_tags, "tag", None)
 
         tag, depends = get_graph_info(html_tags)
-        if (grading_method == "ranking"):# and (tag is None) and (distractor_for is None):
-            tag = str(index)
+        if ranking == -1:
+            tag = None
+        print("TAG: ", tag)
+        #if (grading_method == "ranking") and (tag is None) and (distractor_for is None):
+        #    tag = str(index)
 
         if is_correct:
             if tag in used_tags:
@@ -345,8 +348,8 @@ def render(element_html, data):
         mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid", "tag", "distractor-for"])
 
         # visual pairing
-        correct_tags = set(block['tag'] for block in mcq_options + student_previous_submission if block['tag'].isdigit())
-        incorrect_tags = set(block['distractor-for'] for block in mcq_options + student_previous_submission if str(block.get('distractor_for', None)).isdigit()) 
+        correct_tags = set(block['tag'] for block in mcq_options + student_previous_submission if block['tag'] is not None)
+        incorrect_tags = set(block['distractor-for'] for block in mcq_options + student_previous_submission if block.get('distractor-for', None)) 
 
         if not incorrect_tags.issubset(correct_tags):
             raise Exception("The following distractor-for tags do not have matching correct answer tags: " + str(incorrect_tags - correct_tags))
@@ -354,9 +357,9 @@ def render(element_html, data):
         for block in student_previous_submission + mcq_options:
             if block.get('distractor-for') is not None:
                 continue
-
+                
             distractors = [block2 for block2 in student_previous_submission + mcq_options if block['tag'] == block2.get('distractor-for', None)]
-
+            
             if len(distractors) == 0:
                 continue
             distractor_bin = pl.get_uuid()
@@ -630,12 +633,12 @@ def grade(element_html, data):
         data["format_errors"][answer_name] = "Your submitted answer was empty."
         return
 
-    old_tags = []
+    old_tags = [block["tag"] for block in student_answer]
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
             indentation = indentations.get(ans["uuid"])
-            if indentation != -1 and ans["indent"] != indentation:
+            if (indentation != -1) and (ans["indent"] != indentation):
                 if "tag" in ans:
                     ans["tag"] = None
                 else:
@@ -727,13 +730,9 @@ def grade(element_html, data):
                     feedback += "</ul>"
 
     #TODO: remove this duct tape
-    #if check_indentation:
-    #    i = 0
-    #    for ans in student_answer:
-    #        if ans['indent'] != indentations.get(ans['uuid']):
-    #            if 'tag' in ans:
-    #                ans['tag'] = old_tags[i]
-    #                i += 1
+    for i, ans in enumerate(student_answer):
+        ans['tag'] = old_tags[i]
+
 
 
     data["partial_scores"][answer_name] = {
