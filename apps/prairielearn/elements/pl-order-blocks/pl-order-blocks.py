@@ -14,6 +14,7 @@ from lxml import etree
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
+INLINE_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
 GRADING_METHOD_DEFAULT = "ordered"
@@ -166,7 +167,7 @@ def prepare(element_html, data):
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "ranking", "indent", "distractor-for"],
+                optional_attribs=["correct", "tag", "ranking", "indent", "distractor-for"],
             )
         elif grading_method == "dag":
             pl.check_attribs(
@@ -178,13 +179,14 @@ def prepare(element_html, data):
         is_correct = pl.get_boolean_attrib(
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
-        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", "None")
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
+        tag = pl.get_string_attrib(html_tags, "tag", None)
 
         tag, depends = get_graph_info(html_tags)
-        if grading_method == "ranking":
+        if (grading_method == "ranking"):# and (tag is None) and (distractor_for is None):
             tag = str(index)
 
         if is_correct:
@@ -214,7 +216,7 @@ def prepare(element_html, data):
             "indent": answer_indent,
             "ranking": ranking,
             "index": index,
-            "tag": tag,  # set by HTML with DAG grader, set internally for ranking grader
+            "tag": tag,  # set by HTML with DAG grader, set internally for ranking grader if tags are not manually provided
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor-for": distractor_for,
@@ -340,7 +342,7 @@ def render(element_html, data):
         )
 
         mcq_options = data["params"][answer_name]
-        mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid"])
+        mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid", "tag", "distractor-for"])
 
         # visual pairing
         correct_tags = set(block['tag'] for block in mcq_options + student_previous_submission if block['tag'].isdigit())
@@ -352,13 +354,15 @@ def render(element_html, data):
         for block in student_previous_submission + mcq_options:
             if block.get('distractor-for') is not None:
                 continue
-            distractors = [block2 for block2 in student_previous_submission + mcq_options if block['tag'] == block2.get('distractor_for', None)]
+
+            distractors = [block2 for block2 in student_previous_submission + mcq_options if block['tag'] == block2.get('distractor-for', None)]
+
             if len(distractors) == 0:
                 continue
             distractor_bin = pl.get_uuid()
             block['distractor_bin'] = distractor_bin
             for distractor in distractors: 
-                distractor['distractor_bin'] = distractor_bi
+                distractor['distractor_bin'] = distractor_bin
 
         if answer_name in data["submitted_answers"]:
             student_previous_submission = filter_multiple_from_array(
@@ -392,6 +396,7 @@ def render(element_html, data):
             element, "indentation", INDENTION_DEFAULT
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
+        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = (
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
@@ -625,6 +630,7 @@ def grade(element_html, data):
         data["format_errors"][answer_name] = "Your submitted answer was empty."
         return
 
+    old_tags = []
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
@@ -719,6 +725,16 @@ def grade(element_html, data):
                     if has_block_groups:
                         feedback += FIRST_WRONG_FEEDBACK["block-group"]
                     feedback += "</ul>"
+
+    #TODO: remove this duct tape
+    #if check_indentation:
+    #    i = 0
+    #    for ans in student_answer:
+    #        if ans['indent'] != indentations.get(ans['uuid']):
+    #            if 'tag' in ans:
+    #                ans['tag'] = old_tags[i]
+    #                i += 1
+
 
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
