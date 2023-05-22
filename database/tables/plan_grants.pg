@@ -1,0 +1,20 @@
+columns
+    course_instance_id: bigint
+    created_at: timestamp with time zone not null default now()
+    deleted_at: timestamp with time zone
+    enrollment_id: bigint
+    enrollment_limit: integer
+    id: bigint not null default nextval('plan_grants_id_seq'::regclass)
+    institution_id: bigint
+    plan_name: text not null
+    type: enum_plan_grant_type not null
+    user_id: bigint
+
+indexes
+    plan_grants_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    plan_grants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
+    plan_grants_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id)
+    plan_grants_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id)
+    plan_grants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)

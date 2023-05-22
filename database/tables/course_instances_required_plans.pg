@@ -1,0 +1,10 @@
+columns
+    course_instance_id: bigint
+    id: bigint not null default nextval('course_instances_required_plans_id_seq'::regclass)
+    plan_name: text not null
+
+indexes
+    course_instances_required_plans_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    course_instances_required_plans_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
