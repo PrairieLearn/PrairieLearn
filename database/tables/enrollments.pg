@@ -1,5 +1,6 @@
 columns
     course_instance_id: bigint not null
+    created_at: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
     role: enum_role
     user_id: bigint not null
