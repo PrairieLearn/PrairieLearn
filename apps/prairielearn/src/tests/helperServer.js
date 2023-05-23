@@ -11,7 +11,6 @@ const opentelemetry = require('@prairielearn/opentelemetry');
 const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
-const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
 const serverJobs = require('../lib/server-jobs-legacy');
@@ -45,7 +44,6 @@ module.exports = {
         [
           // We (currently) don't ever want tracing to run during tests.
           async () => opentelemetry.init({ openTelemetryEnabled: false }),
-          async () => aws.init(),
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls

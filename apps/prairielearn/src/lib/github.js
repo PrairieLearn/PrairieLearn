@@ -330,6 +330,7 @@ module.exports = {
           courseInfo.uuid = uuidv4();
           courseInfo.name = options.short_name;
           courseInfo.title = options.title;
+          courseInfo.timezone = options.display_timezone;
 
           const newContents = JSON.stringify(courseInfo, null, 4);
           job.verbose('New infoCourse.json file:');

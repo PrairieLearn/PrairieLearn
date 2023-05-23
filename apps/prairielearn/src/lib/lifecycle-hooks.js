@@ -4,9 +4,10 @@ const {
   CompleteLifecycleActionCommand,
   DescribeAutoScalingInstancesCommand,
 } = require('@aws-sdk/client-auto-scaling');
-
-const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
+
+const { makeAwsClientConfig } = require('./aws');
+const { config } = require('./config');
 
 /**
  * Gets the lifecycle state of the current EC2 instance.
@@ -34,7 +35,7 @@ module.exports.completeInstanceLaunch = async function () {
     return;
   }
 
-  const client = new AutoScalingClient({ region: config.awsRegion, maxAttempts: 3 });
+  const client = new AutoScalingClient(makeAwsClientConfig({ maxAttempts: 3 }));
 
   // If we're starting outside the context of an Auto Scaling lifecycle change
   // (e.g. a restart after a process crash), there won't be a lifecycle action
@@ -66,7 +67,7 @@ module.exports.completeInstanceTermination = async function () {
     return;
   }
 
-  const client = new AutoScalingClient({ region: config.awsRegion, maxAttempts: 3 });
+  const client = new AutoScalingClient(makeAwsClientConfig({ maxAttempts: 3 }));
 
   // If we're terminating outside the context of an Auto Scaling lifecycle change
   // (e.g. via `systemctl stop`), there won't be a lifecycle action to complete.

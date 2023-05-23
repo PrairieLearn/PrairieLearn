@@ -6,11 +6,33 @@
     "number": "5",
     "module": "Module3",
     "groupWork": true,
-    "groupMaxSize": 3,
-    "groupMinSize": 3,
+    "groupMaxSize": 5,
+    "groupMinSize": 2,
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
+    "groupRoles": [
+        {
+            "name": "Manager",
+            "minimum": 1,
+            "maximum": 1,
+            "canAssignRolesAtStart": true,
+            "canAssignRolesDuringAssessment": true
+        },
+        {
+            "name": "Recorder",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Reflector",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Contributor"
+        }
+    ],
     "allowAccess": [
         {
             "mode": "Public",

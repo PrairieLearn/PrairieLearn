@@ -1,18 +1,19 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const async = require('async');
 const EventEmitter = require('events');
 const fs = require('fs-extra');
 const tar = require('tar');
 const _ = require('lodash');
-const AWS = require('aws-sdk');
+const { Upload } = require('@aws-sdk/lib-storage');
+const { S3 } = require('@aws-sdk/client-s3');
 const PassThroughStream = require('stream').PassThrough;
 const { SQSClient, GetQueueUrlCommand, SendMessageCommand } = require('@aws-sdk/client-sqs');
-
-const { config: globalConfig } = require('./config');
-const externalGraderCommon = require('./externalGraderCommon');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
+
+const aws = require('./aws');
+const { config: globalConfig } = require('./config');
+const externalGraderCommon = require('./externalGraderCommon');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -33,7 +34,7 @@ class Grader {
         (callback) => {
           externalGraderCommon.buildDirectory(dir, submission, variant, question, course, callback);
         },
-        (callback) => {
+        async () => {
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
           let tarball = tar.create(
@@ -53,22 +54,18 @@ class Grader {
             Body: passthrough,
           };
 
-          const s3 = new AWS.S3(config.awsServiceGlobalOptions);
-          s3.upload(params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          const s3 = new S3(aws.makeS3ClientConfig());
+          await new Upload({
+            client: s3,
+            params,
+          }).done();
         },
-        (callback) => {
+        async () => {
           // Store S3 info for this job
-          const params = {
+          sqldb.queryAsync(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,
-          };
-          sqldb.query(sql.update_s3_info, params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
           });
         },
         async () => sendJobToQueue(grading_job.id, question, config),
@@ -92,10 +89,7 @@ function getS3RootKey(jobId) {
 }
 
 async function sendJobToQueue(jobId, question, config) {
-  const sqs = new SQSClient({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const sqs = new SQSClient(aws.makeAwsClientConfig());
 
   await async.series([
     async () => {
