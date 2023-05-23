@@ -28,3 +28,6 @@ CREATE TABLE IF NOT EXISTS
     plan_name TEXT NOT NULL,
     UNIQUE (course_instance_id, plan_name)
   );
+
+ALTER TABLE course_instances
+ADD COLUMN IF NOT EXISTS student_billing_enabled BOOLEAN NOT NULL DEFAULT FALSE;

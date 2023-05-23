@@ -1,11 +1,14 @@
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 interface InstructorCourseInstanceBillingProps {
+  studentBillingEnabled: boolean;
   resLocals: Record<string, any>;
 }
 
 export function InstructorCourseInstanceBilling({
+  studentBillingEnabled,
   resLocals,
 }: InstructorCourseInstanceBillingProps) {
   return html`
@@ -15,6 +18,7 @@ export function InstructorCourseInstanceBilling({
         ${renderEjs(__filename, "<%- include('../../../../pages/partials/head') %>", {
           ...resLocals,
         })}
+        ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../../pages/partials/navbar') %>", {
@@ -30,7 +34,8 @@ export function InstructorCourseInstanceBilling({
                     class="form-check-input"
                     type="checkbox"
                     name="student_billing_enabled"
-                    value=""
+                    ${studentBillingEnabled ? 'checked' : ''}
+                    value="1"
                     id="studentBillingEnabled"
                   />
                   <label class="form-check-label" for="studentBillingEnabled">
@@ -41,6 +46,9 @@ export function InstructorCourseInstanceBilling({
                     for additional features that you select.
                   </p>
                 </div>
+
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button type="submit" class="btn btn-primary">Save</button>
               </form>
             </div>
           </div>
