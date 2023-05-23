@@ -1,5 +1,6 @@
 import json
 import math
+import string
 from enum import Enum
 from typing import Any, Callable, Optional, cast
 
@@ -304,3 +305,23 @@ def test_grade_answer_parametrized_key_error_blank(
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["format_errors"][question_name] == "No answer was submitted"
+
+
+@pytest.mark.repeat(100)
+def test_get_uuid() -> None:
+    """Test basic properties of the pl.get_uuid() function."""
+
+    pl_uuid = pl.get_uuid()
+    clauses = pl_uuid.split("-")
+
+    # Assert clauses have standard structure.
+    assert len(clauses) == 5
+    assert [8, 4, 4, 4, 12] == list(map(len, clauses))
+
+    # Assert that all characters are valid.
+    seen_characters = set().union(*(clause for clause in clauses))
+    allowed_hex_characters = set(string.hexdigits[:16])
+    assert seen_characters.issubset(allowed_hex_characters)
+
+    # Assert that the first character is a valid hex letter.
+    assert pl_uuid[0] in set("abcdef")

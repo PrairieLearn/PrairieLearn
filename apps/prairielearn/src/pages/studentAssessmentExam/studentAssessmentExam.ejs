@@ -5,7 +5,7 @@
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
-    <div id="content" class="container">
+    <main id="content" class="container">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
@@ -33,7 +33,7 @@
           <% } %>
 
           <% if (locals.assessment.group_work) { %>
-            <%- include('../partials/studentGroupControls.ejs', {groupsize: groupsize}); %>
+            <%- include('../partials/studentGroupControls.ejs'); %>
           <% } else { %>
             <% if (locals.assessment.require_honor_code) { %>
             <div class="card card-secondary mb-4 test-class-honor-code">
@@ -72,6 +72,6 @@
           </script>
         </div> <!-- card-body -->
       </div>
-    </div>
+    </main>
   </body>
 </html>

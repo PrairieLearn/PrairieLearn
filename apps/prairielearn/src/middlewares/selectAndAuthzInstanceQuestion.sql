@@ -56,10 +56,7 @@ SELECT
     to_jsonb(ai),
     '{formatted_date}',
     to_jsonb(
-      format_date_full_compact (
-        ai.date,
-        COALESCE(ci.display_timezone, c.display_timezone)
-      )
+      format_date_full_compact (ai.date, ci.display_timezone)
     )
   ) AS assessment_instance,
   CASE
@@ -96,10 +93,7 @@ SELECT
     'last_grader_name',
     COALESCE(ulg.name, ulg.uid),
     'modified_at_formatted',
-    format_date_short (
-      iq.modified_at,
-      COALESCE(ci.display_timezone, c.display_timezone)
-    )
+    format_date_short (iq.modified_at, ci.display_timezone)
   ) AS instance_question,
   jsonb_build_object(
     'id',
@@ -113,7 +107,9 @@ SELECT
     'advance_score_perc',
     aq.effective_advance_score_perc,
     'sequence_locked',
-    iqi.sequence_locked
+    iqi.sequence_locked,
+    'instructor_question_number',
+    admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(q) AS question,
@@ -130,7 +126,6 @@ FROM
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN groups AS g ON (
     g.id = ai.group_id
@@ -155,5 +150,7 @@ WHERE
     $assessment_id::BIGINT IS NULL
     OR a.id = $assessment_id
   )
+  AND q.deleted_at IS NULL
+  AND a.deleted_at IS NULL
   AND aai.authorized
   AND NOT iqi.sequence_locked;

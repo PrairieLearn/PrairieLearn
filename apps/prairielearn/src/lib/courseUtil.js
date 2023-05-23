@@ -5,6 +5,10 @@ const { promisify } = require('util');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
+/**
+ * @param {string} coursePath
+ * @param {(err: Error, hash: string) => void} callback
+ */
 function getCommitHash(coursePath, callback) {
   const execOptions = {
     cwd: coursePath,
@@ -20,6 +24,7 @@ function getCommitHash(coursePath, callback) {
   });
 }
 module.exports.getCommitHash = getCommitHash;
+module.exports.getCommitHashAsync = promisify(getCommitHash);
 
 /**
  * Loads the current commit hash from disk and stores it in the database. This

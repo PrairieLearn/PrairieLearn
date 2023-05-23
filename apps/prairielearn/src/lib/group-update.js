@@ -5,7 +5,7 @@ const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
 
 const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 

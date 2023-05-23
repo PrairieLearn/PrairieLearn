@@ -16,11 +16,11 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <% if (authz_data.has_course_instance_permission_edit) { %>
-      <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
+      <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScoresModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -49,7 +49,7 @@
         </div>
       </div>
 
-      <div class="modal fade" id="uploadAssessmentInstanceScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentInstanceScores">
+      <div class="modal fade" id="uploadAssessmentInstanceScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentInstanceScoresModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -132,7 +132,7 @@
                 <th>Description</th>
                 <th>User</th>
                 <th>Status</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -159,6 +159,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

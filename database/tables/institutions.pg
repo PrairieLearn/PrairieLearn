@@ -15,6 +15,7 @@ foreign-key constraints
     institutions_default_authn_provider_id_fkey: FOREIGN KEY (default_authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    feature_grants: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     institution_authn_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     pl_courses: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
     saml_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE

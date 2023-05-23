@@ -18,7 +18,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <% if (navPage == 'course_admin') { %>
         <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <% } else if (navPage == 'instance_admin') { %>
@@ -206,6 +206,6 @@
         <% } %>
 
       </div>
-    </div>
+    </main>
   </body>
 </html>

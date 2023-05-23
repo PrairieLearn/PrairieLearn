@@ -4,7 +4,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 function AdministratorSettings({ resLocals }) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>
@@ -19,7 +19,7 @@ function AdministratorSettings({ resLocals }) {
           navPage: 'admin',
           navSubPage: 'settings',
         })}
-        <div id="content" class="container-fluid">
+        <main id="content" class="container-fluid">
           <!-- Chunk generation -->
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -88,7 +88,7 @@ function AdministratorSettings({ resLocals }) {
               </script>
             </div>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();
