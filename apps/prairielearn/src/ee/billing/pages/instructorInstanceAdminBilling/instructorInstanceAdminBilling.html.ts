@@ -47,6 +47,14 @@ export function InstructorCourseInstanceBilling({
                   </p>
                 </div>
 
+                <!-- TODO: only show this if there are existing enrollments? -->
+                <div class="alert alert-warning">
+                  Any students currently enrolled in your course will lose access until they have
+                  paid for the above features. If your course is currently in session, you should
+                  carefully consider the impact of enabling student billing. Before proceeding, you
+                  should communicate this change to your students.
+                </div>
+
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button type="submit" class="btn btn-primary">Save</button>
               </form>

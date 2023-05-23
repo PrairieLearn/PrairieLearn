@@ -8,7 +8,7 @@ export const PLAN_FEATURE_NAMES = [
   'external-grading',
   'workspaces',
 ] as const;
-export const PLAN_NAMES = ['free', 'basic', 'compute'] as const;
+export const PLAN_NAMES = ['basic', 'compute', 'everything'] as const;
 
 export type PlanFeatureName = (typeof PLAN_FEATURE_NAMES)[number];
 export type PlanName = (typeof PLAN_NAMES)[number];
@@ -19,17 +19,16 @@ interface Plan {
 }
 
 export const PLANS = {
-  // Access to all features for a limited number of students.
-  free: {
-    features: ['course-instance-access', 'workspaces', 'external-grading'],
-    initialEnrollmentLimit: 25,
-  },
   // Enabled when student-pays is enabled for a course instance.
   basic: {
     features: ['course-instance-access'],
   },
   // Add-on to basic plan that enables workspaces and external grading.
   compute: {
+    features: ['workspaces', 'external-grading'],
+  },
+  // All features that exist.
+  everything: {
     features: ['workspaces', 'external-grading'],
   },
 } satisfies Record<PlanName, Plan>;
