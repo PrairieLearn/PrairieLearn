@@ -1,13 +1,14 @@
 import async = require('async');
-import AWS = require('aws-sdk');
+import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
 import fetch from 'node-fetch';
 import { logger } from '@prairielearn/logger';
+import sqldb = require('@prairielearn/postgres');
 
 import { config } from '../lib/config';
+import { makeAwsClientConfig } from '../lib/aws';
 import workspaceHelper = require('../lib/workspace');
 
-import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export const run = callbackify(async () => {
@@ -33,24 +34,22 @@ function set_difference<T>(a: Set<T>, b: Set<T>): Set<T> {
  * the database.
  */
 async function checkDBConsistency() {
-  const ec2 = new AWS.EC2();
+  const ec2 = new EC2(makeAwsClientConfig());
   const running_host_set = new Set();
   const reservations = (
-    await ec2
-      .describeInstances({
-        Filters: [
-          {
-            Name: 'tag-key',
-            Values: [config.workspaceLoadLaunchTag],
-          },
-          {
-            Name: 'instance-state-name',
-            Values: ['pending', 'running'],
-          },
-        ],
-        MaxResults: 500,
-      })
-      .promise()
+    await ec2.describeInstances({
+      Filters: [
+        {
+          Name: 'tag-key',
+          Values: [config.workspaceLoadLaunchTag],
+        },
+        {
+          Name: 'instance-state-name',
+          Values: ['pending', 'running'],
+        },
+      ],
+      MaxResults: 500,
+    })
   ).Reservations;
   for (const reservation of reservations ?? []) {
     for (const instance of Object.values(reservation.Instances ?? [])) {
@@ -71,7 +70,7 @@ async function checkDBConsistency() {
     await sqldb.queryAsync(sql.add_terminating_hosts, {
       instances: Array.from(not_in_db),
     });
-    await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) }).promise();
+    await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) });
   }
 
   // Any host that is in the db but not running we will mark as "terminated".
@@ -92,14 +91,14 @@ async function checkDBConsistency() {
 }
 
 async function terminateHosts() {
-  const ec2 = new AWS.EC2();
+  const ec2 = new EC2(makeAwsClientConfig());
   const params = [config.workspaceHostUnhealthyTimeoutSec, config.workspaceHostLaunchTimeoutSec];
   const hosts =
     (await sqldb.callAsync('workspace_hosts_find_terminable', params)).rows[0].terminable_hosts ||
     [];
   if (hosts.length > 0) {
     logger.info('Found terminable hosts', hosts);
-    await ec2.terminateInstances({ InstanceIds: hosts }).promise();
+    await ec2.terminateInstances({ InstanceIds: hosts });
   }
 }
 

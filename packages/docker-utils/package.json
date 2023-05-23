@@ -22,7 +22,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.329.0",
+    "@aws-sdk/client-ecr": "^3.332.0",
     "@prairielearn/logger": "workspace:^",
     "date-fns": "^2.30.0"
   }

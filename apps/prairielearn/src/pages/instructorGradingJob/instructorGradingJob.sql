@@ -42,9 +42,9 @@ SELECT
   u.uid AS user_uid
 FROM
   grading_jobs AS gj
-  LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
-  LEFT JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN questions AS q ON (q.id = v.question_id)
+  JOIN submissions AS s ON (s.id = gj.submission_id)
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN questions AS q ON (q.id = v.question_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

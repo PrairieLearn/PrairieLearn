@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global ace */
 /* global CryptoJS */
 window.InstructorFileEditor = function (options) {

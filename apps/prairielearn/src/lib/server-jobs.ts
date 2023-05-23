@@ -27,10 +27,23 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-type ExecutionJob = Omit<ServerJob, 'execute' | 'executeInBackground'>;
-type ExecutionFunction = (job: ExecutionJob) => Promise<void>;
+export interface ServerJob {
+  error(msg: string): void;
+  warn(msg: string): void;
+  info(msg: string): void;
+  verbose(msg: string): void;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+}
 
-class ServerJob {
+export interface ServerJobExecutor {
+  jobSequenceId: string;
+  execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeInBackground(fn: ServerJobExecutionFunction): void;
+}
+
+export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+
+class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
   private started = false;
@@ -86,7 +99,7 @@ class ServerJob {
    * sequence has completed. The returned promise will not reject if the job
    * sequence fails.
    */
-  async execute(fn: ExecutionFunction): Promise<void> {
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn);
   }
@@ -97,7 +110,7 @@ class ServerJob {
    * to finish. Useful for tools like TypeScript and ESLint that ensure that
    * promises are awaited.
    */
-  executeInBackground(fn: ExecutionFunction): void {
+  executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
     this.executeInternal(fn);
   }
@@ -109,7 +122,7 @@ class ServerJob {
     this.started = true;
   }
 
-  private async executeInternal(fn: ExecutionFunction): Promise<void> {
+  private async executeInternal(fn: ServerJobExecutionFunction): Promise<void> {
     try {
       await fn(this);
       await this.finish();
@@ -169,7 +182,7 @@ class ServerJob {
 /**
  * Creates a job sequence with a single job.
  */
-export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJob> {
+export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
   const { job_sequence_id, job_id } = await queryValidatedOneRow(
     sql.insert_job_sequence,
     {
@@ -188,7 +201,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     })
   );
 
-  const serverJob = new ServerJob(job_sequence_id, job_id);
+  const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
   return serverJob;
 }
