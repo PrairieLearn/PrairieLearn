@@ -43,6 +43,52 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
+-- BLOCK check_enrollment_limits
+WITH
+  enrollment_limits AS (
+    SELECT
+      i.id AS institution_id,
+      i.course_instance_enrollment_limit,
+      i.yearly_enrollment_limit,
+      ci.id AS course_instance_id,
+      ci.enrollment_limit
+    FROM
+      institutions AS i
+      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN course_instances AS ci ON (ci.course_id = c.id)
+    WHERE
+      ci.id = $course_instance_id
+      -- Lock institution to prevent concurrent enrollments that would exceed
+      -- the enrollment limit.
+    FOR UPDATE OF
+      institutions
+  ),
+  course_instance_enrollments AS (
+    SELECT
+      COUNT(*) AS count
+    FROM
+      enrollments
+    WHERE
+      course_instance_id = $course_instance_id
+  ),
+  institution_enrollments AS (
+    SELECT
+      COUNT(*) AS count
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
+      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN institutions AS i ON (i.id = c.institution_id)
+      JOIN enrollment_limits AS el ON (el.institution_id = i.id)
+  )
+SELECT
+  (ci.count >= el.course_instance_enrollment_limit) AS course_instance_limit_exceeded,
+  (i.count >= el.yearly_enrollment_limit) AS yearly_limit_exceeded
+FROM
+  course_instance_enrollments AS ci
+  CROSS JOIN institution_enrollments AS i
+  CROSS JOIN enrollment_limits AS el;
+
 -- BLOCK enroll
 INSERT INTO
   enrollments AS e (user_id, course_instance_id)
@@ -59,6 +105,7 @@ WHERE
     u.institution_id,
     $req_date
   )
+ON CONFLICT DO NOTHING
 RETURNING
   e.id;
 
