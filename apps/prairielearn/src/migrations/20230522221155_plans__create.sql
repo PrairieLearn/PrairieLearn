@@ -12,12 +12,19 @@ CREATE TABLE IF NOT EXISTS
     user_id BIGINT REFERENCES users (user_id),
     institution_id BIGINT REFERENCES institutions (id),
     course_instance_id BIGINT REFERENCES course_instances (id),
-    enrollment_id BIGINT REFERENCES enrollments (id)
+    enrollment_id BIGINT REFERENCES enrollments (id),
+    CONSTRAINT plan_grants_by_name_idx UNIQUE (
+      plan_name,
+      institution_id,
+      course_instance_id,
+      enrollment_id
+    )
   );
 
 CREATE TABLE IF NOT EXISTS
-  course_instances_required_plans (
+  course_instance_required_plans (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT REFERENCES course_instances (id),
-    plan_name TEXT NOT NULL
+    plan_name TEXT NOT NULL,
+    UNIQUE (course_instance_id, plan_name)
   );

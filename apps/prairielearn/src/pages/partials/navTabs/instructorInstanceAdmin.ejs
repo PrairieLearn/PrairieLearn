@@ -23,6 +23,13 @@
     urlSuffix:      '/instance_admin/lti',
     iconClasses:    'fas fa-graduation-cap',
     tabLabel:       'LTI'}) %>
+<% if (billing_enabled) { %>
+    <%- include('navTab', {
+        activeSubPage:  'billing',
+        urlSuffix:      '/instance_admin/billing',
+        iconClasses:    'fas fa-dollar-sign',
+        tabLabel:       'Billing'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'settings',
     urlSuffix:      '/instance_admin/settings',
