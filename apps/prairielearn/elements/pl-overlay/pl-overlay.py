@@ -1,3 +1,5 @@
+from itertools import count
+
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -84,7 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Assign layer index in order children are defined
     # Later defined elements will be placed on top of earlier ones
     locations = []
-    z_index = 0
+    z_index = count(0)
     for child in element:
         # Ignore comments
         if isinstance(child, lxml.html.HtmlComment):
@@ -118,15 +120,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         hoff = ALIGNMENT_TO_PERC[halign]
         voff = ALIGNMENT_TO_PERC[valign]
-        transform = f"translate({hoff}, {voff})"
 
-        style = f"top: {y}px; left: {x}px; transform: {transform}; z-index: {z_index}"
-        obj = {
-            "html": pl.inner_html(child),
-            "outer_style": style,
-        }
-        locations.append(obj)
-        z_index += 1
+        transform = f"translate({hoff}, {voff})"
+        style = (
+            f"top: {y}px; left: {x}px; transform: {transform}; z-index: {next(z_index)}"
+        )
+
+        locations.append(
+            {
+                "html": pl.inner_html(child),
+                "outer_style": style,
+            }
+        )
 
     html_params = {
         "width": width,
