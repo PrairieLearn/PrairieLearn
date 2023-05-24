@@ -1,0 +1,37 @@
+<pl-question-panel>
+
+<p>
+    Cables $AC$ and $BC$ are attached at ring $C$, and they support a box with mass $m$.
+    Determine the maximum mass $m$ if each cable can withstand a maximum tension $T = {{params.T}}$ N.
+    Use the unit squares to compute the relevant distances. 
+    Assume acceleration of gravity equal to $9.8$ m/s$^2$.
+</p>
+
+<pl-drawing gradable="false" grid-size="20"  width="440" height="300">
+    <pl-drawing-initial>
+        
+        <pl-fixed-pin x1="{{params.xA}}" y1="{{params.yA}}" angle="180" label="A" offsetx=-20 offsety=-20></pl-fixed-pin>
+        <pl-fixed-pin x1="{{params.xB}}" y1="{{params.yB}}" angle="-90" label="B" offsety=-10></pl-fixed-pin>
+        <pl-line x1="{{params.xA}}" y1="{{params.yA}}" x2="{{params.xC}}" y2="{{params.yC}}"></pl-line>
+        <pl-dimensions x1="{{params.xA}}" y1="{{params.yA}}" x2="{{params.xC}}" y2="{{params.yC}}" stroke-color="pink3" label="a" dim-offset="-40" dim-offset-angle="-90" end-support-line="true"></pl-dimensions>
+        <pl-dimensions x1="{{params.xA}}" y1="{{params.yA}}" x2="{{params.xC}}" y2="{{params.yC}}" stroke-color="pink3" label="b" dim-offset="20" dim-offset-angle="180" end-support-line="true"></pl-dimensions>
+        <pl-line x1="{{params.xB}}" y1="{{params.yB}}" x2="{{params.xC}}" y2="{{params.yC}}"></pl-line>
+        <pl-dimensions x1="{{params.xB}}" y1="{{params.yB}}" x2="{{params.xC}}" y2="{{params.yC}}" stroke-color="pink3" label="d" dim-offset="20" dim-offset-angle="-90" end-support-line="true"></pl-dimensions>
+        <pl-dimensions x1="{{params.xB}}" y1="{{params.yB}}" x2="{{params.xC}}" y2="{{params.yC}}" stroke-color="pink3" label="c" dim-offset="20" dim-offset-angle="180" end-support-line="true"></pl-dimensions>
+        <pl-line x1="{{params.xC}}" y1="{{params.yC}}" x2="{{params.xD}}" y2="{{params.yD}}"></pl-line>
+        <pl-rectangle x1="{{params.xD}}" y1="{{params.yD}}" width="50" height="40" color="green1"></pl-rectangle>
+        <pl-point x1="{{params.xC}}" y1="{{params.yC}}" label="C" offsetx=-10 offsety=-25></pl-point>
+        <pl-point x1="{{params.xD}}" y1="{{params.yD}}" label="m"></pl-point>
+        
+    </pl-drawing-initial>
+</pl-drawing>
+
+<br>
+
+</pl-question-panel>
+
+
+<p>
+    <pl-number-input answers-name="m" label="Maximum mass $=$" suffix="kg" ></pl-number-input>
+</p>
+    

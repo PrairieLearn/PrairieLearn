@@ -1,0 +1,24 @@
+<pl-question-panel>
+<p>
+    <pl-drawing gradable="false"  width="440" height="120" grid-size="0">
+        <pl-drawing-initial>
+            <pl-circle x1="100" y1="60"  radius="20" color="blue1"></pl-circle>
+            <pl-text x1="100" y1="60"  label="A" offsetx="-10" offsety="-5"></pl-text>
+            <pl-circle x1="340" y1="60"  radius="20" color="blue1"></pl-circle>
+            <pl-text x1="340" y1="60"  label="B" offsetx="-5" offsety="-5"></pl-text>
+            <pl-dimensions x1="120" y1="60" x2="320" y2="60" label="d"></pl-dimensions>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+<p>
+    Two identical spheres with radius $R$ are separated by distance $d \gg R$: sphere $A$ is charged to ${{params.Q1}}$ and the sphere $B$ charged to ${{params.Q2}}$. The magnitude of the force of attraction on sphere $A$ is $F$. The two spheres are made to touch and are separated again by the same distance $d$.   
+</p>
+
+</pl-question-panel>
+
+<p>Determine the expression for the magnitude of the force of attraction on sphere $B$ as a function of $F$.</p>
+<p>
+<pl-symbolic-input answers-name="Fr"  variables="{{params.F}}" ></pl-symbolic-input>
+</p>
+
+

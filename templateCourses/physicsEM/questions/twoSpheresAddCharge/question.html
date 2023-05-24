@@ -1,0 +1,26 @@
+<pl-question-panel>
+<p>
+    Two point charges ${{params.Q1}}$ and ${{params.Q2}}$ are separated by a distance $2d$.
+</p>
+<p>
+    <pl-drawing gradable="false"  width="440" height="120" grid-size="0">
+        <pl-drawing-initial>
+            <pl-circle x1="100" y1="60"  radius="20" color="blue1"></pl-circle>
+            <pl-text x1="100" y1="25"  label="{{params.Q1}}" offsetx="-10" offsety="-5"></pl-text>
+            <pl-circle x1="340" y1="60"  radius="20" color="blue1"></pl-circle>
+            <pl-text x1="340" y1="25"  label="{{params.Q2}}" offsetx="-10" offsety="-5"></pl-text>
+            <pl-dimensions x1="120" y1="60" x2="320" y2="60" label="2d"></pl-dimensions>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+<p>
+    Another point charge ${{params.Q3}}$ is placed between the other two charges, at a distance $d$ from ${{params.Q1}}$. Assuming constant Coulomb's constant $k$, determine the magnitude of the force on the charge ${{params.Q3}}$.
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-symbolic-input answers-name="Fr"  variables="{{params.d}}, {{params.q}}, {{params.k}}" ></pl-symbolic-input>
+</p>
+
+

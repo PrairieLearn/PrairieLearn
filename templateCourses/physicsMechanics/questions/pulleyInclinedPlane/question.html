@@ -1,0 +1,37 @@
+<pl-question-panel>
+
+<p>
+    A mass $m_1 =  {{params.m1}}$ kg is placed upon an inclined plane with an angle $\theta = {{params.theta}} ^o$.
+    The mass $m_1$ is attached by a rope over a frictionless and massless pulley to another mass $m_2 = {{params.m2}}$ kg which hangs vertically. 
+</p>
+
+<pl-drawing gradable="false" grid-size="0"  width="440" height={{params.height_canvas}}>
+    <pl-drawing-initial>
+        <pl-pulley x1={{params.x1}} y1={{params.y1}}  x2={{params.x2}} y2={{params.y2}}  x3={{params.x3}} y3={{params.y3}}  radius={{params.r}} color="gray1" label="A" offsetx="-20"></pl-pulley>
+        <pl-triangle x1={{params.x4}} y1={{params.y4}} x2={{params.x5}} y2={{params.y5}} x3={{params.x6}} y3={{params.y6}} color="brown1"></pl-triangle>
+        <pl-rod x1={{params.x1}} y1={{params.y1}}  x2={{params.x4}} y2={{params.y4}}></pl-rod>
+        <pl-rectangle x1={{params.x2}} y1={{params.y2}} width="40" height="60" color="green1"></pl-rectangle>
+        <pl-rectangle x1={{params.x3}} y1={{params.y3}} width={{params.wbox}} height={{params.hbox}} color="green1" angle={{params.angle_plane}}></pl-rectangle>
+        <pl-point x1={{params.x2}} y1={{params.y2}} label="m_2" offsetx="-10" offsety="10"></pl-point>
+        <pl-point x1={{params.x3}} y1={{params.y3}} label="m_1"></pl-point>
+        <pl-arc-dimensions x1={{params.x6}} y1={{params.y6}}  radius="80" start-angle="180" end-angle={{params.end_angle}} label="\\theta" offsety="-10" offsetx="-15"></pl-arc-dimensions>
+
+    </pl-drawing-initial>
+</pl-drawing>
+</pl-question-panel>
+<br>
+<p>
+    Taking downward as the positive direction for the hanging mass, compute its acceleration. Assume acceleration of gravity equal to $9.8$ m/s$^2$.
+</p>
+<p>
+<pl-number-input answers-name="a" label="acceleration $=$" suffix="m/s^2" ></pl-number-input>
+</p>
+
+<p>
+    What is the tension in the rope?
+</p>
+<p>
+<pl-number-input answers-name="T" label="tension $=$" suffix="N" ></pl-number-input>
+</p>
+
+

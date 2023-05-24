@@ -1,0 +1,38 @@
+<pl-question-panel>
+  <p>
+  <pl-drawing gradable="false"  width="400" height="140" grid-size="0">
+    <pl-drawing-initial>
+        <pl-rectangle x1="200" y1="130" width="400" height="20" color="gray"></pl-rectangle>
+        <pl-circle x1="80" y1="90" radius="30" color="orange"></pl-circle>
+        <pl-text x1="70" y1="90" label="m_1"></pl-text>
+        <pl-vector x1="55" y1="40" width="60" label="v_1" offsetx=-40 offsety=-20></pl-vector>
+        <pl-circle x1="260" y1="90" radius="30" color="red"></pl-circle>
+        <pl-text x1="250" y1="90" label="m_2"></pl-text>    
+        <pl-text x1="240" y1="30" label="v_2 = 0"></pl-text>    
+    </pl-drawing-initial>
+  </pl-drawing>
+  </p>
+   <p>
+  An object with mass $m_1 = {{params.m1}}$ kg is traveling with speed $v_1 = {{params.v1}}$ m/s on a frictionless surface until it collides with another stationary object with mass $m_2 = {{params.m2}}$ kg. Assume the collision is perfectly inelastic when responding to each item below.
+  </p>
+  </pl-question-panel>
+  <p>  
+    1) What is the final speed of the object with mass $m_2$?
+  </p>
+  <p>  
+  <pl-number-input answers-name="v" label="Speed = " suffix="m/s"></pl-number-input>
+  </p>
+  <p>  
+    2) What is the impulse imparted to the object with mass $m_2$?
+  </p>
+  <p>  
+  <pl-number-input answers-name="imp" label="Impulse = " suffix="kg $\cdot$ m/s"></pl-number-input>
+  </p>
+  <p>  
+    3) How much mechanical energy was converted into heat in the collision?
+  </p>
+  <p>
+  <pl-number-input answers-name="E" label="Energy converted into heat = " suffix="J"></pl-number-input>
+  </p>
+
+
