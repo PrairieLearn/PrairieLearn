@@ -11,7 +11,7 @@ const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
 const { logger } = require('@prairielearn/logger');
 const { contains } = require('@prairielearn/path-utils');
-const serverJobs = require('../../lib/server-jobs');
+const serverJobs = require('../../lib/server-jobs-legacy');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
@@ -45,20 +45,6 @@ router.get('/*', (req, res, next) => {
     }
   } else {
     return next(new Error(`No path`));
-  }
-
-  // This is a hack because we do not have a standard for how to serve
-  // page-specific client-side code. I would normally have done this with
-  // a route parameter, but all routes are being mapped to file paths, so
-  // I am using a query string instead.
-  if (req.query.serve) {
-    if (req.query.serve === 'client') {
-      debug('Responding to request for /instructorFileEditorClient.js');
-      res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
-      return;
-    } else {
-      return next(new Error(`Invalid query: serve=${req.query.serve}`));
-    }
   }
 
   let fileEdit = {

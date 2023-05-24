@@ -59,7 +59,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
 
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>
@@ -81,7 +81,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
           navPage: 'admin',
           navSubPage: 'workspaces',
         })}
-        <div id="content" class="container">
+        <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <span class="mr-auto">Workspace hosts</span>
@@ -155,7 +155,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
               })}
             </div>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();

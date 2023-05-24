@@ -1,5 +1,21 @@
 # @prairielearn/migrations
 
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [16d0068d8]
+  - @prairielearn/postgres@1.7.0
+  - @prairielearn/named-locks@1.3.2
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [00d1b045d]
+  - @prairielearn/postgres@1.6.1
+  - @prairielearn/named-locks@1.3.1
+
 ## 1.2.0
 
 ### Minor Changes

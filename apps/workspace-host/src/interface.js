@@ -6,7 +6,8 @@ const express = require('express');
 const http = require('http');
 const request = require('request');
 const path = require('path');
-const AWS = require('aws-sdk');
+const { S3 } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
@@ -28,6 +29,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
+const { makeS3ClientConfig } = require('./lib/aws');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const docker = new Docker();
@@ -117,24 +119,6 @@ async
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
       }
-
-      // If we're not running in EC2, assume we're running with a local s3rver instance.
-      // See https://github.com/jamhall/s3rver for more details.
-      if (!config.runningInEc2) {
-        logger.verbose('Using local s3rver AWS configuration');
-        AWS.config.update({
-          s3ForcePathStyle: true,
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER',
-          s3: {
-            endpoint: new AWS.Endpoint('http://localhost:5000'),
-          },
-        });
-      }
-
-      // It is important that we always do this:
-      // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html
-      AWS.config.update({ region: config.awsRegion });
     },
     async () => {
       if (config.sentryDsn) {
@@ -560,7 +544,7 @@ async function _pullImage(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
-  const auth = await setupDockerAuthAsync(config.cacheImageRegistry);
+  const auth = await setupDockerAuthAsync(config.awsRegion);
 
   let percentDisplayed = false;
   let stream;
@@ -1040,13 +1024,14 @@ async function flushLogsToS3(container) {
     InstitutionId: institutionId,
   };
 
-  const s3 = new AWS.S3({ maxRetries: 3 });
-  await s3
-    .putObject({
+  const s3 = new S3(makeS3ClientConfig({ maxAttempts: 3 }));
+  await new Upload({
+    client: s3,
+    params: {
       Bucket: config.workspaceLogsS3Bucket,
       Key: key,
       Body: parsedLogs,
       Tagging: new URLSearchParams(tags).toString(),
-    })
-    .promise();
+    },
+  }).done();
 }

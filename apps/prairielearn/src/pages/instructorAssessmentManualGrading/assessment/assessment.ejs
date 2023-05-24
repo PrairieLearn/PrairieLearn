@@ -8,7 +8,7 @@
   </head>
   <body>
     <%- include('../../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>
       <%- include('../../partials/assessmentOpenInstancesAlert') %>
       <div class="card mb-4">
@@ -20,14 +20,14 @@
           <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
             <thead>
               <tr>
-                <th></th>
+                <th>Question</th>
                 <th>QID</th>
                 <th>Auto Points</th>
                 <th>Manual Points</th>
                 <th colspan="2">Submissions to grade</th>
                 <th>Grading assigned to</th>
                 <th>Graded by</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -91,6 +91,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

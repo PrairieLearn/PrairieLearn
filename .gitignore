@@ -96,3 +96,6 @@ __pycache__/
 apps/*/dist
 apps/prairielearn/public/build
 packages/*/dist
+
+# TypeScript cache
+*.tsbuildinfo

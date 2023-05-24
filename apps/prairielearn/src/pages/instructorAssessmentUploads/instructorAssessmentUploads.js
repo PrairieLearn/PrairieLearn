@@ -1,12 +1,14 @@
+// @ts-check
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
-const router = express.Router();
 const debug = require('debug')('prairielearn:instructorAssessment');
-
 const error = require('@prairielearn/error');
-const scoreUpload = require('../../lib/score-upload');
 const sqldb = require('@prairielearn/postgres');
 
+const scoreUpload = require('../../lib/score-upload');
+
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
@@ -25,41 +27,36 @@ router.get('/', function (req, res, next) {
   });
 });
 
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a student data editor)'));
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw error.make(403, 'Access denied (must be a student data editor)');
+    }
 
-  if (req.body.__action === 'upload_instance_question_scores') {
-    scoreUpload.uploadInstanceQuestionScores(
-      res.locals.assessment.id,
-      req.file,
-      res.locals.user.user_id,
-      res.locals.authn_user.user_id,
-      function (err, job_sequence_id) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
-    );
-  } else if (req.body.__action === 'upload_assessment_instance_scores') {
-    scoreUpload.uploadAssessmentInstanceScores(
-      res.locals.assessment.id,
-      req.file,
-      res.locals.user.user_id,
-      res.locals.authn_user.user_id,
-      function (err, job_sequence_id) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
-    );
-  } else {
-    return next(
-      error.make(400, `unknown __action: ${req.body.__action}`, {
+    if (req.body.__action === 'upload_instance_question_scores') {
+      const jobSequenceId = await scoreUpload.uploadInstanceQuestionScores(
+        res.locals.assessment.id,
+        req.file,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'upload_assessment_instance_scores') {
+      const jobSequenceId = await scoreUpload.uploadAssessmentInstanceScores(
+        res.locals.assessment.id,
+        req.file,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else {
+      throw error.make(400, `unknown __action: ${req.body.__action}`, {
         locals: res.locals,
         body: req.body,
-      })
-    );
-  }
-});
+      });
+    }
+  })
+);
 
 module.exports = router;

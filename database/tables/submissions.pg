@@ -12,6 +12,7 @@ columns
     grading_method: enum_grading_method
     grading_requested_at: timestamp with time zone
     id: bigint not null default nextval('submissions_id_seq'::regclass)
+    manual_rubric_grading_id: bigint
     mode: enum_mode
     override_score: double precision
     params: jsonb
@@ -33,6 +34,7 @@ indexes
 
 foreign-key constraints
     submissions_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    submissions_manual_rubric_grading_id_fkey: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

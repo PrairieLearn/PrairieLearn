@@ -14,7 +14,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <!-- ###################################################################### -->
@@ -22,7 +22,7 @@
 
       <% if (authz_data.has_course_permission_edit) { %>
       <div class="modal fade" id="refreshAssessmentQuestionStatsModal" tabindex="-1"
-           role="dialog" aria-labelledby="refreshStatsAssessmentInstances">
+           role="dialog" aria-labelledby="refreshAssessmentQuestionStatsModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -74,6 +74,7 @@
                     xlabel: 'mean score / %',
                     ylabel: 'discrimination / %',
                     radius: 2,
+                    topMargin: 30,
                     labels: labels
                 };
                 scatter("#difficultyDiscriminationScatter", xdata, ydata, options);
@@ -110,7 +111,7 @@
         </div>
 
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-sm table-hover tablesorter">
+          <table class="table table-sm table-hover tablesorter">
             <thead>
               <tr>
                 <th class="text-center">Question</th>
@@ -118,7 +119,7 @@
                 <th class="text-center">Discrimination</th>
                 <th class="text-center">Auto-graded Attempts</th>
                 <th class="text-center">Quintiles</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -193,7 +194,7 @@
         </div>
 
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
+          <table class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="text-center">
@@ -385,6 +386,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>
