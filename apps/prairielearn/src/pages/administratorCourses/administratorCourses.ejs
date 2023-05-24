@@ -21,6 +21,7 @@
               <tr>
                 <th>Short name</th>
                 <th>Long name</th>
+                <th>Timezone</th>
                 <th>UID regexp</th>
                 <th>Authn providers</th>
               </tr>
@@ -30,6 +31,7 @@
               <tr>
                 <td><a href="/pl/institution/<%= inst.id %>/admin"><%= inst.short_name %></a></td>
                 <td><%= inst.long_name %></td>
+                <td><%= inst.display_timezone %></td>
                 <td><code><%= inst.uid_regexp %></code></td>
                 <td><%= inst.authn_providers.join(', ') %></td>
               </tr>
