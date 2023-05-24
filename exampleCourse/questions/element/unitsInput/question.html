@@ -17,14 +17,11 @@
             <p> Within this question, you can observe the default behavior of the <a
                     href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
                 element. The submitted answer and reference solutions will be first be converted to base units and then
-                compared. We must also supply an absolute tolerance with an included unit matching the reference
-                solution, so we set <code>atol="1cm"</code> (setting <code>rtol="1e-10"</code> was optional). Submitting
-                units of incorrect dimensionality will not be
-                given any credit.
+                compared. Submitting units of incorrect dimensionality will not be given any credit.
             </p>
             <p> What is the length of a meter stick? </p>
         </pl-question-panel>
-        <pl-units-input answers-name="c_1" correct-answer="1m" rtol="1e-10" atol="1cm"></pl-units-input>
+        <pl-units-input answers-name="c_1" correct-answer="1m"></pl-units-input>
     </div>
 </div>
 
