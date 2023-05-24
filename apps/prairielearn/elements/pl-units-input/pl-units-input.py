@@ -105,9 +105,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"Number of digits specified must be at least 1, not {digits}."
         )
 
-    atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
     ureg = pl.get_unit_registry()
-    parsed_atol = ureg.Quantity(atol)
 
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
@@ -115,6 +113,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # In with-units mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.WITH_UNITS:
+        parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
             raise ValueError(
                 f'"atol" attribute "{atol}" must have units in "with-units" grading.'
@@ -144,6 +143,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
             )
     else:
+        atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
+        parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
             raise ValueError(
                 f'"atol" attribute "{atol}" may only have units in with-units grading.'
