@@ -6,8 +6,8 @@ VALIGN_DEFAULT = "middle"
 HALIGN_DEFAULT = "center"
 CLIP_DEFAULT = True
 
-VALIGN_VALUES = ["top", "middle", "center", "bottom"]
-HALIGN_VALUES = ["left", "middle", "center", "right"]
+VALIGN_VALUES = frozenset(("top", "middle", "center", "bottom"))
+HALIGN_VALUES = frozenset(("left", "middle", "center", "right"))
 
 # Percent to translate each alignment by.  This is relative to the top-left corner of the element.
 ALIGNMENT_TO_PERC = {
@@ -20,7 +20,7 @@ ALIGNMENT_TO_PERC = {
 }
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     num_backgrounds = 0
     for child in element:
@@ -75,7 +75,7 @@ def prepare(element_html, data):
         )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     width = pl.get_float_attrib(element, "width", None)
     height = pl.get_float_attrib(element, "height", None)
@@ -108,12 +108,12 @@ def render(element_html, data):
         # so we don't have to worry about all the alignment possibilities
         if left is not None:
             x = left
-        elif right is not None:
+        else:
             x = width - right
 
         if top is not None:
             y = top
-        elif bottom is not None:
+        else:
             y = height - bottom
 
         hoff = ALIGNMENT_TO_PERC[halign]
@@ -135,6 +135,6 @@ def render(element_html, data):
         "background": background,
         "clip": pl.get_boolean_attrib(element, "clip", CLIP_DEFAULT),
     }
+
     with open("pl-overlay.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-    return html
+        return chevron.render(f, html_params).strip()
