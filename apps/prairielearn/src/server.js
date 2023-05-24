@@ -1627,6 +1627,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorSettings/administratorSettings')
   );
   app.use(
+    '/pl/administrator/institutions',
+    require('./pages/administratorInstitutions/administratorInstitutions').default
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses')
   );
