@@ -7,7 +7,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import errors, UnitRegistry
+from pint import UnitRegistry, errors
 from typing_extensions import assert_never
 
 
