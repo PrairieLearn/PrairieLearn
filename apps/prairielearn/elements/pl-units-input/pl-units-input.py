@@ -115,6 +115,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if grading_mode is GradingMode.WITH_UNITS:
         parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
+            atol = pl.get_string_attrib(element, "atol")
             raise ValueError(
                 f'"atol" attribute "{atol}" must have units in "with-units" grading.'
             )
