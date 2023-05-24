@@ -43,15 +43,18 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
--- BLOCK check_enrollment_limits
+-- BLOCK enroll
 WITH
   enrollment_limits AS (
     SELECT
       i.id AS institution_id,
-      i.course_instance_enrollment_limit,
-      i.yearly_enrollment_limit,
-      ci.id AS course_instance_id,
-      ci.enrollment_limit
+      i.yearly_enrollment_limit AS institution_yearly_enrollment_limit,
+      -- Course instance enrollment limit overrides institution course instance
+      -- enrollment limit to allow for higher limits on individual course instances.
+      COALESCE(
+        ci.enrollment_limit,
+        i.course_instance_enrollment_limit
+      ) AS course_instance_enrollment_limit
     FROM
       institutions AS i
       JOIN pl_courses AS c ON (c.institution_id = i.id)
@@ -61,7 +64,7 @@ WITH
       -- Lock institution to prevent concurrent enrollments that would exceed
       -- the enrollment limit.
     FOR UPDATE OF
-      institutions
+      i
   ),
   course_instance_enrollments AS (
     SELECT
@@ -80,23 +83,32 @@ WITH
       JOIN pl_courses AS c ON (ci.course_id = c.id)
       JOIN institutions AS i ON (i.id = c.institution_id)
       JOIN enrollment_limits AS el ON (el.institution_id = i.id)
+    WHERE
+      e.created_at > now() - interval '1 year'
+  ),
+  limits_exceeded AS (
+    SELECT
+      COALESCE(
+        cie.count + 1 >= el.course_instance_enrollment_limit,
+        FALSE
+      ) AS course_instance_limit_exceeded,
+      COALESCE(
+        ie.count + 1 >= el.institution_yearly_enrollment_limit,
+        FALSE
+      ) AS institution_yearly_limit_exceeded
+    FROM
+      course_instance_enrollments AS cie
+      CROSS JOIN institution_enrollments AS ie
+      CROSS JOIN enrollment_limits AS el
   )
-SELECT
-  (ci.count >= el.course_instance_enrollment_limit) AS course_instance_limit_exceeded,
-  (i.count >= el.yearly_enrollment_limit) AS yearly_limit_exceeded
-FROM
-  course_instance_enrollments AS ci
-  CROSS JOIN institution_enrollments AS i
-  CROSS JOIN enrollment_limits AS el;
-
--- BLOCK enroll
 INSERT INTO
   enrollments AS e (user_id, course_instance_id)
 SELECT
   u.user_id,
   $course_instance_id
 FROM
-  users AS u
+  users AS u,
+  limits_exceeded
 WHERE
   u.user_id = $user_id
   AND check_course_instance_access (
@@ -105,6 +117,8 @@ WHERE
     u.institution_id,
     $req_date
   )
+  AND NOT course_instance_limit_exceeded
+  AND NOT institution_yearly_limit_exceeded
 ON CONFLICT DO NOTHING
 RETURNING
   e.id;
