@@ -78,7 +78,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Get base url, which depends on the type and directory
     if file_type is FileType.STATIC:
-        # Get directory (default is clientFilesQuestion)
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
         base_url = data["options"][DIRECTORY_URL_DICT[file_directory]]
 
