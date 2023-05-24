@@ -55,7 +55,9 @@ def grade_o_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        L = sympy.limit(sym_true / sym_sub, sympy.Symbol(variables[0]), sympy.oo)
+        L = sympy.limit(
+            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
+        )
 
         if L < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -96,8 +98,12 @@ def grade_theta_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        omega_L = sympy.limit(sym_sub / sym_true, sympy.Symbol(variables[0]), sympy.oo)
-        bigo_L = sympy.limit(sym_true / sym_sub, sympy.Symbol(variables[0]), sympy.oo)
+        omega_L = sympy.limit(
+            sympy.simplify(sym_sub / sym_true), sympy.Symbol(variables[0]), sympy.oo
+        )
+        bigo_L = sympy.limit(
+            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
+        )
 
         if omega_L < sympy.sympify(0) or bigo_L < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -136,7 +142,9 @@ def grade_omega_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        L = sympy.limit(sym_true / sym_sub, sympy.Symbol(variables[0]), sympy.oo)
+        L = sympy.limit(
+            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
+        )
 
         if L < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)

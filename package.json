@@ -8,14 +8,16 @@
     "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
     "dev": "yarn workspace @prairielearn/prairielearn dev",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
-    "start": "yarn workspace @prairielearn/prairielearn start"
+    "start": "yarn workspace @prairielearn/prairielearn start",
+    "migrate-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
+    "migrate": "yarn workspace @prairielearn/prairielearn start --migrate-and-exit"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
     "@prairielearn/prettier-plugin-sql": "workspace:^",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
-    "eslint": "^8.37.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.2",
+    "@typescript-eslint/parser": "^5.59.2",
+    "eslint": "^8.39.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-import-resolver-typescript": "^3.5.5",
     "eslint-plugin-import": "2.27.5",
@@ -24,10 +26,11 @@
     "eslint-plugin-no-only-tests": "^3.1.0",
     "htmlhint": "^1.1.4",
     "jsdoc": "^4.0.2",
-    "prettier": "2.8.7",
-    "pyright": "^1.1.301",
+    "prettier": "2.8.8",
+    "pyright": "^1.1.305",
     "s3rver": "^3.7.1",
-    "turbo": "^1.8.8"
+    "turbo": "^1.9.3",
+    "typescript": "^5.0.4"
   },
   "workspaces": [
     "apps/*",

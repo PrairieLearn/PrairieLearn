@@ -34,6 +34,7 @@ class TestBigOInput:
             ("n**2", "n**(1+1-1+1)"),
             ("2**n", "2**(n)"),
             ("2**n", "(1+1)**n"),
+            ("factorial(n)", "n * factorial(n-1)"),
         ],
     )
     @pytest.mark.parametrize("grading_fn", ALL_GRADING_FUNCTIONS)
@@ -124,6 +125,7 @@ class TestBigOInput:
             ("2**n", "n**n"),
             ("2**n", "factorial(n)"),
             ("2**n", "2**(n**2)"),
+            ("factorial(n-1)", "factorial(n)"),
         ],
     )
     def test_too_loose_bigo(self, a_true: str, a_sub: str) -> None:
@@ -145,6 +147,7 @@ class TestBigOInput:
             ("n**n", "2**n"),
             ("factorial(n)", "2**n"),
             ("2**(n**2)", "2**n"),
+            ("factorial(n)", "factorial(n-1)"),
         ],
     )
     def test_too_loose_omega(self, a_true: str, a_sub: str) -> None:
@@ -163,6 +166,7 @@ class TestBigOInput:
             ("n**2", "log(n)"),
             ("2**n", "n**1000"),
             ("2**n", "(3/2)**n"),
+            ("factorial(n)", "factorial(n-1)"),
         ],
     )
     @pytest.mark.parametrize(
@@ -190,6 +194,7 @@ class TestBigOInput:
             ("log(n)", "n**2"),
             ("n**1000", "2**n"),
             ("(3/2)**n", "2**n"),
+            ("factorial(n-1)", "factorial(n)"),
         ],
     )
     @pytest.mark.parametrize(

@@ -1,0 +1,15 @@
+columns
+    description: character varying(100) not null
+    id: bigint not null default nextval('rubric_grading_items_id_seq'::regclass)
+    points: double precision not null
+    rubric_grading_id: bigint not null
+    rubric_item_id: bigint not null
+    score: double precision not null default 1
+
+indexes
+    rubric_grading_items_pkey: PRIMARY KEY (id) USING btree (id)
+    rubric_grading_items_rubric_grading_id_rubric_item_id_key: UNIQUE (rubric_grading_id, rubric_item_id) USING btree (rubric_grading_id, rubric_item_id)
+
+foreign-key constraints
+    rubric_grading_items_rubric_grading_id_fkey: FOREIGN KEY (rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE CASCADE
+    rubric_grading_items_rubric_item_id_fkey: FOREIGN KEY (rubric_item_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE

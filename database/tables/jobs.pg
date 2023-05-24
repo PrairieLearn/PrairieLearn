@@ -21,9 +21,6 @@ columns
     output: text
     start_date: timestamp with time zone default CURRENT_TIMESTAMP
     status: enum_job_status
-    stderr: text
-    stdin: text
-    stdout: text
     type: text
     user_id: bigint
     working_directory: text

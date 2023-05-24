@@ -84,13 +84,31 @@ module.exports = {
       },
     },
     {
+      files: ['*.ts'],
+      rules: {
+        // TypeScript performs similar checks, so we disable these for TS files.
+        // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
+        'import/named': 'off',
+        'import/namespace': 'off',
+        'import/default': 'off',
+        'import/no-named-as-default-member': 'off',
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector: 'MemberExpression[object.name="module"][property.name="exports"]',
+            message: 'module.exports should not be used in TypeScript files',
+          },
+        ],
+      },
+    },
+    {
       files: ['*.test.{js,ts,mjs}'],
       env: {
         mocha: true,
       },
     },
     {
-      files: ['assets/scripts/*.js'],
+      files: ['apps/prairielearn/assets/scripts/**/*'],
       env: {
         browser: true,
         jquery: true,

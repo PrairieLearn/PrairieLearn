@@ -5,6 +5,7 @@ import importlib.util
 import json
 import math
 import os
+import random
 import re
 import unicodedata
 import uuid
@@ -1628,12 +1629,20 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     return (a_sub > lower_bound) & (a_sub < upper_bound)
 
 
-def get_uuid():
-    """get_uuid()
-
-    Returns the string representation of a new random UUID.
+def get_uuid() -> str:
     """
-    return str(uuid.uuid4())
+    Returns the string representation of a new random UUID.
+    First character of this uuid is guaranteed to be an alpha
+    (at the expense of a slight loss in randomness).
+
+    This is done because certain web components need identifiers to
+    start with letters and not numbers.
+    """
+
+    uuid_string = str(uuid.uuid4())
+    random_char = random.choice("abcdef")
+
+    return random_char + uuid_string[1:]
 
 
 def escape_unicode_string(string):
