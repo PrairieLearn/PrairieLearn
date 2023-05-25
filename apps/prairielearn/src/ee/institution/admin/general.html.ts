@@ -1,5 +1,6 @@
-import { html } from '@prairielearn/html';
+import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { type Institution } from '../../../lib/db-types';
 
 export function General({
   institution,
@@ -8,7 +9,7 @@ export function General({
   enrollmentCount,
   resLocals,
 }: {
-  institution: any;
+  institution: Institution;
   courseCount: number;
   courseInstanceCount: number;
   enrollmentCount: number;
@@ -58,7 +59,7 @@ export function General({
   `.toString();
 }
 
-function StatisticsCard({ title, value }: { title: string; value: any }) {
+function StatisticsCard({ title, value }: { title: string; value: HtmlValue }) {
   return html`
     <div class="card d-flex flex-column p-3 align-items-center">
       <span class="h4">${value}</span>

@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
 
 export const InstitutionAdminSso = ({
   institution,
@@ -7,6 +8,12 @@ export const InstitutionAdminSso = ({
   institutionSamlProvider,
   institutionAuthenticationProviders,
   resLocals,
+}: {
+  institution: Institution;
+  supportedAuthenticationProviders: AuthnProvider[];
+  institutionSamlProvider: SamlProvider | null;
+  institutionAuthenticationProviders: AuthnProvider[];
+  resLocals: Record<string, any>;
 }) => {
   const hasSamlProvider = !!institutionSamlProvider;
   // TODO: only show authentication providers that were enabled in `config.json`.
