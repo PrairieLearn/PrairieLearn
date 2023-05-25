@@ -78,6 +78,7 @@ include = [
     "./apps/prairielearn/elements/pl-question-panel",
     "./apps/prairielearn/elements/pl-submission-panel",
     "./apps/prairielearn/elements/pl-symbolic-input",
+    "./apps/prairielearn/elements/pl-template",
     "./apps/prairielearn/elements/pl-units-input",
     "./apps/prairielearn/elements/pl-variable-output",
     "./apps/prairielearn/python/conftest.py",

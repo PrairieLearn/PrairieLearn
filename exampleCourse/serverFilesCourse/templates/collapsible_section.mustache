@@ -1,0 +1,20 @@
+<!-- Note that the id "#" CSS selector does not work for ids that start with a number, so must prefix uuids. -->
+
+<div class="card mb-1 mt-1">
+  <div class="card-header" style="cursor: pointer">
+    <div
+      class="card-title d-flex justify-content-between"
+      data-toggle="collapse"
+      data-target="#collapse-{{uuid}}"
+    >
+      <div>{{section_header}}</div>
+      <div class="fa fa-angle-down"></div>
+    </div>
+  </div>
+
+  <div class="collapse{{#show}} show{{/show}}" id="collapse-{{uuid}}">
+    <div class="card-body">
+      <div class="card-text">{{{section_body}}}</div>
+    </div>
+  </div>
+</div>
