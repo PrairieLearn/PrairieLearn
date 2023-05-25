@@ -15,7 +15,17 @@ DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
 LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
-ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
+ALLOWED_PL_TAGS = frozenset(
+    (
+        "pl-template",
+        "pl-variable",
+        "pl-code",
+        "pl-card",
+        "pl-figure",
+        "pl-file-download",
+        "pl-matrix-latex",
+    )
+)
 
 # Entries from the data dict to copy
 DATA_ENTRIES_TO_COPY = ("params",)
