@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { getInstitution } from '../utils';
-import { Courses } from './courses.html';
+import { InstitutionAdminCourses } from './courses.html';
 import { CourseSchema } from '../../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
@@ -17,7 +17,7 @@ router.get(
       { institution_id: req.params.institution_id },
       CourseSchema
     );
-    res.send(Courses({ institution, courses, resLocals: res.locals }));
+    res.send(InstitutionAdminCourses({ institution, courses, resLocals: res.locals }));
   })
 );
 

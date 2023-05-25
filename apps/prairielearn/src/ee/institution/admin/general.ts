@@ -3,7 +3,7 @@ import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { General } from './general.html';
+import { InstitutionAdminGeneral } from './general.html';
 import { getInstitution } from '../utils';
 
 const sql = loadSqlEquiv(__filename);
@@ -25,7 +25,7 @@ router.get(
       InstitutionStatisticsSchema
     );
     res.send(
-      General({
+      InstitutionAdminGeneral({
         institution,
         courseCount: institutionStatistics.course_count,
         courseInstanceCount: institutionStatistics.course_instance_count,

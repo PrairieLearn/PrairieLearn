@@ -2,7 +2,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Institution } from '../../../lib/db-types';
 
-export function General({
+export function InstitutionAdminGeneral({
   institution,
   courseCount,
   courseInstanceCount,

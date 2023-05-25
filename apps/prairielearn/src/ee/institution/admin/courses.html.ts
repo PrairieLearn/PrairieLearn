@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Course, type Institution } from '../../../lib/db-types';
 
-export function Courses({
+export function InstitutionAdminCourses({
   institution,
   courses,
   resLocals,
