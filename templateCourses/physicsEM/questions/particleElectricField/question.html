@@ -1,0 +1,38 @@
+<pl-question-panel>
+<p>
+    A particle with charge $q = {{params.q}} \mu \rm C$ and mass $m = {{params.m}} \rm mg$ is placed between two infinitely large plates of opposite charges, as illustrated below. The distance between the plates is $h = {{params.h}} \rm cm$. 
+    The magnitude of the electric field between the two plates is $E = {{params.E}}$ kN/C.
+</p>
+<p>
+    <pl-drawing gradable="false"  width="400" height="280" grid-size="0">
+        <pl-drawing-initial>
+            <pl-rectangle x1="180" y1="70"  width="280" height="20" color="orange1"></pl-rectangle>
+            <pl-rectangle x1="180" y1="210"  width="280" height="20" color="blue1"></pl-rectangle>
+            <pl-text x1="20" y1="70"  label="{{params.plus}}" offsety=-10></pl-text>
+            <pl-text x1="20" y1="210"  label="{{params.minus}}" offsety=-10 ></pl-text>
+            <pl-dimensions x1="20" y1="80" width="120" angle="90" label="h"></pl-dimensions>
+            <pl-circle x1="180" y1="90"  radius="10" color="green1"></pl-circle>
+            <pl-text x1="180" y1="90"  label="+q" offsetx=10></pl-text>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+<p>
+    The particle is at rest when it is first released next to the positive plate. Determine the final particle speed $v$ as it strikes the negative plate.
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="v"  label="$v = $" suffix="m/s"></pl-number-input>
+</p>
+
+<pl-question-panel>
+<p>
+    What is the corresponding kinetic energy?
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="ke"  label="$ke = $" suffix="J"></pl-number-input>
+</p>

@@ -1,0 +1,79 @@
+<pl-question-panel>
+<p>
+    An electron (with charge of magnitude $e$ and mass $m$) enters an uniform electric field with velocity ${\bf v}_0 = v_0 {\bf \hat{i}}$ as illustrated below. It passes through the two oppositely charged horizontal plates with dimension $L1$ (region I) and then continues through a field–free region with dimension $L2$ (region II), until it eventually strikes a screen.
+    The distance between the plates is $2h$. 
+    The magnitude of the electric field between the two plates is $E$.
+</p>
+<p>
+    <pl-drawing gradable="false"  width="660" height="280" grid-size="0">
+        <pl-drawing-initial>
+            <pl-vector x1="20" y1="140" stroke-width="1" label="x" width="620" color="black"></pl-vector>
+            <pl-vector x1="40" y1="240" angle="-90" stroke-width="1" label="y" width="220" color="black"></pl-vector>
+            <pl-rectangle x1="160" y1="70"  width="240" height="20" color="orange1"></pl-rectangle>
+            <pl-rectangle x1="160" y1="210"  width="240" height="20" color="blue1"></pl-rectangle>
+            <pl-dimensions x1="40" y1="240" x2="280" y2="240" label="L1"></pl-dimensions>
+            <pl-dimensions x1="280" y1="240" x2="600" y2="240" label="L2"></pl-dimensions>
+            <pl-text x1="20" y1="70"  label="{{params.plus}}" offsety=-10></pl-text>
+            <pl-text x1="20" y1="210"  label="{{params.minus}}" offsety=-10 ></pl-text>
+            <pl-dimensions x1="40" y1="80" x2="40" y2="140"  label="h" start-support-line="true" end-support-line="true" dim-offset="20"></pl-dimensions>
+            <pl-dimensions x1="40" y1="140" x2="40" y2="200" label="h" end-support-line="true" dim-offset="20"></pl-dimensions>
+            <pl-circle x1="40" y1="140"  radius="10" color="green1"></pl-circle>
+            <pl-vector x1="50" y1="140" label="v_0"></pl-vector>
+            <pl-rectangle x1="610" y1="140"  width="20" height="260" color="gray1"></pl-rectangle>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+<p>Use following numerical values to compute your answers:</p>
+
+<pl-code language="python">
+E  = {{params.E}}  # [kN/C]
+h  = {{params.h}}   # [cm]
+L1 = {{params.L1}}  # [cm]
+L2 = {{params.L2}}  # [cm]
+v0 = {{params.v0}}*1e6  # [m/s]
+e  = {{params.e}}*1e-19  # [C]
+m  = {{params.m}}*1e-31  # [kg]
+</pl-code>
+
+
+<pl-question-panel>
+    <p>
+        a) What is the velocity of the electron as it leaves region I?
+    </p>
+</pl-question-panel>
+    
+<p>
+    <pl-number-input answers-name="v1x" label="${\bf v} =$ " suffix="$\hat{\textbf{i}} $"
+    show-placeholder="false" show-help-text="false" size="8" allow-blank="true">
+    </pl-number-input>
+    <pl-number-input answers-name="v1y" 
+    label="$+$"
+    show-placeholder="false"  size="8" suffix="$\hat{\textbf{j}} \rm \; m/s$">
+    </pl-number-input>
+</p>
+
+<pl-question-panel>
+    <p>
+        b) What is the vertical displacement of the electron ${\bf y}_a = y_a \hat{\textbf{j}}$ (position along the y-direction) as it leaves region I, i.e. ${\bf y}_{a} = {\bf y}(x = a)$?
+    </p>
+</pl-question-panel>
+    
+<p>
+    <pl-number-input answers-name="y1" 
+    label="${\bf y}_a =$" show-placeholder="false"  size="8" suffix="$\hat{\textbf{j}} \rm \; m$">
+    </pl-number-input>
+</p>
+
+<pl-question-panel>
+    <p>
+        c) What is the total vertical displacement of the electron when it hits the screen, i.e. ${\bf y}_{b} = {\bf y}(x = a+b) = y_{b} \hat{\textbf{j}}$ ? 
+    </p>
+</pl-question-panel>
+    
+<p>
+    <pl-number-input answers-name="ytotal" 
+    label="${\bf y}_b =$" show-placeholder="false"  size="8" suffix="$\hat{\textbf{j}} \rm \; m$">
+    </pl-number-input>
+</p>
+

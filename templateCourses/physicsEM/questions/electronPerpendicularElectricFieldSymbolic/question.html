@@ -1,0 +1,113 @@
+<pl-question-panel>
+<p>
+    An electron (with charge of magnitude $q$ and mass $m$) enters an uniform electric field with velocity ${\bf v} = v \,{\bf \hat{i}}$ as illustrated below. It passes through the two oppositely charged horizontal plates with dimension $A$ (region A) and then continues through a field–free region with dimension $B$ (region B), until it eventually strikes a screen.
+    The distance between the plates is $2h$. The magnitude of the electric field between the two plates is $E$. Use the given symbolic variables ($m$, $q$, $E$, $v$, $h$, $A$, $B$) to answer the questions below.
+</p>
+<p>
+    <pl-drawing gradable="false"  width="660" height="280" grid-size="0">
+        <pl-drawing-initial>
+            <pl-vector x1="20" y1="140" stroke-width="1" label="x" width="620" color="black"></pl-vector>
+            <pl-vector x1="40" y1="240" angle="-90" stroke-width="1" label="y" width="220" color="black"></pl-vector>
+            <pl-rectangle x1="160" y1="70"  width="240" height="20" color="orange1"></pl-rectangle>
+            <pl-rectangle x1="160" y1="210"  width="240" height="20" color="blue1"></pl-rectangle>
+            <pl-dimensions x1="40" y1="240" x2="280" y2="240" label="A"></pl-dimensions>
+            <pl-dimensions x1="280" y1="240" x2="600" y2="240" label="B"></pl-dimensions>
+            <pl-text x1="20" y1="70"  label="{{params.plus}}" offsety=-10></pl-text>
+            <pl-text x1="20" y1="210"  label="{{params.minus}}" offsety=-10 ></pl-text>
+            <pl-dimensions x1="40" y1="80" x2="40" y2="140"  label="h" start-support-line="true" end-support-line="true" dim-offset="20"></pl-dimensions>
+            <pl-dimensions x1="40" y1="140" x2="40" y2="200" label="h" end-support-line="true" dim-offset="20"></pl-dimensions>
+            <pl-circle x1="40" y1="140"  radius="10" color="green1"></pl-circle>
+            <pl-vector x1="50" y1="140" label="v"></pl-vector>
+            <pl-rectangle x1="610" y1="140"  width="20" height="260" color="gray1"></pl-rectangle>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+<p>
+    a) While in region A (between the charged plates), what is the force on the electron?
+</p>
+
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+<p>
+    ${\bf F} =$ <pl-symbolic-input answers-name="Fi"  size="15"  allow-blank="true" show-help-text="false" variables={{params.varlist}}>
+    </pl-symbolic-input> $\;\hat{\textbf{i}} \,+ $ <pl-symbolic-input answers-name="Fj"  size="15"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input> $\;\hat{\textbf{j}} $ 
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+<p>
+    b) While in region A (between the charged plates), what is the acceleration of the electron?
+</p>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+<p>
+    ${\bf a} =$ <pl-symbolic-input answers-name="ai"  size="15"  allow-blank="true" show-help-text="false" variables={{params.varlist}}>
+    </pl-symbolic-input> $\;\hat{\textbf{i}} \,+ $ <pl-symbolic-input answers-name="aj"  size="15"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input> $\;\hat{\textbf{j}} $ 
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+    <p>
+        c) Assume the electron enter region A at $t = 0$. At what time $t_1$ will the electron leave region A?
+    </p>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+<p>
+    $t_1 =$ <pl-symbolic-input answers-name="t"  size="15"  allow-blank="true" show-help-text="false" variables={{params.varlist}}>
+    </pl-symbolic-input> 
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+    <p>
+        d) What is the velocity of the electron as it leaves region A (at time $t_1$)?
+    </p>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+<p>
+    ${\bf v} =$ <pl-symbolic-input answers-name="v1x"  size="15"  allow-blank="true" show-help-text="false" variables={{params.varlist}}>
+    </pl-symbolic-input> $\;\hat{\textbf{i}} \,+ $ <pl-symbolic-input answers-name="v1y"  size="15"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input> $\;\hat{\textbf{j}} $ 
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+    <p>
+        e) What is the vertical displacement of the electron ${\bf y}_1 = y_1 \;\hat{\textbf{j}}$ (position along the y-direction) at time $t_1$?
+    </p>
+</pl-question-panel>
+   
+<pl-hide-in-panel answer="true">
+<p>
+    ${\bf y}_1 =$ <pl-symbolic-input answers-name="y1"  size="15"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input> $\;\hat{\textbf{j}} $ 
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+    <p>
+        f) Define an expression for $\tan(\theta)$, where $\theta$ is the angle of the electron trajectory wrt the $x$-direction at time $t_1$.
+    </p>
+</pl-question-panel>
+    
+<pl-hide-in-panel answer="true">
+<p>
+    $\tan(\theta)=$ <pl-symbolic-input answers-name="tantheta"  size="15"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input>
+</p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+    <p>
+        g) What is the total vertical displacement of the electron when it hits the screen, i.e. ${\bf y}_{t} = {\bf y}(x = A+B) $? 
+    </p>
+</pl-question-panel>
+   
+<pl-hide-in-panel answer="true">
+<p>
+    ${\bf y}_t =$ <pl-symbolic-input answers-name="yt"  size="35"  allow-blank="true"  variables={{params.varlist}}></pl-symbolic-input> $\;\hat{\textbf{j}} $ 
+</p>
+</pl-hide-in-panel>
+
