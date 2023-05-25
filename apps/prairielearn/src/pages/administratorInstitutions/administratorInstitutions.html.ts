@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { isEnterprise } from '../../lib/license';
 
 export const InstitutionSchema = z.object({
   id: z.string(),
@@ -60,7 +61,11 @@ export function AdministratorInstitutions({
                     (inst) => html`
                       <tr>
                         <td>
-                          <a href="/pl/institution/${inst.id}/admin">${inst.short_name}</a>
+                          ${isEnterprise()
+                            ? html`
+                                <a href="/pl/institution/${inst.id}/admin">${inst.short_name}</a>
+                              `
+                            : inst.short_name}
                         </td>
                         <td>${inst.long_name}</td>
                         <td>${inst.display_timezone}</td>
