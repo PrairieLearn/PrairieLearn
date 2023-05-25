@@ -23,7 +23,10 @@ export function AdministratorInstitutions({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+          ...resLocals,
+          pageTitle: 'Institutions',
+        })}
       </head>
       <body>
         <script>
@@ -34,7 +37,7 @@ export function AdministratorInstitutions({
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
-          navSubPage: 'courses',
+          navSubPage: 'institutions',
         })}
         <main id="content" class="container-fluid">
           <div id="institutions" class="card mb-4">
