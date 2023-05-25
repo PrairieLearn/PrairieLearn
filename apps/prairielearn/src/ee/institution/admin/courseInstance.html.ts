@@ -1,16 +1,16 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Course, type CourseInstance } from '../../../lib/db-types';
+import { Course, type CourseInstance, type Institution } from '../../../lib/db-types';
 
-export function InstitutionAdminCourse({
+export function InstitutionAdminCourseInstance({
   institution,
   course,
-  courseInstances,
+  courseInstance,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
-  courseInstances: CourseInstance[];
+  courseInstance: CourseInstance;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -36,37 +36,17 @@ export function InstitutionAdminCourse({
             <li class="breadcrumb-item">
               <a href="/pl/institution/${institution.id}/admin/courses">Courses</a>
             </li>
+            <li class="breadcrumb-item">
+              <a href="/pl/institution/${institution.id}/admin/course/${course.id}">
+                ${course.title} (${course.short_name})
+              </a>
+            </li>
             <li class="breadcrumb-item active" aria-current="page">
-              ${course.title} (${course.short_name})
+              ${courseInstance.long_name} (${courseInstance.short_name})
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
-          <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${courseInstances.map((courseInstance) => {
-                  return html`
-                    <tr>
-                      <td>
-                        <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${courseInstance.id}"
-                        >
-                          ${courseInstance.long_name ?? '—'}: ${course.short_name ?? '—'}
-                        </a>
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
-        </main>
+        <main class="container mb-4"></main>
       </body>
     </html>
   `.toString();
