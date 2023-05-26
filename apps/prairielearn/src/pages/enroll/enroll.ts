@@ -40,7 +40,7 @@ router.get(
 router.get(
   '/limit_exceeded',
   asyncHandler((req, res) => {
-    res.send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
+    res.status(403).send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
   })
 );
 
@@ -52,21 +52,17 @@ router.post(
     }
 
     if (req.body.__action === 'enroll') {
-      const enrollment = await sqldb.queryOptionalRow(
+      const enrollmentLimitExceeded = await sqldb.queryRow(
         sql.enroll,
         {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
           req_date: res.locals.req_date,
         },
-        z.object({
-          enrollment_id: z.string(),
-          course_instance_limit_exceeded: z.boolean(),
-          institution_yearly_limit_exceeded: z.boolean(),
-        })
+        z.boolean()
       );
 
-      if (!enrollment) {
+      if (enrollmentLimitExceeded) {
         // If an enrollment wasn't returned, that currently means that we
         // exceeded an enrollment limit. We won't share any specific details
         // here. In the future, course staff will be able to check their
@@ -77,7 +73,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
-      await sqldb.queryOneRowAsync(sql.unenroll, {
+      await sqldb.queryZeroOrOneRowAsync(sql.unenroll, {
         course_instance_id: req.body.course_instance_id,
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,

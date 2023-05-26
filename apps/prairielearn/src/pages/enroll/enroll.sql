@@ -89,39 +89,48 @@ WITH
   limits_exceeded AS (
     SELECT
       COALESCE(
-        cie.count + 1 >= el.course_instance_enrollment_limit,
+        cie.count + 1 > el.course_instance_enrollment_limit,
         FALSE
       ) AS course_instance_limit_exceeded,
       COALESCE(
-        ie.count + 1 >= el.institution_yearly_enrollment_limit,
+        ie.count + 1 > el.institution_yearly_enrollment_limit,
         FALSE
       ) AS institution_yearly_limit_exceeded
     FROM
       course_instance_enrollments AS cie
       CROSS JOIN institution_enrollments AS ie
       CROSS JOIN enrollment_limits AS el
+  ),
+  new_enrollment AS (
+    INSERT INTO
+      enrollments AS e (user_id, course_instance_id)
+    SELECT
+      u.user_id,
+      $course_instance_id
+    FROM
+      users AS u,
+      limits_exceeded
+    WHERE
+      u.user_id = $user_id
+      AND check_course_instance_access (
+        $course_instance_id,
+        u.uid,
+        u.institution_id,
+        $req_date
+      )
+      AND NOT course_instance_limit_exceeded
+      AND NOT institution_yearly_limit_exceeded
+    ON CONFLICT DO NOTHING
+    RETURNING
+      e.id
   )
-INSERT INTO
-  enrollments AS e (user_id, course_instance_id)
 SELECT
-  u.user_id,
-  $course_instance_id
+  (
+    course_instance_limit_exceeded
+    OR institution_yearly_limit_exceeded
+  ) AS enrollment_limit_exceeded
 FROM
-  users AS u,
-  limits_exceeded
-WHERE
-  u.user_id = $user_id
-  AND check_course_instance_access (
-    $course_instance_id,
-    u.uid,
-    u.institution_id,
-    $req_date
-  )
-  AND NOT course_instance_limit_exceeded
-  AND NOT institution_yearly_limit_exceeded
-ON CONFLICT DO NOTHING
-RETURNING
-  e.id;
+  limits_exceeded;
 
 -- BLOCK unenroll
 DELETE FROM enrollments AS e USING users AS u

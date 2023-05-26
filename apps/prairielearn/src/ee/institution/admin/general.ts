@@ -34,8 +34,8 @@ router.post(
     if (req.body.__action === 'update_enrollment_limits') {
       await queryAsync(sql.update_enrollment_limits, {
         institution_id: req.params.institution_id,
-        yearly_enrollment_limit: req.body.yearly_enrollment_limit,
-        course_instance_enrollment_limit: req.body.course_instance_enrollment_limit,
+        yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
+        course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
       });
       res.redirect(req.originalUrl);
     } else {

@@ -28,6 +28,7 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: z.date().nullable(),
   display_timezone: z.string(),
+  enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
