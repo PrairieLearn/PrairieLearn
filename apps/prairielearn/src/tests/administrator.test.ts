@@ -24,7 +24,7 @@ describe('Administrator pages', function () {
     });
   });
 
-  describe('view administrator settings page', function () {
+  describe('view administrator settings page', () => {
     it('should load successfully', async () => {
       const res = await fetch(baseUrl + '/administrator/settings');
       assert(res.ok);
@@ -41,7 +41,7 @@ describe('Administrator pages', function () {
     });
   });
 
-  describe('view administrator courses page', function () {
+  describe('view administrator courses page', () => {
     it('should load successfully', async () => {
       const res = await fetch(baseUrl + '/administrator/courses');
       assert(res.ok);
@@ -51,7 +51,7 @@ describe('Administrator pages', function () {
     });
   });
 
-  describe('view administrator exam-mode networks page', function () {
+  describe('view administrator exam-mode networks page', () => {
     it('should load successfully', async () => {
       const res = await fetch(baseUrl + '/administrator/networks');
       assert(res.ok);
