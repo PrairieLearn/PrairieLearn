@@ -21,6 +21,4 @@ FROM
 WHERE
   ci.id = $course_instance_id
   AND ci.course_id = c.id
-  AND i.id = $institution_id
-RETURNING
-  *;
+  AND i.id = $institution_id;
