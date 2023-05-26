@@ -1,6 +1,6 @@
 -- BLOCK select_institutions
 SELECT
-  i.*,
+  to_jsonb(i.*) AS institution,
   coalesce(
     jsonb_agg(
       ap.name

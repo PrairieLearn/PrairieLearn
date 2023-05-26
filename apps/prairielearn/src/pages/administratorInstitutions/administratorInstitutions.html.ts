@@ -2,22 +2,19 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { isEnterprise } from '../../lib/license';
+import { InstitutionSchema } from '../../lib/db-types';
 
-export const InstitutionSchema = z.object({
-  id: z.string(),
-  short_name: z.string(),
-  long_name: z.string(),
-  display_timezone: z.string(),
-  uid_regexp: z.string().nullable(),
+export const InstitutionRowSchema = z.object({
+  institution: InstitutionSchema,
   authn_providers: z.array(z.string()),
 });
-type Institution = z.infer<typeof InstitutionSchema>;
+type InstitutionRow = z.infer<typeof InstitutionRowSchema>;
 
 export function AdministratorInstitutions({
   institutions,
   resLocals,
 }: {
-  institutions: Institution[];
+  institutions: InstitutionRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -58,19 +55,21 @@ export function AdministratorInstitutions({
                 </thead>
                 <tbody>
                   ${institutions.map(
-                    (inst) => html`
+                    ({ institution, authn_providers }) => html`
                       <tr>
                         <td>
                           ${isEnterprise()
                             ? html`
-                                <a href="/pl/institution/${inst.id}/admin">${inst.short_name}</a>
+                                <a href="/pl/institution/${institution.id}/admin">
+                                  ${institution.short_name}
+                                </a>
                               `
-                            : inst.short_name}
+                            : institution.short_name}
                         </td>
-                        <td>${inst.long_name}</td>
-                        <td>${inst.display_timezone}</td>
-                        <td><code>${inst.uid_regexp}</code></td>
-                        <td>${inst.authn_providers.join(', ')}</td>
+                        <td>${institution.long_name}</td>
+                        <td>${institution.display_timezone}</td>
+                        <td><code>${institution.uid_regexp}</code></td>
+                        <td>${authn_providers.join(', ')}</td>
                       </tr>
                     `
                   )}
