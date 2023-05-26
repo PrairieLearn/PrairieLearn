@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import error = require('@prairielearn/error');
 
 import { InstitutionAdminGeneral, InstitutionStatisticsSchema } from './general.html';
 import { getInstitution } from '../utils';
@@ -24,6 +25,22 @@ router.get(
         resLocals: res.locals,
       })
     );
+  })
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'update_enrollment_limits') {
+      await queryAsync(sql.update_enrollment_limits, {
+        institution_id: req.params.institution_id,
+        yearly_enrollment_limit: req.body.yearly_enrollment_limit,
+        course_instance_enrollment_limit: req.body.course_instance_enrollment_limit,
+      });
+      res.redirect(req.originalUrl);
+    } else {
+      throw error.make(400, `Unknown action: ${req.body.__action}`);
+    }
   })
 );
 

@@ -41,12 +41,14 @@ export const CourseInstanceSchema = z.object({
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
 export const InstitutionSchema = z.object({
+  course_instance_enrollment_limit: z.number().nullable(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
   id: IdSchema,
   long_name: z.string(),
   short_name: z.string(),
   uid_regexp: z.string().nullable(),
+  yearly_enrollment_limit: z.number().nullable(),
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
