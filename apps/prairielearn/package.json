@@ -42,7 +42,6 @@
     "@pyroscope/nodejs": "^0.2.5",
     "@sentry/profiling-node": "^0.3.0",
     "@sentry/tracing": "^7.50.0",
-    "@swc/core": "^1.3.60",
     "ace-builds": "^1.18.0",
     "ace-code": "^1.18.0",
     "ajv": "^8.12.0",
@@ -167,6 +166,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@sa11y/format": "^4.1.5",
+    "@swc/core": "^1.3.60",
     "@types/async": "^3.2.20",
     "@types/body-parser": "^1.19.2",
     "@types/bootstrap": "^5.2.6",
