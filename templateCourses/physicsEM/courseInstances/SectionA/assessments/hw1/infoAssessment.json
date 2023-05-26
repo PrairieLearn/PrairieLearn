@@ -21,7 +21,8 @@
                 {"id": "particlesOnIncline", "points": 1,"maxPoints": 6},
                 {"id": "particleElectricField", "points": 1,"maxPoints": 3},
                 {"id": "electronPerpendicularElectricFieldSymbolic", "points": 1,"maxPoints": 1},
-                {"id": "electronPerpendicularElectricField", "points": 1,"maxPoints": 3, "triesPerVariant": 2}
+                {"id": "electronPerpendicularElectricField", "points": 1,"maxPoints": 3, "triesPerVariant": 2},
+                {"id": "dipoleElectricField", "points": 1,"maxPoints": 3, "triesPerVariant": 2}
             ]
         }
     ],

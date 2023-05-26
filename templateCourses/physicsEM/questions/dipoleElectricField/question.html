@@ -1,0 +1,36 @@
+<pl-question-panel>
+<p>
+    An electric dipole has charges with magnitude $q = {{params.q}} \times 10^{-19}$ C and is separated by a distance $d = {{params.d}}$ nm. 
+</p>
+<p>
+    <pl-drawing gradable="false"  width="300" height="320" grid-size="0">
+        <pl-drawing-initial>
+            <pl-vector x1="40" y1="40" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="80" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="120" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="160" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="200" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="240" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-vector x1="40" y1="280" color="green3" width="220" stroke-width="1"></pl-vector>
+            <pl-line x1="{{params.pA.0}}" y1="{{params.pA.1}}" x2="{{params.pB.0}}" y2="{{params.pB.1}}"></pl-line>
+            <pl-circle x1="{{params.pA.0}}" y1="{{params.pA.1}}"  radius="20" color="blue1"></pl-circle>
+            <pl-text x1="{{params.pA.0}}" y1="{{params.pA.1}}"  label="-" offsetx="-10" offsety="-5"></pl-text>
+            <pl-circle x1="{{params.pB.0}}" y1="{{params.pB.1}}"  radius="20" color="red1"></pl-circle>
+            <pl-text x1="{{params.pB.0}}" y1="{{params.pB.1}}"  label="+" offsetx="-10" offsety="-5"></pl-text>
+            <pl-arc-dimensions x1="{{params.p0.0}}" y1="{{params.p0.1}}" start-angle="-{{params.theta1}}" end-angle="0" radius="40" label="\\theta" end-support-line="true" draw-start-arrow="true" draw-end-arrow="false" offsetx="10"></pl-arc-dimensions>
+            <pl-text x1="240" y1="260"  label="E"></pl-text>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+<p>
+    How much electrostatic work does it take to turn this dipole in an uniform electric field ($E = {{params.E}}$ kN/C) from $\theta = {{params.theta1}}^o$ to ${{params.theta2}}^o$? Enter your answer in zJ = $10^{-21}$ J (zepto Joules).
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="W" label="Work = " suffix="$\times 10^{-21}$ J" ></pl-number-input>
+</p>
+
+
