@@ -1,14 +1,14 @@
 {{#question}}
-<script>
-$(function() {
-    var UUID = "{{uuid}}";
+    <script>
+    $(function() {
+        var UUID = "{{uuid}}";
 
-    new window.PLOrderBlocks(UUID, {
-        maxIndent: {{max_indent}},
-        enableIndentation: {{check_indentation}}
+        new window.PLOrderBlocks(UUID, {
+            maxIndent: {{max_indent}},
+            enableIndentation: {{check_indentation}}
+        });
     });
-});
-</script>
+    </script>
 
     <div class="row">
         <div class="column {{dropzone_layout}}">
@@ -22,8 +22,8 @@ $(function() {
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
                     <li class="{{block_formatting}} shadow pl-order-block"
-                        data-uuid="{{uuid}}"
-                        data-string="{{inner_html}}"
+                        uuid="{{uuid}}"
+                        string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         >
                         {{{inner_html}}}
@@ -43,8 +43,8 @@ $(function() {
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block"
                         style='margin-left: {{indent}}px;'
-                        data-uuid="{{uuid}}"
-                        data-string="{{inner_html}}"
+                        uuid="{{uuid}}"
+                        string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         >
                         {{{inner_html}}}

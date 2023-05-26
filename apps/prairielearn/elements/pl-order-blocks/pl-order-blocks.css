@@ -11,7 +11,6 @@ div.pl-order-blocks-bottom {
   width: 100%;
   margin: 8px;
 }
-
 li.pl-order-blocks-code {
   list-style-type: none;
   padding: 0px !important;
@@ -25,7 +24,7 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable li:hover{
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
@@ -102,6 +101,7 @@ ul.submission_table .badge{
 
 .pl-order-block, ul.answer_table li, ul.submission_table li {
   margin-bottom: 5px;
+  border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
   padding: 0.6em;
@@ -146,25 +146,6 @@ div.column {
     border-radius: inherit;
 }
 
-.feedback_badge_container_white {
-  display: flex;
-  align-items: center;
-  background-color: white !important; 
-  padding: 5px !important;
-  border-radius: inherit;
-  border: 1px solid grey;
-}
-
-.feedback-tag{
-    color: #6c757d;
-    margin-right: 10px;
-}
-
-
-.pl-order-blocks-pairing-indicator li:last-child {
-  margin-bottom: 0px !important;
-}
-
 .pl-order-blocks-pairing-indicator {
   border-radius: 10px;
   list-style: none;
@@ -177,9 +158,30 @@ div.column {
   overflow: hidden;
 }
 
+
+.pl-order-blocks-pairing-indicator li:last-child {
+  margin-bottom: 0px !important;
+}
+
 .feedback_badge_container{
     display: flex;
     align-items: center;
     padding: 5px !important;
     border-radius: inherit;
+}
+
+
+.feedback_badge_container_white {
+  display: flex;
+  align-items: center;
+  /* background-color: white !important; */
+  padding: 5px !important;
+  border-radius: inherit;
+  border: 1px solid grey;
+}
+
+
+.feedback-tag{
+    color: #6c757d;
+    margin-right: 10px;
 }

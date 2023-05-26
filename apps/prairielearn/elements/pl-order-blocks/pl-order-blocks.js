@@ -14,8 +14,10 @@ window.PLOrderBlocks = function (uuid, options) {
     var studentAnswers = [];
     for (var i = 0; i < answerObjs.length; i++) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
-        var answerText = answerObjs[i].getAttribute('data-string');
-        var answerUuid = answerObjs[i].getAttribute('data-uuid');
+        var answerText = answerObjs[i].getAttribute('string');
+        var answerUuid = answerObjs[i].getAttribute('uuid');
+        console.log(answerText);
+        console.log(answerUuid);
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -82,7 +84,7 @@ window.PLOrderBlocks = function (uuid, options) {
     let distractorBins = new Set(allAns.map(getDistractorBin).filter(x => x != null));
 
     for (let binUuid of distractorBins) {
-      let blocks = answerObjs.filter(block => getDistractorBin(block) == binUuid);
+      let blocks = answerObjs.filter(block => getDistractorBin(block) === binUuid);
       let indicator = getOrCreateIndicator(binUuid, blocks[0]);
       let innerList = indicator.getElementsByClassName('inner-list')[0];
 
@@ -112,7 +114,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
-    items: 'li:not(.info-fixed)',
+    items: '.pl-order-block',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
     cancel: 'input,textarea,button,select,option,a',
