@@ -1,0 +1,6 @@
+{
+    "controller": "capacitor.py",
+    "dependencies": {
+        "extensionScripts": ["capacitor.js"]
+    }
+}

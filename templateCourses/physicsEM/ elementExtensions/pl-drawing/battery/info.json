@@ -1,0 +1,6 @@
+{
+    "controller": "battery.py",
+    "dependencies": {
+        "extensionScripts": ["battery.js"]
+    }
+}

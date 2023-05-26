@@ -1,0 +1,6 @@
+{
+    "controller": "resistor.py",
+    "dependencies": {
+        "extensionScripts": ["resistor.js"]
+    }
+}

@@ -1,0 +1,33 @@
+<pl-question-panel>
+
+
+<p>
+    <pl-drawing width="500" height="400"  grid-size="20" answers-name="answer">
+        <pl-drawing-initial>
+            <pl-capacitor x1=40 y1=40 x2=200 y2=40 polarized="false" label="6F"></pl-capacitor>
+            <pl-capacitor x1=40 y1=100 x2=200 y2=100 polarized="true" label="4F"></pl-capacitor>
+            <pl-battery   x1=40 y1=40 x2=40 y2=100 label="40V" offsety="15" offsetx="10"></pl-battery>
+            <pl-line      x1=200 y1=100 x2=200 y2=40 ></pl-line>
+            <pl-capacitor   x1=340 y1=140 x2=450 y2=140 label="20F" stroke-width="4"></pl-capacitor>
+            <pl-capacitor   x1=400 y1=40 x2=400 y2=100 label="20F" stroke-color="blue" offsetx="-10"></pl-capacitor>
+            <pl-capacitor   x1=240 y1=40 x2=340 y2=100 label="20F" font-size="20" font-angle="30"></pl-capacitor>
+
+            <pl-resistor   x1=40 y1=340 x2=120 y2=340 interval="20" label="30Q"></pl-resistor>
+            <pl-resistor   x1=200 y1=240 x2=320 y2=340 stroke-color="green" label="40W" height="40"></pl-resistor>
+
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+<p>
+    <pl-drawing width="320" height="260"  grid-size="20" answers-name="answer">
+        <pl-drawing-initial>
+            <pl-line        x1={{params.pA.0}} y1={{params.pA.1}} x2={{params.pC.0}} y2={{params.pC.1}}></pl-line>
+            <pl-battery     x1={{params.pF.0}} y1={{params.pF.1}} x2={{params.pA.0}} y2={{params.pA.1}}></pl-battery>
+            <pl-capacitor   x1={{params.pC.0}} y1={{params.pC.1}} x2={{params.pD.0}} y2={{params.pD.1}}></pl-capacitor>
+            {{{params.randomItems}}}
+
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+
