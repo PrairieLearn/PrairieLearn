@@ -5,12 +5,12 @@ import { type Institution, type Course, type CourseInstance } from '../../../lib
 export function InstitutionAdminCourse({
   institution,
   course,
-  courseInstances,
+  course_instances,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
-  courseInstances: CourseInstance[];
+  course_instances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -50,14 +50,14 @@ export function InstitutionAdminCourse({
                 </tr>
               </thead>
               <tbody>
-                ${courseInstances.map((courseInstance) => {
+                ${course_instances.map((course_instance) => {
                   return html`
                     <tr>
                       <td>
                         <a
-                          href="/pl/institution/${institution.id}/admin/course_instance/${courseInstance.id}"
+                          href="/pl/institution/${institution.id}/admin/course_instance/${course_instance.id}"
                         >
-                          ${courseInstance.long_name ?? '—'}: ${course.short_name ?? '—'}
+                          ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
                         </a>
                       </td>
                     </tr>

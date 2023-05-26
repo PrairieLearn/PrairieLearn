@@ -5,12 +5,12 @@ import { Course, type CourseInstance, type Institution } from '../../../lib/db-t
 export function InstitutionAdminCourseInstance({
   institution,
   course,
-  courseInstance,
+  course_instance,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
-  courseInstance: CourseInstance;
+  course_instance: CourseInstance;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -42,7 +42,7 @@ export function InstitutionAdminCourseInstance({
               </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-              ${courseInstance.long_name} (${courseInstance.short_name})
+              ${course_instance.long_name} (${course_instance.short_name})
             </li>
           </ol>
         </nav>

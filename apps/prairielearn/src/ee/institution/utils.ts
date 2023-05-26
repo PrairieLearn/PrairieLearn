@@ -12,31 +12,26 @@ import {
 
 const sql = loadSqlEquiv(__filename);
 
-export async function getInstitution(institutionId: string): Promise<Institution> {
-  const institutionRes = await queryRow(
-    sql.select_institution,
-    { id: institutionId },
-    InstitutionSchema
-  );
-  return institutionRes;
+export async function getInstitution(institution_id: string): Promise<Institution> {
+  return await queryRow(sql.select_institution, { id: institution_id }, InstitutionSchema);
 }
 
 export async function getInstitutionSamlProvider(
-  institutionId: string
+  institution_id: string
 ): Promise<SamlProvider | null> {
   return await queryOptionalRow(
     sql.select_institution_saml_provider,
-    { institution_id: institutionId },
+    { institution_id },
     SamlProviderSchema
   );
 }
 
 export async function getInstitutionAuthenticationProviders(
-  institutionId: string
+  institution_id: string
 ): Promise<AuthnProvider[]> {
   return await queryRows(
     sql.select_institution_authn_providers,
-    { institution_id: institutionId },
+    { institution_id },
     AuthnProviderSchema
   );
 }

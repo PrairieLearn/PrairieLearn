@@ -1,18 +1,22 @@
+import { z } from 'zod';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Institution } from '../../../lib/db-types';
 
+export const InstitutionStatisticsSchema = z.object({
+  course_count: z.number(),
+  course_instance_count: z.number(),
+  enrollment_count: z.number(),
+});
+type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
+
 export function InstitutionAdminGeneral({
   institution,
-  courseCount,
-  courseInstanceCount,
-  enrollmentCount,
+  statistics,
   resLocals,
 }: {
   institution: Institution;
-  courseCount: number;
-  courseInstanceCount: number;
-  enrollmentCount: number;
+  statistics: InstitutionStatistics;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -49,9 +53,12 @@ export function InstitutionAdminGeneral({
         <main class="container mb-4">
           <h2 class="h4">Statistics</h2>
           <div class="card-grid">
-            ${StatisticsCard({ title: 'Courses', value: courseCount })}
-            ${StatisticsCard({ title: 'Course instances', value: courseInstanceCount })}
-            ${StatisticsCard({ title: 'Enrollments', value: enrollmentCount })}
+            ${StatisticsCard({ title: 'Courses', value: statistics.course_count })}
+            ${StatisticsCard({
+              title: 'Course instances',
+              value: statistics.course_instance_count,
+            })}
+            ${StatisticsCard({ title: 'Enrollments', value: statistics.enrollment_count })}
           </div>
         </main>
       </body>

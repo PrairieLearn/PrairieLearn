@@ -29,7 +29,12 @@ router.get(
       CourseInstanceSchema
     );
     res.send(
-      InstitutionAdminCourse({ institution, course, courseInstances, resLocals: res.locals })
+      InstitutionAdminCourse({
+        institution,
+        course,
+        course_instances: courseInstances,
+        resLocals: res.locals,
+      })
     );
   })
 );

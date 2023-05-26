@@ -29,7 +29,7 @@ router.get(
       InstitutionAdminCourseInstance({
         institution,
         course,
-        courseInstance: course_instance,
+        course_instance,
         resLocals: res.locals,
       })
     );
