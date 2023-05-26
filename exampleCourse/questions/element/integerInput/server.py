@@ -1,13 +1,10 @@
 import random
-import numpy as np
-import prairielearn as pl
 
 import numpy as np
 import prairielearn as pl
 
 
 def generate(data):
-
     # Simulate values
     a = random.randint(2, 10)
     b = random.randint(2, 10)
