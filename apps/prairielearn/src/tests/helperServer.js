@@ -138,16 +138,15 @@ module.exports = {
           await codeCaller.finish();
         },
         function (callback) {
-          debug('after(): close load estimators');
-          load.close();
-          callback(null);
-        },
-        function (callback) {
           debug('after(): stop server');
           server.stopServer(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
+        },
+        async () => {
+          debug('after(): close load estimators');
+          load.close();
         },
         async () => {
           debug('after(): stop cron');

@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
 
 export const InstitutionAdminSso = ({
   institution,
@@ -7,6 +8,12 @@ export const InstitutionAdminSso = ({
   institutionSamlProvider,
   institutionAuthenticationProviders,
   resLocals,
+}: {
+  institution: Institution;
+  supportedAuthenticationProviders: AuthnProvider[];
+  institutionSamlProvider: SamlProvider | null;
+  institutionAuthenticationProviders: AuthnProvider[];
+  resLocals: Record<string, any>;
 }) => {
   const hasSamlProvider = !!institutionSamlProvider;
   // TODO: only show authentication providers that were enabled in `config.json`.
@@ -32,7 +39,7 @@ export const InstitutionAdminSso = ({
         <main class="container">
           <form method="POST">
             <div class="form-group">
-              <div class="h5">Enabled single sign-on providers</div>
+              <h2 class="h4">Enabled single sign-on providers</h2>
               ${supportedAuthenticationProviders.map((provider) => {
                 const isEnabled = institutionAuthenticationProviders.some(
                   (p) => p.id === provider.id
@@ -66,7 +73,7 @@ export const InstitutionAdminSso = ({
               })}
             </div>
             <div class="form-group">
-              <label class="h5 mb-0" for="defaultProvider">Default single sign-on provider</label>
+              <h2 class="h4 mb-0" id="defaultProviderLabel">Default single sign-on provider</h2>
               <small class="form-text text-muted mt-0 mb-2">
                 When a default single sign-on provider is configured, users can click on your
                 institution's name on the login screen and be taken directly to the appropriate
@@ -76,6 +83,7 @@ export const InstitutionAdminSso = ({
                 class="custom-select js-default-authentication-provider"
                 id="defaultProvider"
                 name="default_authn_provider_id"
+                aria-labelledby="defaultProviderLabel"
               >
                 <option
                   value=""
