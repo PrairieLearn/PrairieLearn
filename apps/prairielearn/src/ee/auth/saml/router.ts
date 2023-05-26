@@ -58,7 +58,7 @@ router.post(
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
     const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
-    if (institutionSamlProvider === null) {
+    if (!institutionSamlProvider) {
       throw error.make(404, 'Institution does not support SAML authentication');
     }
 
