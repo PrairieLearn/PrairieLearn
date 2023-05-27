@@ -606,6 +606,8 @@ def generate(data):
 | `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
 | `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
 | `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
+| `custom-functions`           | string              | -                     | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                           |
+
 
 #### Details
 
@@ -613,7 +615,10 @@ Correct answers are best created as `sympy` expressions and converted to json us
 
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
-Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
+
+Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
+See example question for details.
 
 #### Example implementations
 
