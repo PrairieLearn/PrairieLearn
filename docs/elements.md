@@ -609,7 +609,6 @@ def generate(data):
 | `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
 | `custom-functions`           | string              | -                     | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                           |
 
-
 #### Details
 
 Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
