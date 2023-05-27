@@ -186,11 +186,27 @@ class TestSympy:
 
         assert sympy_expr == json_converted_expr
 
-    # TODO parameterize this with more extensive test cases
-    def test_assumption_conversion(self) -> None:
-        assumptions = {"x": {"positive": True}, "y": {"real": True}}
+    @pytest.mark.parametrize(
+        "assumptions, expression_str",
+        [
+            ({"x": {"positive": True}, "y": {"real": True}}, "(x**2)**(1/2) + y"),
+            ({"x": {"positive": False}, "z": {"complex": True}}, "z^2 + y - x"),
+            (
+                {
+                    "x": {"positive": False},
+                    "y": {"positive": True},
+                    "z": {"positive": True},
+                },
+                "z^2 + y^2 - x**3",
+            ),
+            (dict(), "z^2 + y - x"),
+        ],
+    )
+    def test_assumption_conversion(
+        self, assumptions: dict[str, dict[str, Any]], expression_str: str
+    ) -> None:
         sympy_expr = phs.convert_string_to_sympy(
-            "(x**2)**(1/2) + y",
+            expression_str,
             ["x", "y", "z"],
             allow_complex=True,
             assumptions=assumptions,
