@@ -1,14 +1,14 @@
 {{#question}}
-    <script>
-    $(function() {
-        var UUID = "{{uuid}}";
+<script>
+$(function() {
+    var UUID = "{{uuid}}";
 
-        new window.PLOrderBlocks(UUID, {
-            maxIndent: {{max_indent}},
-            enableIndentation: {{check_indentation}}
-        });
+    new window.PLOrderBlocks(UUID, {
+        maxIndent: {{max_indent}},
+        enableIndentation: {{check_indentation}}
     });
-    </script>
+});
+</script>
 
     <div class="d-flex flex-wrap">
         <div class="pl-order-blocks-container {{dropzone_layout}}">
@@ -17,7 +17,6 @@
                     <a role="button" class="btn btn-link btn-sm disabled" data-toggle="popover">
                         <i class="fa fa-question-circle" aria-hidden="true" style="visibility: hidden;"></i>
                     </a>
-                </li>
             </div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
@@ -31,13 +30,12 @@
                 {{/options}}
             </ul>
         </div>
-            <div class="pl-order-blocks-container {{dropzone_layout}}">
-                <div class="card-header pl-order-blocks-header list-group-item-primary">
+        <div class="pl-order-blocks-container {{dropzone_layout}}">
+            <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{solution-header}}</span>
-                    <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
+                <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
-                </li>
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
