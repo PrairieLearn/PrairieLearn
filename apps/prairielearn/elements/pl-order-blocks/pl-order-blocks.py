@@ -357,11 +357,16 @@ def render(element_html, data):
         for block in student_previous_submission + mcq_options:
             if block.get('distractor-for') is not None:
                 continue
-                
-            distractors = [block2 for block2 in student_previous_submission + mcq_options if block['tag'] == block2.get('distractor-for', None)]
+
+            distractors = [
+                block2 
+                for block2 in student_previous_submission + mcq_options 
+                if (block['tag'] == block2.get('distractor-for', None)) and (block['tag'] is not None)
+                ]
             
             if len(distractors) == 0:
                 continue
+
             distractor_bin = pl.get_uuid()
             block['distractor_bin'] = distractor_bin
             for distractor in distractors: 
