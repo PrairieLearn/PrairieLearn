@@ -247,7 +247,7 @@ class TestExceptions:
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
     INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
     INVALID_VARIABLE_CASES = ["x", "y", "z*n"]
-    INVALID_PARSE_CASES = ["(", "n**", "n**2+"]
+    INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
     INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
     INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
 

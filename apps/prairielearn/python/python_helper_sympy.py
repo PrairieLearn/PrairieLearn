@@ -299,7 +299,7 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
     # Note some whitelist items were removed. If there are compatibility issues, try
-    # adding those items back. 
+    # adding those items back.
     whitelist: ASTWhiteListT = (
         ast.Load,
         ast.Expression,
@@ -373,7 +373,6 @@ def evaluate(
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
     except TokenError:
-        # TODO see if can get tuple used to create this
         raise HasParseError(-1)
 
     # First do AST check, mainly for security
