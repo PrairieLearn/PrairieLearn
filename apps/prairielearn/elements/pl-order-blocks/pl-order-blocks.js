@@ -16,8 +16,6 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
         var answerText = answerObjs[i].getAttribute('string');
         var answerUuid = answerObjs[i].getAttribute('uuid');
-        console.log(answerText);
-        console.log(answerUuid);
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));

@@ -11,6 +11,7 @@ div.pl-order-blocks-bottom {
   width: 100%;
   margin: 8px;
 }
+
 li.pl-order-blocks-code {
   list-style-type: none;
   padding: 0px !important;
@@ -43,6 +44,13 @@ li.ui-state-highlight {
   height: 100%;
   margin-bottom: 0px;
 }
+
+ul.ui-sortable {
+  padding: 17px 17px 17px 17px;
+  height: 100%;
+  margin-bottom: 0px;
+}
+
 
 .pl-order-blocks-container li, .pl-order-blocks-answer-container li {
   margin-bottom: 5px;
@@ -84,12 +92,6 @@ ul.header {
 ul.inline li {
   display: inline-block;
   margin-right: 5px;
-}
-
-ul.ui-sortable {
-  padding: 17px 17px 17px 17px;
-  height: 100%;
-  margin-bottom: 0px;
 }
 
 
@@ -174,7 +176,6 @@ div.column {
 .feedback_badge_container_white {
   display: flex;
   align-items: center;
-  /* background-color: white !important; */
   padding: 5px !important;
   border-radius: inherit;
   border: 1px solid grey;

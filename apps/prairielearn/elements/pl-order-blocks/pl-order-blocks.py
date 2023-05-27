@@ -40,6 +40,9 @@ FIRST_WRONG_FEEDBACK = {
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
+def filter_pairs_from_dict(data, keys):
+    return {key: data[key] for key in keys}
+
 
 def get_graph_info(html_tags):
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
@@ -188,9 +191,6 @@ def prepare(element_html, data):
         tag, depends = get_graph_info(html_tags)
         if ranking == -1:
             tag = None
-        print("TAG: ", tag)
-        #if (grading_method == "ranking") and (tag is None) and (distractor_for is None):
-        #    tag = str(index)
 
         if is_correct:
             if tag in used_tags:
@@ -374,8 +374,12 @@ def render(element_html, data):
             mcq_options = [
                 opt
                 for opt in mcq_options
-                if opt
-                not in filter_multiple_from_array(
+                if 
+                filter_pairs_from_dict(
+                    opt, ["inner_html", "uuid"]
+                )
+                not in 
+                filter_multiple_from_array(
                     student_previous_submission, ["inner_html", "uuid"]
                 )
             ]
