@@ -31,14 +31,14 @@
                 {{/options}}
             </ul>
         </div>
-        <div class="column {{dropzone_layout}}">
-            <ul class="list-group-item list-group-item-primary header">
-                <li><strong>{{solution-header}}</strong>
+            <div class="pl-order-blocks-container {{dropzone_layout}}">
+                <div class="card-header pl-order-blocks-header list-group-item-primary">
+                <span class="mr-2">{{solution-header}}</span>
                     <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
                 </li>
-            </ul>
+            </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block"
