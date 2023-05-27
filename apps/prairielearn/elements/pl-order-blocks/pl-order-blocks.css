@@ -92,23 +92,3 @@ div.pl-order-blocks-container {
 .pl-order-blocks-pairing-indicator li:last-child {
   margin-bottom: 0px !important;
 }
-
-.feedback_badge_container{
-    display: flex;
-    align-items: center;
-    padding: 5px !important;
-    border-radius: inherit;
-}
-
-.feedback_badge_container_white {
-  display: flex;
-  align-items: center;
-  padding: 5px !important;
-  border-radius: inherit;
-  border: 1px solid grey;
-}
-
-.feedback-tag{
-    color: #6c757d;
-    margin-right: 10px;
-}
