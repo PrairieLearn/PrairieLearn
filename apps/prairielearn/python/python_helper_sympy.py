@@ -349,7 +349,8 @@ def evaluate(
 ) -> sympy.Expr:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = expr.replace("^", "**")
+    # Also replace the unicode minus with the normal one.
+    expr = expr.replace("^", "**").replace("\u2212", "-")
 
     local_dict = {
         k: v
@@ -672,11 +673,3 @@ def get_items_list(items_string: Optional[str]) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
-
-
-def process_student_input(student_input: str) -> str:
-    # Replace Unicode minus with hyphen minus wherever it occurs
-    a_sub = student_input.replace("\u2212", "-")
-
-    # Strip whitespace
-    return a_sub.strip()

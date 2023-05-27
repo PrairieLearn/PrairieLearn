@@ -34,18 +34,20 @@ def test_evaluate() -> None:
 
 class TestSympy:
     SYMBOL_NAMES = ["n", "m"]
-    FUNCTION_NAMES = ["f", "g"]
     M, N = sympy.symbols("m n")
 
+    FUNCTION_NAMES = ["f", "g", "beef"]
     # Any annotations here to ignore annoying typechecking complaining
     F: Any = sympy.Function("f")
     G: Any = sympy.Function("g")
+    BEEF: Any = sympy.Function("beef")
 
-    # TODO add more tests of custom functions
     CUSTOM_FUNCTION_PAIRS = [
         ("f(1) + g(2)", F(1) + G(2)),
         ("f(g(n), 1)", F(G(N), 1)),
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
+        ("beef(m + n)", BEEF(N + M)),
+        ("beef(n) + f(m)", BEEF(N) + F(M)),
     ]
 
     INCORRECT_FUNCTION_PAIRS = [
@@ -58,6 +60,9 @@ class TestSympy:
         ("e^(pi * i)", -1),
         ("infty", sympy.oo),
         ("infty", sympy.oo + 99),
+        ("-infty", -sympy.oo),
+        ("-infty + 99", -sympy.oo),
+        ("n \u2212 m", N - M),
         ("n/-m", -N / M),
         ("n / 2", N / 2),
         ("3^m + 4", 3**M + 4),

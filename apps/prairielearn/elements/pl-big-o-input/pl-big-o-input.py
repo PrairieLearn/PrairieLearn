@@ -239,14 +239,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_proccessed = phs.process_student_input(a_sub)
-
     s = phs.validate_string_as_sympy(
-        a_proccessed, variables, allow_complex=False, allow_trig_functions=False
+        a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
     if s is None:
-        data["submitted_answers"][name] = a_proccessed
+        data["submitted_answers"][name] = a_sub
     else:
         data["format_errors"][name] = s
         data["submitted_answers"][name] = None

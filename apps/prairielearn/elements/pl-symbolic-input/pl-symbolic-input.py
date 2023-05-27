@@ -263,10 +263,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_proccessed = phs.process_student_input(a_sub)
-
     error_msg = phs.validate_string_as_sympy(
-        a_proccessed,
+        a_sub,
         variables,
         allow_complex=allow_complex,
         allow_trig_functions=True,
@@ -286,7 +284,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         assumptions_dict = a_tru.get("_assumptions")
 
     a_sub_parsed = phs.convert_string_to_sympy(
-        a_proccessed,
+        a_sub,
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
@@ -347,7 +345,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility
-            # TODO maybe get assumptions from somewhere else as well?
             a_sub_sympy = phs.convert_string_to_sympy(
                 a_sub,
                 variables,
