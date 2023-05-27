@@ -10,15 +10,15 @@
     });
     </script>
 
-    <div class="row">
-        <div class="column {{dropzone_layout}}">
-            <ul class="list-group-item list-group-item-primary header">
-                <li><strong>{{source-header}}</strong>
+    <div class="d-flex flex-wrap">
+        <div class="pl-order-blocks-container {{dropzone_layout}}">
+            <div class="card-header pl-order-blocks-header list-group-item-primary">
+                <span class="mr-2">{{source-header}}</span>
                     <a role="button" class="btn btn-link btn-sm disabled" data-toggle="popover">
                         <i class="fa fa-question-circle" aria-hidden="true" style="visibility: hidden;"></i>
                     </a>
                 </li>
-            </ul>
+            </div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
                     <li class="{{block_formatting}} shadow pl-order-block"
@@ -34,12 +34,12 @@
             <div class="pl-order-blocks-container {{dropzone_layout}}">
                 <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{solution-header}}</span>
-                    <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
+                    <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
                 </li>
             </div>
-            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone">
+            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block"
                         style='margin-left: {{indent}}px;'
