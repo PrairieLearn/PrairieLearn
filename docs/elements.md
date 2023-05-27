@@ -68,6 +68,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
 - [`pl-card`](#pl-card-element): Displays content within a card-styled component.
+- [`pl-template`](#pl-template-element): Displays content from mustache templates.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1998,6 +1999,53 @@ The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbo
 #### Example implementations
 
 - [element/card]
+
+---
+
+### `pl-template` element
+
+Displays boilerplate HTML from templates in a reusable way.
+
+#### Sample element
+
+```html
+<pl-template file-name="outer_template.mustache" subdirectory="templates">
+  <pl-variable name="is-open">True</pl-variable>
+  <pl-variable
+    name="problem-statement"
+    directory="question"
+    file-name="serverFilesQuestion/statement.html"
+  ></pl-variable>
+</pl-template>
+```
+
+#### Customizations
+
+| Attribute               | Type                                                                                            | Default             | Description                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `file-name`             | string                                                                                          | -                   | File name of the outer template to use.                                                                      |
+| `directory`             | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                                                                      |
+| `log-variable-warnings` | boolean                                                                                         | false               | Whether to log warnings when rendering templates with undefined variables. Useful for debugging.             |
+| `log-tag-warnings`      | boolean                                                                                         | true                | Whether to log warnings if a rendered template contains elements which are not guaranteed to work correctly. |
+
+Inside the `pl-template` element, variables for use in rendering the template may be specified with a `pl-variable` tag. Each `pl-variable` tag can be used to define a variable with data from a file or with the contents of the tag (but not both). Note that substitution is **not** applied to external files used in `pl-variable` (files are used as-is). The `pl-variable` tag supports the following attributes:
+
+| Attribute         | Type                                                                                            | Default             | Description                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------- |
+| `name`            | string                                                                                          | -                   | Variable name to assign the data defined by this tag.         |
+| `file-name`       | string                                                                                          | -                   | File name to use if variable data is being taken from a file. |
+| `directory`       | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                       |
+| `trim-whitespace` | boolean                                                                                         | true                | Whether to trim whitespace of data specified by this tag.     |
+
+#### Details
+
+Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **elements that accept and/or grade student input used within this element will not work correctly.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Each instance of the `pl-template` element also has a unique `uuid` variable available for rendering. Templates may also be used within other templates.
+
+_Note:_ The id `#` CSS selector does _not_ work for ids that start with a number, so uuids should be prefixed (as these may start with a number).
+
+#### Example implementations
+
+- [element/template]
 
 ---
 
