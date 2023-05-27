@@ -76,7 +76,7 @@ function resetInstructorGradingPanel() {
         element.style.display = use_percentage ? '' : 'none';
       });
       window.localStorage.manual_grading_score_use = use_percentage ? 'percentage' : 'points';
-      updatePointsView();
+      updatePointsView(null);
     });
     toggle.checked = window.localStorage.manual_grading_score_use === 'percentage';
     toggle.dispatchEvent(new Event('change'));
@@ -345,7 +345,7 @@ function roundPoints(points) {
   return Math.round(Number(points) * 100) / 100;
 }
 
-function updatePointsView() {
+function updatePointsView(sourceInput) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     const max_auto_points = Number(form.dataset.maxAutoPoints);
     const max_manual_points = Number(form.dataset.maxManualPoints);
@@ -353,14 +353,14 @@ function updatePointsView() {
 
     const auto_points =
       roundPoints(
-        this.name === 'score_auto_percent'
-          ? (this.value * max_auto_points) / 100
+        sourceInput?.name === 'score_auto_percent'
+          ? (sourceInput?.value * max_auto_points) / 100
           : form.querySelector('[name=score_auto_points]')?.value
       ) || 0;
     const manual_points =
       roundPoints(
-        this.name === 'score_manual_percent'
-          ? (this.value * max_manual_points) / 100
+        sourceInput?.name === 'score_manual_percent'
+          ? (sourceInput?.value * max_manual_points) / 100
           : form.querySelector('[name=score_manual_points]')?.value
       ) || 0;
     const points = roundPoints(auto_points + manual_points);
@@ -368,16 +368,16 @@ function updatePointsView() {
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
 
-    if (this.name !== 'score_auto_points') {
+    if (sourceInput?.name !== 'score_auto_points') {
       updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
     }
-    if (this.name !== 'score_auto_percent') {
+    if (sourceInput?.name !== 'score_auto_percent') {
       updateQueryObjects(form, '[name=score_auto_percent]', { value: auto_perc });
     }
-    if (this.name !== 'score_manual_points') {
+    if (sourceInput?.name !== 'score_manual_points') {
       updateQueryObjects(form, '[name=score_manual_points]', { value: manual_points });
     }
-    if (this.name !== 'score_manual_percent') {
+    if (sourceInput?.name !== 'score_manual_percent') {
       updateQueryObjects(form, '[name=score_manual_percent]', { value: manual_perc });
     }
 
@@ -414,7 +414,7 @@ function computePointsFromRubric() {
       manualInput.value = manualPoints;
     }
   });
-  updatePointsView();
+  updatePointsView(this);
 }
 
 function enableRubricItemLongTextField(event) {
