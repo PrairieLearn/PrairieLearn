@@ -123,7 +123,7 @@ function resetInstructorGradingPanel() {
     .forEach((item) => item.addEventListener('change', computePointsFromRubric));
   document
     .querySelectorAll('.js-grading-score-input')
-    .forEach((input) => input.addEventListener('input', computePointsFromRubric));
+    .forEach((input) => input.addEventListener('input', () => computePointsFromRubric(input)));
 
   document.querySelectorAll('.js-adjust-points-enable').forEach((link) =>
     link.addEventListener('click', function () {
@@ -390,7 +390,7 @@ function updatePointsView(sourceInput) {
   });
 }
 
-function computePointsFromRubric() {
+function computePointsFromRubric(sourceInput = null) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     if (form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector('.js-manual-score-value-input-points');
@@ -414,7 +414,7 @@ function computePointsFromRubric() {
       manualInput.value = manualPoints;
     }
   });
-  updatePointsView(this);
+  updatePointsView(sourceInput);
 }
 
 function enableRubricItemLongTextField(event) {
