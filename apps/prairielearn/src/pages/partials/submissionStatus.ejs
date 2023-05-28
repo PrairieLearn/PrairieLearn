@@ -1,5 +1,4 @@
 <% let auto_submission_status_prefix = ''; %>
-<% const manual_percentage = assessment_question.max_points ? Math.floor(instance_question.manual_points * 100 / (assessment_question.max_manual_points || assessment_question.max_points)) + '%' : `${instance_question.manual_points > 0 ? '+' : ''}${instance_question.manual_points} ${Math.abs(instance_question.manual_points > 1) ? 'pts' : 'pt'}`; %>
 <% if (locals.assessment_question ? (assessment_question.max_manual_points || instance_question.manual_points || instance_question.requires_manual_grading) : question.grading_method == 'Manual') { %>
     <% auto_submission_status_prefix = 'auto-grading: '; %>
     <%# The manual grading status only applies to the latest submission %>
@@ -10,12 +9,17 @@
             <% } else { %>
                 <span class="badge badge-secondary">manual grading: waiting for grading</span><br/>
             <% } %>
-        <% } else if (instance_question.manual_points <= 0) { %>
+        <% } else { %>
+        <% const manual_percentage = assessment_question.max_points
+           ? Math.floor(instance_question.manual_points * 100 / (assessment_question.max_manual_points || assessment_question.max_points)) + '%'
+           : ((instance_question.manual_points > 0 ? '+' : '') + instance_question.manual_points + (Math.abs(instance_question.manual_points) > 1 ? ' pts' : ' pt')); %>
+        <% if (instance_question.manual_points <= 0) { %>
             <span class="badge badge-danger">manual grading: <%= manual_percentage %></span><br/>
         <% } else if (instance_question.manual_points >= assessment_question.max_manual_points) { %>
             <span class="badge badge-success">manual grading: <%= manual_percentage %></span><br/>
         <% } else { %>
             <span class="badge badge-warning">manual grading: <%= manual_percentage %></span><br/>
+        <% } %>
         <% } %>
     <% } %>
 <% } %>
