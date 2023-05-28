@@ -10,12 +10,12 @@
       <% if (!show_input) { %>
         <span class="js-manual-grading-points">
           <span class="js-<%= type %>-score-value-info">
-            <span class="js-value-<%= type %>-points"><%= Math.round(points * 100) / 100 %></span> / <%= max_points %>
+            <span class="js-value-<%= type %>-points"></span> / <%= max_points %>
           </span>
         </span>
         <span class="js-manual-grading-percentage">
           <span class="js-<%= type %>-score-value-info">
-            <span class="js-value-<%= type %>-percentage"><%= Math.round(points * 10000 / (max_points || assessment_question.max_points)) / 100 %></span>%
+            <span class="js-value-<%= type %>-percentage"></span>%
           </span>
         </span>
       <% } %>
@@ -53,7 +53,6 @@
              id="js-<%= type %>-score-value-input-percentage-<%= context %>"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-percentage"
              name="score_<%= type %>_percent"
-             value="<%= Math.round(points * 10000 / (max_points || assessment_question.max_points)) / 100 %>"
       <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
       <span class="input-group-append">
         <span class="input-group-text">%</span>
