@@ -3,9 +3,11 @@
     <label for="js-<%= type %>-score-value-input-points-<%= context %>" class="js-manual-grading-points">
       <%= type_label %> Points:
     </label>
+    <% if (assessment_question.max_points) { %>
     <label for="js-<%= type %>-score-value-input-percentage-<%= context %>" class="js-manual-grading-percentage">
       <%= type_label %> Score:
     </label>
+    <% } %>
     <span class="float-right">
       <% if (!show_input) { %>
         <span class="js-manual-grading-points">
@@ -13,11 +15,13 @@
             <span class="js-value-<%= type %>-points"></span> / <%= max_points %>
           </span>
         </span>
+        <% if (assessment_question.max_points) { %>
         <span class="js-manual-grading-percentage">
           <span class="js-<%= type %>-score-value-info">
             <span class="js-value-<%= type %>-percentage"></span>%
           </span>
         </span>
+        <% } %>
       <% } %>
       <div class="btn-group btn-group-sm" role="group">
         <% if (show_input_edit && authz_data.has_course_instance_permission_edit) { %>
@@ -47,6 +51,7 @@
       </span>
     </div>
   </div>
+  <% if (assessment_question.max_points) { %>
   <div class="js-manual-grading-percentage">
     <div class="input-group js-<%= type %>-score-value-input <% if (!show_input) { %> d-none<% } %>">
       <input type="number" step="any" required
@@ -59,4 +64,5 @@
       </span>
     </div>
   </div>
+  <% } %>
 </div>
