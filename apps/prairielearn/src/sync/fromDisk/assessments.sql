@@ -26,7 +26,7 @@ FROM
 SELECT
   q.qid,
   q.id,
-  c.sharing_name,
+  c.sharing_name
 FROM
   questions AS q
   JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
