@@ -1079,6 +1079,7 @@ module.exports = {
         correct_answers: _.get(variant, 'true_answer', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
+        answers_names: {},
       };
       _.extend(data.options, module.exports.getContextOptions(context));
 
