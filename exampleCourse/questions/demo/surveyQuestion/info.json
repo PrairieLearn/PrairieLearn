@@ -4,5 +4,6 @@
     "topic": "Demo",
     "tags": ["Fa18", "v3", "glherman", "balamut2"],
     "type": "v3",
+    "singleVariant": true,
     "showCorrectAnswer": false
 }
