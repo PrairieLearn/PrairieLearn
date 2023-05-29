@@ -3,5 +3,6 @@
     "title": "Demo: Obtaining feedback from students",
     "topic": "Demo",
     "tags": ["Fa18", "v3", "glherman", "balamut2"],
-    "type": "v3"
+    "type": "v3",
+    "showCorrectAnswer": false
 }
