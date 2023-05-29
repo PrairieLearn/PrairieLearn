@@ -22,19 +22,20 @@ SELECT
 FROM
   JSONB_ARRAY_ELEMENTS_TEXT($exam_uuids) AS exam_uuids;
 
--- BLOCK get_all_imported_questions
-select
+-- BLOCK get_imported_questions
+SELECT
   q.qid,
   q.id,
-  c.sharing_name
-from
-  questions as q
-  join sharing_set_questions as qss on q.id = qss.question_id
-  join sharing_sets as ss on qss.sharing_set_id = ss.id
-  join sharing_set_courses as css on ss.id = css.sharing_set_id
-  join pl_courses as c on c.id = ss.course_id
-where
-  css.course_id = $courseId;
+  c.sharing_name,
+FROM
+  questions AS q
+  JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
+  JOIN sharing_sets AS ss ON ssq.sharing_set_id = ss.id
+  JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
+  JOIN pl_courses AS c ON c.id = ss.course_id
+WHERE
+  ssc.course_id = $course_id AND
+  '@' || c.sharing_name || '/' || q.qid = ANY($imported_qids::text[]);
 
 -- BLOCK get_course_info
 SELECT
@@ -42,4 +43,4 @@ SELECT
 FROM
   pl_courses
 WHERE
-  id = $courseId;
+  id = $course_id;

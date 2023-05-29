@@ -356,7 +356,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   });
 
   if (importedQids.size > 0) {
-    let result = await sqldb.queryOneRowAsync(sql.get_course_info, { courseId: courseId });
+    let result = await sqldb.queryOneRowAsync(sql.get_course_info, { course_id: courseId });
     if (!result.rows[0].question_sharing_enabled) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid)?.forEach((tid) => {
@@ -369,17 +369,13 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     }
   }
 
-  // let questionInfo = Array.from(importedQids).map(extractInfo);
-
-  // TODO: this is very inefficient, because it pulls in names of ALL shared questions that this
-  // course has permissions on. Move this validation check to the database for efficiency
-  const importedQuestions = await sqldb.queryAsync(sql.get_all_imported_questions, {
-    courseId: courseId,
+  const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
+    course_id: courseId,
+    imported_qids: Array.from(importedQids)
   });
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
-
   let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
   if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {
@@ -393,6 +389,8 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
       });
     });
   }
+
+
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
