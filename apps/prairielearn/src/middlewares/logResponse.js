@@ -25,26 +25,20 @@ module.exports = function (req, res, next) {
         params: req.params,
         body: req.body,
         finished: res.writableFinished,
-        authn_user_id: res.locals && res.locals.authn_user ? res.locals.authn_user.user_id : null,
-        authn_user_uid: res.locals && res.locals.authn_user ? res.locals.authn_user.uid : null,
-        user_id: res.locals && res.locals.user ? res.locals.user.user_id : null,
-        user_uid: res.locals && res.locals.user ? res.locals.user.uid : null,
-        course_id: res.locals && res.locals.course ? res.locals.course.id : null,
-        course_short_name: res.locals && res.locals.course ? res.locals.course.short_name : null,
-        course_instance_id:
-          res.locals && res.locals.course_instance ? res.locals.course_instance.id : null,
-        course_instance_short_name:
-          res.locals && res.locals.course_instance ? res.locals.course_instance.short_name : null,
-        assessment_id: res.locals && res.locals.assessment ? res.locals.assessment.id : null,
-        assessment_directory:
-          res.locals && res.locals.assessment ? res.locals.assessment.tid : null,
-        assessment_instance_id:
-          res.locals && res.locals.assessment_instance ? res.locals.assessment_instance.id : null,
-        question_id: res.locals && res.locals.question ? res.locals.question.id : null,
-        question_directory:
-          res.locals && res.locals.question ? res.locals.question.directory : null,
-        instance_question_id:
-          res.locals && res.locals.instance_question ? res.locals.instance_question.id : null,
+        authn_user_id: res.locals?.authn_user?.user_id ?? null,
+        authn_user_uid: res.locals?.authn_user?.uid ?? null,
+        user_id: res.locals?.user?.user_id ?? null,
+        user_uid: res.locals?.user?.uid ?? null,
+        course_id: res.locals?.course?.id ?? null,
+        course_short_name: res.locals?.course?.short_name ?? null,
+        course_instance_id: res.locals?.course_instance?.id ?? null,
+        course_instance_short_name: res.locals?.course_instance?.short_name ?? null,
+        assessment_id: res.locals?.assessment?.id ?? null,
+        assessment_directory: res.locals?.assessment?.tid ?? null,
+        assessment_instance_id: res.locals?.assessment_instance?.id ?? null,
+        question_id: res.locals?.question?.id ?? null,
+        question_directory: res.locals?.question?.directory ?? null,
+        instance_question_id: res.locals?.instance_question?.id ?? null,
       };
       logger.verbose('response', access);
     });
