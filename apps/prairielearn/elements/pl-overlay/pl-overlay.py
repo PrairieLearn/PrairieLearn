@@ -1,3 +1,5 @@
+from itertools import count
+
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -6,8 +8,8 @@ VALIGN_DEFAULT = "middle"
 HALIGN_DEFAULT = "center"
 CLIP_DEFAULT = True
 
-VALIGN_VALUES = ["top", "middle", "center", "bottom"]
-HALIGN_VALUES = ["left", "middle", "center", "right"]
+VALIGN_VALUES = frozenset(("top", "middle", "center", "bottom"))
+HALIGN_VALUES = frozenset(("left", "middle", "center", "right"))
 
 # Percent to translate each alignment by.  This is relative to the top-left corner of the element.
 ALIGNMENT_TO_PERC = {
@@ -20,7 +22,7 @@ ALIGNMENT_TO_PERC = {
 }
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     num_backgrounds = 0
     for child in element:
@@ -75,7 +77,7 @@ def prepare(element_html, data):
         )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     width = pl.get_float_attrib(element, "width", None)
     height = pl.get_float_attrib(element, "height", None)
@@ -84,7 +86,7 @@ def render(element_html, data):
     # Assign layer index in order children are defined
     # Later defined elements will be placed on top of earlier ones
     locations = []
-    z_index = 0
+    z_index = count(0)
     for child in element:
         # Ignore comments
         if isinstance(child, lxml.html.HtmlComment):
@@ -108,25 +110,28 @@ def render(element_html, data):
         # so we don't have to worry about all the alignment possibilities
         if left is not None:
             x = left
-        elif right is not None:
+        else:
             x = width - right
 
         if top is not None:
             y = top
-        elif bottom is not None:
+        else:
             y = height - bottom
 
         hoff = ALIGNMENT_TO_PERC[halign]
         voff = ALIGNMENT_TO_PERC[valign]
-        transform = f"translate({hoff}, {voff})"
 
-        style = f"top: {y}px; left: {x}px; transform: {transform}; z-index: {z_index}"
-        obj = {
-            "html": pl.inner_html(child),
-            "outer_style": style,
-        }
-        locations.append(obj)
-        z_index += 1
+        transform = f"translate({hoff}, {voff})"
+        style = (
+            f"top: {y}px; left: {x}px; transform: {transform}; z-index: {next(z_index)}"
+        )
+
+        locations.append(
+            {
+                "html": pl.inner_html(child),
+                "outer_style": style,
+            }
+        )
 
     html_params = {
         "width": width,
@@ -135,6 +140,6 @@ def render(element_html, data):
         "background": background,
         "clip": pl.get_boolean_attrib(element, "clip", CLIP_DEFAULT),
     }
+
     with open("pl-overlay.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-    return html
+        return chevron.render(f, html_params).strip()

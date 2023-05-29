@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types';
 
 export const InstitutionAdminSaml = ({
   institution,
@@ -7,6 +8,12 @@ export const InstitutionAdminSaml = ({
   institutionAuthenticationProviders,
   host,
   resLocals,
+}: {
+  institution: Institution;
+  samlProvider: SamlProvider | null;
+  institutionAuthenticationProviders: AuthnProvider[];
+  host: string;
+  resLocals: Record<string, any>;
 }) => {
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
