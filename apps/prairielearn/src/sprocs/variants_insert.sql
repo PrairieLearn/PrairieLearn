@@ -19,6 +19,8 @@ AS $$
 DECLARE
     real_question_id bigint;
     real_course_instance_id bigint;
+    question_course_id bigint;
+    shared_with_course boolean;
     real_user_id bigint;
     real_group_id bigint;
     new_number integer;
@@ -84,16 +86,22 @@ BEGIN
     END IF;
 
     -- check consistency of question_id and course_id
-    SELECT q.id
-    INTO real_question_id
+    SELECT q.course_id
+    INTO question_course_id
     FROM
         questions AS q
     WHERE
-        q.id = real_question_id
-        -- TODO: when implementing question sharing, make sure the question has been shared with the course_id
-        -- instead of requiring the question being created in the course that created it.
-        AND q.course_id = variant_course_id;
-    IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
+        q.id = real_question_id;
+    SELECT count(*) > 0
+    INTO shared_with_course
+    FROM
+      sharing_sets AS ss
+      JOIN sharing_set_questions AS ssq on ssq.sharing_set_id = ss.id
+      JOIN sharing_set_courses AS ssc on ssc.sharing_set_id = ss.id
+      JOIN pl_courses AS c ON ssc.course_id = c.id
+    WHERE
+      ssq.question_id = real_question_id;
+    IF (question_course_id <> variant_course_id) AND NOT shared_with_course THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
 
     -- check consistency of course_instance_id and course_id
     IF real_course_instance_id IS NOT NULL THEN
