@@ -28,9 +28,11 @@
             <span class="js-manual-grading-points" data-testid="rubric-item-points">
               [<%= (item.points >= 0 ? '+' : '') + (Math.round(item.points * 100) / 100) %>]
             </span>
+            <% if (assessment_question.max_points) { %>
             <span class="js-manual-grading-percentage">
               [<%= (item.points >= 0 ? '+' : '') + (Math.round(item.points * 10000 / (assessment_question.max_manual_points || assessment_question.max_points)) / 100) %>%]
             </span>
+            <% } %>
           </strong>
         </span>
         <span>
@@ -64,6 +66,7 @@
             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
           </div>
         </div>
+        <% if (assessment_question.max_points) { %>
         <div class="js-manual-grading-percentage">
           <div class="input-group input-group-sm">
             <input type="number" step="any"
@@ -77,6 +80,7 @@
             </span>
           </div>
         </div>
+        <% } %>
       </label>
     </div>
   </div>
