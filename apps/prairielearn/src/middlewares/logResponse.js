@@ -47,7 +47,6 @@ module.exports = function (req, res, next) {
           res.locals && res.locals.instance_question ? res.locals.instance_question.id : null,
       };
       logger.verbose('response', access);
-      res.locals.response_logged = true;
     });
   }
   next();
