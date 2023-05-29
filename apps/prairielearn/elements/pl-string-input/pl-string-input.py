@@ -44,7 +44,7 @@ def prepare(element_html, data):
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
-    
+
     correct_answer = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
