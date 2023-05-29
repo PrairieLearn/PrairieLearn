@@ -192,7 +192,7 @@ def prepare(element_html, data):
         if ranking == -1:
             tag = None
 
-        if is_correct:
+        if is_correct and tag is not None:
             if tag in used_tags:
                 raise Exception(
                     f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
@@ -642,7 +642,6 @@ def grade(element_html, data):
         data["format_errors"][answer_name] = "Your submitted answer was empty."
         return
 
-    old_tags = [block["tag"] for block in student_answer]
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
@@ -737,12 +736,6 @@ def grade(element_html, data):
                     if has_block_groups:
                         feedback += FIRST_WRONG_FEEDBACK["block-group"]
                     feedback += "</ul>"
-
-    #TODO: remove this duct tape
-    for i, ans in enumerate(student_answer):
-        ans['tag'] = old_tags[i]
-
-
 
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
