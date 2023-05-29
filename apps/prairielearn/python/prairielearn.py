@@ -67,10 +67,19 @@ class QuestionData(TypedDict):
     extensions: dict[str, Any]
     num_valid_submissions: int
     manual_grading: bool
+    answers_names: dict[str, bool]
 
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def check_answers_names(data: QuestionData, name: str) -> None:
+    """Checks that answers names are distinct using property in data dict."""
+    if name in data["answers_names"]:
+        raise KeyError('Duplicate answer-name attribute: "{name}"')
+    else:
+        data["answers_names"][name] = True
 
 
 def get_unit_registry() -> UnitRegistry:

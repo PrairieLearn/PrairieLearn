@@ -88,11 +88,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     name = pl.get_string_attrib(element, "answers-name")
-    if name in data['answers_names']:
-        raise Exception('duplicate answer-name attribute: %s' % name)
-    else:
-        data['answers_names'][name] = True
-        
+    pl.check_answers_names(data, name)
+
     correct_answer_html = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
