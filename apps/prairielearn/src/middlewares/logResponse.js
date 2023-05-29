@@ -8,7 +8,7 @@ module.exports = function (req, res, next) {
   const path = req.path;
 
   if (req.method !== 'OPTIONS') {
-    res.once('finish', function () {
+    res.once('close', function () {
       // Attach information to the Sentry scope so that we can more easily
       // debug errors. No PII is added.
       if (config.sentryDsn) {
@@ -24,6 +24,7 @@ module.exports = function (req, res, next) {
         path,
         params: req.params,
         body: req.body,
+        finished: res.writableFinished,
         authn_user_id: res.locals && res.locals.authn_user ? res.locals.authn_user.user_id : null,
         authn_user_uid: res.locals && res.locals.authn_user ? res.locals.authn_user.uid : null,
         user_id: res.locals && res.locals.user ? res.locals.user.user_id : null,
@@ -47,16 +48,6 @@ module.exports = function (req, res, next) {
       };
       logger.verbose('response', access);
       res.locals.response_logged = true;
-    });
-
-    // install a handler that will always be called, so we can
-    // check whether we correctly logged the response
-    res.on('close', () => {
-      if (!res.locals.response_logged) {
-        logger.error('response was not logged', {
-          response_id: res.locals.response_id,
-        });
-      }
     });
   }
   next();
