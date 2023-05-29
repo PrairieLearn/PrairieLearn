@@ -530,6 +530,9 @@ module.exports = {
     // prettier-ignore
     err = checkProp('test_type',             'string',  ['test'],                             []);
     if (err) return err;
+    // prettier-ignore
+    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+    if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
