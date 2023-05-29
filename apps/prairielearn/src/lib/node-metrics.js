@@ -1,9 +1,10 @@
 // @ts-check
-const AWS = require('aws-sdk');
 const loopbench = require('loopbench')();
+const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const Sentry = require('@prairielearn/sentry');
-
 const { logger } = require('@prairielearn/logger');
+
+const { makeAwsClientConfig } = require('./aws');
 const { config } = require('./config');
 
 let intervalId;
@@ -71,23 +72,21 @@ async function emit() {
       },
     ];
 
-    const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
-    /** @type {import('aws-sdk').CloudWatch.Types.Dimensions} */
+    const cloudwatch = new CloudWatch(makeAwsClientConfig());
+    /** @type {import('@aws-sdk/client-cloudwatch').Dimension[]} */
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
     ];
-    await cloudwatch
-      .putMetricData({
-        Namespace: 'PrairieLearn',
-        MetricData: metrics.map((m) => ({
-          ...m,
-          StorageResolution: 1,
-          Timestamp: new Date(),
-          Dimensions: dimensions,
-        })),
-      })
-      .promise();
+    await cloudwatch.putMetricData({
+      Namespace: 'PrairieLearn',
+      MetricData: metrics.map((m) => ({
+        ...m,
+        StorageResolution: 1,
+        Timestamp: new Date(),
+        Dimensions: dimensions,
+      })),
+    });
   } catch (err) {
     logger.error('Error reporting Node metrics', err);
     Sentry.captureException(err);

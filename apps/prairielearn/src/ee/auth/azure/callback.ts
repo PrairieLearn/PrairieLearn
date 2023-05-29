@@ -1,4 +1,4 @@
-import * as passport from 'passport';
+import passport = require('passport');
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 

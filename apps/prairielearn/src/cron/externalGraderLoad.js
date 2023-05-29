@@ -1,28 +1,23 @@
-const ERR = require('async-stacktrace');
+// @ts-check
 const _ = require('lodash');
-const AWS = require('aws-sdk');
-
-const { config } = require('../lib/config');
+const util = require('node:util');
+const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
+const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 
-module.exports = {};
+const { makeAwsClientConfig } = require('../lib/aws');
+const { config } = require('../lib/config');
 
-module.exports.run = function (callback) {
-  if (!config.runningInEc2) return callback(null);
-  getLoadStats((err, stats) => {
-    if (ERR(err, callback)) return;
-    sendStatsToCloudWatch(stats, (err) => {
-      if (ERR(err, callback)) return;
-      setAutoScalingGroupCapacity(stats, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    });
-  });
-};
+module.exports.run = util.callbackify(async () => {
+  if (!config.runningInEc2) return;
 
-function getLoadStats(callback) {
+  const stats = await getLoadStats();
+  await sendStatsToCloudWatch(stats);
+  await setAutoScalingGroupCapacity(stats);
+});
+
+async function getLoadStats() {
   const params = [
     config.externalGradingJobsQueueName,
     config.externalGradingLoadAverageIntervalSec,
@@ -30,24 +25,23 @@ function getLoadStats(callback) {
     config.externalGradingCurrentCapacityFactor,
     config.externalGradingHistoryCapacityFactor,
   ];
-  sqldb.callOneRow('grader_loads_current', params, (err, result) => {
-    if (ERR(err, callback)) return;
-    const stats = result.rows[0];
-    callback(null, stats);
-  });
+  const result = await sqldb.callOneRowAsync('grader_loads_current', params);
+  return result.rows[0];
 }
 
-function sendStatsToCloudWatch(stats, callback) {
-  const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
+async function sendStatsToCloudWatch(stats) {
   const dimensions = [{ Name: 'By Queue', Value: config.externalGradingJobsQueueName }];
-  const params = {
+  const timestamp = new Date(stats.timestamp_formatted);
+
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
+  await cloudwatch.putMetricData({
     // AWS limits to 20 items within each MetricData list
     MetricData: [
       {
         MetricName: 'InstanceCount',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.instance_count,
       },
@@ -55,7 +49,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'InstanceCountLaunching',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.instance_count_launching,
       },
@@ -63,7 +57,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'InstanceCountInService',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.instance_count_in_service,
       },
@@ -71,7 +65,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'InstanceCountAbandoningLaunch',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.instance_count_abandoning_launch,
       },
@@ -79,7 +73,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'InstanceCountUnhealthy',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.instance_count_unhealthy,
       },
@@ -87,7 +81,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'CurrentJobs',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.current_jobs,
       },
@@ -95,7 +89,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'MaxJobs',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.max_jobs,
       },
@@ -103,7 +97,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'LoadPercentage',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Percent',
         Value: stats.load_perc,
       },
@@ -111,7 +105,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobs',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs,
       },
@@ -119,7 +113,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobsInSubmit',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs_in_submit,
       },
@@ -127,7 +121,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobsInQueue',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs_in_queue,
       },
@@ -135,7 +129,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobsInPrepare',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs_in_prepare,
       },
@@ -143,7 +137,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobsInRun',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs_in_run,
       },
@@ -151,7 +145,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'UngradedJobsInReport',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.ungraded_jobs_in_report,
       },
@@ -159,7 +153,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJob',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_sec,
       },
@@ -167,7 +161,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJobInSubmit',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_in_submit_sec,
       },
@@ -175,7 +169,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJobInQueue',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_in_queue_sec,
       },
@@ -183,7 +177,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJobInPrepare',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_in_prepare_sec,
       },
@@ -191,7 +185,7 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJobInRun',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_in_run_sec,
       },
@@ -199,172 +193,162 @@ function sendStatsToCloudWatch(stats, callback) {
         MetricName: 'AgeOfOldestJobInReport',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Seconds',
         Value: stats.age_of_oldest_job_in_report_sec,
       },
     ],
     Namespace: 'Grader',
-  };
-  cloudwatch.putMetricData(params, function (err, _data) {
-    if (ERR(err, callback)) return;
+  });
 
-    const params = {
-      // AWS limits to 20 items within each MetricData list
-      MetricData: [
-        {
-          MetricName: 'HistoryJobs',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.history_jobs,
-        },
-        {
-          MetricName: 'CurrentUsers',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.current_users,
-        },
-        {
-          MetricName: 'GradingJobsPerUser',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.grading_jobs_per_user,
-        },
-        {
-          MetricName: 'AverageGradingJobsPerUser',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.average_grading_jobs_per_user,
-        },
-        {
-          MetricName: 'HistoryGradingJobsPerUser',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.history_grading_jobs_per_user,
-        },
-        {
-          MetricName: 'PredictedJobsByCurrentUsers',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.predicted_jobs_by_current_users,
-        },
-        {
-          MetricName: 'PredictedJobsByHistoryUsers',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.predicted_jobs_by_history_users,
-        },
-        {
-          MetricName: 'JobsPerInstance',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.jobs_per_instance,
-        },
-        {
-          MetricName: 'DesiredInstancesByUngradedJobs',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_by_ungraded_jobs,
-        },
-        {
-          MetricName: 'DesiredInstancesByCurrentJobs',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_by_current_jobs,
-        },
-        {
-          MetricName: 'DesiredInstancesByHistoryJobs',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_by_history_jobs,
-        },
-        {
-          MetricName: 'DesiredInstancesByCurrentUsers',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_by_current_users,
-        },
-        {
-          MetricName: 'DesiredInstancesByHistoryUsers',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_by_history_users,
-        },
-        {
-          MetricName: 'DesiredInstancesCurrent',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_current,
-        },
-        {
-          MetricName: 'DesiredInstancesHistory',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances_history,
-        },
-        {
-          MetricName: 'DesiredInstances',
-          Dimensions: dimensions,
-          StorageResolution: 1,
-          Timestamp: stats.timestamp_formatted,
-          Unit: 'Count',
-          Value: stats.desired_instances,
-        },
-      ],
-      Namespace: 'Grader',
-    };
-    cloudwatch.putMetricData(params, function (err, _data) {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+  // AWS limits to 20 items within each MetricData list, so we split up the
+  // metrics into two batches.
+  await cloudwatch.putMetricData({
+    MetricData: [
+      {
+        MetricName: 'HistoryJobs',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.history_jobs,
+      },
+      {
+        MetricName: 'CurrentUsers',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.current_users,
+      },
+      {
+        MetricName: 'GradingJobsPerUser',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.grading_jobs_per_user,
+      },
+      {
+        MetricName: 'AverageGradingJobsPerUser',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.average_grading_jobs_per_user,
+      },
+      {
+        MetricName: 'HistoryGradingJobsPerUser',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.history_grading_jobs_per_user,
+      },
+      {
+        MetricName: 'PredictedJobsByCurrentUsers',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.predicted_jobs_by_current_users,
+      },
+      {
+        MetricName: 'PredictedJobsByHistoryUsers',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.predicted_jobs_by_history_users,
+      },
+      {
+        MetricName: 'JobsPerInstance',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.jobs_per_instance,
+      },
+      {
+        MetricName: 'DesiredInstancesByUngradedJobs',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_by_ungraded_jobs,
+      },
+      {
+        MetricName: 'DesiredInstancesByCurrentJobs',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_by_current_jobs,
+      },
+      {
+        MetricName: 'DesiredInstancesByHistoryJobs',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_by_history_jobs,
+      },
+      {
+        MetricName: 'DesiredInstancesByCurrentUsers',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_by_current_users,
+      },
+      {
+        MetricName: 'DesiredInstancesByHistoryUsers',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_by_history_users,
+      },
+      {
+        MetricName: 'DesiredInstancesCurrent',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_current,
+      },
+      {
+        MetricName: 'DesiredInstancesHistory',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances_history,
+      },
+      {
+        MetricName: 'DesiredInstances',
+        Dimensions: dimensions,
+        StorageResolution: 1,
+        Timestamp: timestamp,
+        Unit: 'Count',
+        Value: stats.desired_instances,
+      },
+    ],
+    Namespace: 'Grader',
   });
 }
 
-function setAutoScalingGroupCapacity(stats, callback) {
-  if (!config.externalGradingAutoScalingGroupName) return callback(null);
-  if (!_.isInteger(stats.desired_instances)) return callback(null);
-  if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return callback(null);
-  if (stats.desired_instances === stats.instance_count) return callback(null);
+async function setAutoScalingGroupCapacity(stats) {
+  if (!config.externalGradingAutoScalingGroupName) return;
+  if (!_.isInteger(stats.desired_instances)) return;
+  if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return;
+  if (stats.desired_instances === stats.instance_count) return;
 
-  const autoscaling = new AWS.AutoScaling(config.awsServiceGlobalOptions);
-  const params = {
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
+  logger.verbose(`setting AutoScalingGroup capacity to ${stats.desired_instances}`);
+  await autoscaling.setDesiredCapacity({
     AutoScalingGroupName: config.externalGradingAutoScalingGroupName,
     DesiredCapacity: stats.desired_instances,
     HonorCooldown: false,
-  };
-  logger.verbose('setting AutoScalingGroup capacity', params);
-  autoscaling.setDesiredCapacity(params, (err) => {
-    if (ERR(err, callback)) return;
-    callback(null);
   });
 }

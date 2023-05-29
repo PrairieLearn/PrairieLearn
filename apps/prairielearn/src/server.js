@@ -18,6 +18,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -40,7 +41,6 @@ const {
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
-const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
@@ -63,6 +63,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 
@@ -107,6 +108,12 @@ module.exports.initExpress = function () {
     }
   }
 
+  // This should come before the session middleware so that we don't
+  // create a session every time we get a health check request.
+  app.get('/pl/webhooks/ping', function (req, res, _next) {
+    res.send('.');
+  });
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
@@ -114,6 +121,9 @@ module.exports.initExpress = function () {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
     res.locals.compiled_script_tag = assets.compiledScriptTag;
+    res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
+    res.locals.compiled_script_path = assets.compiledScriptPath;
+    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
     next();
   });
   app.use(function (req, res, next) {
@@ -124,6 +134,23 @@ module.exports.initExpress = function () {
     setLocalsFromConfig(res.locals);
     next();
   });
+
+  app.use(
+    session({
+      secret: config.secretKey,
+      store: new SessionStore({
+        expireSeconds: config.sessionStoreExpireSeconds,
+      }),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        maxAge: config.sessionStoreExpireSeconds * 1000,
+        httpOnly: true,
+        secure: 'auto', // uses Express "trust proxy"
+        sameSite: config.sessionCookieSameSite,
+      },
+    })
+  );
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
@@ -367,9 +394,13 @@ module.exports.initExpress = function () {
   // assets system with cacheable assets.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
 
-  // This is included for backwards-compatibility with pages that might still
-  // expect to be able to load files from the `/node_modules` route.
-  app.use('/node_modules', staticNodeModules('.'));
+  // For backwards compatibility, we redirect requests for the old `node_modules`
+  // route to the new `cacheable_node_modules` route.
+  app.use('/node_modules', (req, res) => {
+    // Strip the leading slash.
+    const assetPath = req.url.slice(1);
+    res.redirect(assets.nodeModulesAssetPath(assetPath));
+  });
 
   // Support legacy use of ace by v2 questions
   app.use(
@@ -422,7 +453,7 @@ module.exports.initExpress = function () {
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
-  app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
@@ -436,7 +467,7 @@ module.exports.initExpress = function () {
   }
 
   // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -468,20 +499,8 @@ module.exports.initExpress = function () {
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
   // some pages don't need authorization
-  app.use('/', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
-  app.use('/pl', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
+  app.use('/', require('./pages/home/home'));
+  app.use('/pl', require('./pages/home/home'));
   app.use('/pl/settings', [
     function (req, res, next) {
       res.locals.navPage = 'user_settings';
@@ -489,13 +508,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/userSettings/userSettings'),
   ]);
-  app.use('/pl/enroll', [
-    function (req, res, next) {
-      res.locals.navPage = 'enroll';
-      next();
-    },
-    require('./pages/enroll/enroll'),
-  ]);
+  app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
     function (req, res, next) {
       res.locals.navPage = 'logout';
@@ -1616,6 +1629,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorSettings/administratorSettings')
   );
   app.use(
+    '/pl/administrator/institutions',
+    require('./pages/administratorInstitutions/administratorInstitutions').default
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses')
   );
@@ -1629,7 +1646,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/features',
-    require('./pages/administratorFeatures/administratorFeatures')
+    require('./pages/administratorFeatures/administratorFeatures').default
   );
   app.use(
     '/pl/administrator/queries',
@@ -1648,14 +1665,6 @@ module.exports.initExpress = function () {
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
   );
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  // Webhooks //////////////////////////////////////////////////////////
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
-    res.send('.');
-  });
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1847,7 +1856,6 @@ if (require.main === module && config.startServer) {
 
         // Load config immediately so we can use it configure everything else.
         await loadConfig(configPaths);
-        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.

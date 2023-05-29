@@ -10,6 +10,10 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
   },
   "dependencies": {
+    "@aws-sdk/client-auto-scaling": "^3.332.0",
+    "@aws-sdk/client-s3": "^3.332.0",
+    "@aws-sdk/client-sqs": "^3.332.0",
+    "@aws-sdk/lib-storage": "^3.332.0",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
@@ -18,13 +22,12 @@
     "ajv": "^8.12.0",
     "async": "^3.2.4",
     "async-stacktrace": "^0.0.2",
-    "aws-sdk": "^2.1369.0",
     "byline": "^5.0.0",
     "chai": "^4.3.7",
     "dockerode": "^3.3.5",
     "fs-extra": "^11.1.1",
     "logform": "^2.5.1",
-    "s3-streamlogger": "1.7.0",
+    "s3-streamlogger": "^1.9.0",
     "tmp": "^0.2.1",
     "winston": "^3.8.2",
     "winston-aws-cloudwatch": "^3.0.0",
@@ -42,6 +45,6 @@
     "sinon": "^15.0.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
-    "typescript-cp": "^0.1.7"
+    "typescript-cp": "^0.1.8"
   }
 }

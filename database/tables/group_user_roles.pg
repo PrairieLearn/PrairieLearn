@@ -1,0 +1,14 @@
+columns
+    group_id: bigint not null
+    group_role_id: bigint not null
+    id: bigint not null default nextval('group_user_roles_id_seq'::regclass)
+    user_id: bigint not null
+
+indexes
+    group_user_roles_pkey: PRIMARY KEY (id) USING btree (id)
+    group_user_roles_group_id_user_id_group_role_id_key: UNIQUE USING btree (group_id, user_id, group_role_id)
+
+foreign-key constraints
+    group_user_roles_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id)
+    group_user_roles_group_role_id_fkey: FOREIGN KEY (group_role_id) REFERENCES group_roles(id)
+    group_user_roles_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)

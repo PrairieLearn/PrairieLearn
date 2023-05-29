@@ -2,12 +2,11 @@ columns
     branch: text default 'master'::text
     commit_hash: text
     deleted_at: timestamp with time zone
-    display_timezone: text
+    display_timezone: text not null
     example_course: boolean not null default false
     grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
-    manual_grading_visible: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
     question_sharing_enabled: boolean default false
@@ -47,3 +46,4 @@ referenced by
     sharing_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     tags: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     topics: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

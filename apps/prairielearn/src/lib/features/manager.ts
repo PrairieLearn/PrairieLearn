@@ -125,6 +125,47 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   /**
+   * Checks if the given feature is enabled based on the context derived from locals populated from
+   * middlewares.
+   *
+   * @param name The name of the feature.
+   * @param locals The locals field authenticated and populated by middlewares.
+   * @returns Whether or not the feature is enabled
+   */
+  async enabledFromLocals(
+    name: FeatureName,
+    locals: {
+      institution?: { id: string };
+      course?: { id: string };
+      course_instance?: { id: string };
+      user?: { user_id: string };
+    }
+  ): Promise<boolean> {
+    const user_context = locals.user && { user_id: locals.user.user_id };
+    if (!locals.institution) {
+      return this.enabled(name, user_context);
+    } else if (!locals.course) {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        ...user_context,
+      });
+    } else if (!locals.course_instance) {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        course_id: locals.course.id,
+        ...user_context,
+      });
+    } else {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        course_id: locals.course.id,
+        course_instance_id: locals.course_instance.id,
+        ...user_context,
+      });
+    }
+  }
+
+  /**
    * Enables the feature for the given context.
    *
    * @param name The name of the feature.
