@@ -34,8 +34,8 @@ FROM
   JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
   JOIN pl_courses AS c ON c.id = ss.course_id
 WHERE
-  ssc.course_id = $course_id AND
-  '@' || c.sharing_name || '/' || q.qid = ANY($imported_qids::text[]);
+  ssc.course_id = $course_id
+  AND '@' || c.sharing_name || '/' || q.qid = ANY ($imported_qids::text[]);
 
 -- BLOCK get_course_info
 SELECT

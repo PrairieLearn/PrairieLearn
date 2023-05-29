@@ -371,7 +371,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
     course_id: courseId,
-    imported_qids: Array.from(importedQids)
+    imported_qids: Array.from(importedQids),
   });
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
@@ -389,8 +389,6 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
       });
     });
   }
-
-
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
