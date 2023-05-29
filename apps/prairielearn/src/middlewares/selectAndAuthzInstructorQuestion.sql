@@ -43,6 +43,7 @@ FROM
   sharing_info
 WHERE
   q.id = $question_id
+  AND q.course_id = $course_id -- TODO: when implementing question sharing relax this condition to also allow if the question is shared with the course
   AND q.deleted_at IS NULL;
 
 -- BLOCK select_and_auth_with_course_instance
@@ -94,4 +95,5 @@ FROM
 WHERE
   q.id = $question_id
   AND ci.id = $course_instance_id
+  AND q.course_id = ci.course_id -- TODO: when implementing question sharing relax this condition to also allow if the question is shared with the course
   AND q.deleted_at IS NULL;
