@@ -46,7 +46,6 @@ module.exports = function (req, res, next) {
       if (!res.writableFinished) {
         logger.verbose('request aborted by client', {
           response_id: res.locals.response_id,
-          timestamp: new Date().toISOString(),
         });
       }
     });
