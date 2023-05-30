@@ -19,6 +19,7 @@ import {
   CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
+import { isEnterprise } from '../../lib/license';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -62,31 +63,35 @@ router.post(
 
     if (req.body.__action === 'enroll') {
       const limitExceeded = await runInTransactionAsync(async () => {
-        const {
-          institution,
-          course_instance,
-          institution_enrollment_count,
-          course_instance_enrollment_count,
-        } = await queryRow(
-          sql.select_and_lock_enrollment_counts,
-          { course_instance_id: req.body.course_instance_id },
-          z.object({
-            institution: InstitutionSchema,
-            course_instance: CourseInstanceSchema,
-            institution_enrollment_count: z.number(),
-            course_instance_enrollment_count: z.number(),
-          })
-        );
+        // Enrollment limits can only be configured on enterprise instances, so
+        // we'll also only check and enforce the limits on enterprise instances.
+        if (isEnterprise()) {
+          const {
+            institution,
+            course_instance,
+            institution_enrollment_count,
+            course_instance_enrollment_count,
+          } = await queryRow(
+            sql.select_and_lock_enrollment_counts,
+            { course_instance_id: req.body.course_instance_id },
+            z.object({
+              institution: InstitutionSchema,
+              course_instance: CourseInstanceSchema,
+              institution_enrollment_count: z.number(),
+              course_instance_enrollment_count: z.number(),
+            })
+          );
 
-        const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
-        const courseInstanceEnrollmentLimit =
-          course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
+          const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
+          const courseInstanceEnrollmentLimit =
+            course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
 
-        if (
-          institution_enrollment_count + 1 > yearlyEnrollmentLimit ||
-          course_instance_enrollment_count + 1 > courseInstanceEnrollmentLimit
-        ) {
-          return true;
+          if (
+            institution_enrollment_count + 1 > yearlyEnrollmentLimit ||
+            course_instance_enrollment_count + 1 > courseInstanceEnrollmentLimit
+          ) {
+            return true;
+          }
         }
 
         // No limits would be exceeded, so we can enroll the user.

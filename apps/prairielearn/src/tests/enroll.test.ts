@@ -87,28 +87,36 @@ async function unenrollUser(user: AuthUser) {
   });
 }
 
-describe('Enroll page', function () {
+describe('Enroll page (enterprise)', function () {
   before(helperServer.before());
   after(helperServer.after);
+
+  const originalIsEnterprise = config.isEnterprise;
+  before(async () => (config.isEnterprise = true));
+  after(async () => (config.isEnterprise = originalIsEnterprise));
 
   step('enroll a single student', async () => {
     const res = await enrollUser(USER_1);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('enrolls the same student again', async () => {
     const res = await enrollUser(USER_1);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('unenroll a single student', async () => {
     const res = await unenrollUser(USER_1);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('unenroll the same student again', async () => {
     const res = await unenrollUser(USER_1);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('apply a course instance enrollment limit', async () => {
@@ -118,6 +126,7 @@ describe('Enroll page', function () {
   step('enroll one student', async () => {
     const res = await enrollUser(USER_1);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('fail to enroll a second student', async () => {
@@ -147,6 +156,7 @@ describe('Enroll page', function () {
   step('enroll a second student', async () => {
     const res = await enrollUser(USER_2);
     assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('fail to enroll a third student', async () => {
@@ -167,5 +177,27 @@ describe('Enroll page', function () {
     const res = await enrollUser(USER_3);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
+  });
+});
+
+// Enrollment limits should not apply for non-enterprise instances (the default).
+describe('Enroll page (non-enterprise)', () => {
+  before(helperServer.before());
+  after(helperServer.after);
+
+  step('apply a course instance enrollment limit', async () => {
+    await queryAsync('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+  });
+
+  step('enroll one student', async () => {
+    const res = await enrollUser(USER_1);
+    assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
+  });
+
+  step('enroll a second student', async () => {
+    const res = await enrollUser(USER_2);
+    assert.isOk(res.ok);
+    assert.equal(res.url, baseUrl + '/enroll');
   });
 });
