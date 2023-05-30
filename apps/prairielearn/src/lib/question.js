@@ -1,3 +1,5 @@
+// @ts-check
+
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -518,22 +520,6 @@ module.exports = {
     let questionModule, question_course, courseIssues, data, submission, grading_job;
     async.series(
       [
-        (callback) => {
-          if (question.course_id === variant_course.id) {
-            question_course = variant_course;
-            callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
-        },
         (callback) => {
           var params = [variant.id, check_submission_id];
           sqldb.callZeroOrOneRow(
@@ -1269,7 +1255,7 @@ module.exports = {
    * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
    * @param {Object} course - The course for the variant.
    * @param {number} authn_user_id - The currently authenticated user.
-   * @return {string} The job sequence ID.
+   * @return {Promise<string>} The job sequence ID.
    */
   async startTestQuestion(
     count,
@@ -1285,8 +1271,8 @@ module.exports = {
 
     const serverJob = await createServerJob({
       courseId: course.id,
-      userId: authn_user_id,
-      authnUserId: authn_user_id,
+      userId: String(authn_user_id),
+      authnUserId: String(authn_user_id),
       type: 'test_question',
       description: 'Test ' + question.qid,
     });
@@ -1932,6 +1918,8 @@ module.exports = {
         )
       );
 
+      /** @type function */
+      let renderFileAsync = util.promisify(ejs.renderFile);
       async.parallel(
         [
           async () => {
@@ -1971,10 +1959,7 @@ module.exports = {
             const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
             // Using util.promisify on renderFile instead of {async: true} from EJS, because the
             // latter would require all includes in EJS to be translated to await recursively.
-            panels.submissionPanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the question score panel
@@ -2001,10 +1986,7 @@ module.exports = {
               'partials',
               'questionScorePanel.ejs'
             );
-            panels.questionScorePanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the assessment score panel
@@ -2027,10 +2009,7 @@ module.exports = {
               'partials',
               'assessmentScorePanel.ejs'
             );
-            panels.assessmentScorePanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the question panel footer
@@ -2054,10 +2033,7 @@ module.exports = {
               'partials',
               'questionFooter.ejs'
             );
-            panels.questionPanelFooter = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             if (!renderScorePanels) return;
@@ -2086,10 +2062,7 @@ module.exports = {
               'partials',
               'questionNavSideButton.ejs'
             );
-            panels.questionNavNextButton = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionNavNextButton = await renderFileAsync(templatePath, renderParams);
           },
         ],
         (err) => {

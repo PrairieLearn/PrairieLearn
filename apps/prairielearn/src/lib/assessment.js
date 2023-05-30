@@ -229,7 +229,6 @@ module.exports = {
                 row.variant,
                 check_submission_id,
                 row.question,
-                row.question_course,
                 row.variant_course,
                 authn_user_id,
                 overrideGradeRate,
