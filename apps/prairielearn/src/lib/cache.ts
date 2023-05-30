@@ -1,19 +1,18 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const redis = require('redis');
-const redisLru = require('redis-lru');
-const { LRUCache } = require('lru-cache');
-const util = require('util');
+import ERR = require('async-stacktrace');
+import redis = require('redis');
+import redisLru = require('redis-lru');
+import { LRUCache } from 'lru-cache';
+import util = require('util');
 
-const { config } = require('./config');
-const { logger } = require('@prairielearn/logger');
+import { config } from './config';
+import { logger } from '@prairielearn/logger';
 
 let cacheEnabled = false;
-let cacheType;
-let cache;
-let client;
+let cacheType: 'none' | 'memory' | 'redis';
+let cache: any;
+let client: redis.RedisClient | null;
 
-module.exports.init = function (callback) {
+export function init(callback: (err?: Error | null) => void) {
   cacheType = config.questionRenderCacheType;
   if (!cacheType || cacheType === 'none') {
     // No caching
@@ -43,9 +42,9 @@ module.exports.init = function (callback) {
   }
 
   callback(null);
-};
+}
 
-module.exports.set = function (key, value, maxAgeMS = null) {
+export function set(key: string, value: any, maxAgeMS = null) {
   if (!cacheEnabled) return;
 
   switch (cacheType) {
@@ -73,14 +72,12 @@ module.exports.set = function (key, value, maxAgeMS = null) {
     default:
       throw new Error(`Unknown cache type "${cacheType}"`);
   }
-};
+}
 
 /**
  * Calls the callback with the value if it exists in the cache, or null otherwise.
- *
- * @param {string} key The key to look up in the cache
  */
-module.exports.getAsync = async function (key) {
+export async function getAsync(key: string) {
   if (!cacheEnabled) return null;
 
   switch (cacheType) {
@@ -91,15 +88,15 @@ module.exports.getAsync = async function (key) {
     default:
       throw new Error(`Unknown cache type "${cacheType}"`);
   }
-};
+}
 
-module.exports.get = util.callbackify(module.exports.getAsync);
+export const get = util.callbackify(getAsync);
 
 /**
  * Clears all entries from the cache. Mostly used to avoid leaking memory
  * during testing.
  */
-module.exports.reset = function (callback) {
+export function reset(callback: (err?: Error | null) => void) {
   if (!cacheEnabled) return callback(null);
 
   switch (cacheType) {
@@ -116,17 +113,17 @@ module.exports.reset = function (callback) {
     default:
       callback(new Error(`Unknown cache type "${cacheType}"`));
   }
-};
+}
 
 /**
  * Closes and deletes the cache itself.
  */
-module.exports.close = function (callback) {
+export function close(callback: (err?: Error | null) => void) {
   if (!cacheEnabled) return callback(null);
   cacheEnabled = false;
 
   if (cacheType === 'redis') {
-    client.quit((err) => {
+    client?.quit((err) => {
       if (ERR(err, callback)) return;
       cache = null;
       client = null;
@@ -138,4 +135,4 @@ module.exports.close = function (callback) {
   } else {
     callback(new Error(`Unknown cache type "${cacheType}"`));
   }
-};
+}
