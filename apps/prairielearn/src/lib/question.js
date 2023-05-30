@@ -521,6 +521,22 @@ module.exports = {
     async.series(
       [
         (callback) => {
+          if (question.course_id === variant_course.id) {
+            question_course = variant_course;
+            callback(null);
+          } else {
+            sqldb.queryOneRow(
+              sql.select_question_course,
+              { question_course_id: question.course_id },
+              (err, result) => {
+                if (ERR(err, callback)) return;
+                question_course = result.rows[0].course;
+                callback(null);
+              }
+            );
+          }
+        },
+        (callback) => {
           var params = [variant.id, check_submission_id];
           sqldb.callZeroOrOneRow(
             'variants_select_submission_for_grading',
@@ -1944,7 +1960,6 @@ module.exports = {
 
             await manualGrading.populateRubricData(locals);
             await manualGrading.populateManualGradingData(submission);
-
             const renderParams = {
               course: question_course,
               course_instance,
