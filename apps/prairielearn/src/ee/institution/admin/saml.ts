@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import * as pem from 'pem';
-
+import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+
 import { InstitutionAdminSaml } from './saml.html';
 import {
   getInstitution,
@@ -99,7 +100,7 @@ router.get(
         institution,
         samlProvider,
         institutionAuthenticationProviders,
-        host: req.headers.host,
+        host: z.string().parse(req.headers.host),
         resLocals: res.locals,
       })
     );

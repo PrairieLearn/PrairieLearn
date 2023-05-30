@@ -8,6 +8,7 @@ import * as error from '@prairielearn/error';
 
 import {
   MigrationFile,
+  parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
 } from '../load-migrations';
@@ -124,8 +125,15 @@ export async function initWithLock(directories: string[], project: string) {
     const migrationPath = path.join(directory, filename);
     if (filename.endsWith('.sql')) {
       const migrationSql = await fs.readFile(migrationPath, 'utf8');
+      const annotations = parseAnnotations(migrationSql);
       try {
-        await sqldb.queryAsync(migrationSql, {});
+        if (annotations.has('NO TRANSACTION')) {
+          await sqldb.queryAsync(migrationSql, {});
+        } else {
+          await sqldb.runInTransactionAsync(async () => {
+            await sqldb.queryAsync(migrationSql, {});
+          });
+        }
       } catch (err) {
         error.addData(err, { sqlFile: filename });
         throw err;

@@ -68,6 +68,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
 - [`pl-card`](#pl-card-element): Displays content within a card-styled component.
+- [`pl-template`](#pl-template-element): Displays content from mustache templates.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -749,8 +750,8 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 | `display`                  | "block" or "inline"                          | "inline"     | How to display the input field.                                                                                                                                                                                                                                                                                               |
 | `grading-mode`             | "with-units", "exact-units", or "only-units" | "with-units" | How to grade student submission. "only-units" only checks for the units input by the student. "exact-units" asks for a quantity with a specified unit. "with-units" is similar to "exact-units", but will automatically convert the units used by the given answer if possible.                                               |
 | `comparison`               | "exact", "sigfig", "decdig" or "relabs"      | "sigfig"     | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=exact-units`                                         |
-| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode=exact-units`.                                                                                                                                                                                                                                                  |
-| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode=with-units`. Required and must include units when `grading-mode=with-units`.                                                                                                                                                                                   |
+| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode="with-units"`.                                                                                                                                                                                                                                                 |
+| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode="with-units"`. In `grading-mode="with-units"`, the default value copies the units used in the correct answer, and custom values must include units.                                                                                                            |
 | `digits`                   | integer                                      | 2            | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                     |
 | `allow-blank`              | boolean                                      | false        | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                              |
 | `blank-value`              | string                                       | ""           | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                                                         |
@@ -1997,6 +1998,53 @@ The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbo
 
 ---
 
+### `pl-template` element
+
+Displays boilerplate HTML from templates in a reusable way.
+
+#### Sample element
+
+```html
+<pl-template file-name="outer_template.mustache" subdirectory="templates">
+  <pl-variable name="is-open">True</pl-variable>
+  <pl-variable
+    name="problem-statement"
+    directory="question"
+    file-name="serverFilesQuestion/statement.html"
+  ></pl-variable>
+</pl-template>
+```
+
+#### Customizations
+
+| Attribute               | Type                                                                                            | Default             | Description                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `file-name`             | string                                                                                          | -                   | File name of the outer template to use.                                                                      |
+| `directory`             | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                                                                      |
+| `log-variable-warnings` | boolean                                                                                         | false               | Whether to log warnings when rendering templates with undefined variables. Useful for debugging.             |
+| `log-tag-warnings`      | boolean                                                                                         | true                | Whether to log warnings if a rendered template contains elements which are not guaranteed to work correctly. |
+
+Inside the `pl-template` element, variables for use in rendering the template may be specified with a `pl-variable` tag. Each `pl-variable` tag can be used to define a variable with data from a file or with the contents of the tag (but not both). Note that substitution is **not** applied to external files used in `pl-variable` (files are used as-is). The `pl-variable` tag supports the following attributes:
+
+| Attribute         | Type                                                                                            | Default             | Description                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------- |
+| `name`            | string                                                                                          | -                   | Variable name to assign the data defined by this tag.         |
+| `file-name`       | string                                                                                          | -                   | File name to use if variable data is being taken from a file. |
+| `directory`       | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                       |
+| `trim-whitespace` | boolean                                                                                         | true                | Whether to trim whitespace of data specified by this tag.     |
+
+#### Details
+
+Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **elements that accept and/or grade student input used within this element will not work correctly.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Each instance of the `pl-template` element also has a unique `uuid` variable available for rendering. Templates may also be used within other templates.
+
+_Note:_ The id `#` CSS selector does _not_ work for ids that start with a number, so uuids should be prefixed (as these may start with a number).
+
+#### Example implementations
+
+- [element/template]
+
+---
+
 ### `pl-file-preview` element
 
 Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
@@ -2428,6 +2476,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/dataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dataframe
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
+[element/template]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/template
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
