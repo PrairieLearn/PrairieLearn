@@ -89,12 +89,9 @@ module.exports = {
             debug('before(): initialize socket server');
             socketServer.init(httpServer);
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize cache');
-            cache.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await cache.init();
           },
           async () => {
             debug('before(): initialize server jobs');
