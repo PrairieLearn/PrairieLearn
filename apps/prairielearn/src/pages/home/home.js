@@ -8,6 +8,7 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
+  res.locals.navPage = 'home';
   res.locals.isAuthenticated = !!res.locals.authn_user;
   if (res.locals.isAuthenticated) {
     const params = {

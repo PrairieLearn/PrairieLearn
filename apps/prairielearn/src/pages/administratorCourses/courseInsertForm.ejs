@@ -3,9 +3,9 @@
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <div class="form-group">
       <label>Institution:</label>
-      <select name="institution_id" class="form-control">
+      <select name="institution_id" class="form-control" onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;">
           <% institutions.forEach(function(i) { %>
-              <option value="<%= i.id %>"><%= i.short_name %></option>
+              <option value="<%= i.id %>" data-timezone="<%= i.display_timezone %>"><%= i.short_name %></option>
           <% }); %>
       </select>
   </div>
@@ -19,7 +19,7 @@
   </div>
   <div class="form-group">
     <label for="courseAddInputTimezone">Timezone:</label>
-    <input type="text" class="form-control" id="courseAddInputTimezone" name="display_timezone" value="America/Chicago">
+    <input type="text" class="form-control" id="courseAddInputTimezone" name="display_timezone" value="<%= institutions[0]?.display_timezone %>">
   </div>
   <div class="form-group">
     <label for="courseAddInputPath">Path:</label>

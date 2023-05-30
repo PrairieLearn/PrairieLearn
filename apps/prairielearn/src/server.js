@@ -108,6 +108,12 @@ module.exports.initExpress = function () {
     }
   }
 
+  // This should come before the session middleware so that we don't
+  // create a session every time we get a health check request.
+  app.get('/pl/webhooks/ping', function (req, res, _next) {
+    res.send('.');
+  });
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
@@ -138,10 +144,10 @@ module.exports.initExpress = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds,
+        maxAge: config.sessionStoreExpireSeconds * 1000,
         httpOnly: true,
-        secure: true,
-        sameSite: 'none', // needed for iframes, Canvas LTI
+        secure: 'auto', // uses Express "trust proxy"
+        sameSite: config.sessionCookieSameSite,
       },
     })
   );
@@ -493,20 +499,8 @@ module.exports.initExpress = function () {
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
   // some pages don't need authorization
-  app.use('/', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
-  app.use('/pl', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
+  app.use('/', require('./pages/home/home'));
+  app.use('/pl', require('./pages/home/home'));
   app.use('/pl/settings', [
     function (req, res, next) {
       res.locals.navPage = 'user_settings';
@@ -514,13 +508,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/userSettings/userSettings'),
   ]);
-  app.use('/pl/enroll', [
-    function (req, res, next) {
-      res.locals.navPage = 'enroll';
-      next();
-    },
-    require('./pages/enroll/enroll'),
-  ]);
+  app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
     function (req, res, next) {
       res.locals.navPage = 'logout';
@@ -1627,6 +1615,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorSettings/administratorSettings')
   );
   app.use(
+    '/pl/administrator/institutions',
+    require('./pages/administratorInstitutions/administratorInstitutions').default
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses')
   );
@@ -1659,14 +1651,6 @@ module.exports.initExpress = function () {
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
   );
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  // Webhooks //////////////////////////////////////////////////////////
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
-    res.send('.');
-  });
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////

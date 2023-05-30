@@ -284,15 +284,14 @@ BEGIN
                     access_rule->>'password',
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
-                    input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
+                    input_date(access_rule->>'start_date', ci.display_timezone),
+                    input_date(access_rule->>'end_date', ci.display_timezone),
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-                    JOIN pl_courses AS c ON (c.id = ci.course_id)
                 WHERE
                     a.id = new_assessment_id
             )
