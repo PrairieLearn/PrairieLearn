@@ -1,6 +1,5 @@
 import redis = require('redis');
 import { LRUCache } from 'lru-cache';
-import util = require('util');
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -69,7 +68,7 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
 /**
  * Returns the value for the corresponding key if it exists in the cache; null otherwise.
  */
-export async function getAsync(key: string): Promise<any> {
+export async function get(key: string): Promise<any> {
   if (!cacheEnabled) return null;
 
   switch (cacheType) {
@@ -94,8 +93,6 @@ export async function getAsync(key: string): Promise<any> {
     }
   }
 }
-
-export const get = util.callbackify(getAsync);
 
 /**
  * Clear all entries from the cache.
