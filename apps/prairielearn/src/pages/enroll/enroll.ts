@@ -49,7 +49,7 @@ router.get(
 router.get(
   '/limit_exceeded',
   asyncHandler((req, res) => {
-    res.status(403).send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
+    res.send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
   })
 );
 

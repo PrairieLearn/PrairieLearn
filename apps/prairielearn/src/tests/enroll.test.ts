@@ -122,8 +122,7 @@ describe('Enroll page', function () {
 
   step('fail to enroll a second student', async () => {
     const res = await enrollUser(USER_2);
-    assert.isNotOk(res.ok);
-    assert.equal(res.status, 403);
+    assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
@@ -137,8 +136,7 @@ describe('Enroll page', function () {
 
   step('fail to enroll a second student', async () => {
     const res = await enrollUser(USER_2);
-    assert.isNotOk(res.ok);
-    assert.equal(res.status, 403);
+    assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
@@ -153,8 +151,7 @@ describe('Enroll page', function () {
 
   step('fail to enroll a third student', async () => {
     const res = await enrollUser(USER_3);
-    assert.isNotOk(res.ok);
-    assert.equal(res.status, 403);
+    assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
@@ -168,8 +165,7 @@ describe('Enroll page', function () {
 
   step('fail to enroll a third student', async () => {
     const res = await enrollUser(USER_3);
-    assert.isNotOk(res.ok);
-    assert.equal(res.status, 403);
+    assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 });
