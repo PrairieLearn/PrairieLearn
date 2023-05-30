@@ -7,7 +7,6 @@ const mustache = require('mustache');
 const cheerio = require('cheerio');
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const sqlDb = require('@prairielearn/postgres');
 const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
 const objectHash = require('object-hash');
 
