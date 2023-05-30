@@ -283,7 +283,7 @@ module.exports = {
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {?number} course_instance_id - The course instance for this variant. Can be null for instructor questions.
    * @param {Object} variant_course - The course for the variant.
-   * @param {Object} variant_course - The course for the question.
+   * @param {Object} question_course - The course for the question.
    * @param {Object} options - Options controlling the creation: options = {variant_seed}
    * @param {boolean} require_open - If true, only use an existing variant if it is open.
    * @param {function} callback - A callback(err, variant) function.
@@ -500,7 +500,6 @@ module.exports = {
    * @param {Object} variant - The variant to grade.
    * @param {?number} check_submission_id - The submission_id that must be graded (or null to skip this check).
    * @param {Object} question - The question for the variant.
-   * @param {Object} question_course - The course for the question.
    * @param {Object} variant_course - The course for the variant.
    * @param {number | null} authn_user_id - The currently authenticated user.
    * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
@@ -510,16 +509,31 @@ module.exports = {
     variant,
     check_submission_id,
     question,
-    question_course,
     variant_course,
     authn_user_id,
     overrideGradeRateCheck,
     callback
   ) {
     debug('_gradeVariant()');
-    let questionModule, courseIssues, data, submission, grading_job;
+    let questionModule, question_course, courseIssues, data, submission, grading_job;
     async.series(
       [
+        (callback) => {
+          if (question.course_id === variant_course.id) {
+            question_course = variant_course;
+            callback(null);
+          } else {
+            sqldb.queryOneRow(
+              sql.select_question_course,
+              { question_course_id: question.course_id },
+              (err, result) => {
+                if (ERR(err, callback)) return;
+                question_course = result.rows[0].course;
+                callback(null);
+              }
+            );
+          }
+        },
         (callback) => {
           var params = [variant.id, check_submission_id];
           sqldb.callZeroOrOneRow(
@@ -596,7 +610,7 @@ module.exports = {
         },
         (callback) => {
           const studentMessage = 'Error grading submission';
-          const courseData = { variant, question, submission, variant_course };
+          const courseData = { variant, question, submission, course: variant_course };
           module.exports._writeCourseIssues(
             courseIssues,
             variant,
