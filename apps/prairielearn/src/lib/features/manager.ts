@@ -13,29 +13,6 @@ const DEFAULT_CONTEXT = {
   user_id: null,
 };
 
-/**
- * Grants can have different types, which can be used to determine how they
- * were applied. These are mostly meant to be consumed by administrators who
- * need to be able to tell if a feature was enabled by default, set manually
- * by another administrator, or enabled as part of a subscription plan.
- */
-export enum FeatureGrantType {
-  /**
-   * A feature grant that was applied by default for a given context. For
-   * instance, we might want to enable a certain feature for all courses when
-   * they are created.
-   */
-  Default = 'default',
-  /**
-   * A feature flag that has been manually enabled by an administrator.
-   */
-  Manual = 'manual',
-  /**
-   * A feature flag that has been enabled as part of a subscription plan.
-   */
-  Subscription = 'subscription',
-}
-
 type EmptyContext = Record<string, never>;
 
 interface UserContext {
@@ -172,9 +149,9 @@ export class FeatureManager<FeatureName extends string> {
    * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
-  async enable(name: FeatureName, type: FeatureGrantType, context: FeatureContext = {}) {
+  async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.enable_feature, { name, type, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.enable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**
