@@ -77,7 +77,7 @@ module.exports = {
    * @protected
    *
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} course - The course for the question.
    * @param {Object} options - Options controlling the creation: options = {variant_seed}
    * @param {function} callback - A callback(err, courseIssues, variant) function.
    */
@@ -208,7 +208,8 @@ module.exports = {
    * @param {number} user_id - The user for the new variant.
    * @param {number} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
+   * @param {Object} question_course - The course for the question.
    * @param {Object} options - Options controlling the creation: options = {variant_seed}
    * @param {function} callback - A callback(err, variant) function.
    */
@@ -219,50 +220,56 @@ module.exports = {
     authn_user_id,
     group_work,
     course_instance_id,
-    course,
+    variant_course,
+    question_course,
     options,
     require_open,
     callback
   ) {
     module.exports._selectQuestion(question_id, instance_question_id, (err, question) => {
       if (ERR(err, callback)) return;
-      module.exports._makeVariant(question, course, options, (err, courseIssues, variant) => {
-        if (ERR(err, callback)) return;
-        const params = [
-          variant.variant_seed,
-          variant.params,
-          variant.true_answer,
-          variant.options,
-          variant.broken,
-          instance_question_id,
-          question.id,
-          course_instance_id,
-          user_id,
-          authn_user_id,
-          group_work,
-          require_open,
-          course.id,
-        ];
-        sqldb.callOneRow('variants_insert', params, (err, result) => {
+      module.exports._makeVariant(
+        question,
+        question_course,
+        options,
+        (err, courseIssues, variant) => {
           if (ERR(err, callback)) return;
-          const variant = result.rows[0].variant;
-          debug('variants_insert', variant);
-
-          const studentMessage = 'Error creating question variant';
-          const courseData = { variant, question, course };
-          module.exports._writeCourseIssues(
-            courseIssues,
-            variant,
+          const params = [
+            variant.variant_seed,
+            variant.params,
+            variant.true_answer,
+            variant.options,
+            variant.broken,
+            instance_question_id,
+            question.id,
+            course_instance_id,
+            user_id,
             authn_user_id,
-            studentMessage,
-            courseData,
-            (err) => {
-              if (ERR(err, callback)) return;
-              return callback(null, variant);
-            }
-          );
-        });
-      });
+            group_work,
+            require_open,
+            variant_course.id,
+          ];
+          sqldb.callOneRow('variants_insert', params, (err, result) => {
+            if (ERR(err, callback)) return;
+            const variant = result.rows[0].variant;
+            debug('variants_insert', variant);
+
+            const studentMessage = 'Error creating question variant';
+            const courseData = { variant, question, course: variant_course };
+            module.exports._writeCourseIssues(
+              courseIssues,
+              variant,
+              authn_user_id,
+              studentMessage,
+              courseData,
+              (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null, variant);
+              }
+            );
+          });
+        }
+      );
     });
   },
 
@@ -275,7 +282,8 @@ module.exports = {
    * @param {number} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {?number} course_instance_id - The course instance for this variant. Can be null for instructor questions.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
+   * @param {Object} variant_course - The course for the question.
    * @param {Object} options - Options controlling the creation: options = {variant_seed}
    * @param {boolean} require_open - If true, only use an existing variant if it is open.
    * @param {function} callback - A callback(err, variant) function.
@@ -287,7 +295,8 @@ module.exports = {
     authn_user_id,
     group_work,
     course_instance_id,
-    course,
+    variant_course,
+    question_course,
     options,
     require_open,
     callback
@@ -310,7 +319,8 @@ module.exports = {
           authn_user_id,
           group_work,
           course_instance_id,
-          course,
+          variant_course,
+          question_course,
           options,
           require_open,
           (err, variant) => {
@@ -332,7 +342,8 @@ module.exports = {
         authn_user_id,
         group_work,
         course_instance_id,
-        course,
+        variant_course,
+        question_course,
         options,
         require_open,
         (err, variant) => {
@@ -1037,19 +1048,44 @@ module.exports = {
    *
    * @param {Object} question - The question for the variant.
    * @param {boolean} group_work - If the assessment will support group work.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {number} authn_user_id - The currently authenticated user.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
    * @param {function} callback - A callback(err, variant) function.
    */
-  _testQuestion(question, group_work, course_instance, course, test_type, authn_user_id, callback) {
+  _testQuestion(
+    question,
+    group_work,
+    course_instance,
+    variant_course,
+    test_type,
+    authn_user_id,
+    callback
+  ) {
     debug('_testQuestion()');
 
     let variant,
+      question_course,
       expected_submission = null,
       test_submission = null;
     async.series(
       [
+        (callback) => {
+          if (question.course_id === variant_course.id) {
+            question_course = variant_course;
+            callback(null);
+          } else {
+            sqldb.queryOneRow(
+              sql.select_question_course,
+              { question_course_id: question.course_id },
+              (err, result) => {
+                if (ERR(err, callback)) return;
+                question_course = result.rows[0].course;
+                callback(null);
+              }
+            );
+          }
+        },
         (callback) => {
           const instance_question_id = null;
           const course_instance_id = (course_instance && course_instance.id) || null;
@@ -1062,7 +1098,8 @@ module.exports = {
             authn_user_id,
             group_work,
             course_instance_id,
-            course,
+            variant_course,
+            question_course,
             options,
             require_open,
             (err, ret_variant) => {
@@ -1078,7 +1115,7 @@ module.exports = {
           module.exports._testVariant(
             variant,
             question,
-            course,
+            variant_course,
             test_type,
             authn_user_id,
             (err, ret_expected_submission, ret_test_submission) => {
@@ -1525,6 +1562,22 @@ module.exports = {
     async.series(
       [
         (callback) => {
+          if (locals.question.course_id === locals.course.id) {
+            locals.question_course = locals.course;
+            callback(null);
+          } else {
+            sqldb.queryOneRow(
+              sql.select_question_course,
+              { question_course_id: locals.question.course_id },
+              (err, result) => {
+                if (ERR(err, callback)) return;
+                locals.question_course = result.rows[0].course;
+                callback(null);
+              }
+            );
+          }
+        },
+        (callback) => {
           if (variant_id != null) {
             const params = [variant_id, locals.question.id, locals.instance_question?.id];
             sqldb.callOneRow('variants_select', params, (err, result) => {
@@ -1554,6 +1607,7 @@ module.exports = {
               assessmentGroupWork,
               course_instance_id,
               locals.course,
+              locals.question_course,
               options,
               require_open,
               (err, variant) => {
@@ -1676,7 +1730,7 @@ module.exports = {
             locals.question,
             locals.submission,
             locals.submissions.slice(0, MAX_RECENT_SUBMISSIONS),
-            locals.course,
+            locals.question_course,
             locals.course_instance,
             locals,
             (err, htmls) => {
@@ -1824,7 +1878,7 @@ module.exports = {
         assessment_instance,
         assessment,
         assessment_set,
-        course,
+        question_course,
         course_instance,
         submission_index,
         submission_count,
@@ -1877,7 +1931,7 @@ module.exports = {
               question,
               submission,
               submissions,
-              course,
+              question_course,
               course_instance,
               locals
             );
@@ -1890,7 +1944,7 @@ module.exports = {
             await manualGrading.populateManualGradingData(submission);
 
             const renderParams = {
-              course,
+              course: question_course,
               course_instance,
               question,
               submission,
