@@ -57,7 +57,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getOrCreateIndicator(uuid, createAt) {
-    let indicator = document.getElementById('indicator-' + uuid)
+    let indicator = document.getElementById('indicator-' + uuid);
     if (!indicator) {
       indicator = document.createElement('li');
       indicator.classList.add('pl-order-blocks-pairing-indicator');
@@ -76,13 +76,15 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function placePairingIndicators() {
     let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
-    let allAns = answerObjs.concat(Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')));
+    let allAns = answerObjs.concat(
+      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block'))
+    );
 
-    let getDistractorBin = block => block.getAttribute('data-distractor-bin');
-    let distractorBins = new Set(allAns.map(getDistractorBin).filter(x => x != null));
+    let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
+    let distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
     for (let binUuid of distractorBins) {
-      let blocks = answerObjs.filter(block => getDistractorBin(block) === binUuid);
+      let blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
       let indicator = getOrCreateIndicator(binUuid, blocks[0]);
       let innerList = indicator.getElementsByClassName('inner-list')[0];
 
@@ -100,12 +102,16 @@ window.PLOrderBlocks = function (uuid, options) {
     let block = ui.item[0];
     let binUuid = block.getAttribute('data-distractor-bin');
     let containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
-    let containingIndicatorUuid = containingIndicator ? containingIndicator.getAttribute('data-distractor-bin') : null;
+    let containingIndicatorUuid = containingIndicator
+      ? containingIndicator.getAttribute('data-distractor-bin')
+      : null;
 
     if (!binUuid && containingIndicatorUuid) {
       containingIndicator.insertAdjacentElement('afterend', block);
     } else if (binUuid !== containingIndicatorUuid) {
-      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName('inner-list')[0];
+      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
+        'inner-list'
+      )[0];
       properIndicatorList.insertAdjacentElement('beforeend', block);
     }
   }

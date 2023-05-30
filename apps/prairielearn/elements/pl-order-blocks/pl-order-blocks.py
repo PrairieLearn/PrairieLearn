@@ -40,6 +40,7 @@ FIRST_WRONG_FEEDBACK = {
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
+
 def filter_pairs_from_dict(data, keys):
     return {key: data[key] for key in keys}
 
@@ -170,13 +171,26 @@ def prepare(element_html, data):
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "tag", "ranking", "indent", "distractor-for"],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "ranking",
+                    "indent",
+                    "distractor-for",
+                ],
             )
         elif grading_method == "dag":
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "tag", "depends", "comment", "indent", "distractor-for"],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "depends",
+                    "comment",
+                    "indent",
+                    "distractor-for",
+                ],
             )
 
         is_correct = pl.get_boolean_attrib(
@@ -345,32 +359,46 @@ def render(element_html, data):
         )
 
         mcq_options = data["params"][answer_name]
-        mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid", "tag", "distractor-for"])
+        mcq_options = filter_multiple_from_array(
+            mcq_options, ["inner_html", "uuid", "tag", "distractor-for"]
+        )
 
         # visual pairing
-        correct_tags = set(block['tag'] for block in mcq_options + student_previous_submission if block['tag'] is not None)
-        incorrect_tags = set(block['distractor-for'] for block in mcq_options + student_previous_submission if block.get('distractor-for', None)) 
+        correct_tags = set(
+            block["tag"]
+            for block in mcq_options + student_previous_submission
+            if block["tag"] is not None
+        )
+        incorrect_tags = set(
+            block["distractor-for"]
+            for block in mcq_options + student_previous_submission
+            if block.get("distractor-for", None)
+        )
 
         if not incorrect_tags.issubset(correct_tags):
-            raise Exception("The following distractor-for tags do not have matching correct answer tags: " + str(incorrect_tags - correct_tags))
+            raise Exception(
+                "The following distractor-for tags do not have matching correct answer tags: "
+                + str(incorrect_tags - correct_tags)
+            )
 
         for block in student_previous_submission + mcq_options:
-            if block.get('distractor-for') is not None:
+            if block.get("distractor-for") is not None:
                 continue
 
             distractors = [
-                block2 
-                for block2 in student_previous_submission + mcq_options 
-                if (block['tag'] == block2.get('distractor-for', None)) and (block['tag'] is not None)
-                ]
-            
+                block2
+                for block2 in student_previous_submission + mcq_options
+                if (block["tag"] == block2.get("distractor-for", None))
+                and (block["tag"] is not None)
+            ]
+
             if len(distractors) == 0:
                 continue
 
             distractor_bin = pl.get_uuid()
-            block['distractor_bin'] = distractor_bin
-            for distractor in distractors: 
-                distractor['distractor_bin'] = distractor_bin
+            block["distractor_bin"] = distractor_bin
+            for distractor in distractors:
+                distractor["distractor_bin"] = distractor_bin
 
         if answer_name in data["submitted_answers"]:
             student_previous_submission = filter_multiple_from_array(
@@ -379,12 +407,8 @@ def render(element_html, data):
             mcq_options = [
                 opt
                 for opt in mcq_options
-                if 
-                filter_pairs_from_dict(
-                    opt, ["inner_html", "uuid"]
-                )
-                not in 
-                filter_multiple_from_array(
+                if filter_pairs_from_dict(opt, ["inner_html", "uuid"])
+                not in filter_multiple_from_array(
                     student_previous_submission, ["inner_html", "uuid"]
                 )
             ]
@@ -408,7 +432,7 @@ def render(element_html, data):
             element, "indentation", INDENTION_DEFAULT
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
-        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
+        inline_layout = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
 
         help_text = (
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
