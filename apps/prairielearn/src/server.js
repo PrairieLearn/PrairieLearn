@@ -2125,12 +2125,7 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        cache.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => cache.init(),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);

@@ -160,12 +160,9 @@ module.exports = {
           debug('after(): close server jobs');
           await serverJobs.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close cache');
-          cache.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await cache.close();
         },
         function (callback) {
           debug('after(): close local cache');
