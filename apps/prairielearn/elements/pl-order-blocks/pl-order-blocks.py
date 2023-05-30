@@ -14,7 +14,6 @@ from lxml import etree
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
-INLINE_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
 GRADING_METHOD_DEFAULT = "ordered"
@@ -429,7 +428,6 @@ def render(element_html, data):
             element, "indentation", INDENTION_DEFAULT
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
-        inline_layout = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
 
         help_text = (
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
