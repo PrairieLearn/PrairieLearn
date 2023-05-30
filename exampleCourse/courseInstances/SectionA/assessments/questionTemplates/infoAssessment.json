@@ -36,7 +36,7 @@
               {"id": "demo/addHTMLtable",                    "points": 2, "maxPoints": 4},
               {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4},
               {"id": "element/markdown",                 "points": 2, "maxPoints": 10},
-              {"id": "demo/surveyQuestion",                  "points": 1, "maxPoints": 1}
+              {"id": "demo/survey",                  "points": 1, "maxPoints": 1}
           ]
       },
         {
