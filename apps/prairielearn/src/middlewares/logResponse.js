@@ -41,6 +41,14 @@ module.exports = function (req, res, next) {
         instance_question_id: res.locals?.instance_question?.id ?? null,
       };
       logger.verbose('response', access);
+
+      // Print additional message in this case to simplify grepping logs for this scenario
+      if (!res.writableFinished) {
+        logger.verbose('request aborted by client', {
+          response_id: res.locals.response_id,
+          timestamp: new Date().toISOString(),
+        });
+      }
     });
   }
   next();
