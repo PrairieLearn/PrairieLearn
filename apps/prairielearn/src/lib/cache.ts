@@ -1,9 +1,10 @@
 import redis = require('redis');
 import { LRUCache } from 'lru-cache';
 import util = require('util');
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config';
-import { logger } from '@prairielearn/logger';
 
 let cacheEnabled = false;
 let cacheType: 'redis' | 'memory' | 'none';
@@ -24,11 +25,17 @@ export async function init() {
     client = redis.createClient({
       url: config.redisUrl,
     });
-    client.on('error', (err) => logger.error('Redis error', err));
+    await client.connect();
+    client.on('error', (err) => {
+      logger.error('Redis error', err);
+      Sentry.captureException(err);
+    });
   } else if (cacheType === 'memory') {
     cacheEnabled = true;
     cache = new LRUCache({
-      max: config.questionRenderCacheMaxItems,
+      // The in-memory cache is really only suited for development, so we'll
+      // hardcode a relatively low limit here.
+      max: 1000,
     });
   } else {
     throw new Error(`Unknown cache type "${cacheType}"`);
@@ -55,10 +62,6 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
         .set(key, JSON.stringify(value), { PX: maxAgeMS ?? undefined })
         .catch((_err) => logger.error('Cache set error', { key, maxAgeMS }));
       break;
-    }
-
-    default: {
-      throw new Error(`Unknown cache type "${cacheType}"`);
     }
   }
 }
@@ -87,7 +90,7 @@ export async function getAsync(key: string): Promise<any> {
     }
 
     default: {
-      throw new Error(`Unknown cache type "${cacheType}"`);
+      return null;
     }
   }
 }
@@ -111,13 +114,10 @@ export async function reset() {
       do {
         const reply = await client.scan(cursor, { MATCH: '*', COUNT: 1000 });
         cursor = reply.cursor;
+        console.log('deleting keys', reply.keys);
         await client.del(reply.keys);
       } while (cursor !== 0);
       break;
-    }
-
-    default: {
-      throw new Error(`Unknown cache type "${cacheType}"`);
     }
   }
 }
@@ -131,9 +131,5 @@ export async function close() {
 
   if (cacheType === 'redis') {
     await client.quit();
-  } else if (cacheType === 'memory') {
-    // Nothing to do here.
-  } else {
-    throw new Error(`Unknown cache type "${cacheType}"`);
   }
 }
