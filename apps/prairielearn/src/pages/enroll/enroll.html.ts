@@ -2,14 +2,14 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export const CourseInstanceSchema = z.object({
+export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
   course_instance_id: z.string(),
   enrolled: z.boolean(),
   instructor_access: z.boolean(),
 });
-type CourseInstance = z.infer<typeof CourseInstanceSchema>;
+type CourseInstance = z.infer<typeof CourseInstanceRowSchema>;
 
 export function Enroll({
   courseInstances,

@@ -161,7 +161,7 @@ describe('Enroll page', function () {
   step('set a yearly enrollment limit', async () => {
     await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
     await queryAsync(
-      'UPDATE institutions SET course_instance_enrollment_limit = NULL, yearly_enrollment_limit = 2 WHERE id = 1',
+      'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
       {}
     );
   });

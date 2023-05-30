@@ -8,10 +8,10 @@ ALTER COLUMN created_at
 SET DEFAULT CURRENT_TIMESTAMP;
 
 ALTER TABLE institutions
-ADD COLUMN IF NOT EXISTS yearly_enrollment_limit INTEGER;
+ADD COLUMN IF NOT EXISTS yearly_enrollment_limit INTEGER NOT NULL DEFAULT 100000;
 
 ALTER TABLE institutions
-ADD COLUMN IF NOT EXISTS course_instance_enrollment_limit INTEGER;
+ADD COLUMN IF NOT EXISTS course_instance_enrollment_limit INTEGER NOT NULL DEFAULT 10000;
 
 ALTER TABLE course_instances
 ADD COLUMN IF NOT EXISTS enrollment_limit INTEGER;
