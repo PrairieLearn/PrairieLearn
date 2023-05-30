@@ -192,7 +192,6 @@
     "@types/passport-azure-ad": "^4.3.1",
     "@types/pem": "^1.9.6",
     "@types/pg": "^8.6.6",
-    "@types/redis": "^2.8.32",
     "@types/tar": "^6.1.4",
     "@types/tmp": "^0.2.3",
     "@types/uuid": "^9.0.1",
