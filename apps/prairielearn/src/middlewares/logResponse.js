@@ -17,7 +17,6 @@ module.exports = function (req, res, next) {
 
       var access = {
         response_id: res.locals.response_id,
-        timestamp: new Date().toISOString(),
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],
         method: req.method,
