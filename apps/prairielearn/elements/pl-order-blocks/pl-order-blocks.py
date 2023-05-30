@@ -203,9 +203,6 @@ def prepare(element_html, data):
         tag = pl.get_string_attrib(html_tags, "tag", None)
 
         tag, depends = get_graph_info(html_tags)
-        if ranking == -1:
-            tag = None
-
         if is_correct and tag is not None:
             if tag in used_tags:
                 raise Exception(
@@ -233,10 +230,10 @@ def prepare(element_html, data):
             "indent": answer_indent,
             "ranking": ranking,
             "index": index,
-            "tag": tag,  # set by HTML with DAG grader, set internally for ranking grader if tags are not manually provided
+            "tag": tag,
+            "distractor-for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
-            "distractor-for": distractor_for,
         }
         if is_correct:
             correct_answers.append(answer_data_dict)
