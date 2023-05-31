@@ -52,12 +52,24 @@ router.get(
       ? 'course_instance'
       : 'institution';
 
+    const { external_grading_question_count, workspace_question_count } = await queryRow(
+      sql.question_counts,
+      { course_id: res.locals.course.id },
+      z.object({
+        external_grading_question_count: z.number(),
+        workspace_question_count: z.number(),
+      })
+    );
+
     res.send(
       InstructorCourseInstanceBilling({
         studentBillingEnabled,
+        computeEnabled: requiredPlans.includes('compute'),
         enrollmentCount,
         enrollmentLimit,
         enrollmentLimitSource,
+        externalGradingQuestionCount: external_grading_question_count,
+        workspaceQuestionCount: workspace_question_count,
         resLocals: res.locals,
       })
     );
@@ -73,10 +85,11 @@ router.post(
       plans.push('basic');
     }
 
-    console.log('setting plans', plans);
-    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, plans);
+    if (req.body.compute_enabled === '1') {
+      plans.push('compute');
+    }
 
-    console.log('req.body', req.body);
+    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, plans);
     res.redirect(req.originalUrl);
   })
 );

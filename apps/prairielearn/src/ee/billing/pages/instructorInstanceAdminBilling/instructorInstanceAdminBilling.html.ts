@@ -4,15 +4,21 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 export function InstructorCourseInstanceBilling({
   studentBillingEnabled,
+  computeEnabled,
   enrollmentCount,
   enrollmentLimit,
   enrollmentLimitSource,
+  externalGradingQuestionCount = 0,
+  workspaceQuestionCount = 0,
   resLocals,
 }: {
   studentBillingEnabled: boolean;
+  computeEnabled: boolean;
   enrollmentCount: number;
   enrollmentLimit: number;
   enrollmentLimitSource: 'course_instance' | 'institution';
+  externalGradingQuestionCount: number;
+  workspaceQuestionCount: number;
   resLocals: Record<string, any>;
 }) {
   const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
@@ -78,6 +84,34 @@ export function InstructorCourseInstanceBilling({
                   </p>
                 </div>
 
+                <h2>Features</h2>
+                <p>
+                  If your course requires certain features, you can enable them so that students can
+                  pay for them.
+                </p>
+
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="compute_enabled"
+                    ${computeEnabled ? 'checked' : ''}
+                    value="1"
+                    id="computeEnabled"
+                  />
+                  <label class="form-check-label" for="computeEnabled">
+                    External grading and workspaces
+                  </label>
+                  <p class="small text-muted">
+                    Students will be able to use questions that utilize external grading and/or
+                    workspaces. This course has
+                    <strong>${pluralizeQuestionCount(externalGradingQuestionCount)}</strong> that
+                    use external grading and
+                    <strong>${pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
+                    workspaces.
+                  </p>
+                </div>
+
                 <!-- TODO: only show this if there are existing enrollments? -->
                 <div class="alert alert-warning">
                   Any students currently enrolled in your course will lose access until they have
@@ -115,4 +149,8 @@ function enrollmentLimitExplanation({
   }
 
   return `This course's institution has a per-course-instance enrollment limit of ${enrollmentLimit}.`;
+}
+
+function pluralizeQuestionCount(count: number) {
+  return count === 1 ? `${count} question` : `${count} questions`;
 }
