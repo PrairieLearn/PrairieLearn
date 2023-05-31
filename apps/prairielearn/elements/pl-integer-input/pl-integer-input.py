@@ -86,9 +86,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
+    parse_error = data["format_errors"].get(name)
+
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+        raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
         # Get info strings
         info_params = {
@@ -120,7 +122,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
-            "display_append_span": show_info or suffix,
+            "display_append_span": show_info or suffix or parse_error,
+            "parse_error": parse_error,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
@@ -135,7 +138,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
             "label": label,
@@ -147,7 +149,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising a ValueError if it does not exist
-            a_sub = data["submitted_answers"].get(name, None)
+            a_sub = data["submitted_answers"].get(name)
             if a_sub is None:
                 raise ValueError(f"Submitted answer is None for {name}")
 
@@ -176,7 +178,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     raw_submitted_answer
                 )
 
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+        score = data["partial_scores"].get(name, {"score": None}).get("score")
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -190,7 +192,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-        a_tru = pl.from_json(data["correct_answers"].get(name, None))
+        a_tru = pl.from_json(data["correct_answers"].get(name))
         if a_tru is None:
             return ""
 
@@ -216,7 +218,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answers"].get(name, None)
+    a_sub = data["submitted_answers"].get(name)
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -275,7 +277,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = pl.from_json(data["correct_answers"].get(name, None))
+    a_tru = pl.from_json(data["correct_answers"].get(name))
     if a_tru is None:
         return
 

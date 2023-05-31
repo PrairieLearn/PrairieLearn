@@ -29,7 +29,7 @@
         />
         <span class="input-group-append">
             {{#suffix}}
-            <span class="input-group-text {{^show_info}}rounded-right{{/show_info}}" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
+            <span class="input-group-text {{^display_append_span}}rounded-right{{/display_append_span}}" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
             {{/suffix}}
 
             {{#show_info}}
@@ -52,6 +52,11 @@
                     <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                 </span>
             {{/incorrect}}
+            {{#parse_error}}
+                <a role="button" class="btn btn-light border d-flex align-items-center text-danger rounded-right" data-toggle="popover" data-html="true" title="Format Error" data-placement="auto" data-trigger="focus" tabindex="0" data-content="{{parse_error}}">
+                    Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                </a>
+            {{/parse_error}}
         </span>
     </span>
 {{#inline}}</span>{{/inline}}
@@ -77,9 +82,7 @@
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
 
-    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-
-    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+    <a href="javascript:void(0);" role="button" class="badge text-danger badge-invalid btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></a>
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
