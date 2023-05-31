@@ -103,7 +103,7 @@
     "klaw": "^4.1.0",
     "lodash": "^4.17.21",
     "loopbench": "^2.0.0",
-    "lru-cache": "^8.0.5",
+    "lru-cache": "^9.1.1",
     "mathjax": "^3.2.2",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
