@@ -61,6 +61,9 @@ router.get(
       })
     );
 
+    // TODO: handle case where student billing for enrollments is not enabled
+    // and the course instance already has access to certain plans via the institution
+    // or the course instance itself.
     res.send(
       InstructorCourseInstanceBilling({
         studentBillingEnabled,
@@ -89,6 +92,7 @@ router.post(
       plans.push('compute');
     }
 
+    // TODO: forbid removal of `basic` plan if enrollments exceed any limits.
     await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, plans);
     res.redirect(req.originalUrl);
   })
