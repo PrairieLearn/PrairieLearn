@@ -29,7 +29,6 @@ SELECT
 INSERT INTO
   feature_grants (
     name,
-    type,
     institution_id,
     course_id,
     course_instance_id,
@@ -38,7 +37,6 @@ INSERT INTO
 VALUES
   (
     $name,
-    $type,
     $institution_id,
     $course_id,
     $course_instance_id,
