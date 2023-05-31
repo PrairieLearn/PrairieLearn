@@ -1934,6 +1934,8 @@ module.exports = {
         )
       );
 
+      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+      // latter would require all includes in EJS to be translated to await recursively.
       /** @type function */
       let renderFileAsync = util.promisify(ejs.renderFile);
       async.parallel(
@@ -1972,8 +1974,6 @@ module.exports = {
               plainUrlPrefix: config.urlPrefix,
             };
             const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
-            // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-            // latter would require all includes in EJS to be translated to await recursively.
             panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
