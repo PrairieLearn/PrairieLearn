@@ -2,15 +2,16 @@ import async = require('async');
 import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
 import fetch from 'node-fetch';
+import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
-import sqldb = require('@prairielearn/postgres');
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
 import { makeAwsClientConfig } from '../lib/aws';
 import workspaceHelper = require('../lib/workspace');
 import workspaceHostUtils = require('../lib/workspaceHost');
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 
 export const run = callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -20,7 +21,7 @@ export const run = callbackify(async () => {
   await checkHealth();
 });
 
-function set_difference<T>(a: Set<T>, b: Set<T>): Set<T> {
+function setDifference<T>(a: Set<T>, b: Set<T>): Set<T> {
   const diff = new Set<T>();
   for (const val of a) {
     if (!b.has(val)) {
@@ -36,50 +37,48 @@ function set_difference<T>(a: Set<T>, b: Set<T>): Set<T> {
  */
 async function checkDBConsistency() {
   const ec2 = new EC2(makeAwsClientConfig());
-  const running_host_set = new Set();
-  const reservations = (
-    await ec2.describeInstances({
-      Filters: [
-        {
-          Name: 'tag-key',
-          Values: [config.workspaceLoadLaunchTag],
-        },
-        {
-          Name: 'instance-state-name',
-          Values: ['pending', 'running'],
-        },
-      ],
-      MaxResults: 500,
-    })
-  ).Reservations;
-  for (const reservation of reservations ?? []) {
+  const runningHosts = new Set<string>();
+  const instances = await ec2.describeInstances({
+    Filters: [
+      {
+        Name: 'tag-key',
+        Values: [config.workspaceLoadLaunchTag],
+      },
+      {
+        Name: 'instance-state-name',
+        Values: ['pending', 'running'],
+      },
+    ],
+    MaxResults: 500,
+  });
+  for (const reservation of instances.Reservations ?? []) {
     for (const instance of Object.values(reservation.Instances ?? [])) {
-      running_host_set.add(instance.InstanceId);
+      if (instance.InstanceId) {
+        runningHosts.add(instance.InstanceId);
+      }
     }
   }
 
-  const db_hosts_nonterminated = new Set(
-    (await sqldb.queryAsync(sql.select_nonterminated_workspace_hosts, [])).rows.map(
-      (instance) => instance.instance_id
-    )
+  const nonTerminatedHosts = new Set(
+    await queryRows(sql.select_nonterminated_workspace_hosts, z.string())
   );
 
   // Kill off any host that is running but not in the db
-  const not_in_db = set_difference(running_host_set, db_hosts_nonterminated);
-  if (not_in_db.size > 0) {
-    logger.info('Terminating hosts that are not in the database', Array.from(not_in_db));
-    await sqldb.queryAsync(sql.add_terminating_hosts, {
-      instances: Array.from(not_in_db),
+  const hostsNotInDatabase = setDifference(runningHosts, nonTerminatedHosts);
+  if (hostsNotInDatabase.size > 0) {
+    logger.info('Terminating hosts that are not in the database', Array.from(hostsNotInDatabase));
+    await queryAsync(sql.add_terminating_hosts, {
+      instances: Array.from(hostsNotInDatabase),
     });
-    await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) });
+    await ec2.terminateInstances({ InstanceIds: Array.from(hostsNotInDatabase) });
   }
 
   // Any host that is in the db but not running we will mark as "terminated".
-  const not_in_ec2 = set_difference(db_hosts_nonterminated, running_host_set);
-  if (not_in_ec2.size > 0) {
-    logger.info('Terminating hosts that are not running in EC2', Array.from(not_in_ec2));
+  const hostsNotInEc2 = setDifference(nonTerminatedHosts, runningHosts);
+  if (hostsNotInEc2.size > 0) {
+    logger.info('Terminating hosts that are not running in EC2', Array.from(hostsNotInEc2));
     const stoppedWorkspaces = await workspaceHostUtils.terminateWorkspaceHostsIfNotLaunching(
-      Array.from(not_in_ec2)
+      Array.from(hostsNotInEc2)
     );
     stoppedWorkspaces.forEach((workspace) => {
       workspaceHelper.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
@@ -104,8 +103,16 @@ async function terminateHosts() {
 }
 
 async function checkHealth() {
-  const db_hosts = (await sqldb.queryAsync(sql.select_healthy_hosts, [])).rows;
-  await async.each(db_hosts, async (host) => {
+  const hosts = await queryRows(
+    sql.select_healthy_hosts,
+    z.object({
+      id: z.string(),
+      instance_id: z.string().nullable(),
+      hostname: z.string().nullable(),
+    })
+  );
+
+  await async.each(hosts, async (host) => {
     const url = `http://${host.hostname}/status`;
     let healthy = true;
     if (host.hostname === null || host.hostname === 'null') {
@@ -122,7 +129,7 @@ async function checkHealth() {
 
     if (!healthy) {
       logger.info(`Host ${host.hostname} (${host.instance_id}) is unhealthy!`);
-      await workspaceHostUtils.markWorkspaceHostUnhealthy(host.instance_id, 'Failed health check');
+      await workspaceHostUtils.markWorkspaceHostUnhealthy(host.id, 'Failed health check');
     }
   });
 }
