@@ -398,12 +398,12 @@ def generate(data):
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                       |
-| -------------- | ------- | ------- | --------------------------------------------------------------------------------- |
-| `answers-name` | string  | -       | The key of the correct answer.                                                    |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.              |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers. |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.        |
+| Attribute      | Type    | Default | Description                                                                                                                                                          |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
 
 #### Example implementation
 
