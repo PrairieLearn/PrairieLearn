@@ -1,7 +1,6 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 const express = require('express');
-const util = require('util');
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
@@ -23,7 +22,7 @@ router.post(
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'invalidate_question_cache') {
-      await util.promisify(cache.reset)();
+      await cache.reset();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string = req.body.course_ids || '';
