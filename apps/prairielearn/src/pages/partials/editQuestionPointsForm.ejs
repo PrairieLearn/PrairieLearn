@@ -1,0 +1,34 @@
+<% if (instance_question.manual_rubric_id) { %>
+  <p>This question is configured to use rubrics for grading. Changes must be performed in
+    <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">the manual grading page</a>.
+  </p>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+  </div>
+<% } else { %>%>
+<form name="edit-question-points-form" method="POST">
+  <input type="hidden" name="__action" value="edit_question_points">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
+  <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
+  <div class="form-group">
+    <div class="input-group">
+      <input type="text" class="form-control" name="<%= locals.field ?? 'points' %>" value="<%= instance_question.points %>">
+      <span class="input-group-addon">/<%= instance_question.max_points %></span>
+    </div>
+  </div>
+  <p>
+    <small>
+      This will also recalculate the total points and total score at
+      100% credit. This change will be overwritten if the question is
+      answered again by the student.  You may also update the
+      score <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">via
+        the manual grading page</a>.
+    </small>
+  </p>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Change</button>
+  </div>
+</form>
+<% } %>

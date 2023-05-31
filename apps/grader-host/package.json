@@ -1,0 +1,50 @@
+{
+  "name": "@prairielearn/grader-host",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev:no-watch": "ts-node --transpile-only src/index.js",
+    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "start": "node dist/index.js",
+    "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
+  },
+  "dependencies": {
+    "@aws-sdk/client-auto-scaling": "^3.332.0",
+    "@aws-sdk/client-s3": "^3.332.0",
+    "@aws-sdk/client-sqs": "^3.332.0",
+    "@aws-sdk/lib-storage": "^3.332.0",
+    "@prairielearn/config": "workspace:^",
+    "@prairielearn/docker-utils": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/sanitize": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
+    "ajv": "^8.12.0",
+    "async": "^3.2.4",
+    "async-stacktrace": "^0.0.2",
+    "byline": "^5.0.0",
+    "chai": "^4.3.7",
+    "dockerode": "^3.3.5",
+    "fs-extra": "^11.1.1",
+    "logform": "^2.5.1",
+    "s3-streamlogger": "^1.9.0",
+    "tmp": "^0.2.1",
+    "winston": "^3.8.2",
+    "winston-aws-cloudwatch": "^3.0.0",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.20",
+    "@types/chai": "^4.3.5",
+    "@types/dockerode": "^3.3.16",
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^18.16.3",
+    "@types/tmp": "^0.2.3",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22",
+    "sinon": "^15.0.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4",
+    "typescript-cp": "^0.1.8"
+  }
+}
