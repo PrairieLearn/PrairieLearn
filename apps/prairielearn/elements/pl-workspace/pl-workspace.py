@@ -1,29 +1,32 @@
 import chevron
+import prairielearn as pl
 
 
-def add_format_error(data, error_string):
+def add_format_error(data: pl.QuestionData, error_string: str) -> None:
     if "_files" not in data["format_errors"]:
         data["format_errors"]["_files"] = []
     data["format_errors"]["_files"].append(error_string)
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
     # Get workspace url
-    # TODO: Improve UX if key undefined (https://github.com/PrairieLearn/PrairieLearn/pull/2665#discussion_r449319839)
-    workspace_url = data["options"]["workspace_url"]
+    workspace_url = data["options"].get("workspace_url")
+
+    if workspace_url is None:
+        raise ValueError(
+            "Workspace URL not found. Did you remember to set the workspace options?"
+        )
 
     # Create and return html
     html_params = {"workspace_url": workspace_url}
     with open("pl-workspace.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-
-    return html
+        return chevron.render(f, html_params).strip()
 
 
-def parse(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> None:
     workspace_required_file_names = data["params"].get(
         "_workspace_required_file_names", []
     )
