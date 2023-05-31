@@ -1,0 +1,36 @@
+<pl-question-panel>
+    <p>
+        <i>
+            The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in
+            arbitrary positions on top of other elements.
+            This question combines the <code class="user-output">pl-figure</code> element to serve as a static
+            background, along with the string input element.
+        </i>
+    </p>
+    <p>
+        <i>
+            Each overlayed element is wrapped with a <code class="user-output">&lt;pl-location x=... y=...&gt;</code>
+            tag, which specifies the location of the child relative to the parent overlay element. The <code
+                class="user-output">halign</code> and <code class="user-output">valign</code> attributes can be used to
+            center contents about the specified location.
+        </i>
+    </p>
+    <p>
+        <i>
+            The optional <code class="user-output">&lt;pl-background&gt;</code> tag can be used to wrap some contents as
+            the "background", which will automatically resize the overlay to fit the background.
+        </i>
+    </p>
+    <p>
+        Fill in the abbreviation of the given US state.
+    </p>
+</pl-question-panel>
+
+<pl-overlay clip="false">
+    <pl-background>
+        <pl-figure file-name="us_states_blank.png" directory="clientFilesQuestion"></pl-figure>
+    </pl-background>
+    <pl-location left="{{params.x}}" top="{{params.y}}" halign="left">
+        <pl-string-input answers-name="state" show-help-text="false" size="1" ignore-case="True"></pl-string-input>
+    </pl-location>
+</pl-overlay>

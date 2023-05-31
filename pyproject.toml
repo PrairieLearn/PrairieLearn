@@ -1,8 +1,8 @@
 [tool.flake8]
 filename = [
-    "./elements/**/*.py",
+    "./apps/prairielearn/elements/**/*.py",
+    "./apps/prairielearn/python/*.py",
     "./graders/**/*.py",
-    "./python/*.py",
     "./exampleCourse/**/*.py",
     "./testCourse/**/*.py"
 ]
@@ -58,30 +58,38 @@ skip_glob = ["tools/*", "node_modules/*"]
 
 [tool.pyright]
 include = [
-    "./elements/pl-answer-panel",
-    "./elements/pl-big-o-input",
-    "./elements/pl-card",
-    "./elements/pl-code",
-    "./elements/pl-dataframe",
-    "./elements/pl-external-grader-variables",
-    "./elements/pl-file-preview",
-    "./elements/pl-file-upload",
-    "./elements/pl-graph",
-    "./elements/pl-hidden-hints",
-    "./elements/pl-hide-in-manual-grading",
-    "./elements/pl-hide-in-panel",
-    "./elements/pl-manual-grading-only",
-    "./elements/pl-python-variable",
-    "./elements/pl-question-panel",
-    "./elements/pl-submission-panel",
-    "./elements/pl-symbolic-input",
-    "./elements/pl-units-input",
-    "./elements/pl-variable-output",
-    "./python/conftest.py",
-    "./python/prairielearn.py",
-    "./python/prairielearn_test.py",
-    "./python/python_helper_sympy.py",
-    "./python/python_helper_sympy_test.py"
+    "./apps/prairielearn/elements/pl-answer-panel",
+    "./apps/prairielearn/elements/pl-big-o-input",
+    "./apps/prairielearn/elements/pl-card",
+    "./apps/prairielearn/elements/pl-code",
+    "./apps/prairielearn/elements/pl-dataframe",
+    "./apps/prairielearn/elements/pl-external-grader-variables",
+    "./apps/prairielearn/elements/pl-figure",
+    "./apps/prairielearn/elements/pl-file-download",
+    "./apps/prairielearn/elements/pl-file-preview",
+    "./apps/prairielearn/elements/pl-file-upload",
+    "./apps/prairielearn/elements/pl-graph",
+    "./apps/prairielearn/elements/pl-hidden-hints",
+    "./apps/prairielearn/elements/pl-hide-in-manual-grading",
+    "./apps/prairielearn/elements/pl-hide-in-panel",
+    "./apps/prairielearn/elements/pl-matrix-latex",
+    "./apps/prairielearn/elements/pl-manual-grading-only",
+    "./apps/prairielearn/elements/pl-overlay",
+    "./apps/prairielearn/elements/pl-python-variable",
+    "./apps/prairielearn/elements/pl-question-panel",
+    "./apps/prairielearn/elements/pl-submission-panel",
+    "./apps/prairielearn/elements/pl-symbolic-input",
+    "./apps/prairielearn/elements/pl-template",
+    "./apps/prairielearn/elements/pl-units-input",
+    "./apps/prairielearn/elements/pl-variable-output",
+    "./apps/prairielearn/elements/pl-workspace",
+    "./apps/prairielearn/elements/pl-xss-safe",
+    "./apps/prairielearn/python/conftest.py",
+    "./apps/prairielearn/python/colors.py",
+    "./apps/prairielearn/python/prairielearn.py",
+    "./apps/prairielearn/python/prairielearn_test.py",
+    "./apps/prairielearn/python/python_helper_sympy.py",
+    "./apps/prairielearn/python/python_helper_sympy_test.py"
 ]
-extraPaths = ["./python"]
+extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.9"
