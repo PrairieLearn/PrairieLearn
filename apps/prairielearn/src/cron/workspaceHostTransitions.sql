@@ -10,7 +10,6 @@ WHERE
 SELECT
   wh.id,
   wh.instance_id,
-  wh.load_count,
   wh.hostname
 FROM
   workspace_hosts AS wh

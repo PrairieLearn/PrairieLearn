@@ -130,7 +130,7 @@ describe('workspaceHost utilities', function () {
   });
 
   describe('assignWorkspaceToHost', () => {
-    it('show assign a workspace to a host', async () => {
+    it('should assign a workspace to a host', async () => {
       await insertWorkspace(1);
       await insertWorkspaceHost(1, 'ready');
 
@@ -139,6 +139,16 @@ describe('workspaceHost utilities', function () {
 
       const workspace = await selectWorkspace('1');
       assert.equal(workspace.workspace_host_id, '1');
+
+      const workspaceLogs = await getWorkspaceLogs(1);
+      assert.lengthOf(workspaceLogs, 1);
+      assert.equal(workspaceLogs[0].state, 'launching');
+      assert.equal(workspaceLogs[0].message, 'Assigned to host 1');
+
+      const workspaceHostLogs = await getWorkspaceHostLogs(1);
+      assert.lengthOf(workspaceHostLogs, 1);
+      assert.equal(workspaceHostLogs[0].state, 'ready');
+      assert.equal(workspaceHostLogs[0].message, 'Assigned workspace 1');
     });
 
     it('should not assign a workspace to a host if it is unhealthy', async () => {
@@ -150,6 +160,9 @@ describe('workspaceHost utilities', function () {
 
       const workspace = await selectWorkspace('1');
       assert.isNull(workspace.workspace_host_id);
+
+      assert.isEmpty(await getWorkspaceHostLogs(1));
+      assert.isEmpty(await getWorkspaceLogs(1));
     });
 
     it('should not assign a workspace to a host if it is at capacity', async () => {
@@ -162,6 +175,9 @@ describe('workspaceHost utilities', function () {
 
       const workspace = await selectWorkspace('1');
       assert.isNull(workspace.workspace_host_id);
+
+      assert.isEmpty(await getWorkspaceHostLogs(1));
+      assert.isEmpty(await getWorkspaceLogs(1));
     });
   });
 

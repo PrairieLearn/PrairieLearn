@@ -46,6 +46,8 @@ WITH
       available_host AS ah
     WHERE
       w.id = $workspace_id
+    RETURNING
+      w.*
   ),
   updated_workspace_host AS (
     UPDATE workspace_hosts as wh
@@ -66,6 +68,30 @@ WITH
       available_host AS ah
     WHERE
       wh.id = ah.id
+    RETURNING
+      wh.*
+  ),
+  workspace_log AS (
+    INSERT INTO
+      workspace_logs (workspace_id, state, message)
+    SELECT
+      uw.id,
+      uw.state,
+      'Assigned to host ' || uwh.id
+    FROM
+      updated_workspace AS uw,
+      updated_workspace_host AS uwh
+  ),
+  workspace_host_log AS (
+    INSERT INTO
+      workspace_host_logs (workspace_host_id, state, message)
+    SELECT
+      uwh.id,
+      uwh.state,
+      'Assigned workspace ' || uw.id
+    FROM
+      updated_workspace_host AS uwh,
+      updated_workspace AS uw
   )
 SELECT
   id AS workspace_host_id
@@ -112,7 +138,7 @@ WITH
       updated_draining_hosts AS wh
   )
 SELECT
-  count(*) AS recaptured_hosts
+  count(*)::integer AS recaptured_hosts
 FROM
   updated_draining_hosts;
 
