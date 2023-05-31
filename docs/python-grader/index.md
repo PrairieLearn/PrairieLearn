@@ -105,10 +105,10 @@ The test cases for each coding problem are defined as methods of a `test` class 
 
 ```python
 ## No plot grading
-class Test(PrairieLearnTestCase):
+class Test(PLTestCase):
 
 ## Plot grading enabled
-class Test(PrairieLearnTestCaseWithPlot):
+class Test(PLTestCaseWithPlot):
 ```
 
 These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.

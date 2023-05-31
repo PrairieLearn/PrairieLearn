@@ -13,7 +13,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 const { TEST_COURSE_PATH } = require('../lib/paths');
-const { features, FeatureGrantType } = require('../lib/features/index');
+const { features } = require('../lib/features/index');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -128,7 +128,8 @@ const checkGradingResults = (assigned_grader, grader) => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=manual-grading-form]');
-    assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
+    // The percentage input is not checked because its value is updated via client-side JS, which is
+    // currently not supported by the test suite
     assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
     assert.equal(form.find('textarea').text(), feedback_note);
 
@@ -339,7 +340,7 @@ describe('Manual Grading', function () {
   after('shut down testing server', helperServer.after);
 
   before('ensure course has manual grading enabled', async () => {
-    await features.enable('manual-grading-rubrics', FeatureGrantType.Manual);
+    await features.enable('manual-grading-rubrics');
   });
 
   before('build assessment manual grading page URL', async () => {
