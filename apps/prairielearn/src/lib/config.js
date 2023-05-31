@@ -36,13 +36,19 @@ const ConfigSchema = z.object({
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
+  assetsPrefix: z
+    .string()
+    .default('/assets')
+    .refine((s) => s.startsWith('/') && !s.endsWith('/'), {
+      message: 'must be an absolute path and not end with a slash',
+    }),
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-trust-auth']).default('none'),
+  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
   /** Overrides the user UID in development with `authType: 'none'` */
   authUid: z.string().nullable().default('dev@illinois.edu'),
   /** Overrides the user name in development with `authType: 'none'` */
@@ -50,6 +56,8 @@ const ConfigSchema = z.object({
   /** Overrides the user UIN in development with `authType: 'none'` */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
+  sessionStoreExpireSeconds: z.number().default(86400),
+  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -257,8 +265,6 @@ const ConfigSchema = z.object({
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  questionRenderCacheMaxItems: z.number().default(100_000),
-  questionRenderCacheMaxAgeMilliseconds: z.number().default(6 * 60 * 60 * 1000),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   filesRoot: z.string().default('/files'),
@@ -467,6 +473,7 @@ const ConfigSchema = z.object({
     .default(
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000'
     ),
+  features: z.record(z.string(), z.boolean()).default({}),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

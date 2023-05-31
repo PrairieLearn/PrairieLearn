@@ -39,6 +39,12 @@
                 {"id": "demo/autograder/java/helloWorld", "points": 1}
 
             ]
+        },
+        {
+            "title": "Questions using R External Grader",
+            "questions": [
+                {"id": "demo/autograder/r/createRObject", "points": 1}
+            ]
         }
     ]
 }

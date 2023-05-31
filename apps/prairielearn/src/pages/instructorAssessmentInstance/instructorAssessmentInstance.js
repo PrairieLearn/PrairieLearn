@@ -1,4 +1,3 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const { pipeline } = require('node:stream/promises');
 const asyncHandler = require('express-async-handler');
@@ -8,6 +7,7 @@ const { stringifyStream } = require('@prairielearn/csv');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
+const manualGrading = require('../../lib/manualGrading');
 const assessment = require('../../lib/assessment');
 
 const router = express.Router();
@@ -102,107 +102,74 @@ router.get(
   })
 );
 
-router.post('/', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_instance_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a student data editor)'));
-  }
+router.post(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      return next(error.make(403, 'Access denied (must be a student data editor)'));
+    }
 
-  if (req.body.__action === 'edit_total_points') {
-    const params = [
-      res.locals.assessment_instance.id,
-      req.body.points,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('assessment_instances_update_points', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
-    });
-  } else if (req.body.__action === 'edit_total_score_perc') {
-    const params = [
-      res.locals.assessment_instance.id,
-      req.body.score_perc,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('assessment_instances_update_score_perc', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
-    });
-  } else if (req.body.__action === 'edit_question_points') {
-    const params = [
-      res.locals.assessment.id,
-      null, // submission_id
-      req.body.instance_question_id,
-      null, // uid
-      null, // assessment_instance_number
-      null, // qid
-      req.body.modified_at,
-      null, // score_perc
-      req.body.points,
-      null, // manual_score_perc
-      req.body.manual_points,
-      null, // auto_score_perc
-      req.body.auto_points,
-      null, // feedback
-      null, // partial_scores
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('instance_questions_update_score', params, (err, result) => {
-      if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict) {
+    if (req.body.__action === 'edit_total_points') {
+      await sqldb.callAsync('assessment_instances_update_points', [
+        res.locals.assessment_instance.id,
+        req.body.points,
+        res.locals.authn_user.user_id,
+      ]);
+      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'edit_total_score_perc') {
+      await sqldb.callAsync('assessment_instances_update_score_perc', [
+        res.locals.assessment_instance.id,
+        req.body.score_perc,
+        res.locals.authn_user.user_id,
+      ]);
+      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'edit_question_points') {
+      const { modified_at_conflict, grading_job_id } =
+        await manualGrading.updateInstanceQuestionScore(
+          res.locals.assessment.id,
+          req.body.instance_question_id,
+          null, // submission_id
+          req.body.modified_at,
+          {
+            points: req.body.points,
+            manual_points: req.body.manual_points,
+            auto_points: req.body.auto_points,
+          },
+          res.locals.authn_user.user_id
+        );
+      if (modified_at_conflict) {
         return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`
         );
       }
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
-    });
-  } else if (req.body.__action === 'edit_question_score_perc') {
-    const params = [
-      res.locals.assessment.id,
-      null, // submission_id
-      req.body.instance_question_id,
-      null, // uid
-      null, // assessment_instance_number
-      null, // qid
-      req.body.modified_at,
-      req.body.score_perc,
-      null, // points
-      null, // manual_score_perc
-      null, // manual_points
-      null, // auto_score_perc
-      null, // auto_points
-      null, // feedback
-      null, // partial_scores
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('instance_questions_update_score', params, (err, result) => {
-      if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict) {
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'edit_question_score_perc') {
+      const { modified_at_conflict, grading_job_id } =
+        await manualGrading.updateInstanceQuestionScore(
+          res.locals.assessment.id,
+          req.body.instance_question_id,
+          null, // submission_id
+          req.body.modified_at,
+          { score_perc: req.body.score_perc },
+          res.locals.authn_user.user_id
+        );
+      if (modified_at_conflict) {
         return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`
         );
       }
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
-  }
-});
+      res.redirect(req.originalUrl);
+    } else {
+      return next(
+        error.make(400, 'unknown __action', {
+          locals: res.locals,
+          body: req.body,
+        })
+      );
+    }
+  })
+);
 
 module.exports = router;

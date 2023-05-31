@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 1.7.0
+
+### Minor Changes
+
+- 16d0068d8: Introduce improved query functions: `queryRows`, `queryRow`, and `queryOptionalRow`
+
+## 1.6.1
+
+### Patch Changes
+
+- 00d1b045d: Remove unused `pg-describe`/`pg-diff` commands from `package.json`
+
 ## 1.6.0
 
 ### Minor Changes

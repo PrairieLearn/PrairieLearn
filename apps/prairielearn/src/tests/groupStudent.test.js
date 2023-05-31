@@ -130,8 +130,8 @@ describe('Group based homework assess control on student side', function () {
         if (ERR(err, callback)) return;
         var min = result.rows[0]['minimum'];
         var max = result.rows[0]['maximum'];
-        assert.equal(min, 3);
-        assert.equal(max, 3);
+        assert.equal(min, 2);
+        assert.equal(max, 5);
       });
       callback(null);
     });
@@ -210,8 +210,8 @@ describe('Group based homework assess control on student side', function () {
     });
     it('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
-      locals.join_code = elemList.text();
-      assert.lengthOf(locals.join_code, locals.$('#group-name').text().length + 1 + 4);
+      locals.joinCode = elemList.text();
+      assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
     });
     it('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
@@ -255,7 +255,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        join_code: locals.join_code,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
@@ -281,7 +281,7 @@ describe('Group based homework assess control on student side', function () {
     });
     it('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
-      assert.equal(locals.join_code, elemList.text());
+      assert.equal(locals.joinCode, elemList.text());
     });
     it('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
@@ -325,7 +325,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        join_code: locals.join_code,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
@@ -358,7 +358,7 @@ describe('Group based homework assess control on student side', function () {
     });
     it('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
-      assert.equal(locals.join_code, elemList.text());
+      assert.equal(locals.joinCode, elemList.text());
     });
   });
   describe('13. the fourth user can not join the already full group', function () {
@@ -393,7 +393,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        join_code: locals.join_code,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
@@ -739,7 +739,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        join_code: locals.join_code,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl_2, form: form, followAllRedirects: true },

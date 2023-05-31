@@ -2,13 +2,65 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
+const qs = require('qs');
+const ejs = require('ejs');
+const path = require('path');
+
 const question = require('../../../lib/question');
+const manualGrading = require('../../../lib/manualGrading');
+const { features } = require('../../../lib/features/index');
+
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
-const ltiOutcomes = require('../../../lib/ltiOutcomes');
-const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+async function prepareLocalsForRender(req, res) {
+  // Even though getAndRenderVariant will select variants for the instance question, if the
+  // question has multiple variants, by default getAndRenderVariant may select a variant without
+  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submission and pass it along to getAndRenderVariant explicitly.
+  const params = { instance_question_id: res.locals.instance_question.id };
+  const variant_with_submission = (
+    await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
+  ).rows[0];
+
+  if (variant_with_submission) {
+    res.locals.manualGradingInterface = true;
+    await util.promisify(question.getAndRenderVariant)(
+      variant_with_submission.variant_id,
+      null,
+      res.locals
+    );
+  }
+
+  res.locals.rubric_settings_visible = await features.enabledFromLocals(
+    'manual-grading-rubrics',
+    res.locals
+  );
+
+  // If student never loaded question or never submitted anything (submission is null)
+  if (!res.locals.submission) {
+    throw error.make(404, 'Instance question does not have a gradable submission.');
+  }
+
+  res.locals.conflict_grading_job = null;
+  if (req.query.conflict_grading_job_id) {
+    const params = {
+      grading_job_id: req.query.conflict_grading_job_id,
+      instance_question_id: res.locals.instance_question.id, // for authz
+    };
+    res.locals.conflict_grading_job = (
+      await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
+    ).rows[0];
+    await manualGrading.populateManualGradingData(res.locals.conflict_grading_job);
+  }
+
+  const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
+    course_instance_id: res.locals.course_instance.id,
+  });
+  res.locals.graders = graders_result.rows[0]?.graders;
+}
 
 router.get(
   '/',
@@ -17,45 +69,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    res.locals.conflict_grading_job = null;
-    if (req.query.conflict_grading_job_id) {
-      const params = {
-        grading_job_id: req.query.conflict_grading_job_id,
-        instance_question_id: res.locals.instance_question.id, // for authz
-      };
-      res.locals.conflict_grading_job = (
-        await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
-      ).rows[0];
-    }
-
-    // Even though getAndRenderVariant will select variants for the instance question, if the
-    // question has multiple variants, by default getAndRenderVariant may select a variant without
-    // submissions or even create a new one. We don't want that behaviour, so we select the last
-    // submission and pass it along to getAndRenderVariant explicitly.
-    const params = { instance_question_id: res.locals.instance_question.id };
-    const variant_with_submission = (
-      await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
-    ).rows[0];
-
-    if (variant_with_submission) {
-      res.locals.manualGradingInterface = true;
-      await util.promisify(question.getAndRenderVariant)(
-        variant_with_submission.variant_id,
-        null,
-        res.locals
-      );
-    }
-
-    // If student never loaded question or never submitted anything (submission is null)
-    if (!res.locals.submission) {
-      return next(error.make(404, 'Instance question does not have a gradable submission.'));
-    }
-
-    const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
-      course_instance_id: res.locals.course_instance.id,
-    });
-    res.locals.graders = graders_result.rows[0]?.graders;
-
+    await prepareLocalsForRender(req, res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
@@ -78,6 +92,28 @@ router.get(
   })
 );
 
+router.get(
+  '/grading_rubric_panels',
+  asyncHandler(async (req, res, _next) => {
+    try {
+      await prepareLocalsForRender(req, res);
+      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+      // latter would require all includes in EJS to be translated to await recursively.
+      const gradingPanel = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'gradingPanel.ejs'),
+        { context: 'main', ...res.locals }
+      );
+      const rubricSettings = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'rubricSettingsModal.ejs'),
+        res.locals
+      );
+      res.send({ gradingPanel, rubricSettings });
+    } catch (err) {
+      res.send({ err: String(err) });
+    }
+  })
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
@@ -85,42 +121,40 @@ router.post(
       return next(error.make(403, 'Access denied (must be a student data editor)'));
     }
     if (req.body.__action === 'add_manual_grade') {
-      const params = [
-        res.locals.assessment.id,
-        null, // submission_id
-        res.locals.instance_question.id, // instance_question_id,
-        null, // uid
-        null, // assessment_instance_number
-        null, // qid
-        req.body.modified_at,
-        null, // score_perc
-        null, // points
-        req.body.use_score_perc ? req.body.score_manual_percent : null, // manual_score_perc
-        req.body.use_score_perc ? null : req.body.score_manual_points, // manual_points
-        req.body.use_score_perc ? req.body.score_auto_percent || null : null, // auto_score_perc
-        req.body.use_score_perc ? null : req.body.score_auto_points || null, // auto_points
-        { manual: req.body.submission_note }, // feedback
-        null, // partial_scores
-        res.locals.authn_user.user_id,
-      ];
+      let manual_rubric_data = null;
+      if (res.locals.assessment_question.manual_rubric_id) {
+        let manual_rubric_items = req.body.rubric_item_selected_manual || [];
+        if (!Array.isArray(manual_rubric_items)) {
+          manual_rubric_items = [manual_rubric_items];
+        }
+        manual_rubric_data = {
+          rubric_id: res.locals.assessment_question.manual_rubric_id,
+          applied_rubric_items: manual_rubric_items.map((id) => ({ rubric_item_id: id })),
+          adjust_points: req.body.score_manual_adjust_points || null,
+        };
+      }
 
-      /*
-       * TODO: calling 'instance_questions_update_score' may not be the perfect thing to do here,
-       * because it won't respect the 'credit' property of the assessment_instance.  However, allowing
-       * the 'credit' calculation in a manually graded problem is also problematic, because it means
-       * that the behavior of the instructor editing the score on the manual grading page would be
-       * different than the behavior of the instructor editing the score on any of the other pages
-       * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
-       * manually graded within PrairieLearn and how to handle those score calculations.
-       */
-      const update_result = (await sqldb.callAsync('instance_questions_update_score', params))
-        .rows[0];
+      const update_result = await manualGrading.updateInstanceQuestionScore(
+        res.locals.assessment.id,
+        res.locals.instance_question.id,
+        req.body.submission_id,
+        req.body.modified_at,
+        {
+          manual_score_perc: req.body.use_score_perc ? req.body.score_manual_percent : null,
+          manual_points: req.body.use_score_perc ? null : req.body.score_manual_points,
+          auto_score_perc: req.body.use_score_perc ? req.body.score_auto_percent || null : null,
+          auto_points: req.body.use_score_perc ? null : req.body.score_auto_points || null,
+          feedback: { manual: req.body.submission_note },
+          manual_rubric_data,
+        },
+        res.locals.authn_user.user_id
+      );
+
       if (update_result.modified_at_conflict) {
         return res.redirect(
           req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`
         );
       }
-      await util.promisify(ltiOutcomes.updateScore)(res.locals.assessment_instance.id);
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
@@ -130,6 +164,28 @@ router.post(
           res.locals.instance_question.id
         )
       );
+    } else if (req.body.__action === 'modify_rubric_settings') {
+      // Parse using qs, which allows deep objects to be created based on parameter names
+      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
+      manualGrading
+        .updateAssessmentQuestionRubric(
+          res.locals.instance_question.assessment_question_id,
+          req.body.use_rubric === 'true',
+          req.body.replace_auto_points === 'true',
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          rubric_items,
+          !!req.body.tag_for_manual_grading,
+          res.locals.authn_user.user_id
+        )
+        .then(() => {
+          res.redirect(req.baseUrl + '/grading_rubric_panels');
+        })
+        .catch((err) => {
+          res.status(500).send({ err: String(err) });
+        });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {
@@ -145,7 +201,7 @@ router.post(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
-          req.body.assessment_question_id,
+          res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id
         )

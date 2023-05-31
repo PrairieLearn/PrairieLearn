@@ -5,7 +5,7 @@
     <link href="<%= asset_path('stylesheets/home.css') %>" rel="stylesheet">
   </head>
 
-  <body class="d-flex flex-column h-100">
+  <body class="d-flex flex-column h-100" style="--flourish-image-url: url('<%= asset_path('images/grassy_landscape.svg') %>')">
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>
@@ -19,7 +19,7 @@
             <div class="pb-4 <%= isAuthenticated ? 'd-none' : 'col-md-6 col-lg-7' %>">
               <h1 class="display-4 font-weight-normal">PrairieLearn</h1>
               <p class="lead font-weight-normal">
-                <i class="fa fa-sync-alt fa-fw" aria-ignore="true"></i>
+                <i class="fa fa-sync-alt fa-fw" aria-hidden="true"></i>
                 Mastery learning meets online assessment
               </p>
               <a href="<%= plainUrlPrefix %>/login" class="btn btn-lg btn-primary">

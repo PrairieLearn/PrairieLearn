@@ -1,6 +1,7 @@
 columns
     authn_user_id: bigint
     broken: boolean default false
+    course_id: bigint not null
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
@@ -31,6 +32,7 @@ check constraints
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

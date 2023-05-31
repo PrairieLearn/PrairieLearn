@@ -11,7 +11,7 @@ CONTENTS_DEFAULT = None
 LANGUAGE_DEFAULT = "html"
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = [
@@ -43,7 +43,7 @@ def prepare(element_html, data):
         raise Exception('Attribute "language" must be either "html" or "markdown".')
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
@@ -83,6 +83,4 @@ def render(element_html, data):
     }
 
     with open("pl-xss-safe.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-
-    return html
+        return chevron.render(f, html_params).strip()

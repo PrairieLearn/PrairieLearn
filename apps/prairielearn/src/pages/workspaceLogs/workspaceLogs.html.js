@@ -33,7 +33,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
           navPage: 'plain',
         })}
 
-        <div id="content" class="container">
+        <main id="content" class="container">
           <h1 class="mb-4">Workspace logs</h1>
 
           <h2>Versions</h2>
@@ -63,7 +63,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
 
           <h2>History</h2>
           ${WorkspaceLogsTable({ workspaceLogs })}
-        </div>
+        </main>
       </body>
     </html>
   `.toString();
@@ -91,7 +91,7 @@ const WorkspaceVersionLogs = ({
           navPage: 'plain',
         })}
 
-        <div id="content" class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1 class="mb-4">Workspace version logs</h1>
 
           <h2>Container logs</h2>
@@ -119,7 +119,7 @@ const WorkspaceVersionLogs = ({
 
           <h2>History</h2>
           ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
-        </div>
+        </main>
       </body>
     </html>
   `.toString();

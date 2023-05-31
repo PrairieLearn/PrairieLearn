@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -10,42 +10,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'courses'}); %>
-    <div id="content" class="container-fluid">
-      <div id="institutions" class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          Institutions
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped">
-            <thead>
-              <tr>
-                <th>Short name</th>
-                <th>Long name</th>
-                <th>UID regexp</th>
-                <th>Authn providers</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% institutions.forEach(function(inst, i) { %>
-              <tr>
-                <td><a href="/pl/institution/<%= inst.id %>/admin"><%= inst.short_name %></a></td>
-                <td><%= inst.long_name %></td>
-                <td><code><%= inst.uid_regexp %></code></td>
-                <td><%= inst.authn_providers.join(', ') %></td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-        <div class="card-footer">
-          <small>
-            To change institutions, edit the <strong><tt>institutions</tt></strong> table.
-            To change the allowed authentication providers, edit the <strong><tt>institution_authn_providers</tt></strong> table.
-          </small>
-        </div>
-      </div>
-
-      <%# Course requests %> 	
+    <main id="content" class="container-fluid">
       <%- include('../administratorCourseRequests/courseRequestsTable', {'show_all': false}) %>
 
       <div id="courses" class="card mb-4">
@@ -71,7 +36,7 @@
                 <th>Timezone</th>
                 <th>Path</th>
                 <th>Repository</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -112,6 +77,6 @@
           </small>
         </div>
       </div>
-    </div>
+    </main>
   </body>
 </html>

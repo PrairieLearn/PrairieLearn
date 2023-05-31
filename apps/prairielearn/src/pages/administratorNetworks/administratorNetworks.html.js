@@ -4,7 +4,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 function AdministratorNetworks({ resLocals }) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>
@@ -14,7 +14,7 @@ function AdministratorNetworks({ resLocals }) {
           navPage: 'admin',
           navSubPage: 'networks',
         })}
-        <div id="content" class="container-fluid">
+        <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Exam-mode networks</div>
             <div class="table-responsive">
@@ -51,7 +51,7 @@ function AdministratorNetworks({ resLocals }) {
               </small>
             </div>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();
