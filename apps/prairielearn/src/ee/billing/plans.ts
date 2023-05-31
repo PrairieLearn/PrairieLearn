@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -37,6 +37,16 @@ export async function getPlanGrantsForInstitution(institution_id: string): Promi
   return queryRows(sql.select_plan_grants_for_institution, { institution_id }, z.enum(PLAN_NAMES));
 }
 
+export async function getPlanGrantsForCourseInstance(
+  course_instance_id: string
+): Promise<PlanName[]> {
+  return queryRows(
+    sql.select_plan_grants_for_course_instance,
+    { course_instance_id },
+    z.enum(PLAN_NAMES)
+  );
+}
+
 export async function getRequiredPlansForCourseInstance(
   course_instance_id: string
 ): Promise<PlanName[]> {
@@ -45,6 +55,13 @@ export async function getRequiredPlansForCourseInstance(
     { course_instance_id },
     z.enum(PLAN_NAMES)
   );
+}
+
+export async function updateRequiredPlansForCourseInstance(
+  course_instance_id: string,
+  plans: PlanName[]
+) {
+  await queryAsync(sql.update_required_plans_for_course_instance, { course_instance_id, plans });
 }
 
 export function getFeaturesForPlans(plans: PlanName[]): PlanFeatureName[] {

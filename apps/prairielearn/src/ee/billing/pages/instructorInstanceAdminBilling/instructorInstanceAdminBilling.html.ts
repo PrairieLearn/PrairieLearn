@@ -2,15 +2,23 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-interface InstructorCourseInstanceBillingProps {
-  studentBillingEnabled: boolean;
-  resLocals: Record<string, any>;
-}
-
 export function InstructorCourseInstanceBilling({
   studentBillingEnabled,
+  enrollmentCount,
+  enrollmentLimit,
+  enrollmentLimitSource,
   resLocals,
-}: InstructorCourseInstanceBillingProps) {
+}: {
+  studentBillingEnabled: boolean;
+  enrollmentCount: number;
+  enrollmentLimit: number;
+  enrollmentLimitSource: 'course_instance' | 'institution';
+  resLocals: Record<string, any>;
+}) {
+  const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
+  const enrollmentLimitPercentage = studentBillingEnabled
+    ? 0
+    : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -29,6 +37,28 @@ export function InstructorCourseInstanceBilling({
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
               <form method="POST">
+                <h2>Enrollments</h2>
+                <div class="mb-3">
+                  <div class="progress">
+                    <div
+                      class="progress-bar"
+                      role="progressbar"
+                      style="width: ${enrollmentLimitPercentage}%"
+                      aria-valuenow="25"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <div>${enrollmentCount} / ${enrollmentLimitText} enrollments</div>
+                  <div class="small text-muted">
+                    ${enrollmentLimitExplanation({
+                      studentBillingEnabled,
+                      enrollmentLimit,
+                      enrollmentLimitSource,
+                    })}
+                  </div>
+                </div>
+
                 <div class="form-check">
                   <input
                     class="form-check-input"
@@ -39,11 +69,12 @@ export function InstructorCourseInstanceBilling({
                     id="studentBillingEnabled"
                   />
                   <label class="form-check-label" for="studentBillingEnabled">
-                    Enable student billing
+                    Enable student billing for enrollments
                   </label>
                   <p class="small text-muted">
-                    When student billing is enabled, students can pay for access to your course and
-                    for additional features that you select.
+                    When student billing is enabled, students pay for access to your course
+                    instance. Enabling student billing will allow your course instance to exceed any
+                    enrollment limits that would otherwise apply.
                   </p>
                 </div>
 
@@ -64,4 +95,24 @@ export function InstructorCourseInstanceBilling({
       </body>
     </html>
   `.toString();
+}
+
+function enrollmentLimitExplanation({
+  studentBillingEnabled,
+  enrollmentLimit,
+  enrollmentLimitSource,
+}: {
+  studentBillingEnabled: boolean;
+  enrollmentLimit: number;
+  enrollmentLimitSource: 'course_instance' | 'institution';
+}): string {
+  if (studentBillingEnabled) {
+    return 'Student billing for enrollments is enabled, so there is no enrollment limit.';
+  }
+
+  if (enrollmentLimitSource === 'course_instance') {
+    return `This course instance has an enrollment limit of ${enrollmentLimit}.`;
+  }
+
+  return `This course's institution has a per-course-instance enrollment limit of ${enrollmentLimit}.`;
 }

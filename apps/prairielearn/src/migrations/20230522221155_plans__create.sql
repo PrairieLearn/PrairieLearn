@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS
     plan_name TEXT NOT NULL,
     type enum_plan_grant_type NOT NULL,
     enrollment_limit INTEGER DEFAULT NULL,
-    -- TODO: why do we actually need a user_id here?
     user_id BIGINT REFERENCES users (user_id),
     institution_id BIGINT REFERENCES institutions (id),
     course_instance_id BIGINT REFERENCES course_instances (id),
@@ -28,6 +27,3 @@ CREATE TABLE IF NOT EXISTS
     plan_name TEXT NOT NULL,
     UNIQUE (course_instance_id, plan_name)
   );
-
-ALTER TABLE course_instances
-ADD COLUMN IF NOT EXISTS student_billing_enabled BOOLEAN NOT NULL DEFAULT FALSE;

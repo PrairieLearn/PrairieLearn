@@ -1144,6 +1144,8 @@ module.exports.initExpress = function () {
       next();
     },
     asyncHandler(async (req, res, next) => {
+      // The navigation tabs rely on this value to know when to show/hide the
+      // billing tab, so we need to load it for all instance admin pages.
       const hasCourseInstanceBilling = await features.enabledFromLocals(
         'course-instance-billing',
         res.locals
