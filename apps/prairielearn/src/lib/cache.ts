@@ -77,7 +77,7 @@ export async function get(key: string): Promise<any> {
       if (typeof value === 'string') {
         return JSON.parse(value);
       }
-      return null;
+      return undefined;
     }
 
     case 'redis': {
@@ -85,7 +85,7 @@ export async function get(key: string): Promise<any> {
       if (typeof value === 'string') {
         return JSON.parse(value);
       }
-      return null;
+      return undefined;
     }
 
     default: {
