@@ -16,7 +16,6 @@ import {
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
-console.log(sql);
 
 router.get(
   '/',
