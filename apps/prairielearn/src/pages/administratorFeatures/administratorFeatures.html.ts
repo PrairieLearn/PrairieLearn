@@ -1,25 +1,32 @@
-// @ts-check
+import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { FeatureGrantRow } from './administratorFeatures';
+export const FeatureGrantRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  institution_id: z.string().nullable(),
+  institution_short_name: z.string().nullable(),
+  institution_long_name: z.string().nullable(),
+  course_id: z.string().nullable(),
+  course_title: z.string().nullable(),
+  course_short_name: z.string().nullable(),
+  course_instance_id: z.string().nullable(),
+  course_instance_short_name: z.string().nullable(),
+  course_instance_long_name: z.string().nullable(),
+  user_id: z.string().nullable(),
+  user_uid: z.string().nullable(),
+  user_name: z.string().nullable(),
+});
+type FeatureGrantRow = z.infer<typeof FeatureGrantRowSchema>;
 
-interface AdministratorFeaturesProps {
+export function AdministratorFeatures({
+  features,
+  resLocals,
+}: {
   features: string[];
   resLocals: Record<string, any>;
-}
-
-interface AdministratorFeatureProps {
-  feature: string;
-  featureGrants: FeatureGrantRow[];
-  resLocals: Record<string, any>;
-}
-
-interface FeatureGrantProps {
-  featureGrant: FeatureGrantRow;
-}
-
-export function AdministratorFeatures({ features, resLocals }: AdministratorFeaturesProps) {
+}) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -62,7 +69,11 @@ export function AdministratorFeature({
   feature,
   featureGrants,
   resLocals,
-}: AdministratorFeatureProps) {
+}: {
+  feature: string;
+  featureGrants: FeatureGrantRow[];
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -106,7 +117,7 @@ export function AdministratorFeature({
   `.toString();
 }
 
-function FeatureGrantBreadcrumbs({ featureGrant }: FeatureGrantProps) {
+function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantRow }) {
   const hasInstitution = featureGrant.institution_id !== null;
   const hasCourse = featureGrant.course_id !== null;
   const hasCourseInstance = featureGrant.course_instance_id !== null;
@@ -148,22 +159,10 @@ function FeatureGrantBreadcrumbs({ featureGrant }: FeatureGrantProps) {
   `;
 }
 
-function FeatureGrantBadge({ featureGrant }: FeatureGrantProps) {
-  switch (featureGrant.type) {
-    case 'default':
-      return html`<span class="badge badge-pill badge-secondary">default</span>`;
-    case 'manual':
-      return html`<span class="badge badge-pill badge-primary">manual</span>`;
-    case 'subscription':
-      return html`<span class="badge badge-pill badge-success">subscription</span>`;
-  }
-}
-
-function FeatureGrant({ featureGrant }: FeatureGrantProps) {
+function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
   return html`
     <div class="list-group-item d-flex flex-row align-items-center">
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
-      <div class="ml-auto">${FeatureGrantBadge({ featureGrant })}</div>
     </div>
   `;
 }
