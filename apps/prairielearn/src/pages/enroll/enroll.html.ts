@@ -2,21 +2,27 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export const CourseInstanceSchema = z.object({
+export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
   course_instance_id: z.string(),
   enrolled: z.boolean(),
   instructor_access: z.boolean(),
 });
-type CourseInstance = z.infer<typeof CourseInstanceSchema>;
+type CourseInstance = z.infer<typeof CourseInstanceRowSchema>;
 
-interface EnrollProps {
+export function Enroll({
+  courseInstances,
+  resLocals,
+}: {
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
-}
+}) {
+  // Temporary for testing.
+  courseInstances.forEach((ci) => {
+    ci.instructor_access = false;
+  });
 
-export function Enroll({ courseInstances, resLocals }: EnrollProps) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -228,12 +234,13 @@ export function Enroll({ courseInstances, resLocals }: EnrollProps) {
   `.toString();
 }
 
-interface EnrollLtiMessageProps {
+export function EnrollLtiMessage({
+  ltiInfo,
+  resLocals,
+}: {
   ltiInfo: any;
   resLocals: Record<string, any>;
-}
-
-export function EnrollLtiMessage({ ltiInfo, resLocals }: EnrollLtiMessageProps) {
+}) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -273,6 +280,36 @@ export function EnrollLtiMessage({ ltiInfo, resLocals }: EnrollLtiMessageProps) 
                 to PrairieLearn from it, it will take over your login again. You might consider
                 using different web browsers for that course from your other PrairieLearn courses.
               </p>
+            </div>
+          </div>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
+
+export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Record<string, any> }) {
+  return html`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
+          ...resLocals,
+          navPage: 'enroll',
+          pageTitle: 'Courses',
+        })}
+      </head>
+      <body>
+        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+          ...resLocals,
+          navPage: 'enroll',
+        })}
+        <main id="content" class="container">
+          <div class="card mb-4">
+            <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>
+            <div class="card-body">
+              This course has reached its enrollment limit. Please contact the course staff for more
+              information.
             </div>
           </div>
         </main>

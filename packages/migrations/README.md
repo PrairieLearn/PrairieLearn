@@ -24,6 +24,17 @@ module.exports = async function () {
 };
 ```
 
+`.sql` migrations are run inside a transaction by default. If your migration cannot run inside a transaction (for instance, if it uses `CREATE INDEX CONCURRENTLY`), you can add a special annotation comment to the file:
+
+```sql
+-- prairielearn:migrations NO TRANSACTION
+CREATE INDEX CONCURRENTLY ...;
+```
+
+When running without a transaction, it is recommended that the migration only consist of a single statement so that the database isn't left in an inconsistent state.
+
+`.js`/`.ts` migrations are not automatically run inside a transaction. If transactional DDL is required, a transaction should be manually wrapped in a transaction.
+
 ### Batched migrations
 
 Batched migrations are useful for when one needs to make changes to many rows within a table, for instance backfilling a new column from existing data. While one could technically do this with the schema migrations machinery, that has a number of disadvantages:
