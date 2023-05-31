@@ -3,7 +3,7 @@ CREATE FUNCTION
         IN assessment_instance_id bigint,
         OUT variant jsonb,
         OUT question jsonb,
-        OUT course jsonb
+        OUT variant_course jsonb
     ) RETURNS SETOF RECORD
 AS $$
 BEGIN
