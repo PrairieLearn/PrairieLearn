@@ -3413,7 +3413,7 @@ __metadata:
     "@types/passport-azure-ad": ^4.3.1
     "@types/pem": ^1.9.6
     "@types/pg": ^8.6.6
-    "@types/tar": ^6.1.4
+    "@types/tar": ^6.1.5
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.1
     ace-builds: ^1.18.0
@@ -3531,7 +3531,7 @@ __metadata:
     streamifier: ^0.1.1
     strip-ansi: ^6.0.1
     tablesorter: ^2.31.3
-    tar: ^6.1.13
+    tar: ^6.1.15
     three: ^0.152.2
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
@@ -4721,13 +4721,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tar@npm:^6.1.4":
-  version: 6.1.4
-  resolution: "@types/tar@npm:6.1.4"
+"@types/tar@npm:^6.1.5":
+  version: 6.1.5
+  resolution: "@types/tar@npm:6.1.5"
   dependencies:
     "@types/node": "*"
     minipass: ^4.0.0
-  checksum: 48a1f6b8665ed03f37f74966cfe991a33d6e85cee28aaa6ef42c7ca8448cdbc1e2ca96b473b6b53f1d7bd91423ae0dcfe54a295607d7ac4b4cbb9dbf167df7fa
+  checksum: 1efa71c8d72f2b02d16ffecb65c4a96be9dacce000c4207532a686477386524dd99b6e26904319354be3ac9ac4d41296a0cb9cf87d05f8f21ae31c68fe446348
   languageName: node
   linkType: hard
 
@@ -15384,6 +15384,20 @@ __metadata:
     mkdirp: ^1.0.3
     yallist: ^4.0.0
   checksum: 8a278bed123aa9f53549b256a36b719e317c8b96fe86a63406f3c62887f78267cea9b22dc6f7007009738509800d4a4dccc444abd71d762287c90f35b002eb1c
+  languageName: node
+  linkType: hard
+
+"tar@npm:^6.1.15":
+  version: 6.1.15
+  resolution: "tar@npm:6.1.15"
+  dependencies:
+    chownr: ^2.0.0
+    fs-minipass: ^2.0.0
+    minipass: ^5.0.0
+    minizlib: ^2.1.1
+    mkdirp: ^1.0.3
+    yallist: ^4.0.0
+  checksum: f23832fceeba7578bf31907aac744ae21e74a66f4a17a9e94507acf460e48f6db598c7023882db33bab75b80e027c21f276d405e4a0322d58f51c7088d428268
   languageName: node
   linkType: hard
 
