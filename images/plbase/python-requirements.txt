@@ -19,7 +19,7 @@ pandas==1.5.3
 Pint==0.20.1
 psutil==5.9.5
 PuLP==2.7.0
-pycryptodome==3.17.0
+pycryptodome==3.18.0
 Pygments==2.15.1
 pygments-ansi-color==0.2.0
 pygraphviz==1.6
