@@ -41,7 +41,7 @@
     "@prairielearn/workspace-utils": "workspace:^",
     "@pyroscope/nodejs": "^0.2.5",
     "@sentry/profiling-node": "^0.3.0",
-    "@sentry/tracing": "^7.50.0",
+    "@sentry/tracing": "^7.53.1",
     "@socket.io/redis-adapter": "^8.2.1",
     "ace-builds": "^1.18.0",
     "ace-code": "^1.18.0",
