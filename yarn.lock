@@ -3474,7 +3474,7 @@ __metadata:
     isbinaryfile: ^5.0.0
     jju: ^1.4.0
     jose: ^4.14.4
-    jquery: ^3.6.4
+    jquery: ^3.7.0
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^3.0.5
@@ -10697,10 +10697,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jquery@npm:>=1.2.6, jquery@npm:>=1.8.0 <4.0.0, jquery@npm:^3.6.4":
+"jquery@npm:>=1.2.6, jquery@npm:>=1.8.0 <4.0.0":
   version: 3.6.4
   resolution: "jquery@npm:3.6.4"
   checksum: 8354f7bd0a0424aa714ee1b6b1ef74b410f834eb5c8501682289b358bc151f11677f11188b544f3bb49309d6ec4d15d1a5de175661250c206b06185a252f706f
+  languageName: node
+  linkType: hard
+
+"jquery@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "jquery@npm:3.7.0"
+  checksum: 907785e133afc427650a131af5fccef66a404885037513b3d4d7d63aee6409bcc32a39836868c60e59b05aa0fb8ace8961c18b2ee3ffdf6ffdb571d6d7cd88ff
   languageName: node
   linkType: hard
 
