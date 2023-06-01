@@ -16,6 +16,7 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
         var answerText = answerObjs[i].getAttribute('string');
         var answerUuid = answerObjs[i].getAttribute('uuid');
+        var answerDistractorBin = answerObjs[i].getAttribute('data-distractor-bin');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -26,6 +27,7 @@ window.PLOrderBlocks = function (uuid, options) {
           inner_html: answerText,
           indent: answerIndent,
           uuid: answerUuid,
+          distractor_bin: answerDistractorBin
         };
         studentAnswers.push(answer);
       }
