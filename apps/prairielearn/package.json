@@ -39,7 +39,7 @@
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
-    "@pyroscope/nodejs": "^0.2.5",
+    "@pyroscope/nodejs": "^0.2.6",
     "@sentry/profiling-node": "^0.3.0",
     "@sentry/tracing": "^7.50.0",
     "@socket.io/redis-adapter": "^8.2.1",

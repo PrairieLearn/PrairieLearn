@@ -3381,7 +3381,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@pyroscope/nodejs": ^0.2.5
+    "@pyroscope/nodejs": ^0.2.6
     "@sa11y/format": ^4.1.5
     "@sentry/profiling-node": ^0.3.0
     "@sentry/tracing": ^7.50.0
@@ -3736,9 +3736,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pyroscope/nodejs@npm:^0.2.5":
-  version: 0.2.5
-  resolution: "@pyroscope/nodejs@npm:0.2.5"
+"@pyroscope/nodejs@npm:^0.2.6":
+  version: 0.2.6
+  resolution: "@pyroscope/nodejs@npm:0.2.6"
   dependencies:
     axios: ^0.26.1
     debug: ^4.3.3
@@ -3746,7 +3746,7 @@ __metadata:
     pprof: ^3.2.0
     regenerator-runtime: ^0.13.11
     source-map: ^0.7.3
-  checksum: 997f3148e63aa4799269b19fbe4fcb921f14af1da0c4ede450f064f5b720a2d13489a541aca7afa2089204a60438d1a1e9ee0f19a96530e95d5b4b0a95089b75
+  checksum: 0b2c70c8474d94dece3ced0b50ee6acf951e250bb7666425a847145ff41ae8b154c769a35187ada6ee535daa102668aab8cf0fb2879bfc227f07a20cb29358f1
   languageName: node
   linkType: hard
 
