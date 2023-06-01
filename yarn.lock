@@ -3416,7 +3416,7 @@ __metadata:
     "@types/tar": ^6.1.4
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.1
-    ace-builds: ^1.18.0
+    ace-builds: ^1.22.0
     ace-code: ^1.18.0
     ajv: ^8.12.0
     ansi_up: ^5.2.1
@@ -4934,10 +4934,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.18.0":
-  version: 1.18.0
-  resolution: "ace-builds@npm:1.18.0"
-  checksum: f11c92f64adc0e2d4800e6968aa74172c81812cb8103c7bc043d837aceb54fe29e223adcc34d6aab44cdc6c68cbe6631ddbe02251c54655fe7b0b7880e40c708
+"ace-builds@npm:^1.22.0":
+  version: 1.22.0
+  resolution: "ace-builds@npm:1.22.0"
+  checksum: 2b349d6b3c8ad4780757c05f05a0815fa88a7b74afa0b6a97ea4367b7d2fe3516ea88f3073042d408c8eb1be100595a970449a5ff4144827a0dd75cd8cb96fe5
   languageName: node
   linkType: hard
 
