@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.332.0",
-    "node-fetch": "^2.6.9",
+    "node-fetch": "^2.6.11",
     "zod": "^3.21.4"
   }
 }

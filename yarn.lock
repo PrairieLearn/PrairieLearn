@@ -3028,7 +3028,7 @@ __metadata:
     "@aws-sdk/client-ec2": ^3.332.0
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.16.3
-    node-fetch: ^2.6.9
+    node-fetch: ^2.6.11
     typescript: ^5.0.4
     zod: ^3.21.4
   languageName: unknown
@@ -3060,7 +3060,7 @@ __metadata:
     get-port: ^5.1.1
     globby: ^11.1.0
     mocha: ^10.2.0
-    node-fetch: ^2.6.9
+    node-fetch: ^2.6.11
     pretty-bytes: ^5.6.0
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
@@ -3407,7 +3407,7 @@ __metadata:
     "@types/mocha": ^10.0.1
     "@types/multer": ^1.4.7
     "@types/node": ^18.16.3
-    "@types/node-fetch": ^2.6.3
+    "@types/node-fetch": ^2.6.4
     "@types/object-hash": ^3.0.2
     "@types/passport": ^1.0.12
     "@types/passport-azure-ad": ^4.3.1
@@ -3494,7 +3494,7 @@ __metadata:
     multer: ^1.4.5-lts.1
     mustache: ^4.2.0
     ncp: ^2.0.0
-    node-fetch: ^2.6.9
+    node-fetch: ^2.6.11
     nodemon: ^2.0.22
     numeric: ^1.2.6
     oauth-signature: ^1.5.0
@@ -4546,13 +4546,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node-fetch@npm:^2.6.3":
-  version: 2.6.3
-  resolution: "@types/node-fetch@npm:2.6.3"
+"@types/node-fetch@npm:^2.6.4":
+  version: 2.6.4
+  resolution: "@types/node-fetch@npm:2.6.4"
   dependencies:
     "@types/node": "*"
     form-data: ^3.0.0
-  checksum: b68cda58e91535a42dd5337932443c37f8e198ca1e8deeb95bd92a64a9a84d92071867b91c5eb84ee8e13f33d45a70549fe2bc11dd070a894dd561909f4d39f5
+  checksum: f3e1d881bb42269e676ecaf49f0e096ab345e22823a2b2d071d60619414817fe02df48a31a8d05adb23054028a2a65521bdb3906ceb763ab6d3339c8d8775058
   languageName: node
   linkType: hard
 
@@ -12454,7 +12454,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^2.6.2, node-fetch@npm:^2.6.7, node-fetch@npm:^2.6.9":
+"node-fetch@npm:^2.6.11":
+  version: 2.6.11
+  resolution: "node-fetch@npm:2.6.11"
+  dependencies:
+    whatwg-url: ^5.0.0
+  peerDependencies:
+    encoding: ^0.1.0
+  peerDependenciesMeta:
+    encoding:
+      optional: true
+  checksum: 249d0666a9497553384d46b5ab296ba223521ac88fed4d8a17d6ee6c2efb0fc890f3e8091cafe7f9fba8151a5b8d925db2671543b3409a56c3cd522b468b47b3
+  languageName: node
+  linkType: hard
+
+"node-fetch@npm:^2.6.2, node-fetch@npm:^2.6.7":
   version: 2.6.9
   resolution: "node-fetch@npm:2.6.9"
   dependencies:
