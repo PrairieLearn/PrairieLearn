@@ -1,5 +1,4 @@
 // @ts-check
-
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -9,13 +8,12 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const z = require('zod');
 
 const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
 const question = require('../lib/question');
 const externalGrader = require('./externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
-const serverJobs = require('./server-jobs-legacy');
 const sqldb = require('@prairielearn/postgres');
 const ltiOutcomes = require('../lib/ltiOutcomes');
+const { createServerJob } = require('./server-jobs');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -292,103 +290,61 @@ module.exports = {
   /**
    * Grade all assessment instances and (optionally) close them.
    *
-   * @param {number} assessment_id - The assessment to grade.
-   * @param {number} user_id - The current user performing the update.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} assessment_id - The assessment to grade.
+   * @param {string} user_id - The current user performing the update.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} close - Whether to close the assessment instances after grading.
    * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
-   * @param {function} callback - A callback(err) function.
    */
-  gradeAllAssessmentInstances(
+  async gradeAllAssessmentInstances(
     assessment_id,
     user_id,
     authn_user_id,
     close,
-    overrideGradeRate,
-    callback
+    overrideGradeRate
   ) {
     debug('gradeAllAssessmentInstances()');
-    const params = { assessment_id };
-    sqldb.queryOneRow(sql.select_assessment_info, params, function (err, result) {
-      if (ERR(err, callback)) return;
-      const assessment_label = result.rows[0].assessment_label;
-      const course_instance_id = result.rows[0].course_instance_id;
-      const course_id = result.rows[0].course_id;
+    const assessmentInfo = await sqldb.queryOneRowAsync(sql.select_assessment_info, {
+      assessment_id,
+    });
+    const assessment_label = assessmentInfo.rows[0].assessment_label;
+    const course_instance_id = assessmentInfo.rows[0].course_instance_id;
+    const course_id = assessmentInfo.rows[0].course_id;
 
-      const options = {
-        course_id: course_id,
-        course_instance_id: course_instance_id,
-        assessment_id: assessment_id,
-        user_id: user_id,
-        authn_user_id: authn_user_id,
-        type: 'grade_all_assessment_instances',
-        description: 'Grade all assessment instances for ' + assessment_label,
-      };
-      serverJobs.createJobSequence(options, function (err, job_sequence_id) {
-        if (ERR(err, callback)) return;
-        callback(null, job_sequence_id);
+    const serverJob = await createServerJob({
+      courseId: course_id,
+      courseInstanceId: course_instance_id,
+      assessmentId: assessment_id,
+      userId: user_id,
+      authnUserId: authn_user_id,
+      type: 'grade_all_assessment_instances',
+      description: 'Grade all assessment instances for ' + assessment_label,
+    });
 
-        // We've now triggered the callback to our caller, but we
-        // continue executing below to launch the jobs themselves.
+    serverJob.executeInBackground(async (job) => {
+      job.info('Grading assessment instances for ' + assessment_label);
 
-        const jobOptions = {
-          course_id: course_id,
-          course_instance_id: course_instance_id,
-          assessment_id: assessment_id,
-          user_id: user_id,
-          authn_user_id: authn_user_id,
-          type: 'grade_all_assessment_instances',
-          description: 'Grade all assessment instances for ' + assessment_label,
-          job_sequence_id: job_sequence_id,
-          last_in_sequence: true,
-        };
-        serverJobs.createJob(jobOptions, function (err, job) {
-          if (err) {
-            logger.error('Error in createJob()', err);
-            serverJobs.failJobSequence(job_sequence_id);
-            return;
-          }
-          job.verbose('Grading assessment instances for ' + assessment_label);
-
-          const params = { assessment_id };
-          sqldb.query(sql.select_instances_to_grade, params, (err, result) => {
+      const instances = await sqldb.queryAsync(sql.select_instances_to_grade, { assessment_id });
+      let rows = instances.rows;
+      job.info(rows.length === 1 ? 'One instance found' : rows.length + ' instances found');
+      await async.eachSeries(rows, (row, callback) => {
+        job.info(`Grading assessment instance #${row.instance_number} for ${row.username}`);
+        const requireOpen = true;
+        module.exports.gradeAssessmentInstance(
+          row.assessment_instance_id,
+          authn_user_id,
+          requireOpen,
+          close,
+          overrideGradeRate,
+          (err) => {
             if (ERR(err, callback)) return;
-            let rows = result.rows;
-            job.verbose(
-              rows.length === 1 ? 'One instance found' : rows.length + ' instances found'
-            );
-            async.eachSeries(
-              rows,
-              (row, callback) => {
-                job.verbose(
-                  `Grading assessment instance #${row.instance_number} for ${row.username}`
-                );
-                const requireOpen = true;
-                module.exports.gradeAssessmentInstance(
-                  row.assessment_instance_id,
-                  authn_user_id,
-                  requireOpen,
-                  close,
-                  overrideGradeRate,
-                  (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                  }
-                );
-              },
-              (err) => {
-                if (err) {
-                  job.fail(error.newMessage(err, 'Error grading instances'));
-                } else {
-                  job.verbose('Finished grading assessment instances');
-                  job.succeed();
-                }
-              }
-            );
-          });
-        });
+            callback(null);
+          }
+        );
       });
     });
+
+    return serverJob.jobSequenceId;
   },
 
   /**
