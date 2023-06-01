@@ -3233,7 +3233,7 @@ __metadata:
     "@types/node": ^18.16.3
     fs-extra: ^11.1.1
     mocha: ^10.2.0
-    serialize-error: ^8.1.0
+    serialize-error: ^10.0.0
     ts-node: ^10.9.1
     typescript: ^5.0.4
     typescript-cp: ^0.1.8
@@ -14489,12 +14489,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serialize-error@npm:^8.1.0":
-  version: 8.1.0
-  resolution: "serialize-error@npm:8.1.0"
+"serialize-error@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "serialize-error@npm:10.0.0"
   dependencies:
-    type-fest: ^0.20.2
-  checksum: 2eef236d50edd2d7926e602c14fb500dc3a125ee52e9f08f67033181b8e0be5d1122498bdf7c23c80683cddcad083a27974e9e7111ce23165f4d3bcdd6d65102
+    type-fest: ^2.12.2
+  checksum: cb968c6b0544a4896483f8108e40febc947ad710da099f83ef0ef803029830fc8464b31bc9d4c3c175b46d9ba45344229c9901f30ab8a9829611ac1ec56d6b5d
   languageName: node
   linkType: hard
 
@@ -15876,6 +15876,13 @@ __metadata:
   version: 0.8.1
   resolution: "type-fest@npm:0.8.1"
   checksum: d61c4b2eba24009033ae4500d7d818a94fd6d1b481a8111612ee141400d5f1db46f199c014766b9fa9b31a6a7374d96fc748c6d688a78a3ce5a33123839becb7
+  languageName: node
+  linkType: hard
+
+"type-fest@npm:^2.12.2":
+  version: 2.19.0
+  resolution: "type-fest@npm:2.19.0"
+  checksum: a4ef07ece297c9fba78fc1bd6d85dff4472fe043ede98bd4710d2615d15776902b595abf62bd78339ed6278f021235fb28a96361f8be86ed754f778973a0d278
   languageName: node
   linkType: hard
 
