@@ -226,42 +226,60 @@ Students are able to see their groupmates' UIDs, which can become a point of con
 
 ## Forcing students to complete questions in-order
 
-**WARNING:** We **strongly** discourage the use of this option during exams, as it can be very detrimental to student success. See below for more details.
+**WARNING:** We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
 
 Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
 
-To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
+To enable these features, set `advanceScorePerc` for any question to a number between 0 and 100. An example of what this looks like is below, with boilerplate attributes omitted:
 
 ```json
 {
-  "advanceScorePerc": 100,
   "zones": [
     {
-      "advanceScorePerc": 80,
       "questions": [
-        {
-          "id": "page1",
-          "advanceScorePerc": 50
-        },
-        {
-          "id": "page2"
-        },
-        {
-          "id": "page3"
-        }
+        { "id": "q1", "advanceScorePerc": 50 },
+        { "id": "q2", "advanceScorePerc": 100 },
+        { "id": "q3", "advanceScorePerc": 0 },
+        { "id": "q4", "advanceScorePerc": 80 },
+        { "id": "q5", "advanceScorePerc": 100 }
       ]
     }
   ]
 }
 ```
 
-In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80% in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+Each question blocks all later questions until its `advanceScorePerc` is met. In the above example, `q1` blocks all later questions until the student has scored at least 50% on it. Then `q2` blocks all later questions until the student has a perfect score on it. Once a student gets past `q2`, both `q3` and `q4` are immediately available because `q3` does not do any blocking. Finally, `q4` blocks the remaining `q5` until the student has an 80% score on it. The `advanceScorePerc` attribute on `q5` is irrelevant because there are no questions after it.
 
-If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+The relevant score for comparing to `advanceScorePerc` is the student's _highest submission score_ for the question, not their percentage score on the question overall. For example, suppose `q1` above has `"points": [10, 4, 2, 1]`. Then a student who makes a 50%-correct submission on their second attempt will unblock the question, even though they only score 2 points out of 10 on the question (50% of the 4-point second-chance value).
 
-### Note about exam-type assessments and in-order questions
+An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which will act as a default for all questions in that zone or assessment. For example, the following configuration is equivalent to the above:
 
-The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
+```json
+{
+  "zones": [
+    {
+      "advanceScorePerc": 100,
+      "questions": [
+        { "id": "q1", "advanceScorePerc": 50 },
+        { "id": "q2" },
+        { "id": "q3", "advanceScorePerc": 0 },
+        { "id": "q4", "advanceScorePerc": 80 },
+        { "id": "q5" }
+      ]
+    }
+  ]
+}
+```
+
+In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 because the zone-level attribute is used as a default.
+
+Note that an `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
+
+If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+
+### Warning about in-order questions and high-stakes exams
+
+The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
 ## Auto-closing Exam assessments
 
