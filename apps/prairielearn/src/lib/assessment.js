@@ -166,7 +166,7 @@ module.exports = {
    * if needed.
    *
    * @param {number} assessment_instance_id - The assessment instance to grade.
-   * @param {number | null} authn_user_id - The current authenticated user.
+   * @param {string | null} authn_user_id - The current authenticated user.
    * @param {boolean} requireOpen - Whether to enforce that the assessment instance is open before grading.
    * @param {boolean} close - Whether to close the assessment instance after grading.
    * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
