@@ -42,7 +42,7 @@
     "@types/tmp": "^0.2.3",
     "mocha": "^10.2.0",
     "nodemon": "^2.0.22",
-    "sinon": "^15.0.4",
+    "sinon": "^15.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
     "typescript-cp": "^0.1.8"
