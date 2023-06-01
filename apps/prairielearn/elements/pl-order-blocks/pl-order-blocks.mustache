@@ -97,11 +97,9 @@ $(function() {
 
 
 {{#true_answer}}
-    <div class="true_answer_container">
-        <ul class="list-group">
-            <li class="list-group-item list-group-item-success"><strong>Correct answer ({{ordering_message}}{{indentation_message}}):</strong></li>
-        </ul>
-        <ul class="list-group answer_table">
+    <div class="pl-order-blocks-answer-container">
+        <div class="card-header list-group-item-success">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
+        <ul class="card-body list-group">
         {{#question_solution}}
             <li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
         {{/question_solution}}
