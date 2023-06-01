@@ -1,38 +1,44 @@
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOneRowAsync,
-  queryZeroOrOneRowAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
+import {
+  AuthnProviderSchema,
+  InstitutionSchema,
+  SamlProviderSchema,
+  type AuthnProvider,
+  type Institution,
+  type SamlProvider,
+} from '../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-export async function getInstitution(institutionId) {
-  const institutionRes = await queryOneRowAsync(sql.select_institution, {
-    id: institutionId,
-  });
-  return institutionRes.rows[0];
+export async function getInstitution(institution_id: string): Promise<Institution> {
+  return await queryRow(sql.select_institution, { id: institution_id }, InstitutionSchema);
 }
 
-export async function getInstitutionSamlProvider(institutionId) {
-  const samlProviderRes = await queryZeroOrOneRowAsync(sql.select_institution_saml_provider, {
-    institution_id: institutionId,
-  });
-  return samlProviderRes.rows[0] ?? null;
+export async function getInstitutionSamlProvider(
+  institution_id: string
+): Promise<SamlProvider | null> {
+  return await queryOptionalRow(
+    sql.select_institution_saml_provider,
+    { institution_id },
+    SamlProviderSchema
+  );
 }
 
-export async function getInstitutionAuthenticationProviders(institutionId) {
-  const authProvidersRes = await queryAsync(sql.select_institution_authn_providers, {
-    institution_id: institutionId,
-  });
-  return authProvidersRes.rows;
+export async function getInstitutionAuthenticationProviders(
+  institution_id: string
+): Promise<AuthnProvider[]> {
+  return await queryRows(
+    sql.select_institution_authn_providers,
+    { institution_id },
+    AuthnProviderSchema
+  );
 }
 
-export async function getSupportedAuthenticationProviders() {
-  const authProvidersRes = await queryAsync(sql.select_authentication_providers, {});
-  return authProvidersRes.rows.filter((row) => {
+export async function getSupportedAuthenticationProviders(): Promise<AuthnProvider[]> {
+  const authProviders = await queryRows(sql.select_authentication_providers, AuthnProviderSchema);
+  return authProviders.filter((row) => {
     if (row.name === 'Shibboleth') {
       return config.hasShib;
     }

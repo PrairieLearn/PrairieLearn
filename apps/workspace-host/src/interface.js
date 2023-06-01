@@ -544,7 +544,10 @@ async function _pullImage(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
-  const auth = await setupDockerAuthAsync(config.awsRegion);
+
+  // We only auth if a specific ECR registry is configured. Otherwise, we'll
+  // assume we're pulling from the public Docker Hub registry.
+  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
 
   let percentDisplayed = false;
   let stream;

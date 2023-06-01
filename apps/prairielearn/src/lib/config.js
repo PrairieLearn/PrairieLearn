@@ -57,6 +57,7 @@ const ConfigSchema = z.object({
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
+  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -264,8 +265,6 @@ const ConfigSchema = z.object({
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  questionRenderCacheMaxItems: z.number().default(100_000),
-  questionRenderCacheMaxAgeMilliseconds: z.number().default(6 * 60 * 60 * 1000),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   filesRoot: z.string().default('/files'),

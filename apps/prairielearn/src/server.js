@@ -82,7 +82,6 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
-    --exit                              Run all the initialization and exit
 `;
 
   console.log(msg);
@@ -107,6 +106,12 @@ module.exports.initExpress = function () {
       app.use(Sentry.Handlers.tracingHandler());
     }
   }
+
+  // This should come before the session middleware so that we don't
+  // create a session every time we get a health check request.
+  app.get('/pl/webhooks/ping', function (req, res, _next) {
+    res.send('.');
+  });
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -138,10 +143,10 @@ module.exports.initExpress = function () {
       resave: false,
       saveUninitialized: true,
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds,
+        maxAge: config.sessionStoreExpireSeconds * 1000,
         httpOnly: true,
-        secure: true,
-        sameSite: 'none', // needed for iframes, Canvas LTI
+        secure: 'auto', // uses Express "trust proxy"
+        sameSite: config.sessionCookieSameSite,
       },
     })
   );
@@ -493,20 +498,8 @@ module.exports.initExpress = function () {
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
   // some pages don't need authorization
-  app.use('/', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
-  app.use('/pl', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
+  app.use('/', require('./pages/home/home'));
+  app.use('/pl', require('./pages/home/home'));
   app.use('/pl/settings', [
     function (req, res, next) {
       res.locals.navPage = 'user_settings';
@@ -514,13 +507,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/userSettings/userSettings'),
   ]);
-  app.use('/pl/enroll', [
-    function (req, res, next) {
-      res.locals.navPage = 'enroll';
-      next();
-    },
-    require('./pages/enroll/enroll'),
-  ]);
+  app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
     function (req, res, next) {
       res.locals.navPage = 'logout';
@@ -1627,6 +1614,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorSettings/administratorSettings')
   );
   app.use(
+    '/pl/administrator/institutions',
+    require('./pages/administratorInstitutions/administratorInstitutions').default
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses')
   );
@@ -1659,14 +1650,6 @@ module.exports.initExpress = function () {
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
   );
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  // Webhooks //////////////////////////////////////////////////////////
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
-    res.send('.');
-  });
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -2141,12 +2124,7 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        cache.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await cache.init(),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
@@ -2192,10 +2170,6 @@ if (require.main === module && config.startServer) {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
           logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-        }
-        if ('exit' in argv) {
-          logger.info('exit option passed, quitting...');
-          process.exit(0);
         }
 
         // SIGTERM can be used to gracefully shut down the process. This signal
