@@ -33,7 +33,7 @@ router.get(
       res.locals.course_instance.id
     );
     const planGrantFeatures = getFeaturesForPlans(
-      institutionPlanGrants.concat(courseInstancePlanGrants)
+      institutionPlanGrants.concat(courseInstancePlanGrants).map((grant) => grant.plan_name)
     );
     console.log(planGrantFeatures);
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);

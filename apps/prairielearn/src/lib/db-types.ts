@@ -72,3 +72,19 @@ export const AuthnProviderSchema = z.object({
   name: z.string().nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
+
+export const PlanGrantSchema = z.object({
+  course_instance_id: IdSchema.nullable(),
+  created_at: z.date(),
+  // TODO: handled `deleted_at` everywhere we need to.
+  deleted_at: z.date().nullable(),
+  enrollment_id: IdSchema.nullable(),
+  // TODO: remove this column.
+  enrollment_limit: z.number().nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+  type: z.enum(['trial', 'stripe', 'invoice', 'gift']),
+  user_id: IdSchema.nullable(),
+});
+export type PlanGrant = z.infer<typeof PlanGrantSchema>;

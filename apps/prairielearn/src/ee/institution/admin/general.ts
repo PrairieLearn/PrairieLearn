@@ -5,6 +5,12 @@ import error = require('@prairielearn/error');
 
 import { InstitutionAdminGeneral, InstitutionStatisticsSchema } from './general.html';
 import { getInstitution } from '../utils';
+import {
+  PlanGrantUpdate,
+  PlanName,
+  getPlanGrantsForInstitution,
+  updatePlanGrantsForInstitution,
+} from '../../billing/plans';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -18,10 +24,12 @@ router.get(
       { institution_id: req.params.institution_id },
       InstitutionStatisticsSchema
     );
+    const planGrants = await getPlanGrantsForInstitution(req.params.institution_id);
     res.send(
       InstitutionAdminGeneral({
         institution,
         statistics,
+        planGrants,
         resLocals: res.locals,
       })
     );
@@ -37,6 +45,24 @@ router.post(
         yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
         course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_plans') {
+      // We exclude `basic` from the list of allowed plans because it should
+      // only ever be used for student billing for enrollments.
+      const allowedPlans: PlanName[] = ['compute', 'everything'];
+      const updates: PlanGrantUpdate[] = [];
+      for (const plan of allowedPlans) {
+        const planGranted = !!req.body[`plan_${plan}`];
+        const planGrantType = req.body[`plan_${plan}_grant_type`];
+        if (planGranted) {
+          updates.push({
+            plan,
+            grantType: planGrantType,
+          });
+        }
+      }
+      console.log('plan grant updates', updates);
+      await updatePlanGrantsForInstitution(req.params.institution_id, updates);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);

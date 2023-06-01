@@ -1,6 +1,6 @@
 -- BLOCK select_plan_grants_for_institution
 SELECT
-  plan_name
+  *
 FROM
   plan_grants
 WHERE
@@ -11,7 +11,7 @@ WHERE
 
 -- BLOCK select_plan_grants_for_course_instance
 SELECT
-  pg.plan_name
+  pg.*
 FROM
   plan_grants AS pg
   JOIN course_instances AS ci ON (ci.id = pg.course_instance_id)
@@ -45,3 +45,49 @@ SELECT
   $course_instance_id,
   UNNEST($plans::text[])
 ON CONFLICT DO NOTHING;
+
+-- BLOCK update_plan_grants_for_institution
+WITH
+  desired_plan_grants AS (
+    SELECT
+      (plans ->> 'plan')::text AS plan_name,
+      (plans ->> 'grantType')::text AS grant_type
+    FROM
+      JSON_ARRAY_ELEMENTS($plans::json) AS plans
+  ),
+  deleted_plan_grants AS (
+    DELETE FROM plan_grants
+    WHERE
+      institution_id = $institution_id
+      AND NOT EXISTS (
+        SELECT
+          *
+        FROM
+          desired_plan_grants
+        WHERE
+          plan_name = plan_grants.plan_name
+      )
+  )
+INSERT INTO
+  plan_grants (
+    institution_id,
+    plan_name,
+    type
+  )
+SELECT
+  $institution_id,
+  plan_name,
+  grant_type::enum_plan_grant_type
+FROM
+  desired_plan_grants
+  -- TODO: we need something like `NULLS NOT DISTINCT` from Postgres 15 for this
+  -- to work, but we aren't running on that version yet.
+ON CONFLICT (
+  plan_name,
+  institution_id,
+  course_instance_id,
+  enrollment_id
+) DO
+UPDATE
+SET
+type = EXCLUDED.type;

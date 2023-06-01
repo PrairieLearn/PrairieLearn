@@ -43,7 +43,7 @@ export function InstructorCourseInstanceBilling({
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
               <form method="POST">
-                <h2>Enrollments</h2>
+                <h2 class="h4">Enrollments</h2>
                 <div class="mb-3">
                   <div class="progress">
                     <div
@@ -84,7 +84,7 @@ export function InstructorCourseInstanceBilling({
                   </p>
                 </div>
 
-                <h2>Features</h2>
+                <h2 class="h4">Features</h2>
                 <p>
                   If your course requires certain features, you can enable them so that students can
                   pay for them.
