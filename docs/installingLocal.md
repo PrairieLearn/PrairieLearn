@@ -67,7 +67,8 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # following commands are inside the container:
 make start-support
-yarn mocha tests/testGetHomepage.js
+cd apps/prairielearn
+yarn mocha src/tests/getHomepage.test.js
 ```
 
 ## Working on packages

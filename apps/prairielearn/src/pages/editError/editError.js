@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const error = require('@prairielearn/error');
-const serverJobs = require('../../lib/server-jobs');
+const serverJobs = require('../../lib/server-jobs-legacy');
 const syncHelpers = require('../shared/syncHelpers');
 
 router.get('/:job_sequence_id', function (req, res, next) {
@@ -66,10 +66,12 @@ router.post('/:job_sequence_id', (req, res, next) => {
   }
 
   if (req.body.__action === 'pull') {
-    syncHelpers.pullAndUpdate(res.locals, function (err, job_sequence_id) {
-      if (ERR(err, next)) return;
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-    });
+    syncHelpers
+      .pullAndUpdate(res.locals)
+      .then((job_sequence_id) => {
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      })
+      .catch((err) => ERR(err, next));
   } else {
     return next(
       error.make(400, 'unknown __action', {

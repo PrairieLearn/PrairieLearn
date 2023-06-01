@@ -1,5 +1,7 @@
 build:
 	@yarn turbo run build
+build-sequential:
+	@yarn turbo run --concurrency 1 build
 python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:
@@ -21,7 +23,10 @@ start: start-support
 start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
-	@node executor.js
+	@node apps/prairielearn/dist/executor.js
+
+update-database-description:
+	@yarn --cwd apps/prairielearn pg-describe postgres -o ../../database
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
@@ -66,6 +71,8 @@ typecheck: typecheck-js typecheck-python
 # as a side-effect.
 # TODO: Do we want to have a separate typecheck command for all packages/apps?
 # Maybe using TypeScript project references?
+typecheck-tools:
+	@yarn tsc
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:

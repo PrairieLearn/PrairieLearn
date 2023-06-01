@@ -1,6 +1,10 @@
 import { Router } from 'express';
 
 import authzIsAdministrator = require('../../../middlewares/authzIsAdministrator');
+import generalRouter from './general';
+import coursesRouter from './courses';
+import courseRouter from './course';
+import courseInstanceRouter from './courseInstance';
 import ssoRouter from './sso';
 import samlRouter from './saml';
 
@@ -17,11 +21,11 @@ router.use((req, res, next) => {
   next();
 });
 
+router.use('/', generalRouter);
+router.use('/courses', coursesRouter);
+router.use('/course/:course_id', courseRouter);
+router.use('/course_instance/:course_instance_id', courseInstanceRouter);
 router.use('/sso', ssoRouter);
 router.use('/saml', samlRouter);
-router.use('/', (req, res) => {
-  // Default fallthrough: redirect to the SSO configuration page.
-  res.redirect(`${req.baseUrl}/sso`);
-});
 
 export default router;

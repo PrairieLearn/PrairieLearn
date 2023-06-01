@@ -27,6 +27,7 @@ const { promisify } = require('util');
 /**
  * @typedef {Object} SyncResults
  * @property {boolean} hadJsonErrors
+ * @property {boolean} hadJsonErrorsOrWarnings
  * @property {string} courseId
  * @property {import('./course-db').CourseData} courseData
  */
@@ -146,7 +147,19 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
     }
   });
 };
-module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
+
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @returns {Promise<SyncResults>}
+ */
+function syncDiskToSqlAsync(courseDir, course_id, logger) {
+  // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
+  // that it'll always result in a non-undefined value if it doesn't error.
+  return promisify(module.exports.syncDiskToSql)(courseDir, course_id, logger);
+}
+module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
 /**
  * @param {string} courseDir
@@ -163,3 +176,4 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
     });
   });
 };
+module.exports.syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);

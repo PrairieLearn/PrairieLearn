@@ -11,6 +11,7 @@ DECLARE
     mismatched_uuid_short_names TEXT;
     valid_course_instance record;
     syncing_course_instance_id bigint;
+    course_instance_timezone TEXT;
     enrollment JSONB;
 BEGIN
     -- The sync algorithm used here is described in the preprint
@@ -80,8 +81,10 @@ BEGIN
         WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
     ),
     insert_unmatched_src_rows AS (
-        INSERT INTO course_instances AS dest (course_id, short_name, uuid, deleted_at)
-        SELECT syncing_course_id, src_short_name, src_uuid, NULL
+        -- UTC is used as a temporary timezone, which will be updated in following statements
+        INSERT INTO course_instances AS dest
+            (course_id, short_name, uuid, display_timezone, deleted_at)
+        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
         FROM matched_rows
         WHERE dest_id IS NULL
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
@@ -128,11 +131,13 @@ BEGIN
     SET
         long_name = src.data->>'long_name',
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
-        display_timezone = src.data->>'display_timezone',
+        display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
-    FROM disk_course_instances AS src
+    FROM
+        disk_course_instances AS src
+        JOIN pl_courses AS c ON (c.id = syncing_course_id)
     WHERE
         dest.short_name = src.short_name
         AND dest.deleted_at IS NULL
@@ -145,7 +150,8 @@ BEGIN
         FROM disk_course_instances AS src
         WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
-        SELECT ci.id INTO STRICT syncing_course_instance_id
+        SELECT ci.id, ci.display_timezone
+        INTO STRICT syncing_course_instance_id, course_instance_timezone
         FROM course_instances AS ci
         WHERE
             ci.short_name = valid_course_instance.short_name
@@ -168,8 +174,8 @@ BEGIN
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
                 ELSE jsonb_array_to_text_array(access_rule->'uids')
             END,
-            input_date(access_rule->>'start_date', valid_course_instance.data->>'display_timezone'),
-            input_date(access_rule->>'end_date', valid_course_instance.data->>'display_timezone'),
+            input_date(access_rule->>'start_date', course_instance_timezone),
+            input_date(access_rule->>'end_date', course_instance_timezone),
             access_rule->>'institution'
         FROM
             JSONB_ARRAY_ELEMENTS(valid_course_instance.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)

@@ -4,7 +4,9 @@ import importlib
 import importlib.util
 import json
 import math
+import numbers
 import os
+import random
 import re
 import unicodedata
 import uuid
@@ -1498,7 +1500,11 @@ def string_to_2darray(s, allow_complex=True):
     raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
 
 
-def latex_from_2darray(A, presentation_type="f", digits=2):
+def latex_from_2darray(
+    A: Union[numbers.Number, np.ndarray],
+    presentation_type: str = "f",
+    digits: int = 2,
+) -> str:
     r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
@@ -1515,21 +1521,21 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if np.isscalar(A):
+    if isinstance(A, numbers.Number):
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
-
+    # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: to_precision.to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
                 x, digits=digits, presentation_type=presentation_type
             ),
@@ -1547,8 +1553,8 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
         .splitlines()
     )
     rv = [r"\begin{bmatrix}"]
-    rv += ["  " + " & ".join(line.split()) + r"\\" for line in lines]
-    rv += [r"\end{bmatrix}"]
+    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
+    rv.append(r"\end{bmatrix}")
     return "".join(rv)
 
 
@@ -1628,12 +1634,20 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     return (a_sub > lower_bound) & (a_sub < upper_bound)
 
 
-def get_uuid():
-    """get_uuid()
-
-    Returns the string representation of a new random UUID.
+def get_uuid() -> str:
     """
-    return str(uuid.uuid4())
+    Returns the string representation of a new random UUID.
+    First character of this uuid is guaranteed to be an alpha
+    (at the expense of a slight loss in randomness).
+
+    This is done because certain web components need identifiers to
+    start with letters and not numbers.
+    """
+
+    uuid_string = str(uuid.uuid4())
+    random_char = random.choice("abcdef")
+
+    return random_char + uuid_string[1:]
 
 
 def escape_unicode_string(string):

@@ -19,6 +19,7 @@ foreign-key constraints
 
 referenced by
     assessment_instances: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_user_roles: FOREIGN KEY (group_id) REFERENCES groups(id)
     group_users: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

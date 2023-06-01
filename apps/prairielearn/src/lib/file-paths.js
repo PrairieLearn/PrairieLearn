@@ -4,13 +4,10 @@ const path = require('path');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
+const { APP_ROOT_PATH } = require('./paths');
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const QUESTION_DEFAULTS_PATH = path.resolve(
-  __dirname,
-  '..',
-  'question-servers',
-  'default-calculation'
-);
+const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
 
 /**
  * @typedef {Object} QuestionFilePathInfo

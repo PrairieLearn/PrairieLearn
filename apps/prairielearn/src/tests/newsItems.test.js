@@ -131,30 +131,42 @@ describe('News items', function () {
 
   describe('News items page', () => {
     it('should load in course instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course/1/news_items');
+      const res = await fetch(locals.baseUrl + '/course/1/news_items', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_items');
+      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_items', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
     it('should load in course instance student level', async () => {
-      const res = await fetch(locals.baseUrl + '/course_instance/1/news_items');
+      const res = await fetch(locals.baseUrl + '/course_instance/1/news_items', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
   });
 
   describe('Single news item page', () => {
     it('should load in course instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course/1/news_item/1/');
+      const res = await fetch(locals.baseUrl + '/course/1/news_item/1/', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {
-      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_item/1/');
+      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_item/1/', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
     it('should load in course instance student level', async () => {
-      const res = await fetch(locals.baseUrl + '/course_instance/1/news_item/1/');
+      const res = await fetch(locals.baseUrl + '/course_instance/1/news_item/1/', {
+        method: 'HEAD',
+      });
       assert.isOk(res.ok);
     });
   });

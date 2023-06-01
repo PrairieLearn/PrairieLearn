@@ -65,6 +65,7 @@ SELECT
   s.sid,
   s.v2_score,
   s.variant_id,
+  s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
   -- These are separate for historical reasons
   gj.id AS grading_job_id,
