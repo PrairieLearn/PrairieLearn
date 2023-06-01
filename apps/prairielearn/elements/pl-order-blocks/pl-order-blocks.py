@@ -14,7 +14,7 @@ from lxml import etree
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
-DISTRACTOR_INFO_DEFAULT = 'none'
+DISTRACTOR_INFO_DEFAULT = "none"
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
 GRADING_METHOD_DEFAULT = "ordered"
@@ -163,19 +163,33 @@ def prepare(element_html, data):
             )
         elif grading_method in ["unordered", "ordered"]:
             pl.check_attribs(
-                html_tags, required_attribs=[], optional_attribs=["correct", "indent", "distractor-feedback"]
+                html_tags,
+                required_attribs=[],
+                optional_attribs=["correct", "indent", "distractor-feedback"],
             )
         elif grading_method == "ranking":
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "ranking", "indent", "distractor-feedback"],
+                optional_attribs=[
+                    "correct",
+                    "ranking",
+                    "indent",
+                    "distractor-feedback",
+                ],
             )
         elif grading_method == "dag":
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "tag", "depends", "comment", "indent", "distractor-feedback"],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "depends",
+                    "comment",
+                    "indent",
+                    "distractor-feedback",
+                ],
             )
 
         is_correct = pl.get_boolean_attrib(
@@ -184,12 +198,20 @@ def prepare(element_html, data):
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
-        distractor_info = pl.get_string_attrib(element, "distractor-info", DISTRACTOR_INFO_DEFAULT)
-        distractor_feedback = pl.get_string_attrib(html_tags, "distractor-feedback", None)
-        is_correct = pl.get_boolean_attrib(html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT)
+        distractor_info = pl.get_string_attrib(
+            element, "distractor-info", DISTRACTOR_INFO_DEFAULT
+        )
+        distractor_feedback = pl.get_string_attrib(
+            html_tags, "distractor-feedback", None
+        )
+        is_correct = pl.get_boolean_attrib(
+            html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
+        )
 
-        if (distractor_info == 'none') and (distractor_feedback is not None):
-            raise Exception("distractor-info must be 'show-distractors' for the distractor-feedback tag to be used in <pl-answer>")
+        if (distractor_info == "none") and (distractor_feedback is not None):
+            raise Exception(
+                "distractor-info must be 'show-distractors' for the distractor-feedback tag to be used in <pl-answer>"
+            )
 
         tag, depends = get_graph_info(html_tags)
         if grading_method == "ranking":
@@ -351,7 +373,7 @@ def render(element_html, data):
         mcq_options = data["params"][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid"])
 
-        if answer_name in data["submitted_answers"]: 
+        if answer_name in data["submitted_answers"]:
             student_previous_submission = filter_multiple_from_array(
                 data["submitted_answers"][answer_name], ["inner_html", "uuid", "indent"]
             )
@@ -422,8 +444,7 @@ def render(element_html, data):
         return html
 
     elif data["panel"] == "submission":
-        
-        feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+        feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
 
         if grading_method == "external":
             return ""  # external grader is responsible for displaying results screen
@@ -436,11 +457,17 @@ def render(element_html, data):
                 {
                     "inner_html": attempt["inner_html"],
                     "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
-                    "badge_type": attempt["badge_type"] if (feedback_type.startswith("first-wrong")) else "",
-                    "icon": attempt["icon"] if (feedback_type.startswith("first-wrong")) else "",
+                    "badge_type": attempt["badge_type"]
+                    if (feedback_type.startswith("first-wrong"))
+                    else "",
+                    "icon": attempt["icon"]
+                    if (feedback_type.startswith("first-wrong"))
+                    else "",
                     "first-wrong": feedback_type.startswith("first-wrong"),
                     "distractor-feedback": attempt.get("distractor-feedback"),
-                    "show-distractor-feedback": (attempt.get("distractor-feedback", None) is not None) 
+                    "show-distractor-feedback": (
+                        attempt.get("distractor-feedback", None) is not None
+                    )
                     and (i <= data["partial_scores"][answer_name]["first_wrong"])
                     and (feedback_type == "first-wrong-verbose"),
                 }
@@ -508,12 +535,18 @@ def render(element_html, data):
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        distractor_info = pl.get_string_attrib(element, 'distractor-info', DISTRACTOR_INFO_DEFAULT)
+        distractor_info = pl.get_string_attrib(
+            element, "distractor-info", DISTRACTOR_INFO_DEFAULT
+        )
         all_distractors = []
-        if distractor_info != 'none':
-            all_distractors = [item for item in data['params'][answer_name] if not item['is_correct']]
+        if distractor_info != "none":
+            all_distractors = [
+                item for item in data["params"][answer_name] if not item["is_correct"]
+            ]
             for distractor in all_distractors:
-                distractor['has-distractor-feedback'] = distractor['distractor-feedback'] is not None
+                distractor["has-distractor-feedback"] = (
+                    distractor["distractor-feedback"] is not None
+                )
 
         question_solution = [
             {
@@ -522,7 +555,7 @@ def render(element_html, data):
             }
             for solution in data["correct_answers"][answer_name]
         ]
-        
+
         html_params = {
             "true_answer": True,
             "question_solution": question_solution,
@@ -530,7 +563,8 @@ def render(element_html, data):
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
             "distractor-feedback": all_distractors,
-            "show-distractors": (len(all_distractors) > 0) and (distractor_info == "show-distractors"),
+            "show-distractors": (len(all_distractors) > 0)
+            and (distractor_info == "show-distractors"),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -556,7 +590,7 @@ def parse(element_html, data):
         element, "grading-method", GRADING_METHOD_DEFAULT
     )
     correct_answers = data["correct_answers"][answer_name]
-    mcq_options = data['params'][answer_name]
+    mcq_options = data["params"][answer_name]
 
     if grading_mode == "ranking":
         for answer in student_answer:
@@ -579,7 +613,9 @@ def parse(element_html, data):
                     ),
                     None,
                 )
-                answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
+                answer["distractor-feedback"] = (
+                    search["distractor-feedback"] if search is not None else None
+                )
     elif grading_mode == "dag":
         for answer in student_answer:
             search = next(
@@ -591,7 +627,9 @@ def parse(element_html, data):
                 None,
             )
             answer["tag"] = search["tag"] if search is not None else None
-            answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
+            answer["distractor-feedback"] = (
+                search["distractor-feedback"] if search is not None else None
+            )
             if search is None:
                 search = next(
                     (
@@ -601,7 +639,9 @@ def parse(element_html, data):
                     ),
                     None,
                 )
-                answer["distractor-feedback"] = search["distractor-feedback"] if search is not None else None
+                answer["distractor-feedback"] = (
+                    search["distractor-feedback"] if search is not None else None
+                )
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
         for html_tags in element:
@@ -651,10 +691,10 @@ def grade(element_html, data):
     true_answer_list = data["correct_answers"][answer_name]
 
     distractor_feedback = {
-        item['inner_html']: item['distractor-feedback']
-        for item in data['params'][answer_name]
-        if not item['is_correct']
-        }
+        item["inner_html"]: item["distractor-feedback"]
+        for item in data["params"][answer_name]
+        if not item["is_correct"]
+    }
 
     final_score = 0
     feedback = ""
@@ -697,7 +737,6 @@ def grade(element_html, data):
         depends_graph = {}
         group_belonging = {}
 
-
         if grading_mode == "ranking":
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
@@ -721,12 +760,17 @@ def grade(element_html, data):
         elif grading_mode == "dag":
             depends_graph, group_belonging = extract_dag(true_answer_list)
 
-        num_initial_correct, true_answer_length = grade_dag(submission, depends_graph, group_belonging)
-        first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
+        num_initial_correct, true_answer_length = grade_dag(
+            submission, depends_graph, group_belonging
+        )
+        first_wrong = (
+            -1 if num_initial_correct == len(submission) else num_initial_correct
+        )
 
-        if feedback_type.startswith('first-wrong'):
+        if feedback_type.startswith("first-wrong"):
             for i, block in enumerate(student_answer):
-                if i >= num_initial_correct: break
+                if i >= num_initial_correct:
+                    break
                 block["badge_type"] = "badge-success"
                 block["icon"] = "fa-check"
 
@@ -734,7 +778,7 @@ def grade(element_html, data):
                 student_answer[first_wrong]["badge_type"] = "badge-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
 
-                for block in student_answer[first_wrong + 1: ]:
+                for block in student_answer[first_wrong + 1 :]:
                     block["badge_type"] = ""
                     block["icon"] = ""
 
@@ -764,8 +808,13 @@ def grade(element_html, data):
             elif feedback_type.startswith("first-wrong"):
                 if first_wrong == -1:
                     feedback = FIRST_WRONG_FEEDBACK["incomplete"]
-                elif feedback_type.endswith('verbose') and student_answer[first_wrong]["inner_html"] in distractor_feedback:
-                    feedback += FIRST_WRONG_FEEDBACK['distractor-feedback'].format(str(first_wrong + 1)) 
+                elif (
+                    feedback_type.endswith("verbose")
+                    and student_answer[first_wrong]["inner_html"] in distractor_feedback
+                ):
+                    feedback += FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
+                        str(first_wrong + 1)
+                    )
                 else:
                     feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
                         str(first_wrong + 1)
