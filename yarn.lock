@@ -13599,13 +13599,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.305":
-  version: 1.1.305
-  resolution: "pyright@npm:1.1.305"
+"pyright@npm:^1.1.311":
+  version: 1.1.311
+  resolution: "pyright@npm:1.1.311"
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: 494a94ea8f8a50e4410083d95e5165eadeb6a522068abc28ded1a7b93b54ac00cf52ca05d276beec4d31661f14207b22cf2b1c95513170ddc04e7b3921d90172
+  checksum: aae225c0cbf05a9e569d1b8f844693e44eb150a5d6718e921b9dbe680b22516e417d96714104e53ccd8a88dc239ca03e0daa3f4d8471c07db5cc7b73349c9f0c
   languageName: node
   linkType: hard
 
@@ -14260,7 +14260,7 @@ __metadata:
     htmlhint: ^1.1.4
     jsdoc: ^4.0.2
     prettier: 2.8.8
-    pyright: ^1.1.305
+    pyright: ^1.1.311
     s3rver: ^3.7.1
     turbo: ^1.9.3
     typescript: ^5.0.4
