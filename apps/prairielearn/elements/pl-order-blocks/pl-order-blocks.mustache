@@ -104,27 +104,27 @@ $(function() {
             <li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
         {{/question_solution}}
         </ul>
-        {{#show-distractors}}
-        </br>
-        <ul class="list-group">
-        <li class="list-group-item list-group-item-danger"><strong>
-        Incorrect Blocks (these blocks should not be included in your solution):</strong></li>
-        </ul>
-        <ul class="list-group answer_table" style="list-style-type:none;">
+    </div>
+
+    {{#show-distractors}}
+    <br><br>
+    <div class="pl-order-blocks-answer-container">
+        <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
+        <ul class="card-body list-group" style="list-style-type:none;">
         {{#distractor-feedback}}
-            <li>
-                <div class="{{block_formatting}}">{{{inner_html}}}</div>
+            <li class="pl-order-blocks-feedback-container list-group-item-warning">
+                <ul style="padding:0px;">
+                    <li class="{{block_formatting}}">{{{inner_html}}}</li>
+                </ul>
                 {{#has-distractor-feedback}}
-                <div style="margin: 10px" >
-                    <div >
-                        <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                        {{distractor-feedback}}
-                    </div>
+                <div >
+                    <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                    {{distractor-feedback}}
                 </div>
                 {{/has-distractor-feedback}}
             </li>
         {{/distractor-feedback}}
         </ul>
-        {{/show-distractors}}
     </div>
+    {{/show-distractors}}
 {{/true_answer}}
