@@ -108,7 +108,7 @@ def prepare(element_html, data):
         partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
         if partial_credit_type not in ["none", "lcs"]:
             raise Exception(
-                f'partial credit type "'
+                'partial credit type "'
                 + partial_credit_type
                 + '" is not available with the "'
                 + grading_method
@@ -311,15 +311,9 @@ def prepare(element_html, data):
         option["uuid"] = pl.get_uuid()
 
     # prep for visual pairing
-    correct_tags = set(
-        block["tag"]
-        for block in all_blocks
-        if block["tag"] is not None
-    )
+    correct_tags = set(block["tag"] for block in all_blocks if block["tag"] is not None)
     incorrect_tags = set(
-        block["distractor_for"]
-        for block in all_blocks
-        if block.get("distractor_for", None)
+        block["distractor_for"] for block in all_blocks if block["distractor_for"]
     )
 
     if not incorrect_tags.issubset(correct_tags):
@@ -328,7 +322,7 @@ def prepare(element_html, data):
         )
 
     for block in all_blocks:
-        if block.get("distractor_for") is not None:
+        if block["distractor_for"] is not None:
             continue
 
         distractors = [
@@ -381,16 +375,18 @@ def render(element_html, data):
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        all_blocks = data['params'][answer_name]
+        all_blocks = data["params"][answer_name]
         student_previous_submission = data["submitted_answers"].get(answer_name, [])
-        submitted_block_ids = {block['uuid'] for block in student_previous_submission}
-        source_blocks = [block for block in all_blocks if block['uuid'] not in submitted_block_ids]
+        submitted_block_ids = {block["uuid"] for block in student_previous_submission}
+        source_blocks = [
+            block for block in all_blocks if block["uuid"] not in submitted_block_ids
+        ]
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
-            option['indent'] = submission_indent
+            option["indent"] = submission_indent
 
         dropzone_layout = pl.get_string_attrib(
             element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT

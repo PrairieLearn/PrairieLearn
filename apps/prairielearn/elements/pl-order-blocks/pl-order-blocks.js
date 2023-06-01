@@ -27,7 +27,7 @@ window.PLOrderBlocks = function (uuid, options) {
           inner_html: answerText,
           indent: answerIndent,
           uuid: answerUuid,
-          distractor_bin: answerDistractorBin
+          distractor_bin: answerDistractorBin,
         };
         studentAnswers.push(answer);
       }
