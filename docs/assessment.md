@@ -275,7 +275,7 @@ In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 becau
 
 Note that an `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
 
-For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given.
+For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#changing-question-order-randomization).
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
