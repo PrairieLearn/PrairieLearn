@@ -46,8 +46,8 @@ li.ui-state-highlight {
 .pl-order-blocks-container li,
 .pl-order-blocks-answer-container li {
   margin-bottom: 5px;
-  border: 1px solid grey !important;
-  border-radius: 5px !important;
+  border: 1px solid grey;
+  border-radius: 5px;
   line-height: 1.2em;
 }
 
@@ -77,10 +77,11 @@ div.pl-order-blocks-container {
 
 .pl-order-blocks-pairing-indicator {
   border-radius: 10px;
+  border: 0px !important;
   list-style: none;
   margin-left: -10px;
   margin-right: -10px;
-  padding: 4px 9px 4px 9px;
+  padding: 4px 10px 4px 10px;
   margin-top: 5px;
   margin-bottom: 5px;
   overflow: hidden;

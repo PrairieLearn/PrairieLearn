@@ -40,10 +40,6 @@ def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
 
-def filter_pairs_from_dict(data, keys):
-    return {key: data[key] for key in keys}
-
-
 def get_graph_info(html_tags):
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tags, "depends", "")
@@ -229,7 +225,7 @@ def prepare(element_html, data):
             "ranking": ranking,
             "index": index,
             "tag": tag,
-            "distractor-for": distractor_for,
+            "distractor_for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
         }
@@ -340,11 +336,7 @@ def render(element_html, data):
     )
 
     if data["panel"] == "question":
-        mcq_options = []
-        student_previous_submission = []
         submission_indent = []
-        student_submission_dict_list = []
-
         answer_name = pl.get_string_attrib(element, "answers-name")
         source_header = pl.get_string_attrib(
             element, "source-header", SOURCE_HEADER_DEFAULT
@@ -353,21 +345,22 @@ def render(element_html, data):
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        mcq_options = data["params"][answer_name]
-        mcq_options = filter_multiple_from_array(
-            mcq_options, ["inner_html", "uuid", "tag", "distractor-for"]
-        )
+        all_blocks = data['params'][answer_name]
+        student_previous_submission = data["submitted_answers"].get(answer_name, [])
+
+        submitted_block_ids = {block['uuid'] for block in student_previous_submission}
+        source_blocks = [block for block in all_blocks if block['uuid'] not in submitted_block_ids]
 
         # visual pairing
         correct_tags = set(
             block["tag"]
-            for block in mcq_options + student_previous_submission
+            for block in all_blocks
             if block["tag"] is not None
         )
         incorrect_tags = set(
-            block["distractor-for"]
-            for block in mcq_options + student_previous_submission
-            if block.get("distractor-for", None)
+            block["distractor_for"]
+            for block in all_blocks
+            if block.get("distractor_for", None)
         )
 
         if not incorrect_tags.issubset(correct_tags):
@@ -375,14 +368,14 @@ def render(element_html, data):
                 f"The following distractor-for tags do not have matching correct answer tags: {incorrect_tags - correct_tags}"
             )
 
-        for block in student_previous_submission + mcq_options:
-            if block["distractor-for"] is not None:
+        for block in all_blocks:
+            if block.get("distractor_for") is not None:
                 continue
 
             distractors = [
                 block2
-                for block2 in student_previous_submission + mcq_options
-                if (block["tag"] == block2.get("distractor-for"))
+                for block2 in all_blocks
+                if (block["tag"] == block2.get("distractor_for"))
                 and (block["tag"] is not None)
             ]
 
@@ -394,30 +387,12 @@ def render(element_html, data):
             for distractor in distractors:
                 distractor["distractor_bin"] = distractor_bin
 
-        if answer_name in data["submitted_answers"]:
-            student_previous_submission = filter_multiple_from_array(
-                data["submitted_answers"][answer_name], ["inner_html", "uuid", "indent"]
-            )
-            mcq_options = [
-                opt
-                for opt in mcq_options
-                if filter_pairs_from_dict(opt, ["inner_html", "uuid"])
-                not in filter_multiple_from_array(
-                    student_previous_submission, ["inner_html", "uuid"]
-                )
-            ]
 
-        for index, option in enumerate(student_previous_submission):
+        for option in student_previous_submission:
             submission_indent = option.get("indent", None)
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
-
-            temp = {
-                "inner_html": option["inner_html"],
-                "indent": submission_indent,
-                "uuid": option["uuid"],
-            }
-            student_submission_dict_list.append(dict(temp))
+            option['indent'] = submission_indent
 
         dropzone_layout = pl.get_string_attrib(
             element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
@@ -445,10 +420,10 @@ def render(element_html, data):
         html_params = {
             "question": True,
             "answer_name": answer_name,
-            "options": mcq_options,
+            "options": source_blocks,
             "source-header": source_header,
             "solution-header": solution_header,
-            "submission_dict": student_submission_dict_list,
+            "submission_dict": student_previous_submission,
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
