@@ -3526,7 +3526,7 @@ __metadata:
     serve-favicon: ^2.5.0
     showdown: ^2.1.0
     sinon: ^15.0.4
-    socket.io: ^4.6.1
+    socket.io: ^4.6.2
     socket.io-client: ^4.6.1
     streamifier: ^0.1.1
     strip-ansi: ^6.0.1
@@ -3638,7 +3638,7 @@ __metadata:
     nodemon: ^2.0.22
     redis: ^4.6.6
     request: ^2.88.2
-    socket.io: ^4.6.1
+    socket.io: ^4.6.2
     ts-node: ^10.9.1
     typescript: ^5.0.4
     typescript-cp: ^0.1.8
@@ -7792,7 +7792,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"engine.io@npm:~6.4.1":
+"engine.io@npm:~6.4.2":
   version: 6.4.2
   resolution: "engine.io@npm:6.4.2"
   dependencies:
@@ -14794,17 +14794,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io@npm:^4.6.1":
-  version: 4.6.1
-  resolution: "socket.io@npm:4.6.1"
+"socket.io-parser@npm:~4.2.4":
+  version: 4.2.4
+  resolution: "socket.io-parser@npm:4.2.4"
+  dependencies:
+    "@socket.io/component-emitter": ~3.1.0
+    debug: ~4.3.1
+  checksum: 61540ef99af33e6a562b9effe0fad769bcb7ec6a301aba5a64b3a8bccb611a0abdbe25f469933ab80072582006a78ca136bf0ad8adff9c77c9953581285e2263
+  languageName: node
+  linkType: hard
+
+"socket.io@npm:^4.6.2":
+  version: 4.6.2
+  resolution: "socket.io@npm:4.6.2"
   dependencies:
     accepts: ~1.3.4
     base64id: ~2.0.0
     debug: ~4.3.2
-    engine.io: ~6.4.1
+    engine.io: ~6.4.2
     socket.io-adapter: ~2.5.2
-    socket.io-parser: ~4.2.1
-  checksum: 447941727142669b3709c3ae59ed790a2c3ad312d935400e2e25fdf59a95cdc92ebcf6b000ab2042a2a77ae51bb87598b40845a8d3b1f6ea6a0dd1df9c8f8459
+    socket.io-parser: ~4.2.4
+  checksum: 17f48c65627f6663384529072e33bff631eb496f6189a1325dd6775b2a50779b2acb36b6f57c9fc26f28e3ae109fb238d39167aebfbf96838a5fb7dd1b74c209
   languageName: node
   linkType: hard
 
