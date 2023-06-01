@@ -15,21 +15,18 @@ migrate-dev:
 
 dev: start-support
 	@yarn dev
-dev-workspace-host: start-support kill-running-workspaces
+dev-workspace-host: start-support
 	@yarn dev-workspace-host
 
 start: start-support
 	@yarn start
-start-workspace-host: start-support kill-running-workspaces
+start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
 	@node apps/prairielearn/dist/executor.js
 
 update-database-description:
 	@yarn --cwd apps/prairielearn pg-describe postgres -o ../../database
-
-kill-running-workspaces:
-	@docker/kill_running_workspaces.sh
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
