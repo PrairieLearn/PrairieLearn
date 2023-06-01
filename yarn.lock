@@ -3365,7 +3365,7 @@ __metadata:
     socket.io: ^4.6.2
     socket.io-client: ^4.6.2
     streamifier: ^0.1.1
-    strip-ansi: ^6.0.1
+    strip-ansi: ^7.1.0
     tablesorter: ^2.31.3
     tar: ^6.1.15
     three: ^0.152.2
@@ -15137,6 +15137,15 @@ __metadata:
   dependencies:
     ansi-regex: ^6.0.1
   checksum: 257f78fa433520e7f9897722731d78599cb3fce29ff26a20a5e12ba4957463b50a01136f37c43707f4951817a75e90820174853d6ccc240997adc5df8f966039
+  languageName: node
+  linkType: hard
+
+"strip-ansi@npm:^7.1.0":
+  version: 7.1.0
+  resolution: "strip-ansi@npm:7.1.0"
+  dependencies:
+    ansi-regex: ^6.0.1
+  checksum: 859c73fcf27869c22a4e4d8c6acfe690064659e84bef9458aa6d13719d09ca88dcfd40cbf31fd0be63518ea1a643fe070b4827d353e09533a5b0b9fd4553d64d
   languageName: node
   linkType: hard
 
