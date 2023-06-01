@@ -27,7 +27,7 @@
     "@types/pg-cursor": "^2.7.0",
     "multipipe": "^4.0.0",
     "pg": "^8.10.0",
-    "pg-cursor": "^2.9.0",
+    "pg-cursor": "^2.10.0",
     "pg-pool": "^3.6.0",
     "zod": "^3.21.4"
   }
