@@ -3448,7 +3448,7 @@ __metadata:
     date-fns: ^2.30.0
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
-    delay: ^5.0.0
+    delay: ^6.0.0
     detect-mocha: ^0.1.0
     dockerode: ^3.3.5
     dropzone: ^5.9.3
@@ -7406,6 +7406,13 @@ __metadata:
   version: 5.0.0
   resolution: "delay@npm:5.0.0"
   checksum: 62f151151ecfde0d9afbb8a6be37a6d103c4cb24f35a20ef3fe56f920b0d0d0bb02bc9c0a3084d0179ef669ca332b91155f2ee4d9854622cd2cdba5fc95285f9
+  languageName: node
+  linkType: hard
+
+"delay@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "delay@npm:6.0.0"
+  checksum: e00190cf6e56e3f746af6664a9b7a837a582a70b96ce18d83b86a97300cc9f727189b9f6a7082557134223c0bd23eee88e681cab54cb4e5d8f6b2f4054e7b49a
   languageName: node
   linkType: hard
 

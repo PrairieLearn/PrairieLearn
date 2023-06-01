@@ -72,7 +72,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "debug": "^4.3.4",
-    "delay": "^5.0.0",
+    "delay": "^6.0.0",
     "detect-mocha": "^0.1.0",
     "dockerode": "^3.3.5",
     "dropzone": "^5.9.3",
