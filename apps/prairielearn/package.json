@@ -44,7 +44,7 @@
     "@sentry/tracing": "^7.50.0",
     "@socket.io/redis-adapter": "^8.2.1",
     "ace-builds": "^1.18.0",
-    "ace-code": "^1.18.0",
+    "ace-code": "^1.22.0",
     "ajv": "^8.12.0",
     "ansi_up": "^5.2.1",
     "archiver": "^5.3.1",
