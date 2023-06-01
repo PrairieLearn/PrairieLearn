@@ -3541,7 +3541,7 @@ __metadata:
     tzientist: ^3.1.0
     unified: ^9.2.2
     unist-util-visit: ^2.0.3
-    unzipper: ^0.10.11
+    unzipper: ^0.10.14
     uuid: ^9.0.0
     winston: ^3.8.2
     xml2js: ^0.5.0
@@ -16139,9 +16139,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unzipper@npm:^0.10.11":
-  version: 0.10.11
-  resolution: "unzipper@npm:0.10.11"
+"unzipper@npm:^0.10.14":
+  version: 0.10.14
+  resolution: "unzipper@npm:0.10.14"
   dependencies:
     big-integer: ^1.6.17
     binary: ~0.3.0
@@ -16153,7 +16153,7 @@ __metadata:
     listenercount: ~1.0.1
     readable-stream: ~2.3.6
     setimmediate: ~1.0.4
-  checksum: 006cd43ec4d6df47d86aa6b15044a606f50cdcd6a3d6f96f64f54ca0b663c09abb221f76edca0e9592511036d37ea094b1d76ce92c5bf10d7c6eb56f0be678f8
+  checksum: b46ae9a72e4b4c224be6a8f46447dd7cb3761a59450827e869747c4564a8f555f877fc19c7e3b5d146127a7dd3e2ffea186116682f6646e64479f99dd23565bc
   languageName: node
   linkType: hard
 

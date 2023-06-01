@@ -154,7 +154,7 @@
     "tzientist": "^3.1.0",
     "unified": "^9.2.2",
     "unist-util-visit": "^2.0.3",
-    "unzipper": "^0.10.11",
+    "unzipper": "^0.10.14",
     "uuid": "^9.0.0",
     "winston": "^3.8.2",
     "xml2js": "^0.5.0",
