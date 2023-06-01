@@ -28,7 +28,7 @@
     "@opentelemetry/instrumentation-pg": "^0.35.1",
     "@opentelemetry/instrumentation-redis": "^0.34.5",
     "@opentelemetry/resource-detector-aws": "^1.2.3",
-    "@opentelemetry/resources": "^1.12.0",
+    "@opentelemetry/resources": "^1.13.0",
     "@opentelemetry/sdk-metrics": "^1.12.0",
     "@opentelemetry/sdk-node": "^0.38.0",
     "@opentelemetry/sdk-trace-base": "^1.12.0",
