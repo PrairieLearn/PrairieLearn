@@ -112,7 +112,7 @@ def prepare(element_html, data):
         partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
         if partial_credit_type not in ["none", "lcs"]:
             raise Exception(
-                'partial credit type "'
+                f'partial credit type "'
                 + partial_credit_type
                 + '" is not available with the "'
                 + grading_method
@@ -199,10 +199,9 @@ def prepare(element_html, data):
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
-        tag = pl.get_string_attrib(html_tags, "tag", None)
 
         tag, depends = get_graph_info(html_tags)
-        if is_correct and tag is not None:
+        if is_correct:
             if tag in used_tags:
                 raise Exception(
                     f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
@@ -372,19 +371,18 @@ def render(element_html, data):
         )
 
         if not incorrect_tags.issubset(correct_tags):
-            raise Exception(
-                "The following distractor-for tags do not have matching correct answer tags: "
-                + str(incorrect_tags - correct_tags)
+            raise ValueError(
+                f"The following distractor-for tags do not have matching correct answer tags: {incorrect_tags - correct_tags}"
             )
 
         for block in student_previous_submission + mcq_options:
-            if block.get("distractor-for") is not None:
+            if block["distractor-for"] is not None:
                 continue
 
             distractors = [
                 block2
                 for block2 in student_previous_submission + mcq_options
-                if (block["tag"] == block2.get("distractor-for", None))
+                if (block["tag"] == block2.get("distractor-for"))
                 and (block["tag"] is not None)
             ]
 
@@ -665,7 +663,7 @@ def grade(element_html, data):
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
             indentation = indentations.get(ans["uuid"])
-            if (indentation != -1) and (ans["indent"] != indentation):
+            if indentation != -1 and ans["indent"] != indentation:
                 if "tag" in ans:
                     ans["tag"] = None
                 else:
