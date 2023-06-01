@@ -976,12 +976,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/lib-storage@npm:^3.332.0":
-  version: 3.332.0
-  resolution: "@aws-sdk/lib-storage@npm:3.332.0"
+"@aws-sdk/lib-storage@npm:^3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/lib-storage@npm:3.342.0"
   dependencies:
-    "@aws-sdk/middleware-endpoint": 3.329.0
-    "@aws-sdk/smithy-client": 3.329.0
+    "@aws-sdk/middleware-endpoint": 3.342.0
+    "@aws-sdk/smithy-client": 3.342.0
     buffer: 5.6.0
     events: 3.3.0
     stream-browserify: 3.0.0
@@ -989,7 +989,7 @@ __metadata:
   peerDependencies:
     "@aws-sdk/abort-controller": ^3.0.0
     "@aws-sdk/client-s3": ^3.0.0
-  checksum: 9f1a8964216161057097fcfeb2dfe7056e9cc857a2ef9ec94dc86ce2c81d9e181f68ee361415d594151ba6ab4fd1aa8abec689613b7a360b5dbf95d8e63c7f08
+  checksum: cf6e2219b52cd3bf3b37bd5bf224a95be4af51d032654b69c79c2d47158a1cbba1406008b89c316cf7881634b62c1fd30320d9297b5eedea517f7611f01ccd8e
   languageName: node
   linkType: hard
 
@@ -1038,6 +1038,19 @@ __metadata:
     "@aws-sdk/util-middleware": 3.329.0
     tslib: ^2.5.0
   checksum: ed662d778a4ab7b05ee4fba607d6b72e798ee969752fabe2141546a184a71f2daf206a2b8300fa68de0339ebc2646fb8fdf9bf22ebf9cf68495518465c1f1bcc
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/middleware-endpoint@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/middleware-endpoint@npm:3.342.0"
+  dependencies:
+    "@aws-sdk/middleware-serde": 3.342.0
+    "@aws-sdk/types": 3.342.0
+    "@aws-sdk/url-parser": 3.342.0
+    "@aws-sdk/util-middleware": 3.342.0
+    tslib: ^2.5.0
+  checksum: 10bd600494d0586411291ab8baa2e088ea521c49b2b5712282fb59bd0c201a07e5e55f0721c564eb5b4baf56d1fbab6fd6c46b2819f87af0b41b65bb2a27e636
   languageName: node
   linkType: hard
 
@@ -1184,6 +1197,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/middleware-serde@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/middleware-serde@npm:3.342.0"
+  dependencies:
+    "@aws-sdk/types": 3.342.0
+    tslib: ^2.5.0
+  checksum: 10bff04ba1e31b9a7da311bd509459ad6a45f78aca817c0c436f9b2cde1f5f439a1f089d29cb741141815b9a0bee8a680efa25d5a9e900a079a415acf3cd8602
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/middleware-signing@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/middleware-signing@npm:3.329.0"
@@ -1214,6 +1237,15 @@ __metadata:
   dependencies:
     tslib: ^2.5.0
   checksum: 34b2ac02f8bd21a6803064de8059a866aa776c8a7962d40e11d072801291b9f5e78daac5adf91931ca1d19b11e2e972467c6b9679bf7c049b5f63ce50eb214d9
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/middleware-stack@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/middleware-stack@npm:3.342.0"
+  dependencies:
+    tslib: ^2.5.0
+  checksum: 8cd077f7e60f9ceb57eba0f0766e5784ced7bb959dfeebb4491a948006052da1d1a99a98795146a80424b00f3f6874f85bdb94419a1e1d510227f739886f90a2
   languageName: node
   linkType: hard
 
@@ -1307,6 +1339,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/querystring-parser@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/querystring-parser@npm:3.342.0"
+  dependencies:
+    "@aws-sdk/types": 3.342.0
+    tslib: ^2.5.0
+  checksum: 248b5b855eed52957cf3d2113ce57205723ecf1f378d211c79eb6209e68d8c4994c537bc4ff40695496f69b5337359d8de63825978e7570aa2e9cc76222c9e95
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/service-error-classification@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/service-error-classification@npm:3.329.0"
@@ -1367,6 +1409,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/smithy-client@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/smithy-client@npm:3.342.0"
+  dependencies:
+    "@aws-sdk/middleware-stack": 3.342.0
+    "@aws-sdk/types": 3.342.0
+    tslib: ^2.5.0
+  checksum: af79f4ec9bce5cda76154839f5f2ce24268cc4ec8f496aa5b9a8ff632f88675dc7015363cd57b397691df4de417cc05d706cf7b0c6ae02c686d42e95f204133d
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/token-providers@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/token-providers@npm:3.329.0"
@@ -1402,6 +1455,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/types@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/types@npm:3.342.0"
+  dependencies:
+    tslib: ^2.5.0
+  checksum: c9ec0873304548696deb604fcc4fcdacb726c9e03a65cdb4e9d8643a24ddf83ea32aa9d85b801406670526ca210131d5a8842d3674c73757c03ca5329ed2d13a
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/url-parser@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/url-parser@npm:3.329.0"
@@ -1410,6 +1472,17 @@ __metadata:
     "@aws-sdk/types": 3.329.0
     tslib: ^2.5.0
   checksum: d5640fb2c21ebca56904641204bd51bb14b9d7cc1ae76860ce2e7d51cf5c1e76b09eefb98678d67651de2773a7137509017f22a93c8f2e7451666e10100072ec
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/url-parser@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/url-parser@npm:3.342.0"
+  dependencies:
+    "@aws-sdk/querystring-parser": 3.342.0
+    "@aws-sdk/types": 3.342.0
+    tslib: ^2.5.0
+  checksum: d5c1b23cc3f110ac2acc47c7777911d362bf674ba5226b82b8f8c73c25e45bc56ad5060169821af88890d8d9cc02963d0af0e7574f9a283fc6987f7f8672f7bf
   languageName: node
   linkType: hard
 
@@ -1550,6 +1623,15 @@ __metadata:
   dependencies:
     tslib: ^2.5.0
   checksum: 23bc1ab195d31871edb2a7c9b3772911e881a39d70dfacedcf6e0308cbe95ec0ccb09f5f41f52458bff621d8e44dd3a4c94336da213d6d8074ffa0c0e334fad2
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/util-middleware@npm:3.342.0":
+  version: 3.342.0
+  resolution: "@aws-sdk/util-middleware@npm:3.342.0"
+  dependencies:
+    tslib: ^2.5.0
+  checksum: b668e04eff6e54b3d2e1f410d1b18244fc1aecb9c6d231f95971c6798393c5a00e139cbd30da08f82226af9ea96addb3a8d96a2612e2e338975495d03c100426
   languageName: node
   linkType: hard
 
@@ -3145,7 +3227,7 @@ __metadata:
     "@aws-sdk/client-auto-scaling": ^3.332.0
     "@aws-sdk/client-s3": ^3.332.0
     "@aws-sdk/client-sqs": ^3.332.0
-    "@aws-sdk/lib-storage": ^3.332.0
+    "@aws-sdk/lib-storage": ^3.342.0
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
@@ -3358,7 +3440,7 @@ __metadata:
     "@aws-sdk/client-ec2": ^3.332.0
     "@aws-sdk/client-s3": ^3.332.0
     "@aws-sdk/client-sqs": ^3.332.0
-    "@aws-sdk/lib-storage": ^3.332.0
+    "@aws-sdk/lib-storage": ^3.342.0
     "@fortawesome/fontawesome-free": ^6.4.0
     "@octokit/rest": ^19.0.7
     "@prairielearn/bind-mount": "workspace:^"
@@ -3614,7 +3696,7 @@ __metadata:
   resolution: "@prairielearn/workspace-host@workspace:apps/workspace-host"
   dependencies:
     "@aws-sdk/client-s3": ^3.332.0
-    "@aws-sdk/lib-storage": ^3.332.0
+    "@aws-sdk/lib-storage": ^3.342.0
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/logger": "workspace:^"
