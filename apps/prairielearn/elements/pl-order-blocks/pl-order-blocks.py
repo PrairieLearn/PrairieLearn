@@ -366,7 +366,6 @@ def render(element_html, data):
     )
 
     if data["panel"] == "question":
-        submission_indent = []
         answer_name = pl.get_string_attrib(element, "answers-name")
         source_header = pl.get_string_attrib(
             element, "source-header", SOURCE_HEADER_DEFAULT

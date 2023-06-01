@@ -43,11 +43,12 @@ li.ui-state-highlight {
   margin-bottom: 0px;
 }
 
-.pl-order-blocks-container li,
+.pl-order-blocks-container .pl-order-block,
+.pl-order-blocks-pairing-indicator .pl-order-block,
 .pl-order-blocks-answer-container li {
   margin-bottom: 5px;
-  border: 1px solid grey;
-  border-radius: 5px;
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
   line-height: 1.2em;
 }
 
