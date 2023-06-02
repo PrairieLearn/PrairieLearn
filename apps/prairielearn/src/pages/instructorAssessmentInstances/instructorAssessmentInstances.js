@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const util = require('node:util');
 
 const error = require('@prairielearn/error');
 const regrading = require('../../lib/regrading');
@@ -87,7 +88,7 @@ router.post('/', function (req, res, next) {
     const assessment_id = res.locals.assessment.id;
     const close = req.body.__action === 'close_all';
     const overrideGradeRate = true;
-    assessment.gradeAllAssessmentInstances(
+    util.callbackify(assessment.gradeAllAssessmentInstances)(
       assessment_id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
