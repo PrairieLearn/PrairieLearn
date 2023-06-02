@@ -506,6 +506,13 @@
   </script>
 
 </nav>
+
+<% flash(['notice']).forEach(({ type, message }) => { %>
+  <div class="alert alert-<%= type === 'notice' ? 'primary' : 'info' %> border-0 rounded-0 mb-0" role="alert">
+    <%= message %>
+  </div>
+<% }); %>
+
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {
     instance_admin: 'navTabs/instructorInstanceAdmin',

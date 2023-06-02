@@ -108,6 +108,7 @@ router.post('/', function (req, res, next) {
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
     processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
+      res.locals.flash('notice', 'Question saved successfully.');
       res.redirect(
         res.locals.urlPrefix +
           '/question/' +

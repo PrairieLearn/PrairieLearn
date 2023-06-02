@@ -66,6 +66,7 @@ const lifecycleHooks = require('./lib/lifecycle-hooks');
 const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
+const { flashMiddleware, flash } = require('@prairielearn/flash');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -434,6 +435,14 @@ module.exports.initExpress = function () {
   });
 
   // More middlewares
+  app.use(flashMiddleware());
+  app.use((req, res, next) => {
+    // This is so that the `navbar` partial can access the flash messages. If
+    // you want to add a flash message, you should import and use `flash`
+    // directly from `@prairielearn/flash`.
+    res.locals.flash = flash;
+    next();
+  });
   app.use(require('./middlewares/logResponse')); // defers to end of response
   app.use(require('./middlewares/cors'));
   app.use(require('./middlewares/date'));

@@ -9,7 +9,7 @@ export interface FlashMessage {
 }
 
 export function flashMiddleware() {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     const flashStorage = makeFlashStorage(req);
     als.run(flashStorage, () => next());
   };
@@ -17,11 +17,27 @@ export function flashMiddleware() {
 
 export function flash(): FlashMessage[];
 export function flash(type: string): string | null;
+export function flash(type: string[]): FlashMessage[];
 export function flash(type: string, message: string): void;
-export function flash(type?: string, message?: string) {
+export function flash(type?: string | string[], message?: string) {
   const flashStorage = als.getStore();
   if (!flashStorage) {
     throw new Error('flash() must be called within a request');
+  }
+
+  if (Array.isArray(type)) {
+    const messages = type
+      .map((type) => {
+        const flash = flashStorage.get(type);
+        if (flash == null) return null;
+        return {
+          type,
+          message: flash,
+        };
+      })
+      .filter((message): message is FlashMessage => message != null);
+    type.forEach((t) => flashStorage.clear(t));
+    return messages;
   }
 
   if (type != null && message != null) {
@@ -36,7 +52,7 @@ export function flash(type?: string, message?: string) {
   }
 
   const messages = flashStorage.getAll();
-  flashStorage.clear();
+  flashStorage.clearAll();
   return messages;
 }
 
@@ -44,7 +60,7 @@ interface FlashStorage {
   add(type: string, message: string): void;
   get(type: string): string | null;
   getAll(): FlashMessage[];
-  clear(type?: string): void;
+  clear(type: string): void;
   clearAll(): void;
 }
 
