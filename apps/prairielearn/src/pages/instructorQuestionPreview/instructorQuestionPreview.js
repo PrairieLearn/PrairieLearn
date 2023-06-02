@@ -10,6 +10,7 @@ const question = require('../../lib/question');
 const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
+const { flash } = require('@prairielearn/flash');
 
 const router = express.Router();
 
@@ -108,7 +109,10 @@ router.post('/', function (req, res, next) {
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
     processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
-      res.locals.flash('notice', 'Question saved successfully.');
+      flash('notice', 'Notice');
+      flash('success', 'Success');
+      flash('warn', 'Warning');
+      flash('error', 'Error');
       res.redirect(
         res.locals.urlPrefix +
           '/question/' +

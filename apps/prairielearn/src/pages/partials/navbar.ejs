@@ -507,9 +507,16 @@
 
 </nav>
 
-<% flash(['notice']).forEach(({ type, message }) => { %>
-  <div class="alert alert-<%= type === 'notice' ? 'primary' : 'info' %> border-0 rounded-0 mb-0" role="alert">
-    <%= message %>
+<% flash(['notice', 'success', 'warn', 'error']).forEach(({ type, message }) => { %>
+  <% const color = type === 'warn' ? 'warning' : type === 'error' ? 'danger' : type === 'notice' ? 'info' : 'success'; %>
+  <div class="alert alert-<%= color %> border-left-0 border-right-0 rounded-0 mb-0" role="alert">
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <%= message %>
+        </div>
+      </div>
+    </div>
   </div>
 <% }); %>
 
