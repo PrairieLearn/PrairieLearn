@@ -16,7 +16,7 @@ export function flashMiddleware() {
 }
 
 export function flash(): FlashMessage[];
-export function flash(type: string): FlashMessage[];
+export function flash(type: string): string | null;
 export function flash(type: string, message: string): void;
 export function flash(type?: string, message?: string) {
   const flashStorage = als.getStore();
@@ -30,9 +30,9 @@ export function flash(type?: string, message?: string) {
   }
 
   if (type != null) {
-    const messages = flashStorage.get(type);
+    const message = flashStorage.get(type);
     flashStorage.clear(type);
-    return messages;
+    return message;
   }
 
   const messages = flashStorage.getAll();
@@ -42,7 +42,7 @@ export function flash(type?: string, message?: string) {
 
 interface FlashStorage {
   add(type: string, message: string): void;
-  get(type: string): FlashMessage;
+  get(type: string): string | null;
   getAll(): FlashMessage[];
   clear(type?: string): void;
   clearAll(): void;
@@ -58,8 +58,7 @@ function makeFlashStorage(req: Request): FlashStorage {
   return {
     add(type: string, message: string) {
       session.flash ??= {};
-      session.flash[type] ??= [];
-      session.flash[type].push({ type, message });
+      session.flash[type] = message;
     },
     get(type: string) {
       return session.flash?.[type] ?? null;
