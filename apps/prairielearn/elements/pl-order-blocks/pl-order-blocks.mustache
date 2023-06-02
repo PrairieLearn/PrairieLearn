@@ -46,43 +46,42 @@ $(function() {
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#partially_correct}}
-            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{partially_correct}}%</span>
+            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i> {{partially_correct}}%</span>
         {{/partially_correct}}
         {{#incorrect}}
             <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
-            </li>
-        </ul>
-        <ul class="list-group submission_table">
-            {{#student_submission}}
-            	<li class="{{block_formatting}}" style="margin-left: {{indent}}px;">
-                    {{#first-wrong}}
-                        {{#show-distractor-feedback}}
-                            <div class="feedback_badge_container_white">
-                                <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                                <span>{{{inner_html}}}</span>
+    </div>
+    <ul class="card-body list-group">
+        {{#student_submission}}
+            <li class="{{block_formatting}}" style="margin-left: {{indent}}px;">
+                {{#first-wrong}}
+                    {{#show-distractor-feedback}}
+                        <div class="feedback_badge_container_white">
+                            <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                            <span>{{{inner_html}}}</span>
+                        </div>
+                        <div style="margin: 10px" >
+                            <div >
+                                <span class="pl-order-blocks-feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                                {{distractor-feedback}}
                             </div>
-                            <div style="margin: 10px" >
-                                <div >
-                                    <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                                    {{distractor-feedback}}
-                                </div>
-                            </div>
-                            {{/show-distractor-feedback}}
-                            {{^show-distractor-feedback}}
-                            <div class="feedback_badge_container">
-                                <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                                <span>{{{inner_html}}}</span>
-                            </div>
+                        </div>
                         {{/show-distractor-feedback}}
-                    {{/first-wrong}}
-                    {{^first-wrong}}
-                        {{{inner_html}}}
-                    {{/first-wrong}}
-                </li>
-            {{/student_submission}}
-        </ul>
-        {{{feedback}}}
+                        {{^show-distractor-feedback}}
+                        <div class="feedback_badge_container">
+                            <span class="badge {{badge_type}} "><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                            <span>{{{inner_html}}}</span>
+                        </div>
+                    {{/show-distractor-feedback}}
+                {{/first-wrong}}
+                {{^first-wrong}}
+                    {{{inner_html}}}
+                {{/first-wrong}}
+            </li>
+        {{/student_submission}}
+    </ul>
+    {{{feedback}}}
     {{/parse-error}}
 
     {{#parse-error}}
@@ -118,7 +117,7 @@ $(function() {
                 </ul>
                 {{#has-distractor-feedback}}
                 <div >
-                    <span class="feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                    <span class="pl-order-blocks-feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
                     {{distractor-feedback}}
                 </div>
                 {{/has-distractor-feedback}}
