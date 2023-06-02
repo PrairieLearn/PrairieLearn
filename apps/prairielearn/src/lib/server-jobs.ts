@@ -12,12 +12,12 @@ import socketServer = require('./socket-server');
 const sql = loadSqlEquiv(__filename);
 
 interface CreateServerJobOptions {
-  courseId?: string;
-  courseInstanceId?: string;
-  courseRequestId?: string;
-  assessmentId?: string;
-  userId?: string;
-  authnUserId?: string;
+  courseId?: string | number;
+  courseInstanceId?: string | number;
+  courseRequestId?: string | number;
+  assessmentId?: string | number;
+  userId?: string | number;
+  authnUserId?: string | number;
   type: string;
   description: string;
 }
