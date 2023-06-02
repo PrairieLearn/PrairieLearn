@@ -82,7 +82,6 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
-    --exit                              Run all the initialization and exit
 `;
 
   console.log(msg);
@@ -2125,12 +2124,7 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        cache.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await cache.init(),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
@@ -2176,10 +2170,6 @@ if (require.main === module && config.startServer) {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
           logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-        }
-        if ('exit' in argv) {
-          logger.info('exit option passed, quitting...');
-          process.exit(0);
         }
 
         // SIGTERM can be used to gracefully shut down the process. This signal

@@ -19,10 +19,10 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/diff": "^5.0.3",
     "@types/fs-extra": "^11.0.1",
-    "@types/lodash": "^4.14.194",
-    "@types/node": "^18.16.3",
+    "@types/lodash": "^4.14.195",
+    "@types/node": "^18.16.16",
     "@types/yargs": "^17.0.24",
-    "typescript": "^5.0.4",
+    "typescript": "^5.1.3",
     "typescript-cp": "^0.1.8"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
     "diff": "^5.1.0",
     "fs-extra": "^11.1.1",
     "lodash": "^4.17.21",
+    "postgres-array": "^3.0.2",
     "yargs": "^17.7.2"
   }
 }

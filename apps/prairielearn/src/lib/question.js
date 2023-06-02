@@ -500,10 +500,10 @@ module.exports = {
    * Grade the most recent submission for a given variant.
    *
    * @param {Object} variant - The variant to grade.
-   * @param {?number} check_submission_id - The submission_id that must be graded (or null to skip this check).
+   * @param {string | null} check_submission_id - The submission_id that must be graded (or null to skip this check).
    * @param {Object} question - The question for the variant.
    * @param {Object} variant_course - The course for the variant.
-   * @param {number | null} authn_user_id - The currently authenticated user.
+   * @param {string | null} authn_user_id - The currently authenticated user.
    * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
    * @param {function} callback - A callback(err) function.
    */
