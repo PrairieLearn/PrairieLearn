@@ -30,6 +30,7 @@ const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
 const { makeS3ClientConfig } = require('./lib/aws');
+const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const docker = new Docker();
@@ -104,8 +105,23 @@ let workspace_server_settings = {};
 async
   .series([
     async () => {
-      const configFilename = argv['config'] ?? 'config.json';
-      await loadConfig(configFilename);
+      // For backwards compatibility, we'll default to trying to load config
+      // files from both the application and repository root.
+      //
+      // We'll put the app config file second so that it can override anything
+      // in the repository root config file.
+      let configPaths = [
+        path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+        path.join(APP_ROOT_PATH, 'config.json'),
+      ];
+
+      // If a config file was specified on the command line, we'll use that
+      // instead of the default locations.
+      if ('config' in argv) {
+        configPaths = [argv['config']];
+      }
+
+      await loadConfig(configPaths);
       if (config.runningInEc2) {
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;
@@ -166,11 +182,16 @@ async
     async () => {
       // Set up a periodic pruning of running containers
       async function pruneContainersTimeout() {
-        await pruneStoppedContainers();
-        await pruneRunawayContainers();
-        await sqldb.queryAsync(sql.update_load_count, {
-          instance_id: workspace_server_settings.instance_id,
-        });
+        try {
+          await pruneStoppedContainers();
+          await pruneRunawayContainers();
+          await sqldb.queryAsync(sql.update_load_count, {
+            instance_id: workspace_server_settings.instance_id,
+          });
+        } catch (err) {
+          logger.error('Error pruning containers', err);
+          Sentry.captureException(err);
+        }
 
         setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
       }
@@ -210,16 +231,24 @@ async
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
           }
-        } else if (ws.state === 'running') {
-          if (!ws.launch_uuid) {
-            await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Shutting down');
-            await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
-              workspace_id: ws.id,
-              instance_id: workspace_server_settings.instance_id,
-            });
-          }
         }
       });
+
+      // Especially in dev mode, there may be containers that are running but
+      // don't correspond to any known workspace. Clean them up.
+      const allContainers = await docker.listContainers({
+        all: true,
+        filters: { label: ['prairielearn.workspace-id'] },
+      });
+      for (const container of allContainers) {
+        const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
+        if (result.rows.some((ws) => ws.id === containerWorkspaceId)) return;
+
+        logger.info(
+          `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`
+        );
+        await dockerAttemptKillAndRemove(docker.getContainer(container.Id));
+      }
     },
   ])
   .then(() => {
