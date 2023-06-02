@@ -84,6 +84,11 @@
       }, function(msg) {
         // We're done with the socket for this incarnation of the page
         socket.close();
+        if (msg.answerPanel) {
+          const answerContainer = document.querySelector('.answer-body');
+          answerContainer.innerHTML = (msg.answerPanel);
+          answerContainer.closest('.grading-block').classList.remove('d-none');
+        }
         if (msg.submissionPanel) {
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');

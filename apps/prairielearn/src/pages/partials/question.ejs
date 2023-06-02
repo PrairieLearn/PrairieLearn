@@ -127,14 +127,12 @@
   </div>
   <% } %>
 
-  <% if (showTrueAnswer) { %>
-  <div class="card mb-4 grading-block">
+  <div class="card mb-4 grading-block<%= showTrueAnswer ? '' : ' d-none' %>">
     <div class="card-header bg-secondary text-white">Correct answer</div>
     <div class="card-body answer-body">
-      <%- answerHtml %>
+      <%- showTrueAnswer ? answerHtml : '' %>
     </div>
   </div>
-  <% } %>
 
   <%# Submissions section %>
   <% if (showSubmissions) { %>
