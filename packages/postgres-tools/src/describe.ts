@@ -1,10 +1,9 @@
 // @ts-check
-import pg from 'pg';
 import chalk from 'chalk';
+import { parse as parsePostgresArray } from 'postgres-array';
 import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(__filename);
-const pgArray = pg.types.arrayParser;
 
 interface ColumnDescription {
   name: string;
@@ -55,11 +54,6 @@ interface DescribeOptions {
   ignoreTables?: string[];
   ignoreColumns?: string[];
   ignoreEnums?: string[];
-}
-
-function parsePostgresArray(arr: string): string[] {
-  // @ts-expect-error -- Incorrect type definitions in `pg-types`.
-  return pgArray.create(arr, String).parse();
 }
 
 async function describeWithPool(
