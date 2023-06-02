@@ -242,7 +242,7 @@ async
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
-        if (result.rows.some((ws) => ws.id === containerWorkspaceId)) return;
+        if (result.rows.some((ws) => ws.id === containerWorkspaceId)) continue;
 
         logger.info(
           `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`
