@@ -33,8 +33,8 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
-    SYMBOL_NAMES = ["n", "m"]
-    M, N = sympy.symbols("m n")
+    SYMBOL_NAMES = ["n", "m", "alpha"]
+    M, N, ALPHA = sympy.symbols("m n alpha")
 
     FUNCTION_NAMES = ["f", "g", "beef"]
     # Any annotations here to ignore annoying typechecking complaining
@@ -56,6 +56,10 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
+        ("abs(sign(alpha))", sympy.Abs(sympy.sign(ALPHA))),
+        ("Abs(alpha)", sympy.Abs(ALPHA)),
+        ("abs(n) * sgn(n)", sympy.Abs(N) * sympy.sign(N)),
+        ("n alpha", ALPHA * N),
         ("n log^2 2n", N * (sympy.log(2 * N) ** 2)),
         ("e^(pi * i)", -1),
         ("infty", sympy.oo),

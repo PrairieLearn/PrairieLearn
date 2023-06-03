@@ -125,11 +125,11 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Submit $f(1) + sgn(x)$.
+                Submit $f(x) + beef(\alpha)$, where $\alpha$ should be spelled out as <code>alpha</code> in the submission.
             </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="custom_function" variables="x" custom-functions="f,sgn"
-            correct-answer="f(1) + sgn(x)"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="custom_function" variables="x,alpha" custom-functions="f,beef"
+            correct-answer="f(x) + beef(alpha)"></pl-symbolic-input>
     </div>
 </div>
 
@@ -140,9 +140,9 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Submit $sgn(y) * f(y)$.
+                Submit $beef(y) * f(y)$.
             </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="custom_function_2" variables="y" custom-functions="sgn,f"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="custom_function_2" variables="y" custom-functions="beef,f"></pl-symbolic-input>
     </div>
 </div>

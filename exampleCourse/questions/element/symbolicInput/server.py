@@ -22,7 +22,7 @@ def generate(data):
     data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(C))
 
     f = sympy.Function("f")
-    sgn = sympy.Function("sgn")
+    beef = sympy.Function("beef")
 
-    ans = f(y) + sgn(y)
+    ans = f(y) + beef(y)
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
