@@ -56,6 +56,9 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
+        ("min(alpha, m, n)", sympy.Min(N, M, ALPHA)),
+        ("max(m)", M),
+        ("max(m,n)", sympy.Max(N, M)),
         ("abs(sign(alpha))", sympy.Abs(sympy.sign(ALPHA))),
         ("Abs(alpha)", sympy.Abs(ALPHA)),
         ("abs(n) * sgn(n)", sympy.Abs(N) * sympy.sign(N)),

@@ -79,9 +79,14 @@ class _Constants:
             "sqrt": sympy.sqrt,
             "factorial": sympy.factorial,
             "abs": sympy.Abs,
-            "Abs": sympy.Abs,
-            "sign": sympy.sign,
             "sgn": sympy.sign,
+            "max": sympy.Max,
+            "min": sympy.Min,
+            # Extra aliases to make parsing work correctly
+            "sign": sympy.sign,
+            "Abs": sympy.Abs,
+            "Max": sympy.Max,
+            "Min": sympy.Min,
         }
 
         self.trig_functions = {
