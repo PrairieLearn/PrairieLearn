@@ -3,5 +3,7 @@
     "title": "Randomized zipped file generation",
     "topic": "Template",
     "tags": ["erobson"],
-    "type": "v3"
+    "type": "v3",
+    "showCorrectAnswer": false,
+    "singleVariant": false
 }
