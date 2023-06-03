@@ -611,9 +611,9 @@ def generate(data):
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json`. It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
-It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+Variables with the same name as greek letters (e.g., `alpha`, `beta`, etc.) will be automatically converted to their LaTeX equivalents for display on the correct answer and submission panels.
 
 Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
 
