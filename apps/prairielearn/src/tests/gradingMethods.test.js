@@ -149,8 +149,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -183,8 +183,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -222,8 +222,8 @@ describe('Grading method(s)', function () {
             'manual grading: waiting for grading'
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
 
@@ -256,8 +256,8 @@ describe('Grading method(s)', function () {
             'manual grading: waiting for grading'
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -301,8 +301,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
       describe('"save" action', () => {
@@ -335,8 +335,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -378,8 +378,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -414,8 +414,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -457,8 +457,8 @@ describe('Grading method(s)', function () {
             'manual grading: waiting for grading'
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
 
@@ -495,8 +495,8 @@ describe('Grading method(s)', function () {
             'manual grading: waiting for grading'
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -534,8 +534,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -566,8 +566,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
