@@ -81,7 +81,7 @@ class _Constants:
             "abs": sympy.Abs,
             "Abs": sympy.Abs,
             "sign": sympy.sign,
-            "sgn": sympy.sign
+            "sgn": sympy.sign,
         }
 
         self.trig_functions = {
