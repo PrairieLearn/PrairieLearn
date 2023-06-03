@@ -3,7 +3,7 @@
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <%- compiled_script_tag('externalGradingLiveUpdate.js') %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
