@@ -1,8 +1,9 @@
-import faker
-import os
 import io
+import os
 import zipfile
+
 import chevron
+import faker
 
 
 def generate(data):
