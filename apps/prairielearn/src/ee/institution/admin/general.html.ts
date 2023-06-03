@@ -52,7 +52,7 @@ export function InstitutionAdminGeneral({
         })}
         <main class="container mb-4">
           <h2 class="h4">Statistics</h2>
-          <div class="card-grid">
+          <div class="card-grid mb-3">
             ${StatisticsCard({ title: 'Courses', value: statistics.course_count })}
             ${StatisticsCard({
               title: 'Course instances',
@@ -60,6 +60,50 @@ export function InstitutionAdminGeneral({
             })}
             ${StatisticsCard({ title: 'Enrollments', value: statistics.enrollment_count })}
           </div>
+          <h2 class="h4">Limits</h2>
+          <form method="POST">
+            <div class="form-group">
+              <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
+              <input
+                type="number"
+                class="form-control"
+                id="course_instance_enrollment_limit"
+                name="course_instance_enrollment_limit"
+                value="${institution.course_instance_enrollment_limit}"
+                aria-describedby="course_instance_enrollment_limit_help"
+              />
+              <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
+                The maximum number of enrollments allowed for a single course instance. A blank
+                value allows for unlimited enrollments. This value can be overridden on individual
+                course instances.
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
+              <input
+                type="number"
+                class="form-control"
+                id="yearly_enrollment_limit"
+                name="yearly_enrollment_limit"
+                value="${institution.yearly_enrollment_limit}"
+                aria-describedby="yearly_enrollment_limit_help"
+              />
+              <small id="yearly_enrollment_limit_help" class="form-text text-muted">
+                The maximum number of enrollments allowed per year. A blank value allows for
+                unlimited enrollments. The limit is applied on a rolling basis; that is, it applies
+                to the previous 365 days from the instance a student attempts to enroll.
+              </small>
+            </div>
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button
+              type="submit"
+              name="__action"
+              value="update_enrollment_limits"
+              class="btn btn-primary"
+            >
+              Save
+            </button>
+          </form>
         </main>
       </body>
     </html>
