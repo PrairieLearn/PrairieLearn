@@ -1513,6 +1513,7 @@ Attributes for `<pl-variable-output>`:
 | `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.    |
 | `show-python`      | boolean | true     | Toggles the display of the Python tab.         |
 | `show-r`           | boolean | true     | Toggles the display of the R tab.              |
+| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.          |
 
 Attributes for `<variable>` (one of these for each variable to display):
 
