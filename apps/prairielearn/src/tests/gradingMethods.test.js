@@ -32,12 +32,8 @@ const mockStudents = [
 ];
 
 const waitForExternalGrader = async ($questionsPage, questionsPage) => {
-  const variantId = $questionsPage('form > input[name="__variant_id"]').val();
-
-  // The variant token (used for a sort of authentication) is inlined into
-  // a `<script>` tag. This regex will read it out of the page's raw HTML.
-  const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
-
+  const { variantId, variantToken } = $questionsPage('.question-container').data();
+  console.log(variantId, variantToken);
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise((resolve, reject) => {
@@ -54,9 +50,14 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
       });
     };
 
-    socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
-      handleStatusChange(msg);
-    });
+    socket.emit(
+      'init',
+      { variant_id: variantId.toString(), variant_token: variantToken.toString() },
+      function (msg) {
+        if (!msg) return reject(new Error('Socket initialization failed'));
+        handleStatusChange(msg);
+      }
+    );
 
     socket.on('change:status', function (msg) {
       handleStatusChange(msg);
