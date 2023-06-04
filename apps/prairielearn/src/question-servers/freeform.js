@@ -1603,6 +1603,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
         filename: filename,
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
 
       const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrCompute(
         course,
