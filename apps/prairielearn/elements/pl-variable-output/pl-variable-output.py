@@ -1,6 +1,7 @@
 from enum import Enum
 
 import chevron
+import lxml.etree
 import lxml.html
 import numpy as np
 import prairielearn as pl
