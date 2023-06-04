@@ -39,7 +39,7 @@
                 {"id": "demo/randomCheckbox",       "points": 1, "maxPoints": 3},
                 {"id": "demo/randomPlot",           "points": 1, "maxPoints": 3},
                 {"id": "demo/randomFakeData",       "points": 1, "maxPoints": 3},
-                {"id": "demo/randomZippedFile",       "points": 1, "maxPoints": 3}
+                {"id": "demo/randomZippedFile",     "points": 1, "maxPoints": 3}
             ]
         },
         {
