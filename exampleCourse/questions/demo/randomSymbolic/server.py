@@ -24,7 +24,3 @@ def generate(data):
     data["params"]["x"] = sympy.latex(x)
     data["params"]["f"] = sympy.latex(f)
     data["correct_answers"]["df"] = str(df)
-
-
-if __name__ == "__main__":
-    generate({"params": {}, "correct_answers": {}})
