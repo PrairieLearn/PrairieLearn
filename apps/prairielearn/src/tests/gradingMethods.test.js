@@ -31,7 +31,7 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-const waitForExternalGrader = async ($questionsPage, questionsPage) => {
+const waitForExternalGrader = async ($questionsPage) => {
   const { variantId, variantToken } = $questionsPage('.question-container').data();
   console.log(variantId, variantToken);
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
@@ -286,7 +286,7 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
 
           iqId = parseInstanceQuestionId(iqUrl);
-          await waitForExternalGrader($questionsPage, questionsPage);
+          await waitForExternalGrader($questionsPage);
           // reload QuestionsPage since socket io cannot update without DOM
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
