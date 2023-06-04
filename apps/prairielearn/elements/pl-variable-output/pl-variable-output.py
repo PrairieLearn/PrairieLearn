@@ -91,7 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     r_data = ""
     sympy_data = "from sympy import *\n\n"
     for child in element:
-        if child.tag == "variable":
+        if child.tag in {"variable", "pl-variable"}:
             # Raise exception if variable does not have a name
             pl.check_attribs(
                 child,
