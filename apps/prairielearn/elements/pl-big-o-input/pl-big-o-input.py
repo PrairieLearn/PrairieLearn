@@ -97,14 +97,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     constants_class = phs._Constants()
 
     operators: list[str] = list(phs.STANDARD_OPERATORS)
-    operators.extend(variables)
     operators.extend(constants_class.functions.keys())
 
     constants = list(constants_class.variables.keys())
 
     info_params = {
         "format": True,
-        "variable": variables,
+        "variables": variables,
         "operators": operators,
         "constants": constants,
     }
