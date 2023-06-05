@@ -1,12 +1,6 @@
 import { io } from 'socket.io-client';
 import './mathjax';
 
-declare global {
-  interface Window {
-    MathJax: any;
-  }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
   if (gradingMethod === 'External') {
@@ -24,8 +18,8 @@ function externalGradingLiveUpdate() {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
-    var status = elem.dataset.gradingJobStatus;
-    var submissionId = elem.id.replace('submission-', '');
+    const status = elem.dataset.gradingJobStatus;
+    const submissionId = elem.id.replace('submission-', '');
     updateStatus({ id: submissionId, grading_job_status: status });
     // Grading is not pending if it's done, or it's save-only, or has been canceled
     if (status !== 'graded' && status !== 'none' && status !== 'canceled') {

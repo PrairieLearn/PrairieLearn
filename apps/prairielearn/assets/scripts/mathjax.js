@@ -1,3 +1,5 @@
+// No typechecking as MathJax does not work well with that
+
 // Default to SVG, as lines were sometimes disappearing when using the CHTML renderer.
 const outputComponent = 'output/svg';
 
@@ -47,11 +49,3 @@ window.MathJax = {
     },
   },
 };
-
-// https://docs.mathjax.org/en/latest/web/configuration.html#configuring-and-loading-in-one-script
-(() => {
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/startup.js';
-  script.async = true;
-  document.head.appendChild(script);
-})();
