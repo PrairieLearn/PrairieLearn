@@ -65,7 +65,6 @@ async function obtainInfo(req, res) {
       group_id: IdSchema,
       name: z.string(),
       size: z.number(),
-      // TODO: what actually is the type of this thing?
       uid_list: z.array(z.string()),
     })
   );
