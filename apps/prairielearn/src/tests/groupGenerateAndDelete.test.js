@@ -1,9 +1,11 @@
+// @ts-check
 const assert = require('chai').assert;
 const util = require('node:util');
 const sqldb = require('@prairielearn/postgres');
 const { step } = require('mocha-steps');
 
 const helperServer = require('./helperServer');
+const { deleteAllGroups } = require('../lib/groups');
 const groupUpdate = require('../lib/group-update');
 const { TEST_COURSE_PATH } = require('../lib/paths');
 
@@ -56,8 +58,7 @@ describe('test auto group and delete groups', function () {
   });
 
   step('delete groups', async () => {
-    const params = [locals.assessment_id, 0];
-    await sqldb.callAsync('assessment_groups_delete_all', params);
+    await deleteAllGroups(locals.assessment_id, 1);
 
     const groups = await sqldb.queryAsync(
       'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
