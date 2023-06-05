@@ -73,6 +73,22 @@ export const AuthnProviderSchema = z.object({
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
+export const GroupConfigSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  date: z.date(),
+  deleted_at: z.date().nullable(),
+  has_roles: z.boolean(),
+  id: IdSchema,
+  maximum: z.number().nullable(),
+  minimum: z.number().nullable(),
+  name: z.string().nullable(),
+  student_authz_create: z.boolean().nullable(),
+  student_authz_leave: z.boolean().nullable(),
+  student_authz_join: z.boolean().nullable(),
+});
+export type GroupConfig = z.infer<typeof GroupConfigSchema>;
+
 export const UserSchema = z.object({
   deleted_at: z.date().nullable(),
   institution_id: IdSchema,
