@@ -1477,8 +1477,9 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 ```html
 <pl-variable-output digits="3">
-  <variable params-name="matrixC">C</variable>
-  <variable params-name="matrixD">D</variable>
+  <!-- Example comment inside of this element. -->
+  <pl-variable params-name="matrixC">C</pl-variable>
+  <pl-variable params-name="matrixD">D</pl-variable>
 </pl-variable-output>
 ```
 
@@ -1505,17 +1506,17 @@ def generate(data):
 
 Attributes for `<pl-variable-output>`:
 
-| Attribute          | Type    | Default  | Description                                    |
-| ------------------ | ------- | -------- | ---------------------------------------------- |
-| `digits`           | integer | —        | Number of digits to display after the decimal. |
-| `default-tab`      | string  | 'matlab' | Select the active tab.                         |
-| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab.         |
-| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.    |
-| `show-python`      | boolean | true     | Toggles the display of the Python tab.         |
-| `show-r`           | boolean | true     | Toggles the display of the R tab.              |
-| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.          |
+| Attribute          | Type    | Default  | Description                                                         |
+| ------------------ | ------- | -------- | ------------------------------------------------------------------- |
+| `digits`           | integer | —        | Number of digits to display after the decimal.                      |
+| `default-tab`      | string  | `matlab` | Select the active tab.                                              |
+| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab. Also compatible with Octave. |
+| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.                         |
+| `show-python`      | boolean | true     | Toggles the display of the Python tab.                              |
+| `show-r`           | boolean | true     | Toggles the display of the R tab.                                   |
+| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.                               |
 
-Attributes for `<variable>` (one of these for each variable to display):
+Attributes for `<pl-variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
@@ -1525,10 +1526,10 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into
+This element displays a list of variables inside `<pl-code>` tags that are formatted for import into
 either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
-text that appears between the `<variable>` and `</variable>` tags, followed by `=`. Below
+text that appears between the `<pl-variable>` and `</pl-variable>` tags, followed by `=`. Below
 are samples of the format displayed under each language tab.
 
 **MATLAB format:**
@@ -1571,6 +1572,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 - [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](#pl-matrix-latex-element)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 
