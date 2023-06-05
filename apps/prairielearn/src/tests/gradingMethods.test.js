@@ -33,7 +33,6 @@ const mockStudents = [
 
 const waitForExternalGrader = async ($questionsPage) => {
   const { variantId, variantToken } = $questionsPage('.question-container').data();
-  console.log(variantId, variantToken);
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise((resolve, reject) => {
