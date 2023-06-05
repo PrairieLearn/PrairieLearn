@@ -3218,7 +3218,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.6
-    "@sa11y/format": ^4.1.5
+    "@sa11y/format": ^5.0.1
     "@sentry/profiling-node": ^0.3.0
     "@sentry/tracing": ^7.54.0
     "@socket.io/redis-adapter": ^8.2.1
@@ -3284,7 +3284,6 @@ __metadata:
     date-fns: ^2.30.0
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
-    delay: ^5.0.0
     detect-mocha: ^0.1.0
     dockerode: ^3.3.5
     dropzone: ^5.9.3
@@ -3314,7 +3313,7 @@ __metadata:
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^3.0.5
-    jsdom: ^21.1.2
+    jsdom: ^22.1.0
     json-stable-stringify: ^1.0.2
     json-stringify-safe: ^5.0.1
     klaw: ^4.1.0
@@ -3368,7 +3367,7 @@ __metadata:
     strip-ansi: ^6.0.1
     tablesorter: ^2.31.3
     tar: ^6.1.15
-    three: ^0.152.2
+    three: ^0.153.0
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
@@ -3642,32 +3641,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sa11y/common@npm:4.1.5":
-  version: 4.1.5
-  resolution: "@sa11y/common@npm:4.1.5"
+"@sa11y/common@npm:5.0.1":
+  version: 5.0.1
+  resolution: "@sa11y/common@npm:5.0.1"
   dependencies:
-    axe-core: 4.3.3
-  checksum: c5aad4555fea4c507b61889a819835ea814abb65d2dc54e92a0409fa10713ab0e3913bde0b285d7f8f642d9176405ae140e38b8112f578bdffe877f1ebc36326
+    axe-core: 4.7.0
+  checksum: 944e23a0fc524f7ba3f51a32fda604d3bc6682550cb4387ba9ac7d16662d432ff5cbcbe682b30e23318fae629bcb850f4290c4d82ad49d6b816eb23e66ec434c
   languageName: node
   linkType: hard
 
-"@sa11y/format@npm:^4.1.5":
-  version: 4.1.5
-  resolution: "@sa11y/format@npm:4.1.5"
+"@sa11y/format@npm:^5.0.1":
+  version: 5.0.1
+  resolution: "@sa11y/format@npm:5.0.1"
   dependencies:
-    "@sa11y/common": 4.1.5
-    "@sa11y/preset-rules": 4.1.5
-    axe-core: 4.3.3
-  checksum: f694e50d58e271d9c1f37c2cc12abd1651bc430890fd425b11739a299abdff26de56631034b5cc28ab812222cf147c73e673e7db7851ff1110d820ab8e6a0f07
+    "@sa11y/common": 5.0.1
+    "@sa11y/preset-rules": 5.0.1
+    axe-core: 4.7.0
+  checksum: 7bcfd410cb9053bb0e0b68c3003a36018b5b9fc0bee392ce52d3a7357f5e62512d2921ceacca4e6efb33de8c7f298afb2470312742a7c303597ffe6b22bc054f
   languageName: node
   linkType: hard
 
-"@sa11y/preset-rules@npm:4.1.5":
-  version: 4.1.5
-  resolution: "@sa11y/preset-rules@npm:4.1.5"
+"@sa11y/preset-rules@npm:5.0.1":
+  version: 5.0.1
+  resolution: "@sa11y/preset-rules@npm:5.0.1"
   dependencies:
-    "@sa11y/common": 4.1.5
-  checksum: 9c953d345ad53debd779f66f3f605cced3d45e0c36b9d4e6f9ff79d2d97be36a9f65b88980640add1da7b6ee46707076a19ea12070c7be5c4a986765dbd143c0
+    "@sa11y/common": 5.0.1
+  checksum: 22db7d7b90c77aace6205d707bd9738e6ef94b703db876d2f4e7a951ef9a76ba83ba95281147167bffae189989ce35f5cac40dbc388501693e8dd98e0f47f68e
   languageName: node
   linkType: hard
 
@@ -4813,16 +4812,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn-globals@npm:^7.0.0":
-  version: 7.0.1
-  resolution: "acorn-globals@npm:7.0.1"
-  dependencies:
-    acorn: ^8.1.0
-    acorn-walk: ^8.0.2
-  checksum: 2a2998a547af6d0db5f0cdb90acaa7c3cbca6709010e02121fb8b8617c0fbd8bab0b869579903fde358ac78454356a14fadcc1a672ecb97b04b1c2ccba955ce8
-  languageName: node
-  linkType: hard
-
 "acorn-jsx@npm:^5.3.2":
   version: 5.3.2
   resolution: "acorn-jsx@npm:5.3.2"
@@ -4839,7 +4828,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn-walk@npm:^8.0.2, acorn-walk@npm:^8.1.1":
+"acorn-walk@npm:^8.1.1":
   version: 8.2.0
   resolution: "acorn-walk@npm:8.2.0"
   checksum: 1715e76c01dd7b2d4ca472f9c58968516a4899378a63ad5b6c2d668bba8da21a71976c14ec5f5b75f887b6317c4ae0b897ab141c831d741dc76024d8745f1ad1
@@ -4864,7 +4853,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.1.0, acorn@npm:^8.4.1, acorn@npm:^8.8.0, acorn@npm:^8.8.2":
+"acorn@npm:^8.4.1, acorn@npm:^8.8.0":
   version: 8.8.2
   resolution: "acorn@npm:8.8.2"
   bin:
@@ -5309,10 +5298,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axe-core@npm:4.3.3":
-  version: 4.3.3
-  resolution: "axe-core@npm:4.3.3"
-  checksum: ac349d0b5341ad0859052d843717a1f596adf2efaa85ed9796581aa2f8fea74fda0f68b300363da8a0fb50f4b41b381c4f0b53dd14052205b9a082be0ca388b7
+"axe-core@npm:4.7.0":
+  version: 4.7.0
+  resolution: "axe-core@npm:4.7.0"
+  checksum: f086bcab42be1761ba2b0b127dec350087f4c3a853bba8dd58f69d898cefaac31a1561da23146f6f3c07954c76171d1f2ce460e555e052d2b02cd79af628fa4a
   languageName: node
   linkType: hard
 
@@ -7948,25 +7937,6 @@ __metadata:
     escodegen: bin/escodegen.js
     esgenerate: bin/esgenerate.js
   checksum: 381cdc4767ecdb221206bbbab021b467bbc2a6f5c9a99c9e6353040080bdd3dfe73d7604ad89a47aca6ea7d58bc635f6bd3fbc8da9a1998e9ddfa8372362ccd0
-  languageName: node
-  linkType: hard
-
-"escodegen@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "escodegen@npm:2.0.0"
-  dependencies:
-    esprima: ^4.0.1
-    estraverse: ^5.2.0
-    esutils: ^2.0.2
-    optionator: ^0.8.1
-    source-map: ~0.6.1
-  dependenciesMeta:
-    source-map:
-      optional: true
-  bin:
-    escodegen: bin/escodegen.js
-    esgenerate: bin/esgenerate.js
-  checksum: 5aa6b2966fafe0545e4e77936300cc94ad57cfe4dc4ebff9950492eaba83eef634503f12d7e3cbd644ecc1bab388ad0e92b06fd32222c9281a75d1cf02ec6cef
   languageName: node
   linkType: hard
 
@@ -10682,18 +10652,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsdom@npm:^21.1.2":
-  version: 21.1.2
-  resolution: "jsdom@npm:21.1.2"
+"jsdom@npm:^22.1.0":
+  version: 22.1.0
+  resolution: "jsdom@npm:22.1.0"
   dependencies:
     abab: ^2.0.6
-    acorn: ^8.8.2
-    acorn-globals: ^7.0.0
     cssstyle: ^3.0.0
     data-urls: ^4.0.0
     decimal.js: ^10.4.3
     domexception: ^4.0.0
-    escodegen: ^2.0.0
     form-data: ^4.0.0
     html-encoding-sniffer: ^3.0.0
     http-proxy-agent: ^5.0.0
@@ -10717,7 +10684,7 @@ __metadata:
   peerDependenciesMeta:
     canvas:
       optional: true
-  checksum: 6b3cf2d15e5a5712b3db5ff56eba82b97c9a879b52e95063cc8323bdf8837b6ca15cfec85b57ab71c95c6b4a4098bf67f274c6ff4e9ff519aa4811a04f290610
+  checksum: d955ab83a6dad3e6af444098d30647c719bbb4cf97de053aa5751c03c8d6f3283d8c4d7fc2774c181f1d432fb0250e7332bc159e6b466424f4e337d73adcbf30
   languageName: node
   linkType: hard
 
@@ -15339,10 +15306,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"three@npm:^0.152.2":
-  version: 0.152.2
-  resolution: "three@npm:0.152.2"
-  checksum: 6d2d990dbff60b99c7e58b7f1446bb4bd235c7db5dd848a671385e01ae5c72bec865265be7f5a82907ecc96186acc13177d7de1252bc9592f5c9ebaffd1da1e7
+"three@npm:^0.153.0":
+  version: 0.153.0
+  resolution: "three@npm:0.153.0"
+  checksum: 68899ca90e048967a83866a1d54a9d28bba3532d228ede9e4c2a3b9bec347c31d8bb633eeaf7828397d2419cded8f57cf32f2a9c037a3587d45122e793ddc0c4
   languageName: node
   linkType: hard
 

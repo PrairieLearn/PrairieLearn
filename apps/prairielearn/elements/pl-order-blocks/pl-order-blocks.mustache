@@ -15,7 +15,7 @@ $(function() {
             <div class="card-header pl-order-blocks-header list-group-item-primary">{{source-header}}</div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
-                    <li class="{{block_formatting}} shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
+                    <li class="{{block_formatting}} shadow {{^editable}}nodrag{{/editable}}" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
                 {{/options}}
             </ul>
         </div>
@@ -28,7 +28,7 @@ $(function() {
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
-                    <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="{{block_formatting}} shadow">{{{inner_html}}}</li>
+                    <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="{{block_formatting}} shadow {{^editable}}nodrag{{/editable}}">{{{inner_html}}}</li>
                 {{/submission_dict}}
             </ul>
         </div>

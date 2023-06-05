@@ -609,14 +609,18 @@ def generate(data):
 | `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
 | `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
 | `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
+| `custom-functions`           | string              | -                     | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                           |
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json`. It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
-It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+Variables with the same name as greek letters (e.g., `alpha`, `beta`, etc.) will be automatically converted to their LaTeX equivalents for display on the correct answer and submission panels.
 
-Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
+
+Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
+See example question for details.
 
 #### Example implementations
 
@@ -897,9 +901,9 @@ The question will only be graded when all matrix components are entered, unless 
 
 #### See also
 
-- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -976,9 +980,9 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### See also
 
-- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -1479,8 +1483,9 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 ```html
 <pl-variable-output digits="3">
-  <variable params-name="matrixC">C</variable>
-  <variable params-name="matrixD">D</variable>
+  <!-- Example comment inside of this element. -->
+  <pl-variable params-name="matrixC">C</pl-variable>
+  <pl-variable params-name="matrixD">D</pl-variable>
 </pl-variable-output>
 ```
 
@@ -1507,16 +1512,17 @@ def generate(data):
 
 Attributes for `<pl-variable-output>`:
 
-| Attribute          | Type    | Default  | Description                                    |
-| ------------------ | ------- | -------- | ---------------------------------------------- |
-| `digits`           | integer | —        | Number of digits to display after the decimal. |
-| `default-tab`      | string  | 'matlab' | Select the active tab.                         |
-| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab.         |
-| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.    |
-| `show-python`      | boolean | true     | Toggles the display of the Python tab.         |
-| `show-r`           | boolean | true     | Toggles the display of the R tab.              |
+| Attribute          | Type    | Default  | Description                                                         |
+| ------------------ | ------- | -------- | ------------------------------------------------------------------- |
+| `digits`           | integer | —        | Number of digits to display after the decimal.                      |
+| `default-tab`      | string  | `matlab` | Select the active tab.                                              |
+| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab. Also compatible with Octave. |
+| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.                         |
+| `show-python`      | boolean | true     | Toggles the display of the Python tab.                              |
+| `show-r`           | boolean | true     | Toggles the display of the R tab.                                   |
+| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.                               |
 
-Attributes for `<variable>` (one of these for each variable to display):
+Attributes for `<pl-variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
@@ -1526,27 +1532,27 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into
+This element displays a list of variables inside `<pl-code>` tags that are formatted for import into
 either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
-text that appears between the `<variable>` and `</variable>` tags, followed by `=`. Below
+text that appears between the `<pl-variable>` and `</pl-variable>` tags, followed by `=`. Below
 are samples of the format displayed under each language tab.
 
 **MATLAB format:**
 
-```
+```matlab
 A = [1.23; 4.56]; % matrix
 ```
 
 **Mathematica format:**
 
-```
+```mathematica
 A = [1.23; 4.56]; (* matrix *)
 ```
 
 **Python format:**
 
-```
+```python
 import numpy as np
 
 A = np.array([[1.23], [4.56]]) # matrix
@@ -1554,7 +1560,7 @@ A = np.array([[1.23], [4.56]]) # matrix
 
 **R format:**
 
-```
+```r
 A = c(1.23, 4.56) # vector
 A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
@@ -1572,6 +1578,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 - [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](#pl-matrix-latex-element)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 
