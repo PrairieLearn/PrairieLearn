@@ -12,13 +12,22 @@ ALL_GRADING_FUNCTIONS = [
 
 
 class TestBigOInput:
+    @pytest.mark.parametrize(
+        "a_true, a_sub",
+        [
+            ("n**2", "n**2"),
+            ("n**2", "n ** 2"),
+            ("n**2", "n^2"),
+            ("n^2", "n**2"),
+            ("factorial(n)", "n!"),
+            ("log(n)", "log n"),
+            ("n*log(n)**2", "n log^2 n"),
+        ],
+    )
     @pytest.mark.parametrize("grading_fn", ALL_GRADING_FUNCTIONS)
-    @pytest.mark.parametrize("a_sub", ["n**2", "n ** 2", "n^2"])
     def test_correct_answer(
-        self, a_sub: str, grading_fn: bou.BigOGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
-        a_true = "n**2"
-
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
         assert score == 1.0
@@ -72,6 +81,7 @@ class TestBigOInput:
         [
             ("1", "14"),
             ("1", "20"),
+            ("log(n)", "log(n^2)"),
             ("log(n)", "7*log(n)"),
             ("log(n)", "(32/3)*log(n)"),
             ("n**2", "2*n**2"),
