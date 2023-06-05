@@ -121,9 +121,11 @@ class TestBigOInput:
             ("n**2", "n**3"),
             ("n**2", "n**4"),
             ("n**2", "factorial(n)"),
+            ("n**2", "n!"),
             ("n**2", "n**2*log(n)"),
             ("2**n", "n**n"),
             ("2**n", "factorial(n)"),
+            ("2**n", "n!"),
             ("2**n", "2**(n**2)"),
             ("factorial(n-1)", "factorial(n)"),
         ],
@@ -143,9 +145,11 @@ class TestBigOInput:
             ("n**3", "n**2"),
             ("n**4", "n**2"),
             ("factorial(n)", "n**2"),
+            ("n!", "n**2"),
             ("n**2*log(n)", "n**2"),
             ("n**n", "2**n"),
             ("factorial(n)", "2**n"),
+            ("n!", "2**n"),
             ("2**(n**2)", "2**n"),
             ("factorial(n)", "factorial(n-1)"),
         ],
@@ -235,8 +239,8 @@ class TestExceptions:
         a_true = "n**2"
 
         # Test for invalid functions in student submission and solution
-        with pytest.raises(phs.HasInvalidFunctionError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
             grading_fn(a_true, a_sub, VARIABLES)
 
-        with pytest.raises(phs.HasInvalidFunctionError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
             grading_fn(a_sub, a_true, VARIABLES)
