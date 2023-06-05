@@ -51,7 +51,7 @@ module.exports = {
    *
    * @param {Array} courseIssues - List of issue objects for to be written.
    * @param {Object} variant - The variant associated with the issues.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {string} studentMessage - The message to display to the student.
    * @param {Object} courseData - Arbitrary data to be associated with the issues.
    * @param {function} callback - A callback(err) function.
@@ -143,7 +143,7 @@ module.exports = {
    * @param {Object} variant - The variant.
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
-   * @param {Number} authn_user_id - The current authenticated user.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, fileData) function.
    */
   getFile(filename, variant, question, course, authn_user_id, callback) {
@@ -207,8 +207,8 @@ module.exports = {
    *
    * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
    * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
-   * @param {number} user_id - The user for the new variant.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} user_id - The user for the new variant.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} variant_course - The course for the variant.
    * @param {Object} question_course - The course for the question.
@@ -280,8 +280,8 @@ module.exports = {
    *
    * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
    * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
-   * @param {number} user_id - The user for the new variant.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} user_id - The user for the new variant.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {?number} course_instance_id - The course instance for this variant. Can be null for instructor questions.
    * @param {Object} variant_course - The course for the variant.
@@ -775,7 +775,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err, submission_id) function.
    */
   _createTestSubmission(variant, question, course, test_type, authn_user_id, callback) {
@@ -949,7 +949,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err) function.
    */
   _testVariant(variant, question, course, test_type, authn_user_id, callback) {
@@ -1065,7 +1065,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} variant_course - The course for the variant.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
    * @param {function} callback - A callback(err, variant) function.
    */
@@ -1170,7 +1170,7 @@ module.exports = {
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err, success) function.
    */
   _runTest(
@@ -1270,7 +1270,7 @@ module.exports = {
    * @param {boolean} group_work - If the assessment will support group work
    * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
    * @param {Object} course - The course for the variant.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @return {Promise<string>} The job sequence ID.
    */
   async startTestQuestion(
