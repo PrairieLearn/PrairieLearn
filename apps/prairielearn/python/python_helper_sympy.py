@@ -356,6 +356,12 @@ def sympy_check(
 def evaluate(
     expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
 ) -> sympy.Expr:
+    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
+
+
+def evaluate_with_source(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
+) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     # Also replace the unicode minus with the normal one.
@@ -416,7 +422,7 @@ def evaluate(
     # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)
 
-    return res
+    return res, code
 
 
 def convert_string_to_sympy(
@@ -429,6 +435,27 @@ def convert_string_to_sympy(
     custom_functions: Optional[list[str]] = None,
     assumptions: Optional[AssumptionsDictT] = None,
 ) -> sympy.Expr:
+    return convert_string_to_sympy_with_source(
+        expr,
+        variables=variables,
+        allow_hidden=allow_hidden,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+        custom_functions=custom_functions,
+        assumptions=assumptions,
+    )[0]
+
+
+def convert_string_to_sympy_with_source(
+    expr: str,
+    variables: Optional[list[str]] = None,
+    *,
+    allow_hidden: bool = False,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+    custom_functions: Optional[list[str]] = None,
+    assumptions: Optional[AssumptionsDictT] = None,
+) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -494,7 +521,7 @@ def convert_string_to_sympy(
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate(expr, locals_for_eval, allow_complex=allow_complex)
+    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
