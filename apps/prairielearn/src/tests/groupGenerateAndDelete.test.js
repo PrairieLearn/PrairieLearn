@@ -58,7 +58,7 @@ describe('test auto group and delete groups', function () {
   });
 
   step('delete groups', async () => {
-    await deleteAllGroups(locals.assessment_id, 1);
+    await deleteAllGroups(locals.assessment_id, '1');
 
     const groups = await sqldb.queryAsync(
       'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
