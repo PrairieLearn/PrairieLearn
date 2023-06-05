@@ -1,6 +1,12 @@
 import { io } from 'socket.io-client';
 import './mathjax';
 
+declare global {
+  interface Window {
+    MathJax: any;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
   if (gradingMethod === 'External') {

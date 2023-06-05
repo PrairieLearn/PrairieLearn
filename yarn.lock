@@ -3238,7 +3238,6 @@ __metadata:
     "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.195
     "@types/loopbench": ^1.2.1
-    "@types/mathjax": ^0.0.37
     "@types/memorystream": ^0.3.1
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
@@ -4327,13 +4326,6 @@ __metadata:
     "@types/linkify-it": "*"
     "@types/mdurl": "*"
   checksum: 868824a3e4d00718ba9cd4762cf16694762a670860f4b402e6e9f952b6841a2027488bdc55d05c2b960bf5078df21a9d041270af7e8949514645fe88fdb722ac
-  languageName: node
-  linkType: hard
-
-"@types/mathjax@npm:^0.0.37":
-  version: 0.0.37
-  resolution: "@types/mathjax@npm:0.0.37"
-  checksum: 8fe8f0dac3271a848dc0070c49ec8604c53abdc0a442308e357f215ed4d68102ed5e57e2f989cde447ebcf929efd2bc64b5a986b159c5cb50963546aa20d1a81
   languageName: node
   linkType: hard
 

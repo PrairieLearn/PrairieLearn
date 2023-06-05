@@ -4,7 +4,7 @@
     "noEmit": true,
     "rootDir": "./",
     "outDir": "../../public/build/scripts",
-    "types": ["jquery", "bootstrap", "mathjax"],
+    "types": ["jquery", "bootstrap"],
   },
   "include": ["**/*"],
 }
