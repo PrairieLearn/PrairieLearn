@@ -307,8 +307,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    # Note some whitelist items were removed. If there are compatibility issues, try
-    # adding those items back.
+    # Note some whitelist items were removed in this PR:
+    # https://github.com/PrairieLearn/PrairieLearn/pull/7020
+    # If there are compatibility issues, try adding those items back.
     whitelist: ASTWhiteListT = (
         ast.Load,
         ast.Expression,
