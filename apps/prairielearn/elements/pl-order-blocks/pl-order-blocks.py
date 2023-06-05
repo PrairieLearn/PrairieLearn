@@ -370,6 +370,8 @@ def render(element_html, data):
     )
 
     if data["panel"] == "question":
+        editable = data["editable"]
+
         answer_name = pl.get_string_attrib(element, "answers-name")
         source_header = pl.get_string_attrib(
             element, "source-header", SOURCE_HEADER_DEFAULT
@@ -429,6 +431,7 @@ def render(element_html, data):
             "max_indent": max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
+            "editable": editable,
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:

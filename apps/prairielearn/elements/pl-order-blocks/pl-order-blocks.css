@@ -23,10 +23,18 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable .pl-order-block:hover{
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag){
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
+}
+
+ul.pl-order-blocks-connected-sortable li.nodrag {
+  opacity: 0.6;
+}
+
+ul.pl-order-blocks-connected-sortable li.nodrag:hover {
+  cursor: not-allowed;
 }
 
 li.ui-state-highlight {
