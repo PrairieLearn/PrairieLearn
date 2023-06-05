@@ -165,8 +165,8 @@ module.exports = {
    * functions that asynchronously grade exams can set `requireOpen` to false
    * if needed.
    *
-   * @param {string | number} assessment_instance_id - The assessment instance to grade.
-   * @param {string | number | null} authn_user_id - The current authenticated user.
+   * @param {number} assessment_instance_id - The assessment instance to grade.
+   * @param {string | null} authn_user_id - The current authenticated user.
    * @param {boolean} requireOpen - Whether to enforce that the assessment instance is open before grading.
    * @param {boolean} close - Whether to close the assessment instance after grading.
    * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
@@ -290,9 +290,9 @@ module.exports = {
   /**
    * Grade all assessment instances and (optionally) close them.
    *
-   * @param {string | number} assessment_id - The assessment to grade.
-   * @param {string | number} user_id - The current user performing the update.
-   * @param {string | number} authn_user_id - The current authenticated user.
+   * @param {string} assessment_id - The assessment to grade.
+   * @param {string} user_id - The current user performing the update.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} close - Whether to close the assessment instances after grading.
    * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
    */
