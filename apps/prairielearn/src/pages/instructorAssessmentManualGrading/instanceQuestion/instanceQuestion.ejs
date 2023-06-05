@@ -3,8 +3,7 @@
   <head>
     <%# instance_question_info is reset to keep the default title from showing the student question number %>
     <%- include('../../partials/head', {pageNote: `Instance - question ${instance_question_info.instructor_question_number}`, instance_question_info: undefined}); %>
-    <%- include('../../partials/mathjax'); %>
-    <%- compiled_script_tag('externalGradingLiveUpdate.js') %>
+    <%- compiled_script_tag('question.ts') %>
     <script>
      document.urlPrefix = '<%= urlPrefix %>';
     </script>

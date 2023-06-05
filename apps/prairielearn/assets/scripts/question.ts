@@ -1,17 +1,26 @@
 import { io } from 'socket.io-client';
+import './mathjax';
+
+declare global {
+  interface Window {
+    MathJax: any;
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.querySelector('.question-container').dataset.gradingMethod === 'External') {
+  const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
+  if (gradingMethod === 'External') {
     externalGradingLiveUpdate();
   }
 });
 
 function externalGradingLiveUpdate() {
-  const { variantId, variantToken } = document.querySelector('.question-container').dataset;
+  const { variantId, variantToken } = (document.querySelector('.question-container') as HTMLElement)
+    .dataset;
 
   // Render initial grading states into the DOM
   let gradingPending = false;
-  document.querySelectorAll('[id^=submission-]').forEach((elem) => {
+  document.querySelectorAll('[id^=submission-]').forEach((elem: HTMLElement) => {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
@@ -72,7 +81,7 @@ function fetchResults(socket, submissionId) {
     questionContext,
     csrfToken,
     authorizedEdit,
-  } = document.querySelector('.question-container').dataset;
+  } = (document.querySelector('.question-container') as HTMLElement).dataset;
 
   const modal = $('#submissionInfoModal-' + submissionId);
   const wasModalOpen = (modal.data('bs.modal') || {})._isShown;

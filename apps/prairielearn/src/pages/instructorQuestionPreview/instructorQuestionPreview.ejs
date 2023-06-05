@@ -2,8 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
-    <%- include('../partials/mathjax'); %>
-    <%- compiled_script_tag('externalGradingLiveUpdate.js') %>
+    <%- compiled_script_tag('question.ts') %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
