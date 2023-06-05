@@ -1513,6 +1513,7 @@ Attributes for `<pl-variable-output>`:
 | `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.    |
 | `show-python`      | boolean | true     | Toggles the display of the Python tab.         |
 | `show-r`           | boolean | true     | Toggles the display of the R tab.              |
+| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.          |
 
 Attributes for `<variable>` (one of these for each variable to display):
 
@@ -1532,19 +1533,19 @@ are samples of the format displayed under each language tab.
 
 **MATLAB format:**
 
-```
+```matlab
 A = [1.23; 4.56]; % matrix
 ```
 
 **Mathematica format:**
 
-```
+```mathematica
 A = [1.23; 4.56]; (* matrix *)
 ```
 
 **Python format:**
 
-```
+```python
 import numpy as np
 
 A = np.array([[1.23], [4.56]]) # matrix
@@ -1552,7 +1553,7 @@ A = np.array([[1.23], [4.56]]) # matrix
 
 **R format:**
 
-```
+```r
 A = c(1.23, 4.56) # vector
 A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
