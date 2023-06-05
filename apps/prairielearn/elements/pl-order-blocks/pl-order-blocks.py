@@ -191,10 +191,14 @@ def prepare(element_html, data):
         is_correct = pl.get_boolean_attrib(
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
-        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+        if distractor_for is not None and is_correct:
+            raise Exception(
+                "The distractor-for attribute may only be used on blocks with correct=false."
+            )
 
         tag, depends = get_graph_info(html_tags)
         if is_correct:

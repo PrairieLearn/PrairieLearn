@@ -50,6 +50,7 @@ li.ui-state-highlight {
   border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
+  color: black;
 }
 
 .pl-order-blocks-answer-container > ul {
