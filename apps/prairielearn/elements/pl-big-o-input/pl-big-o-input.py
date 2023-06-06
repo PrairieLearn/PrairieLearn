@@ -59,7 +59,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
@@ -85,7 +85,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
@@ -96,15 +96,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants_class = phs._Constants()
 
-    operators = ["( )", "+", "-", "*", "/", "^", "**"]
-    operators.extend(variables)
+    operators: list[str] = list(phs.STANDARD_OPERATORS)
     operators.extend(constants_class.functions.keys())
 
     constants = list(constants_class.variables.keys())
 
     info_params = {
         "format": True,
-        "variable": variables,
+        "variables": variables,
         "operators": operators,
         "constants": constants,
     }
@@ -149,12 +148,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         missing_input = False
         feedback = None
         a_sub = None
+        a_sub_raw = None
         raw_submitted_answer = None
 
         if parse_error is None and name in data["submitted_answers"]:
             a_sub = sympy.latex(
-                sympy.sympify(data["submitted_answers"][name], evaluate=False)
+                phs.convert_string_to_sympy(
+                    data["submitted_answers"][name],
+                    variables,
+                    allow_complex=False,
+                    allow_trig_functions=False,
+                )
             )
+            a_sub_raw = data["raw_submitted_answers"].get(name, None)
+
             if name in data["partial_scores"]:
                 feedback = data["partial_scores"][name].get("feedback")
         elif name not in data["submitted_answers"]:
@@ -185,6 +192,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
+            "a_sub_raw": a_sub_raw,
             "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
         }
@@ -203,7 +211,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = sympy.sympify(a_tru)
+        a_tru = phs.convert_string_to_sympy(
+            a_tru, variables, allow_complex=False, allow_trig_functions=False
+        )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),
@@ -218,7 +228,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
@@ -228,14 +238,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_proccessed = phs.process_student_input(a_sub)
-
     s = phs.validate_string_as_sympy(
-        a_proccessed, variables, allow_complex=False, allow_trig_functions=False
+        a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
     if s is None:
-        data["submitted_answers"][name] = a_proccessed
+        data["submitted_answers"][name] = a_sub
     else:
         data["format_errors"][name] = s
         data["submitted_answers"][name] = None
@@ -244,7 +252,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
