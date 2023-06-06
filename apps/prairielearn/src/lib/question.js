@@ -1810,6 +1810,7 @@ module.exports = {
       if (results.rowCount === 0) return callback(error.make(404, 'Not found'));
 
       const renderSelection = {
+        answer: true,
         submissions: true,
       };
       const {
@@ -1883,6 +1884,8 @@ module.exports = {
             submission.grading_job_status = grading_job_status;
             submission.formatted_date = formatted_date;
             submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
+
+            panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
 
             await manualGrading.populateRubricData(locals);
             await manualGrading.populateManualGradingData(submission);
