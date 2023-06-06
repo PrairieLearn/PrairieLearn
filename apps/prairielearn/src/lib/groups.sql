@@ -265,15 +265,15 @@ VALUES
 -- BLOCK delete_all_groups
 WITH
   assessment_groups AS (
-        SELECT
-          g.id
-        FROM
-          group_configs AS gc
-          JOIN groups AS g ON (g.group_config_id = gc.id)
-        WHERE
-          gc.assessment_id = $assessment_id
-          AND g.deleted_at IS NULL
-          AND gc.deleted_at IS NULL
+    SELECT
+      g.id
+    FROM
+      group_configs AS gc
+      JOIN groups AS g ON (g.group_config_id = gc.id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.deleted_at IS NULL
+      AND gc.deleted_at IS NULL
   ),
   deleted_group_users AS (
     DELETE FROM group_users
