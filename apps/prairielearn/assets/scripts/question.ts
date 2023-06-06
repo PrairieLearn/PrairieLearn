@@ -114,7 +114,9 @@ function fetchResults(socket, submissionId) {
       }
       if (msg.submissionPanel) {
         document.getElementById('submission-' + submissionId).outerHTML = msg.submissionPanel;
-        window.MathJax.typesetPromise();
+        window.MathJax.startup.promise.then(async () => {
+          window.MathJax.typesetPromise();
+        });
         // Restore modal state if need be
         if (wasModalOpen) {
           $('#submissionInfoModal-' + submissionId).modal('show');
