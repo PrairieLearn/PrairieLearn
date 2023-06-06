@@ -1,13 +1,6 @@
 --BLOCK config_info
 SELECT
-  id,
-  course_instance_id,
-  name,
-  minimum,
-  maximum,
-  student_authz_join,
-  student_authz_create,
-  student_authz_leave
+  *
 FROM
   group_configs
 WHERE
@@ -32,7 +25,7 @@ ORDER BY
 SELECT
   g.id AS group_id,
   g.name AS name,
-  COUNT(u.uid) AS size,
+  COUNT(u.uid)::integer AS size,
   array_agg(u.uid) AS uid_list
 FROM
   groups AS g
