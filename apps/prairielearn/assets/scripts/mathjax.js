@@ -28,7 +28,7 @@ const mathjaxPromise = new Promise((resolve, _reject) => {
     },
     // Kept for compatibility reasons.
     onReady: (cb) => {
-      window.safeMathjaxPromise.then(cb);
+      mathjaxPromise.then(cb);
     },
     startup: {
       // Adds a custom promise so that, regardless if Mathjax.startup.promise is accessed before or
