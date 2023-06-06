@@ -308,7 +308,7 @@ WITH
     WHERE
       g.id = ag.id
     RETURNING
-      id
+      g.id
   )
 INSERT INTO
   group_logs (authn_user_id, group_id, action)
