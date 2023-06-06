@@ -3,7 +3,7 @@
   <head>
     <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
     <%- compiled_script_tag('question.ts') %>
-    <script async src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
+    <script src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
