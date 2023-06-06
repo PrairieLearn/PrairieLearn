@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": {

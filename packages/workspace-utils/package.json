@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/workspace-utils",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "main": "./dist/index.js",
   "repository": {
