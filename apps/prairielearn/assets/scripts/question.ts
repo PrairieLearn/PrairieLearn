@@ -1,11 +1,5 @@
 import { io } from 'socket.io-client';
-import './mathjax';
-
-declare global {
-  interface Window {
-    MathJax: any;
-  }
-}
+import { mathjaxTypeset } from './mathjax';
 
 document.addEventListener('DOMContentLoaded', () => {
   const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
@@ -114,9 +108,7 @@ function fetchResults(socket, submissionId) {
       }
       if (msg.submissionPanel) {
         document.getElementById('submission-' + submissionId).outerHTML = msg.submissionPanel;
-        window.MathJax.startup.promise.then(async () => {
-          window.MathJax.typesetPromise();
-        });
+        mathjaxTypeset();
         // Restore modal state if need be
         if (wasModalOpen) {
           $('#submissionInfoModal-' + submissionId).modal('show');
