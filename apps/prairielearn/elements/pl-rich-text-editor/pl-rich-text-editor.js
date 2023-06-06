@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill, he, QuillMarkdown, showdown */
+/* global Quill,he, MathJax, QuillMarkdown, showdown */
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
@@ -62,10 +62,12 @@ class MathFormula extends Embed {
   }
 
   static updateNode(node, value) {
-    window.mathjaxConvert(value).then(async (html) => {
+    MathJax.startup.promise.then(async () => {
+      const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
       const formatted = html.innerHTML;
       // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
       node.innerHTML = formatted + '&#8201;';
+      await MathJax.typesetPromise();
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
     });

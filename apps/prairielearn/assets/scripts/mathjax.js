@@ -3,7 +3,7 @@
 // Default to SVG, as lines were sometimes disappearing when using the CHTML renderer.
 const outputComponent = 'output/svg';
 
-window.safeMathjaxPromise = new Promise((resolve, _reject) => {
+const mathjaxPromise = new Promise((resolve, _reject) => {
   window.MathJax = {
     tex: {
       inlineMath: [
@@ -31,12 +31,15 @@ window.safeMathjaxPromise = new Promise((resolve, _reject) => {
       window.safeMathjaxPromise.then(cb);
     },
     startup: {
+      // Adds a custom promise so that, regardless if Mathjax.startup.promise is accessed before or
+      // after the page is loaded, it will be resolved when the page is ready.
+      promise: mathjaxPromise,
       ready: () => {
         window.MathJax.startup.defaultReady();
         window.MathJax.Hub = {
           Queue: function () {
             console.warn(
-              'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typeset() or MathJax.typesetPromise()'
+              'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typesetPromise()'
             );
             window.MathJax.typesetPromise();
           },
@@ -50,17 +53,13 @@ window.safeMathjaxPromise = new Promise((resolve, _reject) => {
   };
 });
 
-window.mathjaxTypeset = async () => {
-  await window.safeMathjaxPromise;
-  return window.MathJax.typesetPromise();
-};
-
-window.mathjaxConvert = async (value) => {
-  await window.safeMathjaxPromise;
-  return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
-};
-
 module.exports = {
-  mathjaxTypeset: window.mathjaxTypeset,
-  mathjaxConvert: window.mathjaxConvert,
+  mathjaxTypeset: async () => {
+    await window.MathJax.promise;
+    return window.MathJax.typesetPromise();
+  },
+  mathjaxConvert: async (value) => {
+    await window.MathJax.promise;
+    return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
+  },
 };
