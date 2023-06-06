@@ -69,6 +69,7 @@ module.exports.connection = function (socket) {
         if (ERR(err, (err) => logger.error('Error rendering panels for submission', err))) return;
         callback({
           submission_id: msg.submission_id,
+          answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
