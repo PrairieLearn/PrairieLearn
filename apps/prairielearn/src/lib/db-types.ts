@@ -88,3 +88,16 @@ export const GroupConfigSchema = z.object({
   student_authz_join: z.boolean().nullable(),
 });
 export type GroupConfig = z.infer<typeof GroupConfigSchema>;
+
+export const UserSchema = z.object({
+  deleted_at: z.date().nullable(),
+  institution_id: IdSchema,
+  lti_context_id: z.string().nullable(),
+  lti_course_instance_id: IdSchema.nullable(),
+  lti_user_id: z.string().nullable(),
+  name: z.string().nullable(),
+  uid: z.string(),
+  uin: z.string().nullable(),
+  user_id: IdSchema,
+});
+export type User = z.infer<typeof UserSchema>;
