@@ -26,14 +26,12 @@ def generate(data):
     default_output = reordered_words[9]
 
     # Build the list of input/output pairs.
-    pairs_dict = {input: output for (input, output) in zip(input_words, output_words)}
-
     data["params"]["pairs"] = [
         {
             "input": input,
             "output": output,
         }
-        for (input, output) in pairs_dict.items()
+        for (input, output) in zip(input_words, output_words)
     ]
 
     # Pick the function name
@@ -47,7 +45,7 @@ def generate(data):
             "type": "function (str -> str)",
         }
     ]
-    data["params"]["pairs_dict"] = pairs_dict
+
     data["params"]["function_name"] = function_name
     data["params"]["default_output"] = default_output
     data["params"]["invalid_input"] = missing_word

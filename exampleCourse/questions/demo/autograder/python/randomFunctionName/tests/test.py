@@ -11,21 +11,25 @@ class Test(PLTestCase):
         student_function = getattr(self.st, function_name)
 
         num_correct = 0
-        pairs_dict = self.data["params"]["pairs_dict"]
+        pairs_dicts = self.data["params"]["pairs"]
 
-        for input, expected_output in pairs_dict.items():
+        for pair_dict in pairs_dicts:
+            input = pair_dict["input"]
+            expected_output = pair_dict["output"]
             student_output = Feedback.call_user(student_function, input)
+
             if student_output == expected_output:
                 Feedback.add_feedback(
                     f'Function "{function_name}" returned "{student_output}" on input "{input}".'
                 )
                 num_correct += 1
+
             else:
                 Feedback.add_feedback(
                     f'Function "{function_name}" returned "{student_output}" on input "{input}", not "{expected_output}".'
                 )
 
-        percentage_score = num_correct / len(pairs_dict)
+        percentage_score = num_correct / len(pairs_dicts)
         Feedback.set_score(percentage_score)
 
     @points(1)
@@ -37,11 +41,13 @@ class Test(PLTestCase):
         default_output = self.data["params"]["default_output"]
 
         student_output = Feedback.call_user(student_function, invalid_input)
+
         if student_output == default_output:
             Feedback.add_feedback(
                 f'Function "{function_name}" returned "{student_output}" on input "{invalid_input}".'
             )
             Feedback.set_score(1)
+
         else:
             Feedback.add_feedback(
                 f'Function "{function_name}" returned "{student_output}" on input "{invalid_input}", not "{default_output}".'
