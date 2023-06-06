@@ -9,6 +9,7 @@ const { z } = require('zod');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('@prairielearn/error');
+const groups = require('../../lib/groups');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/postgres');
 const { GroupConfigSchema, IdSchema } = require('../../lib/db-types');
@@ -130,10 +131,7 @@ router.post(
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_all') {
-      sqldb.callAsync('assessment_groups_delete_all', [
-        res.locals.assessment.id,
-        res.locals.authn_user.user_id,
-      ]);
+      await groups.deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_group') {
       const assessment_id = res.locals.assessment.id;
