@@ -17,7 +17,6 @@
 
 <% const globalFlashes = flash(['notice', 'success', 'warn', 'error']); %>
 
-<div class="js-global-navbar <%= globalFlashes.length === 0 ? 'mb-3' : '' %>">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
   <a class="navbar-brand" href="<%= homeUrl %>">
     <span class="navbar-brand-label">PrairieLearn</span>
@@ -527,38 +526,15 @@ if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
         </ul>
     </nav>
 <% } %>
+
+<div class="mb-3">
+  <% globalFlashes.forEach(({ type, message }) => { %>
+    <% const color = type === 'warn' ? 'warning' : type === 'error' ? 'danger' : type === 'notice' ? 'info' : 'success'; %>
+    <div class="alert alert-<%= color %> border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show js-global-flash" role="alert">
+      <%= message %>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  <% }); %>
 </div>
-
-<% globalFlashes.forEach(({ type, message }) => { %>
-  <% const color = type === 'warn' ? 'warning' : type === 'error' ? 'danger' : type === 'notice' ? 'info' : 'success'; %>
-  <div class="alert alert-<%= color %> border-left-0 border-right-0 rounded-0 mt-0 alert-dismissible fade show js-global-flash" role="alert">
-    <%= message %>
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-<% }); %>
-
-<script>
-  $(function() {
-    const globalNavbar = document.querySelector('.js-global-navbar');
-
-    function getGlobalFlashes() {
-      return document.querySelectorAll('.js-global-flash');
-    }
-
-    // Ideally we'd use a top margin on the page's contents instead of a bottom
-    // margin on the navbar, but that would be too invasive of a change at this
-    // point. So, we'll just add a bottom margin to the navbar when there are no
-    // more flashes. See the top of this file where we conditionally add initial
-    // bottom margin depending on if there are global flashes being displayed
-    // or not.
-    getGlobalFlashes().forEach((flash) => {
-      $(flash).on('closed.bs.alert', () => {
-        if (getGlobalFlashes().length === 0) {
-          globalNavbar.classList.add('mb-3');
-        }
-      });
-    });
-  });
-</script>
