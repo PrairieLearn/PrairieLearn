@@ -155,13 +155,13 @@ def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
     # First, check for extra keys on `new_data`.
     extra_keys = set(new_data.keys()) - set(PROPS.keys())
     if extra_keys:
-        extra_keys_str = ", ".join(extra_keys)
+        extra_keys_str = ", ".join(map(str, extra_keys))
         raise ValueError(f"data contains extra keys: {extra_keys_str}")
 
     # Then, check for missing keys on `new_data`.
     missing_keys = set(old_data.keys()) - set(new_data.keys())
     if missing_keys:
-        missing_keys_str = ", ".join(missing_keys)
+        missing_keys_str = ", ".join(map(str, missing_keys))
         raise ValueError(f"data is missing keys: {missing_keys_str}")
 
     # Validate each entry in `new_data`.

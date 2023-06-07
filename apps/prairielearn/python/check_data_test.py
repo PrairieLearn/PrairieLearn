@@ -31,3 +31,12 @@ def test_check_data_invalid_modification_nested() -> None:
         ValueError, match=r'data\["params"\] has been illegally modified'
     ):
         check_data({"params": {"foo": "bar"}}, {"params": {"foo": "baz"}}, "test")
+
+
+def test_check_data_number_keys() -> None:
+    with pytest.raises(ValueError, match="data contains extra keys: 1, 2"):
+        check_data(
+            {"panel": "question"},
+            {"panel": "question", 1: "data", 2: "more data"},
+            "render",
+        )
