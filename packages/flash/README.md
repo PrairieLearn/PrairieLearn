@@ -17,7 +17,7 @@ app.use(
   session({
     // See https://www.npmjs.com/package/express-session for more information
     // about configuring the session middleware.
-    secret: 'secret,
+    secret: 'secret',
     resave: false,
     saveUninitialized: true,
   })
