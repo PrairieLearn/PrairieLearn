@@ -174,7 +174,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         );
       }
       this.checkSubmittable();
-      if (window.MathJax) MathJax.typesetPromise();
+      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
       this.trigger('renderFinished');
     },
 
@@ -281,7 +281,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         });
         this.rivetsBindingsActive = true;
       }
-      if (window.MathJax) MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
       this.trigger('renderFinished');
       return this;
     },
@@ -337,7 +337,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         });
         //this.rivetsBindingsActive = true;
       }
-      if (window.MathJax) MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
       //this.trigger("renderFinished");
       return this;
     },
