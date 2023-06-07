@@ -55,11 +55,11 @@ const mathjaxPromise = new Promise((resolve, _reject) => {
 
 module.exports = {
   mathjaxTypeset: async () => {
-    await window.MathJax.promise;
+    await mathjaxPromise;
     return window.MathJax.typesetPromise();
   },
   mathjaxConvert: async (value) => {
-    await window.MathJax.promise;
+    await mathjaxPromise;
     return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
   },
 };
