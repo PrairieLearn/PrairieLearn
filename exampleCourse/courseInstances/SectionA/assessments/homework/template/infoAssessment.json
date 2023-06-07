@@ -5,6 +5,7 @@
     "set": "Homework",
     "module": "IntroModule",
     "number": "1",
+    "helpLink": "https://www.google.com",
     "allowAccess": [
         {
             "comment": "Set end date for 100% credit",

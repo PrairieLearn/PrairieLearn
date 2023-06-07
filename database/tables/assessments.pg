@@ -18,6 +18,7 @@ columns
     duration_stat_threshold_seconds: double precision[] not null default ARRAY[]::double precision[]
     duration_stat_thresholds: interval[] not null default ARRAY[]::interval[]
     group_work: boolean default false
+    help_link: text
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_bonus_points: double precision
     max_points: double precision

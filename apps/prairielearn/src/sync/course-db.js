@@ -356,6 +356,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
  * @property {GroupRole[]} groupRoles
+ * @property {string} helpLink
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */

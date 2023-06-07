@@ -136,6 +136,10 @@
             "type": "boolean",
             "default": false
         },
+        "helpLink": {
+          "description": "Link to help source for the assessment.",
+          "type": "string"
+        },
         "advanceScorePerc": {
             "$ref": "#/definitions/advanceScorePerc"
         },
