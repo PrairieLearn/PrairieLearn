@@ -33,7 +33,7 @@ import { flash } from '@prairielearn/flash';
 app.get('/set-flash', (req, res) => {
   flash('notice', 'Your preferences have been updated.');
   flash('success', 'Course created successfully.');
-  flash('warn', 'Syncing completed with 5 warnings.');
+  flash('warning', 'Syncing completed with 5 warnings.');
   flash('error', 'Group must have fewer than 10 members.');
 
   res.redirect('/display-flash');

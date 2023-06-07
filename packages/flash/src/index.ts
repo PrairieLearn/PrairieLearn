@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 
 const als = new AsyncLocalStorage<FlashStorage>();
 
-export type FlashMessageType = 'notice' | 'success' | 'warn' | 'error';
+export type FlashMessageType = 'notice' | 'success' | 'warning' | 'error';
 
 export interface FlashMessage {
   type: FlashMessageType;
