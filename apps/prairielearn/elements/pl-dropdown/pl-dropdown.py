@@ -56,6 +56,7 @@ def prepare(element_html, data):
         optional_attribs=["blank", "weight", "sort"],
     )
     answers_name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, answers_name)
 
     # Get answer from pl-answer if implemented
     data["correct_answers"][answers_name] = get_solution(element, data)

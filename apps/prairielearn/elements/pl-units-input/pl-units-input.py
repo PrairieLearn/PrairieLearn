@@ -7,7 +7,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import errors
+from pint import UnitRegistry, errors
 from typing_extensions import assert_never
 
 
@@ -39,6 +39,21 @@ MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
+
+
+def get_with_units_atol(
+    element: lxml.html.HtmlElement, data: pl.QuestionData, ureg: UnitRegistry
+) -> str:
+    """Returns the atol string for use in the "with-units" grading mode."""
+
+    if pl.has_attrib(element, "atol"):
+        return pl.get_string_attrib(element, "atol")
+
+    name = pl.get_string_attrib(element, "answers-name")
+    correct_answer = data["correct_answers"].get(name)
+    correct_answer_units = str(ureg.Quantity(correct_answer).units)
+
+    return f"{ATOL_DEFAULT} {correct_answer_units}"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -73,6 +88,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     correct_answer_html = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
@@ -90,31 +107,25 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"Number of digits specified must be at least 1, not {digits}."
         )
 
-    atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
     ureg = pl.get_unit_registry()
-    parsed_atol = ureg.Quantity(atol)
 
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
-    # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
+    # In with-units mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.WITH_UNITS:
-        if not pl.has_attrib(element, "atol"):
-            raise ValueError("atol is a required parameter for units agnostic grading.")
-
+        parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
+            atol = pl.get_string_attrib(element, "atol")
             raise ValueError(
-                f'atol parameter "{atol}" must have units in unit agnostic grading.'
+                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
             )
 
         if pl.has_attrib(element, "comparison"):
             raise ValueError(
-                'Cannot set parameter "comparison" in unit agnostic grading.'
+                'Cannot set attribute "comparison" in "with-units" grading.'
             )
-
-        if pl.has_attrib(element, "rtol"):
-            raise ValueError('Cannot set parameter "rtol" in unit agnostic grading.')
 
         partial_credit = pl.get_float_attrib(
             element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
@@ -135,9 +146,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
             )
     else:
+        atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
+        parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
             raise ValueError(
-                f'atol parameter "{atol}" may only have units in units agnostic grading.'
+                f'"atol" attribute "{atol}" may only have units in with-units grading.'
             )
 
 
@@ -180,8 +193,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
         elif grading_mode is GradingMode.WITH_UNITS:
-            atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
-            placeholder_text = f"Number (atol={atol}) + Unit"
+            rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
+            atol = get_with_units_atol(element, data, ureg)
+            placeholder_text = f"Number (rtol={rtol}, atol={atol}) + Unit"
 
         elif grading_mode is GradingMode.EXACT_UNITS:
             if comparison is uu.ComparisonType.RELABS:
@@ -406,7 +420,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         grading_fn = uu.get_with_units_grading_fn(
             ureg=ureg,
             correct_ans=a_tru,
-            atol=pl.get_string_attrib(element, "atol"),  # No default in this case.
+            rtol=pl.get_float_attrib(element, "rtol", RTOL_DEFAULT),
+            atol=get_with_units_atol(element, data, ureg),
         )
     else:
         assert_never(grading_mode)

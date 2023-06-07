@@ -18,6 +18,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -40,7 +41,6 @@ const {
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
-const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
@@ -63,6 +63,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 
@@ -81,7 +82,6 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
-    --exit                              Run all the initialization and exit
 `;
 
   console.log(msg);
@@ -107,6 +107,12 @@ module.exports.initExpress = function () {
     }
   }
 
+  // This should come before the session middleware so that we don't
+  // create a session every time we get a health check request.
+  app.get('/pl/webhooks/ping', function (req, res, _next) {
+    res.send('.');
+  });
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
@@ -115,6 +121,8 @@ module.exports.initExpress = function () {
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
     res.locals.compiled_script_tag = assets.compiledScriptTag;
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
+    res.locals.compiled_script_path = assets.compiledScriptPath;
+    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
     next();
   });
   app.use(function (req, res, next) {
@@ -125,6 +133,23 @@ module.exports.initExpress = function () {
     setLocalsFromConfig(res.locals);
     next();
   });
+
+  app.use(
+    session({
+      secret: config.secretKey,
+      store: new SessionStore({
+        expireSeconds: config.sessionStoreExpireSeconds,
+      }),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        maxAge: config.sessionStoreExpireSeconds * 1000,
+        httpOnly: true,
+        secure: 'auto', // uses Express "trust proxy"
+        sameSite: config.sessionCookieSameSite,
+      },
+    })
+  );
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
@@ -427,7 +452,7 @@ module.exports.initExpress = function () {
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
-  app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
@@ -473,20 +498,8 @@ module.exports.initExpress = function () {
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
   // some pages don't need authorization
-  app.use('/', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
-  app.use('/pl', [
-    function (req, res, next) {
-      res.locals.navPage = 'home';
-      next();
-    },
-    require('./pages/home/home'),
-  ]);
+  app.use('/', require('./pages/home/home'));
+  app.use('/pl', require('./pages/home/home'));
   app.use('/pl/settings', [
     function (req, res, next) {
       res.locals.navPage = 'user_settings';
@@ -494,13 +507,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/userSettings/userSettings'),
   ]);
-  app.use('/pl/enroll', [
-    function (req, res, next) {
-      res.locals.navPage = 'enroll';
-      next();
-    },
-    require('./pages/enroll/enroll'),
-  ]);
+  app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
     function (req, res, next) {
       res.locals.navPage = 'logout';
@@ -1607,6 +1614,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorSettings/administratorSettings')
   );
   app.use(
+    '/pl/administrator/institutions',
+    require('./pages/administratorInstitutions/administratorInstitutions').default
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses')
   );
@@ -1639,14 +1650,6 @@ module.exports.initExpress = function () {
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
   );
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  // Webhooks //////////////////////////////////////////////////////////
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
-    res.send('.');
-  });
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1838,7 +1841,6 @@ if (require.main === module && config.startServer) {
 
         // Load config immediately so we can use it configure everything else.
         await loadConfig(configPaths);
-        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
@@ -2122,12 +2124,7 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        cache.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await cache.init(),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
@@ -2173,10 +2170,6 @@ if (require.main === module && config.startServer) {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
           logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-        }
-        if ('exit' in argv) {
-          logger.info('exit option passed, quitting...');
-          process.exit(0);
         }
 
         // SIGTERM can be used to gracefully shut down the process. This signal

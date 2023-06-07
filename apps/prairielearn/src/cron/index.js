@@ -5,6 +5,7 @@ const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
 const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielearn/opentelemetry');
+const Sentry = require('@prairielearn/sentry');
 
 const { config } = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
@@ -108,6 +109,11 @@ module.exports = {
         name: 'cleanTimeSeries',
         module: require('./cleanTimeSeries'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
+      },
+      {
+        name: 'sessionStoreExpire',
+        module: require('./sessionStoreExpire'),
+        intervalSec: 'daily',
       },
     ];
 
@@ -270,6 +276,13 @@ module.exports = {
                     stack: err.stack,
                     data: JSON.stringify(err.data),
                     cronUuid,
+                  });
+
+                  Sentry.captureException(err, {
+                    tags: {
+                      'cron.name': job.name,
+                      'cron.uuid': cronUuid,
+                    },
                   });
 
                   span.recordException(err);

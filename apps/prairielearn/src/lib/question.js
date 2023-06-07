@@ -9,12 +9,13 @@ const { differenceInMilliseconds, parseISO } = require('date-fns');
 const fs = require('fs');
 const unzipper = require('unzipper');
 const fg = require('fast-glob');
+const util = require('util');
 const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-utils');
 
-const markdown = require('./markdown');
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const externalGrader = require('./externalGrader');
+const manualGrading = require('./manualGrading');
 const ltiOutcomes = require('../lib/ltiOutcomes');
 const sqldb = require('@prairielearn/postgres');
 const questionServers = require('../question-servers');
@@ -486,10 +487,10 @@ module.exports = {
    * Grade the most recent submission for a given variant.
    *
    * @param {Object} variant - The variant to grade.
-   * @param {?number} check_submission_id - The submission_id that must be graded (or null to skip this check).
+   * @param {string | null} check_submission_id - The submission_id that must be graded (or null to skip this check).
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
-   * @param {number | null} authn_user_id - The currently authenticated user.
+   * @param {string | null} authn_user_id - The currently authenticated user.
    * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
    * @param {function} callback - A callback(err) function.
    */
@@ -1643,13 +1644,6 @@ module.exports = {
                 ? detailedSubmissionResult.rows[idx]
                 : {}),
             }));
-            await async.each(locals.submissions, async (s) => {
-              if (s.feedback?.manual) {
-                s.feedback_manual_html = await markdown.processContent(
-                  s.feedback.manual.toString() || ''
-                );
-              }
-            });
             locals.submission = locals.submissions[0]; // most recent submission
 
             locals.showSubmissions = true;
@@ -1706,6 +1700,12 @@ module.exports = {
             load_system_data: loadExtraData,
           });
           locals.issues = result.rows;
+        },
+        async () => {
+          if (locals.instance_question) {
+            await manualGrading.populateRubricData(locals);
+            await async.each(locals.submissions, manualGrading.populateManualGradingData);
+          }
         },
         async () => {
           if (locals.question.type !== 'Freeform') {
@@ -1810,6 +1810,7 @@ module.exports = {
       if (results.rowCount === 0) return callback(error.make(404, 'Not found'));
 
       const renderSelection = {
+        answer: true,
         submissions: true,
       };
       const {
@@ -1864,12 +1865,12 @@ module.exports = {
 
       async.parallel(
         [
-          (callback) => {
+          async () => {
             // Render the submission panel
             submission.submission_number = submission_index;
             const submissions = [submission];
 
-            module.exports._render(
+            const htmls = await util.promisify(module.exports._render)(
               renderSelection,
               variant,
               question,
@@ -1877,58 +1878,44 @@ module.exports = {
               submissions,
               course,
               course_instance,
-              locals,
-              (err, htmls) => {
-                if (ERR(err, callback)) return;
-                submission.grading_job_id = grading_job_id;
-                submission.grading_job_status = grading_job_status;
-                submission.formatted_date = formatted_date;
-                submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
+              locals
+            );
+            submission.grading_job_id = grading_job_id;
+            submission.grading_job_status = grading_job_status;
+            submission.formatted_date = formatted_date;
+            submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
 
-                markdown
-                  .processContent(submission.feedback?.manual?.toString() || '')
-                  .then((html) => {
-                    submission.feedback_manual_html = html;
+            panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
 
-                    const renderParams = {
-                      course,
-                      course_instance,
-                      question,
-                      submission,
-                      submissionHtml: htmls.submissionHtmls[0],
-                      submissionCount: submission_count,
-                      expanded: true,
-                      urlPrefix,
-                      plainUrlPrefix: config.urlPrefix,
-                    };
-                    const templatePath = path.join(
-                      __dirname,
-                      '..',
-                      'pages',
-                      'partials',
-                      'submission.ejs'
-                    );
-                    ejs.renderFile(templatePath, renderParams, (err, html) => {
-                      if (ERR(err, callback)) return;
-                      panels.submissionPanel = html;
-                      callback(null);
-                    });
-                  })
-                  .catch((err) => ERR(err, callback));
-              }
+            await manualGrading.populateRubricData(locals);
+            await manualGrading.populateManualGradingData(submission);
+
+            const renderParams = {
+              course,
+              course_instance,
+              question,
+              submission,
+              submissionHtml: htmls.submissionHtmls[0],
+              submissionCount: submission_count,
+              expanded: true,
+              urlPrefix,
+              plainUrlPrefix: config.urlPrefix,
+            };
+            const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
+            // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+            // latter would require all includes in EJS to be translated to await recursively.
+            panels.submissionPanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
             );
           },
-          (callback) => {
+          async () => {
             // Render the question score panel
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
             // The score panel can and should only be rendered for
             // questions that are part of an assessment
-            if (variant.instance_question_id == null) {
-              // If the variant does not have an instance question,
-              // it's not part of an assessment
-              return callback(null);
-            }
+            if (variant.instance_question_id == null) return;
 
             const renderParams = {
               instance_question,
@@ -1947,21 +1934,18 @@ module.exports = {
               'partials',
               'questionScorePanel.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionScorePanel = html;
-              callback(null);
-            });
+            panels.questionScorePanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
+          async () => {
             // Render the assessment score panel
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
-            // As usual, only render if this variant is part of an
-            // assessment
-            if (variant.instance_question_id == null) {
-              return callback(null);
-            }
+            // As usual, only render if this variant is part of an assessment
+            if (variant.instance_question_id == null) return;
+
             const renderParams = {
               assessment_instance,
               assessment,
@@ -1976,15 +1960,14 @@ module.exports = {
               'partials',
               'assessmentScorePanel.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.assessmentScorePanel = html;
-              callback(null);
-            });
+            panels.assessmentScorePanel = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
+          async () => {
             // Render the question panel footer
-            if (!renderScorePanels) return callback(null);
+            if (!renderScorePanels) return;
 
             const renderParams = {
               variant,
@@ -2004,19 +1987,16 @@ module.exports = {
               'partials',
               'questionFooter.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionPanelFooter = html;
-              callback(null);
-            });
+            panels.questionPanelFooter = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
-          (callback) => {
-            if (!renderScorePanels) return callback(null);
+          async () => {
+            if (!renderScorePanels) return;
 
             // only render if variant is part of assessment
-            if (variant.instance_question_id == null) {
-              return callback(null);
-            }
+            if (variant.instance_question_id == null) return;
 
             // Render the next question nav link
             // NOTE: This must be kept in sync with the corresponding code in
@@ -2039,11 +2019,10 @@ module.exports = {
               'partials',
               'questionNavSideButton.ejs'
             );
-            ejs.renderFile(templatePath, renderParams, (err, html) => {
-              if (ERR(err, callback)) return;
-              panels.questionNavNextButton = html;
-              callback(null);
-            });
+            panels.questionNavNextButton = await util.promisify(ejs.renderFile)(
+              templatePath,
+              renderParams
+            );
           },
         ],
         (err) => {

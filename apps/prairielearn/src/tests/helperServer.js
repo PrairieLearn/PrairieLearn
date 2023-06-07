@@ -11,7 +11,6 @@ const opentelemetry = require('@prairielearn/opentelemetry');
 const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
-const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
 const serverJobs = require('../lib/server-jobs-legacy');
@@ -45,7 +44,6 @@ module.exports = {
         [
           // We (currently) don't ever want tracing to run during tests.
           async () => opentelemetry.init({ openTelemetryEnabled: false }),
-          async () => aws.init(),
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
@@ -91,12 +89,9 @@ module.exports = {
             debug('before(): initialize socket server');
             socketServer.init(httpServer);
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize cache');
-            cache.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await cache.init();
           },
           async () => {
             debug('before(): initialize server jobs');
@@ -140,16 +135,15 @@ module.exports = {
           await codeCaller.finish();
         },
         function (callback) {
-          debug('after(): close load estimators');
-          load.close();
-          callback(null);
-        },
-        function (callback) {
           debug('after(): stop server');
           server.stopServer(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
+        },
+        async () => {
+          debug('after(): close load estimators');
+          load.close();
         },
         async () => {
           debug('after(): stop cron');
@@ -163,12 +157,9 @@ module.exports = {
           debug('after(): close server jobs');
           await serverJobs.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close cache');
-          cache.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await cache.close();
         },
         function (callback) {
           debug('after(): close local cache');

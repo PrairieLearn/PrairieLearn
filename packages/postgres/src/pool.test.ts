@@ -4,7 +4,14 @@ import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { z, ZodError } from 'zod';
 
-import { queryAsync, queryCursor, queryValidatedCursor } from './default-pool';
+import {
+  queryAsync,
+  queryRows,
+  queryRow,
+  queryOptionalRow,
+  queryCursor,
+  queryValidatedCursor,
+} from './default-pool';
 import { makePostgresTestUtils } from './test-utils';
 
 chai.use(chaiAsPromised);
@@ -14,15 +21,112 @@ const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',
 });
 
+const WorkspaceSchema = z.object({
+  id: z.string(),
+  created_at: z.date(),
+});
+
 describe('@prairielearn/postgres', function () {
   before(async () => {
     await postgresTestUtils.createDatabase();
-    await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY);', {});
+    await queryAsync(
+      'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
+      {}
+    );
     await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
   });
 
   after(async () => {
     await postgresTestUtils.dropDatabase();
+  });
+
+  describe('queryRows', () => {
+    it('handles single column', async () => {
+      const rows = await queryRows('SELECT id FROM workspaces WHERE id <= 10;', z.string());
+      assert.lengthOf(rows, 10);
+      assert.equal(rows[0], '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const rows = await queryRows('SELECT * FROM workspaces WHERE id <= 10;', WorkspaceSchema);
+      assert.lengthOf(rows, 10);
+      assert.equal(rows[0].id, '1');
+      assert.isNotNull(rows[0].created_at);
+    });
+
+    it('handles parameters', async () => {
+      const rows = await queryRows(
+        'SELECT * FROM workspaces WHERE id <= $1;',
+        [10],
+        WorkspaceSchema
+      );
+      assert.lengthOf(rows, 10);
+    });
+  });
+
+  describe('queryRow', () => {
+    it('handles single column', async () => {
+      const row = await queryRow('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const row = await queryRow('SELECT * FROM workspaces WHERE id = 1;', WorkspaceSchema);
+      assert.equal(row.id, '1');
+      assert.isNotNull(row.created_at);
+    });
+
+    it('handles parameters', async () => {
+      const row = await queryRow('SELECT * FROM workspaces WHERE id = $1;', [1], WorkspaceSchema);
+      assert.equal(row.id, '1');
+    });
+
+    it('rejects results with zero rows', async () => {
+      const rows = queryRow('SELECT * FROM workspaces WHERE id = -1;', WorkspaceSchema);
+      await assert.isRejected(rows, 'Incorrect rowCount: 0');
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const rows = queryRow('SELECT * FROM workspaces', WorkspaceSchema);
+      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+    });
+  });
+
+  describe('queryOptionalRow', () => {
+    it('handles single column', async () => {
+      const row = await queryRow('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      assert.equal(row, '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const row = await queryOptionalRow('SELECT * FROM workspaces WHERE id = 1;', WorkspaceSchema);
+      assert.isNotNull(row);
+      assert.equal(row?.id, '1');
+      assert.isNotNull(row?.created_at);
+    });
+
+    it('handles parameters', async () => {
+      const row = await queryOptionalRow(
+        'SELECT * FROM workspaces WHERE id = $1;',
+        [1],
+        WorkspaceSchema
+      );
+      assert.isNotNull(row);
+      assert.equal(row?.id, '1');
+    });
+
+    it('handles missing result', async () => {
+      const row = await queryOptionalRow(
+        'SELECT * FROM workspaces WHERE id = -1;',
+        WorkspaceSchema
+      );
+      assert.isNull(row);
+    });
+
+    it('rejects with multiple rows', async () => {
+      const rows = queryOptionalRow('SELECT * FROM workspaces', WorkspaceSchema);
+      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+    });
   });
 
   describe('queryCursor', () => {

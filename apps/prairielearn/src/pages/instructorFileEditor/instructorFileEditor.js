@@ -47,20 +47,6 @@ router.get('/*', (req, res, next) => {
     return next(new Error(`No path`));
   }
 
-  // This is a hack because we do not have a standard for how to serve
-  // page-specific client-side code. I would normally have done this with
-  // a route parameter, but all routes are being mapped to file paths, so
-  // I am using a query string instead.
-  if (req.query.serve) {
-    if (req.query.serve === 'client') {
-      debug('Responding to request for /instructorFileEditorClient.js');
-      res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
-      return;
-    } else {
-      return next(new Error(`Invalid query: serve=${req.query.serve}`));
-    }
-  }
-
   let fileEdit = {
     uuid: uuidv4(),
     userID: res.locals.user.user_id,
