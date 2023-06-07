@@ -28,7 +28,7 @@ describe('flash', () => {
     });
   });
 
-  it('overwrites flash with the same type', () => {
+  it('stores multiples flashes with the same type', () => {
     const req = {
       session: {},
     } as any;
@@ -38,7 +38,10 @@ describe('flash', () => {
       flash('notice', 'hello world');
       flash('notice', 'goodbye world');
 
-      assert.sameDeepMembers(flash(), [{ type: 'notice', message: 'goodbye world' }]);
+      assert.sameDeepMembers(flash(), [
+        { type: 'notice', message: 'hello world' },
+        { type: 'notice', message: 'goodbye world' },
+      ]);
     });
   });
 
@@ -52,8 +55,8 @@ describe('flash', () => {
       flash('notice', 'hello world');
       flash('error', 'goodbye world');
 
-      assert.equal(flash('notice'), 'hello world');
-      assert.equal(flash('error'), 'goodbye world');
+      assert.sameDeepMembers(flash('notice'), [{ type: 'notice', message: 'hello world' }]);
+      assert.sameDeepMembers(flash('error'), [{ type: 'error', message: 'goodbye world' }]);
     });
   });
 
@@ -84,11 +87,11 @@ describe('flash', () => {
       flash('notice', 'hello world');
       flash('error', 'goodbye world');
 
-      assert.equal(flash('notice'), 'hello world');
-      assert.equal(flash('error'), 'goodbye world');
+      assert.sameDeepMembers(flash('notice'), [{ type: 'notice', message: 'hello world' }]);
+      assert.sameDeepMembers(flash('error'), [{ type: 'error', message: 'goodbye world' }]);
 
-      assert.equal(flash('notice'), null);
-      assert.equal(flash('error'), null);
+      assert.deepEqual(flash('notice'), []);
+      assert.deepEqual(flash('error'), []);
       assert.isEmpty(flash());
     });
   });

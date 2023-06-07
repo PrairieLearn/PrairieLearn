@@ -48,8 +48,8 @@ app.get('/display-flash', (req, res) => {
 The `flash()` function has three behaviors:
 
 - `flash(type: string, message: string)`: Set a message with the given type.
-- `flash(type: string)`: Get all messages with the given type.
-- `flash(types: string[])`: Get all messages with any of the given types.
-- `flash()`: Get all messages.
+- `flash(type: string): FlashMessage[]`: Get all messages with the given type.
+- `flash(types: string[]): FlashMessage[]`: Get all messages with any of the given types.
+- `flash(): FlashMessage[]`: Get all messages.
 
 Once a message is read, it is immediately removed from the persisted list of messages. A message is _only_ removed once it is read; it will be persisted indefinitely if it iw not.

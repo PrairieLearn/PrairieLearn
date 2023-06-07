@@ -18,7 +18,7 @@ export function flashMiddleware() {
 }
 
 export function flash(): FlashMessage[];
-export function flash(type: FlashMessageType): string | null;
+export function flash(type: FlashMessageType): FlashMessage[];
 export function flash(type: FlashMessageType[]): FlashMessage[];
 export function flash(type: FlashMessageType, message: string): void;
 export function flash(type?: FlashMessageType | FlashMessageType[], message?: string) {
@@ -28,16 +28,7 @@ export function flash(type?: FlashMessageType | FlashMessageType[], message?: st
   }
 
   if (Array.isArray(type)) {
-    const messages = type
-      .map((type) => {
-        const flash = flashStorage.get(type);
-        if (flash == null) return null;
-        return {
-          type,
-          message: flash,
-        };
-      })
-      .filter((message): message is FlashMessage => message != null);
+    const messages = type.flatMap((type) => flashStorage.get(type));
     type.forEach((t) => flashStorage.clear(t));
     return messages;
   }
@@ -60,7 +51,7 @@ export function flash(type?: FlashMessageType | FlashMessageType[], message?: st
 
 interface FlashStorage {
   add(type: FlashMessageType, message: string): void;
-  get(type: FlashMessageType): string | null;
+  get(type: FlashMessageType): FlashMessage[] | null;
   getAll(): FlashMessage[];
   clear(type: FlashMessageType): void;
   clearAll(): void;
@@ -75,24 +66,21 @@ function makeFlashStorage(req: Request): FlashStorage {
 
   return {
     add(type: FlashMessageType, message: string) {
-      session.flash ??= {};
-      session.flash[type] = message;
+      session.flash ??= [];
+      session.flash.push({ type, message });
     },
     get(type: FlashMessageType) {
-      return session.flash?.[type] ?? null;
+      const messages = session.flash ?? [];
+      return messages.filter((message: FlashMessage) => message.type === type);
     },
     getAll() {
-      const messages = session.flash ?? {};
-      return Object.entries<string>(messages).map(([type, message]) => ({
-        type: type as FlashMessageType,
-        message,
-      }));
+      return session.flash ?? [];
     },
     clear(type: FlashMessageType) {
-      delete session.flash?.[type];
+      session.flash = session.flash.filter((message: FlashMessage) => message.type !== type);
     },
     clearAll() {
-      session.flash = {};
+      session.flash = [];
     },
   } satisfies FlashStorage;
 }
