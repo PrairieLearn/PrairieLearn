@@ -3,7 +3,7 @@
   <head>
     <%- include('../partials/head'); %>
     <%- compiled_script_tag('question.ts') %>
-    <script src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
+    <script defer src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
