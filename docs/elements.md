@@ -1475,6 +1475,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 Displays a list of variables that are formatted for import into the
 supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
+
 #### Sample element
 
 ![](elements/pl-variable-output.png)
