@@ -487,10 +487,10 @@ module.exports = {
    * Grade the most recent submission for a given variant.
    *
    * @param {Object} variant - The variant to grade.
-   * @param {?number} check_submission_id - The submission_id that must be graded (or null to skip this check).
+   * @param {string | null} check_submission_id - The submission_id that must be graded (or null to skip this check).
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
-   * @param {number | null} authn_user_id - The currently authenticated user.
+   * @param {string | null} authn_user_id - The currently authenticated user.
    * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
    * @param {function} callback - A callback(err) function.
    */
@@ -1810,6 +1810,7 @@ module.exports = {
       if (results.rowCount === 0) return callback(error.make(404, 'Not found'));
 
       const renderSelection = {
+        answer: true,
         submissions: true,
       };
       const {
@@ -1883,6 +1884,8 @@ module.exports = {
             submission.grading_job_status = grading_job_status;
             submission.formatted_date = formatted_date;
             submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
+
+            panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
 
             await manualGrading.populateRubricData(locals);
             await manualGrading.populateManualGradingData(submission);

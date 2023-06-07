@@ -1,0 +1,40 @@
+<pl-question-panel>
+    <p>
+        <i>
+            This is a small example question that shows how we can randomize questions using the Python autograder.
+            <code>server.py</code> randomizes a function name and a list of input/output pairs the function must
+            correctly handle, plus a default output for every other case. The test file checks these pairs and the default output.
+        </i>
+    </p>
+    <p>
+        Design a function named <code>{{function_name}}</code> that takes a string as input and produces a string as output.
+        For each of the input strings listed in the following table, it should produce the corresponding output:
+        <div class="card mb-3">
+        <table class="table table-sm table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Input</th>
+                    <th>Output</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#params.pairs}}
+                <tr><td><code>"{{input}}"</code></td><td><code>"{{output}}"</code></td></tr>
+                {{/params.pairs}}
+            </tbody>
+        </table>
+        </div>
+
+        For any other input, it should produce <code>"{{params.default_output}}"</code>.
+    </p>
+
+<pl-file-editor file-name="user_code.py" ace-mode="ace/mode/python">
+def {{params.function_name}}(input):
+    # Insert your code here!
+</pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

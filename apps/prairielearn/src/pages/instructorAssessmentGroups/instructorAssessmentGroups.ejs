@@ -370,8 +370,8 @@
               not yet assigned:
             </strong>
             <ul class="mb-0">
-              <% notAssigned.forEach(function(row, iRow) {%>
-              <li><%= row.uid %></li>
+              <% notAssigned.forEach(function(uid) {%>
+              <li><%= uid %></li>
               <% }); %>
             </ul>
             <% } %>
