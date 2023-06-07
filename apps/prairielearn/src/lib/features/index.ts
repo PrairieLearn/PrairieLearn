@@ -1,4 +1,5 @@
 import { FeatureManager } from './manager';
+import { featuresMiddleware } from './middleware';
 
 const features = new FeatureManager([
   'manual-grading-rubrics',
@@ -6,4 +7,4 @@ const features = new FeatureManager([
   'process-questions-in-worker',
 ]);
 
-export { features };
+export { features, featuresMiddleware };
