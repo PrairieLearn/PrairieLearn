@@ -518,7 +518,6 @@ def generate(data):
 
 #### Customizations
 
-
 | Attribute        | Type                | Default  | Description                                                                                                                                                          |
 | ---------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`   | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
