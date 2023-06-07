@@ -72,7 +72,6 @@ def solve_problem(answers_list, grading_method):
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answers-name")
 
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -97,6 +96,8 @@ def prepare(element_html, data):
     pl.check_attribs(
         element, required_attribs=required_attribs, optional_attribs=optional_attribs
     )
+    answer_name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, answer_name)
 
     check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(
