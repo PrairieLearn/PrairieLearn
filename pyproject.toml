@@ -83,6 +83,7 @@ include = [
     "./apps/prairielearn/elements/pl-template",
     "./apps/prairielearn/elements/pl-units-input",
     "./apps/prairielearn/elements/pl-variable-output",
+    "./apps/prairielearn/elements/pl-workspace",
     "./apps/prairielearn/elements/pl-xss-safe",
     "./apps/prairielearn/python/conftest.py",
     "./apps/prairielearn/python/colors.py",

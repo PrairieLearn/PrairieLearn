@@ -530,6 +530,9 @@ module.exports = {
     // prettier-ignore
     err = checkProp('test_type',             'string',  ['test'],                             []);
     if (err) return err;
+    // prettier-ignore
+    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+    if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
@@ -1076,6 +1079,7 @@ module.exports = {
         correct_answers: _.get(variant, 'true_answer', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
+        answers_names: {},
       };
       _.extend(data.options, module.exports.getContextOptions(context));
 
@@ -1603,6 +1607,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
         filename: filename,
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
 
       const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrCompute(
         course,
@@ -1901,7 +1906,7 @@ module.exports = {
       let cachedData;
 
       try {
-        cachedData = await cache.getAsync(cacheKey);
+        cachedData = await cache.get(cacheKey);
       } catch (err) {
         // We don't actually want to fail if the cache has an error; we'll
         // just compute the cachedData as normal

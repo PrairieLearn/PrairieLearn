@@ -45,7 +45,7 @@ router.get('/', function (req, res, next) {
               repositoryName: repository.getRepository(),
             };
             ecr.describeImages(params, (err, data) => {
-              if (err && err.code === 'RepositoryNotFoundException') {
+              if (err && err.name === 'RepositoryNotFoundException') {
                 image.imageSyncNeeded = true;
                 return callback(null);
               } else if (ERR(err, callback)) {

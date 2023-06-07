@@ -49,6 +49,7 @@ def prepare(element_html, data):
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
 
     correct_answer = pl.get_float_attrib(element, "correct-answer", None)
     if correct_answer is not None:

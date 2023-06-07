@@ -19,6 +19,7 @@ class DisplayType(Enum):
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
+CUSTOM_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
@@ -47,9 +48,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "blank-value",
         "placeholder",
+        "custom-functions",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
 
     correct_answer = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
@@ -70,8 +73,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
-    variables_string = pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
-    variables = phs.get_variables_list(variables_string)
+    variables = phs.get_items_list(
+        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = phs.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    )
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -83,8 +90,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
     constants_class = phs._Constants()
-    operators = ["( )", "+", "-", "*", "/", "^", "**"]
 
+    operators: list[str] = list(phs.STANDARD_OPERATORS)
+    operators.extend(custom_functions)
     operators.extend(constants_class.functions.keys())
     operators.extend(constants_class.trig_functions.keys())
 
@@ -147,13 +155,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_sub is not None:
                 if isinstance(a_sub, str):
                     # this is for backward-compatibility
-                    a_sub = phs.convert_string_to_sympy(
-                        a_sub, variables, allow_complex=allow_complex
+                    a_sub_parsed = phs.convert_string_to_sympy(
+                        a_sub,
+                        variables,
+                        allow_complex=allow_complex,
+                        custom_functions=custom_functions,
                     )
                 else:
-                    a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-                a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-                html_params["a_sub"] = sympy.latex(a_sub)
+                    a_sub_parsed = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+                a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                html_params["a_sub"] = sympy.latex(a_sub_parsed)
+                html_params["a_sub_raw"] = data["raw_submitted_answers"].get(name, None)
             else:
                 html_params["missing_input"] = True
                 html_params["parse_error"] = None
@@ -203,22 +215,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name)
-        if a_tru is not None:
-            if isinstance(a_tru, str):
-                # this is so instructors can specify the true answer simply as a string
-                a_tru = phs.convert_string_to_sympy(
-                    a_tru, variables, allow_complex=allow_complex
-                )
-            else:
-                a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
-            a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
-            with open(
-                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
-            ) as f:
-                return chevron.render(f, html_params).strip()
-        else:
+        if a_tru is None:
             return ""
+
+        elif isinstance(a_tru, str):
+            # this is so instructors can specify the true answer simply as a string
+            a_tru = phs.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+
+        a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
+        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -226,8 +240,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = phs.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -247,14 +264,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    a_proccessed = phs.process_student_input(a_sub)
-
     error_msg = phs.validate_string_as_sympy(
-        a_proccessed,
+        a_sub,
         variables,
         allow_complex=allow_complex,
         allow_trig_functions=True,
         imaginary_unit=imaginary_unit,
+        custom_functions=custom_functions,
     )
 
     if error_msg is not None:
@@ -262,12 +278,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    # Retrieve variable assumptions encoded in correct answer
+    assumptions_dict = None
+    a_tru = data["correct_answers"].get(name, {})
+    if isinstance(a_tru, dict):
+        assumptions_dict = a_tru.get("_assumptions")
+
     a_sub_parsed = phs.convert_string_to_sympy(
-        a_proccessed,
+        a_sub,
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=True,
+        assumptions=assumptions_dict,
+        custom_functions=custom_functions,
     )
 
     # Make sure we can parse the json again
@@ -289,8 +313,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = phs.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -307,7 +334,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, str):
         # this is so instructors can specify the true answer simply as a string
         a_tru_sympy = phs.convert_string_to_sympy(
-            a_tru, variables, allow_complex=allow_complex
+            a_tru,
+            variables,
+            allow_complex=allow_complex,
+            custom_functions=custom_functions,
         )
     else:
         a_tru_sympy = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
@@ -317,7 +347,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if isinstance(a_sub, str):
             # this is for backward-compatibility
             a_sub_sympy = phs.convert_string_to_sympy(
-                a_sub, variables, allow_complex=allow_complex, allow_trig_functions=True
+                a_sub,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=True,
+                custom_functions=custom_functions,
+                assumptions=a_tru_sympy.assumptions0,
             )
         else:
             a_sub_sympy = phs.json_to_sympy(
@@ -332,8 +367,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = phs.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -349,7 +387,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # Parse correct answer based on type
     if isinstance(a_tru, str):
         a_tru = phs.convert_string_to_sympy(
-            a_tru, variables, allow_complex=allow_complex
+            a_tru,
+            variables,
+            allow_complex=allow_complex,
+            custom_functions=custom_functions,
         )
     else:
         a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
