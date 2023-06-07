@@ -28,6 +28,7 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: z.date().nullable(),
   display_timezone: z.string(),
+  enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
@@ -41,12 +42,14 @@ export const CourseInstanceSchema = z.object({
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
 export const InstitutionSchema = z.object({
+  course_instance_enrollment_limit: z.number(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
   id: IdSchema,
   long_name: z.string(),
   short_name: z.string(),
   uid_regexp: z.string().nullable(),
+  yearly_enrollment_limit: z.number(),
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
@@ -69,3 +72,32 @@ export const AuthnProviderSchema = z.object({
   name: z.string().nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
+
+export const GroupConfigSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  date: z.date(),
+  deleted_at: z.date().nullable(),
+  has_roles: z.boolean(),
+  id: IdSchema,
+  maximum: z.number().nullable(),
+  minimum: z.number().nullable(),
+  name: z.string().nullable(),
+  student_authz_create: z.boolean().nullable(),
+  student_authz_leave: z.boolean().nullable(),
+  student_authz_join: z.boolean().nullable(),
+});
+export type GroupConfig = z.infer<typeof GroupConfigSchema>;
+
+export const UserSchema = z.object({
+  deleted_at: z.date().nullable(),
+  institution_id: IdSchema,
+  lti_context_id: z.string().nullable(),
+  lti_course_instance_id: IdSchema.nullable(),
+  lti_user_id: z.string().nullable(),
+  name: z.string().nullable(),
+  uid: z.string(),
+  uin: z.string().nullable(),
+  user_id: IdSchema,
+});
+export type User = z.infer<typeof UserSchema>;

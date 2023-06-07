@@ -1,8 +1,10 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
+const util = require('node:util');
 const debug = require('debug')('prairielearn:authCallbackLti');
 
 const sqldb = require('@prairielearn/postgres');
@@ -71,7 +73,7 @@ router.post('/', function (req, res, next) {
       // https://oauth.net/core/1.0/#nonce
       var nonceReused = false;
       var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
-      cache.get(nonceKey, (err, val) => {
+      util.callbackify(cache.get)(nonceKey, (err, val) => {
         if (ERR(err, next)) return;
         if (val) {
           nonceReused = true;

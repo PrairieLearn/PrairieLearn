@@ -35,3 +35,11 @@ FROM
   course_statistics,
   course_instance_statistics,
   enrollment_statistics;
+
+-- BLOCK update_enrollment_limits
+UPDATE institutions
+SET
+  yearly_enrollment_limit = $yearly_enrollment_limit,
+  course_instance_enrollment_limit = $course_instance_enrollment_limit
+WHERE
+  id = $institution_id;

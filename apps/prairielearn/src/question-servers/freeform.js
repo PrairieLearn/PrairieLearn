@@ -1607,6 +1607,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
         filename: filename,
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
 
       const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrCompute(
         course,
@@ -1905,7 +1906,7 @@ module.exports = {
       let cachedData;
 
       try {
-        cachedData = await cache.getAsync(cacheKey);
+        cachedData = await cache.get(cacheKey);
       } catch (err) {
         // We don't actually want to fail if the cache has an error; we'll
         // just compute the cachedData as normal
