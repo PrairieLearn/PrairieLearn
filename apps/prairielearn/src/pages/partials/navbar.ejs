@@ -528,7 +528,6 @@ if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
 <div class="mb-3">
   <% const globalFlashColors = { 'notice': 'info', 'success': 'success', 'warning': 'warning', 'error': 'danger' }; %>
   <% flash(Object.keys(globalFlashColors)).forEach(({ type, message }) => { %>
-    <% const color = type === 'warn' ? 'warning' : type === 'error' ? 'danger' : type === 'notice' ? 'info' : 'success'; %>
     <div class="alert alert-<%= globalFlashColors[type] %> border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show js-global-flash" role="alert">
       <%= message %>
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
