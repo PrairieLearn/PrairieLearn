@@ -3,8 +3,10 @@ import { Request, Response, NextFunction } from 'express';
 
 const als = new AsyncLocalStorage<FlashStorage>();
 
+export type FlashMessageType = 'notice' | 'success' | 'warn' | 'error';
+
 export interface FlashMessage {
-  type: string;
+  type: FlashMessageType;
   message: string;
 }
 
@@ -16,10 +18,10 @@ export function flashMiddleware() {
 }
 
 export function flash(): FlashMessage[];
-export function flash(type: string): string | null;
-export function flash(type: string[]): FlashMessage[];
-export function flash(type: string, message: string): void;
-export function flash(type?: string | string[], message?: string) {
+export function flash(type: FlashMessageType): string | null;
+export function flash(type: FlashMessageType[]): FlashMessage[];
+export function flash(type: FlashMessageType, message: string): void;
+export function flash(type?: FlashMessageType | FlashMessageType[], message?: string) {
   const flashStorage = als.getStore();
   if (!flashStorage) {
     throw new Error('flash() must be called within a request');
@@ -57,10 +59,10 @@ export function flash(type?: string | string[], message?: string) {
 }
 
 interface FlashStorage {
-  add(type: string, message: string): void;
-  get(type: string): string | null;
+  add(type: FlashMessageType, message: string): void;
+  get(type: FlashMessageType): string | null;
   getAll(): FlashMessage[];
-  clear(type: string): void;
+  clear(type: FlashMessageType): void;
   clearAll(): void;
 }
 
@@ -72,18 +74,21 @@ function makeFlashStorage(req: Request): FlashStorage {
   const session = req.session as any;
 
   return {
-    add(type: string, message: string) {
+    add(type: FlashMessageType, message: string) {
       session.flash ??= {};
       session.flash[type] = message;
     },
-    get(type: string) {
+    get(type: FlashMessageType) {
       return session.flash?.[type] ?? null;
     },
     getAll() {
       const messages = session.flash ?? {};
-      return Object.entries<string>(messages).map(([type, message]) => ({ type, message }));
+      return Object.entries<string>(messages).map(([type, message]) => ({
+        type: type as FlashMessageType,
+        message,
+      }));
     },
-    clear(type: string) {
+    clear(type: FlashMessageType) {
       delete session.flash?.[type];
     },
     clearAll() {
