@@ -299,6 +299,9 @@ Course staff see any reported issues show up on the "Issues" tab.
 
 ![Issue report](assessment-report3.png)
 
+In additon, you may add a help link by setting the `"helpLink"` attribute. This link will be shown to students on the question score
+panel, and is meant for students to get help from course staff.
+
 ## Access control
 
 See the [Access control page](accessControl.md) for details.

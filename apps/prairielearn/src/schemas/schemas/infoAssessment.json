@@ -137,7 +137,7 @@
             "default": false
         },
         "helpLink": {
-          "description": "Link to help source for the assessment.",
+          "description": "Link shown to students to get help from course staff.",
           "type": "string"
         },
         "advanceScorePerc": {
