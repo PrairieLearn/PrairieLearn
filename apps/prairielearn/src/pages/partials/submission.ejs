@@ -73,7 +73,14 @@
           <% } %>
         </span>
       </div>
-      <small>Submitted at <%- submission.formatted_date %></small>
+      <span class="small">
+        <% if (authz_data.user.uid == submission.uid) { %>
+          <span class="pl-submission-attribution">You</span> submitted
+        <% } else { %>
+          Submitted by <%= authz_data.user.name %> (<span class="pl-submission-attribution"><%= submission.uid %></span>)
+        <% } %>
+        at <span class="pl-submission-time"><%- submission.formatted_date %></span>
+      </span>
     </div>
     <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
