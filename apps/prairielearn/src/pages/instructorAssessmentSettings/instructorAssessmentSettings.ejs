@@ -53,7 +53,7 @@
                     <tr>
                         <th scope="row">Set</th>
                         <td>
-                            <%= assessment_set.name %> 
+                            <%= assessment_set.name %>
                             <span class="text-muted">(<%= assessment_set.abbreviation %>)</span>
                         </td>
                     </tr>
@@ -62,13 +62,13 @@
                         <th scope="row">Module</th>
                         <td>
                             <% if (assessment_module) { %>
-                            <%= assessment_module.heading %> 
+                            <%= assessment_module.heading %>
                             <span class="text-muted">(<%= assessment_module.name %>)</span>
                             <% } else { %>
                             &mdash;
                             <% } %>
                         </td>
-                    </tr>                    
+                    </tr>
                     <tr><th scope="row">AID</th>
                         <td>
                             <span class="pr-2"><%= assessment.tid %></span>
@@ -114,6 +114,18 @@
                           </div>
                         </span>
                       </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Help Link</th>
+                        <td>
+                            <% if (assessment.help_link) { %>
+                            <a href="<%= assessment.help_link %>">
+                                <%= assessment.help_link %>
+                            </a>
+                            <% } else { %>
+                            <span class="text-muted">None</span>
+                            <% } %>
+                        </td>
                     </tr>
                 </tbody>
             </table>
