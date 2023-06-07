@@ -46,6 +46,7 @@ def prepare(element_html, data):
         "allow-blank",
         "blank-value",
         "custom-format",
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -102,6 +103,7 @@ def render(element_html, data):
     custom_format = pl.get_string_attrib(
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
+    placeholder = pl.get_string_attrib(element, "placeholder", None)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -115,6 +117,7 @@ def render(element_html, data):
             "editable": editable,
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
             "uuid": pl.get_uuid(),
+            "placeholder": placeholder,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
@@ -210,10 +213,17 @@ def render(element_html, data):
             info_params.pop("format", None)
             # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
-            info_params["shortformat"] = pl.get_boolean_attrib(
-                element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
-            )
-            shortinfo = chevron.render(f, info_params).strip()
+            # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
+            shortinfo = ""
+            if placeholder is None:
+                # 'placeholder' attribute is not set, use default shortinfo as placeholder text
+                info_params["shortformat"] = pl.get_boolean_attrib(
+                    element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
+                )
+                shortinfo = chevron.render(f, info_params).strip()
+            else:
+                # override the placeholder text
+                shortinfo = placeholder
 
         html_params["info"] = info
         html_params["shortinfo"] = shortinfo
