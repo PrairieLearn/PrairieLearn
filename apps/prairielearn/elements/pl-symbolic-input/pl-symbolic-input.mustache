@@ -56,7 +56,7 @@
         });
 
         $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
-            MathJax.typesetPromise();
+            MathJax.startup.promise.then(() => MathJax.typesetPromise());
         });
     });
 </script>

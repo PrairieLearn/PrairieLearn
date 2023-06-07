@@ -67,7 +67,6 @@ class MathFormula extends Embed {
       const formatted = html.innerHTML;
       // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
       node.innerHTML = formatted + '&#8201;';
-      await MathJax.typesetPromise();
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
     });

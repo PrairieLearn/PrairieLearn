@@ -131,7 +131,7 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise();
+      MathJax.startup.promise.then(() => MathJax.typesetPromise());
     }
   }
 };

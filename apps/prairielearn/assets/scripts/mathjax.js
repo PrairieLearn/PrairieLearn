@@ -1,6 +1,7 @@
 // No typechecking as MathJax does not work well with that
 
-// Default to SVG, as lines were sometimes disappearing when using the CHTML renderer.
+// Default to SVG, as lines were sometimes disappearing when using the CHTML renderer. Note that
+// some elements (e.g., pl-drawing) depend on an SVG output.
 const outputComponent = 'output/svg';
 
 const mathjaxPromise = new Promise((resolve, _reject) => {
