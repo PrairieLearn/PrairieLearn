@@ -77,7 +77,7 @@ function makeFlashStorage(req: Request): FlashStorage {
       return session.flash ?? [];
     },
     clear(type: FlashMessageType) {
-      session.flash = session.flash.filter((message: FlashMessage) => message.type !== type);
+      session.flash = session.flash?.filter((message: FlashMessage) => message.type !== type) ?? [];
     },
     clearAll() {
       session.flash = [];
