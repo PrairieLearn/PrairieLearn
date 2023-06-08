@@ -497,6 +497,27 @@ module.exports = {
   },
 
   /**
+   * Get the course associated with the question
+   *
+   * @param {Object} question - The question for the variant.
+   * @param {Object} variant_course - The course for the variant.
+   */
+  _getQuestionCourse(question, variant_course, callback) {
+    if (question.course_id === variant_course.id) {
+      callback(variant_course);
+    } else {
+      sqldb.queryOneRow(
+        sql.select_question_course,
+        { question_course_id: question.course_id },
+        (err, result) => {
+          if (ERR(err, callback)) return;
+          callback(result.rows[0].course);
+        }
+      );
+    }
+  },
+
+  /**
    * Grade the most recent submission for a given variant.
    *
    * @param {Object} variant - The variant to grade.
@@ -521,20 +542,10 @@ module.exports = {
     async.series(
       [
         (callback) => {
-          if (question.course_id === variant_course.id) {
-            question_course = variant_course;
+          module.exports._getQuestionCourse(question, variant_course, (course) => {
+            question_course = course;
             callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
+          });
         },
         (callback) => {
           var params = [variant.id, check_submission_id];
@@ -1087,20 +1098,10 @@ module.exports = {
     async.series(
       [
         (callback) => {
-          if (question.course_id === variant_course.id) {
-            question_course = variant_course;
+          module.exports._getQuestionCourse(question, variant_course, (course) => {
+            question_course = course;
             callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
+          });
         },
         (callback) => {
           const instance_question_id = null;
@@ -1578,20 +1579,10 @@ module.exports = {
     async.series(
       [
         (callback) => {
-          if (locals.question.course_id === locals.course.id) {
-            locals.question_course = locals.course;
+          module.exports._getQuestionCourse(locals.question, locals.course, (course) => {
+            locals.question_course = course;
             callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: locals.question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                locals.question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
+          });
         },
         (callback) => {
           if (variant_id != null) {
