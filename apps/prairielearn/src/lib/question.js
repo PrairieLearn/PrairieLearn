@@ -1,3 +1,5 @@
+// @ts-check
+
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -49,7 +51,7 @@ module.exports = {
    *
    * @param {Array} courseIssues - List of issue objects for to be written.
    * @param {Object} variant - The variant associated with the issues.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {string} studentMessage - The message to display to the student.
    * @param {Object} courseData - Arbitrary data to be associated with the issues.
    * @param {function} callback - A callback(err) function.
@@ -141,7 +143,7 @@ module.exports = {
    * @param {Object} variant - The variant.
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
-   * @param {Number} authn_user_id - The current authenticated user.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, fileData) function.
    */
   getFile(filename, variant, question, course, authn_user_id, callback) {
@@ -205,8 +207,8 @@ module.exports = {
    *
    * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
    * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
-   * @param {number} user_id - The user for the new variant.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} user_id - The user for the new variant.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} variant_course - The course for the variant.
    * @param {Object} question_course - The course for the question.
@@ -278,12 +280,12 @@ module.exports = {
    *
    * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
    * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
-   * @param {number} user_id - The user for the new variant.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} user_id - The user for the new variant.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {?number} course_instance_id - The course instance for this variant. Can be null for instructor questions.
    * @param {Object} variant_course - The course for the variant.
-   * @param {Object} variant_course - The course for the question.
+   * @param {Object} question_course - The course for the question.
    * @param {Object} options - Options controlling the creation: options = {variant_seed}
    * @param {boolean} require_open - If true, only use an existing variant if it is open.
    * @param {function} callback - A callback(err, variant) function.
@@ -495,14 +497,30 @@ module.exports = {
   },
 
   /**
+   * Get the course associated with the question
+   *
+   * @param {Object} question - The question for the variant.
+   * @param {Object} variant_course - The course for the variant.
+   */
+  async _getQuestionCourse(question, variant_course) {
+    if (question.course_id === variant_course.id) {
+      return variant_course;
+    } else {
+      let result = await sqldb.queryOneRowAsync(sql.select_question_course, {
+        question_course_id: question.course_id,
+      });
+      return result.rows[0].course;
+    }
+  },
+
+  /**
    * Grade the most recent submission for a given variant.
    *
    * @param {Object} variant - The variant to grade.
-   * @param {?number} check_submission_id - The submission_id that must be graded (or null to skip this check).
+   * @param {string | null} check_submission_id - The submission_id that must be graded (or null to skip this check).
    * @param {Object} question - The question for the variant.
-   * @param {Object} question_course - The course for the question.
    * @param {Object} variant_course - The course for the variant.
-   * @param {number | null} authn_user_id - The currently authenticated user.
+   * @param {string | null} authn_user_id - The currently authenticated user.
    * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
    * @param {function} callback - A callback(err) function.
    */
@@ -510,16 +528,18 @@ module.exports = {
     variant,
     check_submission_id,
     question,
-    question_course,
     variant_course,
     authn_user_id,
     overrideGradeRateCheck,
     callback
   ) {
     debug('_gradeVariant()');
-    let questionModule, courseIssues, data, submission, grading_job;
+    let questionModule, question_course, courseIssues, data, submission, grading_job;
     async.series(
       [
+        async () => {
+          question_course = await module.exports._getQuestionCourse(question, variant_course);
+        },
         (callback) => {
           var params = [variant.id, check_submission_id];
           sqldb.callZeroOrOneRow(
@@ -759,7 +779,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err, submission_id) function.
    */
   _createTestSubmission(variant, question, course, test_type, authn_user_id, callback) {
@@ -933,7 +953,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err) function.
    */
   _testVariant(variant, question, course, test_type, authn_user_id, callback) {
@@ -1049,7 +1069,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} variant_course - The course for the variant.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
    * @param {function} callback - A callback(err, variant) function.
    */
@@ -1070,6 +1090,9 @@ module.exports = {
       test_submission = null;
     async.series(
       [
+        async () => {
+          question_course = await module.exports._getQuestionCourse(question, variant_course);
+        },
         (callback) => {
           if (question.course_id === variant_course.id) {
             question_course = variant_course;
@@ -1154,7 +1177,7 @@ module.exports = {
    * @param {boolean} group_work - If the assessment will support group work.
    * @param {Object} course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
-   * @param {number} authn_user_id - The currently authenticated user.
+   * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err, success) function.
    */
   _runTest(
@@ -1254,8 +1277,8 @@ module.exports = {
    * @param {boolean} group_work - If the assessment will support group work
    * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
    * @param {Object} course - The course for the variant.
-   * @param {number} authn_user_id - The currently authenticated user.
-   * @return {string} The job sequence ID.
+   * @param {string} authn_user_id - The currently authenticated user.
+   * @return {Promise<string>} The job sequence ID.
    */
   async startTestQuestion(
     count,
@@ -1271,8 +1294,8 @@ module.exports = {
 
     const serverJob = await createServerJob({
       courseId: course.id,
-      userId: authn_user_id,
-      authnUserId: authn_user_id,
+      userId: String(authn_user_id),
+      authnUserId: String(authn_user_id),
       type: 'test_question',
       description: 'Test ' + question.qid,
     });
@@ -1561,6 +1584,12 @@ module.exports = {
   getAndRenderVariant(variant_id, variant_seed, locals, callback) {
     async.series(
       [
+        async () => {
+          locals.question_course = await module.exports._getQuestionCourse(
+            locals.question,
+            locals.course
+          );
+        },
         (callback) => {
           if (locals.question.course_id === locals.course.id) {
             locals.question_course = locals.course;
@@ -1866,6 +1895,7 @@ module.exports = {
       if (results.rowCount === 0) return callback(error.make(404, 'Not found'));
 
       const renderSelection = {
+        answer: true,
         submissions: true,
       };
       const {
@@ -1918,6 +1948,10 @@ module.exports = {
         )
       );
 
+      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+      // latter would require all includes in EJS to be translated to await recursively.
+      /** @type function */
+      let renderFileAsync = util.promisify(ejs.renderFile);
       async.parallel(
         [
           async () => {
@@ -1940,9 +1974,10 @@ module.exports = {
             submission.formatted_date = formatted_date;
             submission.grading_job_stats = module.exports._buildGradingJobStats(grading_job);
 
+            panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
+
             await manualGrading.populateRubricData(locals);
             await manualGrading.populateManualGradingData(submission);
-
             const renderParams = {
               course: question_course,
               course_instance,
@@ -1955,12 +1990,7 @@ module.exports = {
               plainUrlPrefix: config.urlPrefix,
             };
             const templatePath = path.join(__dirname, '..', 'pages', 'partials', 'submission.ejs');
-            // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-            // latter would require all includes in EJS to be translated to await recursively.
-            panels.submissionPanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.submissionPanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the question score panel
@@ -1987,10 +2017,7 @@ module.exports = {
               'partials',
               'questionScorePanel.ejs'
             );
-            panels.questionScorePanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the assessment score panel
@@ -2013,10 +2040,7 @@ module.exports = {
               'partials',
               'assessmentScorePanel.ejs'
             );
-            panels.assessmentScorePanel = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             // Render the question panel footer
@@ -2040,10 +2064,7 @@ module.exports = {
               'partials',
               'questionFooter.ejs'
             );
-            panels.questionPanelFooter = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
           },
           async () => {
             if (!renderScorePanels) return;
@@ -2072,10 +2093,7 @@ module.exports = {
               'partials',
               'questionNavSideButton.ejs'
             );
-            panels.questionNavNextButton = await util.promisify(ejs.renderFile)(
-              templatePath,
-              renderParams
-            );
+            panels.questionNavNextButton = await renderFileAsync(templatePath, renderParams);
           },
         ],
         (err) => {

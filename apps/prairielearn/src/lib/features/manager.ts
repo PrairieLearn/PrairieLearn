@@ -1,5 +1,6 @@
 import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
 import { z } from 'zod';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { config } from '../config';
 
@@ -13,28 +14,7 @@ const DEFAULT_CONTEXT = {
   user_id: null,
 };
 
-/**
- * Grants can have different types, which can be used to determine how they
- * were applied. These are mostly meant to be consumed by administrators who
- * need to be able to tell if a feature was enabled by default, set manually
- * by another administrator, or enabled as part of a subscription plan.
- */
-export enum FeatureGrantType {
-  /**
-   * A feature grant that was applied by default for a given context. For
-   * instance, we might want to enable a certain feature for all courses when
-   * they are created.
-   */
-  Default = 'default',
-  /**
-   * A feature flag that has been manually enabled by an administrator.
-   */
-  Manual = 'manual',
-  /**
-   * A feature flag that has been enabled as part of a subscription plan.
-   */
-  Subscription = 'subscription',
-}
+export type FeatureOverrides = Record<string, boolean>;
 
 type EmptyContext = Record<string, never>;
 
@@ -75,6 +55,7 @@ function validateContext(context: FeatureContext) {
 
 export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
+  als: AsyncLocalStorage<FeatureOverrides>;
 
   constructor(features: FeatureName[]) {
     features.forEach((feature) => {
@@ -83,6 +64,7 @@ export class FeatureManager<FeatureName extends string> {
       }
     });
     this.features = new Set(features);
+    this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
   private validateFeature(name: FeatureName, context: FeatureContext) {
@@ -105,6 +87,13 @@ export class FeatureManager<FeatureName extends string> {
    */
   async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
+
+    // Allow features to be overridden by `runWithOverrides`.
+    const featureOverrides = this.als.getStore();
+    const featureOverride = featureOverrides?.[name];
+    if (featureOverride !== undefined) {
+      return featureOverride;
+    }
 
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
@@ -172,9 +161,9 @@ export class FeatureManager<FeatureName extends string> {
    * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
-  async enable(name: FeatureName, type: FeatureGrantType, context: FeatureContext = {}) {
+  async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.enable_feature, { name, type, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.enable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**
@@ -186,5 +175,9 @@ export class FeatureManager<FeatureName extends string> {
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+  }
+
+  runWithOverrides<T>(overrides: FeatureOverrides, fn: () => T): T {
+    return this.als.run(overrides, fn);
   }
 }

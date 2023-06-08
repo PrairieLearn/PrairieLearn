@@ -1,5 +1,6 @@
-import { FeatureManager, FeatureGrantType } from './manager';
+import { FeatureManager } from './manager';
+import { featuresMiddleware } from './middleware';
 
 const features = new FeatureManager(['manual-grading-rubrics']);
 
-export { features, FeatureGrantType };
+export { features, featuresMiddleware };
