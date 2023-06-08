@@ -674,37 +674,37 @@ class AssessmentCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = _.map(result.rows, 'title');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug(`Generate TID and Title`);
     let names = this.getNamesForCopy(
       this.assessment.tid,
-      this.oldNamesShort,
+      oldNamesShort,
       this.assessment.title,
-      this.oldNamesLong
+      oldNamesLong
     );
-    this.tid = names.shortName;
-    this.assessmentTitle = names.longName;
-    this.assessmentPath = path.join(assessmentsPath, this.tid);
-    this.pathsToAdd = [this.assessmentPath];
-    this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${this.tid}`;
+    const tid = names.shortName;
+    const assessmentTitle = names.longName;
+    const assessmentPath = path.join(assessmentsPath, tid);
+    this.pathsToAdd = [assessmentPath];
+    this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${tid}`;
 
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
-    const toPath = this.assessmentPath;
+    const toPath = assessmentPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug(`Read infoAssessment.json`);
-    const infoJson = await fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'));
+    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
     debug(`Write infoAssessment.json with new title and uuid`);
-    infoJson.title = this.assessmentTitle;
+    infoJson.title = assessmentTitle;
     this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
       spaces: 4,
     });
   }
@@ -782,18 +782,18 @@ class AssessmentAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = _.map(result.rows, 'title');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug(`Generate TID and Title`);
-    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-    this.tid = names.shortName;
-    this.assessmentTitle = names.longName;
-    this.assessmentPath = path.join(assessmentsPath, this.tid);
-    this.pathsToAdd = [this.assessmentPath];
-    this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
+    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const tid = names.shortName;
+    const assessmentTitle = names.longName;
+    const assessmentPath = path.join(assessmentsPath, tid);
+    this.pathsToAdd = [assessmentPath];
+    this.commitMessage = `${this.course_instance.short_name}: add assessment ${tid}`;
 
     debug(`Write infoAssessment.json`);
 
@@ -802,7 +802,7 @@ class AssessmentAddEditor extends Editor {
     let infoJson = {
       uuid: this.uuid,
       type: 'Homework',
-      title: this.assessmentTitle,
+      title: assessmentTitle,
       set: 'Homework',
       number: '1',
       allowAccess: [],
@@ -811,8 +811,8 @@ class AssessmentAddEditor extends Editor {
 
     // We use outputJson to create the directory this.assessmentsPath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx'
-    // to throw an error if this.assessmentPath already exists.
-    await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+    // to throw an error if `assessmentPath` already exists.
+    await fs.outputJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
       spaces: 4,
       flag: 'wx',
     });
@@ -833,10 +833,10 @@ class CourseInstanceCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = _.map(result.rows, 'long_name');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(
+    const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
       'infoCourseInstance.json'
     );
@@ -844,9 +844,9 @@ class CourseInstanceCopyEditor extends Editor {
     debug(`Generate short_name and long_name`);
     let names = this.getNamesForCopy(
       this.course_instance.short_name,
-      this.oldNamesShort,
+      oldNamesShort,
       this.course_instance.long_name,
-      this.oldNamesLong
+      oldNamesLong
     );
     this.short_name = names.shortName;
     this.long_name = names.longName;
@@ -934,16 +934,16 @@ class CourseInstanceAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = _.map(result.rows, 'long_name');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(
+    const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
       'infoCourseInstance.json'
     );
 
     debug(`Generate short_name and long_name`);
-    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     this.short_name = names.shortName;
     this.long_name = names.longName;
     this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
@@ -984,13 +984,13 @@ class QuestionAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = _.map(result.rows, 'title');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
-    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+    let names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     this.qid = names.shortName;
     this.questionTitle = names.longName;
     this.questionPath = path.join(questionsPath, this.qid);
@@ -1120,17 +1120,17 @@ class QuestionCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = _.map(result.rows, 'title');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
     let names = this.getNamesForCopy(
       this.question.qid,
-      this.oldNamesShort,
+      oldNamesShort,
       this.question.title,
-      this.oldNamesLong
+      oldNamesLong
     );
     this.qid = names.shortName;
     this.questionTitle = names.longName;
@@ -1175,19 +1175,14 @@ class QuestionTransferEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    this.oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = _.map(result.rows, 'title');
 
     debug('Get all existing short names');
-    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug(`Generate qid and title`);
-    if (this.oldNamesShort.includes(this.from_qid) || this.oldNamesLong.includes(this.from_title)) {
-      let names = this.getNamesForCopy(
-        this.from_qid,
-        this.oldNamesShort,
-        this.from_title,
-        this.oldNamesLong
-      );
+    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(this.from_title)) {
+      let names = this.getNamesForCopy(this.from_qid, oldNamesShort, this.from_title, oldNamesLong);
       this.qid = names.shortName;
       this.questionTitle = names.longName;
     } else {
