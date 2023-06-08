@@ -6,9 +6,9 @@ This page describes the procedure to install and run your course locally within 
 
 Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-If you are using Windows, you are strongly encouraged to use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features. It has been found to provide better performance for running PrairieLearn compared to running Docker directly on top of Windows.
+If you are using Windows, you are strongly encouraged to also use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features. It has been found to provide better performance for running PrairieLearn compared to running Docker directly on top of Windows.
 
-Here are the instructions to enable WSL 2 integration:
+Here are the instructions to install WSL 2 and enable its integration with Docker:
 
 - Install WSL 2. For current instructions, [follow the Microsoft documentation](https://learn.microsoft.com/en-us/windows/wsl/install).
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
