@@ -841,17 +841,12 @@ class AssessmentAddEditor extends Editor {
     );
     async.series(
       [
-        (callback) => {
+        async () => {
           debug('Get all existing long names');
-          sqldb.query(
-            sql.select_assessments_with_course_instance,
-            { course_instance_id: this.course_instance.id },
-            (err, result) => {
-              if (ERR(err, callback)) return;
-              this.oldNamesLong = _.map(result.rows, 'title');
-              callback(null);
-            }
-          );
+          const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+            course_instance_id: this.course_instance.id,
+          });
+          this.oldNamesLong = _.map(result.rows, 'title');
         },
         (callback) => {
           debug('Get all existing short names');
@@ -871,7 +866,7 @@ class AssessmentAddEditor extends Editor {
           this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
           callback(null);
         },
-        (callback) => {
+        async () => {
           debug(`Write infoAssessment.json`);
 
           this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
@@ -889,15 +884,10 @@ class AssessmentAddEditor extends Editor {
           // We use outputJson to create the directory this.assessmentsPath if it
           // does not exist (which it shouldn't). We use the file system flag 'wx'
           // to throw an error if this.assessmentPath already exists.
-          fs.outputJson(
-            path.join(this.assessmentPath, 'infoAssessment.json'),
-            infoJson,
-            { spaces: 4, flag: 'wx' },
-            (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            }
-          );
+          await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+            spaces: 4,
+            flag: 'wx',
+          });
         },
       ],
       (err) => {
