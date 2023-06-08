@@ -89,6 +89,13 @@ class Editor {
                   env: gitEnv,
                 });
               }
+
+              try {
+                await util.promisify(this.write).bind(this)();
+              } catch (err) {
+                // TODO?
+                console.error(err);
+              }
             });
           });
         },
