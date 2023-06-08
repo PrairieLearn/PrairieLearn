@@ -616,7 +616,7 @@ module.exports = {
         },
         (callback) => {
           const studentMessage = 'Error grading submission';
-          const courseData = { variant, question, submission, variant_course };
+          const courseData = { variant, question, submission, course: variant_course };
           module.exports._writeCourseIssues(
             courseIssues,
             variant,
@@ -1092,22 +1092,6 @@ module.exports = {
       [
         async () => {
           question_course = await module.exports._getQuestionCourse(question, variant_course);
-        },
-        (callback) => {
-          if (question.course_id === variant_course.id) {
-            question_course = variant_course;
-            callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
         },
         (callback) => {
           const instance_question_id = null;
@@ -1589,22 +1573,6 @@ module.exports = {
             locals.question,
             locals.course
           );
-        },
-        (callback) => {
-          if (locals.question.course_id === locals.course.id) {
-            locals.question_course = locals.course;
-            callback(null);
-          } else {
-            sqldb.queryOneRow(
-              sql.select_question_course,
-              { question_course_id: locals.question.course_id },
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                locals.question_course = result.rows[0].course;
-                callback(null);
-              }
-            );
-          }
         },
         (callback) => {
           if (variant_id != null) {

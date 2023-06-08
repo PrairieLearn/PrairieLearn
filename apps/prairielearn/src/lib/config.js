@@ -475,7 +475,7 @@ const ConfigSchema = z.object({
     ),
   features: z.record(z.string(), z.boolean()).default({}),
   /**
-   * During sync, should QIDs of shared questions being imported be validated?
+   * Determines if QIDs of shared questions being imported should be validated.
    * Turn off in dev mode to enable successful syncs when you don't have access
    * to imported questions. Must be true in production for data integrity.
    */
