@@ -26,6 +26,8 @@ const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
 const load = require('./lib/load');
 
+const sql = sqldb.loadSqlEquiv(__filename);
+
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
 process.on('SIGTERM', () => {
@@ -113,11 +115,23 @@ async.series(
             config.jobsQueueUrl,
             (job, fail, success) => {
               globalLogger.info(`received ${job.jobId} from queue`);
-              handleJob(job, (err) => {
-                globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+
+              // Ensure that this job wasn't canceled in the time since job submission.
+              isJobCanceled(job, (err, canceled) => {
                 if (ERR(err, fail)) return;
-                globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                success();
+
+                if (canceled) {
+                  globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
+                  success();
+                  return;
+                }
+
+                handleJob(job, (err) => {
+                  globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+                  if (ERR(err, fail)) return;
+                  globalLogger.info(`handleJob(${job.jobId}) succeeded`);
+                  success();
+                });
               });
             },
             (err) => {
@@ -144,6 +158,19 @@ async.series(
     });
   }
 );
+
+function isJobCanceled(job, callback) {
+  sqldb.queryOneRow(
+    sql.check_job_cancellation,
+    {
+      grading_job_id: job.jobId,
+    },
+    (err, result) => {
+      if (ERR(err, callback)) return;
+      callback(null, result.rows[0].canceled);
+    }
+  );
+}
 
 function handleJob(job, done) {
   load.startJob();

@@ -9,11 +9,9 @@ const {
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
 } = require('@aws-sdk/client-sqs');
-const sqldb = require('@prairielearn/postgres');
 
 const globalLogger = require('./logger');
 const { config } = require('./config');
-const sql = sqldb.loadSqlEquiv(__filename);
 
 let messageSchema = null;
 
@@ -25,7 +23,7 @@ let messageSchema = null;
  * @param {Function} doneCallback
  */
 module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
-  let parsedMessage, jobCanceled, receiptHandle;
+  let parsedMessage, receiptHandle;
   async.series(
     [
       (callback) => {
@@ -91,20 +89,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           })
         );
       },
-      async () => {
-        // Ensure that this job wasn't canceled in the time since job submission.
-        const result = await sqldb.queryOneRowAsync(sql.check_job_cancelation, {
-          grading_job_id: parsedMessage.jobId,
-        });
-        jobCanceled = result.rows[0].canceled;
-      },
       (callback) => {
-        // Don't execute the job if it was canceled
-        if (jobCanceled) {
-          globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job.`);
-          return callback(null);
-        }
-
         receiveCallback(
           parsedMessage,
           (err) => {
