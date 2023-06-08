@@ -504,53 +504,41 @@ class Editor {
    * an ".info" file.
    * @param rootDirectory Directory to start searching from.
    * @param infoFile Name of the info file, will stop recursing once a directory contains this.
-   * @param callback {function(err, files)} Function that is called once this has completed.
    */
-  getExistingShortNames(rootDirectory, infoFile, callback) {
+  async getExistingShortNames(rootDirectory, infoFile) {
     let files = [];
-    const walk = (relativeDir, callback) => {
-      fs.readdir(path.join(rootDirectory, relativeDir), (err, directories) => {
-        if (err && (err.code === 'ENOENT' || err.code === 'ENOTDIR')) {
-          // If the directory doesn't exist, then we have nothing to load
-          return callback(null);
+    const walk = async (relativeDir) => {
+      let directories;
+      try {
+        directories = await fs.readdir(path.join(rootDirectory, relativeDir));
+      } catch (err) {
+        // If the directory doesn't exist, then we have nothing to load
+        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+          return;
         }
-        if (ERR(err, callback)) return;
+        throw err;
+      }
 
-        // For each subdirectory, try to find an Info file
-        async.each(
-          directories,
-          (dir, callback) => {
-            // Relative path to the current folder
-            const subdirPath = path.join(relativeDir, dir);
-            // Absolute path to the info file
-            const infoPath = path.join(rootDirectory, subdirPath, infoFile);
-            fs.access(infoPath, (err) => {
-              if (!err) {
-                // Info file exists, we can use this directory
-                files.push(subdirPath);
-                callback(null);
-              } else {
-                // No info file, let's try recursing
-                walk(subdirPath, (err) => {
-                  if (ERR(err, callback)) return;
-                  callback(null);
-                });
-              }
-            });
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
+      // For each subdirectory, try to find an Info file
+      async.each(directories, async (dir) => {
+        // Relative path to the current folder
+        const subdirPath = path.join(relativeDir, dir);
+        // Absolute path to the info file
+        const infoPath = path.join(rootDirectory, subdirPath, infoFile);
+        const hasInfoFile = await fs.pathExists(infoPath);
+        if (hasInfoFile) {
+          // Info file exists, we can use this directory
+          files.push(subdirPath);
+        } else {
+          // No info file, let's try recursing
+          await walk(subdirPath);
+        }
       });
     };
 
-    return walk('', (err) => {
-      if (ERR(err, callback)) return;
-      debug('getExistingShortNames() returning', files);
-      callback(null, files);
-    });
+    await walk('');
+    debug('getExistingShortNames() returning', files);
+    return files;
   }
 
   getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
@@ -677,13 +665,12 @@ class AssessmentCopyEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'title');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
-          if (ERR(err, callback)) return;
-          this.oldNamesShort = filenames;
-          callback(null);
-        });
+        this.oldNamesShort = await this.getExistingShortNames(
+          assessmentsPath,
+          'infoAssessment.json'
+        );
       },
       (callback) => {
         debug(`Generate TID and Title`);
@@ -798,13 +785,12 @@ class AssessmentAddEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'title');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
-          if (ERR(err, callback)) return;
-          this.oldNamesShort = filenames;
-          callback(null);
-        });
+        this.oldNamesShort = await this.getExistingShortNames(
+          assessmentsPath,
+          'infoAssessment.json'
+        );
       },
       (callback) => {
         debug(`Generate TID and Title`);
@@ -860,16 +846,11 @@ class CourseInstanceCopyEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'long_name');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(
+        this.oldNamesShort = await this.getExistingShortNames(
           courseInstancesPath,
-          'infoCourseInstance.json',
-          (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          }
+          'infoCourseInstance.json'
         );
       },
       (callback) => {
@@ -975,16 +956,11 @@ class CourseInstanceAddEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'long_name');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(
+        this.oldNamesShort = await this.getExistingShortNames(
           courseInstancesPath,
-          'infoCourseInstance.json',
-          (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          }
+          'infoCourseInstance.json'
         );
       },
       (callback) => {
@@ -1038,13 +1014,9 @@ class QuestionAddEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'title');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-          if (ERR(err, callback)) return;
-          this.oldNamesShort = filenames;
-          callback(null);
-        });
+        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
       },
       (callback) => {
         debug(`Generate qid and title`);
@@ -1187,13 +1159,9 @@ class QuestionCopyEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'title');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-          if (ERR(err, callback)) return;
-          this.oldNamesShort = filenames;
-          callback(null);
-        });
+        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
       },
       (callback) => {
         debug(`Generate qid and title`);
@@ -1256,13 +1224,9 @@ class QuestionTransferEditor extends Editor {
         });
         this.oldNamesLong = _.map(result.rows, 'title');
       },
-      (callback) => {
+      async () => {
         debug('Get all existing short names');
-        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-          if (ERR(err, callback)) return;
-          this.oldNamesShort = filenames;
-          callback(null);
-        });
+        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
       },
       (callback) => {
         debug(`Generate qid and title`);
