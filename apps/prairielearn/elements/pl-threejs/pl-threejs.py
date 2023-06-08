@@ -160,6 +160,7 @@ def get_objects(element, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answer-name")
+    pl.check_answers_names(data, answer_name)
 
     uuid = pl.get_uuid()
 

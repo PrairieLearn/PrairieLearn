@@ -33,16 +33,16 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
 def grade_o_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-    if a_true.replace(" ", "") == a_sub.replace(" ", ""):
-        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
-
-    sym_true = phs.convert_string_to_sympy(
+    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    sym_sub = phs.convert_string_to_sympy(
+    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
+
+    if sym_true_source == sym_sub_source:
+        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
@@ -74,15 +74,16 @@ def grade_o_expression(
 def grade_theta_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-    if a_true.replace(" ", "") == a_sub.replace(" ", ""):
-        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
-
-    sym_true = phs.convert_string_to_sympy(
+    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
-    sym_sub = phs.convert_string_to_sympy(
+
+    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
+
+    if sym_true_source == sym_sub_source:
+        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
@@ -115,15 +116,16 @@ def grade_theta_expression(
 def grade_omega_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-    if a_true.replace(" ", "") == a_sub.replace(" ", ""):
-        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
-
-    sym_true = phs.convert_string_to_sympy(
+    sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
-    sym_sub = phs.convert_string_to_sympy(
+
+    sym_sub, sym_sub_source = phs.convert_string_to_sympy_with_source(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
+
+    if sym_true_source == sym_sub_source:
+        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
