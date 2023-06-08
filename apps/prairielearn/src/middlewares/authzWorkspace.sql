@@ -3,7 +3,7 @@ SELECT
   v.question_id,
   v.instance_question_id,
   v.course_instance_id,
-  q.course_id,
+  v.course_id,
   q.qid AS question_qid,
   iq.assessment_instance_id
 FROM

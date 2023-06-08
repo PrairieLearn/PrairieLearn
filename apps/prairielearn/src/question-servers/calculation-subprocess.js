@@ -34,9 +34,9 @@ async function prepareChunksIfNeeded(question, course) {
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
-async function callFunction(func, course, question, inputData) {
-  await prepareChunksIfNeeded(question, course);
-  const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+async function callFunction(func, question_course, question, inputData) {
+  await prepareChunksIfNeeded(question, question_course);
+  const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
   const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
     'server.js',
     question.directory,
@@ -73,8 +73,8 @@ module.exports.generate = (question, course, variant_seed, callback) => {
   );
 };
 
-module.exports.grade = (submission, variant, question, course, callback) => {
-  callFunction('grade', course, question, { submission, variant }).then(
+module.exports.grade = (submission, variant, question, question_course, callback) => {
+  callFunction('grade', question_course, question, { submission, variant }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
     (err) => console.log(err)
   );
