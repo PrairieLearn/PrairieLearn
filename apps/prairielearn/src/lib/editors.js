@@ -33,8 +33,8 @@ class Editor {
     this.question = params.locals.question;
   }
 
-  write(callback) {
-    callback(new Error('write must be defined in a subclass'));
+  async write() {
+    throw new Error('write must be defined in a subclass');
   }
 
   canEdit(callback) {
@@ -190,7 +190,7 @@ class Editor {
             return;
           }
 
-          this.write((err) => {
+          util.callbackify(this.write).bind(this)((err) => {
             if (ERR(err, (e) => logger.error('Error in write()', e))) {
               job.fail(err);
             } else {
@@ -677,7 +677,7 @@ class AssessmentCopyEditor extends Editor {
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
   }
 
-  write(callback) {
+  async write() {
     debug('AssessmentCopyEditor: write()');
     const assessmentsPath = path.join(
       this.course.path,
@@ -685,63 +685,57 @@ class AssessmentCopyEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    async.waterfall(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-            course_instance_id: this.course_instance.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'title');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          });
-        },
-        (callback) => {
-          debug(`Generate TID and Title`);
-          let names = this.getNamesForCopy(
-            this.assessment.tid,
-            this.oldNamesShort,
-            this.assessment.title,
-            this.oldNamesLong
-          );
-          this.tid = names.shortName;
-          this.assessmentTitle = names.longName;
-          this.assessmentPath = path.join(assessmentsPath, this.tid);
-          this.pathsToAdd = [this.assessmentPath];
-          this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${this.tid}`;
+    await async.waterfall([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+          course_instance_id: this.course_instance.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'title');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
+          if (ERR(err, callback)) return;
+          this.oldNamesShort = filenames;
           callback(null);
-        },
-        async () => {
-          const fromPath = path.join(assessmentsPath, this.assessment.tid);
-          const toPath = this.assessmentPath;
-          debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-          await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-        },
-        async () => {
-          debug(`Read infoAssessment.json`);
-          return await fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'));
-        },
-        async (infoJson) => {
-          debug(`Write infoAssessment.json with new title and uuid`);
-          infoJson.title = this.assessmentTitle;
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
-          infoJson.uuid = this.uuid;
-          await fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
-            spaces: 4,
-          });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+        });
+      },
+      (callback) => {
+        debug(`Generate TID and Title`);
+        let names = this.getNamesForCopy(
+          this.assessment.tid,
+          this.oldNamesShort,
+          this.assessment.title,
+          this.oldNamesLong
+        );
+        this.tid = names.shortName;
+        this.assessmentTitle = names.longName;
+        this.assessmentPath = path.join(assessmentsPath, this.tid);
+        this.pathsToAdd = [this.assessmentPath];
+        this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${this.tid}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        const fromPath = path.join(assessmentsPath, this.assessment.tid);
+        const toPath = this.assessmentPath;
+        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      },
+      async () => {
+        debug(`Read infoAssessment.json`);
+        return await fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'));
+      },
+      async (infoJson) => {
+        debug(`Write infoAssessment.json with new title and uuid`);
+        infoJson.title = this.assessmentTitle;
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
+        infoJson.uuid = this.uuid;
+        await fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+          spaces: 4,
+        });
+      },
+    ]);
   }
 }
 
@@ -751,7 +745,7 @@ class AssessmentDeleteEditor extends Editor {
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
   }
 
-  write(callback) {
+  async write() {
     debug('AssessmentDeleteEditor: write()');
     const deletePath = path.join(
       this.course.path,
@@ -759,25 +753,19 @@ class AssessmentDeleteEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    async.series(
-      [
-        async () => {
-          await fs.remove(path.join(deletePath, this.assessment.tid));
-        },
-        (callback) => {
-          this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid, (err) => {
-            if (ERR(err, callback)) return;
-            this.pathsToAdd = [path.join(deletePath, this.assessment.tid)];
-            this.commitMessage = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
-            callback(null);
-          });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+    await async.series([
+      async () => {
+        await fs.remove(path.join(deletePath, this.assessment.tid));
+      },
+      (callback) => {
+        this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid, (err) => {
+          if (ERR(err, callback)) return;
+          this.pathsToAdd = [path.join(deletePath, this.assessment.tid)];
+          this.commitMessage = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
+          callback(null);
+        });
+      },
+    ]);
   }
 }
 
@@ -795,7 +783,7 @@ class AssessmentRenameEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('AssessmentRenameEditor: write()');
     const basePath = path.join(
       this.course.path,
@@ -806,25 +794,19 @@ class AssessmentRenameEditor extends Editor {
     const oldPath = path.join(basePath, this.assessment.tid);
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-    async.series(
-      [
-        async () => {
-          await fs.move(oldPath, newPath, { overwrite: false });
-        },
-        (callback) => {
-          this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name, (err) => {
-            if (ERR(err, callback)) return;
-            this.pathsToAdd = [oldPath, newPath];
-            this.commitMessage = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`;
-            callback(null);
-          });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+    await async.series([
+      async () => {
+        await fs.move(oldPath, newPath, { overwrite: false });
+      },
+      (callback) => {
+        this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name, (err) => {
+          if (ERR(err, callback)) return;
+          this.pathsToAdd = [oldPath, newPath];
+          this.commitMessage = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`;
+          callback(null);
+        });
+      },
+    ]);
   }
 }
 
@@ -834,7 +816,7 @@ class AssessmentAddEditor extends Editor {
     this.description = `${this.course_instance.short_name}: add assessment`;
   }
 
-  write(callback) {
+  async write() {
     debug('AssessmentAddEditor: write()');
     const assessmentsPath = path.join(
       this.course.path,
@@ -842,62 +824,56 @@ class AssessmentAddEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    async.series(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-            course_instance_id: this.course_instance.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'title');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          });
-        },
-        (callback) => {
-          debug(`Generate TID and Title`);
-          let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-          this.tid = names.shortName;
-          this.assessmentTitle = names.longName;
-          this.assessmentPath = path.join(assessmentsPath, this.tid);
-          this.pathsToAdd = [this.assessmentPath];
-          this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
+    async.series([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+          course_instance_id: this.course_instance.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'title');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(assessmentsPath, 'infoAssessment.json', (err, filenames) => {
+          if (ERR(err, callback)) return;
+          this.oldNamesShort = filenames;
           callback(null);
-        },
-        async () => {
-          debug(`Write infoAssessment.json`);
-
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
-
-          let infoJson = {
-            uuid: this.uuid,
-            type: 'Homework',
-            title: this.assessmentTitle,
-            set: 'Homework',
-            number: '1',
-            allowAccess: [],
-            zones: [],
-          };
-
-          // We use outputJson to create the directory this.assessmentsPath if it
-          // does not exist (which it shouldn't). We use the file system flag 'wx'
-          // to throw an error if this.assessmentPath already exists.
-          await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
-            spaces: 4,
-            flag: 'wx',
-          });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+        });
+      },
+      (callback) => {
+        debug(`Generate TID and Title`);
+        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+        this.tid = names.shortName;
+        this.assessmentTitle = names.longName;
+        this.assessmentPath = path.join(assessmentsPath, this.tid);
+        this.pathsToAdd = [this.assessmentPath];
+        this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        debug(`Write infoAssessment.json`);
+
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
+
+        let infoJson = {
+          uuid: this.uuid,
+          type: 'Homework',
+          title: this.assessmentTitle,
+          set: 'Homework',
+          number: '1',
+          allowAccess: [],
+          zones: [],
+        };
+
+        // We use outputJson to create the directory this.assessmentsPath if it
+        // does not exist (which it shouldn't). We use the file system flag 'wx'
+        // to throw an error if this.assessmentPath already exists.
+        await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+          spaces: 4,
+          flag: 'wx',
+        });
+      },
+    ]);
   }
 }
 
@@ -907,72 +883,66 @@ class CourseInstanceCopyEditor extends Editor {
     this.description = `Copy course instance ${this.course_instance.short_name}`;
   }
 
-  write(callback) {
+  async write() {
     debug('CourseInstanceCopyEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-    async.waterfall(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-            course_id: this.course.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'long_name');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(
-            courseInstancesPath,
-            'infoCourseInstance.json',
-            (err, filenames) => {
-              if (ERR(err, callback)) return;
-              this.oldNamesShort = filenames;
-              callback(null);
-            }
-          );
-        },
-        (callback) => {
-          debug(`Generate short_name and long_name`);
-          let names = this.getNamesForCopy(
-            this.course_instance.short_name,
-            this.oldNamesShort,
-            this.course_instance.long_name,
-            this.oldNamesLong
-          );
-          this.short_name = names.shortName;
-          this.long_name = names.longName;
-          this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-          this.pathsToAdd = [this.courseInstancePath];
-          this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${this.short_name}`;
-          callback(null);
-        },
-        async () => {
-          const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
-          const toPath = this.courseInstancePath;
-          debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-          await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-        },
-        async () => {
-          debug(`Read infoCourseInstance.json`);
-          return await fs.readJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'));
-        },
-        async (infoJson) => {
-          debug(`Write infoCourseInstance.json with new longName and uuid`);
-          infoJson.longName = this.long_name;
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
-          infoJson.uuid = this.uuid;
-          await fs.writeJson(
-            path.join(this.courseInstancePath, 'infoCourseInstance.json'),
-            infoJson,
-            { spaces: 4 }
-          );
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+    await async.waterfall([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
+          course_id: this.course.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'long_name');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(
+          courseInstancesPath,
+          'infoCourseInstance.json',
+          (err, filenames) => {
+            if (ERR(err, callback)) return;
+            this.oldNamesShort = filenames;
+            callback(null);
+          }
+        );
+      },
+      (callback) => {
+        debug(`Generate short_name and long_name`);
+        let names = this.getNamesForCopy(
+          this.course_instance.short_name,
+          this.oldNamesShort,
+          this.course_instance.long_name,
+          this.oldNamesLong
+        );
+        this.short_name = names.shortName;
+        this.long_name = names.longName;
+        this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+        this.pathsToAdd = [this.courseInstancePath];
+        this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${this.short_name}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
+        const toPath = this.courseInstancePath;
+        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      },
+      async () => {
+        debug(`Read infoCourseInstance.json`);
+        return await fs.readJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'));
+      },
+      async (infoJson) => {
+        debug(`Write infoCourseInstance.json with new longName and uuid`);
+        infoJson.longName = this.long_name;
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+        infoJson.uuid = this.uuid;
+        await fs.writeJson(
+          path.join(this.courseInstancePath, 'infoCourseInstance.json'),
+          infoJson,
+          { spaces: 4 }
+        );
+      },
+    ]);
   }
 }
 
@@ -982,32 +952,22 @@ class CourseInstanceDeleteEditor extends Editor {
     this.description = `Delete course instance ${this.course_instance.short_name}`;
   }
 
-  write(callback) {
+  async write() {
     debug('CourseInstanceDeleteEditor: write()');
     const deletePath = path.join(this.course.path, 'courseInstances');
-    async.series(
-      [
-        async () => {
-          await fs.remove(path.join(deletePath, this.course_instance.short_name));
-        },
-        (callback) => {
-          this.removeEmptyPrecedingSubfolders(
-            deletePath,
-            this.course_instance.short_name,
-            (err) => {
-              if (ERR(err, callback)) return;
-              this.pathsToAdd = [path.join(deletePath, this.course_instance.short_name)];
-              this.commitMessage = `delete course instance ${this.course_instance.short_name}`;
-              callback(null);
-            }
-          );
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+    await async.series([
+      async () => {
+        await fs.remove(path.join(deletePath, this.course_instance.short_name));
+      },
+      (callback) => {
+        this.removeEmptyPrecedingSubfolders(deletePath, this.course_instance.short_name, (err) => {
+          if (ERR(err, callback)) return;
+          this.pathsToAdd = [path.join(deletePath, this.course_instance.short_name)];
+          this.commitMessage = `delete course instance ${this.course_instance.short_name}`;
+          callback(null);
+        });
+      },
+    ]);
   }
 }
 
@@ -1025,35 +985,29 @@ class CourseInstanceRenameEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('CourseInstanceRenameEditor: write()');
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
     const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-    async.series(
-      [
-        async () => {
-          await fs.move(oldPath, newPath, { overwrite: false });
-        },
-        (callback) => {
-          this.removeEmptyPrecedingSubfolders(
-            path.join(this.course.path, 'courseInstances'),
-            this.course_instance.short_name,
-            (err) => {
-              if (ERR(err, callback)) return;
+    await async.series([
+      async () => {
+        await fs.move(oldPath, newPath, { overwrite: false });
+      },
+      (callback) => {
+        this.removeEmptyPrecedingSubfolders(
+          path.join(this.course.path, 'courseInstances'),
+          this.course_instance.short_name,
+          (err) => {
+            if (ERR(err, callback)) return;
 
-              this.pathsToAdd = [oldPath, newPath];
-              this.commitMessage = `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`;
-              callback(null);
-            }
-          );
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+            this.pathsToAdd = [oldPath, newPath];
+            this.commitMessage = `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`;
+            callback(null);
+          }
+        );
+      },
+    ]);
   }
 }
 
@@ -1063,66 +1017,60 @@ class CourseInstanceAddEditor extends Editor {
     this.description = `Add course instance`;
   }
 
-  write(callback) {
+  async write() {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-    async.waterfall(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-            course_id: this.course.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'long_name');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(
-            courseInstancesPath,
-            'infoCourseInstance.json',
-            (err, filenames) => {
-              if (ERR(err, callback)) return;
-              this.oldNamesShort = filenames;
-              callback(null);
-            }
-          );
-        },
-        (callback) => {
-          debug(`Generate short_name and long_name`);
-          let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-          this.short_name = names.shortName;
-          this.long_name = names.longName;
-          this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-          this.pathsToAdd = [this.courseInstancePath];
-          this.commitMessage = `add course instance ${this.short_name}`;
-          callback(null);
-        },
-        async () => {
-          debug(`Write infoCourseInstance.json`);
-
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
-
-          let infoJson = {
-            uuid: this.uuid,
-            longName: this.long_name,
-            allowAccess: [],
-          };
-
-          // We use outputJson to create the directory this.courseInstancePath if it
-          // does not exist (which it shouldn't). We use the file system flag 'wx' to
-          // throw an error if this.courseInstancePath already exists.
-          await fs.outputJson(
-            path.join(this.courseInstancePath, 'infoCourseInstance.json'),
-            infoJson,
-            { spaces: 4, flag: 'wx' }
-          );
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+    await async.waterfall([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
+          course_id: this.course.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'long_name');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(
+          courseInstancesPath,
+          'infoCourseInstance.json',
+          (err, filenames) => {
+            if (ERR(err, callback)) return;
+            this.oldNamesShort = filenames;
+            callback(null);
+          }
+        );
+      },
+      (callback) => {
+        debug(`Generate short_name and long_name`);
+        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+        this.short_name = names.shortName;
+        this.long_name = names.longName;
+        this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+        this.pathsToAdd = [this.courseInstancePath];
+        this.commitMessage = `add course instance ${this.short_name}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        debug(`Write infoCourseInstance.json`);
+
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+
+        let infoJson = {
+          uuid: this.uuid,
+          longName: this.long_name,
+          allowAccess: [],
+        };
+
+        // We use outputJson to create the directory this.courseInstancePath if it
+        // does not exist (which it shouldn't). We use the file system flag 'wx' to
+        // throw an error if this.courseInstancePath already exists.
+        await fs.outputJson(
+          path.join(this.courseInstancePath, 'infoCourseInstance.json'),
+          infoJson,
+          { spaces: 4, flag: 'wx' }
+        );
+      },
+    ]);
   }
 }
 
@@ -1132,59 +1080,53 @@ class QuestionAddEditor extends Editor {
     this.description = `Add question`;
   }
 
-  write(callback) {
+  async write() {
     debug('QuestionAddEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    async.waterfall(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-            course_id: this.course.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'title');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          });
-        },
-        (callback) => {
-          debug(`Generate qid and title`);
-          let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-          this.qid = names.shortName;
-          this.questionTitle = names.longName;
-          this.questionPath = path.join(questionsPath, this.qid);
-          this.pathsToAdd = [this.questionPath];
-          this.commitMessage = `add question ${this.qid}`;
+    await async.waterfall([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+          course_id: this.course.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'title');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
+          if (ERR(err, callback)) return;
+          this.oldNamesShort = filenames;
           callback(null);
-        },
-        async () => {
-          const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
-          const toPath = this.questionPath;
-          debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-          await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-        },
-        async () => {
-          debug(`Read info.json`);
-          return await fs.readJson(path.join(this.questionPath, 'info.json'));
-        },
-        async (infoJson) => {
-          debug(`Write info.json with new title and uuid`);
-          infoJson.title = this.questionTitle;
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-          infoJson.uuid = this.uuid;
-          await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+        });
+      },
+      (callback) => {
+        debug(`Generate qid and title`);
+        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+        this.qid = names.shortName;
+        this.questionTitle = names.longName;
+        this.questionPath = path.join(questionsPath, this.qid);
+        this.pathsToAdd = [this.questionPath];
+        this.commitMessage = `add question ${this.qid}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
+        const toPath = this.questionPath;
+        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      },
+      async () => {
+        debug(`Read info.json`);
+        return await fs.readJson(path.join(this.questionPath, 'info.json'));
+      },
+      async (infoJson) => {
+        debug(`Write info.json with new title and uuid`);
+        infoJson.title = this.questionTitle;
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+        infoJson.uuid = this.uuid;
+        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+      },
+    ]);
   }
 }
 
@@ -1194,31 +1136,25 @@ class QuestionDeleteEditor extends Editor {
     this.description = `Delete question ${this.question.qid}`;
   }
 
-  write(callback) {
+  async write() {
     debug('QuestionDeleteEditor: write()');
-    async.series(
-      [
-        async () => {
-          await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
-        },
-        (callback) => {
-          this.removeEmptyPrecedingSubfolders(
-            path.join(this.course.path, 'questions'),
-            this.question.qid,
-            (err) => {
-              if (ERR(err, callback)) return;
-              this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
-              this.commitMessage = `delete question ${this.question.qid}`;
-              callback(null);
-            }
-          );
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+    await async.series([
+      async () => {
+        await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
+      },
+      (callback) => {
+        this.removeEmptyPrecedingSubfolders(
+          path.join(this.course.path, 'questions'),
+          this.question.qid,
+          (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
+            this.commitMessage = `delete question ${this.question.qid}`;
+            callback(null);
+          }
+        );
+      },
+    ]);
   }
 }
 
@@ -1236,80 +1172,74 @@ class QuestionRenameEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('QuestionRenameEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
-    async.waterfall(
-      [
-        async () => {
-          await fs.move(oldPath, newPath, { overwrite: false });
-        },
-        (callback) => {
-          debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-          this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid, (err) => {
-            if (ERR(err, callback)) return;
-            this.pathsToAdd = [oldPath, newPath];
-            this.commitMessage = `rename question ${this.question.qid} to ${this.qid_new}`;
-            callback(null);
-          });
-        },
-        async () => {
-          debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-          const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-            question_id: this.question.id,
-          });
-          return result.rows;
-        },
-        async (assessments) => {
-          debug(
-            `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
+    await async.waterfall([
+      async () => {
+        await fs.move(oldPath, newPath, { overwrite: false });
+      },
+      (callback) => {
+        debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+        this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid, (err) => {
+          if (ERR(err, callback)) return;
+          this.pathsToAdd = [oldPath, newPath];
+          this.commitMessage = `rename question ${this.question.qid} to ${this.qid_new}`;
+          callback(null);
+        });
+      },
+      async () => {
+        debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
+        const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
+          question_id: this.question.id,
+        });
+        return result.rows;
+      },
+      async (assessments) => {
+        debug(
+          `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
+        );
+        await async.eachSeries(assessments, async (assessment) => {
+          let infoPath = path.join(
+            this.course.path,
+            'courseInstances',
+            assessment.course_instance_directory,
+            'assessments',
+            assessment.assessment_directory,
+            'infoAssessment.json'
           );
-          await async.eachSeries(assessments, async (assessment) => {
-            let infoPath = path.join(
-              this.course.path,
-              'courseInstances',
-              assessment.course_instance_directory,
-              'assessments',
-              assessment.assessment_directory,
-              'infoAssessment.json'
-            );
-            this.pathsToAdd.push(infoPath);
+          this.pathsToAdd.push(infoPath);
 
-            debug(`Read ${infoPath}`);
-            const infoJson = await fs.readJson(infoPath);
+          debug(`Read ${infoPath}`);
+          const infoJson = await fs.readJson(infoPath);
 
-            debug(`Find/replace QID in ${infoPath}`);
-            let found = false;
-            infoJson.zones.forEach((zone) => {
-              zone.questions.forEach((question) => {
-                if (question.alternatives) {
-                  question.alternatives.forEach((alternative) => {
-                    if (alternative.id === this.question.qid) {
-                      alternative.id = this.qid_new;
-                      found = true;
-                    }
-                  });
-                } else if (question.id === this.question.qid) {
-                  question.id = this.qid_new;
-                  found = true;
-                }
-              });
+          debug(`Find/replace QID in ${infoPath}`);
+          let found = false;
+          infoJson.zones.forEach((zone) => {
+            zone.questions.forEach((question) => {
+              if (question.alternatives) {
+                question.alternatives.forEach((alternative) => {
+                  if (alternative.id === this.question.qid) {
+                    alternative.id = this.qid_new;
+                    found = true;
+                  }
+                });
+              } else if (question.id === this.question.qid) {
+                question.id = this.qid_new;
+                found = true;
+              }
             });
-            if (!found) {
-              logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
-            }
-            debug(`Write ${infoPath}`);
-            await fs.writeJson(infoPath, infoJson, { spaces: 4 });
           });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+          if (!found) {
+            logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+          }
+          debug(`Write ${infoPath}`);
+          await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+        });
+      },
+    ]);
   }
 }
 
@@ -1319,64 +1249,58 @@ class QuestionCopyEditor extends Editor {
     this.description = `Copy question ${this.question.qid}`;
   }
 
-  write(callback) {
+  async write() {
     debug('QuestionCopyEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    async.waterfall(
-      [
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-            course_id: this.course.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'title');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          });
-        },
-        (callback) => {
-          debug(`Generate qid and title`);
-          let names = this.getNamesForCopy(
-            this.question.qid,
-            this.oldNamesShort,
-            this.question.title,
-            this.oldNamesLong
-          );
-          this.qid = names.shortName;
-          this.questionTitle = names.longName;
-          this.questionPath = path.join(questionsPath, this.qid);
-          this.pathsToAdd = [this.questionPath];
-          this.commitMessage = `copy question ${this.question.qid} to ${this.qid}`;
+    await async.waterfall([
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+          course_id: this.course.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'title');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
+          if (ERR(err, callback)) return;
+          this.oldNamesShort = filenames;
           callback(null);
-        },
-        async () => {
-          const fromPath = path.join(questionsPath, this.question.qid);
-          const toPath = this.questionPath;
-          debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-          await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-        },
-        async () => {
-          debug(`Read info.json`);
-          return await fs.readJson(path.join(this.questionPath, 'info.json'));
-        },
-        async (infoJson) => {
-          debug(`Write info.json with new title and uuid`);
-          infoJson.title = this.questionTitle;
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-          infoJson.uuid = this.uuid;
-          await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+        });
+      },
+      (callback) => {
+        debug(`Generate qid and title`);
+        let names = this.getNamesForCopy(
+          this.question.qid,
+          this.oldNamesShort,
+          this.question.title,
+          this.oldNamesLong
+        );
+        this.qid = names.shortName;
+        this.questionTitle = names.longName;
+        this.questionPath = path.join(questionsPath, this.qid);
+        this.pathsToAdd = [this.questionPath];
+        this.commitMessage = `copy question ${this.question.qid} to ${this.qid}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        const fromPath = path.join(questionsPath, this.question.qid);
+        const toPath = this.questionPath;
+        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      },
+      async () => {
+        debug(`Read info.json`);
+        return await fs.readJson(path.join(this.questionPath, 'info.json'));
+      },
+      async (infoJson) => {
+        debug(`Write info.json with new title and uuid`);
+        infoJson.title = this.questionTitle;
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+        infoJson.uuid = this.uuid;
+        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+      },
+    ]);
   }
 }
 
@@ -1389,77 +1313,71 @@ class QuestionTransferEditor extends Editor {
     this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
   }
 
-  write(callback) {
+  async write() {
     debug('QuestionTransferEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    async.waterfall(
-      [
-        async () => {
-          debug(`Get title of question that is being copied`);
-          const infoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
-          this.from_title = infoJson.title || 'Empty Title';
-        },
-        async () => {
-          debug('Get all existing long names');
-          const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-            course_id: this.course.id,
-          });
-          this.oldNamesLong = _.map(result.rows, 'title');
-        },
-        (callback) => {
-          debug('Get all existing short names');
-          this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
-            if (ERR(err, callback)) return;
-            this.oldNamesShort = filenames;
-            callback(null);
-          });
-        },
-        (callback) => {
-          debug(`Generate qid and title`);
-          if (
-            this.oldNamesShort.includes(this.from_qid) ||
-            this.oldNamesLong.includes(this.from_title)
-          ) {
-            let names = this.getNamesForCopy(
-              this.from_qid,
-              this.oldNamesShort,
-              this.from_title,
-              this.oldNamesLong
-            );
-            this.qid = names.shortName;
-            this.questionTitle = names.longName;
-          } else {
-            this.qid = this.from_qid;
-            this.questionTitle = this.from_title;
-          }
-          this.questionPath = path.join(questionsPath, this.qid);
-          this.pathsToAdd = [this.questionPath];
-          this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
+    await async.waterfall([
+      async () => {
+        debug(`Get title of question that is being copied`);
+        const infoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
+        this.from_title = infoJson.title || 'Empty Title';
+      },
+      async () => {
+        debug('Get all existing long names');
+        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+          course_id: this.course.id,
+        });
+        this.oldNamesLong = _.map(result.rows, 'title');
+      },
+      (callback) => {
+        debug('Get all existing short names');
+        this.getExistingShortNames(questionsPath, 'info.json', (err, filenames) => {
+          if (ERR(err, callback)) return;
+          this.oldNamesShort = filenames;
           callback(null);
-        },
-        async () => {
-          const fromPath = this.from_path;
-          const toPath = this.questionPath;
-          debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-          await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-        },
-        async () => {
-          debug(`Read info.json`);
-          return await fs.readJson(path.join(this.questionPath, 'info.json'));
-        },
-        async (infoJson) => {
-          debug(`Write info.json with new title and uuid`);
-          infoJson.title = this.questionTitle;
-          this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-          infoJson.uuid = this.uuid;
-          await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
+        });
+      },
+      (callback) => {
+        debug(`Generate qid and title`);
+        if (
+          this.oldNamesShort.includes(this.from_qid) ||
+          this.oldNamesLong.includes(this.from_title)
+        ) {
+          let names = this.getNamesForCopy(
+            this.from_qid,
+            this.oldNamesShort,
+            this.from_title,
+            this.oldNamesLong
+          );
+          this.qid = names.shortName;
+          this.questionTitle = names.longName;
+        } else {
+          this.qid = this.from_qid;
+          this.questionTitle = this.from_title;
+        }
+        this.questionPath = path.join(questionsPath, this.qid);
+        this.pathsToAdd = [this.questionPath];
+        this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
         callback(null);
-      }
-    );
+      },
+      async () => {
+        const fromPath = this.from_path;
+        const toPath = this.questionPath;
+        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      },
+      async () => {
+        debug(`Read info.json`);
+        return await fs.readJson(path.join(this.questionPath, 'info.json'));
+      },
+      async (infoJson) => {
+        debug(`Write info.json with new title and uuid`);
+        infoJson.title = this.questionTitle;
+        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+        infoJson.uuid = this.uuid;
+        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
+      },
+    ]);
   }
 }
 
@@ -1509,15 +1427,12 @@ class FileDeleteEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('FileDeleteEditor: write()');
     // This will silently do nothing if deletePath no longer exists.
-    fs.remove(this.deletePath, (err) => {
-      if (ERR(err, callback)) return;
-      this.pathsToAdd = [this.deletePath];
-      this.commitMessage = this.description;
-      callback(null);
-    });
+    await fs.remove(this.deletePath);
+    this.pathsToAdd = [this.deletePath];
+    this.commitMessage = this.description;
   }
 }
 
@@ -1594,26 +1509,16 @@ class FileRenameEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('FileRenameEditor: write()');
-    async.series(
-      [
-        async () => {
-          debug(`ensure path exists`);
-          fs.ensureDir(path.dirname(this.newPath));
-        },
-        async () => {
-          debug(`rename file`);
-          await fs.rename(this.oldPath, this.newPath);
-          this.pathsToAdd = [this.oldPath, this.newPath];
-          this.commitMessage = this.description;
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+
+    debug(`ensure path exists`);
+    await fs.ensureDir(path.dirname(this.newPath));
+
+    debug(`rename file`);
+    await fs.rename(this.oldPath, this.newPath);
+    this.pathsToAdd = [this.oldPath, this.newPath];
+    this.commitMessage = this.description;
   }
 }
 
@@ -1695,26 +1600,16 @@ class FileUploadEditor extends Editor {
     });
   }
 
-  write(callback) {
+  async write() {
     debug('FileUploadEditor: write()');
-    async.series(
-      [
-        async () => {
-          debug(`ensure path exists`);
-          await fs.ensureDir(path.dirname(this.filePath));
-        },
-        async () => {
-          debug(`write file`);
-          await fs.writeFile(this.filePath, this.fileContents);
-          this.pathsToAdd = [this.filePath];
-          this.commitMessage = this.description;
-        },
-      ],
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      }
-    );
+
+    debug(`ensure path exists`);
+    await fs.ensureDir(path.dirname(this.filePath));
+
+    debug(`write file`);
+    await fs.writeFile(this.filePath, this.fileContents);
+    this.pathsToAdd = [this.filePath];
+    this.commitMessage = this.description;
   }
 }
 
@@ -1724,7 +1619,7 @@ class CourseInfoEditor extends Editor {
     this.description = `Create infoCourse.json`;
   }
 
-  write(callback) {
+  async write() {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
@@ -1742,14 +1637,10 @@ class CourseInfoEditor extends Editor {
     // This will error if:
     // - this.course.path does not exist (use of writeJson)
     // - infoPath does exist (use of 'wx')
-    fs.writeJson(infoPath, infoJson, { spaces: 4, flag: 'wx' }, (err) => {
-      if (ERR(err, callback)) return;
+    await fs.writeJson(infoPath, infoJson, { spaces: 4, flag: 'wx' });
 
-      this.pathsToAdd = [infoPath];
-      this.commitMessage = `create infoCourse.json`;
-
-      callback(null);
-    });
+    this.pathsToAdd = [infoPath];
+    this.commitMessage = `create infoCourse.json`;
   }
 }
 
