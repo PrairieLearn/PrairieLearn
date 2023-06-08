@@ -227,7 +227,7 @@ If you're using your own editor, you must ensure that it frequently autosaves an
 
 ## Running locally (on Docker)
 
-In production, PrairieLearn runs workspaces on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still use workspaces locally with a few workarounds. This infrastructure is similar to the one used for external graders. To enable workspace functionality in your local environment, follow the [instructions provided in the external grader page](../externalGrading.md#running-locally-for-development).
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 

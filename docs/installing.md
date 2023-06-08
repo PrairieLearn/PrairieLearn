@@ -54,8 +54,6 @@ If you are running on Windows with WSL 2, run the command above in a WSL 2 shell
 docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn
 ```
 
-If you plan on running externally graded questions or workspaces in local development, please see [this section](../externalGrading/#running-locally-on-docker) for additional options required to handle these features.
-
 After running the command above, you should see a message that says:
 
 ```console
@@ -67,6 +65,50 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
 **NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+
+### Support for external graders and workspaces
+
+In production, PrairieLearn runs external grading jobs and workspaces on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs and workspaces locally with a few workarounds.
+
+- Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
+- Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
+- Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+
+In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
+
+- We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
+- We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
+
+To run PrairieLearn locally with external grader and workspace support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows with WSL 2, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
+
+```bash
+mkdir "$HOME/pl_ag_jobs"
+```
+
+Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, and you are using Linux or Mac OS X, the new command is as follows:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
+    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
+    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    prairielearn/prairielearn
+```
+
+If you are on Windows with WSL 2, you can use the following command on the WSL 2 shell:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
+    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
+    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+**NOTE**: We do not currently support the use of external graders and workspaces in a Windows environment without WSL 2, due to limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to provide such functionality in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged.
 
 ## Upgrading your Docker's version of PrairieLearn
 
