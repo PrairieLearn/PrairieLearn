@@ -657,56 +657,44 @@ class AssessmentCopyEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    await async.waterfall([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-          course_instance_id: this.course_instance.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'title');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(
-          assessmentsPath,
-          'infoAssessment.json'
-        );
-      },
-      (callback) => {
-        debug(`Generate TID and Title`);
-        let names = this.getNamesForCopy(
-          this.assessment.tid,
-          this.oldNamesShort,
-          this.assessment.title,
-          this.oldNamesLong
-        );
-        this.tid = names.shortName;
-        this.assessmentTitle = names.longName;
-        this.assessmentPath = path.join(assessmentsPath, this.tid);
-        this.pathsToAdd = [this.assessmentPath];
-        this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${this.tid}`;
-        callback(null);
-      },
-      async () => {
-        const fromPath = path.join(assessmentsPath, this.assessment.tid);
-        const toPath = this.assessmentPath;
-        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-      },
-      async () => {
-        debug(`Read infoAssessment.json`);
-        return await fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'));
-      },
-      async (infoJson) => {
-        debug(`Write infoAssessment.json with new title and uuid`);
-        infoJson.title = this.assessmentTitle;
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
-        infoJson.uuid = this.uuid;
-        await fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
-          spaces: 4,
-        });
-      },
-    ]);
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+      course_instance_id: this.course_instance.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
+
+    debug(`Generate TID and Title`);
+    let names = this.getNamesForCopy(
+      this.assessment.tid,
+      this.oldNamesShort,
+      this.assessment.title,
+      this.oldNamesLong
+    );
+    this.tid = names.shortName;
+    this.assessmentTitle = names.longName;
+    this.assessmentPath = path.join(assessmentsPath, this.tid);
+    this.pathsToAdd = [this.assessmentPath];
+    this.commitMessage = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid} to ${this.tid}`;
+
+    const fromPath = path.join(assessmentsPath, this.assessment.tid);
+    const toPath = this.assessmentPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug(`Read infoAssessment.json`);
+    const infoJson = await fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'));
+
+    debug(`Write infoAssessment.json with new title and uuid`);
+    infoJson.title = this.assessmentTitle;
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
+    infoJson.uuid = this.uuid;
+    await fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+      spaces: 4,
+    });
   }
 }
 
@@ -777,55 +765,45 @@ class AssessmentAddEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    async.series([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-          course_instance_id: this.course_instance.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'title');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(
-          assessmentsPath,
-          'infoAssessment.json'
-        );
-      },
-      (callback) => {
-        debug(`Generate TID and Title`);
-        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-        this.tid = names.shortName;
-        this.assessmentTitle = names.longName;
-        this.assessmentPath = path.join(assessmentsPath, this.tid);
-        this.pathsToAdd = [this.assessmentPath];
-        this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
-        callback(null);
-      },
-      async () => {
-        debug(`Write infoAssessment.json`);
 
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+      course_instance_id: this.course_instance.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'title');
 
-        let infoJson = {
-          uuid: this.uuid,
-          type: 'Homework',
-          title: this.assessmentTitle,
-          set: 'Homework',
-          number: '1',
-          allowAccess: [],
-          zones: [],
-        };
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
-        // We use outputJson to create the directory this.assessmentsPath if it
-        // does not exist (which it shouldn't). We use the file system flag 'wx'
-        // to throw an error if this.assessmentPath already exists.
-        await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
-          spaces: 4,
-          flag: 'wx',
-        });
-      },
-    ]);
+    debug(`Generate TID and Title`);
+    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+    this.tid = names.shortName;
+    this.assessmentTitle = names.longName;
+    this.assessmentPath = path.join(assessmentsPath, this.tid);
+    this.pathsToAdd = [this.assessmentPath];
+    this.commitMessage = `${this.course_instance.short_name}: add assessment ${this.tid}`;
+
+    debug(`Write infoAssessment.json`);
+
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new assessment in the DB
+
+    let infoJson = {
+      uuid: this.uuid,
+      type: 'Homework',
+      title: this.assessmentTitle,
+      set: 'Homework',
+      number: '1',
+      allowAccess: [],
+      zones: [],
+    };
+
+    // We use outputJson to create the directory this.assessmentsPath if it
+    // does not exist (which it shouldn't). We use the file system flag 'wx'
+    // to throw an error if this.assessmentPath already exists.
+    await fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {
+      spaces: 4,
+      flag: 'wx',
+    });
   }
 }
 
@@ -838,58 +816,49 @@ class CourseInstanceCopyEditor extends Editor {
   async write() {
     debug('CourseInstanceCopyEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-    await async.waterfall([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-          course_id: this.course.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'long_name');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(
-          courseInstancesPath,
-          'infoCourseInstance.json'
-        );
-      },
-      (callback) => {
-        debug(`Generate short_name and long_name`);
-        let names = this.getNamesForCopy(
-          this.course_instance.short_name,
-          this.oldNamesShort,
-          this.course_instance.long_name,
-          this.oldNamesLong
-        );
-        this.short_name = names.shortName;
-        this.long_name = names.longName;
-        this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-        this.pathsToAdd = [this.courseInstancePath];
-        this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${this.short_name}`;
-        callback(null);
-      },
-      async () => {
-        const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
-        const toPath = this.courseInstancePath;
-        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-      },
-      async () => {
-        debug(`Read infoCourseInstance.json`);
-        return await fs.readJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'));
-      },
-      async (infoJson) => {
-        debug(`Write infoCourseInstance.json with new longName and uuid`);
-        infoJson.longName = this.long_name;
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
-        infoJson.uuid = this.uuid;
-        await fs.writeJson(
-          path.join(this.courseInstancePath, 'infoCourseInstance.json'),
-          infoJson,
-          { spaces: 4 }
-        );
-      },
-    ]);
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
+      course_id: this.course.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'long_name');
+
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(
+      courseInstancesPath,
+      'infoCourseInstance.json'
+    );
+
+    debug(`Generate short_name and long_name`);
+    let names = this.getNamesForCopy(
+      this.course_instance.short_name,
+      this.oldNamesShort,
+      this.course_instance.long_name,
+      this.oldNamesLong
+    );
+    this.short_name = names.shortName;
+    this.long_name = names.longName;
+    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+    this.pathsToAdd = [this.courseInstancePath];
+    this.commitMessage = `copy course instance ${this.course_instance.short_name} to ${this.short_name}`;
+
+    const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
+    const toPath = this.courseInstancePath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug(`Read infoCourseInstance.json`);
+    const infoJson = await fs.readJson(
+      path.join(this.courseInstancePath, 'infoCourseInstance.json')
+    );
+
+    debug(`Write infoCourseInstance.json with new longName and uuid`);
+    infoJson.longName = this.long_name;
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+    infoJson.uuid = this.uuid;
+    await fs.writeJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {
+      spaces: 4,
+    });
   }
 }
 
@@ -948,52 +917,44 @@ class CourseInstanceAddEditor extends Editor {
   async write() {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-    await async.waterfall([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-          course_id: this.course.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'long_name');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(
-          courseInstancesPath,
-          'infoCourseInstance.json'
-        );
-      },
-      (callback) => {
-        debug(`Generate short_name and long_name`);
-        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-        this.short_name = names.shortName;
-        this.long_name = names.longName;
-        this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
-        this.pathsToAdd = [this.courseInstancePath];
-        this.commitMessage = `add course instance ${this.short_name}`;
-        callback(null);
-      },
-      async () => {
-        debug(`Write infoCourseInstance.json`);
 
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
+      course_id: this.course.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'long_name');
 
-        let infoJson = {
-          uuid: this.uuid,
-          longName: this.long_name,
-          allowAccess: [],
-        };
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(
+      courseInstancesPath,
+      'infoCourseInstance.json'
+    );
 
-        // We use outputJson to create the directory this.courseInstancePath if it
-        // does not exist (which it shouldn't). We use the file system flag 'wx' to
-        // throw an error if this.courseInstancePath already exists.
-        await fs.outputJson(
-          path.join(this.courseInstancePath, 'infoCourseInstance.json'),
-          infoJson,
-          { spaces: 4, flag: 'wx' }
-        );
-      },
-    ]);
+    debug(`Generate short_name and long_name`);
+    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+    this.short_name = names.shortName;
+    this.long_name = names.longName;
+    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+    this.pathsToAdd = [this.courseInstancePath];
+    this.commitMessage = `add course instance ${this.short_name}`;
+
+    debug(`Write infoCourseInstance.json`);
+
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new course instance in the DB
+
+    let infoJson = {
+      uuid: this.uuid,
+      longName: this.long_name,
+      allowAccess: [],
+    };
+
+    // We use outputJson to create the directory this.courseInstancePath if it
+    // does not exist (which it shouldn't). We use the file system flag 'wx' to
+    // throw an error if this.courseInstancePath already exists.
+    await fs.outputJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {
+      spaces: 4,
+      flag: 'wx',
+    });
   }
 }
 
@@ -1006,46 +967,37 @@ class QuestionAddEditor extends Editor {
   async write() {
     debug('QuestionAddEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    await async.waterfall([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-          course_id: this.course.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'title');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-      },
-      (callback) => {
-        debug(`Generate qid and title`);
-        let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
-        this.qid = names.shortName;
-        this.questionTitle = names.longName;
-        this.questionPath = path.join(questionsPath, this.qid);
-        this.pathsToAdd = [this.questionPath];
-        this.commitMessage = `add question ${this.qid}`;
-        callback(null);
-      },
-      async () => {
-        const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
-        const toPath = this.questionPath;
-        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-      },
-      async () => {
-        debug(`Read info.json`);
-        return await fs.readJson(path.join(this.questionPath, 'info.json'));
-      },
-      async (infoJson) => {
-        debug(`Write info.json with new title and uuid`);
-        infoJson.title = this.questionTitle;
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-        infoJson.uuid = this.uuid;
-        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-      },
-    ]);
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+      course_id: this.course.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+    debug(`Generate qid and title`);
+    let names = this.getNamesForAdd(this.oldNamesShort, this.oldNamesLong);
+    this.qid = names.shortName;
+    this.questionTitle = names.longName;
+    this.questionPath = path.join(questionsPath, this.qid);
+    this.pathsToAdd = [this.questionPath];
+    this.commitMessage = `add question ${this.qid}`;
+
+    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
+    const toPath = this.questionPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug(`Read info.json`);
+    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+
+    debug(`Write info.json with new title and uuid`);
+    infoJson.title = this.questionTitle;
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.uuid = this.uuid;
+    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
@@ -1151,51 +1103,42 @@ class QuestionCopyEditor extends Editor {
   async write() {
     debug('QuestionCopyEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    await async.waterfall([
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-          course_id: this.course.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'title');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-      },
-      (callback) => {
-        debug(`Generate qid and title`);
-        let names = this.getNamesForCopy(
-          this.question.qid,
-          this.oldNamesShort,
-          this.question.title,
-          this.oldNamesLong
-        );
-        this.qid = names.shortName;
-        this.questionTitle = names.longName;
-        this.questionPath = path.join(questionsPath, this.qid);
-        this.pathsToAdd = [this.questionPath];
-        this.commitMessage = `copy question ${this.question.qid} to ${this.qid}`;
-        callback(null);
-      },
-      async () => {
-        const fromPath = path.join(questionsPath, this.question.qid);
-        const toPath = this.questionPath;
-        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-      },
-      async () => {
-        debug(`Read info.json`);
-        return await fs.readJson(path.join(this.questionPath, 'info.json'));
-      },
-      async (infoJson) => {
-        debug(`Write info.json with new title and uuid`);
-        infoJson.title = this.questionTitle;
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-        infoJson.uuid = this.uuid;
-        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-      },
-    ]);
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+      course_id: this.course.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+    debug(`Generate qid and title`);
+    let names = this.getNamesForCopy(
+      this.question.qid,
+      this.oldNamesShort,
+      this.question.title,
+      this.oldNamesLong
+    );
+    this.qid = names.shortName;
+    this.questionTitle = names.longName;
+    this.questionPath = path.join(questionsPath, this.qid);
+    this.pathsToAdd = [this.questionPath];
+    this.commitMessage = `copy question ${this.question.qid} to ${this.qid}`;
+
+    const fromPath = path.join(questionsPath, this.question.qid);
+    const toPath = this.questionPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug(`Read info.json`);
+    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+
+    debug(`Write info.json with new title and uuid`);
+    infoJson.title = this.questionTitle;
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.uuid = this.uuid;
+    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
@@ -1211,64 +1154,51 @@ class QuestionTransferEditor extends Editor {
   async write() {
     debug('QuestionTransferEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
-    await async.waterfall([
-      async () => {
-        debug(`Get title of question that is being copied`);
-        const infoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
-        this.from_title = infoJson.title || 'Empty Title';
-      },
-      async () => {
-        debug('Get all existing long names');
-        const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-          course_id: this.course.id,
-        });
-        this.oldNamesLong = _.map(result.rows, 'title');
-      },
-      async () => {
-        debug('Get all existing short names');
-        this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-      },
-      (callback) => {
-        debug(`Generate qid and title`);
-        if (
-          this.oldNamesShort.includes(this.from_qid) ||
-          this.oldNamesLong.includes(this.from_title)
-        ) {
-          let names = this.getNamesForCopy(
-            this.from_qid,
-            this.oldNamesShort,
-            this.from_title,
-            this.oldNamesLong
-          );
-          this.qid = names.shortName;
-          this.questionTitle = names.longName;
-        } else {
-          this.qid = this.from_qid;
-          this.questionTitle = this.from_title;
-        }
-        this.questionPath = path.join(questionsPath, this.qid);
-        this.pathsToAdd = [this.questionPath];
-        this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
-        callback(null);
-      },
-      async () => {
-        const fromPath = this.from_path;
-        const toPath = this.questionPath;
-        debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-        await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-      },
-      async () => {
-        debug(`Read info.json`);
-        return await fs.readJson(path.join(this.questionPath, 'info.json'));
-      },
-      async (infoJson) => {
-        debug(`Write info.json with new title and uuid`);
-        infoJson.title = this.questionTitle;
-        this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
-        infoJson.uuid = this.uuid;
-        await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
-      },
-    ]);
+
+    debug(`Get title of question that is being copied`);
+    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
+    this.from_title = sourceInfoJson.title || 'Empty Title';
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+      course_id: this.course.id,
+    });
+    this.oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    this.oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+    debug(`Generate qid and title`);
+    if (this.oldNamesShort.includes(this.from_qid) || this.oldNamesLong.includes(this.from_title)) {
+      let names = this.getNamesForCopy(
+        this.from_qid,
+        this.oldNamesShort,
+        this.from_title,
+        this.oldNamesLong
+      );
+      this.qid = names.shortName;
+      this.questionTitle = names.longName;
+    } else {
+      this.qid = this.from_qid;
+      this.questionTitle = this.from_title;
+    }
+    this.questionPath = path.join(questionsPath, this.qid);
+    this.pathsToAdd = [this.questionPath];
+    this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
+
+    const fromPath = this.from_path;
+    const toPath = this.questionPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug(`Read info.json`);
+    const infoJson = await fs.readJson(path.join(this.questionPath, 'info.json'));
+
+    debug(`Write info.json with new title and uuid`);
+    infoJson.title = this.questionTitle;
+    this.uuid = uuidv4(); // <-- store uuid so we can find the new question in the DB
+    infoJson.uuid = this.uuid;
+    await fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, { spaces: 4 });
   }
 }
 
