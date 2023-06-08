@@ -229,6 +229,7 @@ router.get('/', function (req, res, next) {
     if (ERR(err, next)) return;
     logPageView(req, res, (err) => {
       if (ERR(err, next)) return;
+      question.setRendererHeader(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
   });
