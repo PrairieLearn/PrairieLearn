@@ -470,9 +470,8 @@ class Editor {
    * This should be run after renames or deletes to prevent syncing issues.
    * @param rootDirectory Root directory that the items are being stored in.
    * @param id Item to delete root subfolders for, relative from the root directory.
-   * @callback {function(err)} Function to call once this has finished.
    */
-  removeEmptyPrecedingSubfolders(rootDirectory, id, callback) {
+  async removeEmptyPrecedingSubfolders(rootDirectory, id) {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
@@ -480,39 +479,24 @@ class Editor {
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
-    async.eachOfSeries(
-      reverseFolders,
-      (folder, index, callback) => {
-        if (!seenNonemptyFolder) {
-          const delPath = path.join(rootDirectory, ...idSplit.slice(0, idSplit.length - 1 - index));
-          debug('Checking', delPath);
+    await async.eachOfSeries(reverseFolders, async (folder, index) => {
+      if (!seenNonemptyFolder) {
+        const delPath = path.join(rootDirectory, ...idSplit.slice(0, idSplit.length - 1 - index));
+        debug('Checking', delPath);
 
-          fs.readdir(delPath, (err, files) => {
-            if (ERR(err, callback)) return;
+        const files = await fs.readdir(delPath);
 
-            // Delete the subfolder if it's empty, otherwise stop here
-            if (files.length > 0) {
-              debug(delPath, 'is nonempty, stopping here.');
-              debug('Folder contains', files);
-              seenNonemptyFolder = true;
-              callback(null);
-            } else {
-              debug('No files, deleting', delPath);
-              fs.remove(delPath, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-              });
-            }
-          });
+        // Delete the subfolder if it's empty, otherwise stop here
+        if (files.length > 0) {
+          debug(delPath, 'is nonempty, stopping here.');
+          debug('Folder contains', files);
+          seenNonemptyFolder = true;
         } else {
-          callback(null);
+          debug('No files, deleting', delPath);
+          await fs.remove(delPath);
         }
-      },
-      (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
       }
-    );
+    });
   }
 
   /**
@@ -753,19 +737,10 @@ class AssessmentDeleteEditor extends Editor {
       this.course_instance.short_name,
       'assessments'
     );
-    await async.series([
-      async () => {
-        await fs.remove(path.join(deletePath, this.assessment.tid));
-      },
-      (callback) => {
-        this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid, (err) => {
-          if (ERR(err, callback)) return;
-          this.pathsToAdd = [path.join(deletePath, this.assessment.tid)];
-          this.commitMessage = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
-          callback(null);
-        });
-      },
-    ]);
+    await fs.remove(path.join(deletePath, this.assessment.tid));
+    await this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid);
+    this.pathsToAdd = [path.join(deletePath, this.assessment.tid)];
+    this.commitMessage = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
   }
 }
 
@@ -794,19 +769,10 @@ class AssessmentRenameEditor extends Editor {
     const oldPath = path.join(basePath, this.assessment.tid);
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-    await async.series([
-      async () => {
-        await fs.move(oldPath, newPath, { overwrite: false });
-      },
-      (callback) => {
-        this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name, (err) => {
-          if (ERR(err, callback)) return;
-          this.pathsToAdd = [oldPath, newPath];
-          this.commitMessage = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`;
-          callback(null);
-        });
-      },
-    ]);
+    await fs.move(oldPath, newPath, { overwrite: false });
+    await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
+    this.pathsToAdd = [oldPath, newPath];
+    this.commitMessage = `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`;
   }
 }
 
@@ -955,19 +921,10 @@ class CourseInstanceDeleteEditor extends Editor {
   async write() {
     debug('CourseInstanceDeleteEditor: write()');
     const deletePath = path.join(this.course.path, 'courseInstances');
-    await async.series([
-      async () => {
-        await fs.remove(path.join(deletePath, this.course_instance.short_name));
-      },
-      (callback) => {
-        this.removeEmptyPrecedingSubfolders(deletePath, this.course_instance.short_name, (err) => {
-          if (ERR(err, callback)) return;
-          this.pathsToAdd = [path.join(deletePath, this.course_instance.short_name)];
-          this.commitMessage = `delete course instance ${this.course_instance.short_name}`;
-          callback(null);
-        });
-      },
-    ]);
+    await fs.remove(path.join(deletePath, this.course_instance.short_name));
+    await this.removeEmptyPrecedingSubfolders(deletePath, this.course_instance.short_name);
+    this.pathsToAdd = [path.join(deletePath, this.course_instance.short_name)];
+    this.commitMessage = `delete course instance ${this.course_instance.short_name}`;
   }
 }
 
@@ -990,24 +947,14 @@ class CourseInstanceRenameEditor extends Editor {
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
     const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-    await async.series([
-      async () => {
-        await fs.move(oldPath, newPath, { overwrite: false });
-      },
-      (callback) => {
-        this.removeEmptyPrecedingSubfolders(
-          path.join(this.course.path, 'courseInstances'),
-          this.course_instance.short_name,
-          (err) => {
-            if (ERR(err, callback)) return;
+    await fs.move(oldPath, newPath, { overwrite: false });
+    await this.removeEmptyPrecedingSubfolders(
+      path.join(this.course.path, 'courseInstances'),
+      this.course_instance.short_name
+    );
 
-            this.pathsToAdd = [oldPath, newPath];
-            this.commitMessage = `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`;
-            callback(null);
-          }
-        );
-      },
-    ]);
+    this.pathsToAdd = [oldPath, newPath];
+    this.commitMessage = `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`;
   }
 }
 
@@ -1138,23 +1085,13 @@ class QuestionDeleteEditor extends Editor {
 
   async write() {
     debug('QuestionDeleteEditor: write()');
-    await async.series([
-      async () => {
-        await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
-      },
-      (callback) => {
-        this.removeEmptyPrecedingSubfolders(
-          path.join(this.course.path, 'questions'),
-          this.question.qid,
-          (err) => {
-            if (ERR(err, callback)) return;
-            this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
-            this.commitMessage = `delete question ${this.question.qid}`;
-            callback(null);
-          }
-        );
-      },
-    ]);
+    await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
+    await this.removeEmptyPrecedingSubfolders(
+      path.join(this.course.path, 'questions'),
+      this.question.qid
+    );
+    this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
+    this.commitMessage = `delete question ${this.question.qid}`;
   }
 }
 
@@ -1177,69 +1114,59 @@ class QuestionRenameEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
-    await async.waterfall([
-      async () => {
-        await fs.move(oldPath, newPath, { overwrite: false });
-      },
-      (callback) => {
-        debug(`Move files\n from ${oldPath}\n to ${newPath}`);
-        this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid, (err) => {
-          if (ERR(err, callback)) return;
-          this.pathsToAdd = [oldPath, newPath];
-          this.commitMessage = `rename question ${this.question.qid} to ${this.qid_new}`;
-          callback(null);
-        });
-      },
-      async () => {
-        debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-        const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-          question_id: this.question.id,
-        });
-        return result.rows;
-      },
-      async (assessments) => {
-        debug(
-          `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
-        );
-        await async.eachSeries(assessments, async (assessment) => {
-          let infoPath = path.join(
-            this.course.path,
-            'courseInstances',
-            assessment.course_instance_directory,
-            'assessments',
-            assessment.assessment_directory,
-            'infoAssessment.json'
-          );
-          this.pathsToAdd.push(infoPath);
 
-          debug(`Read ${infoPath}`);
-          const infoJson = await fs.readJson(infoPath);
+    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    await fs.move(oldPath, newPath, { overwrite: false });
+    await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
+    this.pathsToAdd = [oldPath, newPath];
+    this.commitMessage = `rename question ${this.question.qid} to ${this.qid_new}`;
 
-          debug(`Find/replace QID in ${infoPath}`);
-          let found = false;
-          infoJson.zones.forEach((zone) => {
-            zone.questions.forEach((question) => {
-              if (question.alternatives) {
-                question.alternatives.forEach((alternative) => {
-                  if (alternative.id === this.question.qid) {
-                    alternative.id = this.qid_new;
-                    found = true;
-                  }
-                });
-              } else if (question.id === this.question.qid) {
-                question.id = this.qid_new;
+    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
+    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
+      question_id: this.question.id,
+    });
+    const assessments = result.rows;
+
+    debug(
+      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
+    );
+    await async.eachSeries(assessments, async (assessment) => {
+      let infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_directory,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json'
+      );
+      this.pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson = await fs.readJson(infoPath);
+
+      debug(`Find/replace QID in ${infoPath}`);
+      let found = false;
+      infoJson.zones.forEach((zone) => {
+        zone.questions.forEach((question) => {
+          if (question.alternatives) {
+            question.alternatives.forEach((alternative) => {
+              if (alternative.id === this.question.qid) {
+                alternative.id = this.qid_new;
                 found = true;
               }
             });
-          });
-          if (!found) {
-            logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+          } else if (question.id === this.question.qid) {
+            question.id = this.qid_new;
+            found = true;
           }
-          debug(`Write ${infoPath}`);
-          await fs.writeJson(infoPath, infoJson, { spaces: 4 });
         });
-      },
-    ]);
+      });
+      if (!found) {
+        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+      }
+      debug(`Write ${infoPath}`);
+      await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+    });
   }
 }
 
