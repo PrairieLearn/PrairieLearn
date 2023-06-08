@@ -91,19 +91,12 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           })
         );
       },
-      (callback) => {
-        // If we're configured to use the database, ensure that this job
-        // wasn't canceled in the time since job submission
-        if (!config.useDatabase) return callback(null);
-
-        const params = {
+      async () => {
+        // Ensure that this job wasn't canceled in the time since job submission.
+        const result = await sqldb.queryOneRowAsync(sql.check_job_cancelation, {
           grading_job_id: parsedMessage.jobId,
-        };
-        sqldb.queryOneRow(sql.check_job_cancelation, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          jobCanceled = result.rows[0].canceled;
-          callback(null);
         });
+        jobCanceled = result.rows[0].canceled;
       },
       (callback) => {
         // Don't execute the job if it was canceled
