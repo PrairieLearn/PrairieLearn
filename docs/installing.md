@@ -6,7 +6,7 @@ This page describes the procedure to install and run your course locally within 
 
 Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-If you are using Windows, you are strongly encouraged to also use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features. It has been found to provide better performance for running PrairieLearn compared to running Docker directly on top of Windows.
+If you are using Windows, you are strongly encouraged to also use WSL 2 to run PrairieLearn. WSL 2 provides a Linux environment that runs alongside Windows, and makes better use of modern CPU virtualization features.
 
 Here are the instructions to install WSL 2 and enable its integration with Docker:
 
@@ -18,7 +18,7 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 sudo apt install docker
 ```
 
-If you are using Windows without WSL 2 then you will need to first give Docker permission to access the C: drive (or whichever drive your course directory is on). This can be done by right-clicking on the Docker "whale" icon in the taskbar, choosing "Settings", and granting shared access to the C: drive. This step is not necessary if you are using WSL 2 integration.
+**NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
 ## Cloning your course repository
 
@@ -26,9 +26,9 @@ If you are running PrairieLearn with the example course only, you may skip this 
 
 When you request your course, you will typically receive a GitHub repository URL to your course's content. You may use [Git](https://git-scm.com/) to clone (make a local copy of) this course content in your own computer. Make note of the directory you are cloning your course to. If you are working with multiple courses, you will need to store each course in a separate directory.
 
-If you are using Windows with WSL 2, you have two options to store your course repository(ies):
+If you are using Windows, you have two options to store your course repository(ies):
 
-- Store your course content inside the WSL instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
+- Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
 
 - Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
 
@@ -40,19 +40,15 @@ To run PrairieLearn using the example course only, open a terminal window and ty
 docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 ```
 
-To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory. For example, if your course is stored in `/Users/mwest/git/pl-tam212`, the command is:
+To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory. For example, if your course is stored in `$HOME/pl-tam212`, the command is:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course prairielearn/prairielearn
+docker run -it --rm -p 3000:3000 -v $HOME/pl-tam212:/course prairielearn/prairielearn
 ```
 
 Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
 
-If you are running on Windows with WSL 2, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt. If you are using Windows without support for WSL 2, use the Windows path for your course, e.g.:
-
-```sh
-docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn
-```
+If you are running on Windows, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt.
 
 After running the command above, you should see a message that says:
 
@@ -79,7 +75,7 @@ In order to run external grading jobs when PrairieLearn is running locally insid
 - We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
 - We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
 
-To run PrairieLearn locally with external grader and workspace support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows with WSL 2, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
+To run PrairieLearn locally with external grader and workspace support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
 
 ```bash
 mkdir "$HOME/pl_ag_jobs"
@@ -96,7 +92,7 @@ docker run -it --rm -p 3000:3000 \
     prairielearn/prairielearn
 ```
 
-If you are on Windows with WSL 2, you can use the following command on the WSL 2 shell:
+If you are on Windows, you can use the following command on the WSL 2 shell:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -107,8 +103,6 @@ docker run -it --rm -p 3000:3000 \
     --add-host=host.docker.internal:172.17.0.1 \
     prairielearn/prairielearn
 ```
-
-**NOTE**: We do not currently support the use of external graders and workspaces in a Windows environment without WSL 2, due to limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to provide such functionality in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged.
 
 ## Upgrading your Docker's version of PrairieLearn
 
