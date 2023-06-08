@@ -53,8 +53,16 @@
                 </span>
             {{/incorrect}}
             {{#parse_error}}
-                <a role="button" class="btn btn-light border d-flex align-items-center text-danger rounded-right" data-toggle="popover" data-html="true" title="Format Error" data-placement="auto" data-trigger="focus" tabindex="0" data-content="{{parse_error}}">
-                    Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                <a role="button"
+                   class="btn btn-light border d-flex align-items-center text-danger rounded-right"
+                   data-toggle="popover"
+                   data-html="true"
+                   title="Format Error"
+                   data-placement="auto"
+                   data-trigger="focus"
+                   tabindex="0"
+                   data-content="{{parse_error}}">
+                    <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
                 </a>
             {{/parse_error}}
         </span>
