@@ -4,6 +4,7 @@
     "title": "Test disabling real-time grading",
     "set": "Exam",
     "number": "8",
+    "helpLink": "https://www.prairielearn.org/",
     "allowRealTimeGrading": false,
     "allowAccess": [
         {
