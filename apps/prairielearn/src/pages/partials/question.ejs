@@ -1,4 +1,13 @@
-<div id="question-0" class="question-container">
+<div id="question-0" class="question-container"
+     data-grading-method="<%= question.grading_method %>"
+     data-variant-id="<%= variant.id %>"
+     data-question-id="<%= question.id %>"
+     data-instance-question-id="<%= locals.instance_question?.id ?? '' %>"
+     data-variant-token="<%= variantToken %>"
+     data-url-prefix="<%= urlPrefix %>"
+     data-question-context="<%= question_context %>"
+     data-csrf-token="<%= __csrf_token %>"
+     data-authorized-edit="<%= !locals.authz_result || locals.authz_result.authorized_edit %>">
   <% if (question.type != 'Freeform') { %>
   <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
   <% } %>
@@ -127,14 +136,12 @@
   </div>
   <% } %>
 
-  <% if (showTrueAnswer) { %>
-  <div class="card mb-4 grading-block">
+  <div class="card mb-4 grading-block<%= showTrueAnswer ? '' : ' d-none' %>">
     <div class="card-header bg-secondary text-white">Correct answer</div>
     <div class="card-body answer-body">
-      <%- answerHtml %>
+      <%- showTrueAnswer ? answerHtml : '' %>
     </div>
   </div>
-  <% } %>
 
   <%# Submissions section %>
   <% if (showSubmissions) { %>
@@ -196,7 +203,5 @@
     <% } %>
 
   <% } %> <%# endif showSubmissions %>
-
-  <%- include('externalGradingLiveUpdate'); %>
 
 </div>
