@@ -52,13 +52,19 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-container .pl-order-block,
-.pl-order-blocks-pairing-indicator .pl-order-block,
-.pl-order-blocks-answer-container li {
+.pl-order-blocks-pairing-indicator .pl-order-block {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
   color: black;
+}
+
+.pl-order-blocks-answer-container li {
+  margin-bottom: 5px;
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
+  line-height: 1.2em;
 }
 
 .pl-order-blocks-answer-container > ul {
