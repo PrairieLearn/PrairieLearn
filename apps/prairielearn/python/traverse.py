@@ -58,14 +58,14 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
 def traverse_and_replace(
     html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
 ) -> str:
-   """
-   Perform traversal and element replacement on HTML with the given replace function.
-   In short, uses stacks to track what has been parsed already and what still needs to be parsed.
-   The count_stack tracks how many children each unclosed tag (contained in the tail_stack) has.
-   The top entry in count_stack is decremented every time something is moved onto result,
-   and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
-   """
-   
+    """
+    Perform traversal and element replacement on HTML with the given replace function.
+    In short, uses stacks to track what has been parsed already and what still needs to be parsed.
+    The count_stack tracks how many children each unclosed tag (contained in the tail_stack) has.
+    The top entry in count_stack is decremented every time something is moved onto result,
+    and when an entry hits zero, the corresponding tag from tail_stack is moved onto result as well.
+    """
+
     # Initialize result and work data structures
     result: Deque[str] = deque()
 
