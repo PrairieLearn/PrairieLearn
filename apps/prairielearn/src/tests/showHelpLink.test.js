@@ -85,8 +85,6 @@ describe('Show helpLink on some assessment', function () {
     );
   });
 
-  // TODO remove the stuff below here ------------------------------------------
-
   step('check that the question has the help link', async () => {
     const response = await helperClient.fetchCheerio(context.questionUrl, {
       headers,
