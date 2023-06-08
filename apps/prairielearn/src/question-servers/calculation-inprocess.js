@@ -8,8 +8,8 @@ var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
 
 module.exports = {
-  loadServer: function (question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+  loadServer: function (question, question_course, callback) {
+    const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
 
     chunks.getTemplateQuestionIds(question, (err, questionIds) => {
       if (ERR(err, callback)) return;
@@ -30,7 +30,7 @@ module.exports = {
           type: 'serverFilesCourse',
         },
       ].concat(templateQuestionChunks);
-      chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
+      chunks.ensureChunksForCourse(question_course.id, chunksToLoad, (err) => {
         if (ERR(err, callback)) return;
         filePaths.questionFilePath(
           'server.js',
