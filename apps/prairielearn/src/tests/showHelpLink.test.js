@@ -87,39 +87,11 @@ describe('Show helpLink on some assessment', function () {
 
   // TODO remove the stuff below here ------------------------------------------
 
-  step('simulate a time limit expiration', async () => {
-    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
-      method: 'POST',
-      form,
-      headers: headersTimeLimit,
-    });
-    assert.equal(response.status, 403);
-
-    // We should have been redirected back to the same assessment instance
-    assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
-
-    // we should not have any questions
-    assert.lengthOf(response.$('a:contains("Question 1")'), 0);
-
-    // we should have the "assessment closed" message
-    const msg = response.$('div.test-suite-assessment-closed-message');
-    assert.lengthOf(msg, 1);
-    assert.match(msg.text(), /Assessment .* is no longer available/);
-  });
-
-  step('check the assessment instance is closed', async () => {
-    const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
-    assert.equal(results.rowCount, 1);
-    assert.equal(results.rows[0].open, false);
-  });
-
-  step('check that accessing a question gives the "assessment closed" message', async () => {
+  step('check that the question has the help link', async () => {
     const response = await helperClient.fetchCheerio(context.questionUrl, {
       headers,
     });
-    assert.equal(response.status, 403);
-
-    assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
-    assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    const elemList = response.$('a:contains(Ask course staff for help with this question)');
+    assert.lengthOf(elemList, 1);
   });
 });
