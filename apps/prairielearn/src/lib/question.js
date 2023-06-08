@@ -502,18 +502,14 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} variant_course - The course for the variant.
    */
-  _getQuestionCourse(question, variant_course, callback) {
+  async _getQuestionCourse(question, variant_course) {
     if (question.course_id === variant_course.id) {
-      callback(variant_course);
+      return variant_course;
     } else {
-      sqldb.queryOneRow(
-        sql.select_question_course,
-        { question_course_id: question.course_id },
-        (err, result) => {
-          if (ERR(err, callback)) return;
-          callback(result.rows[0].course);
-        }
-      );
+      let result = await sqldb.queryOneRowAsync(sql.select_question_course, {
+        question_course_id: question.course_id,
+      });
+      return result.rows[0].course;
     }
   },
 
@@ -541,11 +537,8 @@ module.exports = {
     let questionModule, question_course, courseIssues, data, submission, grading_job;
     async.series(
       [
-        (callback) => {
-          module.exports._getQuestionCourse(question, variant_course, (course) => {
-            question_course = course;
-            callback(null);
-          });
+        async () => {
+          question_course = await module.exports._getQuestionCourse(question, variant_course);
         },
         (callback) => {
           var params = [variant.id, check_submission_id];
@@ -1097,11 +1090,8 @@ module.exports = {
       test_submission = null;
     async.series(
       [
-        (callback) => {
-          module.exports._getQuestionCourse(question, variant_course, (course) => {
-            question_course = course;
-            callback(null);
-          });
+        async () => {
+          question_course = await module.exports._getQuestionCourse(question, variant_course);
         },
         (callback) => {
           const instance_question_id = null;
@@ -1578,11 +1568,11 @@ module.exports = {
   getAndRenderVariant(variant_id, variant_seed, locals, callback) {
     async.series(
       [
-        (callback) => {
-          module.exports._getQuestionCourse(locals.question, locals.course, (course) => {
-            locals.question_course = course;
-            callback(null);
-          });
+        async () => {
+          locals.question_course = await module.exports._getQuestionCourse(
+            locals.question,
+            locals.course
+          );
         },
         (callback) => {
           if (variant_id != null) {
