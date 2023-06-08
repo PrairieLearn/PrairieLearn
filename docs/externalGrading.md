@@ -230,7 +230,7 @@ A reference Python implementation for this can be seen in `PrairieLearn/graders/
 
 ## Writing questions
 
-To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl-file-editor>` gives students an in-browser editor that they can use to write code. `<pl-file-upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
+To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl-file-editor>` gives students an in-browser editor that they can use to write code. `<pl-file-upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`. For questions using workspaces, [the `gradedFiles` option](https://prairielearn.readthedocs.io/en/latest/workspaces/#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
 
 If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` dict. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
 
@@ -246,7 +246,7 @@ If you want to write your own submission mechanism (as a custom element, for ins
 ]
 ```
 
-For a working example of this, see `PrairieLearn/elements/pl_file_upload/pl_file_upload.py`.
+For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
 
 ## Running locally for development
 
@@ -258,44 +258,51 @@ In production, PrairieLearn runs external grading jobs on a distributed system t
 
 PrairieLearn supports two ways of running on your own machine: natively, and inside a Docker container. We support running external autograders for each way. If the `HOST_JOBS_DIR` environment variable is set (more on that later), PrairieLearn will assume it's running in a container; otherwise, it assumes it's running natively.
 
-#### Running locally (on Docker)
+### Running locally (on Docker)
 
-We have to do a couple interesting things to run external grading jobs when PrairieLearn is running locally inside Docker:
+In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
 
 - We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
 - We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
 
-Running PrairieLearn locally with externally graded question support looks something like this:
-
-- Create an empty directory to use to share job data between containers.
-  - This can live anywhere, but needs to be created first and referenced in
-    the docker launch command.
-  - This command is copy-pastable for Windows PowerShell, MacOS, and Linux (including WSL2 instances).
+To run PrairieLearn locally with externally graded question support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows with WSL 2, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
 
 ```bash
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-- Modify your PL docker run call to include the jobs directory.
-
-##### Shell Command
-
-On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
+Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, and you are using Linux or Mac OS X, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
-    -v "$PWD":/course `# Map your current directory in as course content` \
+    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
     prairielearn/prairielearn
 ```
 
-On Windows PowerShell, `cd` to your course directory and copy the following command **except** with your own username in `HOST_JOBS_DIR`:
+If you are on Windows with WSL 2, you can use the following command on the WSL 2 shell:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
+    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
+    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+#### Running on Windows without WSL 2 support
+
+The use of Windows without WSL 2 for external grading support is highly discouraged. Given some expectations of file system permissions in external graders, Docker images running directly on Windows can cause issues with mode/permissions, as jobs are typically created in an environment that allows for a distinction of executable and non-executable files that is not easily translateable to a Windows file system.
+
+If you are required to use Windows without WSL 2, on Windows PowerShell, use the following command:
 
 ```powershell
 docker run -it --rm -p 3000:3000 `
-    -v $PWD\:/course `
+    -v $HOME\Documents\pl-tam212:/course `
     -v $HOME\pl_ag_jobs:/jobs `
     -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
     -v /var/run/docker.sock:/var/run/docker.sock `
@@ -307,44 +314,22 @@ docker run -it --rm -p 3000:3000 `
 - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`).
 - Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
 
-If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+When running external graders in this mode, you may encounter an error like:
 
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$PWD":/course \
-    -v $HOME/pl_ag_jobs:/jobs \
-    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --add-host=host.docker.internal:172.17.0.1 \
-    prairielearn/prairielearn
-```
-
-Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
-
-##### Windows errors and quirks
-
-###### `exec user process caused "no such file or directory"`
-
-This error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
-graded question:
-
-```bash
+```console
 standard_init_linux.go:207: exec user process caused "no such file or directory"
 ```
 
-One solution for this is to make a `.gitattributes` files in your PL repository with the line
-`*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
-format instead of converting them for Windows (which breaks mapping them back into docker).
-This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
+This error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux format instead of converting them for Windows (which breaks mapping them back into docker). This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
-###### `invalid mode: /grade`
+Another common issue is:
 
-This error occurs when `HOST_JOBS_DIR` cannot be accessed:
-
-```sh
+```console
 error: Error processing external grading job 1
 error: handleGraderErrorUnable to launch Docker container for grading: (HTTP code 500) server error - invalid mode: /grade
 ```
+
+This error occurs when `HOST_JOBS_DIR` cannot be accessed. Some steps can be performed to resolve this issue:
 
 1. Verify that the `pl_ag_jobs` directory was created successfully.
 2. Verify the following quirks about `HOST_JOBS_DIR`:
@@ -355,6 +340,6 @@ error: handleGraderErrorUnable to launch Docker container for grading: (HTTP cod
    - If still not working, restart Docker.
    - If still not working, restart Windows.
 
-#### Running locally (native, not on Docker)
+### Running locally (native, not on Docker)
 
 When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs` on Unix-based systems and `$USERPROFILE/.pljobs` on Windows. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.
