@@ -27,7 +27,7 @@ describe('makeWithData', () => {
 
 describe('makeWithInfo', () => {
   it('makes an error with the expected properties', () => {
-    const err = makeWithInfo('Not Found', 'extra info for user');
+    const err = makeWithInfo('Not Found', 'bar');
     assert.equal(err.message, 'Not Found');
     assert.equal(err.info, 'bar');
   });
