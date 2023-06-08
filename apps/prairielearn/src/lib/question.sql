@@ -232,7 +232,7 @@ FROM
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
   JOIN pl_courses AS c ON (c.id = v.course_id)
-  JOIN pl_courses AS qc ON (c.id = q.course_id)
+  JOIN pl_courses AS qc ON (qc.id = q.course_id)
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
