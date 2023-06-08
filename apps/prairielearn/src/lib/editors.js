@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const { logger } = require('@prairielearn/logger');
@@ -31,6 +32,9 @@ class Editor {
     this.assessment = params.locals.assessment;
     this.assessment_set = params.locals.assessment_set;
     this.question = params.locals.question;
+    this.description = null;
+    this.pathsToAdd = null;
+    this.commitMessage = null;
   }
 
   async write() {
@@ -194,7 +198,15 @@ class Editor {
             if (ERR(err, (e) => logger.error('Error in write()', e))) {
               job.fail(err);
             } else {
-              job.succeed();
+              if (this.description == null || this.description === '') {
+                job.fail(new Error('Missing required description'));
+              } else if (this.pathsToAdd == null || this.pathsToAdd.length === 0) {
+                job.fail(new Error('Missing required pathsToAdd'));
+              } else if (this.commitMessage == null || this.commitMessage === '') {
+                job.fail(new Error('Missing required commitMessage'));
+              } else {
+                job.succeed();
+              }
             }
           });
         });
@@ -468,8 +480,8 @@ class Editor {
   /**
    * Remove empty preceding subfolders for a question, assessment, etc. based on its ID.
    * This should be run after renames or deletes to prevent syncing issues.
-   * @param rootDirectory Root directory that the items are being stored in.
-   * @param id Item to delete root subfolders for, relative from the root directory.
+   * @param {string} rootDirectory Root directory that the items are being stored in.
+   * @param {string} id Item to delete root subfolders for, relative from the root directory.
    */
   async removeEmptyPrecedingSubfolders(rootDirectory, id) {
     const idSplit = id.split(path.sep);
@@ -479,7 +491,7 @@ class Editor {
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
-    await async.eachOfSeries(reverseFolders, async (folder, index) => {
+    for (const [index] of reverseFolders.entries()) {
       if (!seenNonemptyFolder) {
         const delPath = path.join(rootDirectory, ...idSplit.slice(0, idSplit.length - 1 - index));
         debug('Checking', delPath);
@@ -496,7 +508,7 @@ class Editor {
           await fs.remove(delPath);
         }
       }
-    });
+    }
   }
 
   /**
@@ -1054,7 +1066,7 @@ class QuestionRenameEditor extends Editor {
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
     );
-    await async.eachSeries(assessments, async (assessment) => {
+    for (const assessment of assessments) {
       let infoPath = path.join(
         this.course.path,
         'courseInstances',
@@ -1090,7 +1102,7 @@ class QuestionRenameEditor extends Editor {
       }
       debug(`Write ${infoPath}`);
       await fs.writeJson(infoPath, infoJson, { spaces: 4 });
-    });
+    }
   }
 }
 
@@ -1220,12 +1232,14 @@ class FileDeleteEditor extends Editor {
 
   canEdit(callback) {
     if (!contains(this.container.rootPath, this.deletePath)) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
+
         `<p>The path of the file to delete</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-        `<p>must be inside the root directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
+          `<p>must be inside the root directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1233,12 +1247,13 @@ class FileDeleteEditor extends Editor {
       contains(invalidRootPath, this.deletePath)
     );
     if (found) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The path of the file to delete</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-        `<p>must <em>not</em> be inside the directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
+          `<p>must <em>not</em> be inside the directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1277,22 +1292,24 @@ class FileRenameEditor extends Editor {
   canEdit(callback) {
     debug('FileRenameEditor: canEdit()');
     if (!contains(this.container.rootPath, this.oldPath)) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file's old path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-        `<p>must be inside the root directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+          `<p>must be inside the root directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+      );
       return callback(err);
     }
 
     if (!contains(this.container.rootPath, this.newPath)) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file's new path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-        `<p>must be inside the root directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
+          `<p>must be inside the root directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1302,12 +1319,13 @@ class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.oldPath)
     );
     if (found) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file's old path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-        `<p>must <em>not</em> be inside the directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+          `<p>must <em>not</em> be inside the directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1315,12 +1333,13 @@ class FileRenameEditor extends Editor {
       contains(invalidRootPath, this.newPath)
     );
     if (found) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file's new path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-        `<p>must <em>not</em> be inside the directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
+          `<p>must <em>not</em> be inside the directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1393,12 +1412,13 @@ class FileUploadEditor extends Editor {
 
   canEdit(callback) {
     if (!contains(this.container.rootPath, this.filePath)) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-        `<p>must be inside the root directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
+          `<p>must be inside the root directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+      );
       return callback(err);
     }
 
@@ -1406,12 +1426,13 @@ class FileUploadEditor extends Editor {
       contains(invalidRootPath, this.filePath)
     );
     if (found) {
-      let err = new Error('Invalid file path');
-      err.info =
+      const err = error.makeWithInfo(
+        'Invalid file path',
         `<p>The file path</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-        `<p>must <em>not</em> be inside the directory</p>` +
-        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
+          `<p>must <em>not</em> be inside the directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+      );
       return callback(err);
     }
 
