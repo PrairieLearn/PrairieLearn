@@ -1698,13 +1698,13 @@ module.exports = {
     );
   },
 
-  async gradeAsync(submission, variant, question, course) {
+  async gradeAsync(submission, variant, question, question_course) {
     return instrumented('freeform.grade', async () => {
       debug('grade()');
       if (variant.broken) throw new Error('attemped to grade broken variant');
       if (submission.broken) throw new Error('attemped to grade broken submission');
 
-      const context = await module.exports.getContext(question, course);
+      const context = await module.exports.getContext(question, question_course);
       let data = {
         params: variant.params,
         correct_answers: variant.true_answer,
@@ -1745,8 +1745,8 @@ module.exports = {
     });
   },
 
-  grade(submission, variant, question, course, callback) {
-    module.exports.gradeAsync(submission, variant, question, course).then(
+  grade(submission, variant, question, question_course, callback) {
+    module.exports.gradeAsync(submission, variant, question, question_course).then(
       ({ courseIssues, data: resultData }) => {
         callback(null, courseIssues, resultData);
       },

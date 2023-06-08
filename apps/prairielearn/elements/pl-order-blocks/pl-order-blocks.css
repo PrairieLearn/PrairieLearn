@@ -14,6 +14,7 @@ div.pl-order-blocks-bottom {
 
 li.pl-order-blocks-code {
   list-style-type: none;
+  padding: 0px !important;
 }
 
 .pl-order-blocks-code > .pl-code,
@@ -22,7 +23,7 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable li:hover:not(.nodrag){
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag){
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
@@ -50,11 +51,14 @@ li.ui-state-highlight {
   margin-bottom: 0px;
 }
 
-.pl-order-blocks-container li, .pl-order-blocks-answer-container li {
+.pl-order-blocks-container .pl-order-block,
+.pl-order-blocks-pairing-indicator .pl-order-block,
+.pl-order-blocks-answer-container li {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
+  color: black;
 }
 
 .pl-order-blocks-answer-container > ul {
@@ -79,4 +83,20 @@ div.pl-order-blocks-container {
   height: 3rem;
   display: flex;
   align-items: center;
+}
+
+.pl-order-blocks-pairing-indicator {
+  border-radius: 10px;
+  border: 0px !important;
+  list-style: none;
+  margin-left: -10px;
+  margin-right: -10px;
+  padding: 4px 10px 4px 10px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+
+.pl-order-blocks-pairing-indicator li:last-child {
+  margin-bottom: 0px !important;
 }
