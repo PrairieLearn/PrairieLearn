@@ -418,12 +418,6 @@ function updateDidSync(fileEdit, callback) {
   );
 }
 
-function deleteEditFromFileStore(file_id, authn_user_id, callback) {
-  callbackify(async () => {
-    await fileStore.delete(file_id, authn_user_id);
-  })(callback);
-}
-
 async function createEdit(fileEdit) {
   const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
     user_id: fileEdit.userID,
