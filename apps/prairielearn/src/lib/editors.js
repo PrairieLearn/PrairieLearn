@@ -3,7 +3,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const { logger } = require('@prairielearn/logger');
 const { contains } = require('@prairielearn/path-utils');
-const serverJobs = require('./server-jobs-legacy');
+const { createServerJob } = require('./server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../sync/syncFromDisk');
 const courseUtil = require('../lib/courseUtil');
@@ -22,6 +22,42 @@ const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * @param {any} course
+ * @param {string} startGitHash
+ * @param {import('./server-jobs').ServerJob} job
+ */
+async function syncCourseFromDisk(course, startGitHash, job) {
+  const endGitHash = await courseUtil.updateCourseCommitHashAsync(course);
+
+  const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
+
+  if (config.chunksGenerator) {
+    const chunkChanges = await chunks.updateChunksForCourse({
+      coursePath: course.path,
+      courseId: course.id,
+      courseData: result.courseData,
+      oldHash: startGitHash,
+      newHash: endGitHash,
+    });
+    chunks.logChunkChangesToJob(chunkChanges, job);
+  }
+
+  if (result.hadJsonErrors) {
+    throw new Error('One or more JSON files contained errors and were unable to be synced');
+  }
+
+  await util.promisify(requireFrontend.undefQuestionServers)(course.path, job);
+}
+
+async function cleanAndResetRepository(course, env, job) {
+  await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
+  await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
+    cwd: course.path,
+    env,
+  });
+}
 
 class Editor {
   constructor(params) {
@@ -56,425 +92,102 @@ class Editor {
   }
 
   doEdit(callback) {
-    const options = {
-      course_id: this.course.id,
-      user_id: this.user.user_id,
-      authn_user_id: this.authz_data.authn_user.user_id,
-      type: 'sync',
-      description: this.description,
-      courseDir: this.course.path,
-    };
-
-    serverJobs.createJobSequence(options, (err, job_sequence_id) => {
-      // Return immediately if we fail to create a job sequence
-      if (ERR(err, callback)) return;
-
-      let gitEnv = process.env;
-      if (config.gitSshCommand != null) {
-        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-      }
-
-      let courseLock;
-      let jobSequenceHasFailed = false;
-      let startGitHash = null;
-      let endGitHash = null;
-
-      const _lock = () => {
-        debug(`${job_sequence_id}: _lock`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'lock',
-          description: 'Lock',
-          job_sequence_id: job_sequence_id,
-          on_success: _getStartGitHash,
-          on_error: _finishWithFailure,
-          no_job_sequence_update: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-
-          const lockName = 'coursedir:' + options.courseDir;
-          job.verbose(`Trying lock ${lockName}`);
-          namedLocks.waitLock(lockName, { timeout: 5000 }, (err, lock) => {
-            if (ERR(err, (e) => logger.error('Error in waitLock()', e))) {
-              job.fail(err);
-            } else if (lock == null) {
-              job.verbose(`Did not acquire lock ${lockName}`);
-              job.fail(
-                new Error(
-                  `Another user is already syncing or modifying the course: ${options.courseDir}`
-                )
-              );
-            } else {
-              courseLock = lock;
-              job.verbose(`Acquired lock ${lockName}`);
-              job.succeed();
-            }
-            return;
+    let jobSequenceId = null;
+    async.series(
+      [
+        async () => {
+          const serverJob = await createServerJob({
+            courseId: this.course.id,
+            userId: this.user.user_id,
+            authnUserId: this.authz_data.authn_user.user_id,
+            type: 'sync',
+            description: this.description,
           });
-        });
-      };
+          jobSequenceId = serverJob.jobSequenceId;
 
-      const _getStartGitHash = () => {
-        courseUtil.getOrUpdateCourseCommitHash(this.course, (err, hash) => {
-          ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-          startGitHash = hash;
+          // We deliberately use `execute` instead of `executeInBackground` here
+          // because we want edits to complete during the request during which
+          // they are made.
+          await serverJob.execute(async (job) => {
+            const gitEnv = process.env;
+            if (config.gitSshCommand != null) {
+              gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+            }
 
-          if (config.fileEditorUseGit) {
-            _clean(_write, _cleanup);
-          } else {
-            _write();
-          }
-        });
-      };
+            const lockName = `coursedir:${this.course.path}`;
+            await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
+              const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
 
-      const _clean = (on_success, on_error) => {
-        debug(`${job_sequence_id}: _clean`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          job_sequence_id: job_sequence_id,
-          type: 'clean_git_repo',
-          description: 'Clean local files not in remote git repository',
-          command: 'git',
-          arguments: ['clean', '-fdx'],
-          working_directory: this.course.path,
-          env: gitEnv,
-          on_success: () => {
-            _reset(on_success, on_error);
-          },
-          on_error: on_error,
-          no_job_sequence_update: true,
-        };
-        serverJobs.spawnJob(jobOptions);
-      };
-
-      const _reset = (on_success, on_error) => {
-        debug(`${job_sequence_id}: _reset`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          job_sequence_id: job_sequence_id,
-          type: 'reset_from_git',
-          description: 'Reset state to remote git repository',
-          command: 'git',
-          arguments: ['reset', '--hard', `origin/${this.course.branch}`],
-          working_directory: this.course.path,
-          env: gitEnv,
-          on_success: on_success,
-          on_error: on_error,
-          no_job_sequence_update: true,
-        };
-        serverJobs.spawnJob(jobOptions);
-      };
-
-      const _write = () => {
-        debug(`${job_sequence_id}: _write`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'write',
-          description: 'Write to disk',
-          job_sequence_id: job_sequence_id,
-          on_success: config.fileEditorUseGit ? _add : _syncFromDisk,
-          on_error: config.fileEditorUseGit ? _cleanupAfterWrite : _cleanup,
-          no_job_sequence_update: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-
-          util.callbackify(this.write).bind(this)((err) => {
-            if (ERR(err, (e) => logger.error('Error in write()', e))) {
-              job.fail(err);
-            } else {
-              if (this.description == null || this.description === '') {
-                job.fail(new Error('Missing required description'));
-              } else if (this.pathsToAdd == null || this.pathsToAdd.length === 0) {
-                job.fail(new Error('Missing required pathsToAdd'));
-              } else if (this.commitMessage == null || this.commitMessage === '') {
-                job.fail(new Error('Missing required commitMessage'));
-              } else {
-                job.succeed();
+              if (config.fileEditorUseGit) {
+                await cleanAndResetRepository(this.course, gitEnv, job);
               }
-            }
-          });
-        });
-      };
 
-      const _add = () => {
-        debug(`${job_sequence_id}: _add`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          job_sequence_id: job_sequence_id,
-          type: 'git_add',
-          description: 'Stage changes',
-          command: 'git',
-          arguments: ['add'].concat(this.pathsToAdd),
-          working_directory: this.course.path,
-          env: gitEnv,
-          on_success: _commit,
-          on_error: _cleanupAfterWrite,
-          no_job_sequence_update: true,
-        };
-        serverJobs.spawnJob(jobOptions);
-      };
+              try {
+                job.info('Write changes to disk');
+                await this.write();
+              } catch (err) {
+                if (config.fileEditorUseGit) {
+                  await cleanAndResetRepository(this.course, gitEnv, job);
+                }
 
-      const _commit = () => {
-        debug(`${job_sequence_id}: _commit`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          job_sequence_id: job_sequence_id,
-          type: 'git_commit',
-          description: 'Commit changes',
-          command: 'git',
-          arguments: [
-            '-c',
-            `user.name="${this.user.name}"`,
-            '-c',
-            `user.email="${this.user.uid}"`,
-            'commit',
-            '-m',
-            this.commitMessage,
-          ],
-          working_directory: this.course.path,
-          env: gitEnv,
-          on_success: _push,
-          on_error: _cleanupAfterWrite,
-          no_job_sequence_update: true,
-        };
-        serverJobs.spawnJob(jobOptions);
-      };
+                throw err;
+              }
 
-      const _push = () => {
-        debug(`${job_sequence_id}: _push`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          job_sequence_id: job_sequence_id,
-          type: 'git_push',
-          description: 'Push to remote',
-          command: 'git',
-          arguments: ['push'],
-          working_directory: this.course.path,
-          env: gitEnv,
-          on_success: _getEndCommitHash,
-          on_error: _cleanupAfterCommit,
-          no_job_sequence_update: true,
-        };
-        serverJobs.spawnJob(jobOptions);
-      };
-
-      const _getEndCommitHash = () => {
-        debug(`${job_sequence_id}: _updateCommitHash`);
-        courseUtil.getCommitHash(this.course.path, (err, hash) => {
-          ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-          endGitHash = hash;
-
-          // Note that we perform a second `git clean` after writing to disk, as
-          // the write operations may have left some empty directories behind.
-          // This would most likely occur during a rename.
-          _clean(_syncFromDisk, _cleanup);
-        });
-      };
-
-      const _syncFromDisk = () => {
-        debug(`${job_sequence_id}: _syncFromDisk`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'sync_from_disk',
-          description: 'Sync course',
-          job_sequence_id: job_sequence_id,
-          on_success: _reloadQuestionServers,
-          on_error: _cleanup,
-          no_job_sequence_update: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-
-          syncFromDisk._syncDiskToSqlWithLock(
-            this.course.path,
-            this.course.id,
-            job,
-            (err, result) => {
-              if (ERR(err, (e) => logger.error('Error in _syncDiskToSqlWithLock()', e))) {
-                debug('_syncDiskToSqlWithLock(): failure');
-                job.fail(err);
+              if (!config.fileEditorUseGit) {
+                await syncCourseFromDisk(this.course, startGitHash, job);
                 return;
               }
 
-              const updateCourseCommitHash = () => {
-                courseUtil.updateCourseCommitHash(this.course, (err) => {
-                  if (err) {
-                    job.fail(err);
-                  } else {
-                    checkJsonErrors();
-                  }
+              try {
+                await job.exec('git', ['add', ...this.pathsToAdd], {
+                  cwd: this.course.path,
+                  env: gitEnv,
                 });
-              };
-
-              const checkJsonErrors = () => {
-                if (result.hadJsonErrors) {
-                  job.fail('One or more JSON files contained errors and were unable to be synced');
-                } else {
-                  job.succeed();
-                }
-              };
-
-              if (config.chunksGenerator) {
-                util.callbackify(chunks.updateChunksForCourse)(
+                await job.exec(
+                  'git',
+                  [
+                    '-c',
+                    `user.name="${this.user.name}"`,
+                    '-c',
+                    `user.email="${this.user.uid}"`,
+                    'commit',
+                    '-m',
+                    this.commitMessage,
+                  ],
                   {
-                    coursePath: this.course.path,
-                    courseId: this.course.id,
-                    courseData: result.courseData,
-                    oldHash: startGitHash,
-                    newHash: endGitHash,
-                  },
-                  (err, chunkChanges) => {
-                    if (err) {
-                      job.fail(err);
-                      return;
-                    }
-                    chunks.logChunkChangesToJob(chunkChanges, job);
-                    updateCourseCommitHash();
+                    cwd: this.course.path,
+                    env: gitEnv,
                   }
                 );
-              } else {
-                updateCourseCommitHash();
+              } catch (err) {
+                await cleanAndResetRepository(this.course, gitEnv, job);
+                throw err;
               }
-            }
-          );
-        });
-      };
 
-      const _reloadQuestionServers = () => {
-        debug(`${job_sequence_id}: _reloadQuestionServers`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'reload_question_servers',
-          description: 'Reload server.js code (for v2 questions)',
-          job_sequence_id: job_sequence_id,
-          on_success: _unlock,
-          on_error: _cleanup,
-          no_job_sequence_update: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-          const coursePath = this.course.path;
-          requireFrontend.undefQuestionServers(coursePath, job, (err) => {
-            if (ERR(err, (e) => logger.error('Error in undefQuestionServers()', e))) {
-              job.fail(err);
-            } else {
-              job.succeed();
-            }
+              try {
+                await job.exec('git', ['push'], {
+                  cwd: this.course.path,
+                  env: gitEnv,
+                });
+              } finally {
+                // Regardless of whether we error, we'll do a clean and reset:
+                //
+                // If pushing succeeded, the clean will remove any empty directories
+                // that might have been left behind by operations like renames.
+                //
+                // If pushing errored, the reset will get us back to a known good state.
+                await cleanAndResetRepository(this.course, gitEnv, job);
+              }
+
+              await syncCourseFromDisk(this.course, startGitHash, job);
+            });
           });
-        });
-      };
-
-      const _cleanupAfterCommit = (id) => {
-        debug(`Job id ${id} has failed (after git commit)`);
-        jobSequenceHasFailed = true;
-        _reset(_unlock, _unlock);
-      };
-
-      const _cleanupAfterWrite = (id) => {
-        debug(`Job id ${id} has failed (after write)`);
-        jobSequenceHasFailed = true;
-        _clean(_unlock, _unlock);
-      };
-
-      const _cleanup = (id) => {
-        debug(`Job id ${id} has failed`);
-        jobSequenceHasFailed = true;
-        _unlock();
-      };
-
-      const _unlock = () => {
-        debug(`${job_sequence_id}: _unlock`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'unlock',
-          description: 'Unlock',
-          job_sequence_id: job_sequence_id,
-          on_success: jobSequenceHasFailed ? _finishWithFailure : _finishWithSuccess,
-          on_error: _finishWithFailure,
-          no_job_sequence_update: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-
-          namedLocks.releaseLock(courseLock, (err) => {
-            if (ERR(err, (e) => logger.error('Error in releaseLock()', e))) {
-              job.fail(err);
-            } else {
-              job.verbose(`Released lock`);
-              job.succeed();
-            }
-          });
-        });
-      };
-
-      const _finishWithSuccess = () => {
-        debug(`${job_sequence_id}: _finishWithSuccess`);
-        const jobOptions = {
-          course_id: options.course_id,
-          user_id: options.user_id,
-          authn_user_id: options.authn_user_id,
-          type: 'finish',
-          description: 'Finish job sequence',
-          job_sequence_id: job_sequence_id,
-          last_in_sequence: true,
-        };
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (ERR(err, (e) => logger.error('Error in createJob()', e))) {
-            _finishWithFailure();
-            return;
-          }
-
-          job.verbose('Finished with success');
-          job.succeed();
-          callback(null, job_sequence_id);
-        });
-      };
-
-      const _finishWithFailure = () => {
-        debug(`${job_sequence_id}: _finishWithFailure`);
-        serverJobs.failJobSequence(job_sequence_id);
-        callback(new Error('edit failed'), job_sequence_id);
-      };
-
-      _lock();
-    });
+        },
+      ],
+      (err) => {
+        callback(err, jobSequenceId);
+      }
+    );
   }
 
   /**

@@ -54,10 +54,13 @@ describe('server-jobs', () => {
       description: 'test job sequence',
     });
 
-    await serverJob.execute(async (context) => {
-      context.info('testing info');
-      throw new Error('failing job');
-    });
+    await assert.isRejected(
+      serverJob.execute(async (context) => {
+        context.info('testing info');
+        throw new Error('failing job');
+      }),
+      'failing job'
+    );
 
     const finishedJobSequence = await serverJobs.getJobSequenceAsync(serverJob.jobSequenceId, null);
 
