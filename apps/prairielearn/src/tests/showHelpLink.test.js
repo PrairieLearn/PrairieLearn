@@ -22,10 +22,6 @@ describe('Show helpLink on some assessment', function () {
     // need student mode to get a timed exam (instructor override bypasses this)
   };
 
-  const headersTimeLimit = {
-    cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
-  };
-
   before('set up testing server', async function () {
     await util.promisify(helperServer.before().bind(this))();
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
