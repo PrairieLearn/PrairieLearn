@@ -169,19 +169,15 @@ class Editor {
                   cwd: this.course.path,
                   env: gitEnv,
                 });
-              } catch (err) {
-                // In the original implementation, we would *only* reset the
-                // repo state. AFAICT, it should be safe to do both a clean
-                // and reset if the push fails?
-                // TODO: answer above question.
+              } finally {
+                // Regardless of whether we error, we'll do a clean and reset:
+                //
+                // If pushing succeeded, the clean will remove any empty directories
+                // that might have been left behind by operations like renames.
+                //
+                // If pushing errored, the reset will get us back to a known good state.
                 await cleanAndResetRepository(this.course, gitEnv, job);
-                throw err;
               }
-
-              // Note that we perform a second `git clean` after pushing, as the
-              // write operations may have left some empty directories behind.
-              // This would most likely occur during a rename.
-              await cleanAndResetRepository(this.course, gitEnv, job);
 
               await syncCourseFromDisk(this.course, startGitHash, job);
             });
