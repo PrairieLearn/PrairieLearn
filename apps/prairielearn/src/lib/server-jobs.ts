@@ -96,12 +96,12 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
-   * sequence has completed. The returned promise will not reject if the job
+   * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
   async execute(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
-    await this.executeInternal(fn);
+    await this.executeInternal(fn, true);
   }
 
   /**
@@ -112,7 +112,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    */
   executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn);
+    this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {
@@ -122,17 +122,25 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.started = true;
   }
 
-  private async executeInternal(fn: ServerJobExecutionFunction): Promise<void> {
+  private async executeInternal(
+    fn: ServerJobExecutionFunction,
+    shouldThrow: boolean
+  ): Promise<void> {
     try {
       await fn(this);
       await this.finish();
     } catch (err) {
-      console.error(err);
       try {
         await this.finish(err);
       } catch (err) {
         logger.error(`Error failing job ${this.jobId}`, err);
         Sentry.captureException(err);
+        if (shouldThrow) {
+          throw err;
+        }
+      }
+      if (shouldThrow) {
+        throw err;
       }
     }
   }

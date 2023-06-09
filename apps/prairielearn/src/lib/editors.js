@@ -26,10 +26,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 /**
  * @param {any} course
  * @param {string} startGitHash
- * @param {string} endGitHash
  * @param {import('./server-jobs').ServerJob} job
  */
-async function syncCourseFromDisk(course, startGitHash, endGitHash, job) {
+async function syncCourseFromDisk(course, startGitHash, job) {
+  const endGitHash = await courseUtil.updateCourseCommitHashAsync(course);
+
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
   if (config.chunksGenerator) {
@@ -42,8 +43,6 @@ async function syncCourseFromDisk(course, startGitHash, endGitHash, job) {
     });
     chunks.logChunkChangesToJob(chunkChanges, job);
   }
-
-  await courseUtil.updateCourseCommitHashAsync(course.path);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
@@ -125,7 +124,7 @@ class Editor {
 
               try {
                 job.info('Write changes to disk');
-                await util.promisify(this.write).bind(this)();
+                await this.write();
               } catch (err) {
                 if (config.fileEditorUseGit) {
                   await cleanAndResetRepository(this.course, gitEnv, job);
@@ -135,8 +134,7 @@ class Editor {
               }
 
               if (!config.fileEditorUseGit) {
-                const endGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
-                await syncCourseFromDisk(this.course, startGitHash, endGitHash, job);
+                await syncCourseFromDisk(this.course, startGitHash, job);
                 return;
               }
 
@@ -185,16 +183,12 @@ class Editor {
               // This would most likely occur during a rename.
               await cleanAndResetRepository(this.course, gitEnv, job);
 
-              const endGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
-              await syncCourseFromDisk(this.course, startGitHash, endGitHash, job);
+              await syncCourseFromDisk(this.course, startGitHash, job);
             });
           });
         },
       ],
       (err) => {
-        if (err) {
-          console.error(err);
-        }
         callback(err, jobSequenceId);
       }
     );
