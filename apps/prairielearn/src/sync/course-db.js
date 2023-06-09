@@ -1166,6 +1166,19 @@ async function validateAssessment(assessment, questions) {
               'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
             );
           }
+
+          const hasSplitPoints =
+            alternative.autoPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined ||
+            alternative.manualPoints !== undefined;
+          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const isNonIncreasing = pointsList.every(
+            (points, index) => index === 0 || points <= pointsList[index - 1]
+          );
+          if (!isNonIncreasing) {
+            errors.push('Points for a question must be non-increasing');
+          }
         }
         if (assessment.type === 'Homework') {
           if (
