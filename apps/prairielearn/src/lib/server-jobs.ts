@@ -127,6 +127,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       await fn(this);
       await this.finish();
     } catch (err) {
+      console.error(err);
       try {
         await this.finish(err);
       } catch (err) {
