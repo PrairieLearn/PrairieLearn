@@ -67,6 +67,7 @@ const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
+const { featuresMiddleware } = require('./lib/features');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -469,6 +470,13 @@ module.exports.initExpress = function () {
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  // Must come after the authentication middleware, as we need to read the
+  // `authn_is_administrator` property from the response locals.
+  //
+  // This means that feature flag overrides will not be available for
+  // unauthenticated routes.
+  app.use(featuresMiddleware((req, res) => res.locals.authn_is_administrator));
 
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest').default);
