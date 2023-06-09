@@ -88,64 +88,38 @@ router.get('/*', (req, res, next) => {
       async () => {
         debug('Read from db');
         await readEdit(fileEdit);
-      },
-      (callback) => {
+
         debug('Read from disk');
-        fs.readFile(fullPath, (err, contents) => {
-          if (ERR(err, callback)) return;
-          fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
-          fileEdit.diskHash = getHash(fileEdit.diskContents);
-          callback(null, contents);
-        });
-      },
-      (contents, callback) => {
-        isBinaryFile(contents).then(
-          (result) => {
-            debug(`isBinaryFile: ${result}`);
-            if (result) {
-              debug('found a binary file');
-              callback(new Error('Cannot edit binary file'));
-            } else {
-              debug('found a text file');
-              callback(null);
-            }
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null); // should never get here
-          }
-        );
-      },
-      (callback) => {
-        if (fileEdit.jobSequenceId == null) {
-          callback(null);
+        const contents = await fs.readFile(fullPath);
+        fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
+        fileEdit.diskHash = getHash(fileEdit.diskContents);
+
+        const binary = await isBinaryFile(contents);
+        debug(`isBinaryFile: ${binary}`);
+        if (binary) {
+          debug('found a binary file');
+          throw new Error('Cannot edit binary file');
         } else {
+          debug('found a text file');
+        }
+
+        if (fileEdit.jobSequenceId != null) {
           debug('Read job sequence');
-          serverJobs.getJobSequenceWithFormattedOutput(
+          fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
             fileEdit.jobSequenceId,
-            res.locals.course.id,
-            (err, job_sequence) => {
-              if (ERR(err, callback)) return;
-              fileEdit.jobSequence = job_sequence;
-              callback(null);
-            }
+            res.locals.course.id
           );
         }
-      },
-      (callback) => {
-        callbackify(editorUtil.getErrorsAndWarningsForFilePath)(
+
+        const data = await editorUtil.getErrorsAndWarningsForFilePath(
           res.locals.course.id,
-          relPath,
-          (err, data) => {
-            if (ERR(err, callback)) return;
-            const ansiUp = new AnsiUp();
-            fileEdit.sync_errors = data.errors;
-            fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
-            fileEdit.sync_warnings = data.warnings;
-            fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
-            callback(null);
-          }
+          relPath
         );
+        const ansiUp = new AnsiUp();
+        fileEdit.sync_errors = data.errors;
+        fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
+        fileEdit.sync_warnings = data.warnings;
+        fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
       },
     ],
     (err) => {
