@@ -18,7 +18,7 @@ export const CourseSchema = z.object({
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
-  sync_warnings: z.string(),
+  sync_warnings: z.string().nullable(),
   title: z.string().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
@@ -36,7 +36,7 @@ export const CourseInstanceSchema = z.object({
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
-  sync_warnings: z.string(),
+  sync_warnings: z.string().nullable(),
   uuid: z.string().nullable(),
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
