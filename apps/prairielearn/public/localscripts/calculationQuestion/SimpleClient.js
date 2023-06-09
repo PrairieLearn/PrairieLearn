@@ -174,7 +174,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         );
       }
       this.checkSubmittable();
-      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
+      window.MathJax?.startup.promise.then(() => window.MathJax.typesetPromise());
       this.trigger('renderFinished');
     },
 
@@ -281,7 +281,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         });
         this.rivetsBindingsActive = true;
       }
-      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
+      window.MathJax?.startup.promise.then(() => window.MathJax.typesetPromise());
       this.trigger('renderFinished');
       return this;
     },
@@ -337,7 +337,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         });
         //this.rivetsBindingsActive = true;
       }
-      window.MathJax?.startup?.promise?.then(() => window.MathJax.typesetPromise());
+      window.MathJax?.startup.promise.then(() => window.MathJax.typesetPromise());
       //this.trigger("renderFinished");
       return this;
     },
