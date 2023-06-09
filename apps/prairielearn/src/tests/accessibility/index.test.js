@@ -237,8 +237,6 @@ const SKIP_ROUTES = [
   // TODO: create an assessment instance and create an instance question so we can test these pages.
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id',
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
