@@ -3802,6 +3802,77 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
   }
 };
 
+mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+
+    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
+    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
+
+    function getPositions(gap,d,theta,options) {
+      var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
+      var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
+      var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
+      var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
+      return [xm1,ym1,xm2,ym2];
+    }
+    
+    var pos = getPositions(options.interval, d, theta, options)
+    let obj1 = new fabric.Line([options.x1, options.y1, pos[0], pos[1]], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in obj1)) {
+      obj1.id = window.PLDrawingApi.generateID();
+    }
+    let obj2 = new fabric.Line([pos[2], pos[3], options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in obj2)) {
+      obj2.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(obj1,obj2);
+
+    var posSpring = getPositions(1.05*options.interval, d, theta, options)
+    options.x1 = posSpring[0]
+    options.y1 = posSpring[1]
+    options.x2 = posSpring[2]
+    options.y2 = posSpring[3]
+    options.dx = options.interval/10
+    let obj = new mechanicsObjects.Spring(options);
+    if (!('id' in obj)) {
+      obj.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(obj);
+
+    if (options.label) {
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: options.x1 - options.height*Math.sin(theta) + options.offsetx,
+        top:  options.y1 + options.height*Math.cos(theta) + options.offsety, 
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      })
+      canvas.add(textObj);
+    }
+
+    return;
+  }
+
+  static get_button_tooltip() {
+    return 'Add resistor';
+  }
+};
 
 mechanicsObjects.attachHandlersNoClone = function (
   subObj,
