@@ -3874,6 +3874,83 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
   }
 };
 
+mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+
+    var gap = options.interval
+    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
+    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
+    
+    // Switch "legs"
+    var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
+    var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
+    var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
+    var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
+
+    let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in obj1)) {
+      obj1.id = window.PLDrawingApi.generateID();
+    }
+    let obj2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in obj2)) {
+      obj2.id = window.PLDrawingApi.generateID();
+    }
+
+    // Switch line
+    var theta2 = options.switchAngle*Math.PI/180
+    var l = options.interval/Math.cos(theta2)
+    var cx = xm1 + l*Math.cos(theta2+theta);
+    var cy = ym1 + l*Math.sin(theta2+theta); 
+
+    let obj3 = new fabric.Line([xm1, ym1, cx, cy], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in obj3)) {
+      obj3.id = window.PLDrawingApi.generateID();
+    }
+
+    canvas.add(obj1, obj2, obj3);
+
+    if (options.label) {
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: cx + options.offsetx,
+        top:  cy + options.offsety, 
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      })
+      canvas.add(textObj);
+    }
+
+    return;
+  }
+
+  static get_button_tooltip() {
+    return 'Add switch';
+  }
+};
+
 mechanicsObjects.attachHandlersNoClone = function (
   subObj,
   reference,
