@@ -2056,6 +2056,59 @@ class GraphLine(BaseElement):
             "stroke-width",
         ]
 
+class Capacitor(BaseElement):
+    def generate(el, data):
+        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
+        if "x2" in el.attrib and "y2" in el.attrib:
+            x2 = pl.get_float_attrib(el, "x2")
+            y2 = pl.get_float_attrib(el, "y2")
+        else:
+            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(el, "angle", 0)
+            x2 = x1 + w * math.cos(angle * math.pi / 180)
+            y2 = y1 + w * math.sin(angle * math.pi / 180)
+        return {
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "interval": pl.get_float_attrib(el, "interval", 10),
+            "height": pl.get_float_attrib(el, "height", 15),
+            "originX": "center",
+            "originY": "center",
+            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "strokeWidth": pl.get_float_attrib(
+                el, "stroke-width", drawing_defaults["stroke-width"]
+            ),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
+            "label": pl.get_string_attrib(el, "label", ""),
+            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
+            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsetx"]),     
+            "fontSize": pl.get_float_attrib(el, "font-size", drawing_defaults["font-size"]), 
+            "polarized": pl.get_boolean_attrib(el, "polarized", False)
+        }
+
+    def get_attributes():
+        return [
+            "x1",
+            "y1",
+            "width",
+            "angle",
+            "interval",
+            "height",
+            "x2",
+            "y2",
+            "stroke-color",
+            "stroke-width",
+            "label",
+            "offsetx",
+            "offsety",
+            "font-size",
+            "polarized"
+        ]
+
 
 elements["pl-4pointrod"] = FourPointRod
 elements["pl-3pointrod"] = ThreePointRod
@@ -2086,6 +2139,7 @@ elements["pl-text"] = Text
 elements["pl-triangle"] = Triangle
 elements["pl-vector"] = Vector
 elements["pl-paired-vector"] = PairedVector
+elements["pl-capacitor"] = Capacitor
 
 # Base Elements
 
