@@ -3780,11 +3780,9 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     canvas.add(obj1, obj2, obj3, obj4);
 
     if (options.label) {
-      var c1x1 = xm1 - 3*cline1*Math.sin(theta);
-      var c1y1 = ym1 + 3*cline1*Math.cos(theta); 
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: c1x1 + options.offsetx,
-        top:  c1y1 + options.offsety, 
+        left: c2x1 + options.offsetx,
+        top:  0.7*c2y1 + options.offsety, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
