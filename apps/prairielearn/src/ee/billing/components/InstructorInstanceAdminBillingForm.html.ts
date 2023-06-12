@@ -91,6 +91,7 @@ export function InstructorInstanceAdminBillingForm(
     : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
 
   return html`
+    <!-- TODO: use "encodeData" utility from PrairieTest instead of JSON.stringify -->
     <form method="POST" class="js-billing-form" data-props="${JSON.stringify(props)}">
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
