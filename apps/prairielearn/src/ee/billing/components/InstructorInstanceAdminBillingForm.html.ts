@@ -55,9 +55,43 @@ export function instructorInstanceAdminBillingState(
   };
 }
 
-export function InstructorInstanceAdminBillingForm({}: InstructorInstanceAdminBillingInput) {
+export function InstructorInstanceAdminBillingForm(
+  props: InstructorInstanceAdminBillingInput & {
+    enrollmentLimitSource: 'course_instance' | 'institution';
+    externalGradingQuestionCount: number;
+    workspaceQuestionCount: number;
+    csrfToken: string;
+  }
+) {
+  const {
+    initialRequiredPlans,
+    requiredPlans,
+    institutionPlanGrants,
+    courseInstancePlanGrants,
+    enrollmentCount,
+    enrollmentLimit,
+    enrollmentLimitSource,
+    externalGradingQuestionCount,
+    workspaceQuestionCount,
+    csrfToken,
+  } = props;
+
+  const { studentBillingEnabled, studentBillingCanChange, computeEnabled, computeCanChange } =
+    instructorInstanceAdminBillingState({
+      initialRequiredPlans,
+      requiredPlans,
+      institutionPlanGrants,
+      courseInstancePlanGrants,
+      enrollmentCount,
+      enrollmentLimit,
+    });
+  const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
+  const enrollmentLimitPercentage = studentBillingEnabled
+    ? 0
+    : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
+
   return html`
-    <form method="POST">
+    <form method="POST" class="js-billing-form" data-props="${JSON.stringify(props)}">
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
         <div class="progress">
@@ -88,6 +122,7 @@ export function InstructorInstanceAdminBillingForm({}: InstructorInstanceAdminBi
           ${studentBillingEnabled ? 'checked' : ''}
           value="1"
           id="studentBillingEnabled"
+          ${!studentBillingCanChange ? 'disabled' : ''}
         />
         <label class="form-check-label" for="studentBillingEnabled">
           Enable student billing for enrollments
@@ -110,10 +145,10 @@ export function InstructorInstanceAdminBillingForm({}: InstructorInstanceAdminBi
           class="form-check-input"
           type="checkbox"
           name="compute_enabled"
-          ${computeEnabled || computeGrantedByInstitution ? 'checked' : ''}
+          ${computeEnabled ? 'checked' : ''}
           value="1"
           id="computeEnabled"
-          ${computeGrantedByInstitution ? 'disabled' : ''}
+          ${!computeCanChange ? 'disabled' : ''}
         />
         <label class="form-check-label" for="computeEnabled">
           External grading and workspaces
@@ -141,8 +176,32 @@ export function InstructorInstanceAdminBillingForm({}: InstructorInstanceAdminBi
         your students.
       </div>
 
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="submit" class="btn btn-primary">Save</button>
     </form>
   `;
+}
+
+function enrollmentLimitExplanation({
+  studentBillingEnabled,
+  enrollmentLimit,
+  enrollmentLimitSource,
+}: {
+  studentBillingEnabled: boolean;
+  enrollmentLimit: number;
+  enrollmentLimitSource: 'course_instance' | 'institution';
+}): string {
+  if (studentBillingEnabled) {
+    return 'Student billing for enrollments is enabled, so there is no enrollment limit.';
+  }
+
+  if (enrollmentLimitSource === 'course_instance') {
+    return `This course instance has an enrollment limit of ${enrollmentLimit}.`;
+  }
+
+  return `This course's institution has a per-course-instance enrollment limit of ${enrollmentLimit}.`;
+}
+
+function pluralizeQuestionCount(count: number) {
+  return count === 1 ? `${count} question` : `${count} questions`;
 }

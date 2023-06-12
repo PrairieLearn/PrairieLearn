@@ -1,33 +1,32 @@
-import { instructorInstanceAdminBillingState } from '../../src/ee/billing/pages/instructorInstanceAdminBilling/instructorInstanceAdminBillingShared';
+import morphdom = require('morphdom');
+
+import { InstructorInstanceAdminBillingForm } from '../../src/ee/billing/components/InstructorInstanceAdminBillingForm.html';
+import { PlanName } from '../../src/ee/billing/plans-types';
 
 $(() => {
-  console.log('hello, world');
-  const studentBillingEnabledCheckbox =
-    document.querySelector<HTMLInputElement>('#studentBillingEnabled');
-  const computeEnabledCheckbox = document.querySelector<HTMLInputElement>('#computeEnabled');
-  const studentBillingWarning = document.querySelector<HTMLElement>('.js-student-billing-warning');
-  // TODO: should we do something with these values?
-  const enrollmentCount = Number.parseInt(studentBillingWarning.dataset.enrollmentCount, 10);
-  const enrollmentLimit = Number.parseInt(studentBillingWarning.dataset.enrollmentLimit, 10);
-  const initialStudentBillingEnabled =
-    studentBillingWarning.dataset.studentBillingEnabled === 'true';
-  const initialComputeEnabled = studentBillingWarning.dataset.computeEnabled === 'true';
+  const billingForm = document.querySelector<HTMLFormElement>('.js-billing-form');
+  const initialProps = JSON.parse(billingForm.dataset.props);
 
-  function updateAlert() {
-    const showAlert =
-      (!initialStudentBillingEnabled && studentBillingEnabledCheckbox.checked) ||
-      (!initialComputeEnabled && computeEnabledCheckbox.checked);
-    studentBillingWarning.hidden = !showAlert;
-  }
+  const studentBillingCheckbox = document.querySelector<HTMLInputElement>('#studentBillingEnabled');
+  const computeCheckbox = document.querySelector<HTMLInputElement>('#computeEnabled');
 
-  studentBillingEnabledCheckbox.addEventListener('change', () => {
-    updateAlert();
+  billingForm.addEventListener('change', () => {
+    const basicPlanEnabled = studentBillingCheckbox.checked;
+    const computePlanEnabled = computeCheckbox.checked;
+
+    const requiredPlans: PlanName[] = [];
+    if (basicPlanEnabled) {
+      requiredPlans.push('basic');
+    }
+    if (computePlanEnabled) {
+      requiredPlans.push('compute');
+    }
+    morphdom(
+      billingForm,
+      InstructorInstanceAdminBillingForm({
+        ...initialProps,
+        requiredPlans,
+      }).toString()
+    );
   });
-  computeEnabledCheckbox.addEventListener('change', () => {
-    updateAlert();
-  });
-
-  updateAlert();
-
-  const state = instructorInstanceAdminBillingState();
 });

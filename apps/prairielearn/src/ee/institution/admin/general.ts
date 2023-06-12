@@ -7,10 +7,10 @@ import { InstitutionAdminGeneral, InstitutionStatisticsSchema } from './general.
 import { getInstitution } from '../utils';
 import {
   PlanGrantUpdate,
-  PlanName,
   getPlanGrantsForInstitution,
   updatePlanGrantsForInstitution,
 } from '../../billing/plans';
+import { PlanName } from '../../billing/plans-types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

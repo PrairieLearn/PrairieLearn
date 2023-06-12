@@ -3,8 +3,8 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { PlanGrant, type Institution } from '../../../lib/db-types';
-import { PLAN_NAMES, PLANS } from '../../billing/plans';
+import { type PlanGrant, type Institution } from '../../../lib/db-types';
+import { PLAN_NAMES, PLANS } from '../../billing/plans-types';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),

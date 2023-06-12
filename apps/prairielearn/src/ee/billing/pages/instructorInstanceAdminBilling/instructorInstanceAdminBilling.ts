@@ -5,7 +5,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 
 import { InstructorCourseInstanceBilling } from './instructorInstanceAdminBilling.html';
-import { PlanName, planGrantsMatchPlanFeatures } from '../../plans-types';
+import { PlanName } from '../../plans-types';
 import {
   getPlanGrantsForCourseInstance,
   getPlanGrantsForInstitution,
@@ -31,14 +31,7 @@ router.get(
     const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
       res.locals.course_instance.id
     );
-    const allPlanGrants = institutionPlanGrants.concat(courseInstancePlanGrants);
-    const computeGrantedToInstitutionOrCourseInstance = planGrantsMatchPlanFeatures(
-      allPlanGrants.map((planGrant) => planGrant.plan_name),
-      'compute'
-    );
-
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
-    const studentBillingEnabled = requiredPlans.includes('basic');
 
     const enrollmentCount = await queryRow(
       sql.course_instance_enrollment_count,
@@ -66,9 +59,9 @@ router.get(
     // or the course instance itself.
     res.send(
       InstructorCourseInstanceBilling({
-        studentBillingEnabled,
-        computeEnabled: requiredPlans.includes('compute'),
-        computeGrantedByInstitution: computeGrantedToInstitutionOrCourseInstance,
+        requiredPlans,
+        institutionPlanGrants: institutionPlanGrants.map((planGrant) => planGrant.plan_name),
+        courseInstancePlanGrants: courseInstancePlanGrants.map((planGrant) => planGrant.plan_name),
         enrollmentCount,
         enrollmentLimit,
         enrollmentLimitSource,
