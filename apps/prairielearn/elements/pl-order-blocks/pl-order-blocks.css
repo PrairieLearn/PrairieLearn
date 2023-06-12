@@ -46,7 +46,7 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-container > ul {
-  padding: 12px;
+  padding: 14px;
   height: 100%;
   margin-bottom: 0px;
 }
@@ -68,7 +68,7 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-answer-container > ul {
-  padding: 12px;
+  padding: 14px;
 }
 
 div.pl-order-blocks-answer-container {
@@ -126,7 +126,7 @@ div.pl-order-blocks-container {
   list-style: none;
   margin-left: -6px;
   margin-right: -6px;
-  padding: 4px 10px 4px 10px;
+  padding: 4px 6px 4px 6px;
   margin-top: 5px;
   margin-bottom: 5px;
   overflow: hidden;
