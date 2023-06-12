@@ -22,7 +22,10 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from inspect import signature
+
+import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -184,6 +187,34 @@ def worker_loop():
 
             # change to the desired working directory
             os.chdir(cwd)
+
+            if file == "question.html":
+                # This is an experimental implementation of question processing
+                # that does all HTML parsing and rendering in Python. This should
+                # be much faster than the current implementation that does an IPC
+                # call for each element.
+
+                data = args[0]
+                context = args[1]
+
+                result, processed_elements = question_phases.process(fcn, data, context)
+                val = {
+                    "html": result if fcn == "render" else None,
+                    "file": result if fcn == "file" else None,
+                    "data": data,
+                    "processed_elements": list(processed_elements),
+                }
+
+                # make sure all output streams are flushed
+                sys.stderr.flush()
+                sys.stdout.flush()
+
+                # write the return value (JSON on a single line)
+                outf.write(try_dumps({"present": True, "val": val}))
+                outf.write("\n")
+                outf.flush()
+
+                continue
 
             mod = {}
             file_path = os.path.join(cwd, file + ".py")
