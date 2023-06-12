@@ -15,7 +15,6 @@
   </div>
 <% } %>
 
-<div class="mb-4">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
   <a class="navbar-brand" href="<%= homeUrl %>">
     <span class="navbar-brand-label">PrairieLearn</span>
@@ -506,6 +505,7 @@
   </script>
 
 </nav>
+
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {
     instance_admin: 'navTabs/instructorInstanceAdmin',
@@ -524,4 +524,15 @@ if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
         </ul>
     </nav>
 <% } %>
+
+<div class="mb-3">
+  <% const globalFlashColors = { 'notice': 'info', 'success': 'success', 'warning': 'warning', 'error': 'danger' }; %>
+  <% flash(Object.keys(globalFlashColors)).forEach(({ type, message }) => { %>
+    <div class="alert alert-<%= globalFlashColors[type] %> border-left-0 border-right-0 rounded-0 mt-0 mb-0 alert-dismissible fade show js-global-flash" role="alert">
+      <%= message %>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  <% }); %>
 </div>
