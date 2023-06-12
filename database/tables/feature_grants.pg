@@ -5,7 +5,6 @@ columns
     id: bigint not null default nextval('feature_grants_id_seq'::regclass)
     institution_id: bigint
     name: text not null
-    type: feature_grant_type
     user_id: bigint
 
 indexes
