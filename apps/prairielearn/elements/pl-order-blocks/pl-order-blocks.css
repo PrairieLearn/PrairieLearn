@@ -91,34 +91,15 @@ div.pl-order-blocks-container {
   align-items: center;
 }
 
-.feedback_badge_container{
+.pl-order-blocks-feedback-badge-container {
   display: flex;
   align-items: center;
-  padding: 5px !important;
-  border-radius: inherit;
 }
 
-.feedback_badge_container_white {
-  display: flex;
-  align-items: center;
-  background-color: white !important;
-  padding: 5px !important;
-  border-radius: inherit;
-  border: 1px solid grey;
-}
-
-.pl-order-blocks-feedback-tag {
+.pl-order-blocks-feedback-icon {
   color: #6c757d;
   margin-right: 10px;
 }
-
-/* .pl-order-blocks-feedback-container {
-  border-radius: 10px;
-  border: 0px !important;
-  list-style: none;
-  margin-left: -3px;
-  margin-right: -3px;
-} */
 
 .pl-order-blocks-pairing-indicator {
   border-radius: 10px;
