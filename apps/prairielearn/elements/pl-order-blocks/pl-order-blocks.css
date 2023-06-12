@@ -46,7 +46,7 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-container > ul {
-  padding: 17px 17px 17px 17px;
+  padding: 12px;
   height: 100%;
   margin-bottom: 0px;
 }
@@ -60,7 +60,7 @@ li.ui-state-highlight {
   color: black;
 }
 
-.pl-order-blocks-answer-container li {
+.pl-order-blocks-answer-container .pl-order-block {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
@@ -68,7 +68,7 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-answer-container > ul {
-  padding: 10px;
+  padding: 12px;
 }
 
 div.pl-order-blocks-answer-container {
@@ -112,20 +112,20 @@ div.pl-order-blocks-container {
   margin-right: 10px;
 }
 
-.pl-order-blocks-feedback-container {
+/* .pl-order-blocks-feedback-container {
   border-radius: 10px;
   border: 0px !important;
   list-style: none;
   margin-left: -3px;
   margin-right: -3px;
-}
+} */
 
 .pl-order-blocks-pairing-indicator {
   border-radius: 10px;
   border: 0px !important;
   list-style: none;
-  margin-left: -10px;
-  margin-right: -10px;
+  margin-left: -6px;
+  margin-right: -6px;
   padding: 4px 10px 4px 10px;
   margin-top: 5px;
   margin-bottom: 5px;

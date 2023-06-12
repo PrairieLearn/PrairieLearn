@@ -67,7 +67,7 @@ $(function() {
     </div>
     <ul class="card-body list-group">
         {{#student_submission}}
-            <li class="{{block_formatting}}" style="margin-left: {{indent}}px;">
+            <li class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;">
                 {{#first-wrong}}
                     {{#show-distractor-feedback}}
                         <div class="feedback_badge_container_white">
@@ -113,7 +113,7 @@ $(function() {
         <div class="card-header list-group-item-success">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
-            <li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
+            <li class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
         {{/question_solution}}
         </ul>
     </div>
@@ -125,9 +125,9 @@ $(function() {
         <ul class="card-body list-group" style="list-style-type:none;">
         {{#distractors}}
             {{#distractor-feedback}}
-            <li class="pl-order-blocks-feedback-container list-group-item-warning">
-                <ul class="pl-order-blocks-pairing-indicator">
-                    <li class="{{block_formatting}}">{{{inner_html}}}</li>
+            <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
+                <ul style="padding:0px;">
+                    <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
                 </ul>
                 <div>
                     <span class="pl-order-blocks-feedback-tag"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
@@ -136,7 +136,7 @@ $(function() {
             </li>
             {{/distractor-feedback}}
             {{^distractor-feedback}}
-                <li class="{{block_formatting}}">{{{inner_html}}}</li>
+                <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
             {{/distractor-feedback}}
         {{/distractors}}
         </ul>
