@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 
   - [Node.js](http://nodejs.org/)
   - [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/)
-  - [PostgreSQL 14](https://www.postgresql.org)
+  - [PostgreSQL 15](https://www.postgresql.org)
   - [Python 3.10](https://www.python.org)
   - command-line git or [GitHub Desktop](https://desktop.github.com)
 
