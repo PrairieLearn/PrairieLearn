@@ -67,12 +67,30 @@ $(function() {
         </div>
         <ul class="card-body list-group">
             {{#student_submission}}
+                {{#show-distractor-feedback}}
+                <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
+                    <ul style="padding:0px;">
+                        <li class="" style="list-style-type: none; ">
+                            <div class="pl-order-blocks-feedback-badge-container">
+                                <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                            </div>
+                        </li>
+                    </ul>
+                    <div>
+                        <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                        {{distractor-feedback}}
+                    </div>
+                </li>
+                {{/show-distractor-feedback}}
+                {{^show-distractor-feedback}}
                 <li class="" style="list-style-type: none; ">
                     <div class="pl-order-blocks-feedback-badge-container">
-                        <span class="badge {{badge_type}}" style="width:20px;height:20px;margin:2px"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                        <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
                         <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                     </div>
                 </li>
+                {{/show-distractor-feedback}}
             {{/student_submission}}
         </ul>
     </div>
