@@ -172,10 +172,10 @@ def prepare(element_html, data):
                 required_attribs=[],
                 optional_attribs=[
                     "correct",
+                    "tag",
                     "ranking",
                     "indent",
                     "distractor-feedback",
-                    "tag",
                     "distractor-for",
                 ],
             )
@@ -202,9 +202,6 @@ def prepare(element_html, data):
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
-        )
-        is_correct = pl.get_boolean_attrib(
-            html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)

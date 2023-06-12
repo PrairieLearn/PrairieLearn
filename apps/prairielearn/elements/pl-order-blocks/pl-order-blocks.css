@@ -91,16 +91,15 @@ div.pl-order-blocks-container {
   align-items: center;
 }
 
-.pl-order-blocks-feedback-badge-container {
-  display: flex;
-  align-items: center;
-}
-
 .pl-order-blocks-feedback-icon {
   color: #6c757d;
   margin-right: 10px;
 }
 
+.pl-order-blocks-correctness-badge-container {
+  display: flex;
+  align-items: center;
+}
 .pl-order-blocks-correctness-badge {
   margin:4px;
   width: 20px;

@@ -71,7 +71,7 @@ $(function() {
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
                     <ul style="padding:0px;">
                         <li class="" style="list-style-type: none; ">
-                            <div class="pl-order-blocks-feedback-badge-container">
+                            <div class="pl-order-blocks-correctness-badge-container">
                                 <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
                                 <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                             </div>
@@ -85,7 +85,7 @@ $(function() {
                 {{/show-distractor-feedback}}
                 {{^show-distractor-feedback}}
                 <li class="" style="list-style-type: none; ">
-                    <div class="pl-order-blocks-feedback-badge-container">
+                    <div class="pl-order-blocks-correctness-badge-container">
                         <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
                         <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                     </div>
@@ -94,8 +94,7 @@ $(function() {
             {{/student_submission}}
         </ul>
     </div>
-    <br>
-    {{{feedback}}}
+    <p>{{{feedback}}}</p>
     {{/parse-error}}
 
     {{#parse-error}}
@@ -106,7 +105,6 @@ $(function() {
         </div>
     {{/parse-error}}
 {{/submission}}
-
 
 {{#true_answer}}
     <div class="pl-order-blocks-answer-container">
