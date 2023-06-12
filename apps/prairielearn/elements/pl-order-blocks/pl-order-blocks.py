@@ -548,10 +548,6 @@ def render(element_html, data):
         all_distractors = [
             item for item in data["params"][answer_name] if not item["is_correct"]
         ]
-        for distractor in all_distractors:
-            distractor["has-distractor-feedback"] = (
-                distractor["distractor-feedback"] is not None
-            )
 
         question_solution = [
             {

@@ -124,17 +124,20 @@ $(function() {
         <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group" style="list-style-type:none;">
         {{#distractor-feedback}}
+            {{#distractor-feedback}}
             <li class="pl-order-blocks-feedback-container list-group-item-warning">
-                <ul style="padding:0px;">
+                <ul class="pl-order-blocks-pairing-indicator">
                     <li class="{{block_formatting}}">{{{inner_html}}}</li>
                 </ul>
-                {{#has-distractor-feedback}}
-                <div >
-                    <span class="pl-order-blocks-feedback-tag" > <i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                <div>
+                    <span class="pl-order-blocks-feedback-tag"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
                     {{distractor-feedback}}
                 </div>
-                {{/has-distractor-feedback}}
             </li>
+            {{/distractor-feedback}}
+            {{^distractor-feedback}}
+                <li class="{{block_formatting}}">{{{inner_html}}}</li>
+            {{/distractor-feedback}}
         {{/distractor-feedback}}
         </ul>
     </div>
