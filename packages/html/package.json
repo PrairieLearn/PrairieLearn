@@ -2,6 +2,7 @@
   "name": "@prairielearn/html",
   "version": "3.0.1",
   "main": "dist/index.js",
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",

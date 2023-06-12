@@ -8,9 +8,16 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/browser-utils"
   },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsc --emitDeclarationOnly --declaration && tsup --format cjs,esm src/index.ts",
+    "dev": "tsup --watch src/index.ts"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
@@ -19,6 +26,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "ts-node": "^10.9.1",
+    "tsup": "^6.7.0",
     "typescript": "^5.1.3"
   }
 }
