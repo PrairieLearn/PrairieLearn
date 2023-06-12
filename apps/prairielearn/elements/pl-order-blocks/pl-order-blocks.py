@@ -14,7 +14,6 @@ from lxml import etree
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
-DISTRACTOR_INFO_DEFAULT = "none"
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
 GRADING_METHOD_DEFAULT = "ordered"
@@ -90,7 +89,6 @@ def prepare(element_html, data):
         "inline",
         "max-indent",
         "feedback",
-        "distractor-info",
         "partial-credit",
         "format",
         "code-language",
@@ -202,9 +200,6 @@ def prepare(element_html, data):
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
-        distractor_info = pl.get_string_attrib(
-            element, "distractor-info", DISTRACTOR_INFO_DEFAULT
-        )
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
         )
@@ -212,10 +207,6 @@ def prepare(element_html, data):
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
 
-        if (distractor_info == "none") and (distractor_feedback is not None):
-            raise Exception(
-                "distractor-info must be 'show-distractors' for the distractor-feedback tag to be used in <pl-answer>"
-            )
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
             raise Exception(
@@ -554,18 +545,13 @@ def render(element_html, data):
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        distractor_info = pl.get_string_attrib(
-            element, "distractor-info", DISTRACTOR_INFO_DEFAULT
-        )
-        all_distractors = []
-        if distractor_info != "none":
-            all_distractors = [
-                item for item in data["params"][answer_name] if not item["is_correct"]
-            ]
-            for distractor in all_distractors:
-                distractor["has-distractor-feedback"] = (
-                    distractor["distractor-feedback"] is not None
-                )
+        all_distractors = [
+            item for item in data["params"][answer_name] if not item["is_correct"]
+        ]
+        for distractor in all_distractors:
+            distractor["has-distractor-feedback"] = (
+                distractor["distractor-feedback"] is not None
+            )
 
         question_solution = [
             {
@@ -582,8 +568,7 @@ def render(element_html, data):
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
             "distractor-feedback": all_distractors,
-            "show-distractors": (len(all_distractors) > 0)
-            and (distractor_info == "show-distractors"),
+            "show-distractors": (len(all_distractors) > 0),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
