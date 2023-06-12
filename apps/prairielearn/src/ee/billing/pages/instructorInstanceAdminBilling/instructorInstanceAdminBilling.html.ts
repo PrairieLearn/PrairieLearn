@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 export function InstructorCourseInstanceBilling({
   studentBillingEnabled,
   computeEnabled,
+  computeGrantedByInstitution,
   enrollmentCount,
   enrollmentLimit,
   enrollmentLimitSource,
@@ -14,6 +15,7 @@ export function InstructorCourseInstanceBilling({
 }: {
   studentBillingEnabled: boolean;
   computeEnabled: boolean;
+  computeGrantedByInstitution: boolean;
   enrollmentCount: number;
   enrollmentLimit: number;
   enrollmentLimitSource: 'course_instance' | 'institution';
@@ -95,9 +97,10 @@ export function InstructorCourseInstanceBilling({
                     class="form-check-input"
                     type="checkbox"
                     name="compute_enabled"
-                    ${computeEnabled ? 'checked' : ''}
+                    ${computeEnabled || computeGrantedByInstitution ? 'checked' : ''}
                     value="1"
                     id="computeEnabled"
+                    ${computeGrantedByInstitution ? 'disabled' : ''}
                   />
                   <label class="form-check-label" for="computeEnabled">
                     External grading and workspaces
@@ -112,8 +115,14 @@ export function InstructorCourseInstanceBilling({
                   </p>
                 </div>
 
-                <!-- TODO: only show this if there are existing enrollments? -->
-                <div class="alert alert-warning">
+                <div
+                  class="alert alert-warning js-student-billing-warning"
+                  data-student-billing-enabled="${studentBillingEnabled}"
+                  data-compute-enabled="${computeEnabled}"
+                  data-enrollment-count="${enrollmentCount}"
+                  data-enrollment-limit="${enrollmentLimit}"
+                  hidden
+                >
                   Any students currently enrolled in your course will lose access until they have
                   paid for the above features. If your course is currently in session, you should
                   carefully consider the impact of enabling student billing. Before proceeding, you

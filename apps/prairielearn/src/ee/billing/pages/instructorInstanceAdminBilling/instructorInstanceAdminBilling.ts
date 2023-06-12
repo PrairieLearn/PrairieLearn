@@ -5,9 +5,8 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 
 import { InstructorCourseInstanceBilling } from './instructorInstanceAdminBilling.html';
+import { PlanName, planGrantsMatchPlanFeatures } from '../../plans-types';
 import {
-  PlanName,
-  getFeaturesForPlans,
   getPlanGrantsForCourseInstance,
   getPlanGrantsForInstitution,
   getRequiredPlansForCourseInstance,
@@ -32,10 +31,12 @@ router.get(
     const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
       res.locals.course_instance.id
     );
-    const planGrantFeatures = getFeaturesForPlans(
-      institutionPlanGrants.concat(courseInstancePlanGrants).map((grant) => grant.plan_name)
+    const allPlanGrants = institutionPlanGrants.concat(courseInstancePlanGrants);
+    const computeGrantedToInstitutionOrCourseInstance = planGrantsMatchPlanFeatures(
+      allPlanGrants.map((planGrant) => planGrant.plan_name),
+      'compute'
     );
-    console.log(planGrantFeatures);
+
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
     const studentBillingEnabled = requiredPlans.includes('basic');
 
@@ -67,6 +68,7 @@ router.get(
       InstructorCourseInstanceBilling({
         studentBillingEnabled,
         computeEnabled: requiredPlans.includes('compute'),
+        computeGrantedByInstitution: computeGrantedToInstitutionOrCourseInstance,
         enrollmentCount,
         enrollmentLimit,
         enrollmentLimitSource,

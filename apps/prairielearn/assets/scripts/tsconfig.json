@@ -2,7 +2,7 @@
   "compilerOptions": {
     "lib": ["ES2020", "DOM"],
     "noEmit": true,
-    "rootDir": "./",
+    "rootDir": "../../",
     "outDir": "../../public/build/scripts",
     "types": ["jquery", "bootstrap"],
   },
