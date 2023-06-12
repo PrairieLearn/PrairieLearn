@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "tsc --emitDeclarationOnly --declaration && tsup --format cjs,esm src/index.ts",
+    "build": "tsc && tsup --format cjs,esm src/index.ts",
     "dev": "tsup --watch src/index.ts"
   },
   "dependencies": {
