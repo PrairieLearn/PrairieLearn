@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS
     institution_id BIGINT REFERENCES institutions (id),
     course_instance_id BIGINT REFERENCES course_instances (id),
     enrollment_id BIGINT REFERENCES enrollments (id),
-    CONSTRAINT plan_grants_by_name_idx UNIQUE (
+    CONSTRAINT plan_grants_by_name_idx UNIQUE NULLS NOT DISTINCT (
       plan_name,
       institution_id,
       course_instance_id,

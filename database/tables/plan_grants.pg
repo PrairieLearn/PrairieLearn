@@ -12,7 +12,7 @@ columns
 
 indexes
     plan_grants_pkey: PRIMARY KEY (id) USING btree (id)
-    plan_grants_by_name_idx: UNIQUE (plan_name, institution_id, course_instance_id, enrollment_id) USING btree (plan_name, institution_id, course_instance_id, enrollment_id)
+    plan_grants_by_name_idx: UNIQUE NULLS NOT DISTINCT (plan_name, institution_id, course_instance_id, enrollment_id) USING btree (plan_name, institution_id, course_instance_id, enrollment_id) NULLS NOT DISTINCT
 
 foreign-key constraints
     plan_grants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
