@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -32,6 +33,7 @@ export function InstitutionAdminGeneral({
           navPage: 'institution_admin',
           pageTitle: 'General',
         })}
+        ${compiledScriptTag('institutionAdminGeneralClient.ts')}
         <style>
           .card-grid {
             display: grid;
@@ -149,10 +151,10 @@ function Plans({ planGrants }: { planGrants: PlanGrant[] }) {
       console.log(planGrant);
 
       return html`
-        <li class="list-group-item d-flex flex-row align-items-center">
+        <li class="list-group-item d-flex flex-row align-items-center js-plan">
           <div class="form-check flex-grow-1">
             <input
-              class="form-check-input"
+              class="form-check-input js-plan-enabled"
               type="checkbox"
               name="plan_${planName}"
               ${hasPlanGrant ? 'checked' : ''}
@@ -174,7 +176,11 @@ function Plans({ planGrants }: { planGrants: PlanGrant[] }) {
             </div>
           </div>
 
-          <select class="custom-select w-auto" name="plan_${planName}_grant_type">
+          <select
+            class="custom-select w-auto js-plan-type"
+            name="plan_${planName}_grant_type"
+            ${!hasPlanGrant ? 'disabled' : null}
+          >
             <option value="trial" ${planGrantType === 'trial' ? 'selected' : null}>trial</option>
             <option value="stripe" ${planGrantType === 'stripe' ? 'selected' : null}>stripe</option>
             <option value="invoice" ${planGrantType === 'invoice' ? 'selected' : null}>
