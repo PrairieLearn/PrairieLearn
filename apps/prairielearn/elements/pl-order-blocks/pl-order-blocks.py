@@ -545,7 +545,7 @@ def render(element_html, data):
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        all_distractors = [
+        distractors = [
             item for item in data["params"][answer_name] if not item["is_correct"]
         ]
 
@@ -563,8 +563,8 @@ def render(element_html, data):
             "ordering_message": ordering_message,
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
-            "distractor-feedback": all_distractors,
-            "show-distractors": (len(all_distractors) > 0),
+            "distractors": distractors,
+            "show-distractors": (len(distractors) > 0),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
