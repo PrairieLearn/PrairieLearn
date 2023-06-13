@@ -861,7 +861,7 @@ def test(element_html, data):
     elif data["test_type"] == "incorrect":
         answer = deepcopy(data["correct_answers"][answer_name])
         distractor_feedback = {
-            item["inner_html"]: item["distractor-feedback"]
+            item["inner_html"]: item["distractor_feedback"]
             for item in data["params"][answer_name]
             if not item["is_correct"]
         }
