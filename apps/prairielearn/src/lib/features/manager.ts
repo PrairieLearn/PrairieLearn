@@ -56,6 +56,7 @@ function validateContext(context: FeatureContext) {
 export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
   als: AsyncLocalStorage<FeatureOverrides>;
+  globalOverrides: FeatureOverrides = {};
 
   constructor(features: FeatureName[]) {
     features.forEach((feature) => {
@@ -89,11 +90,11 @@ export class FeatureManager<FeatureName extends string> {
     this.validateFeature(name, context);
 
     // Allow features to be overridden by `runWithOverrides`.
-    const featureOverrides = this.als.getStore();
-    const featureOverride = featureOverrides?.[name];
-    if (featureOverride !== undefined) {
-      return featureOverride;
-    }
+    const featureOverrides = this.als.getStore() ?? {};
+    if (name in featureOverrides) return featureOverrides[name];
+
+    // Allow global overrides, e.g. for tests.
+    if (name in this.globalOverrides) return this.globalOverrides[name];
 
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
@@ -177,7 +178,30 @@ export class FeatureManager<FeatureName extends string> {
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
+  /**
+   * Runs the given function with a set of feature overrides persisted in
+   * {@link AsyncLocalStorage}. This allows for a feature to be enabled or
+   * disabled in the context of a single request.
+   */
   runWithOverrides<T>(overrides: FeatureOverrides, fn: () => T): T {
     return this.als.run(overrides, fn);
+  }
+
+  /**
+   * Globally sets the given feature overrides and automatically cleans them up
+   * once the provided function has executed.
+   *
+   * Note that this should generally only be used in tests. If used while serving
+   * actual requests, this will have unintended behavior since the overrides will
+   * apply to all code that is running at the same time.
+   */
+  async runWithGlobalOverrides<T>(overrides: FeatureOverrides, fn: () => Promise<T>): Promise<T> {
+    const originalGlobalOverrides = this.globalOverrides;
+    this.globalOverrides = { ...originalGlobalOverrides, ...overrides };
+    try {
+      return await fn();
+    } finally {
+      this.globalOverrides = originalGlobalOverrides;
+    }
   }
 }

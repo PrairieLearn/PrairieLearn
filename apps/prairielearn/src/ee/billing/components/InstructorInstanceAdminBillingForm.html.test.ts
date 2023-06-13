@@ -12,10 +12,10 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.studentBillingEnabled, false);
-    assert.equal(state.studentBillingCanChange, true);
-    assert.equal(state.computeEnabled, false);
-    assert.equal(state.computeCanChange, true);
+    assert.isFalse(state.studentBillingEnabled);
+    assert.isTrue(state.studentBillingCanChange);
+    assert.isFalse(state.computeEnabled);
+    assert.isTrue(state.computeCanChange);
   });
 
   it('disallows enabling compute when already granted by institution', () => {
@@ -27,8 +27,8 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.computeEnabled, true);
-    assert.equal(state.computeCanChange, false);
+    assert.isTrue(state.computeEnabled);
+    assert.isFalse(state.computeCanChange);
   });
 
   it('disallows enabling compute when already granted by course instance', () => {
@@ -40,8 +40,8 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.computeEnabled, true);
-    assert.equal(state.computeCanChange, false);
+    assert.isTrue(state.computeEnabled);
+    assert.isFalse(state.computeCanChange);
   });
 
   it('allows enabling compute when student billing is enabled', () => {
@@ -53,8 +53,8 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.computeEnabled, false);
-    assert.equal(state.computeCanChange, true);
+    assert.isFalse(state.computeEnabled);
+    assert.isTrue(state.computeCanChange);
   });
 
   it('allows enabling compute when student billing is enabled and compute is granted by institution', () => {
@@ -66,8 +66,8 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.computeEnabled, false);
-    assert.equal(state.computeCanChange, true);
+    assert.isFalse(state.computeEnabled);
+    assert.isTrue(state.computeCanChange);
   });
 
   it('allows enabling compute when student billing is enabled and compute is granted by course instance', () => {
@@ -79,8 +79,8 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 0,
       enrollmentLimit: 0,
     });
-    assert.equal(state.computeEnabled, false);
-    assert.equal(state.computeCanChange, true);
+    assert.isFalse(state.computeEnabled);
+    assert.isTrue(state.computeCanChange);
   });
 
   it('warns when disabling student billing with excess enrollments', () => {
@@ -92,9 +92,11 @@ describe('instructorInstanceAdminBillingState', () => {
       enrollmentCount: 100,
       enrollmentLimit: 50,
     });
+    assert.isTrue(state.studentBillingEnabled);
+    assert.isFalse(state.studentBillingCanChange);
     assert.match(
-      state.alertMessage ?? '',
-      /will forbid students from accessing this course instance/
+      state.studentBillingAlert?.message ?? '',
+      /To disable student billing, first remove excess enrollments./
     );
   });
 });
