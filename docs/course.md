@@ -17,17 +17,9 @@ exampleCourse
 |   |   `-- ...
 |   `-- Sp17
 |       `-- ...
-+-- autograders         # all autograders for the course (see other doc)
-|   +-- ag1
-|       `-- ...
-|   +-- ag2
-|       `-- ...
 +-- elements            # custom HTML elements for the course
 |   +-- element1
 |       `-- ...
-+-- environment         # files needed to configure the autograder environment (see other doc)
-|   `-- ...
-|   `-- ...
 +-- clientFilesCourse   # files available from the client at all times (see other doc)
 |   `-- library.js
 |   `-- refs.html
@@ -62,7 +54,22 @@ This file specifies basic information about the course:
       "heading": "Homeworks",
       "color": "green1"
     },
-    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1" }
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "red1"
+    }
+  ],
+  "assessmentModules": [
+    {
+      "name": "vectors-coords",
+      "heading": "Vectors and coordinates"
+    },
+    {
+      "name": "moments",
+      "heading": "Moments of inertia"
+    }
   ],
   "topics": [
     {
@@ -93,7 +100,7 @@ This file specifies basic information about the course:
 
 - Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
 
-- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourse.json)
+- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourse.json)
 
 ## Course-wide options
 
@@ -114,7 +121,7 @@ Each assessment belongs to an _assessment set_. Each assessment set must have th
 | `heading`      | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.                                                                                                                               |
 | `color`        | The color scheme for this assessment (see below for choices).                                                                                                                                                                        |
 
-## Standardized assessment sets
+### Standardized assessment sets
 
 The following list of standardized assessments sets is automatically included in every course. You do not need to include these in your JSON file, but you can add extra assessment sets if needed (see below).
 
@@ -129,31 +136,123 @@ The following list of standardized assessments sets is automatically included in
 | `P`          | Prep            | Temporary assessments used while writing new questions. |
 | `WS`         | Worksheet       | Guided activity, often completed in groups.             |
 
-## Adding your own assessment sets
+### Adding your own assessment sets
 
 You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
 ```json
-    "assessmentSets": [
-        {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"}
-    ],
+{
+  "assessmentSets": [
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "red1"
+    }
+  ]
+}
 ```
 
 The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
 
 ```json
-    "assessmentSets": [
-        {'abbreviation': 'E', 'name': 'Exam', 'heading': 'Exams', 'color': 'brown1'},
-        {'abbreviation': 'Q', 'name': 'Quiz', 'heading': 'Quizzes', 'color': 'red1'},
-        {'abbreviation': 'PE', 'name': 'Practice Exam', 'heading': 'Practice Exams', 'color': 'yellow1'},
-        {'abbreviation': 'PQ', 'name': 'Practice Quiz', 'heading': 'Practice Quizzes', 'color': 'pink1'},
-        {'abbreviation': 'HW', 'name': 'Homework', 'heading': 'Homeworks', 'color': 'green1'},
-        {'abbreviation': 'P', 'name': 'Prep', 'heading': 'Question Preparation', 'color': 'gray1'},
-        {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
-        {'abbreviation': 'WS', 'name': 'Worksheet', 'heading': 'Worksheets', 'color': 'purple1'}
-    ],
+{
+  "assessmentSets": [
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "brown1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "red1"
+    },
+    {
+      "abbreviation": "PE",
+      "name": "Practice Exam",
+      "heading": "Practice Exams",
+      "color": "yellow1"
+    },
+    {
+      "abbreviation": "PQ",
+      "name": "Practice Quiz",
+      "heading": "Practice Quizzes",
+      "color": "pink1"
+    },
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "P",
+      "name": "Prep",
+      "heading": "Question Preparation",
+      "color": "gray1"
+    },
+    {
+      "abbreviation": "MP",
+      "name": "Machine Problem",
+      "heading": "Machine Problems",
+      "color": "turquoise1"
+    },
+    {
+      "abbreviation": "WS",
+      "name": "Worksheet",
+      "heading": "Worksheets",
+      "color": "purple1"
+    }
+  ]
+}
 ```
+
+## Assessment modules
+
+Each assessment in the course belongs to a _module_ defined in `infoCourse.json`. Modules can represent course topics, chapters or sections, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a module with two homeworks, one lab, and one exam, for example.
+
+Modules are optional and do not affect any behavior by default. The order in which the modules are defined in `infoCourse.json` will be the order in which they are displayed in the student page. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
+
+```json
+{
+  "assessmentModules": [
+    {
+      "name": "intro",
+      "heading": "Unit 1: Introduction to XC 101"
+    },
+    {
+      "name": "physics",
+      "heading": "Unit 2: Physics"
+    },
+    {
+      "name": "math",
+      "heading": "Unit 3: Math"
+    }
+  ]
+}
+```
+
+The above configuration can result in the following view for students:
+
+![Assessments grouped by module on the student assessments overview.](assessment-units.png)
+
+Properties for assessmentModules are as follows.
+
+| Property  | Description                                      |
+| --------- | ------------------------------------------------ |
+| `name`    | Brief name for the module. Shorter is better.    |
+| `heading` | Longer title for the module, displayed to users. |
+
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](courseInstance.md#assessment-page-organization) for more details.
 
 ## Topics
 
@@ -168,10 +267,20 @@ Each question in the course has a topic from the list specified in the `infoCour
 For example, topics could be listed like:
 
 ```json
-    "topics": [
-        {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
-        {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."}
-    ],
+{
+  "topics": [
+    {
+      "name": "Vectors",
+      "color": "blue3",
+      "description": "Vector algebra in 3D."
+    },
+    {
+      "name": "Center of mass",
+      "color": "green3",
+      "description": "Calculating the center of mass for irregular bodies and systems."
+    }
+  ]
+}
 ```
 
 ## Tags
@@ -184,7 +293,7 @@ Each question can have zero, one, or many tags associated with it. The propertie
 | `color`       | The color scheme for this tag (see below for choices).                                                                                                                                                                                        |
 | `description` | An explanation of what the tag means, for human referance.                                                                                                                                                                                    |
 
-## Standardized tag names
+### Standardized tag names
 
 The following list of standardized tags is automatically included in every course. You do not need to include these in your JSON file, but you can add extra tags (see below).
 
@@ -217,15 +326,25 @@ The following list of standardized tags is automatically included in every cours
 | `<email>`    | The email of the person who wrote the question, E.g., `mwest@illinois.edu`. Multiple emails can be tagged when several people had significant input. |
 | `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.                                                                            |
 
-## Adding your own tags
+### Adding your own tags
 
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
 ```json
-    "tags": [
-        {"name": "TAM212", "color": "red1", "description": "This question was originally written for TAM 212."},
-        {"name": "mwest", "color": "gray1", "description": "This question was written by Matthew West (mwest@illinois.edu)."}
-    ]
+{
+  "tags": [
+    {
+      "name": "TAM212",
+      "color": "red1",
+      "description": "This question was originally written for TAM 212."
+    },
+    {
+      "name": "mwest",
+      "color": "gray1",
+      "description": "This question was written by Matthew West (mwest@illinois.edu)."
+    }
+  ]
+}
 ```
 
 The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.

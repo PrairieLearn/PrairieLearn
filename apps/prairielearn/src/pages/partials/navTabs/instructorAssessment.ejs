@@ -1,0 +1,74 @@
+<%- include('navTab', {
+    activeSubPage:  'access',
+    urlSuffix:      '/assessment/'+assessment.id+'/access',
+    iconClasses:    'far fa-calendar-alt',
+    tabLabel:       'Access'}) %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'downloads',
+    urlSuffix:      '/assessment/'+assessment.id+'/downloads',
+    iconClasses:    'fas fa-download',
+    tabLabel:       'Downloads'}) %>
+<% } %>
+<% if (authz_data.has_course_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  ['file_view', 'file_edit'],
+    urlSuffix:      '/assessment/'+assessment.id+'/file_view',
+    iconClasses:    'fa fa-edit',
+    tabLabel:       'Files'}) %>
+<% } %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'groups',
+    urlSuffix:      '/assessment/'+assessment.id+'/groups',
+    iconClasses:    'fas fa-users',
+    tabLabel:       'Groups'}) %>
+<% } %>
+<%- include('navTab', {
+    activeSubPage:  'questions',
+    urlSuffix:      '/assessment/'+assessment.id+'/questions',
+    iconClasses:    'far fa-file-alt',
+    tabLabel:       'Questions'}) %>
+<%- include('navTab', {
+    activeSubPage:  'question_statistics',
+    urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
+    iconClasses:    'fas fa-table',
+    tabLabel:       'Question stats'}) %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'manual_grading',
+    urlSuffix:      '/assessment/'+assessment.id+'/manual_grading',
+    iconClasses:    'fas fa-marker',
+    tabLabel:       'Manual Grading'}) %>
+<% } %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'regrading',
+    urlSuffix:      '/assessment/'+assessment.id+'/regrading',
+    iconClasses:    'fa fa-sync',
+    tabLabel:       'Regrading'}) %>
+<% } %>
+<%- include('navTab', {
+    activeSubPage:  'settings',
+    urlSuffix:      '/assessment/'+assessment.id+'/settings',
+    iconClasses:    'fas fa-cog',
+    tabLabel:       'Settings'}) %>
+<%- include('navTab', {
+    activeSubPage:  'assessment_statistics',
+    urlSuffix:      '/assessment/'+assessment.id+'/assessment_statistics',
+    iconClasses:    'fas fa-chart-bar',
+    tabLabel:       'Statistics'}) %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'instances',
+    urlSuffix:      '/assessment/'+assessment.id+'/instances',
+    iconClasses:    'fas fa-user-graduate',
+    tabLabel:       'Students'}) %>
+<% } %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
+    activeSubPage:  'uploads',
+    urlSuffix:      '/assessment/'+assessment.id+'/uploads',
+    iconClasses:    'fas fa-upload',
+    tabLabel:       'Uploads'}) %>
+<% } %>

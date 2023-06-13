@@ -54,7 +54,7 @@ This file specifies basic information about the course instance:
 
 - Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/infoCourseInstance.json)
 
-- [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourseInstance.json)
+- [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json)
 
 ## Course instance `allowAccess`
 
@@ -70,6 +70,18 @@ The course instance `allowAccess` rules determine who can access the course inst
         }
     ]
 ```
+
+## Assessment page organization
+
+Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
+
+```json
+{
+  "groupAssessmentsBy": "Module"
+}
+```
+
+For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
 
 ## Timezone
 

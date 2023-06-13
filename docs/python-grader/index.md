@@ -47,7 +47,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -55,7 +55,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grading-results></pl-external-grading-results>
+  <pl-external-grader-results></pl-external-grader-results>
   <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
@@ -87,7 +87,7 @@ Full example:
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grader-results />
+  <pl-external-grader-results></pl-external-grader-results>
 </pl-submission-panel>
 ```
 
@@ -105,10 +105,10 @@ The test cases for each coding problem are defined as methods of a `test` class 
 
 ```python
 ## No plot grading
-class Test(PrairieLearnTestCase):
+class Test(PLTestCase):
 
 ## Plot grading enabled
-class Test(PrairieLearnTestCaseWithPlot):
+class Test(PLTestCaseWithPlot):
 ```
 
 These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.
@@ -136,7 +136,7 @@ from code_feedback import Feedback
 @points(10)
 @name("name of the test case")
 def test_0(self):
-   if Feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
+   if Feedback.check_scalar("name of the variable", self.ref.variable_name, self.st.variable_names):
        Feedback.set_score(1)
    else:
        Feedback.set_score(0)

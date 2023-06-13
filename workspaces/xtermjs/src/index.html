@@ -15,7 +15,7 @@
         </style>
     </head>
     <body>
-        <div id="terminal" class="terminal"></div>
+        <main id="terminal" class="terminal"></main>
         <script>
          const term = new Terminal({
              'fontFamily': 'courier new, courier, monospace',
@@ -28,18 +28,21 @@
          const protocol = (location.protocol == 'https:' ? 'wss:' : 'ws:');
          let socket = new WebSocket(`${protocol}//${window.location.host}${window.location.pathname}`);
          socket.onopen = () => {
-             term.onData((ev) => {
-                 socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
-             });
-             window.onresize = () => {
-                 fit.fit();
-                 socket.send(JSON.stringify({ 'event': 'resize', 'value': { 'rows': term.rows, 'cols': term.cols } }));
-             };
-             window.onresize();
+           term.onData((ev) => {
+             socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
+           });
+           window.onresize = () => {
+             fit.fit();
+             socket.send(JSON.stringify({ 'event': 'resize', 'value': { 'rows': term.rows, 'cols': term.cols } }));
+           };
+           window.onresize();
+           setInterval(() => {
+             socket.send(JSON.stringify({ 'event': 'heartbeat' }));
+           }, 60 * 1000);
 
-             socket.onmessage = (msg) => {
-                 term.write(msg.data);
-             };
+           socket.onmessage = (msg) => {
+             term.write(msg.data);
+           };
          };
         </script>
     </body>

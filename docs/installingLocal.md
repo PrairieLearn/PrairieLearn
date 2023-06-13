@@ -1,6 +1,6 @@
-# Installing with local source code
+# Running in Docker with local source
 
-This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows.
+This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows. When using Windows, you are strongly encouraged to perform the steps below inside a WSL 2 container.
 
 - First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
 
@@ -17,22 +17,36 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # You can now run the following commands inside the container:
 
-# Install Node packages.
-# Repeat after switching branches or pulling new code.
-yarn
+# Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
+# Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
+# If editing code in `packages/`, you should also repeat either this command or `make build`.
+make deps
 
-# Transpile code in the `packages/` directory.
-# Repeat after switching branches, pulling new code, or editing JS/TS in `packages/`.
-make build
+# Run the PrairieLearn server in development mode.
+make dev
 
-# Run the PrairieLearn server.
+# Or, run PrairieLearn like it's run in production.
 make start
 
-# now you can Ctrl-C and run "make start" again to restart PrairieLearn (after code edits, for example)
-# or Ctrl-C to stop PL and Ctrl-D to exit the container
+# To stop the server, press Ctrl-C.
+# To exit the container, press Ctrl-C and then Ctrl-D.
 ```
 
-The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows cmd), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
+The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows command prompt outside WSL), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
+
+## Auto-restarting the node server
+
+The steps above require you to manually stop and restart PrairieLearn after you have edited any JavaScript files. You can alternatively configure the server to automatically restart when changes are detected. To do this, run the PrairieLearn container as described at the start of this page and then run:
+
+```sh
+make dev
+```
+
+Alternatively, you can set the `DEV=true` environment variable while running PrairieLearn automatically:
+
+```sh
+docker run -it --rm -p 3000:3000 -e DEV=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
+```
 
 ## Running the test suite
 
@@ -53,7 +67,20 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # following commands are inside the container:
 make start-support
-mocha tests/testGetHomepage.js
+cd apps/prairielearn
+yarn mocha src/tests/getHomepage.test.js
+```
+
+## Working on packages
+
+When working on something in the `packages/` directory, you'll need to rebuild the package before any changes will become visible to other packages or apps that use the package. You can build everything with `make build`, or you can run the `dev` script in a package to rebuild it automatically whenever there are changes.
+
+```sh
+# From the root of the repository:
+yarn workspace @prairielearn/postgres run dev
+
+# From a specific package directory, e.g. `packages/postgres`:
+yarn dev
 ```
 
 ## Updating or building the Docker image
@@ -70,20 +97,6 @@ You can also build a local copy of this image and use it to make sure you have a
 cd /path/to/PrairieLearn
 docker build -t prairielearn/plbase images/plbase
 docker build -t prairielearn/prairielearn .
-```
-
-## Auto-restarting the node server
-
-The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
-
-```sh
-make start-nodemon
-```
-
-Alternatively, you can set the `NODEMON=true` environment variable while running PrairieLearn automatically:
-
-```sh
-docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
 ## Connecting to an existing Docker container

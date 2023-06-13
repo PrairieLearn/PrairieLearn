@@ -1,0 +1,35 @@
+<% if (sequence_locked) { %>
+  <span class="text-muted">
+    <%= rowLabelText %>
+  </span>
+<% } else { %>
+  <a href="<%= urlPrefix %>/instance_question/<%= id %>/">
+    <%= rowLabelText %>
+  </a>
+<% } %>
+
+<% if (sequence_locked) { %>
+  <%
+  var lockedPopoverText = prev_sequence_locked
+    ? `A previous question must be completed before you can access this one.` 
+    : `You must score at least ${prev_advance_score_perc}% on ${prev_title} to unlock this question.`;
+  %>
+  <a tabindex="0" class="btn btn-xs border text-secondary ml-1" role="button"
+    data-toggle="popover" data-trigger="focus" data-container="body"
+    data-html="true"
+    data-content="<%= lockedPopoverText %>"
+    aria-label="Locked"
+  >
+    <i class="fas fa-lock" aria-hidden="true"></i>
+  </a>
+<% } %>
+<% if (file_count > 0) { %>
+  <a tabindex="0" class="btn btn-xs border text-secondary ml-1" role="button"
+    data-toggle="popover" data-trigger="focus" data-container="body"
+    data-html="true"
+    data-content="Personal notes: <%= file_count %>"
+    aria-label="Has personal note attachments"
+  >
+    <i class="fas fa-paperclip"></i>
+  </a>
+<% } %>

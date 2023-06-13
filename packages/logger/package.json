@@ -1,0 +1,24 @@
+{
+  "name": "@prairielearn/logger",
+  "version": "1.0.1",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/logger"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^18.16.16",
+    "typescript": "^5.1.3"
+  },
+  "dependencies": {
+    "logform": "^2.5.1",
+    "winston": "^3.9.0",
+    "zod": "^3.21.4"
+  }
+}

@@ -1,0 +1,36 @@
+<pl-question-panel>
+    <p>
+        <i>
+            Because the Python autograder runs test cases in sequential order, we provide the capability to stop grading early, e.g. if there is some later test case that depends on the succesful result of an earlier one.  This can be done implicitly in most checks by passing <code class="user-output">accuracy_critical=True</code>, or by specifically calling <code class="user-output">feedback.finish()</code>.
+        </i>
+    </p>
+
+    <p>
+        For some number $x$ given as the variable <code class="user-output">x</code>, compute $y=x^2$ and store this as <code class="user-output">y</code>.
+    </p>
+    <p>
+        Finally, compute $z=\sqrt{y+1}$ and save this as <code class="user-output">z</code>.
+    </p>
+
+    <p>The setup code gives the following variables:</p>
+    <p>
+        <pl-external-grader-variables params-name="names_for_user">
+            <pl-variable name="x" type="floating point number">$x$</pl-variable>
+        </pl-external-grader-variables>
+    </p>
+
+    <p>Your code snippet should define the following variables:</p>
+    <pl-external-grader-variables params-name="names_from_user">
+        <pl-variable name="y" type="floating point number">$y=x^2$</pl-variable>
+        <pl-variable name="z" type="floating point number">$z=\sqrt{y+1}$</pl-variable>
+    </pl-external-grader-variables>
+    <pl-file-editor
+        file-name="user_code.py"
+        ace-mode="ace/mode/python"
+        source-file-name="tests/initial_code.py"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

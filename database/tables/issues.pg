@@ -24,7 +24,7 @@ indexes
     issues_course_id_open_idx: USING btree (course_id, course_caused, open)
     issues_course_instance_id_idx: USING btree (course_instance_id)
     issues_instance_question_id_idx: USING btree (instance_question_id)
-    issues_question_id_open_idx: USING btree (course_id, course_caused, open)
+    issues_question_id_course_caused_open_idx: USING btree (question_id, course_caused, open)
     issues_user_id_idx: USING btree (user_id)
     issues_variant_id_idx: USING btree (variant_id)
 

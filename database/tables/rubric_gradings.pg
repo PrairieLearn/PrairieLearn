@@ -1,0 +1,19 @@
+columns
+    adjust_points: double precision not null
+    computed_points: double precision not null
+    id: bigint not null default nextval('rubric_gradings_id_seq'::regclass)
+    max_extra_points: double precision not null
+    min_points: double precision not null
+    rubric_id: bigint not null
+    starting_points: double precision not null
+
+indexes
+    rubric_gradings_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    rubric_gradings_rubric_id_fkey: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    grading_jobs: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
+    rubric_grading_items: FOREIGN KEY (rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submissions: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL

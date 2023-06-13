@@ -14,7 +14,11 @@ docker-compose.override.yml
 ### JetBrains
 /.idea/
 
-.vscode
+### VSCode
+.vscode/*
+!.vscode/extensions.json
+
+### tmux
 .tmux.conf
 
 ## Backup files
@@ -30,17 +34,11 @@ docker-compose.override.yml
 ### jupyter
 .ipynb_checkpoints
 
-## File explorers
-**/.DS_Store # OSX Finder
-
 # PrairieLearn
 
 ## Config
 /config.json
-/aws-config.json
-
-## Dependencies
-node_modules
+/apps/prairielearn/config.json
 
 ## Generated HTML
 
@@ -54,15 +52,23 @@ node_modules
 
 ### Logs
 /server.log
-
-### Code coverage
-/coverage/
-/.nyc_output/
+/apps/prairielearn/server.log
 
 ### Tests
 /tests/testFileEditor/courseLive/
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
+
+## Yarn 
+node_modules
+yarn-error.log
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 ## Programming languages
 
@@ -86,5 +92,14 @@ __pycache__/
 ## Turborepo caches
 .turbo
 
-## Compiled package files
+## Compiled files
+apps/*/dist
+apps/prairielearn/public/build
 packages/*/dist
+
+## TypeScript cache
+*.tsbuildinfo
+
+## Question HTML snapshots
+/new-renderer/
+/old-renderer/
