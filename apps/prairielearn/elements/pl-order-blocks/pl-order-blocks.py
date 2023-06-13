@@ -238,7 +238,7 @@ def prepare(element_html, data):
             "distractor_for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
-            "distractor-feedback": distractor_feedback,
+            "distractor_feedback": distractor_feedback,
             "is_correct": is_correct,
         }
         if is_correct:
@@ -466,10 +466,10 @@ def render(element_html, data):
                     "icon": attempt["icon"]
                     if (feedback_type.startswith("first-wrong"))
                     else "",
-                    "first-wrong": feedback_type.startswith("first-wrong"),
-                    "distractor-feedback": attempt.get("distractor-feedback"),
-                    "show-distractor-feedback": (
-                        attempt.get("distractor-feedback", None) is not None
+                    "first_wrong": feedback_type.startswith("first-wrong"),
+                    "distractor_feedback": attempt.get("distractor_feedback"),
+                    "show_distractor_feedback": (
+                        attempt.get("distractor_feedback") is not None
                     )
                     and (i <= data["partial_scores"][answer_name]["first_wrong"])
                     and (feedback_type == "first-wrong-verbose"),
@@ -606,8 +606,8 @@ def parse(element_html, data):
                     ),
                     None,
                 )
-                answer["distractor-feedback"] = (
-                    search["distractor-feedback"] if search is not None else None
+                answer["distractor_feedback"] = (
+                    search["distractor_feedback"] if search is not None else None
                 )
     elif grading_mode == "dag":
         for answer in student_answer:
@@ -620,8 +620,8 @@ def parse(element_html, data):
                 None,
             )
             answer["tag"] = search["tag"] if search is not None else None
-            answer["distractor-feedback"] = (
-                search["distractor-feedback"] if search is not None else None
+            answer["distractor_feedback"] = (
+                search["distractor_feedback"] if search is not None else None
             )
             if search is None:
                 search = next(
@@ -632,8 +632,8 @@ def parse(element_html, data):
                     ),
                     None,
                 )
-                answer["distractor-feedback"] = (
-                    search["distractor-feedback"] if search is not None else None
+                answer["distractor_feedback"] = (
+                    search["distractor_feedback"] if search is not None else None
                 )
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
@@ -684,7 +684,7 @@ def grade(element_html, data):
     true_answer_list = data["correct_answers"][answer_name]
 
     distractor_feedback = {
-        item["inner_html"]: item["distractor-feedback"]
+        item["inner_html"]: item["distractor_feedback"]
         for item in data["params"][answer_name]
         if not item["is_correct"]
     }

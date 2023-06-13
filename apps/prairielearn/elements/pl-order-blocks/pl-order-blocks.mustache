@@ -67,7 +67,7 @@ $(function() {
         </div>
         <ul class="card-body list-group">
             {{#student_submission}}
-                {{#show-distractor-feedback}}
+                {{#show_distractor_feedback}}
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
                     <ul style="padding:0px;">
                         <li class="" style="list-style-type: none; ">
@@ -79,18 +79,18 @@ $(function() {
                     </ul>
                     <div>
                         <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                        {{distractor-feedback}}
+                        {{distractor_feedback}}
                     </div>
                 </li>
-                {{/show-distractor-feedback}}
-                {{^show-distractor-feedback}}
+                {{/show_distractor_feedback}}
+                {{^show_distractor_feedback}}
                 <li class="" style="list-style-type: none; ">
                     <div class="pl-order-blocks-correctness-badge-container">
                         <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
                         <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                     </div>
                 </li>
-                {{/show-distractor-feedback}}
+                {{/show_distractor_feedback}}
             {{/student_submission}}
         </ul>
     </div>
@@ -122,20 +122,20 @@ $(function() {
         <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group" style="list-style-type:none;">
         {{#distractors}}
-            {{#distractor-feedback}}
+            {{#distractor_feedback}}
             <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
                 <ul style="padding:0px;">
                     <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
                 </ul>
                 <div>
                     <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                    {{distractor-feedback}}
+                    {{distractor_feedback}}
                 </div>
             </li>
-            {{/distractor-feedback}}
-            {{^distractor-feedback}}
+            {{/distractor_feedback}}
+            {{^distractor_feedback}}
                 <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
-            {{/distractor-feedback}}
+            {{/distractor_feedback}}
         {{/distractors}}
         </ul>
     </div>
