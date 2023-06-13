@@ -59,6 +59,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )

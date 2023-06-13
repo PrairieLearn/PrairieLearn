@@ -73,7 +73,6 @@ def solve_problem(answers_list, grading_method):
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answers-name")
 
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -99,6 +98,8 @@ def prepare(element_html, data):
     pl.check_attribs(
         element, required_attribs=required_attribs, optional_attribs=optional_attribs
     )
+    answer_name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, answer_name)
 
     check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(
@@ -168,13 +169,26 @@ def prepare(element_html, data):
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "ranking", "indent"],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "ranking",
+                    "indent",
+                    "distractor-for",
+                ],
             )
         elif grading_method == "dag":
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
-                optional_attribs=["correct", "tag", "depends", "comment", "indent"],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "depends",
+                    "comment",
+                    "indent",
+                    "distractor-for",
+                ],
             )
 
         is_correct = pl.get_boolean_attrib(
@@ -183,11 +197,13 @@ def prepare(element_html, data):
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
+        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+        if distractor_for is not None and is_correct:
+            raise Exception(
+                "The distractor-for attribute may only be used on blocks with correct=false."
+            )
 
         tag, depends = get_graph_info(html_tags)
-        if grading_method == "ranking":
-            tag = str(index)
-
         if is_correct:
             if tag in used_tags:
                 raise Exception(
@@ -215,7 +231,8 @@ def prepare(element_html, data):
             "indent": answer_indent,
             "ranking": ranking,
             "index": index,
-            "tag": tag,  # set by HTML with DAG grader, set internally for ranking grader
+            "tag": tag,
+            "distractor_for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
         }
@@ -281,26 +298,56 @@ def prepare(element_html, data):
         incorrect_answers, incorrect_answers_count
     )
 
-    mcq_options = sampled_correct_answers + sampled_incorrect_answers
+    all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
     source_blocks_order = pl.get_string_attrib(
         element, "source-blocks-order", SOURCE_BLOCKS_ORDER_DEFAULT
     )
     if source_blocks_order == "random":
-        random.shuffle(mcq_options)
+        random.shuffle(all_blocks)
     elif source_blocks_order == "ordered":
-        mcq_options.sort(key=lambda a: a["index"])
+        all_blocks.sort(key=lambda a: a["index"])
     elif source_blocks_order == "alphabetized":
-        mcq_options.sort(key=lambda a: a["inner_html"])
+        all_blocks.sort(key=lambda a: a["inner_html"])
     else:
         raise Exception(
             'The specified option for the "source-blocks-order" attribute is invalid.'
         )
 
-    for option in mcq_options:
+    for option in all_blocks:
         option["uuid"] = pl.get_uuid()
 
-    data["params"][answer_name] = mcq_options
+    # prep for visual pairing
+    correct_tags = set(block["tag"] for block in all_blocks if block["tag"] is not None)
+    incorrect_tags = set(
+        block["distractor_for"] for block in all_blocks if block["distractor_for"]
+    )
+
+    if not incorrect_tags.issubset(correct_tags):
+        raise ValueError(
+            f"The following distractor-for tags do not have matching correct answer tags: {incorrect_tags - correct_tags}"
+        )
+
+    for block in all_blocks:
+        if block["distractor_for"] is not None:
+            continue
+
+        distractors = [
+            block2
+            for block2 in all_blocks
+            if (block["tag"] == block2.get("distractor_for"))
+            and (block["tag"] is not None)
+        ]
+
+        if len(distractors) == 0:
+            continue
+
+        distractor_bin = pl.get_uuid()
+        block["distractor_bin"] = distractor_bin
+        for distractor in distractors:
+            distractor["distractor_bin"] = distractor_bin
+
+    data["params"][answer_name] = all_blocks
     data["correct_answers"][answer_name] = correct_answers
 
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
@@ -328,11 +375,6 @@ def render(element_html, data):
     if data["panel"] == "question":
         editable = data["editable"]
 
-        mcq_options = []
-        student_previous_submission = []
-        submission_indent = []
-        student_submission_dict_list = []
-
         answer_name = pl.get_string_attrib(element, "answers-name")
         source_header = pl.get_string_attrib(
             element, "source-header", SOURCE_HEADER_DEFAULT
@@ -341,33 +383,18 @@ def render(element_html, data):
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        mcq_options = data["params"][answer_name]
-        mcq_options = filter_multiple_from_array(mcq_options, ["inner_html", "uuid"])
+        all_blocks = data["params"][answer_name]
+        student_previous_submission = data["submitted_answers"].get(answer_name, [])
+        submitted_block_ids = {block["uuid"] for block in student_previous_submission}
+        source_blocks = [
+            block for block in all_blocks if block["uuid"] not in submitted_block_ids
+        ]
 
-        if answer_name in data["submitted_answers"]:
-            student_previous_submission = filter_multiple_from_array(
-                data["submitted_answers"][answer_name], ["inner_html", "uuid", "indent"]
-            )
-            mcq_options = [
-                opt
-                for opt in mcq_options
-                if opt
-                not in filter_multiple_from_array(
-                    student_previous_submission, ["inner_html", "uuid"]
-                )
-            ]
-
-        for index, option in enumerate(student_previous_submission):
+        for option in student_previous_submission:
             submission_indent = option.get("indent", None)
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
-
-            temp = {
-                "inner_html": option["inner_html"],
-                "indent": submission_indent,
-                "uuid": option["uuid"],
-            }
-            student_submission_dict_list.append(dict(temp))
+            option["indent"] = submission_indent
 
         dropzone_layout = pl.get_string_attrib(
             element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
@@ -395,10 +422,10 @@ def render(element_html, data):
         html_params = {
             "question": True,
             "answer_name": answer_name,
-            "options": mcq_options,
             "source-header": source_header,
             "solution-header": solution_header,
-            "submission_dict": student_submission_dict_list,
+            "options": source_blocks,
+            "submission_dict": student_previous_submission,
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
@@ -624,18 +651,16 @@ def grade(element_html, data):
                     ans["inner_html"] = None
 
     if grading_mode == "unordered":
-        true_answer_list = filter_multiple_from_array(
-            true_answer_list, ["uuid", "indent", "inner_html"]
-        )
-        correct_selections = [opt for opt in student_answer if opt in true_answer_list]
-        incorrect_selections = [
-            opt for opt in student_answer if opt not in true_answer_list
-        ]
-        final_score = float(
-            (len(correct_selections) - len(incorrect_selections))
-            / len(true_answer_list)
+        true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
+        student_answer_uuids = set(ans["uuid"] for ans in student_answer)
+        correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
+        incorrect_selections = len(student_answer) - correct_selections
+
+        final_score = float((correct_selections - incorrect_selections)) / len(
+            true_answer_list
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
+
     elif grading_mode == "ordered":
         student_answer = [ans["inner_html"] for ans in student_answer]
         true_answer = [ans["inner_html"] for ans in true_answer_list]

@@ -84,12 +84,17 @@ include = [
     "./apps/prairielearn/elements/pl-variable-output",
     "./apps/prairielearn/elements/pl-workspace",
     "./apps/prairielearn/elements/pl-xss-safe",
+    "./apps/prairielearn/python/check_data.py",
+    "./apps/prairielearn/python/check_data_test.py",
     "./apps/prairielearn/python/conftest.py",
     "./apps/prairielearn/python/colors.py",
     "./apps/prairielearn/python/prairielearn.py",
     "./apps/prairielearn/python/prairielearn_test.py",
     "./apps/prairielearn/python/python_helper_sympy.py",
-    "./apps/prairielearn/python/python_helper_sympy_test.py"
+    "./apps/prairielearn/python/python_helper_sympy_test.py",
+    "./apps/prairielearn/python/question_phases.py",
+    "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/traverse_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.9"

@@ -16,5 +16,5 @@ def generate(data):
     # Compute the product of these two numbers
     c = math.sqrt(a**2 + b**2)
 
-    # Put the product into data['params']
-    data["params"]["correct_answer"] = c
+    # Put the correct answer into data['correct_answers']
+    data["correct_answers"]["c"] = c

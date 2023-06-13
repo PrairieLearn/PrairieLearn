@@ -21,6 +21,20 @@ const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
 const { APP_ROOT_PATH } = require('../lib/paths');
+const { features } = require('../lib/features');
+
+/**
+ * @typedef {Object} QuestionProcessingContext
+ * @property {Object} course
+ * @property {Object} question
+ * @property {string} course_dir
+ * @property {string} course_dir_host
+ * @property {string} question_dir
+ * @property {string} question_dir_host
+ * @property {'experimental' | 'default' | 'legacy'} renderer
+ * @property {any} course_elements
+ * @property {any} course_element_extensions
+ */
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -530,11 +544,70 @@ module.exports = {
     // prettier-ignore
     err = checkProp('test_type',             'string',  ['test'],                             []);
     if (err) return err;
+    // prettier-ignore
+    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+    if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
     return null;
+  },
+
+  /**
+   *
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {any} context
+   * @param {string} html
+   */
+  async experimentalProcess(phase, codeCaller, data, context, html) {
+    const pythonContext = {
+      html,
+      elements: {
+        ...coreElementsCache,
+        // Course elements should always take precedence over core elements.
+        ...context.course_elements,
+      },
+      element_extensions: context.course_element_extensions,
+      course_path:
+        config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
+    };
+    const courseIssues = [];
+    let result = null;
+    let output = null;
+
+    try {
+      const res = await codeCaller.call(
+        'question',
+        context.question.directory,
+        'question.html',
+        phase,
+        [data, pythonContext]
+      );
+      result = res.result;
+      output = res.output;
+    } catch (err) {
+      courseIssues.push(err);
+    }
+
+    if ((output?.length ?? 0) > 0) {
+      courseIssues.push(
+        new CourseIssueError(`output logged on console during ${phase}()`, {
+          data: { outputBoth: output },
+          fatal: false,
+        })
+      );
+    }
+
+    return {
+      courseIssues,
+      data: result?.data ?? data,
+      html: result?.html ?? '',
+      fileData: Buffer.from(result?.file ?? '', 'base64'),
+      renderedElementNames: result?.processed_elements ?? [],
+    };
   },
 
   async traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
@@ -786,6 +859,12 @@ module.exports = {
     };
   },
 
+  /**
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {QuestionProcessingContext} context
+   */
   async processQuestionHtml(phase, codeCaller, data, context) {
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -816,11 +895,13 @@ module.exports = {
       };
     }
 
-    // Switch based on which renderer is enabled for this course
-    const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
     let processFunction;
+    /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, any]} */
     let args;
-    if (useNewQuestionRenderer) {
+    if (context.renderer === 'experimental') {
+      processFunction = module.exports.experimentalProcess;
+      args = [phase, codeCaller, data, context, html];
+    } else if (context.renderer === 'default') {
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
       args = [phase, codeCaller, data, context, html];
     } else {
@@ -956,6 +1037,14 @@ module.exports = {
     return { courseIssues, data, html, fileData };
   },
 
+  /**
+   *
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {QuestionProcessingContext} context
+   * @returns
+   */
   async processQuestion(phase, codeCaller, data, context) {
     const meter = metrics.getMeter('prairielearn');
     return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
@@ -1076,6 +1165,7 @@ module.exports = {
         correct_answers: _.get(variant, 'true_answer', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
+        answers_names: {},
       };
       _.extend(data.options, module.exports.getContextOptions(context));
 
@@ -1112,6 +1202,7 @@ module.exports = {
    * @typedef {Object} RenderPanelResult
    * @property {any[]} courseIssues
    * @property {string} html
+   * @property {string} [renderer]
    * @property {string[]} [renderedElementNames]
    * @property {boolean} [cacheHit]
    */
@@ -1123,7 +1214,7 @@ module.exports = {
    * @param {any} submission
    * @param {any} course
    * @param {any} locals
-   * @param {any} context
+   * @param {QuestionProcessingContext} context
    * @returns {Promise<RenderPanelResult>}
    */
   async renderPanel(panel, codeCaller, variant, submission, course, locals, context) {
@@ -1259,6 +1350,15 @@ module.exports = {
       let allRenderedElementNames = [];
       const courseIssues = [];
       const context = await module.exports.getContext(question, course);
+
+      // Hack: we need to propagate this back up to the original caller so
+      // they can expose the selected renderer to the client via a header, but
+      // parent functions don't actually return things. So we'll just stick it
+      // in the `locals` object that the parent will be able to read from.
+      //
+      // See the `setRendererHeader` function in `lib/question` for where this
+      // is actually used.
+      locals.question_renderer = context.renderer;
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         await async.series([
@@ -1694,13 +1794,13 @@ module.exports = {
     );
   },
 
-  async gradeAsync(submission, variant, question, course) {
+  async gradeAsync(submission, variant, question, question_course) {
     return instrumented('freeform.grade', async () => {
       debug('grade()');
       if (variant.broken) throw new Error('attemped to grade broken variant');
       if (submission.broken) throw new Error('attemped to grade broken submission');
 
-      const context = await module.exports.getContext(question, course);
+      const context = await module.exports.getContext(question, question_course);
       let data = {
         params: variant.params,
         correct_answers: variant.true_answer,
@@ -1741,8 +1841,8 @@ module.exports = {
     });
   },
 
-  grade(submission, variant, question, course, callback) {
-    module.exports.gradeAsync(submission, variant, question, course).then(
+  grade(submission, variant, question, question_course, callback) {
+    module.exports.gradeAsync(submission, variant, question, question_course).then(
       ({ courseIssues, data: resultData }) => {
         callback(null, courseIssues, resultData);
       },
@@ -1807,6 +1907,11 @@ module.exports = {
     );
   },
 
+  /**
+   * @param {Object} question
+   * @param {Object} course
+   * @returns {Promise<QuestionProcessingContext>}
+   */
   async getContext(question, course) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     /** @type {chunks.Chunk[]} */
@@ -1830,6 +1935,20 @@ module.exports = {
     ];
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
+    // Select which rendering strategy we'll use. This is computed here so that
+    // in can factor into the cache key.
+    const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
+    const useExperimentalRenderer = await features.enabled('process-questions-in-worker', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
+
+    const renderer = useExperimentalRenderer
+      ? 'experimental'
+      : useNewQuestionRenderer
+      ? 'default'
+      : 'legacy';
+
     // The `*Host` values here refer to the paths relative to PrairieLearn;
     // the other values refer to the paths as they will be seen by the worker
     // that actually executes the question.
@@ -1837,23 +1956,26 @@ module.exports = {
     const courseDirectoryHost = coursePath;
     const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
     const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
-    const context = {
+
+    // Load elements and any extensions
+    const elements = await module.exports.loadElementsForCourse(course);
+    const extensions = await module.exports.loadExtensionsForCourse({
+      course,
+      course_dir: courseDirectory,
+      course_dir_host: courseDirectoryHost,
+    });
+
+    return {
       question,
       course,
       course_dir: courseDirectory,
       course_dir_host: courseDirectoryHost,
       question_dir: questionDirectory,
       question_dir_host: questionDirectoryHost,
+      course_elements: elements,
+      course_element_extensions: extensions,
+      renderer,
     };
-
-    // Load elements and any extensions
-    const elements = await module.exports.loadElementsForCourse(course);
-    const extensions = await module.exports.loadExtensionsForCourse(context);
-
-    context.course_elements = elements;
-    context.course_element_extensions = extensions;
-
-    return context;
   },
 
   async getCacheKey(course, data, context) {
