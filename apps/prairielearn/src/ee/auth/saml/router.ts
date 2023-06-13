@@ -8,7 +8,7 @@ import * as authnLib from '../../../lib/authn';
 
 import { strategy } from './index';
 import { SamlTest } from './router.html';
-import { getInstitutionSamlProvider } from '../../institution/utils';
+import { getInstitutionSamlProvider } from '../../lib/institution';
 
 const router = Router({ mergeParams: true });
 
