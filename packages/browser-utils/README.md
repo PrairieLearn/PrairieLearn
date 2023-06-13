@@ -43,9 +43,9 @@ These functions can be used to encode some state on the server and retrieve it o
 import { EncodedData } from '@prairielearn/browser-utils';
 
 app.get('/', (req, res) => {
-  const courses = ['CS 101' , 'PHYS 512'];
+  const courses = ['CS 101', 'PHYS 512'];
   res.send(`<html><body>${EncodedData(courses, 'courses-data')}</body></html>`);
-})
+});
 ```
 
 On the client, they can be retrieved with `decodeData`:
