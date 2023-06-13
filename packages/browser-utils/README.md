@@ -20,7 +20,7 @@ To be precise, if `document.readyState` is `interactive` or `complete`, the func
 
 ### `parseHTML` and `parseHTMLElement`
 
-These functions return a `DocumentNode` and `Element` from the provided HTML, respectively. The HTML can be an `HtmlSafeString` from `@prairielearn/html` or a plain string.
+These functions return a `DocumentFragment` and `Element` from the provided HTML, respectively. The HTML can be an `HtmlSafeString` from `@prairielearn/html` or a plain string.
 
 ```ts
 import { parseHTML, parseHTMLElement } from '@prairielearn/browser-utils';
