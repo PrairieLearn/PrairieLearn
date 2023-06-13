@@ -40,7 +40,9 @@
             {{^show_info}}
               <span class="d-flex align-items-center">
             {{/show_info}}
-
+            {{#parse_error}}
+              <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+            {{/parse_error}}
             {{#show_score}}
               {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
               {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}

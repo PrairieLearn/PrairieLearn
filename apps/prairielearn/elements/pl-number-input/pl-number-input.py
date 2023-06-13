@@ -112,6 +112,7 @@ def render(element_html, data):
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+        parse_error = data["format_errors"].get(name, None)
 
         html_params = {
             "question": True,
@@ -123,6 +124,7 @@ def render(element_html, data):
             "uuid": pl.get_uuid(),
             "show_score": show_score,
             "accessibility_description": accessibility_description,
+            "parse_error": parse_error is not None
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
