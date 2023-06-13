@@ -841,6 +841,7 @@ def test(element_html, data):
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
     partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
+    check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -867,8 +868,14 @@ def test(element_html, data):
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
         answer = filter_multiple_from_array(
-            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid"]
+            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid", "is_correct", "distractor-feedback"]
         )
+        distractor_feedback = {
+            item["inner_html"]: item["distractor-feedback"]
+            for item in data["params"][answer_name]
+            if not item["is_correct"]
+        }
+
         answer.pop(0)
         score = 0
         if grading_mode == "unordered" or (
@@ -877,8 +884,11 @@ def test(element_html, data):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = 0 if grading_mode in ["dag", "ranking"] else -1
 
-        if grading_mode == "dag" and feedback_type == "first-wrong":
-            feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
+        if grading_mode in ["dag", "ranking"] and feedback_type.startswith("first-wrong"):
+            if feedback_type.endswith("verbose") and answer[first_wrong]["inner_html"] in distractor_feedback:
+                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
+            else:
+                feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]
                 for ans in data["correct_answers"][answer_name]
@@ -888,6 +898,8 @@ def test(element_html, data):
             ) != {None}
             if has_block_groups:
                 feedback += FIRST_WRONG_FEEDBACK["block-group"]
+            if check_indentation:
+                feedback += FIRST_WRONG_FEEDBACK["indentation"]
             feedback += "</ul>"
         else:
             feedback = ""
