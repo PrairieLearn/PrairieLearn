@@ -557,7 +557,7 @@ def render(element_html, data):
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
             "distractors": distractors,
-            "show-distractors": (len(distractors) > 0),
+            "show_distractors": (len(distractors) > 0),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
