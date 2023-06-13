@@ -1,20 +1,13 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
 import { step } from 'mocha-steps';
-import fetch from 'node-fetch';
+import { queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
 import helperServer = require('./helperServer');
-import { queryAsync } from '@prairielearn/postgres';
+import { enrollUser, unenrollUser } from './utils/enrollments';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-
-type AuthUser = {
-  name: string;
-  uid: string;
-  uin: string;
-};
 
 const USER_1 = {
   name: 'Student 1',
@@ -34,59 +27,6 @@ const USER_3 = {
   uin: '3',
 };
 
-async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
-  const originalName = config.authName;
-  const originalUid = config.authUid;
-  const originalUin = config.authUin;
-
-  try {
-    config.authName = user.name;
-    config.authUid = user.uid;
-    config.authUin = user.uin;
-
-    return await fn();
-  } finally {
-    config.authName = originalName;
-    config.authUid = originalUid;
-    config.authUin = originalUin;
-  }
-}
-
-async function getCsrfToken(user: AuthUser): Promise<string> {
-  return await withUser(user, async () => {
-    const res = await fetch(baseUrl + '/enroll');
-    assert.isOk(res.ok);
-    const $ = cheerio.load(await res.text());
-    return $('span[id=test_csrf_token]').text();
-  });
-}
-
-async function enrollUser(user: AuthUser) {
-  return await withUser(user, async () => {
-    return await fetch(baseUrl + '/enroll', {
-      method: 'POST',
-      body: new URLSearchParams({
-        course_instance_id: '1',
-        __action: 'enroll',
-        __csrf_token: await getCsrfToken(user),
-      }),
-    });
-  });
-}
-
-async function unenrollUser(user: AuthUser) {
-  return await withUser(user, async () => {
-    return await fetch(baseUrl + '/enroll', {
-      method: 'POST',
-      body: new URLSearchParams({
-        course_instance_id: '1',
-        __action: 'unenroll',
-        __csrf_token: await getCsrfToken(user),
-      }),
-    });
-  });
-}
-
 describe('Enroll page (enterprise)', function () {
   before(helperServer.before());
   after(helperServer.after);
@@ -96,25 +36,25 @@ describe('Enroll page (enterprise)', function () {
   after(async () => (config.isEnterprise = originalIsEnterprise));
 
   step('enroll a single student', async () => {
-    const res = await enrollUser(USER_1);
+    const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('enrolls the same student again', async () => {
-    const res = await enrollUser(USER_1);
+    const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('unenroll a single student', async () => {
-    const res = await unenrollUser(USER_1);
+    const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('unenroll the same student again', async () => {
-    const res = await unenrollUser(USER_1);
+    const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
@@ -124,13 +64,13 @@ describe('Enroll page (enterprise)', function () {
   });
 
   step('enroll one student', async () => {
-    const res = await enrollUser(USER_1);
+    const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('fail to enroll a second student', async () => {
-    const res = await enrollUser(USER_2);
+    const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
@@ -144,7 +84,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   step('fail to enroll a second student', async () => {
-    const res = await enrollUser(USER_2);
+    const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
@@ -154,13 +94,13 @@ describe('Enroll page (enterprise)', function () {
   });
 
   step('enroll a second student', async () => {
-    const res = await enrollUser(USER_2);
+    const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('fail to enroll a third student', async () => {
-    const res = await enrollUser(USER_3);
+    const res = await enrollUser('1', USER_3);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
@@ -174,7 +114,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   step('fail to enroll a third student', async () => {
-    const res = await enrollUser(USER_3);
+    const res = await enrollUser('1', USER_3);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
@@ -190,13 +130,13 @@ describe('Enroll page (non-enterprise)', () => {
   });
 
   step('enroll one student', async () => {
-    const res = await enrollUser(USER_1);
+    const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
   step('enroll a second student', async () => {
-    const res = await enrollUser(USER_2);
+    const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });

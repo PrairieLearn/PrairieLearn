@@ -57,8 +57,10 @@ router.get(
       throw error.make(404, 'Not Found');
     }
 
-    // TODO: limit access to course owners.
-    console.log('course_instance', res.locals.course_instance);
+    // Only course owners can manage billing.
+    if (!res.locals.authz_data.has_course_permission_own) {
+      throw error.make(403, 'Access denied (must be course owner)');
+    }
 
     const {
       requiredPlans,
@@ -97,6 +99,16 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    // This page is behind a feature flag for now.
+    if (!res.locals.billing_enabled) {
+      throw error.make(404, 'Not Found');
+    }
+
+    // Only course owners can manage billing.
+    if (!res.locals.authz_data.has_course_permission_own) {
+      throw error.make(403, 'Access denied (must be course owner)');
+    }
+
     const pageData = await loadPageData(res);
 
     const requiredPlans: PlanName[] = [];

@@ -7,8 +7,16 @@ import helperServer = require('../../../../tests/helperServer');
 import { updateRequiredPlansForCourseInstance } from '../../plans';
 import { config } from '../../../../lib/config';
 import { features } from '../../../../lib/features';
+import { queryAsync } from '@prairielearn/postgres';
+import { enrollRandomUsers } from '../../../../tests/utils/enrollments';
+import { getCsrfToken } from '../../../../tests/utils/csrf';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
+const pageUrl = siteUrl + '/pl/course_instance/1/instructor/instance_admin/billing';
+
+async function updateCourseInstanceEnrollmentLimit(limit: number) {
+  await queryAsync('UPDATE course_instances SET enrollment_limit = $limit;', { limit });
+}
 
 describe('instructorInstanceAdminBilling', () => {
   enableEnterpriseEdition();
@@ -18,8 +26,7 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('404s if feature is not enabled', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': false }, async () => {
-      const url = '/pl/course_instance/1/instructor/instance_admin/billing';
-      const res = await fetch(siteUrl + url);
+      const res = await fetch(pageUrl);
       assert.isFalse(res.ok);
       assert.equal(res.status, 404);
     });
@@ -28,8 +35,7 @@ describe('instructorInstanceAdminBilling', () => {
   it('404s if not enterprise edition', async () => {
     await withoutEnterpriseEdition(async () => {
       await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-        const url = '/pl/course_instance/1/instructor/instance_admin/billing';
-        const res = await fetch(siteUrl + url);
+        const res = await fetch(pageUrl);
         assert.isFalse(res.ok);
         assert.equal(res.status, 404);
       });
@@ -39,12 +45,31 @@ describe('instructorInstanceAdminBilling', () => {
   it('shows current state', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
       await updateRequiredPlansForCourseInstance('1', ['basic', 'compute']);
-      const url = '/pl/course_instance/1/instructor/instance_admin/billing';
-      const res = await fetch(siteUrl + url);
+
+      const res = await fetch(pageUrl);
       assert.isTrue(res.ok);
       const $ = cheerio.load(await res.text());
       assert.equal($('#studentBillingEnabled').attr('checked'), 'checked');
       assert.equal($('#computeEnabled').attr('checked'), 'checked');
+    });
+  });
+
+  it('forbids disabling student billing if enrollment limit exceeded', async () => {
+    await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
+      await updateCourseInstanceEnrollmentLimit(1);
+      await updateRequiredPlansForCourseInstance('1', ['basic', 'compute']);
+      await enrollRandomUsers('1', 10);
+
+      const csrfToken = await getCsrfToken(pageUrl);
+      const res = await fetch(pageUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          // Omitting `student_billing_enabled` to disable it.
+          __csrf_token: csrfToken,
+        }),
+      });
+      assert.isFalse(res.ok);
+      assert.equal(res.status, 400);
     });
   });
 });
