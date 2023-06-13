@@ -101,7 +101,12 @@ The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+<pl-order-blocks
+  answers-name="conjunction-implies-conjunction"
+  grading-method="dag"
+  solution-placement="bottom"
+  feedback="first-wrong"
+>
   <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
