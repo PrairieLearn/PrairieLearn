@@ -1,13 +1,17 @@
 import { assert } from 'chai';
 import cheerio = require('cheerio');
 import fetch from 'node-fetch';
+import { queryAsync } from '@prairielearn/postgres';
 
 import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../../../tests/ee-helpers';
 import helperServer = require('../../../../tests/helperServer');
-import { updateRequiredPlansForCourseInstance } from '../../plans';
+import {
+  updatePlanGrantsForCourseInstance,
+  updatePlanGrantsForInstitution,
+  updateRequiredPlansForCourseInstance,
+} from '../../plans';
 import { config } from '../../../../lib/config';
 import { features } from '../../../../lib/features';
-import { queryAsync } from '@prairielearn/postgres';
 import { enrollRandomUsers } from '../../../../tests/utils/enrollments';
 import { getCsrfToken } from '../../../../tests/utils/csrf';
 
@@ -65,6 +69,40 @@ describe('instructorInstanceAdminBilling', () => {
         method: 'POST',
         body: new URLSearchParams({
           // Omitting `student_billing_enabled` to disable it.
+          __csrf_token: csrfToken,
+        }),
+      });
+      assert.isFalse(res.ok);
+      assert.equal(res.status, 400);
+    });
+  });
+
+  it('forbids enabling compute if already granted to the institution', async () => {
+    await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
+      await updatePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
+
+      const csrfToken = await getCsrfToken(pageUrl);
+      const res = await fetch(pageUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          compute_enabled: '1',
+          __csrf_token: csrfToken,
+        }),
+      });
+      assert.isFalse(res.ok);
+      assert.equal(res.status, 400);
+    });
+  });
+
+  it('forbids enabling compute if already granted to the course instance', async () => {
+    await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
+      await updatePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
+
+      const csrfToken = await getCsrfToken(pageUrl);
+      const res = await fetch(pageUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          compute_enabled: '1',
           __csrf_token: csrfToken,
         }),
       });

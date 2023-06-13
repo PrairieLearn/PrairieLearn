@@ -80,8 +80,55 @@ SELECT
   grant_type::enum_plan_grant_type
 FROM
   desired_plan_grants
-  -- TODO: we need something like `NULLS NOT DISTINCT` from Postgres 15 for this
-  -- to work, but we aren't running on that version yet.
+ON CONFLICT (
+  plan_name,
+  institution_id,
+  course_instance_id,
+  enrollment_id
+) DO
+UPDATE
+SET
+type = EXCLUDED.type;
+
+-- BLOCK update_plan_grants_for_course_instance
+WITH
+  desired_plan_grants AS (
+    SELECT
+      (plans ->> 'plan')::text AS plan_name,
+      (plans ->> 'grantType')::text AS grant_type
+    FROM
+      JSON_ARRAY_ELEMENTS($plans::json) AS plans
+  ),
+  deleted_plan_grants AS (
+    DELETE FROM plan_grants
+    WHERE
+      course_instance_id = $course_instance_id
+      AND NOT EXISTS (
+        SELECT
+          *
+        FROM
+          desired_plan_grants
+        WHERE
+          plan_name = plan_grants.plan_name
+      )
+  )
+INSERT INTO
+  plan_grants (
+    institution_id,
+    course_instance_id,
+    plan_name,
+    type
+  )
+SELECT
+  i.id,
+  $course_instance_id,
+  plan_name,
+  grant_type::enum_plan_grant_type
+FROM
+  desired_plan_grants
+  JOIN course_instances AS ci ON (ci.id = $course_instance_id)
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN institutions AS i ON (i.id = c.institution_id)
 ON CONFLICT (
   plan_name,
   institution_id,

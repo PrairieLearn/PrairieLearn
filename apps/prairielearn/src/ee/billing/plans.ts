@@ -50,3 +50,13 @@ export async function updatePlanGrantsForInstitution(
     plans: JSON.stringify(plans),
   });
 }
+
+export async function updatePlanGrantsForCourseInstance(
+  course_instance_id: string,
+  plans: PlanGrantUpdate[]
+) {
+  await queryAsync(sql.update_plan_grants_for_course_instance, {
+    course_instance_id,
+    plans: JSON.stringify(plans),
+  });
+}
