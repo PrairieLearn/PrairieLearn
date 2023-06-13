@@ -15,4 +15,4 @@ foreign-key constraints
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    plan_grants: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id)
+    plan_grants: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE

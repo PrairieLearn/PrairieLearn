@@ -40,6 +40,6 @@ referenced by
     lti_credentials: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti_links: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    plan_grants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
+    plan_grants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     users: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     variants: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
