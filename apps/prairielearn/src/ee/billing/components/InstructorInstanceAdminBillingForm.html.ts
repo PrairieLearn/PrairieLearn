@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { EncodedData } from '@prairielearn/browser-utils';
 import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types';
 
 interface InstructorInstanceAdminBillingInput {
@@ -129,9 +130,9 @@ export function InstructorInstanceAdminBillingForm(
     : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
 
-  // TODO: use "encodeData" utility from PrairieTest instead of JSON.stringify
   return html`
-    <form method="POST" class="js-billing-form" data-props="${JSON.stringify(props)}">
+    <form method="POST" class="js-billing-form">
+      ${EncodedData(props, 'billing-form-data')}
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
         <div class="progress">
