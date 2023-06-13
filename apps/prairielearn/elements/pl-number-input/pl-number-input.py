@@ -22,6 +22,7 @@ ALLOW_FRACTIONS_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 CUSTOM_FORMAT_DEFAULT = ".12g"
+SHOW_SCORE_DEFAULT = True
 
 
 def prepare(element_html, data):
@@ -47,6 +48,7 @@ def prepare(element_html, data):
         "blank-value",
         "custom-format",
         "placeholder",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -103,6 +105,7 @@ def render(element_html, data):
     custom_format = pl.get_string_attrib(
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -116,6 +119,7 @@ def render(element_html, data):
             "editable": editable,
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
             "uuid": pl.get_uuid(),
+            "show_score": show_score,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
