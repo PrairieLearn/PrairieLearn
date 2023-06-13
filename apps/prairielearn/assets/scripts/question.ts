@@ -1,4 +1,6 @@
 import { io } from 'socket.io-client';
+import { onDocumentReady } from '@prairielearn/browser-utils';
+
 import './mathjax';
 
 declare global {
@@ -7,7 +9,7 @@ declare global {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+onDocumentReady(() => {
   const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
   if (gradingMethod === 'External') {
     externalGradingLiveUpdate();
