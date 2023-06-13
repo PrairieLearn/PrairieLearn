@@ -4,6 +4,8 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { InstructorInstanceAdminBillingForm } from '../../components/InstructorInstanceAdminBillingForm.html';
 import { PlanName } from '../../plans-types';
 
+export type EnrollmentLimitSource = 'course_instance' | 'institution';
+
 export function InstructorCourseInstanceBilling({
   requiredPlans,
   institutionPlanGrants,
@@ -20,7 +22,7 @@ export function InstructorCourseInstanceBilling({
   courseInstancePlanGrants: PlanName[];
   enrollmentCount: number;
   enrollmentLimit: number;
-  enrollmentLimitSource: 'course_instance' | 'institution';
+  enrollmentLimitSource: EnrollmentLimitSource;
   externalGradingQuestionCount: number;
   workspaceQuestionCount: number;
   resLocals: Record<string, any>;

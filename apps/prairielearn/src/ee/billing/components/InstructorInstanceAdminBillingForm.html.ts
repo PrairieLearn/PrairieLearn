@@ -13,47 +13,77 @@ interface InstructorInstanceAdminBillingInput {
 interface InstructorInstanceAdminBillingState {
   studentBillingEnabled: boolean;
   studentBillingCanChange: boolean;
-  studentBillingAlertMessage: string | null;
+  studentBillingDidChange: boolean;
+  studentBillingAlert: AlertProps | null;
   computeEnabled: boolean;
   computeCanChange: boolean;
+  computeDidChange: boolean;
+  computeAlert: AlertProps | null;
+}
+
+interface AlertProps {
+  message: string;
+  color: 'success' | 'warning' | 'danger';
 }
 
 export function instructorInstanceAdminBillingState(
   input: InstructorInstanceAdminBillingInput
 ): InstructorInstanceAdminBillingState {
   const studentBillingEnabled = input.requiredPlans.includes('basic');
-  const computeEnabledByInstitutionOrCourseInstance = planGrantsMatchPlanFeatures(
-    input.institutionPlanGrants.concat(input.courseInstancePlanGrants),
+  const computeEnabledByInstitution = planGrantsMatchPlanFeatures(
+    input.institutionPlanGrants,
+    'compute'
+  );
+  const computeEnabledByCourseInstance = planGrantsMatchPlanFeatures(
+    input.courseInstancePlanGrants,
     'compute'
   );
   const computeEnabled =
-    (!studentBillingEnabled && computeEnabledByInstitutionOrCourseInstance) ||
+    (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
     input.requiredPlans.includes('compute');
 
   let studentBillingCanChange = true;
+  const studentBillingDidChange =
+    input.initialRequiredPlans.includes('basic') !== input.requiredPlans.includes('basic');
+  let studentBillingAlert: AlertProps | null = null;
   if (input.enrollmentCount > input.enrollmentLimit) {
-    // studentBillingCanChange = false;
+    studentBillingCanChange = false;
+    if (studentBillingEnabled) {
+      const inflectedCountVerb = input.enrollmentCount === 1 ? 'is' : 'are';
+      const inflectedCountNoun = input.enrollmentCount === 1 ? 'enrollment' : 'enrollments';
+      studentBillingAlert = {
+        message: [
+          `There ${inflectedCountVerb} ${input.enrollmentCount} ${inflectedCountNoun} in this course, which exceeds the limit of ${input.enrollmentLimit}.`,
+          'To disable student billing, first remove excess enrollments.',
+        ].join(' '),
+        color: 'warning',
+      };
+    }
   }
 
   let computeCanChange = true;
-  if (!studentBillingEnabled && computeEnabledByInstitutionOrCourseInstance) {
+  const computeDidChange =
+    input.initialRequiredPlans.includes('compute') !== input.requiredPlans.includes('compute');
+  let computeAlert: AlertProps | null = null;
+  if (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) {
     computeCanChange = false;
+    computeAlert = {
+      message: computeEnabledByCourseInstance
+        ? 'This course instance already has access to compute features without additional payment.'
+        : 'Courses in your institution already have access to compute features without additional payment.',
+      color: 'success',
+    };
   }
-
-  let studentBillingAlertMessage: string | null = null;
-  if (input.initialRequiredPlans.includes('basic') && !input.requiredPlans.includes('basic')) {
-    studentBillingAlertMessage =
-      'Disabling student billing will forbid students from accessing this course instance until excess enrollments are removed.';
-  }
-
-  console.log('studentBillingAlertMessage', studentBillingAlertMessage);
 
   return {
     studentBillingEnabled,
     studentBillingCanChange,
-    studentBillingAlertMessage,
+    studentBillingDidChange,
+    studentBillingAlert,
     computeEnabled,
     computeCanChange,
+    computeDidChange,
+    computeAlert,
   };
 }
 
@@ -81,9 +111,10 @@ export function InstructorInstanceAdminBillingForm(
   const {
     studentBillingEnabled,
     studentBillingCanChange,
-    studentBillingAlertMessage,
+    studentBillingAlert,
     computeEnabled,
     computeCanChange,
+    computeAlert,
   } = instructorInstanceAdminBillingState({
     initialRequiredPlans,
     requiredPlans,
@@ -143,9 +174,7 @@ export function InstructorInstanceAdminBillingForm(
           student billing will allow your course instance to exceed any enrollment limits that would
           otherwise apply.
         </p>
-        ${studentBillingAlertMessage
-          ? html`<div class="alert alert-warning">${studentBillingAlertMessage}</div>`
-          : null}
+        ${MaybeAlert(studentBillingAlert)}
       </div>
 
       <h2 class="h4">Features</h2>
@@ -174,6 +203,7 @@ export function InstructorInstanceAdminBillingForm(
           grading and <strong>${pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
           workspaces.
         </p>
+        ${MaybeAlert(computeAlert)}
       </div>
 
       <div
@@ -194,6 +224,11 @@ export function InstructorInstanceAdminBillingForm(
       <button type="submit" class="btn btn-primary">Save</button>
     </form>
   `;
+}
+
+function MaybeAlert(props: AlertProps | null) {
+  if (!props) return null;
+  return html`<div class="alert alert-${props.color}">${props.message}</div>`;
 }
 
 function enrollmentLimitExplanation({

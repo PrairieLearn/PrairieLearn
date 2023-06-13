@@ -1,10 +1,13 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 
-import { InstructorCourseInstanceBilling } from './instructorInstanceAdminBilling.html';
+import {
+  EnrollmentLimitSource,
+  InstructorCourseInstanceBilling,
+} from './instructorInstanceAdminBilling.html';
 import { PlanName } from '../../plans-types';
 import {
   getPlanGrantsForCourseInstance,
@@ -12,9 +15,39 @@ import {
   getRequiredPlansForCourseInstance,
   updateRequiredPlansForCourseInstance,
 } from '../../plans';
+import { instructorInstanceAdminBillingState } from '../../components/InstructorInstanceAdminBillingForm.html';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
+
+async function loadPageData(res: Response) {
+  const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
+  const institutionPlanGrants = await getPlanGrantsForInstitution(res.locals.institution.id);
+  const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
+    res.locals.course_instance.id
+  );
+
+  const enrollmentCount = await queryRow(
+    sql.course_instance_enrollment_count,
+    { course_instance_id: res.locals.course_instance.id },
+    z.number()
+  );
+  const enrollmentLimit =
+    res.locals.course_instance.enrollment_limit ??
+    res.locals.institution.course_instance_enrollment_limit;
+  const enrollmentLimitSource: EnrollmentLimitSource = res.locals.course_instance.enrollment_limit
+    ? 'course_instance'
+    : 'institution';
+
+  return {
+    requiredPlans,
+    institutionPlanGrants: institutionPlanGrants.map((planGrant) => planGrant.plan_name),
+    courseInstancePlanGrants: courseInstancePlanGrants.map((planGrant) => planGrant.plan_name),
+    enrollmentCount,
+    enrollmentLimit,
+    enrollmentLimitSource,
+  };
+}
 
 router.get(
   '/',
@@ -27,23 +60,14 @@ router.get(
     // TODO: limit access to course owners.
     console.log('course_instance', res.locals.course_instance);
 
-    const institutionPlanGrants = await getPlanGrantsForInstitution(res.locals.institution.id);
-    const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
-      res.locals.course_instance.id
-    );
-    const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
-
-    const enrollmentCount = await queryRow(
-      sql.course_instance_enrollment_count,
-      { course_instance_id: res.locals.course_instance.id },
-      z.number()
-    );
-    const enrollmentLimit =
-      res.locals.course_instance.enrollment_limit ??
-      res.locals.institution.course_instance_enrollment_limit;
-    const enrollmentLimitSource = res.locals.course_instance.enrollment_limit
-      ? 'course_instance'
-      : 'institution';
+    const {
+      requiredPlans,
+      institutionPlanGrants,
+      courseInstancePlanGrants,
+      enrollmentCount,
+      enrollmentLimit,
+      enrollmentLimitSource,
+    } = await loadPageData(res);
 
     const { external_grading_question_count, workspace_question_count } = await queryRow(
       sql.question_counts,
@@ -54,14 +78,11 @@ router.get(
       })
     );
 
-    // TODO: handle case where student billing for enrollments is not enabled
-    // and the course instance already has access to certain plans via the institution
-    // or the course instance itself.
     res.send(
       InstructorCourseInstanceBilling({
         requiredPlans,
-        institutionPlanGrants: institutionPlanGrants.map((planGrant) => planGrant.plan_name),
-        courseInstancePlanGrants: courseInstancePlanGrants.map((planGrant) => planGrant.plan_name),
+        institutionPlanGrants,
+        courseInstancePlanGrants,
         enrollmentCount,
         enrollmentLimit,
         enrollmentLimitSource,
@@ -76,18 +97,31 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const plans: PlanName[] = [];
+    const pageData = await loadPageData(res);
 
-    if (req.body.student_billing_enabled === '1') {
-      plans.push('basic');
+    const requiredPlans: PlanName[] = [];
+    if (req.body.student_billing_enabled === '1') requiredPlans.push('basic');
+    if (req.body.compute_enabled === '1') requiredPlans.push('compute');
+
+    const state = instructorInstanceAdminBillingState({
+      ...pageData,
+      initialRequiredPlans: pageData.requiredPlans,
+      requiredPlans,
+    });
+
+    // TODO: write tests for the following logic.
+
+    if (!state.studentBillingCanChange && state.studentBillingDidChange) {
+      const verb = requiredPlans.includes('basic') ? 'enabled' : 'disabled';
+      throw error.make(400, `Student billing cannot be ${verb}.`);
     }
 
-    if (req.body.compute_enabled === '1') {
-      plans.push('compute');
+    if (!state.computeCanChange && state.computeDidChange) {
+      const verb = requiredPlans.includes('compute') ? 'enabled' : 'disabled';
+      throw error.make(400, `Compute cannot be ${verb}.`);
     }
 
-    // TODO: forbid removal of `basic` plan if enrollments exceed any limits.
-    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, plans);
+    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, requiredPlans);
     res.redirect(req.originalUrl);
   })
 );
