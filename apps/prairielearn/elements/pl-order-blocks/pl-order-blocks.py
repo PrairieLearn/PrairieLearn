@@ -37,10 +37,6 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
-def filter_multiple_from_array(data, keys):
-    return [{key: item[key] for key in keys} for item in data]
-
-
 def get_graph_info(html_tags):
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tags, "depends", "")
@@ -851,9 +847,7 @@ def test(element_html, data):
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
-        answer = filter_multiple_from_array(
-            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid"]
-        )
+        answer = data["correct_answers"][answer_name]
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": 1,
@@ -865,9 +859,7 @@ def test(element_html, data):
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = filter_multiple_from_array(
-            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid", "is_correct", "distractor-feedback"]
-        )
+        answer = deepcopy(data["correct_answers"][answer_name])
         distractor_feedback = {
             item["inner_html"]: item["distractor-feedback"]
             for item in data["params"][answer_name]
@@ -882,9 +874,16 @@ def test(element_html, data):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = 0 if grading_mode in ["dag", "ranking"] else -1
 
-        if grading_mode in ["dag", "ranking"] and feedback_type.startswith("first-wrong"):
-            if feedback_type.endswith("verbose") and answer[first_wrong]["inner_html"] in distractor_feedback:
-                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
+        if grading_mode in ["dag", "ranking"] and feedback_type.startswith(
+            "first-wrong"
+        ):
+            if (
+                feedback_type.endswith("verbose")
+                and answer[first_wrong]["inner_html"] in distractor_feedback
+            ):
+                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
+                    str(first_wrong + 1)
+                )
             else:
                 feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
             group_belonging = {
