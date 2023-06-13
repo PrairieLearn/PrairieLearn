@@ -22,22 +22,39 @@ ORDER BY
   tid;
 
 -- BLOCK select_group_users
+WITH
+  assessment_groups AS (
+    SELECT
+      g.id,
+      g.name
+    FROM
+      groups AS g
+    WHERE
+      g.deleted_at IS NULL
+      AND g.group_config_id = $group_config_id
+  ),
+  assessment_group_users AS (
+    SELECT
+      g.id AS group_id,
+      COUNT(u.uid)::integer AS size,
+      array_agg(u.uid) AS uid_list
+    FROM
+      assessment_groups AS g
+      JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = gu.user_id)
+    GROUP BY
+      g.id
+  )
 SELECT
-  g.id AS group_id,
-  g.name AS name,
-  COUNT(u.uid)::integer AS size,
-  array_agg(u.uid) AS uid_list
+  ag.id AS group_id,
+  ag.name,
+  COALESCE(agu.size, 0) AS size,
+  COALESCE(agu.uid_list, ARRAY[]::TEXT[]) AS uid_list
 FROM
-  groups AS g
-  LEFT JOIN group_users AS gu ON gu.group_id = g.id
-  LEFT JOIN users AS u ON u.user_id = gu.user_id
-WHERE
-  g.deleted_at IS NULL
-  AND g.group_config_id = $group_config_id
-GROUP BY
-  g.id
+  assessment_groups AS ag
+  LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)
 ORDER BY
-  g.id;
+  ag.id;
 
 -- BLOCK select_not_in_group
 SELECT

@@ -941,6 +941,21 @@ module.exports.initExpress = function () {
     ]
   );
 
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]
+  );
+
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
