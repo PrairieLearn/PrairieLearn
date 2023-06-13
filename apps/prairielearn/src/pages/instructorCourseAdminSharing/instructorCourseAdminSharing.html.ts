@@ -1,6 +1,5 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
@@ -74,7 +73,7 @@ const chooseSharingNameButton = (resLocals) => {
   `;
 };
 
-const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }) => {
+export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -234,5 +233,3 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
     </html>
   `.toString();
 };
-
-module.exports.InstructorSharing = InstructorSharing;

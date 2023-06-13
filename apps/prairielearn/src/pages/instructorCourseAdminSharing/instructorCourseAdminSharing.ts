@@ -1,14 +1,13 @@
-// @ts-check
-const express = require('express');
+import express = require('express');
 const router = express.Router();
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 
-const path = require('path');
+import path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const { v4: uuidv4 } = require('uuid');
-const { InstructorSharing } = require('./instructorCourseAdminSharing.html');
-const sqldb = require('@prairielearn/postgres');
+import error = require('@prairielearn/error');
+import { v4 as uuidv4 } from 'uuid';
+import { InstructorSharing } from './instructorCourseAdminSharing.html';
+import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 async function generateSharingId(req, res) {

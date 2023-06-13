@@ -1,18 +1,17 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const { assert } = require('chai');
-const { step } = require('mocha-steps');
-const { config } = require('../lib/config');
+import ERR = require('async-stacktrace');
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import { config } from '../lib/config';
 const fetch = require('node-fetch').default;
-const helperClient = require('./helperClient');
-const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/postgres');
+import helperClient = require('./helperClient');
+import helperServer = require('./helperServer');
+import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
-const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 
-const syncFromDisk = require('../sync/syncFromDisk');
+import syncFromDisk = require('../sync/syncFromDisk');
 
-const { makeMockLogger } = require('./mockLogger');
+import { makeMockLogger } from './mockLogger';
 const { logger } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
