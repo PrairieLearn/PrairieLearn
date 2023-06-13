@@ -12,11 +12,24 @@
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
     <span id="pl-number-input-{{uuid}}" class="input-group pl-number-input">
         {{#label}}
+        <label for="pl-number-input-textfield-{{uuid}}" hidden>{{accessibility_description}}</label>
         <span class="input-group-prepend">
             <span class="input-group-text">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" autocomplete="off" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <input
+          id="pl-number-input-textfield-{{uuid}}" 
+          name="{{name}}" 
+          autocomplete="off" 
+          type="text" 
+          class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" 
+          size="{{size}}" 
+          {{^editable}}disabled{{/editable}} 
+          {{#raw_submitted_answer}}
+          value="{{raw_submitted_answer}}"
+          {{/raw_submitted_answer}} 
+          aria-describedby="basic-addon1" 
+          placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
             {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}

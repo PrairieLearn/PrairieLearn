@@ -49,6 +49,7 @@ def prepare(element_html, data):
         "custom-format",
         "placeholder",
         "show-score",
+        "accessibility-description",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -106,6 +107,7 @@ def render(element_html, data):
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    accessibility_description = pl.get_string_attrib(element, "accessibility-description", name)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -120,6 +122,7 @@ def render(element_html, data):
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
             "uuid": pl.get_uuid(),
             "show_score": show_score,
+            "accessibility_description": accessibility_description,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
