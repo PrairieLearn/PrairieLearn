@@ -13,9 +13,9 @@ interface InstructorInstanceAdminBillingInput {
 interface InstructorInstanceAdminBillingState {
   studentBillingEnabled: boolean;
   studentBillingCanChange: boolean;
+  studentBillingAlertMessage: string | null;
   computeEnabled: boolean;
   computeCanChange: boolean;
-  alertMessage: string | null;
 }
 
 export function instructorInstanceAdminBillingState(
@@ -32,7 +32,7 @@ export function instructorInstanceAdminBillingState(
 
   let studentBillingCanChange = true;
   if (input.enrollmentCount > input.enrollmentLimit) {
-    studentBillingCanChange = false;
+    // studentBillingCanChange = false;
   }
 
   let computeCanChange = true;
@@ -40,18 +40,20 @@ export function instructorInstanceAdminBillingState(
     computeCanChange = false;
   }
 
-  let alertMessage: string | null = null;
+  let studentBillingAlertMessage: string | null = null;
   if (input.initialRequiredPlans.includes('basic') && !input.requiredPlans.includes('basic')) {
-    alertMessage =
+    studentBillingAlertMessage =
       'Disabling student billing will forbid students from accessing this course instance until excess enrollments are removed.';
   }
+
+  console.log('studentBillingAlertMessage', studentBillingAlertMessage);
 
   return {
     studentBillingEnabled,
     studentBillingCanChange,
+    studentBillingAlertMessage,
     computeEnabled,
     computeCanChange,
-    alertMessage,
   };
 }
 
@@ -76,31 +78,39 @@ export function InstructorInstanceAdminBillingForm(
     csrfToken,
   } = props;
 
-  const { studentBillingEnabled, studentBillingCanChange, computeEnabled, computeCanChange } =
-    instructorInstanceAdminBillingState({
-      initialRequiredPlans,
-      requiredPlans,
-      institutionPlanGrants,
-      courseInstancePlanGrants,
-      enrollmentCount,
-      enrollmentLimit,
-    });
+  const {
+    studentBillingEnabled,
+    studentBillingCanChange,
+    studentBillingAlertMessage,
+    computeEnabled,
+    computeCanChange,
+  } = instructorInstanceAdminBillingState({
+    initialRequiredPlans,
+    requiredPlans,
+    institutionPlanGrants,
+    courseInstancePlanGrants,
+    enrollmentCount,
+    enrollmentLimit,
+  });
   const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
   const enrollmentLimitPercentage = studentBillingEnabled
     ? 0
     : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
+  const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
 
+  // TODO: use "encodeData" utility from PrairieTest instead of JSON.stringify
   return html`
-    <!-- TODO: use "encodeData" utility from PrairieTest instead of JSON.stringify -->
     <form method="POST" class="js-billing-form" data-props="${JSON.stringify(props)}">
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
         <div class="progress">
           <div
-            class="progress-bar"
+            class="progress-bar ${!studentBillingEnabled && enrollmentLimitExceeded
+              ? 'bg-danger'
+              : null}"
             role="progressbar"
             style="width: ${enrollmentLimitPercentage}%"
-            aria-valuenow="25"
+            aria-valuenow="${enrollmentLimitPercentage}"
             aria-valuemin="0"
             aria-valuemax="100"
           ></div>
@@ -133,6 +143,9 @@ export function InstructorInstanceAdminBillingForm(
           student billing will allow your course instance to exceed any enrollment limits that would
           otherwise apply.
         </p>
+        ${studentBillingAlertMessage
+          ? html`<div class="alert alert-warning">${studentBillingAlertMessage}</div>`
+          : null}
       </div>
 
       <h2 class="h4">Features</h2>

@@ -15,18 +15,13 @@ $(() => {
     const computePlanEnabled = computeCheckbox.checked;
 
     const requiredPlans: PlanName[] = [];
-    if (basicPlanEnabled) {
-      requiredPlans.push('basic');
-    }
-    if (computePlanEnabled) {
-      requiredPlans.push('compute');
-    }
-    morphdom(
-      billingForm,
-      InstructorInstanceAdminBillingForm({
-        ...initialProps,
-        requiredPlans,
-      }).toString()
-    );
+    if (basicPlanEnabled) requiredPlans.push('basic');
+    if (computePlanEnabled) requiredPlans.push('compute');
+
+    const newHtml = InstructorInstanceAdminBillingForm({
+      ...initialProps,
+      requiredPlans,
+    }).toString();
+    morphdom(billingForm, newHtml);
   });
 });
