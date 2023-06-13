@@ -2,7 +2,7 @@ import ERR = require('async-stacktrace');
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { config } from '../lib/config';
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 import helperClient = require('./helperClient');
 import helperServer = require('./helperServer');
 import sqldb = require('@prairielearn/postgres');
@@ -53,7 +53,7 @@ async function accessSharedQuestionAssessment() {
     assessmentsPage
       .$(`a:contains("Example of Importing Questions From Another Course")`)
       .attr('href');
-  let res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
+  const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
 }
@@ -96,7 +96,7 @@ describe('Question Sharing', function () {
     step(
       'Fail to access shared question, because permission has not yet been granted',
       async () => {
-        let res = await accessSharedQuestionAssessment();
+        const res = await accessSharedQuestionAssessment();
         // TODO: Now that we add a dummy question to the DB,
         // then the name of it will show up, but it should fail to load when you access the link
         // this should be updated to actually attempt to go to the link, then hit access denied or something
@@ -117,7 +117,7 @@ describe('Question Sharing', function () {
 
     step('Set test course sharing name', async () => {
       await setSharingName(testCourseId, testCourseSharingName);
-      let sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
+      const sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
       assert(sharingPage.includes(testCourseSharingName));
     });
 
@@ -127,7 +127,7 @@ describe('Question Sharing', function () {
 
     step('Set example course sharing name', async () => {
       await setSharingName(exampleCourseId, exampleCourseSharingName);
-      let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
+      const sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
       assert(sharingPage.includes(exampleCourseSharingName));
     });
 
@@ -145,14 +145,14 @@ describe('Question Sharing', function () {
       });
 
       response = await helperClient.fetchCheerio(sharingUrl);
-      let result = UUID_REGEXP.exec(response.text());
+      const result = UUID_REGEXP.exec(response.text());
       exampleCourseSharingId = result ? result[0] : null;
       assert(exampleCourseSharingId != null);
     });
 
     step('Create a sharing set', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
-      let response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
@@ -164,7 +164,7 @@ describe('Question Sharing', function () {
         }).toString(),
       });
 
-      let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
+      const sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
       assert(sharingPage.includes(exampleCourseSharingName));
     });
 
@@ -178,7 +178,7 @@ describe('Question Sharing', function () {
 
     step('Share sharing set with example course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
-      let response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
@@ -191,7 +191,7 @@ describe('Question Sharing', function () {
         }).toString(),
       });
 
-      let sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
+      const sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
       assert(sharingPage.includes('XC 101'));
     });
 
@@ -228,7 +228,7 @@ describe('Question Sharing', function () {
         }).toString(),
       });
 
-      let settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
+      const settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
       assert.equal(settingsPageResponse.text().includes('share-set-example'), true);
     });
 

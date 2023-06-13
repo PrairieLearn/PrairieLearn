@@ -1,17 +1,18 @@
-import express = require('express');
-const router = express.Router();
+import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-
 import path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugModule from 'debug';
 import error = require('@prairielearn/error');
 import { v4 as uuidv4 } from 'uuid';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import sqldb = require('@prairielearn/postgres');
+
+const router = Router();
+const debug = debugModule('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
 
 async function generateSharingId(req, res) {
-  let newSharingId = uuidv4();
+  const newSharingId = uuidv4();
   return await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_id, {
     sharing_id: newSharingId,
     course_id: res.locals.course.id,
@@ -27,8 +28,8 @@ router.get(
       course_id: res.locals.course.id,
     });
 
-    let sharing_name = result.rows[0].sharing_name;
-    let sharing_id = result.rows[0].sharing_id;
+    const sharing_name = result.rows[0].sharing_name;
+    const sharing_id = result.rows[0].sharing_id;
 
     if (!sharing_id) {
       await generateSharingId(req, res);
@@ -90,4 +91,4 @@ router.post(
   })
 );
 
-module.exports = router;
+export = router;

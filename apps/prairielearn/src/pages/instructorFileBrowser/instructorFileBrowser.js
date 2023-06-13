@@ -197,7 +197,7 @@ function browseFile(file_browser, callback) {
 
 router.get('/*', function (req, res, next) {
   debug('GET /');
-  if (res.locals.question.course_id !== res.locals.course.id) {
+  if (res.locals.question && res.locals.question.course_id !== res.locals.course.id) {
     return next(error.make(403, 'Access denied'));
   }
   if (!res.locals.authz_data.has_course_permission_view) {
