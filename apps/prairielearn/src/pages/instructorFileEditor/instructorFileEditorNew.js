@@ -388,18 +388,11 @@ async function updateDidSave(fileEdit) {
   debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
 }
 
-function updateDidSync(fileEdit, callback) {
-  sqldb.query(
-    sql.update_did_sync,
-    {
-      id: fileEdit.editID,
-    },
-    (err) => {
-      if (ERR(err, callback)) return;
-      debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
-      callback(null);
-    }
-  );
+async function updateDidSync(fileEdit) {
+  await sqldb.queryAsync(sql.update_did_sync, {
+    id: fileEdit.editID,
+  });
+  debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
 }
 
 async function createEdit(fileEdit) {
@@ -579,6 +572,9 @@ async function saveAndSync(fileEdit, locals) {
       }
 
       await promisify(requireFrontend.undefQuestionServers)(locals.course.path, job);
+
+      await updateDidSync(fileEdit);
+      job.verbose('Marked edit as synced');
     });
   });
 }
