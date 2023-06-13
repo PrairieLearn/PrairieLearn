@@ -646,18 +646,16 @@ def grade(element_html, data):
                     ans["inner_html"] = None
 
     if grading_mode == "unordered":
-        true_answer_list = filter_multiple_from_array(
-            true_answer_list, ["uuid", "indent", "inner_html"]
-        )
-        correct_selections = [opt for opt in student_answer if opt in true_answer_list]
-        incorrect_selections = [
-            opt for opt in student_answer if opt not in true_answer_list
-        ]
-        final_score = float(
-            (len(correct_selections) - len(incorrect_selections))
-            / len(true_answer_list)
+        true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
+        student_answer_uuids = set(ans["uuid"] for ans in student_answer)
+        correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
+        incorrect_selections = len(student_answer) - correct_selections
+
+        final_score = float((correct_selections - incorrect_selections)) / len(
+            true_answer_list
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
+
     elif grading_mode == "ordered":
         student_answer = [ans["inner_html"] for ans in student_answer]
         true_answer = [ans["inner_html"] for ans in true_answer_list]
