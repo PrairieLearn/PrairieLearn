@@ -634,9 +634,6 @@ def grade(element_html, data):
     feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
-    allow_blank_submission = pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    )
 
     true_answer_list = data["correct_answers"][answer_name]
 
