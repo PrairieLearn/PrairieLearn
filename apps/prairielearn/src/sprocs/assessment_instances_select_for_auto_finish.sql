@@ -24,9 +24,9 @@ BEGIN
             -- sequential scan on the entire `assessment_instances` table.
             --
             -- "Recently" is defined as twice the `age_mins` value. This should
-            -- ensure that any given assessment instance recieves ample attempts
+            -- ensure that any given assessment instance receives ample attempts
             -- at being finished, even in the unlikely scenario that PrairieLearn
-            -- crashes multiple times while tring to finish it.
+            -- crashes multiple times while trying to finish it.
             --
             -- Note that this relies on the frequency of the `autoFinishExams`
             -- cron job being sufficiently less than `age_mins`. This is true
