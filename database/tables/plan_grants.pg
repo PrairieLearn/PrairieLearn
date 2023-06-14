@@ -1,7 +1,6 @@
 columns
     course_instance_id: bigint
     created_at: timestamp with time zone not null default now()
-    deleted_at: timestamp with time zone
     enrollment_id: bigint
     id: bigint not null default nextval('plan_grants_id_seq'::regclass)
     institution_id: bigint

@@ -105,8 +105,6 @@ export type User = z.infer<typeof UserSchema>;
 export const PlanGrantSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   created_at: z.date(),
-  // TODO: handled `deleted_at` everywhere we need to.
-  deleted_at: z.date().nullable(),
   enrollment_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),

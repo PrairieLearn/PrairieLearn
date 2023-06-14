@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS
   plan_grants (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ,
     plan_name TEXT NOT NULL,
     type enum_plan_grant_type NOT NULL,
     user_id BIGINT REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
