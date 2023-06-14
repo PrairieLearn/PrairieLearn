@@ -18,6 +18,7 @@ import { createServerJob, ServerJob } from './server-jobs';
 import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
+import { contains } from '@prairielearn/path-utils';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -258,11 +259,39 @@ export async function identifyChangedFiles(
   oldHash: string,
   newHash: string
 ): Promise<string[]> {
-  const { stdout } = await util.promisify(child_process.exec)(
+  // In some specific scenarios, the course directory and the root of the course
+  // repository might be different. For example, the example course is usually
+  // manually cloned in production environments, and then the course is added
+  // with the path set to the absolute path of the repo _plus_ `exampleCourse/`.
+  //
+  // In these cases, we need to make sure that the paths we're returning from
+  // this function are relative to the course directory, not the root of the
+  // repository. To do this, we query git itself for the root of the repository,
+  // construct an absolute path for each file, and then trim off the course path.
+  const { stdout: topLevelStdout } = await util.promisify(child_process.exec)(
+    `git rev-parse --show-toplevel`,
+    { cwd: coursePath }
+  );
+  const topLevel = topLevelStdout.trim();
+
+  const { stdout: diffStdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
     { cwd: coursePath }
   );
-  return stdout.trim().split('\n');
+  const changedFiles = diffStdout.trim().split('\n');
+
+  // Construct absolute path to all changed files.
+  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
+
+  // Exclude any changed files that aren't in the course directory.
+  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
+    contains(coursePath, absoluteChangedFile)
+  );
+
+  // Convert all absolute paths back into relative paths.
+  return courseChangedFiles.map((absoluteChangedFile) =>
+    path.relative(coursePath, absoluteChangedFile)
+  );
 }
 
 /**
