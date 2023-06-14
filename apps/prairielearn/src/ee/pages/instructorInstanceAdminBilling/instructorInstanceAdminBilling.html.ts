@@ -31,13 +31,13 @@ export function InstructorCourseInstanceBilling({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../../pages/partials/head') %>", {
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
           ...resLocals,
         })}
         ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../../pages/partials/navbar') %>", {
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
         })}
         <main class="container mb-4">
@@ -46,7 +46,7 @@ export function InstructorCourseInstanceBilling({
             <div class="card-body">
               ${InstructorInstanceAdminBillingForm({
                 initialRequiredPlans: requiredPlans,
-                requiredPlans,
+                desiredRequiredPlans: requiredPlans,
                 institutionPlanGrants,
                 courseInstancePlanGrants,
                 enrollmentCount,

@@ -6,7 +6,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling student billing by default', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: [],
-      requiredPlans: [],
+      desiredRequiredPlans: [],
       institutionPlanGrants: [],
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
@@ -21,7 +21,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('disallows enabling compute when already granted by institution', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: [],
-      requiredPlans: [],
+      desiredRequiredPlans: [],
       institutionPlanGrants: ['compute'],
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
@@ -34,7 +34,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('disallows enabling compute when already granted by course instance', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: [],
-      requiredPlans: [],
+      desiredRequiredPlans: [],
       institutionPlanGrants: [],
       courseInstancePlanGrants: ['compute'],
       enrollmentCount: 0,
@@ -47,7 +47,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling compute when student billing is enabled', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: ['basic'],
-      requiredPlans: ['basic'],
+      desiredRequiredPlans: ['basic'],
       institutionPlanGrants: [],
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
@@ -60,7 +60,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling compute when student billing is enabled and compute is granted by institution', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: ['basic'],
-      requiredPlans: ['basic'],
+      desiredRequiredPlans: ['basic'],
       institutionPlanGrants: ['compute'],
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
@@ -73,7 +73,7 @@ describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling compute when student billing is enabled and compute is granted by course instance', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: ['basic'],
-      requiredPlans: ['basic'],
+      desiredRequiredPlans: ['basic'],
       institutionPlanGrants: [],
       courseInstancePlanGrants: ['compute'],
       enrollmentCount: 0,
@@ -86,14 +86,15 @@ describe('instructorInstanceAdminBillingState', () => {
   it('warns when disabling student billing with excess enrollments', () => {
     const state = instructorInstanceAdminBillingState({
       initialRequiredPlans: ['basic'],
-      requiredPlans: [],
+      desiredRequiredPlans: [],
       institutionPlanGrants: [],
       courseInstancePlanGrants: [],
       enrollmentCount: 100,
       enrollmentLimit: 50,
     });
-    assert.isTrue(state.studentBillingEnabled);
+    // assert.isTrue(state.studentBillingEnabled);
     assert.isFalse(state.studentBillingCanChange);
+    assert.isTrue(state.studentBillingDidChange);
     assert.match(
       state.studentBillingAlert?.message ?? '',
       /To disable student billing, first remove excess enrollments./

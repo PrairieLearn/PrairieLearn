@@ -111,29 +111,27 @@ router.post(
 
     const pageData = await loadPageData(res);
 
-    const requiredPlans: PlanName[] = [];
-    if (req.body.student_billing_enabled === '1') requiredPlans.push('basic');
-    if (req.body.compute_enabled === '1') requiredPlans.push('compute');
+    const desiredRequiredPlans: PlanName[] = [];
+    if (req.body.student_billing_enabled === '1') desiredRequiredPlans.push('basic');
+    if (req.body.compute_enabled === '1') desiredRequiredPlans.push('compute');
 
     const state = instructorInstanceAdminBillingState({
       ...pageData,
       initialRequiredPlans: pageData.requiredPlans,
-      requiredPlans,
+      desiredRequiredPlans,
     });
 
-    // TODO: write tests for the following logic.
-
     if (!state.studentBillingCanChange && state.studentBillingDidChange) {
-      const verb = requiredPlans.includes('basic') ? 'enabled' : 'disabled';
+      const verb = desiredRequiredPlans.includes('basic') ? 'enabled' : 'disabled';
       throw error.make(400, `Student billing cannot be ${verb}.`);
     }
 
     if (!state.computeCanChange && state.computeDidChange) {
-      const verb = requiredPlans.includes('compute') ? 'enabled' : 'disabled';
+      const verb = desiredRequiredPlans.includes('compute') ? 'enabled' : 'disabled';
       throw error.make(400, `Compute cannot be ${verb}.`);
     }
 
-    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, requiredPlans);
+    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, desiredRequiredPlans);
     res.redirect(req.originalUrl);
   })
 );

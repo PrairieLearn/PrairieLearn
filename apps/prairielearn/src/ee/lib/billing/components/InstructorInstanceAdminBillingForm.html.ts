@@ -4,7 +4,7 @@ import { PlanName, planGrantsMatchPlanFeatures } from '../plans-types';
 
 interface InstructorInstanceAdminBillingInput {
   initialRequiredPlans: PlanName[];
-  requiredPlans: PlanName[];
+  desiredRequiredPlans: PlanName[];
   institutionPlanGrants: PlanName[];
   courseInstancePlanGrants: PlanName[];
   enrollmentCount: number;
@@ -30,7 +30,8 @@ interface AlertProps {
 export function instructorInstanceAdminBillingState(
   input: InstructorInstanceAdminBillingInput
 ): InstructorInstanceAdminBillingState {
-  const studentBillingEnabled = input.requiredPlans.includes('basic');
+  const studentBillingInitialEnabled = input.initialRequiredPlans.includes('basic');
+  const studentBillingEnabled = input.desiredRequiredPlans.includes('basic');
   const computeEnabledByInstitution = planGrantsMatchPlanFeatures(
     input.institutionPlanGrants,
     'compute'
@@ -41,30 +42,29 @@ export function instructorInstanceAdminBillingState(
   );
   const computeEnabled =
     (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
-    input.requiredPlans.includes('compute');
+    input.desiredRequiredPlans.includes('compute');
 
   let studentBillingCanChange = true;
   const studentBillingDidChange =
-    input.initialRequiredPlans.includes('basic') !== input.requiredPlans.includes('basic');
+    input.initialRequiredPlans.includes('basic') !== input.desiredRequiredPlans.includes('basic');
   let studentBillingAlert: AlertProps | null = null;
-  if (input.enrollmentCount > input.enrollmentLimit) {
+  if (studentBillingInitialEnabled && input.enrollmentCount > input.enrollmentLimit) {
     studentBillingCanChange = false;
-    if (studentBillingEnabled) {
-      const inflectedCountVerb = input.enrollmentCount === 1 ? 'is' : 'are';
-      const inflectedCountNoun = input.enrollmentCount === 1 ? 'enrollment' : 'enrollments';
-      studentBillingAlert = {
-        message: [
-          `There ${inflectedCountVerb} ${input.enrollmentCount} ${inflectedCountNoun} in this course, which exceeds the limit of ${input.enrollmentLimit}.`,
-          'To disable student billing, first remove excess enrollments.',
-        ].join(' '),
-        color: 'warning',
-      };
-    }
+    const inflectedCountVerb = input.enrollmentCount === 1 ? 'is' : 'are';
+    const inflectedCountNoun = input.enrollmentCount === 1 ? 'enrollment' : 'enrollments';
+    studentBillingAlert = {
+      message: [
+        `There ${inflectedCountVerb} ${input.enrollmentCount} ${inflectedCountNoun} in this course, which exceeds the limit of ${input.enrollmentLimit}.`,
+        'To disable student billing, first remove excess enrollments.',
+      ].join(' '),
+      color: 'warning',
+    };
   }
 
   let computeCanChange = true;
   const computeDidChange =
-    input.initialRequiredPlans.includes('compute') !== input.requiredPlans.includes('compute');
+    input.initialRequiredPlans.includes('compute') !==
+    input.desiredRequiredPlans.includes('compute');
   let computeAlert: AlertProps | null = null;
   if (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) {
     computeCanChange = false;
@@ -98,7 +98,7 @@ export function InstructorInstanceAdminBillingForm(
 ) {
   const {
     initialRequiredPlans,
-    requiredPlans,
+    desiredRequiredPlans,
     institutionPlanGrants,
     courseInstancePlanGrants,
     enrollmentCount,
@@ -118,7 +118,7 @@ export function InstructorInstanceAdminBillingForm(
     computeAlert,
   } = instructorInstanceAdminBillingState({
     initialRequiredPlans,
-    requiredPlans,
+    desiredRequiredPlans,
     institutionPlanGrants,
     courseInstancePlanGrants,
     enrollmentCount,
