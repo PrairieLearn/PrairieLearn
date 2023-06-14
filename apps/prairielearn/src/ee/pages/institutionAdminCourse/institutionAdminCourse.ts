@@ -2,8 +2,8 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { InstitutionAdminCourse } from './course.html';
-import { getInstitution } from '../utils';
+import { InstitutionAdminCourse } from './institutionAdminCourse.html';
+import { getInstitution } from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
