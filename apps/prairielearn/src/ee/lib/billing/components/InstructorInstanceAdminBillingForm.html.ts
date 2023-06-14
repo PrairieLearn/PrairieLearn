@@ -97,10 +97,6 @@ export function InstructorInstanceAdminBillingForm(
   }
 ) {
   const {
-    initialRequiredPlans,
-    desiredRequiredPlans,
-    institutionPlanGrants,
-    courseInstancePlanGrants,
     enrollmentCount,
     enrollmentLimit,
     enrollmentLimitSource,
@@ -116,14 +112,8 @@ export function InstructorInstanceAdminBillingForm(
     computeEnabled,
     computeCanChange,
     computeAlert,
-  } = instructorInstanceAdminBillingState({
-    initialRequiredPlans,
-    desiredRequiredPlans,
-    institutionPlanGrants,
-    courseInstancePlanGrants,
-    enrollmentCount,
-    enrollmentLimit,
-  });
+  } = instructorInstanceAdminBillingState(props);
+
   const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
   const enrollmentLimitPercentage = studentBillingEnabled
     ? 0
