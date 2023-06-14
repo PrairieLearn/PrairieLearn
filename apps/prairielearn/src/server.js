@@ -767,7 +767,7 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use(
       '/pl/institution/:institution_id/admin',
-      require('./ee/routers/institutionAdmin').default,
+      require('./ee/routers/institutionAdmin').default
     );
   }
 
