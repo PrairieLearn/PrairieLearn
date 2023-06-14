@@ -644,12 +644,6 @@ def grade(element_html, data):
     feedback = ""
     first_wrong = -1
 
-    if not allow_blank_submission and len(student_answer) == 0:
-        data["format_errors"][
-            answer_name
-        ] = "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
-        return
-
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
