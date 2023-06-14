@@ -107,7 +107,9 @@ def render(element_html, data):
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
-    accessibility_description = pl.get_string_attrib(element, "accessibility-description", name)
+    accessibility_description = pl.get_string_attrib(
+        element, "accessibility-description", name
+    )
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -124,7 +126,7 @@ def render(element_html, data):
             "uuid": pl.get_uuid(),
             "show_score": show_score,
             "accessibility_description": accessibility_description,
-            "parse_error": parse_error is not None
+            "parse_error": parse_error is not None,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
