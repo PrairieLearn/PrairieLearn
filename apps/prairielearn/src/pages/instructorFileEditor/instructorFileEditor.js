@@ -143,6 +143,7 @@ router.get('/*', (req, res, next) => {
         }
       }
 
+      // TODO: fix this - we no longer have distinct jobs we can query.
       if ('jobSequence' in fileEdit) {
         fileEdit.jobSequence.jobs.forEach((item) => {
           if (item.type === 'git_push' && item.status === 'Error') {
