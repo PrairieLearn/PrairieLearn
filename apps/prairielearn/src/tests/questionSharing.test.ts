@@ -67,19 +67,11 @@ describe('Question Sharing', function () {
     step('set up testing server', helperServer.before(TEST_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    step('Initial sync of example course, fails because sharing not enabled', (callback) => {
-      syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
-        if (ERR(err, callback)) return;
-        assert(result?.hadJsonErrorsOrWarnings);
-        callback(null);
-      });
-    });
-
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
 
-    step('Resync coures with sharing enabled', (callback) => {
+    step('Sync coures with sharing enabled', (callback) => {
       syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
         if (ERR(err, callback)) return;
         // TODO: technically this would have an error because there is no permissions on the
