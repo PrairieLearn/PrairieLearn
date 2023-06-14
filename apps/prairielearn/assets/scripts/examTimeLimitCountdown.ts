@@ -9,8 +9,13 @@ declare global {
 }
 
 onDocumentReady(() => {
-  // TODO Set type
-  const timeLimitData = decodeData('time-limit-data');
+  const timeLimitData = decodeData<{
+    serverRemainingMS: number;
+    serverTimeLimitMS: number;
+    serverUpdateURL: string;
+    canTriggerFinish: boolean;
+    csrfToken: string;
+  }>('time-limit-data');
   new Countdown(
     '#countdownDisplay',
     '#countdownProgress',

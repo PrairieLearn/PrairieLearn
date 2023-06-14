@@ -179,8 +179,10 @@ function setupDynamicObjects() {
   $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
 
   try {
-    // TODO Type
-    const countdownData = decodeData('submission-suspended-data');
+    const countdownData = decodeData<{
+      serverTimeLimitMS: number;
+      serverRemainingMS: number;
+    }>('submission-suspended-data');
     new Countdown(
       '#submission-suspended-display',
       '#submission-suspended-progress',
