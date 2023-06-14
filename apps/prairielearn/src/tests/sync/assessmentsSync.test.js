@@ -1487,6 +1487,26 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records an error if an increasing points array is specified for an alternative', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [
+          {
+            points: [10, 10, 9, 10],
+            id: util.QUESTION_ID,
+          },
+        ],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment?.sync_errors, /Points for a question must be non-increasing/);
+  });
+
   it('accepts a single-element points array being specified for an alternative when real-time grading is disallowed', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);

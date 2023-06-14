@@ -1,6 +1,6 @@
 import { MultiSamlStrategy } from 'passport-saml';
 
-import { getInstitutionSamlProvider } from '../../institution/utils';
+import { getInstitutionSamlProvider } from '../../lib/institution';
 
 export const strategy = new MultiSamlStrategy(
   {

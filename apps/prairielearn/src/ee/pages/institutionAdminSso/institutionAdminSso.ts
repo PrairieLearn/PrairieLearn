@@ -4,13 +4,13 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdminSso } from './sso.html';
+import { InstitutionAdminSso } from './institutionAdminSso.html';
 import {
   getInstitution,
   getSupportedAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-} from '../utils';
+} from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

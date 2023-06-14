@@ -181,6 +181,7 @@ router.get('/', function (req, res, next) {
     ],
     (err) => {
       if (ERR(err, next)) return;
+      question.setRendererHeader(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
   );

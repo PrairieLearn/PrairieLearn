@@ -77,7 +77,7 @@ class ElementTestData(QuestionData):
 def check_answers_names(data: QuestionData, name: str) -> None:
     """Checks that answers names are distinct using property in data dict."""
     if name in data["answers_names"]:
-        raise KeyError('Duplicate "answers-name" attribute: "{name}"')
+        raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     else:
         data["answers_names"][name] = True
 
