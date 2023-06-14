@@ -3928,8 +3928,8 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: cx - 10 + options.offsetx,
-        top:  cy - 5 + options.offsety, 
+        left: cx + options.offsetx,
+        top:  cy + 10 + options.offsety, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
