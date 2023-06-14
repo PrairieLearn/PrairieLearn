@@ -43,3 +43,29 @@ export function newMessage(err: any, newMsg: string): ErrorWithData {
   newErr.message = `${newMsg}: ${newErr.message}`;
   return newErr;
 }
+
+/**
+ * Create a new error based an existing one, optionally adding status, message,
+ * and/or data. The existing error will be set as the `cause` of the new error.
+ *
+ * @param err An existing error.
+ * @param param.status Status code to set on the new error.
+ * @param param.message Message to add to the new error.
+ * @param param.data Data to set on the new error.
+ * @returns
+ */
+export function augmentError(
+  err: any,
+  { status, message, data }: { status?: number; message?: string; data?: any }
+): ErrorWithStatusAndData {
+  let newErr: ErrorWithStatusAndData;
+  if (err instanceof Error) {
+    const combinedMessage = message ? `${message}: ${err.message}` : err.message;
+    newErr = new Error(combinedMessage, { cause: err }) as ErrorWithStatusAndData;
+  } else {
+    newErr = new Error(message ?? String(err)) as ErrorWithStatusAndData;
+  }
+  newErr.status = status ?? 500;
+  newErr.data = data;
+  return newErr;
+}

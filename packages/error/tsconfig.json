@@ -4,5 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["mocha", "node"],
+    "lib": ["ES2022"],
   }
 }
