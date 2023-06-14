@@ -3684,8 +3684,8 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     let textObj = null;
     if (options.label) {
       textObj = new mechanicsObjects.LatexText(options.label, {
-        left: c1x1 + options.offsetx,
-        top:  c1y1 + options.offsety - 10, 
+        left: c1x2 + options.offsetx,
+        top:  c1y2 + options.offsety - 10, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
@@ -3928,8 +3928,8 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: cx + options.offsetx,
-        top:  cy + options.offsety, 
+        left: cx - 10 + options.offsetx,
+        top:  cy - 5 + options.offsety, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
