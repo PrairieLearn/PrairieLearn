@@ -13,7 +13,7 @@ from lxml import etree
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
-PL_ALLOW_EMPTY_SUBMISSION_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
@@ -545,7 +545,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     allow_blank_submission = pl.get_boolean_attrib(
-        element, "allow-blank", PL_ALLOW_EMPTY_SUBMISSION_DEFAULT
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
     )
 
     answer_raw_name = answer_name + "-input"
@@ -635,7 +635,7 @@ def grade(element_html, data):
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
     allow_blank_submission = pl.get_boolean_attrib(
-        element, "allow-blank", PL_ALLOW_EMPTY_SUBMISSION_DEFAULT
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
     )
 
     true_answer_list = data["correct_answers"][answer_name]
