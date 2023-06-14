@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
-import { PlanGrant, PlanGrantSchema } from '../../lib/db-types';
+import { PlanGrant, PlanGrantSchema } from '../../../lib/db-types';
 import { PLAN_NAMES, PlanName } from './plans-types';
 
 const sql = loadSqlEquiv(__filename);

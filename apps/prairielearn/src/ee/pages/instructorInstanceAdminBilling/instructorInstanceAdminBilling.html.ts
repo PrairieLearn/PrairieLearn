@@ -1,8 +1,8 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { InstructorInstanceAdminBillingForm } from '../../components/InstructorInstanceAdminBillingForm.html';
-import { PlanName } from '../../plans-types';
+import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html';
+import { PlanName } from '../../lib/billing/plans-types';
 
 export type EnrollmentLimitSource = 'course_instance' | 'institution';
 

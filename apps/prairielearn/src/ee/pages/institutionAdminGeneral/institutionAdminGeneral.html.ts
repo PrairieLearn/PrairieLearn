@@ -4,7 +4,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type PlanGrant, type Institution } from '../../../lib/db-types';
-import { PLAN_NAMES, PLANS } from '../../billing/plans-types';
+import { PLAN_NAMES, PLANS } from '../../lib/billing/plans-types';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),

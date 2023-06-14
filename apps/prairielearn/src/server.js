@@ -1246,8 +1246,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'billing';
         next();
       },
-      require('./ee/billing/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling')
-        .default,
+      require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
     ]);
   }
 

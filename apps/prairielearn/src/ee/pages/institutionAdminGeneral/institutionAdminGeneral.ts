@@ -12,8 +12,8 @@ import {
   PlanGrantUpdate,
   getPlanGrantsForInstitution,
   updatePlanGrantsForInstitution,
-} from '../../billing/plans';
-import { PlanName } from '../../billing/plans-types';
+} from '../../lib/billing/plans';
+import { PlanName } from '../../lib/billing/plans-types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

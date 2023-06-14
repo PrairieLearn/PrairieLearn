@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import helperServer = require('../../tests/helperServer');
+import helperServer = require('../../../tests/helperServer');
 import {
   getPlanGrantsForCourseInstance,
   getPlanGrantsForInstitution,

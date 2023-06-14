@@ -8,14 +8,14 @@ import {
   EnrollmentLimitSource,
   InstructorCourseInstanceBilling,
 } from './instructorInstanceAdminBilling.html';
-import { PlanName } from '../../plans-types';
+import { PlanName } from '../../lib/billing/plans-types';
 import {
   getPlanGrantsForCourseInstance,
   getPlanGrantsForInstitution,
   getRequiredPlansForCourseInstance,
   updateRequiredPlansForCourseInstance,
-} from '../../plans';
-import { instructorInstanceAdminBillingState } from '../../components/InstructorInstanceAdminBillingForm.html';
+} from '../../lib/billing/plans';
+import { instructorInstanceAdminBillingState } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
