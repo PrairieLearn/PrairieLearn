@@ -143,13 +143,23 @@ router.get('/*', (req, res, next) => {
         }
       }
 
-      // TODO: fix this - we no longer have distinct jobs we can query.
       if ('jobSequence' in fileEdit) {
-        fileEdit.jobSequence.jobs.forEach((item) => {
-          if (item.type === 'git_push' && item.status === 'Error') {
+        // New case: single job for entire operation. We inspect the job's
+        // output to determine if pushing failed.
+        if (!fileEdit.jobSequence.legacy) {
+          const job = fileEdit.jobSequence.jobs[0];
+          if (job.output_raw.indexOf('error: failed to push some refs') >= 0) {
             fileEdit.failedPush = true;
           }
-        });
+        } else {
+          // TODO: remove legacy case here once this has been running in production
+          // for a while.
+          fileEdit.jobSequence.jobs.forEach((item) => {
+            if (item.type === 'git_push' && item.status === 'Error') {
+              fileEdit.failedPush = true;
+            }
+          });
+        }
       }
 
       if (!fileEdit.alertChoice) {
