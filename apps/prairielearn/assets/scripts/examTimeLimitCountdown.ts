@@ -1,5 +1,5 @@
 import { Countdown } from './countdown';
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
 declare global {
   interface Window {
@@ -22,7 +22,15 @@ onDocumentReady(() => {
       if (timeLimitData.canTriggerFinish) {
         // do not trigger unsaved warning dialog
         window.allowQuestionUnload = true;
-        document.forms['time-limit-finish-form'].submit();
+        const form = parseHTMLElement(
+          document,
+          `<form method="POST">
+            <input type="hidden" name="__action" value="timeLimitFinish" />
+            <input type="hidden" name="__csrf_token" value="${timeLimitData.csrfToken}" />
+          </form>`
+        );
+        document.body.append(form);
+        form.submit();
       }
     },
     () => {
