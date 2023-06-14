@@ -3683,11 +3683,11 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
 
     let textObj = null;
     if (options.label) {
-      var c1x1 = xm1 - cline*Math.sin(theta);
-      var c1y1 = ym1 + 1.5*cline*Math.cos(theta); 
+      // var c1x1 = xm1 - cline*Math.sin(theta);
+      // var c1y1 = ym1 + 1.5*cline*Math.cos(theta); 
       textObj = new mechanicsObjects.LatexText(options.label, {
         left: c1x1 + options.offsetx,
-        top:  c1y1 + options.offsety, 
+        top:  0.95*c1y1 + options.offsety, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
