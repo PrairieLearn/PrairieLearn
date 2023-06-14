@@ -3,8 +3,11 @@ import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 
-import { InstitutionAdminGeneral, InstitutionStatisticsSchema } from './general.html';
-import { getInstitution } from '../utils';
+import {
+  InstitutionAdminGeneral,
+  InstitutionStatisticsSchema,
+} from './institutionAdminGeneral.html';
+import { getInstitution } from '../../lib/institution';
 import {
   PlanGrantUpdate,
   getPlanGrantsForInstitution,
