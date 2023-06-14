@@ -89,7 +89,7 @@ export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resL
           });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
-        <div id="content" class="container-fluid">
+        <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>
             <table class="table table-sm table-hover two-column-description">
@@ -228,7 +228,7 @@ export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resL
               </tbody>
             </table>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();

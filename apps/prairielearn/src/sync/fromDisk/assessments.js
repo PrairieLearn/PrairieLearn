@@ -357,7 +357,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   if (importedQids.size > 0) {
     let result = await sqldb.queryOneRowAsync(sql.get_course_info, { course_id: courseId });
-    if (!result.rows[0].question_sharing_enabled) {
+    if (!result.rows[0].question_sharing_enabled && config.checkSharingOnSync) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid)?.forEach((tid) => {
           infofile.addError(
