@@ -13,6 +13,7 @@ from lxml import etree
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
+ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = "random"
@@ -91,6 +92,7 @@ def prepare(element_html, data):
         "partial-credit",
         "format",
         "code-language",
+        "allow-blank",
     ]
 
     pl.check_attribs(
@@ -542,13 +544,21 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
+    allow_blank_submission = pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    )
 
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
 
     student_answer = json.loads(student_answer)
-    if student_answer is None or student_answer == []:
-        data["format_errors"][answer_name] = "No answer was submitted."
+
+    if (not allow_blank_submission) and (
+        student_answer is None or student_answer == []
+    ):
+        data["format_errors"][
+            answer_name
+        ] = "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
         return
 
     grading_mode = pl.get_string_attrib(
@@ -630,10 +640,6 @@ def grade(element_html, data):
     final_score = 0
     feedback = ""
     first_wrong = -1
-
-    if len(student_answer) == 0:
-        data["format_errors"][answer_name] = "Your submitted answer was empty."
-        return
 
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}

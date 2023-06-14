@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "sideEffects": false,
   "repository": {
@@ -12,7 +12,8 @@
     "./package.json": "./package.json",
     ".": {
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {

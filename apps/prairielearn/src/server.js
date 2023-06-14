@@ -763,7 +763,10 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin').default);
+    app.use(
+      '/pl/institution/:institution_id/admin',
+      require('./ee/routers/institutionAdmin').default
+    );
   }
 
   //////////////////////////////////////////////////////////////////////
