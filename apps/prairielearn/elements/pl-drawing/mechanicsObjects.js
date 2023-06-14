@@ -3851,8 +3851,8 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: options.x1 - options.height*Math.sin(theta) + options.offsetx,
-        top:  options.y1 + options.height*Math.cos(theta) + options.offsety - 10, 
+        left: options.x2 - options.height*Math.sin(theta) + options.offsetx,
+        top:  options.y2 + options.height*Math.cos(theta) + options.offsety - 30, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
