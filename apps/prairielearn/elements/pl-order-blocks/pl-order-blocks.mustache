@@ -25,25 +25,27 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container {{dropzone_layout}}">
+        <div class="pl-order-blocks-container {{dropzone_layout}} dropzone-parent-container">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{solution-header}}</span>
                 <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </a>
             </div>
-            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
-                {{#submission_dict}}
-                    <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
-                        style='margin-left: {{indent}}px;'
-                        uuid="{{uuid}}"
-                        string="{{inner_html}}"
-                        {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
-                        >
-                        {{{inner_html}}}
-                    </li>
-                {{/submission_dict}}
-            </ul>
+            <div class="dropzone-container">
+                <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
+                    {{#submission_dict}}
+                        <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
+                            style='margin-left: {{indent}}px;'
+                            uuid="{{uuid}}"
+                            string="{{inner_html}}"
+                            {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
+                            >
+                            {{{inner_html}}}
+                        </li>
+                    {{/submission_dict}}
+                </ul>
+            </div>
         </div>
     </div>
     <input id="{{uuid}}-input" type="hidden" name="{{answer_name}}-input" value=""/>
