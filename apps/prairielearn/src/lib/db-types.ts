@@ -108,8 +108,6 @@ export const PlanGrantSchema = z.object({
   // TODO: handled `deleted_at` everywhere we need to.
   deleted_at: z.date().nullable(),
   enrollment_id: IdSchema.nullable(),
-  // TODO: remove this column.
-  enrollment_limit: z.number().nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   plan_name: z.enum(['basic', 'compute', 'everything']),

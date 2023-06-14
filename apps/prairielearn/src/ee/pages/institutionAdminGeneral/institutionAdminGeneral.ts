@@ -64,7 +64,6 @@ router.post(
           });
         }
       }
-      console.log('plan grant updates', updates);
       await updatePlanGrantsForInstitution(req.params.institution_id, updates);
       res.redirect(req.originalUrl);
     } else {

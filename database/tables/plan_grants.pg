@@ -3,7 +3,6 @@ columns
     created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
     enrollment_id: bigint
-    enrollment_limit: integer
     id: bigint not null default nextval('plan_grants_id_seq'::regclass)
     institution_id: bigint
     plan_name: text not null

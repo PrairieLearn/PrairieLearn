@@ -148,7 +148,6 @@ function Plans({ planGrants }: { planGrants: PlanGrant[] }) {
       const planGrant = planGrants.find((grant) => grant.plan_name === planName);
       const hasPlanGrant = !!planGrant;
       const planGrantType = planGrant?.type ?? 'trial';
-      console.log(planGrant);
 
       return html`
         <li class="list-group-item d-flex flex-row align-items-center js-plan">

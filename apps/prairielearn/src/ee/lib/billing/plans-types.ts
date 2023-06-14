@@ -14,11 +14,14 @@ interface Plan {
 }
 
 export const PLANS = {
-  // Enabled when student-pays is enabled for a course instance.
+  // Enabled when student billing for enrollments is enabled for a course instance.
   basic: {
     features: ['course-instance-access'],
   },
-  // Add-on to basic plan that enables workspaces and external grading.
+  // Enables workspaces and external grading. Can be used in combination with
+  // the `basic` plan (for a course using student billing for enrollments) or
+  // in isolation (a course instance's institution is paying for the basic plan
+  // but the course instance wants to use workspaces and external grading).
   compute: {
     features: ['workspaces', 'external-grading'],
   },
