@@ -3,6 +3,14 @@
   <head>
     <%- include('../partials/head'); %>
     <%- compiled_script_tag('question.ts') %>
+    <%- compiled_script_tag('examTimeLimitCountdown.ts') %>
+    <%- encoded_data({
+          serverRemainingMS: assessment_instance_remaining_ms,
+          serverTimeLimitMS: assessment_instance_time_limit_ms,
+          serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                           assessment_instance.id + '/time_remaining',
+          canTriggerFinish: authz_result.authorized_edit,
+        }, 'time-limit-data') %>
     <script src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';

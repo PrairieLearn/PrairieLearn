@@ -1,7 +1,8 @@
 import { io } from 'socket.io-client';
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
 import './mathjax';
+import { Countdown } from './countdown';
 
 declare global {
   interface Window {
@@ -14,6 +15,7 @@ onDocumentReady(() => {
   if (gradingMethod === 'External') {
     externalGradingLiveUpdate();
   }
+  setupDynamicObjects();
 });
 
 function externalGradingLiveUpdate() {
@@ -136,6 +138,7 @@ function fetchResults(socket, submissionId) {
       if (msg.questionNavNextButton) {
         document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
       }
+      setupDynamicObjects();
     }
   );
 }
@@ -163,4 +166,39 @@ function updateStatus(submission) {
       break;
   }
   display.innerHTML = label;
+}
+
+function setupDynamicObjects() {
+  // Install on page load and reinstall on websocket re-render
+  document.querySelectorAll('a.disable-on-click').forEach((link) => {
+    link.addEventListener('click', () => {
+      link.classList.add('disabled');
+    });
+  });
+  // Enable popover
+  $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
+
+  try {
+    // TODO Type
+    const countdownData = decodeData('submission-suspended-data');
+    new Countdown(
+      '#submission-suspended-display',
+      '#submission-suspended-progress',
+      countdownData.serverRemainingMS,
+      countdownData.serverTimeLimitMS,
+      null, // No Ajax update
+      () => {
+        (document.querySelector('.question-grade') as HTMLButtonElement).disabled = false;
+        (
+          document.querySelectorAll(
+            '.submission-suspended-msg, .grade-rate-limit-popover'
+          ) as NodeListOf<HTMLElement>
+        ).forEach((elem) => {
+          elem.style.display = 'none';
+        });
+      }
+    );
+  } catch (err) {
+    // If there is no submission-suspended-data object, return
+  }
 }
