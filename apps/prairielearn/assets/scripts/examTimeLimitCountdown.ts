@@ -28,7 +28,7 @@ onDocumentReady(() => {
             <input type="hidden" name="__action" value="timeLimitFinish" />
             <input type="hidden" name="__csrf_token" value="${timeLimitData.csrfToken}" />
           </form>`
-        );
+        ) as HTMLFormElement;
         document.body.append(form);
         form.submit();
       }
