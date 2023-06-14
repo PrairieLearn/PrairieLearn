@@ -3782,7 +3782,7 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
         left: c2x1 + options.offsetx,
-        top:  0.7*c2y1 + options.offsety, 
+        top:  c2y1 + options.offsety - 10, 
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
