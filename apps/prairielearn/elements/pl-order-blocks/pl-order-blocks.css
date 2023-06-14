@@ -56,16 +56,12 @@ li.ui-state-highlight {
   margin-bottom: 0px;
 }
 
-.dropzone-parent-container {
+div.pl-order-blocks-container {
   display: flex;
   flex-direction: column;
 }
 
-.card-header {
-  width: 100%;
-}
-
-.dropzone-container {
+div.dropzone-container {
   width: 100%;
   height: 100%;
 }
@@ -97,7 +93,7 @@ div.pl-order-blocks-container {
   border: 1px solid #9e9e9e;
 }
 
-.pl-order-blocks-header {
+div.pl-order-blocks-header {
   height: 3rem;
   display: flex;
   align-items: center;
