@@ -1,12 +1,12 @@
 import { Router } from 'express';
 
-import authzIsAdministrator = require('../../../middlewares/authzIsAdministrator');
-import generalRouter from './general';
-import coursesRouter from './courses';
-import courseRouter from './course';
-import courseInstanceRouter from './courseInstance';
-import ssoRouter from './sso';
-import samlRouter from './saml';
+import authzIsAdministrator = require('../../middlewares/authzIsAdministrator');
+import generalRouter from '../pages/institutionAdminGeneral/institutionAdminGeneral';
+import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses';
+import courseRouter from '../pages/institutionAdminCourse/institutionAdminCourse';
+import courseInstanceRouter from '../pages/institutionAdminCourseInstance/institutionAdminCourseInstance';
+import ssoRouter from '../pages/institutionAdminSso/institutionAdminSso';
+import samlRouter from '../pages/institutionAdminSaml/institutionAdminSaml';
 
 const router = Router({ mergeParams: true });
 
