@@ -1413,6 +1413,54 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-switch` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-switch x1="20" y1="40" x2="140" y2="40" label="A"></pl-switch>
+    <pl-switch
+      x1="180"
+      y1="60"
+      angle="90"
+      width="120"
+      stroke-color="blue"
+      stroke-width="3"
+    ></pl-switch>
+    <pl-switch x1="20" y1="100" angle="30" width="120" switch-angle="-45"></pl-switch>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-switch.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                           |
+| -------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 40      | `x` position for the first end of the switch, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float  | 40      | `y` position for the first end of the switch, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float  | 0       | Angle of rotation around the start point of the switch. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float  | 60      | Length of the switch                                                                                                                                                                                                                                  |
+| `x2`           | float  | -       | `x` position for the end point for the switch, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float  | -       | `y` position for the end point for the switch, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `switch-angle` | float  | 30      | Angle of switch opening.                                                                                                                                                                                                                              |
+| `interval`     | float  | 30      | Distance of the switch opening.                                                                                                                                                                                                                       |
+| `label`        | string | -       | Text to label the switch.                                                                                                                                                                                                                             |
+| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                      |
+| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                    |
+| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                      |
+| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                      |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a switch
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ## Creating group of elements
 
 ### `pl-drawing-group` element
