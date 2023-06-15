@@ -2056,6 +2056,7 @@ class GraphLine(BaseElement):
             "stroke-width",
         ]
 
+
 class Capacitor(BaseElement):
     def generate(el, data):
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
@@ -2085,9 +2086,11 @@ class Capacitor(BaseElement):
             "evented": drawing_defaults["selectable"],
             "label": pl.get_string_attrib(el, "label", ""),
             "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsetx"]),     
-            "fontSize": pl.get_float_attrib(el, "font-size", drawing_defaults["font-size"]), 
-            "polarized": pl.get_boolean_attrib(el, "polarized", False)
+            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsetx"]),
+            "fontSize": pl.get_float_attrib(
+                el, "font-size", drawing_defaults["font-size"]
+            ),
+            "polarized": pl.get_boolean_attrib(el, "polarized", False),
         }
 
     def get_attributes():
@@ -2106,8 +2109,9 @@ class Capacitor(BaseElement):
             "offsetx",
             "offsety",
             "font-size",
-            "polarized"
+            "polarized",
         ]
+
 
 class Battery(BaseElement):
     def generate(el, data):
@@ -2138,8 +2142,10 @@ class Battery(BaseElement):
             "evented": drawing_defaults["selectable"],
             "label": pl.get_string_attrib(el, "label", ""),
             "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),     
-            "fontSize": pl.get_float_attrib(el, "font-size", drawing_defaults["font-size"])
+            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "fontSize": pl.get_float_attrib(
+                el, "font-size", drawing_defaults["font-size"]
+            ),
         }
 
     def get_attributes():
@@ -2157,8 +2163,9 @@ class Battery(BaseElement):
             "label",
             "offsetx",
             "offsety",
-            "font-size"
+            "font-size",
         ]
+
 
 class Resistor(BaseElement):
     def generate(el, data):
@@ -2189,8 +2196,10 @@ class Resistor(BaseElement):
             "evented": drawing_defaults["selectable"],
             "label": pl.get_string_attrib(el, "label", ""),
             "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),     
-            "fontSize": pl.get_float_attrib(el, "font-size", drawing_defaults["font-size"])
+            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "fontSize": pl.get_float_attrib(
+                el, "font-size", drawing_defaults["font-size"]
+            ),
         }
 
     def get_attributes():
@@ -2208,8 +2217,9 @@ class Resistor(BaseElement):
             "label",
             "offsetx",
             "offsety",
-            "font-size"
+            "font-size",
         ]
+
 
 class Switch(BaseElement):
     def generate(el, data):
@@ -2240,8 +2250,10 @@ class Switch(BaseElement):
             "evented": drawing_defaults["selectable"],
             "label": pl.get_string_attrib(el, "label", ""),
             "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),     
-            "fontSize": pl.get_float_attrib(el, "font-size", drawing_defaults["font-size"])
+            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "fontSize": pl.get_float_attrib(
+                el, "font-size", drawing_defaults["font-size"]
+            ),
         }
 
     def get_attributes():
@@ -2260,8 +2272,8 @@ class Switch(BaseElement):
             "offsetx",
             "offsety",
             "font-size",
-
         ]
+
 
 elements["pl-4pointrod"] = FourPointRod
 elements["pl-3pointrod"] = ThreePointRod

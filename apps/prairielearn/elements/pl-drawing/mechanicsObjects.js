@@ -3598,16 +3598,15 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
 
 mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
-
-    var gap = options.interval
-    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
-    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
     // Capacitor legs
-    var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
-    var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
-    var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
-    var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
     let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
@@ -3633,15 +3632,15 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     }
 
     // Capacitor lines
-    var cline = options.height
-    var c1x1 = xm1 - cline*Math.sin(theta);
-    var c1y1 = ym1 + cline*Math.cos(theta); 
-    var c1x2 = xm1 + cline*Math.sin(theta);
-    var c1y2 = ym1 - cline*Math.cos(theta);      
-    var c2x1 = xm2 - cline*Math.sin(theta);
-    var c2y1 = ym2 + cline*Math.cos(theta); 
-    var c2x2 = xm2 + cline*Math.sin(theta);
-    var c2y2 = ym2 - cline*Math.cos(theta);  
+    var cline = options.height;
+    var c1x1 = xm1 - cline * Math.sin(theta);
+    var c1y1 = ym1 + cline * Math.cos(theta);
+    var c1x2 = xm1 + cline * Math.sin(theta);
+    var c1y2 = ym1 - cline * Math.cos(theta);
+    var c2x1 = xm2 - cline * Math.sin(theta);
+    var c2y1 = ym2 + cline * Math.cos(theta);
+    var c2x2 = xm2 + cline * Math.sin(theta);
+    var c2y2 = ym2 - cline * Math.cos(theta);
 
     let obj3 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
       stroke: options.stroke,
@@ -3669,15 +3668,15 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     canvas.add(obj1, obj2, obj3, obj4);
 
     if (options.polarized) {
-      var xm3 = xm2 + 4*Math.cos(theta); 
-      var ym3 = ym2 + 4*Math.sin(theta); 
-      let textObj = new fabric.Text("+", {
+      var xm3 = xm2 + 4 * Math.cos(theta);
+      var ym3 = ym2 + 4 * Math.sin(theta);
+      let textObj = new fabric.Text('+', {
         left: xm3,
-        top:  ym3, 
+        top: ym3,
         textAlign: 'left',
         fontSize: 16,
-        angle: theta*180/Math.PI,
-      })
+        angle: (theta * 180) / Math.PI,
+      });
       canvas.add(textObj);
     }
 
@@ -3685,13 +3684,13 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     if (options.label) {
       textObj = new mechanicsObjects.LatexText(options.label, {
         left: c1x2 + options.offsetx,
-        top:  c1y2 + options.offsety - 10, 
+        top: c1y2 + options.offsety - 10,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
         originX: 'center',
         originY: 'center',
-      })
+      });
       canvas.add(textObj);
     }
 
@@ -3705,16 +3704,15 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    var gap = options.interval
-    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
-    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
-    
     // Battery "legs"
-    var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
-    var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
-    var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
-    var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
     let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
@@ -3740,17 +3738,17 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     }
 
     // Battery lines
-    var cline1 = options.height/2
-    var cline2 = options.height
+    var cline1 = options.height / 2;
+    var cline2 = options.height;
 
-    var c1x1 = xm1 - cline1*Math.sin(theta);
-    var c1y1 = ym1 + cline1*Math.cos(theta); 
-    var c1x2 = xm1 + cline1*Math.sin(theta);
-    var c1y2 = ym1 - cline1*Math.cos(theta);      
-    var c2x1 = xm2 - cline2*Math.sin(theta);
-    var c2y1 = ym2 + cline2*Math.cos(theta); 
-    var c2x2 = xm2 + cline2*Math.sin(theta);
-    var c2y2 = ym2 - cline2*Math.cos(theta);  
+    var c1x1 = xm1 - cline1 * Math.sin(theta);
+    var c1y1 = ym1 + cline1 * Math.cos(theta);
+    var c1x2 = xm1 + cline1 * Math.sin(theta);
+    var c1y2 = ym1 - cline1 * Math.cos(theta);
+    var c2x1 = xm2 - cline2 * Math.sin(theta);
+    var c2y1 = ym2 + cline2 * Math.cos(theta);
+    var c2x2 = xm2 + cline2 * Math.sin(theta);
+    var c2y2 = ym2 - cline2 * Math.cos(theta);
 
     let obj3 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
       stroke: options.stroke,
@@ -3780,13 +3778,13 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
         left: c2x1 + options.offsetx,
-        top:  c2y1 + options.offsety + 10, 
+        top: c2y1 + options.offsety + 10,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
         originX: 'center',
         originY: 'center',
-      })
+      });
       canvas.add(textObj);
     }
 
@@ -3800,19 +3798,18 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
-    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
-
-    function getPositions(gap,d,theta,options) {
-      var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
-      var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
-      var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
-      var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
-      return [xm1,ym1,xm2,ym2];
+    function getPositions(gap, d, theta, options) {
+      var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+      var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+      var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+      var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+      return [xm1, ym1, xm2, ym2];
     }
-    
-    var pos = getPositions(options.interval, d, theta, options)
+
+    var pos = getPositions(options.interval, d, theta, options);
     let obj1 = new fabric.Line([options.x1, options.y1, pos[0], pos[1]], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
@@ -3835,14 +3832,14 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
     if (!('id' in obj2)) {
       obj2.id = window.PLDrawingApi.generateID();
     }
-    canvas.add(obj1,obj2);
+    canvas.add(obj1, obj2);
 
-    var posSpring = getPositions(1.05*options.interval, d, theta, options)
-    options.x1 = posSpring[0]
-    options.y1 = posSpring[1]
-    options.x2 = posSpring[2]
-    options.y2 = posSpring[3]
-    options.dx = options.interval/10
+    var posSpring = getPositions(1.05 * options.interval, d, theta, options);
+    options.x1 = posSpring[0];
+    options.y1 = posSpring[1];
+    options.x2 = posSpring[2];
+    options.y2 = posSpring[3];
+    options.dx = options.interval / 10;
     let obj = new mechanicsObjects.Spring(options);
     if (!('id' in obj)) {
       obj.id = window.PLDrawingApi.generateID();
@@ -3851,14 +3848,14 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: options.x2 - options.height*Math.sin(theta) + options.offsetx,
-        top:  options.y2 + options.height*Math.cos(theta) + options.offsety - 30, 
+        left: options.x2 - options.height * Math.sin(theta) + options.offsetx,
+        top: options.y2 + options.height * Math.cos(theta) + options.offsety - 30,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
         originX: 'center',
         originY: 'center',
-      })
+      });
       canvas.add(textObj);
     }
 
@@ -3872,16 +3869,15 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    var gap = options.interval
-    var theta = Math.atan2(options.y2-options.y1, options.x2 - options.x1);
-    var d = Math.sqrt( Math.pow(options.y2-options.y1,2) + Math.pow(options.x2 - options.x1,2) );
-    
     // Switch "legs"
-    var xm1 = options.x1 + ((d-gap)/2)*Math.cos(theta);
-    var ym1 = options.y1 + ((d-gap)/2)*Math.sin(theta); 
-    var xm2 = options.x1 + ((d+gap)/2)*Math.cos(theta); 
-    var ym2 = options.y1 + ((d+gap)/2)*Math.sin(theta); 
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
     let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
@@ -3907,10 +3903,10 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     }
 
     // Switch line
-    var theta2 = options.switchAngle*Math.PI/180
-    var l = options.interval/Math.cos(theta2)
-    var cx = xm1 + l*Math.cos(theta2+theta);
-    var cy = ym1 + l*Math.sin(theta2+theta); 
+    var theta2 = (options.switchAngle * Math.PI) / 180;
+    var l = options.interval / Math.cos(theta2);
+    var cx = xm1 + l * Math.cos(theta2 + theta);
+    var cy = ym1 + l * Math.sin(theta2 + theta);
 
     let obj3 = new fabric.Line([xm1, ym1, cx, cy], {
       stroke: options.stroke,
@@ -3929,13 +3925,13 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
         left: cx + options.offsetx,
-        top:  cy + 10 + options.offsety, 
+        top: cy + 10 + options.offsety,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
         originX: 'center',
         originY: 'center',
-      })
+      });
       canvas.add(textObj);
     }
 
