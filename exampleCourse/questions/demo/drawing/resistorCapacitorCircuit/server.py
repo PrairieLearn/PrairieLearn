@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     V = random.randint(12, 40)
     data["params"]["V"] = V
 
