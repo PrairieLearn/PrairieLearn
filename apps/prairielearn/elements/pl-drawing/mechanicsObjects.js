@@ -3901,6 +3901,54 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (!('id' in obj2)) {
       obj2.id = window.PLDrawingApi.generateID();
     }
+    canvas.add(obj1, obj2);
+
+    if (options.drawPin) {
+      var circleOptions = _.defaults(
+        {
+          radius: 2,
+          originX: 'center',
+          originY: 'center',
+          fill: options.stroke,
+          left: xm1,
+          top: ym1,
+        },
+        options
+      );
+      let objPin1 = new fabric.Circle(circleOptions);
+      if (!('id' in objPin1)) {
+        objPin1.id = window.PLDrawingApi.generateID();
+      }
+      var circleOptions2 = _.defaults(
+        {
+          left: xm2,
+          top: ym2,
+        },
+        circleOptions
+      );
+      let objPin2 = new fabric.Circle(circleOptions2);
+      if (!('id' in objPin2)) {
+        objPin2.id = window.PLDrawingApi.generateID();
+      }
+      canvas.add(objPin1, objPin2);
+    }
+
+    // if (options.drawAction) {
+    //   var vecOptions = _.defaults(
+    //     {
+    //       color: "green",
+    //       originX: 'center',
+    //       originY: 'center',
+    //       left: xm1,
+    //       top: ym1,
+    //     },
+    //     options
+    //   );
+    // var obj = new mechanicsObjects.arcVector(options);
+    // if (!('id' in obj)) {
+    //   obj.id = window.PLDrawingApi.generateID();
+    // }
+    // canvas.add(obj);
 
     // Switch line
     var theta2 = (options.switchAngle * Math.PI) / 180;
@@ -3919,8 +3967,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     if (!('id' in obj3)) {
       obj3.id = window.PLDrawingApi.generateID();
     }
-
-    canvas.add(obj1, obj2, obj3);
+    canvas.add(obj3);
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
