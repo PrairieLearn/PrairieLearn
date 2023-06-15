@@ -1,6 +1,4 @@
-import math
 import random
-
 
 def generate(data):
 
@@ -18,7 +16,7 @@ def generate(data):
     data["correct_answers"]["charge"] = C * V
 
     ################################
-    ## data for plotting
+    # data for plotting
     ################################
     pA = [60, 60]
     L = 300
