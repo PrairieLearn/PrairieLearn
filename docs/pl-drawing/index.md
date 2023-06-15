@@ -1270,6 +1270,54 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-capacitor` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+  <pl-drawing-initial>
+    <pl-capacitor x1="20" y1="40" x2="140" y2="40" label="20\\mu C"></pl-capacitor>
+    <pl-capacitor
+      x1="40"
+      y1="180"
+      x2="180"
+      y2="100"
+      stroke-color="blue"
+      label="4\\mu C"
+    ></pl-capacitor>
+  </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-capacitor.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                              |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the capacitor, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float   | 40      | `y` position for the first end of the capacitor, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the capacitor. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float   | 60      | Length of the capacitor                                                                                                                                                                                                                                  |
+| `x2`           | float   | -       | `x` position for the end point for the capacitor, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the capacitor, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float   | 15      | Length of the capacitor plates.                                                                                                                                                                                                                          |
+| `interval`     | float   | 10      | Distance between capacitor plates.                                                                                                                                                                                                                       |
+| `polarized`    | boolean | false   | Set if the capacitor is polarized or not, by adding the "+" symbol.                                                                                                                                                                                      |
+| `label`        | string  | -       | Text to label the capacitor.                                                                                                                                                                                                                             |
+| `font-size`    | float   | 16      | Label font size.                                                                                                                                                                                                                                         |
+| `offsetx`      | float   | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                       |
+| `offsety`      | float   | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                         |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                                                                                                         |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                             |
+
+#### Example implementations
+
+- [demo/drawing/resistorCapacitorCircuit]: Example that includes a capacitor
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ## Creating group of elements
 
 ### `pl-drawing-group` element
