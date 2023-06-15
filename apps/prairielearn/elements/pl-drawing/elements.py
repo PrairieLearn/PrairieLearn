@@ -2238,7 +2238,7 @@ class Switch(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 30),
+            "interval": pl.get_float_attrib(el, "interval", 40),
             "switchAngle": pl.get_float_attrib(el, "switch-angle", 30),
             "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
             "originX": "center",
