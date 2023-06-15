@@ -1,12 +1,6 @@
-import { Countdown } from './countdown';
+import { Countdown } from './lib/countdown';
+import { saveQuestionFormData } from './lib/confirmOnUnload';
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
-
-declare global {
-  interface Window {
-    // Temporary until questionPageScripts is converted to an asset
-    allowQuestionUnload: boolean;
-  }
-}
 
 onDocumentReady(() => {
   const timeLimitData = decodeData<{
@@ -26,7 +20,7 @@ onDocumentReady(() => {
       // if viewing exam as a different effective user, do not trigger time limit finish
       if (timeLimitData.canTriggerFinish) {
         // do not trigger unsaved warning dialog
-        window.allowQuestionUnload = true;
+        saveQuestionFormData(document.querySelector('form.question-form'));
         const form = parseHTMLElement(
           document,
           `<form method="POST">

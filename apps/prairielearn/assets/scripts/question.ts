@@ -2,7 +2,8 @@ import { io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
 import './mathjax';
-import { Countdown } from './countdown';
+import { Countdown } from './lib/countdown';
+import { confirmOnUnload } from './lib/confirmOnUnload';
 
 declare global {
   interface Window {
@@ -16,6 +17,8 @@ onDocumentReady(() => {
     externalGradingLiveUpdate();
   }
   setupDynamicObjects();
+  confirmOnUnload(document.querySelector('form.question-form'));
+  disableOnSubmit();
 });
 
 function externalGradingLiveUpdate() {
@@ -203,4 +206,28 @@ function setupDynamicObjects() {
   } catch (err) {
     // If there is no submission-suspended-data object, return
   }
+}
+
+function disableOnSubmit() {
+  const form = document.querySelector('form.question-form') as HTMLFormElement;
+  form.addEventListener('submit', () => {
+    if (!form.dataset.submitted) {
+      form.dataset.submitted = 'true';
+
+      // Since `.disabled` buttons don't POST, clone and hide as workaround
+      form.querySelectorAll('.disable-on-submit').forEach((element: HTMLButtonElement) => {
+        console.log(element);
+        // Create disabled clone of button
+        const clonedElement = element.cloneNode(true) as HTMLButtonElement;
+        clonedElement.id = '';
+        clonedElement.disabled = true;
+
+        // Add it to the same position
+        element.parentNode.insertBefore(clonedElement, element);
+
+        // Hide actual submit button
+        element.style.display = 'none';
+      });
+    }
+  });
 }
