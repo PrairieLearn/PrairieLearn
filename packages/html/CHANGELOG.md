@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 3.0.2
+
+### Patch Changes
+
+- 2c5504f1f: Mark package as free from side effects
+
 ## 3.0.1
 
 ### Patch Changes

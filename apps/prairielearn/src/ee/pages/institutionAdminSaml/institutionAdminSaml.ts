@@ -5,12 +5,12 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { InstitutionAdminSaml } from './saml.html';
+import { InstitutionAdminSaml } from './institutionAdminSaml.html';
 import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} from '../utils';
+} from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

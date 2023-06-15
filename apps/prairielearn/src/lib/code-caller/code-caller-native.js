@@ -257,7 +257,7 @@ class CodeCallerNative {
         // Before reporting the restart as successful, we need to wait
         // for a confirmation message to ensure that control has actually
         // been returned to the Zygote. There's a potential race condition
-        // where we recieve this confirmation before we actually enter the
+        // where we receive this confirmation before we actually enter the
         // official RESTARTING stage. To account for this, we check if
         // there was a correct restart confirmation delivered at this point.
         // If there was, we can immediately report the restart as successful.
