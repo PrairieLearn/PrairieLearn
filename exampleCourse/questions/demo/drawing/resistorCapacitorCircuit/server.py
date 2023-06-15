@@ -16,9 +16,7 @@ def generate(data):
     # total energy
     data["correct_answers"]["charge"] = C * V
 
-    ################################
     # data for plotting
-    ################################
     pA = [60, 60]
     L = 300
     h = 120
