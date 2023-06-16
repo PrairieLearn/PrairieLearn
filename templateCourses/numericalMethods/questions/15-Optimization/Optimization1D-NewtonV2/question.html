@@ -2,27 +2,31 @@
 Idea taken from:
 http://newb.kettering.edu/wp/experientialcalculus/wp-content/uploads/sites/15/2017/05/Module_II.pdf
 -->
-
 <pl-question-panel>
-    <h1>Using Newton's Method for 1D Optimization</h1>
-    <p>
+<h1>Using Newton's Method for 1D Optimization</h1>
+<p>
         In this problem, you will use Newton's Method to optimize the following 1D function:
         {{params.f}}
     </p>
-    <p>
+<p>
         Using the initial guess <code>x0</code>, iterate through Newton's Method until $|f'(x_k)| \leq \mathrm{tol}$, where <code>tol</code> is the desired tolerance. Be sure to include the initial guess <code>x0</code> and the iterate that fufills the above inequality in the array of guesses
         <code>newton_guesses</code>
-    </p>
-    <p> The setup code gives the following variables: </p>
-    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-    <p> Your code snippet should define the following variables: </p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-
-    <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
-    </pl-file-editor>
+</p>
+<p> The setup code gives the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following variables: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
 </pl-question-panel>
-
 <pl-submission-panel>
-    <pl-external-grader-results></pl-external-grader-results>
-    <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

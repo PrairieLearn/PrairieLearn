@@ -1,20 +1,26 @@
 <pl-question-panel>
-  <p>
+<p>
   In physics and engineering, one often times has to calculate a force an object experiences due to a change in velocity, $\mathbf{F} = \nabla v$.
   </p>
-  <p>
+<p>
   Suppose that a space ship's velocity is described by the following equation:
   </p>
-  <p>
+<p>
   $v({\bf x}) = v(x,y,z) = {{params.fxn}}$
   </p>
-
-  <p>
+<p>
   Compute an approximation for $\mathbf{F} = \nabla v$ at ${\bf x}=<pl-matrix-latex params-name="coord"></pl-matrix-latex>$
   for a perturbation $h={{params.h}}$ with a <strong>{{params.approx_type}}</strong> finite difference method.
   </p>
 </pl-question-panel>
-<pl-matrix-component-input answers-name="vec" comparison="relabs" rtol="1e-3" atol="1e-2" label="$\bf{F} = $ " allow-partial-credit="true" ></pl-matrix-component-input>
+<pl-matrix-component-input allow-partial-credit="true" answers-name="vec" atol="1e-2" comparison="relabs" label="$\bf{F} = $ " rtol="1e-3"></pl-matrix-component-input>
 <pl-answer-panel>
-   <p> For more information on applying finite diffrence method on gradient, please review the lecture video <a href="https://www.prairielearn.org/pl/course_instance/128745/instructor/question/9049051/preview">L16.4</a> </p>
+<p> For more information on applying finite diffrence method on gradient, please review the lecture video <a href="https://www.prairielearn.org/pl/course_instance/128745/instructor/question/9049051/preview">L16.4</a> </p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

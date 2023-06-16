@@ -1,19 +1,25 @@
 
 <pl-question-panel>
-  <p>
+<p>
     For a binary floating point system of the form $(1.s_1 s_2 s_3
     \ldots s_n)_2 \times 2^m$, with an exponent range from $-128$ to $127$,
     what is the minimum $n$ for which the number ${{params.a}}.{{params.b}}$ can be
     represented exactly?
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-integer-input answers-name="f"></pl-number-input>
-</p>
+<pl-integer-input answers-name="f">
+</pl-integer-input></p>
 
 {{#feedback.question_feedback}}
 <pl-answer-panel>
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

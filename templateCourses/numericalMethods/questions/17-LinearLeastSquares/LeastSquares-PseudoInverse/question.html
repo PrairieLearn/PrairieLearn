@@ -1,29 +1,31 @@
 
 <pl-question-panel>
-  <p>
-     You are given an $m \times n$ matrix ${\bf A}$, with $m > n$. You wish to solve
+<p>
+     You are given an $m \times n$ matrix ${\bf A}$, with $m &gt; n$. You wish to solve
     the least-squares problem ${\bf Ax} \cong \mathbf{b}$ for some given
     right-hand-side vector $\mathbf{b}$.
     You are also given the SVD $ {\bf A} ={\bf U\Sigma} {\bf V}^T$ of the matrix ${\bf A}$. Which of the
     following expressions gives the correct least-squares solution to the
     system?
   </p>
-
 </pl-question-panel>
-
 <pl-checkbox answers-name="student" hide-answer-panel="true">
-  <pl-answer correct=true>$\mathbf{V\Sigma^+U}^T\mathbf{b}$</pl-answer>
-  <pl-answer correct=true>$(\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T\mathbf{b}$</pl-answer>
-  <pl-answer correct=false>$(\mathbf{A}^T\mathbf{A})^{-1}\mathbf{b}$</pl-answer>
-  <pl-answer correct=false>$\mathbf{U^{-1}\Sigma}^+\mathbf{V}^{-T}\mathbf{b}$</pl-answer>
-  <pl-answer correct=false>$\mathbf{U^{-1}V}^T\mathbf{\Sigma}^+\mathbf{b}$</pl-answer>
-  <pl-answer correct=false>None of these.</pl-answer>
+<pl-answer correct="true">$\mathbf{V\Sigma^+U}^T\mathbf{b}$</pl-answer>
+<pl-answer correct="true">$(\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T\mathbf{b}$</pl-answer>
+<pl-answer correct="false">$(\mathbf{A}^T\mathbf{A})^{-1}\mathbf{b}$</pl-answer>
+<pl-answer correct="false">$\mathbf{U^{-1}\Sigma}^+\mathbf{V}^{-T}\mathbf{b}$</pl-answer>
+<pl-answer correct="false">$\mathbf{U^{-1}V}^T\mathbf{\Sigma}^+\mathbf{b}$</pl-answer>
+<pl-answer correct="false">None of these.</pl-answer>
 </pl-checkbox>
-
 <pl-answer-panel>
-	<p> The solution of a full-rank least-squares problem is $\mathbf{x} = \left(\mathbf{A}^T\mathbf{A}\right)^{-1}\mathbf{A}^T\mathbf{b}$</p>
-	<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD of a full-rank matrix, then $\left(\mathbf{A}^T\mathbf{A}\right)^{-1}\mathbf{A}^T = \mathbf{V}\mathbf{\Sigma}^{-1}\mathbf{U}^T = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T$</p>
-	<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD of any (full-rank or rank-deficient) matrix, then the solution to the least-squares problem with minimum 2-norm is $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
-
-
+<p> The solution of a full-rank least-squares problem is $\mathbf{x} = \left(\mathbf{A}^T\mathbf{A}\right)^{-1}\mathbf{A}^T\mathbf{b}$</p>
+<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD of a full-rank matrix, then $\left(\mathbf{A}^T\mathbf{A}\right)^{-1}\mathbf{A}^T = \mathbf{V}\mathbf{\Sigma}^{-1}\mathbf{U}^T = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T$</p>
+<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD of any (full-rank or rank-deficient) matrix, then the solution to the least-squares problem with minimum 2-norm is $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

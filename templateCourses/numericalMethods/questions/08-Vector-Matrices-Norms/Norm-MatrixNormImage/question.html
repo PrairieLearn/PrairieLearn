@@ -1,27 +1,26 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Consider a $2 \times 2$ matrix $A$ which transforms the unit ball
     with respect to the ${{params.p}}$-norm into the figure shown below:
      <pl-figure file-name="matrix-ellipse.png" type="dynamic" width="500px"></pl-figure>
-  </p>
-  <p>
+</p>
+<p>
     The unit vectors, with respect to the ${{params.p}}$-norm,
     $\mathbf{v_1}$ and $\mathbf{v_2}$, which are oriented
     $\frac{\pi}{4}$ and $\frac{3 \pi}{4}$ radians counter-clockwise 
     from the positive x-axis respectively, are transformed as follows:
   </p>
-  <p>
-    $A\mathbf{v_1} = \begin{bmatrix} {{params.Av1_1}} & {{params.Av1_2}} \end{bmatrix}^T$ and
-    $A\mathbf{v_2} = \begin{bmatrix} {{params.Av2_1}} & {{params.Av2_2}} \end{bmatrix}^T$.
+<p>
+    $A\mathbf{v_1} = \begin{bmatrix} {{params.Av1_1}} &amp; {{params.Av1_2}} \end{bmatrix}^T$ and
+    $A\mathbf{v_2} = \begin{bmatrix} {{params.Av2_1}} &amp; {{params.Av2_2}} \end{bmatrix}^T$.
   </p>
-  <p>
+<p>
     What is the matrix norm $\|A\|_{{params.p}}$?
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-number-input answers-name="ans" comparison="sigfig" digits="3"></pl-number-input>
+<pl-number-input answers-name="ans" comparison="sigfig" digits="3"></pl-number-input>
 </p>
 
 {{#feedback.question_feedback}}
@@ -29,3 +28,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

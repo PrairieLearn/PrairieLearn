@@ -1,23 +1,25 @@
 <pl-question-panel>
-  <h4>Storing Player Attributes in a COO Matrix</h4>
-  <p>After the end of a soccer season, a company collects the attributes of each player and wants to send them over to a third party for analysis. Before sending the data, the company would like to convert it into a matrix format, such that given a list of attributes <code>["Acceleration", "Balance", "Jumping", "Stamina", "Strength", "Vision"]</code> a player with <code>{"Acceleration": 92, "Vision": 85, "Stamina": 80}</code> could be represented as $\begin{bmatrix}92 & 0 & 0 & 80 & 0 & 85\end{bmatrix}$, where missing attributes have values of $0$.</p>
-  <p>In reality, however, there are much more attributes than the ones listed above, whereas the company only knows a few attributes for each player. Therefore to save some storage, the company decides to store the player attribute data in COO matrix format and needs your help to do the conversion.</p>
-
-
-  <p> The setup code provides the following variables: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-
-
-    <p>Note: You should not print the entire <code>player_attributes</code> or the output <code>data</code>, <code>row</code>, and <code>col</code> out, as this will surpass the output limit of the autograder. You can still take a look at slices of the data, e.g. <code>print(player_attributes[:10])</code>.</p>
-
-  <p> Your code snippet should define the following variables: </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-  <pl-file-editor file_name="user_code.py" ace_mode="ace/mode/python" source-file-name="tests/initial_code.py">
-  </pl-file-editor>
-  <hr>
-  <p>For more info on COO format, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+<h4>Storing Player Attributes in a COO Matrix</h4>
+<p>After the end of a soccer season, a company collects the attributes of each player and wants to send them over to a third party for analysis. Before sending the data, the company would like to convert it into a matrix format, such that given a list of attributes <code>["Acceleration", "Balance", "Jumping", "Stamina", "Strength", "Vision"]</code> a player with <code>{"Acceleration": 92, "Vision": 85, "Stamina": 80}</code> could be represented as $\begin{bmatrix}92 &amp; 0 &amp; 0 &amp; 80 &amp; 0 &amp; 85\end{bmatrix}$, where missing attributes have values of $0$.</p>
+<p>In reality, however, there are much more attributes than the ones listed above, whereas the company only knows a few attributes for each player. Therefore to save some storage, the company decides to store the player attribute data in COO matrix format and needs your help to do the conversion.</p>
+<p> The setup code provides the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p>Note: You should not print the entire <code>player_attributes</code> or the output <code>data</code>, <code>row</code>, and <code>col</code> out, as this will surpass the output limit of the autograder. You can still take a look at slices of the data, e.g. <code>print(player_attributes[:10])</code>.</p>
+<p> Your code snippet should define the following variables: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
+<hr/>
+<p>For more info on COO format, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
 </pl-question-panel>
 <pl-submission-panel>
-  <pl-external-grader-results></pl-external-grader-results>
-  <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

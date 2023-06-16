@@ -1,13 +1,11 @@
 
 <pl-question-panel>
-  <p>
+<p>
    Find the induced $\infty$-norm of the following matrix:
   </p>
-
-  <p> $$
-    <pl-matrix-latex params_name="matrix" digits="2"></pl-matrix-latex>$$</p>
+<p> $$
+    <pl-matrix-latex digits="2" params_name="matrix"></pl-matrix-latex>$$</p>
 </pl-question-panel>
-
 <pl-integer-input answers-name="f"></pl-integer-input>
 
 {{#feedback.question_feedback}}
@@ -15,3 +13,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

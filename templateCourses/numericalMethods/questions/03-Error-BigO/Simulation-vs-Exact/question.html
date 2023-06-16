@@ -6,31 +6,27 @@
   a complicated chemical reaction. You have two options for doing so:
 </p>
 <p>
-  <strong> Program A</strong> is an exact model that gives you the correct temperature with
+<strong> Program A</strong> is an exact model that gives you the correct temperature with
   no error. It is expensive to run, however, taking ${{params.time}}$ minutes on your
   best available computer.
 </p>
 <p>
-  <strong>Program B</strong> is a numerical model that gets more accurate the longer you
+<strong>Program B</strong> is a numerical model that gets more accurate the longer you
   allow it to run. When run on your best available computer, the error vs
   time tradeoff is shown in the plot below. </p>
-
 <p>
-    <pl-figure file-name="figure.png" type="dynamic" width="500px"></pl-figure>
+<pl-figure file-name="figure.png" type="dynamic" width="500px"></pl-figure>
 </p>
-
-<hr></hr>
+<hr/>
 <p>
 Which program will run faster, assuming that you need to approximate the
 temperature with an error of at most $10^{-{{params.c}}}$ degree Celsius?
 </p>
-
 </pl-question-panel>
-
-<pl-multiple-choice answers-name="t" weight="1" fixed-order="true">
-  <pl-answer correct="{{params.Aans}}">Program A</pl-answer>
-  <pl-answer correct="{{params.Bans}}">Program B</pl-answer>
-  <pl-answer correct="false"> Both programs will take the same amount of time </pl-answer>
+<pl-multiple-choice answers-name="t" fixed-order="true" weight="1">
+<pl-answer correct="{{params.Aans}}">Program A</pl-answer>
+<pl-answer correct="{{params.Bans}}">Program B</pl-answer>
+<pl-answer correct="false"> Both programs will take the same amount of time </pl-answer>
 </pl-multiple-choice>
 
 {{#feedback.question_feedback}}
@@ -39,3 +35,10 @@ temperature with an error of at most $10^{-{{params.c}}}$ degree Celsius?
 </pl-answer-panel>
 {{/feedback.question_feedback}}
 
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

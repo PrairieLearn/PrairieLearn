@@ -1,42 +1,42 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Suppose you want to find an accurate calculation of $\mathbf{y}$ where
     $\mathbf{y} = \mathbf{Aw}$ given matrix $\bf A$ and vector $\mathbf{\hat{w}}\approx \mathbf{w}$. 
   </p>
-
-  <p>
+<p>
     Given that $\Delta \mathbf{w}\ = \mathbf{\hat{w}} - \mathbf{w}$, you know that:
   </p>
-
-  <ul style="list-style-type:none">
-    <li>
+<ul style="list-style-type:none">
+<li>
       the relative error in vector $\mathbf{\hat{w}}$ is $\|\Delta \mathbf{w}\|/\|\mathbf{w}\|=10^{-{{params.e_deg}}}$;
     </li>
-    <li>
+<li>
       the condition number of your matrix is ${{params.cond}}$;
     </li>
-    <li>
+<li>
       {{params.information}}
     </li>
-
-  </ul>
-
-  <p>
+</ul>
+<p>
     Using the condition number, what bound can you provide on the $\textbf{absolute}$ error
     $\|\Delta \mathbf{y}\|=\|\mathbf{\hat{y}}-\mathbf{y}\|$ for the calculation of $\mathbf{\hat{y}} = \mathbf{A \hat{w}}$?
   </p>
-  
+</pl-question-panel>
+<pl-multiple-choice answers-name="students">
+<pl-answer correct="true">{{params.correct}}</pl-answer>
+<pl-answer correct="false">{{params.wrong1}}</pl-answer>
+<pl-answer correct="false">{{params.wrong2}}</pl-answer>
+<pl-answer correct="false">{{params.wrong3}}</pl-answer>
+</pl-multiple-choice>
+<pl-question-panel>
+<hr/>
+<p>For more info on conditioning, please consult the <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-10-condition.html">reference page</a>.</p>
 </pl-question-panel>
 
-<pl-multiple-choice answers-name="students">
-  <pl-answer correct="true">{{params.correct}}</pl-answer>
-  <pl-answer correct="false">{{params.wrong1}}</pl-answer>
-  <pl-answer correct="false">{{params.wrong2}}</pl-answer>
-  <pl-answer correct="false">{{params.wrong3}}</pl-answer>
-</pl-multiple-choice>
-
 <pl-question-panel>
-  <hr>
-  <p>For more info on conditioning, please consult the <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-10-condition.html">reference page</a>.</p>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
 </pl-question-panel>

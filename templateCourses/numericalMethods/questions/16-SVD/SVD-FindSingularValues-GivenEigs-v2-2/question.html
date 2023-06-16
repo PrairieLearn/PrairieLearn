@@ -1,25 +1,20 @@
 
 <pl-question-panel>
-
-  <p>
+<p>
     You wish to find the SVD of a matrix ${\bf A}$. You are
     given the eigendecomposition of the matrix ${\bf A}^T {\bf A}$:
   </p>
-  <p>
+<p>
 
-    ${\bf A}^T {\bf A} =  <pl-matrix-latex params_name="X" digits="2"></pl-matrix-latex>$
-    $<pl-matrix-latex params_name="sigma" digits="0"></pl-matrix-latex>$
-    $<pl-matrix-latex params_name="Xt" digits="2"></pl-matrix-latex>$
+    ${\bf A}^T {\bf A} =  <pl-matrix-latex digits="2" params_name="X"></pl-matrix-latex>$
+    $<pl-matrix-latex digits="0" params_name="sigma"></pl-matrix-latex>$
+    $<pl-matrix-latex digits="2" params_name="Xt"></pl-matrix-latex>$
 
   </p>
-
-  <p> Determine the singular value $\sigma_{{params.sL}}$ of the matrix ${\bf A}$, such that
+<p> Determine the singular value $\sigma_{{params.sL}}$ of the matrix ${\bf A}$, such that
   ${{params.compare}}$.</p>
-
-  </pl-question-panel>
-
-  <p><pl-number-input answers-name="s" label="$\sigma_{{params.sL}} = $  " comparison="sigfig" digits="3"></pl-number-input></p>
-
+</pl-question-panel>
+<p><pl-number-input answers-name="s" comparison="sigfig" digits="3" label="$\sigma_{{params.sL}} = $  "></pl-number-input></p>
 <!--   <pl-question-panel>
   <p> 
     Obtain the matrix ${\bf V}$ from the SVD of the matrix ${\bf A} = {\bf U \Sigma V^T}$. 
@@ -27,8 +22,13 @@
 </pl-question-panel>
 
 <pl-matrix-component-input answers-name="V" comparison="sigfig" digits="3" label="${\bf V} = $" allow-partial-credit="true"></pl-matrix-component-input> -->
-
 <pl-answer-panel>
-  <p>  To help answer this question take a look at  <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> Euclidean norm of matrices </a> section of the course notes</p>
+<p>  To help answer this question take a look at  <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> Euclidean norm of matrices </a> section of the course notes</p>
 </pl-answer-panel>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,29 +1,34 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Consider a ${{params.a}}\times{{params.a}}$ matrix of integers.
     There are $n$ nonzero entries, where
     $n\ll{{params.b}}$ and the rest of the entries are all $0$'s.
   </p>
-  <p>
+<p>
     This matrix can be stored in two formats
   </p>
-  <p>
+<p>
     1) Dense Representation: Each entry uses $4$ bytes of storage.
   </p>
-  <p>
+<p>
     2) CSR format: Each column index, data value and row
     start pointer uses $4$ bytes of storage.
   </p>
-  <p>
+<p>
     What is the largest value of $n$ (i.e. the largest number of nonzeros)
     for which storing in CSR format is more memory efficient?
   </p>
+<p>
+<pl-integer-input answers-name="f" label="largest n = "></pl-integer-input>
+</p>
+<hr/>
+<p>For more info on sparse matrix, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+</pl-question-panel>
 
-  <p>
-    <pl-integer-input label='largest n = ' answers-name="f"/>
-  </p>
-
-  <hr>
-  <p>For more info on sparse matrix, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
 </pl-question-panel>

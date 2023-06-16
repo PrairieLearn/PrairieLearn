@@ -1,41 +1,40 @@
 <pl-question-panel>
-    <p>
+<p>
     As discussed in lecture, basic algebra operations actually break down in
     floating point arithmetic. Take for instance the associativity property of
     the real numbers under addition where the following would be true,
 
-    <br><br>
+    <br/><br/>
 
     $$
     x + (y + z) = (x + y) + z \qquad x, y, z, \in \mathbb{R}
     $$
 
-    <br><br>
+    <br/><br/>
 
     But in floating point arithmetic, the equality relation does not necessarily
     hold. 
 
-    <br><br>
+    <br/><br/>
 
     Find an $x, y, z$ such that, $x + (y + z) \neq (x + y) + z$. Enter your
     numbers below.  
     
-    <br><br>
-    <i>Hint:</i> think about the concept of machine epsilon.
+    <br/><br/>
+<i>Hint:</i> think about the concept of machine epsilon.
     
     </p>
-
 </pl-question-panel>
-
-<p><pl-number-input answers-name="x" label="$x = $" comparison='sigfig' digits='16'></pl-number-input></p>
-
-<p><pl-number-input answers-name="y" label="$y = $" comparison='sigfig' digits='16'></pl-number-input></p>
-
-<p><pl-number-input answers-name="z" label="$z = $" comparison='sigfig' digits='16'></pl-number-input></p>
-
-
+<p><pl-number-input answers-name="x" comparison="sigfig" digits="16" label="$x = $"></pl-number-input></p>
+<p><pl-number-input answers-name="y" comparison="sigfig" digits="16" label="$y = $"></pl-number-input></p>
+<p><pl-number-input answers-name="z" comparison="sigfig" digits="16" label="$z = $"></pl-number-input></p>
 <pl-answer-panel>
-
-  <p> Due to roundoff error associativity property does not always hold. Try to think of $x,y,z$ values that result ion large roundoff error. Refer to slide 12-17 'Rounding errors' section for more hints.</p>
-
+<p> Due to roundoff error associativity property does not always hold. Try to think of $x,y,z$ values that result ion large roundoff error. Refer to slide 12-17 'Rounding errors' section for more hints.</p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

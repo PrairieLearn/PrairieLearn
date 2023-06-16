@@ -1,27 +1,26 @@
 
 <pl-question-panel>
-
-  <p>
+<p>
  Matrix ${\bf A}$ has the following Singular Value Decomposition :
   </p>
 <p>
-  ${\bf A} = <pl-matrix-latex params_name="U" digits="2"></pl-matrix-latex>$
-  $<pl-matrix-latex params_name="sigma" digits="0"></pl-matrix-latex>$
-  $<pl-matrix-latex params_name="Vt" digits="2"></pl-matrix-latex>$
+  ${\bf A} = <pl-matrix-latex digits="2" params_name="U"></pl-matrix-latex>$
+  $<pl-matrix-latex digits="0" params_name="sigma"></pl-matrix-latex>$
+  $<pl-matrix-latex digits="2" params_name="Vt"></pl-matrix-latex>$
 </p>
-
 <p> Determine the  eigenvalues of ${\bf A}^T {\bf A}$ , such that
-  $\lambda_1 > \lambda_2 > \lambda_3$.</p>
-
-  <p><pl-number-input answers-name="s1" label="$\lambda_1 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
-
-  <p><pl-number-input answers-name="s2" label="$\lambda_2 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
-
-  <p><pl-number-input answers-name="s3" label="$\lambda_3 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
-
+  $\lambda_1 &gt; \lambda_2 &gt; \lambda_3$.</p>
+<p><pl-number-input answers-name="s1" comparison="sigfig" digits="3" label="$\lambda_1 = $  "></pl-number-input></p>
+<p><pl-number-input answers-name="s2" comparison="sigfig" digits="3" label="$\lambda_2 = $  "></pl-number-input></p>
+<p><pl-number-input answers-name="s3" comparison="sigfig" digits="3" label="$\lambda_3 = $  "></pl-number-input></p>
 </pl-question-panel>
-
 <pl-answer-panel>
-  <p>  Hint: consider the properties of $U$ and $V$ matrices. For more information see  <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
+<p>  Hint: consider the properties of $U$ and $V$ matrices. For more information see  <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
 </pl-answer-panel>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

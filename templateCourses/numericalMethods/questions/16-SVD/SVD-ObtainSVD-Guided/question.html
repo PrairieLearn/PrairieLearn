@@ -1,83 +1,73 @@
 
-
 <pl-question-panel>
-
 <p> For the matrix ${\bf A}$ below, </p>
-
-  <p>
-    ${\bf A} = <pl-matrix-latex params_name="A" digits="2"></pl-matrix-latex>$
+<p>
+    ${\bf A} = <pl-matrix-latex digits="2" params_name="A"></pl-matrix-latex>$
   </p>
-
-  <p>
+<p>
     the eigendecomposition of the resulting square matrix
     ${\bf A}^T {\bf A} = {\bf X} {\bf D} {\bf X}^{-1}  $ is given by:
   </p>
-
-  <p>
-      ${\bf A}^T {\bf A} = <pl-matrix-latex params_name="X" digits="2"></pl-matrix-latex>
-      <pl-matrix-latex params_name="eigs" digits="0"></pl-matrix-latex>
-      <pl-matrix-latex params_name="Xt" digits="2"></pl-matrix-latex>$
+<p>
+      ${\bf A}^T {\bf A} = <pl-matrix-latex digits="2" params_name="X"></pl-matrix-latex>
+<pl-matrix-latex digits="0" params_name="eigs"></pl-matrix-latex>
+<pl-matrix-latex digits="2" params_name="Xt"></pl-matrix-latex>$
   </p>
-
-  <p>
+<p>
     The matrices above were rounded for better visualization. For the calculations,
     use the matrices provided below in python format:
   </p>
-
-  <p>
-    <pl-matrix-output digits='5'>
-      <variable params_name="A">A</variable>
-      <variable params_name="X">X</variable>
-      <variable params_name="eigs">D</variable>
-    </pl-matrix-output>
-  </p>
-
-  <p>
+<p>
+<pl-matrix-output digits="5">
+<variable params_name="A">A</variable>
+<variable params_name="X">X</variable>
+<variable params_name="eigs">D</variable>
+</pl-matrix-output>
+</p>
+<p>
     You should obtain the singular value decomposition of the matrix ${\bf A}$
     by using only the eigendecomposition of ${\bf A}^T {\bf A}$.
   </p>
 </pl-question-panel>
-
 <pl-question-panel>
-  <p> $\bf a)$ Enter the matrix ${\bf V}$ from the SVD of the matrix ${\bf A} = {\bf U} {\bf \Sigma} {\bf V^T}$.</p>
+<p> $\bf a)$ Enter the matrix ${\bf V}$ from the SVD of the matrix ${\bf A} = {\bf U} {\bf \Sigma} {\bf V^T}$.</p>
 </pl-question-panel>
-
 <p>
-  <pl-matrix-input answers-name="V" comparison="relabs" rtol="1e-2" atol='1e-8' label="${\bf V} = $"></pl-matrix-input>
+<pl-matrix-input answers-name="V" atol="1e-8" comparison="relabs" label="${\bf V} = $" rtol="1e-2"></pl-matrix-input>
 </p>
-
 <pl-question-panel>
-  <p>
+<p>
     $\bf b)$ Enter the matrix ${\bf \Sigma}$ from the SVD of the matrix
     ${\bf A} = {\bf U \Sigma V^T}$.
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-matrix-input answers-name="sigma" comparison="relabs" rtol="1e-2" atol='1e-8' label="${\bf \Sigma} = $"></pl-matrix-input>
+<pl-matrix-input answers-name="sigma" atol="1e-8" comparison="relabs" label="${\bf \Sigma} = $" rtol="1e-2"></pl-matrix-input>
 </p>
-
 <pl-question-panel>
-  <p>
+<p>
     $\bf c)$ Enter the matrix resulting from the matrix-matrix multiplication  ${\bf A}{\bf V}$.
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-matrix-input answers-name="AV" comparison="relabs" rtol="1e-2" atol='1e-8' label="${\bf AV} = $"></pl-matrix-input>
+<pl-matrix-input answers-name="AV" atol="1e-8" comparison="relabs" label="${\bf AV} = $" rtol="1e-2"></pl-matrix-input>
 </p>
-
 <pl-question-panel>
-  <p>
+<p>
     $\bf d)$ Enter the matrix ${\bf U}$ from the SVD of the matrix
     ${\bf A} = {\bf U} {\bf \Sigma} {\bf V^T}$.
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-matrix-input answers-name="U" comparison="relabs" rtol="1e-2" atol='1e-8' label="${\bf U} = $"></pl-matrix-input>
+<pl-matrix-input answers-name="U" atol="1e-8" comparison="relabs" label="${\bf U} = $" rtol="1e-2"></pl-matrix-input>
 </p>
+<pl-answer-panel>
+<p>  For more information on obtaining the SVD decomposition from $A^TA$ check out the <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
+</pl-answer-panel>
 
- <pl-answer-panel>
-   <p>  For more information on obtaining the SVD decomposition from $A^TA$ check out the <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
- </pl-answer-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

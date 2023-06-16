@@ -1,9 +1,8 @@
 <!-- 
 cs357-s18/quiz-like-questions/opt_nd/medium-newton-one-step.yml
 -->
-
 <pl-question-panel>
-	<p>
+<p>
 		Use Newton’s method to minimize
 		$$f(\mathbf{x})={{params.a}}x_1^2 + {{params.b}}x_1x_2 + {{params.c}}x_2^2$$
 
@@ -14,5 +13,11 @@ cs357-s18/quiz-like-questions/opt_nd/medium-newton-one-step.yml
 		$$\mathbf{x_{i+1}} = \mathbf{x_i} + \mathbf{s_i}$$
 	</p>
 </pl-question-panel>
+<pl-matrix-component-input answers-name="s0" atol="1e-8" comparison="relabs" label="$\mathbf{s_0}^T = $" rtol="1e-2"></pl-matrix-component-input>
 
-<pl-matrix-component-input answers-name="s0" label="$\mathbf{s_0}^T = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

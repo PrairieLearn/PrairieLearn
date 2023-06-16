@@ -1,18 +1,18 @@
 
 <pl-question-panel>
-  <p>
+<p>
     We want to use Monte Carlo method to compute the volume of the
     following complicated region in the 3d-space $(x,y,z)$.
   </p>
   \[
   \begin{cases}
-      0\leq x\leq 1,\ 0\leq y\leq 1, \ 0\leq z\leq 1 & \newline
-      x^2 + \sin y\leq z & \newline
-      x-z+e^y\leq 1 & \newline
+      0\leq x\leq 1,\ 0\leq y\leq 1, \ 0\leq z\leq 1 &amp; \newline
+      x^2 + \sin y\leq z &amp; \newline
+      x-z+e^y\leq 1 &amp; \newline
     \end{cases}
   \]
   <p> For all points $(x, y, z)$, the volume is defined when each of these inequalities is satisfied.</p>
-  <p>
+<p>
     Then, suppose we use a variable <code>counter</code> to count the number of points
     inside the volume, and we have the following 4 random points:
   </p>
@@ -26,5 +26,11 @@
     What is the correct value of <code>counter</code>?
   </p>
 </pl-question-panel>
+<pl-integer-input answers-name="g" label="counter = "></pl-integer-input>
 
-<pl-integer-input label="counter = " answers-name="g"></pl-integer-input>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,15 +1,20 @@
 
-
 <pl-question-panel>
-	<p>
+<p>
 		Which of the following statement(s) is(are) $\textbf{true}$ for
 		finding the minimum of some function $f(x)$ on the interval
 		$[a,b]$ using golden section search?
 	</p>
 </pl-question-panel>
-<pl-checkbox answers-name="student" partial-credit="true" number-answers=4 min-correct=1>
-	<pl-answer correct={{params.tag1}}> {{params.des1}}</pl-answer>
-	  <pl-answer correct={{params.tag2}}> {{params.des2}}</pl-answer>
-	  <pl-answer correct={{params.tag3}}> {{params.des3}}</pl-answer>
-  	  <pl-answer correct={{params.tag4}}> {{params.des4}}</pl-answer>
+<pl-checkbox answers-name="student" min-correct="1" number-answers="4" partial-credit="true">
+<pl-answer correct="{{params.tag1}}"> {{params.des1}}</pl-answer>
+<pl-answer correct="{{params.tag2}}"> {{params.des2}}</pl-answer>
+<pl-answer correct="{{params.tag3}}"> {{params.des3}}</pl-answer>
+<pl-answer correct="{{params.tag4}}"> {{params.des4}}</pl-answer>
 </pl-checkbox>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

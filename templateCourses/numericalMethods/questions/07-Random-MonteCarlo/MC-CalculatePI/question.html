@@ -1,6 +1,5 @@
 <pl-question-panel>
-
-      <h4> Problem Setup </h4>
+<h4> Problem Setup </h4>
 
       The Monte Carlo method is commonly used to approximate areas or volumes of
       shapes. In this problem, we will use Monte Carlo to find the area of a circle,
@@ -8,18 +7,14 @@
       different sample sizes to see how the accuracy increases with larger samples.
 
 
-       <p><img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Pi_30K.gif" alt="Monte Carlo method applied to approximating the value of pi"/></p>
-
-       <p>Source: <a href="https://en.wikipedia.org/wiki/Monte_Carlo_method">https://en.wikipedia.org/wiki/Monte_Carlo_method</a></p>
-       <h4>Implementation</h4>
-
-      <h5>Part 1</h5>
-
-    <p>  According to the formula $A = \pi r^2$, for a circle of radius 1, the area
+       <p><img alt="Monte Carlo method applied to approximating the value of pi" src="https://upload.wikimedia.org/wikipedia/commons/8/84/Pi_30K.gif"/></p>
+<p>Source: <a href="https://en.wikipedia.org/wiki/Monte_Carlo_method">https://en.wikipedia.org/wiki/Monte_Carlo_method</a></p>
+<h4>Implementation</h4>
+<h5>Part 1</h5>
+<p>  According to the formula $A = \pi r^2$, for a circle of radius 1, the area
       of the circle will be equal to $\pi$. Therefore, if we can use Monte Carlo
       to approximate the area of the circle, we can find an estimate for $\pi$. </p>
-
-    <p>
+<p>
     Write a function <code>calculate_pi</code> that accepts a sample of x and corresponding y coordinates
     as arguments and returns an estimate for $\pi$ (since we want to calculate $\pi$ for various
     sample sizes, it will be useful for it to be a function).
@@ -28,54 +23,43 @@
     of the full circle will be 4 times the area we calculate for the single
     quadrant (and your function should take this into account).
     </p>
-
-
-      <h5>Part 2</h5>
-
-    <p>
+<h5>Part 2</h5>
+<p>
       Using the <code>calculate_pi</code> function you wrote in Part 1, estimate the value
       of $\pi$ for different sample size of powers of 10 ranging from $10^0$ to $10^6$ (inclusive). Store
       these values in an array of size 7 named <code>pi</code>. The samples has been given to you in
       <code>xs</code> and <code>ys</code>. For example, if you need 10 samples, you may use
       <code>xs[:10]</code> to get the x coordinates of these 10 samples.
     </p>
-
-      <h5>Part 3</h5>
-
-    <p>
+<h5>Part 3</h5>
+<p>
       Plot the absolute error of your approximations vs. the sample size on a
       log-log plot. The error can be obtained by subtracting the true value of
       $\pi$ from your approximations. Provide appropriate axes labels and a title.
       Save your plot to a variable <code>plot</code>.
     </p>
-
-    <p>
+<p>
       You should notice that the error decreases with larger sample sizes,
       although there may be a considerable amount of noise due to randomization.
       The order of convergence of Monte Carlo is $O\left(\frac{1}{\sqrt{n}}\right)$, so the slope
       of your plot should be around $-1/2$.
     </p>
-
-    <h4> Input and Output </h4>
-
-
-  <p> The setup code gives the following variables: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-
-  <p> Your code snippet should define the following function(s) and variable(s): </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-
-
-<pl-file-editor
-    file-name="user_code.py"
-    ace-mode="ace/mode/python"
-    source-file-name="tests/initial_code.py">
+<h4> Input and Output </h4>
+<p> The setup code gives the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following function(s) and variable(s): </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace-mode="ace/mode/python" file-name="user_code.py" source-file-name="tests/initial_code.py">
 </pl-file-editor>
-
-
 </pl-question-panel>
-
 <pl-submission-panel>
-    <pl-external-grader-results></pl-external-grader-results>
-    <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

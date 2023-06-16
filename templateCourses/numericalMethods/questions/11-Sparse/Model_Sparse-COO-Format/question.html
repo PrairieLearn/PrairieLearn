@@ -1,13 +1,13 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Consider the following matrix:
   </p>
 
   $${\bf A} =  <pl-matrix-latex params-name="A"></pl-matrix-latex>$$
 
-<br>
-  <p>
+<br/>
+<p>
     Complete the information below, to show how ${\bf A}$ is
     represented in COO format.
   </p>
@@ -17,21 +17,25 @@
 ${\bf A}$.data $ =  <pl-matrix-latex params-name="Adata"></pl-matrix-latex>$
 
 <p>
-<pl-matrix-component-input answers-name="Row" comparison="relabs" rtol="1e-3" atol="1e-2" label="${\bf A}$.row ="></pl-matrix-component-input>
+<pl-matrix-component-input answers-name="Row" atol="1e-2" comparison="relabs" label="${\bf A}$.row =" rtol="1e-3"></pl-matrix-component-input>
 </p>
 <p>
-<pl-matrix-component-input answers-name="Col" comparison="relabs" rtol="1e-3" atol="1e-2" label="${\bf A}$.col = "></pl-matrix-component-input>
+<pl-matrix-component-input answers-name="Col" atol="1e-2" comparison="relabs" label="${\bf A}$.col = " rtol="1e-3"></pl-matrix-component-input>
 </p>
-
-
 <pl-question-panel>
-  <p>
+<p>
     Given that data is stored as an array of 64-bit floats, and row and column
     indices and are stored as arrays of 32-bit integers, how many bytes
     in total are stored? (1 byte = 8 bits)
   </p>
-  <p>
-    <pl-number-input answers-name="bytes" label="Total Storage = "  suffix= "bytes" comparison="relabs" rtol="1e-6" atol="1e-2"></pl-number-input>
-  </p>
+<p>
+<pl-number-input answers-name="bytes" atol="1e-2" comparison="relabs" label="Total Storage = " rtol="1e-6" suffix="bytes"></pl-number-input>
+</p>
 </pl-question-panel>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

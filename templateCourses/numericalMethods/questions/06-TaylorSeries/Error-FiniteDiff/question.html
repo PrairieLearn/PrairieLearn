@@ -1,14 +1,20 @@
 <pl-question-panel>
-  <p>
+<p>
     Let $f(x) = {{params.c}} e^{ {{params.p}} x}$. Calculate the relative error of a first order
     forward finite difference approximation to $\frac{df}{dx}$ at $x = {{params.point}}$ with 
     step size ${{params.step}}$. 
   </p>
 </pl-question-panel>
 <p>
-  <pl-number-input answers-name="t1"  label="$ Error = $ " comparison="relabs" rtol="1e-3" atol="1e-6"></pl-number-input>
+<pl-number-input answers-name="t1" atol="1e-6" comparison="relabs" label="$ Error = $ " rtol="1e-3"></pl-number-input>
 </p>
 <pl-answer-panel>
-   <p> Did you use the correct finite difference method? For more information on forward/backward/central finite difference method See <a href="https://courses.engr.illinois.edu/cs357/fa2021/notes/ref-19-finite-difference.html">finite difference</a> page of the course notes</p>
+<p> Did you use the correct finite difference method? For more information on forward/backward/central finite difference method See <a href="https://courses.engr.illinois.edu/cs357/fa2021/notes/ref-19-finite-difference.html">finite difference</a> page of the course notes</p>
 </pl-answer-panel>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

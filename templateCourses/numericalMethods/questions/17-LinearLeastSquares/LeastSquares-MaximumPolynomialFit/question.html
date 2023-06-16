@@ -1,16 +1,16 @@
 <pl-question-panel>
-  <p>
+<p>
     Suppose you want to use the normal equation to solve for the coefficients of a least square problem. The equation you
     want to fit is a degree $k$ polynomial of the following format:
   </p>
-  <p>
+<p>
     $$y = c_1 x + c_2 x^2 + c_3 x^3 + ... + c_k x^k$$
   </p>
-  <p>If the dataset you try to fit consists of the following ${{params.m}}$ data points:
+<p>If the dataset you try to fit consists of the following ${{params.m}}$ data points:
     $$\begin{array}{l|{{params.cm}}}
-    x & {{params.x}} \\
+    x &amp; {{params.x}} \\
     \hline
-    y & {{params.y}} \\
+    y &amp; {{params.y}} \\
     \end{array}$$
 
     What is the maximum degree $k$ of the polynomial such that the least square problem still
@@ -18,5 +18,10 @@
 
   </p>
 </pl-question-panel>
-
-<p><pl-integer-input label="maximum degree k =" answers-name="rank"></pl-integer-input></p>
+<p><pl-integer-input answers-name="rank" label="maximum degree k ="></pl-integer-input></p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

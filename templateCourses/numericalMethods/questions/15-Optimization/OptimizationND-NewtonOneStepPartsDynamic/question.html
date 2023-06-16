@@ -4,10 +4,8 @@ cs357-s18/homework-problems/opt_nd/hessian-v2-fill-in.yml
 cs357-s18/homework-problems/opt_nd/1step-2d-newton-fill-in.yml
 
 -->
-
-
 <pl-question-panel>
-	<p>
+<p>
 		Suppose you are given the following function $f$ and asked to
 		to find a minimum of it.
 
@@ -18,34 +16,35 @@ cs357-s18/homework-problems/opt_nd/1step-2d-newton-fill-in.yml
 		$\mathbf{x_0} = [{{params.x0}}, {{params.y0}}]$?
 	</p>
 </pl-question-panel>
-
-<pl-matrix-component-input answers-name="df" label="$\nabla f(\mathbf{x_0}) = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
-<br><br>
+<pl-matrix-component-input answers-name="df" atol="1e-8" comparison="relabs" label="$\nabla f(\mathbf{x_0}) = $" rtol="1e-2"></pl-matrix-component-input>
+<br/><br/>
 <pl-question-panel>
-	<p>
+<p>
 		Now let us construct the Hessian $H_f$ of the function.	
 		What is the Hessian, evaluated at the starting point, $\mathbf{x_0}$?
 	</p>
 </pl-question-panel>
-
-<pl-matrix-component-input answers-name="H" label="$H(\mathbf{x_0}) = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
-
-<br><br>
+<pl-matrix-component-input answers-name="H" atol="1e-8" comparison="relabs" label="$H(\mathbf{x_0}) = $" rtol="1e-2"></pl-matrix-component-input>
+<br/><br/>
 <pl-question-panel>
-	<p>
+<p>
 		Now, calculate the first iteration, $\mathbf{x_1}$,
 		using Newton's Method.
 	</p>
 </pl-question-panel>
-
-<pl-matrix-component-input answers-name="newton_iterate" label="$\mathbf{x_1}^{newton} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
-<br><br>
+<pl-matrix-component-input answers-name="newton_iterate" atol="1e-8" comparison="relabs" label="$\mathbf{x_1}^{newton} = $" rtol="1e-2"></pl-matrix-component-input>
+<br/><br/>
 <pl-question-panel>
-	<p>
+<p>
 		Using the same initial condition,
 		what is the descent direction for the first iteration of Steepest Descent? 
     </p>
 </pl-question-panel>
+<pl-matrix-component-input answers-name="steepest_direction" atol="1e-8" comparison="relabs" label="$\mathbf{s_1}^{steepest} = $" rtol="1e-2"></pl-matrix-component-input>
 
-
-<pl-matrix-component-input answers-name="steepest_direction" label="$\mathbf{s_1}^{steepest} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

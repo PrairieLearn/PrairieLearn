@@ -1,12 +1,12 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Given the following matrix:
   </p>
-  <p>
-    $\mathbf{A} = <pl-matrix-latex params-name="A" digits="0"></pl-matrix-latex>$
+<p>
+    $\mathbf{A} = <pl-matrix-latex digits="0" params-name="A"></pl-matrix-latex>$
   </p>
-  <p>
+<p>
     Suppose <b>inverse iteration</b> is performed on the matrix
     $\mathbf{B}$, where $\mathbf{B} = \mathbf{A} {{params.shift}}\mathbf{I}$
     ($\mathbf{I}$ is the identity matrix).
@@ -15,13 +15,17 @@
     eigenvalue $(\sigma)$ of $\mathbf{B}$.  What is the corresponding eigenvalue 
     $(\lambda)$ of $\mathbf{A}$.
   </p>
-
-  <p>
-    <pl-integer-input answers-name="closest_eigenvalue"label="$\lambda = $"></pl-integer-input>
-  </p>
-
+<p>
+<pl-integer-input answers-name="closest_eigenvalue" label="$\lambda = $"></pl-integer-input>
+</p>
 </pl-question-panel>
-
 <pl-answer-panel>
-  <p> To solve this question you need to understand how to determine the eigenvalues of a shifted matrix,   and the eigenvalues of an inverse matrix. See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a>   of the course notes.</p>
+<p> To solve this question you need to understand how to determine the eigenvalues of a shifted matrix,   and the eigenvalues of an inverse matrix. See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a>   of the course notes.</p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

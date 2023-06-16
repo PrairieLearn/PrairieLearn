@@ -1,10 +1,8 @@
 <!--
 quiz-like-questions/solve_nd/easy-newton-solve.yml
 -->
-
 <pl-question-panel>
-
-  <p>
+<p>
     For the following function:
       $$ f(x_1, x_2) =
       <pl-matrix-latex params-name="coeffs"></pl-matrix-latex>
@@ -23,22 +21,21 @@ quiz-like-questions/solve_nd/easy-newton-solve.yml
     What is the Jacobian matrix evaluated at the point
     $x_1 = {{params.x}}$ and $x_2 = {{params.y}}$?
   </p>
-  </pl-question-panel>
-
- <pl-matrix-component-input answers-name="jac" label="${\bf J} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+</pl-question-panel>
+<pl-matrix-component-input answers-name="jac" atol="1e-8" comparison="relabs" label="${\bf J} = $" rtol="1e-2"></pl-matrix-component-input>
 <p></p>
-
-
-
-
-
 <pl-question-panel>
-  <p>
+<p>
     With a starting guess of $ \mathbf{x}^{(0)} = [x_1, x_2]$, $x_1 = {{params.x}}$ and $x_2 = {{params.y}}$, what is the
     result of the first iteration of Newton's method, solving
     for $f(x_1, x_2) = (0, 0)$?
   </p>
-  </pl-question-panel>
+</pl-question-panel>
+<pl-matrix-component-input answers-name="iterate" atol="1e-8" comparison="relabs" label="$ \mathbf{x}^{(1)} = $" rtol="1e-2"></pl-matrix-component-input>
 
-    <pl-matrix-component-input answers-name="iterate" label="$ \mathbf{x}^{(1)} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
-
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

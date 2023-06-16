@@ -4,35 +4,39 @@ quiz-like-questions/least_squares/medium-svd-least-squares-v4.yml
 
 quiz-like-questions/least_squares/hard-svd-least-sq.yml
  -->
-
- <pl-question-panel>
-    <p>What is the minimum-norm solution to the least-squares problem:</p>
-    <p>
+<pl-question-panel>
+<p>What is the minimum-norm solution to the least-squares problem:</p>
+<p>
         $\begin{bmatrix} 
-        1 & 0 & 0\\
-        0 & -\frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
-        0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+        1 &amp; 0 &amp; 0\\
+        0 &amp; -\frac{1}{\sqrt{2}} &amp; \frac{1}{\sqrt{2}} \\
+        0 &amp; \frac{1}{\sqrt{2}} &amp; \frac{1}{\sqrt{2}} \\
         \end{bmatrix} 
         \begin{bmatrix} 
-        {{params.sv0}} & 0 & 0\\
-        0 & {{params.sv1}} & 0\\
-        0 & 0 & 0\\ 
+        {{params.sv0}} &amp; 0 &amp; 0\\
+        0 &amp; {{params.sv1}} &amp; 0\\
+        0 &amp; 0 &amp; 0\\ 
         \end{bmatrix}
         \begin{bmatrix}
-        {{params.Vh00}} & {{params.Vh01}} & 0 \\
-        {{params.Vh10}} & {{params.Vh11}} & 0 \\
-        0 & 0 & 1 \\
+        {{params.Vh00}} &amp; {{params.Vh01}} &amp; 0 \\
+        {{params.Vh10}} &amp; {{params.Vh11}} &amp; 0 \\
+        0 &amp; 0 &amp; 1 \\
         \end{bmatrix}
         {\bf x}
-        \cong <pl-matrix-latex params-name="y" digits='0'></pl-matrix-latex>
+        \cong <pl-matrix-latex digits="0" params-name="y"></pl-matrix-latex>
         $
     </p>
 </pl-question-panel>
-    <pl-matrix-component-input answers-name="x" label="$\mathbf{x}=$"> </pl-matrix-component-input>
-
- <pl-answer-panel>
-	<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD, then the solution of minimal 2-norm is given by $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
-	<p>If $\mathbf{\Sigma} = \text{diag}(\sigma_1,\sigma_2,\sigma_3,0)$, then $\mathbf{\Sigma}^{+} = \left(\frac{1}{\sigma_1},\frac{1}{\sigma_2},\frac{1}{\sigma_3},0\right)$  </p>
-	<p>Take advantage of the zeros in the problem to save yourself some work.  </p>
+<pl-matrix-component-input answers-name="x" label="$\mathbf{x}=$"> </pl-matrix-component-input>
+<pl-answer-panel>
+<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD, then the solution of minimal 2-norm is given by $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
+<p>If $\mathbf{\Sigma} = \text{diag}(\sigma_1,\sigma_2,\sigma_3,0)$, then $\mathbf{\Sigma}^{+} = \left(\frac{1}{\sigma_1},\frac{1}{\sigma_2},\frac{1}{\sigma_3},0\right)$  </p>
+<p>Take advantage of the zeros in the problem to save yourself some work.  </p>
 </pl-answer-panel>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

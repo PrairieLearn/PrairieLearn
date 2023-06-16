@@ -1,22 +1,22 @@
 <pl-question-panel>
-  <p> You are given the following data points: </p>
-  <div style="text-align:center">
-    <pl-figure file-name="figure.png" type="dynamic" width=400px></pl-figure>
-  </div>
-  <p>
+<p> You are given the following data points: </p>
+<div style="text-align:center">
+<pl-figure file-name="figure.png" type="dynamic" width="400px"></pl-figure>
+</div>
+<p>
     You are given a 1d numpy array <code>xpts</code> with the x-coordinates for each point,
     and the 1d numpy array <code>ypts</code> with the corresponding y-coordinates. You could obtain
     the plot above by using:
   </p>
-  <pl-code language="python">plt.plot(xpts,ypts,'o')</pl-code>
-  <p>
+<pl-code language="python">plt.plot(xpts,ypts,'o')</pl-code>
+<p>
     A function $f$ that approximates the data points using a polynomial of
     degree $n$ can be written as:
 
     $$ f(x) = \sum_{i=0}^{n} a_i \cdot x^i $$
   </p>
-  <p> You are also given <code>eval_func</code> which evaluates the function $f$ above: </p>
-  <pl-code language="python">
+<p> You are also given <code>eval_func</code> which evaluates the function $f$ above: </p>
+<pl-code language="python">
 def eval_func(n,x,a):
     """
     n: degree of polynomial
@@ -27,26 +27,30 @@ def eval_func(n,x,a):
     for i in range(n+1):
         y_est = y_est + a[i]*x**i
     return y_est</pl-code>
-  <h2>Your task:</h2>
-  <p>
+<h2>Your task:</h2>
+<p>
     Write code to determine the coefficients $a_i$ that give the best approximation $f$ in the least-squares sense when $n={{params.n}}$.
     Once you have your coefficients, you may want to plot the approximated function:
   </p>
-  <pl-code>plt.plot(xpts,eval_func(n,xpts,a),'r')</pl-code>
-  <p>
+<pl-code>plt.plot(xpts,eval_func(n,xpts,a),'r')</pl-code>
+<p>
     Then evaluate the approximated function at $x = {{params.pos}}$ and save this value into <code>y_est</code>.
   </p>
-
-  <p> Variables given by the setup code: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-  <p> Your code snippet should define the following variable: </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-
-  <pl-file-editor file_name="user_code.py" ace_mode="ace/mode/python" source-file-name="tests/initial_code.py">
-  </pl-file-editor>
+<p> Variables given by the setup code: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following variable: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
 </pl-question-panel>
-
 <pl-submission-panel>
-  <pl-external-grader-results></pl-external-grader-results>
-  <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

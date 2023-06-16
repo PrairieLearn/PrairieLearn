@@ -1,25 +1,28 @@
 <pl-question-panel>
-    <p>
+<p>
     You are applying for jobs in the financial industry, looking for a position applying numerical methods in the field of financial modeling.  An interviewer tells you about the 1982 rounding error in the Vancouver Stock Exchange's index, in which the error caused a 50 percent loss of value in 22 months.  The interviewer decides to determine your knowledge of floating-point representations with a quick test.
     </p>
-
-    <p>
+<p>
     You are asked to represent the number $y = {{params.decimal_f}}$ in a floating-point system that contains numbers of the form
     </p>
-
-    <p>
+<p>
     $$x = {{params.fp_format}},$$
     </p>
-
-    <p>
+<p>
     with $b_i \in \{0, 1\}$ and exponent $m \in {{params.exp_range}}$.  What is the absolute error $|y - \text{fl}(y)|$ due to rounding if the floating point system <strong>{{params.rounding}}</strong>?
     </p>
 </pl-question-panel>
-
-    <pl-number-input answers-name="f" comparison="relabs" rtol="1e-8" atol="1e-9"></pl-number-input>
+<pl-number-input answers-name="f" atol="1e-9" comparison="relabs" rtol="1e-8"></pl-number-input>
     
 {{#feedback.question_feedback}}
 <pl-answer-panel>
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

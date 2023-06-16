@@ -1,5 +1,5 @@
 <pl-question-panel>
-  <p>
+<p>
   Suppose you are approximating the {{params.eigen_type}} eigenvalues of two matrices using {{params.iter_type}}{{params.LU_info}}
   The run-time for $k$ iterations of this method applied to an $n\times n$ matrix can be modeled as $t\approx {{params.complexity}}$ for some integer $p$, and some constant $C$.
 </p>
@@ -9,16 +9,20 @@ Suppose the first matrix is of size ${{params.n1}} \times {{params.n1}}$, and th
 <p>
 If the second matrix is of size ${{params.n2}} \times {{params.n2}}$ and you run {{params.k2}} iterations of {{params.iter_type}}, approximately how long will the run-time be?
 </p>
-
 </pl-question-panel>
-
-<pl-multiple-choice answers-name='students'>
-  <pl-answer correct="false">{{params.false0}} seconds</pl-answer>
-  <pl-answer correct="false">{{params.false1}} seconds</pl-answer>
-  <pl-answer correct="true">{{params.true}} seconds</pl-answer>
-  <pl-answer correct="false">{{params.false2}} seconds</pl-answer>
+<pl-multiple-choice answers-name="students">
+<pl-answer correct="false">{{params.false0}} seconds</pl-answer>
+<pl-answer correct="false">{{params.false1}} seconds</pl-answer>
+<pl-answer correct="true">{{params.true}} seconds</pl-answer>
+<pl-answer correct="false">{{params.false2}} seconds</pl-answer>
 </pl-multiple-choice>
-
 <pl-answer-panel>
- <p> In order to answer this question you need to know the complexity of performing a solve using a precomuted LU decompostion ($O(n^p)$). Using the complexity relationship and the provided parameters ($k, t, n$) you shuld be able to figure out the constant $C$. </p>
+<p> In order to answer this question you need to know the complexity of performing a solve using a precomuted LU decompostion ($O(n^p)$). Using the complexity relationship and the provided parameters ($k, t, n$) you shuld be able to figure out the constant $C$. </p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,30 +1,31 @@
 <pl-question-panel>
-  <p>
+<p>
     Suppose the matrix ${\bf A}$ has eigenvalues $\lambda_{A1} = {{params.e1}}$ and
     $\lambda_{A2} = {{params.e2}}$.
   </p>
-
-  <p>
+<p>
     Let ${\bf I}$ be the identity matrix. The matrix ${\bf B}$ is defined by the
     following transformations on ${\bf A}$:
   </p>
-
-  <p>
+<p>
     $${\bf B} = (({\bf A} - {{params.coe}}{\bf I})^{-1})^2$$
   </p>
-
-  <p>
+<p>
     What are the eigenvalues of ${\bf B}$? ($|\lambda_{B1}| \geq |\lambda_{B2}|$)
   </p>
 </pl-question-panel>
 <p>
-  <pl-number-input label="$\lambda_{B1} = $" answers-name="eigenvalue1" comparison="relabs" rtol="1e-2"></pl-number-input>
+<pl-number-input answers-name="eigenvalue1" comparison="relabs" label="$\lambda_{B1} = $" rtol="1e-2"></pl-number-input>
 </p>
-
 <p>
-  <pl-number-input label="$\lambda_{B2} = $" answers-name="eigenvalue2" comparison="relabs" rtol="1e-2"></pl-number-input>
+<pl-number-input answers-name="eigenvalue2" comparison="relabs" label="$\lambda_{B2} = $" rtol="1e-2"></pl-number-input>
 </p>
-
- <pl-answer-panel>
-   <p> To solve this question you need to understand how to determine the eigenvalues of a shifted matrix, eigenvalues of an inverse matrix, and eigenvalues of $\hat{A}^2$ (similar to Power Iteration). See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a> of the course notes.</p>
- </pl-answer-panel>
+<pl-answer-panel>
+<p> To solve this question you need to understand how to determine the eigenvalues of a shifted matrix, eigenvalues of an inverse matrix, and eigenvalues of $\hat{A}^2$ (similar to Power Iteration). See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a> of the course notes.</p>
+</pl-answer-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

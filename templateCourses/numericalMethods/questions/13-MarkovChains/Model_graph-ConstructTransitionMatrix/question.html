@@ -1,14 +1,20 @@
 <pl-question-panel>
 <pl-graph params-name-matrix="mat" weights-digits="2" weights-presentation-type="sigfig"></pl-graph>
-  <p>
+<p>
     For the given graph, what is the corresponding transition matrix?
   </p>
 </pl-question-panel>
-<pl-matrix-component-input label="$\mathbf{A} = $" answers-name="mat" allow-partial-credit=True></pl-matrix-component-input>
-
+<pl-matrix-component-input allow-partial-credit="True" answers-name="mat" label="$\mathbf{A} = $"></pl-matrix-component-input>
 <pl-answer-panel>
-	<p> </p>
-	<p> The entries of a transition matrix are $a_{ij} = \begin{cases} p_{ij}\quad \text{if }\text{node}_i\leftarrow\text{node}_j\\
-	0\quad \text{otherwise}\end{cases}$,<br> 
+<p> </p>
+<p> The entries of a transition matrix are $a_{ij} = \begin{cases} p_{ij}\quad \text{if }\text{node}_i\leftarrow\text{node}_j\\
+	0\quad \text{otherwise}\end{cases}$,<br/> 
 	where $p_{ij}$ is the probability that state $j$ will transition to state $i$.</p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

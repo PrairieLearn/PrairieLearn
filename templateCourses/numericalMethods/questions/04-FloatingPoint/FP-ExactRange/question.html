@@ -1,6 +1,6 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Consider a (binary) floating point system of the form
     $(-1)^s \times$ {{params.representation}} where $s \in \{0, 1\}$ and $m \in \mathbb{Z}: $ {{params.exp_range}}.
     What is the largest value, $k$, for which all of the
@@ -8,7 +8,6 @@
     system?
   </p>
 </pl-question-panel>
-
 <pl-integer-input answers-name="f"></pl-integer-input>
 
 
@@ -17,3 +16,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

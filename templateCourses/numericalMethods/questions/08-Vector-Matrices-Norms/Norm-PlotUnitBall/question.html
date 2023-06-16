@@ -1,62 +1,68 @@
 <pl-question-panel>
-  <h1>Norms</h1>
-  <p>
-    <strong>Note:</strong> In addition to regular $p$-norms, we will use the "0.5-norm" below. By
+<h1>Norms</h1>
+<p>
+<strong>Note:</strong> In addition to regular $p$-norms, we will use the "0.5-norm" below. By
     this we mean that you should use the expression for the $p$-norm with $p=0.5$.
     Note that this is not actually a norm.
   </p>
-  <h2>Your task:</h2>
-  <p>With respect to each norm, plot a 2D ball with radius <code>r</code> centered around the origin using 500 points. (That is, plot the ball made of all 2D vectors $w$ that satisfy the equation $|w|_p=$<code>r</code> for the $p$-norm.)</p>
-  <p>Save a plot's axes using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.gca.html">plt.gca()</a>. For example:</p>
-  <pl-code language="python">
+<h2>Your task:</h2>
+<p>With respect to each norm, plot a 2D ball with radius <code>r</code> centered around the origin using 500 points. (That is, plot the ball made of all 2D vectors $w$ that satisfy the equation $|w|_p=$<code>r</code> for the $p$-norm.)</p>
+<p>Save a plot's axes using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.gca.html">plt.gca()</a>. For example:</p>
+<pl-code language="python">
 plt.figure()
 # ...code for the plot...
 fig_1 = plt.gca()</pl-code>
-  <p>Your code should produce the following four plots:</p>
-  <ol>
-    <li>Draw the radius <code>r</code> 2D ball with respect to the 1-norm and save the plot to <code>fig_1</code>.</li>
-    <li>Draw the radius <code>r</code> 2D ball with respect to the 2-norm and save the plot to <code>fig_2</code>.</li>
-    <li>Draw the radius <code>r</code> 2D ball with respect to the 5-norm and save the plot to <code>fig_3</code>.</li>
-    <li>Draw the radius <code>r</code> 2D ball with respect to the "0.5-norm" and save the plot to <code>fig_4</code>.</li>
-  </ol>
-  <h2>F.A.Q.</h2>
-  <ul>
-    <li>
-      <p><strong>How do I make multiple figures?</strong></p>
-      <p>Call <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.figure.html">plt.figure()</a> at the start of each new figure.</p>
-    </li>
-    <li>
-      <p><strong>How do I draw a ball (with respect to norm $|\cdot|$) with radius <code>r</code>?</strong></p>
-      <p>First, generate 500 points that are equispaced in $[0, 2\pi]$.
+<p>Your code should produce the following four plots:</p>
+<ol>
+<li>Draw the radius <code>r</code> 2D ball with respect to the 1-norm and save the plot to <code>fig_1</code>.</li>
+<li>Draw the radius <code>r</code> 2D ball with respect to the 2-norm and save the plot to <code>fig_2</code>.</li>
+<li>Draw the radius <code>r</code> 2D ball with respect to the 5-norm and save the plot to <code>fig_3</code>.</li>
+<li>Draw the radius <code>r</code> 2D ball with respect to the "0.5-norm" and save the plot to <code>fig_4</code>.</li>
+</ol>
+<h2>F.A.Q.</h2>
+<ul>
+<li>
+<p><strong>How do I make multiple figures?</strong></p>
+<p>Call <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.figure.html">plt.figure()</a> at the start of each new figure.</p>
+</li>
+<li>
+<p><strong>How do I draw a ball (with respect to norm $|\cdot|$) with radius <code>r</code>?</strong></p>
+<p>First, generate 500 points that are equispaced in $[0, 2\pi]$.
         Use these points to generate vectors in the unit ball whose angle corresponds to the generated points.
         Then scale the vectors such that $|\cdot| = $<code>r</code>.
       </p>
-      <p>
+<p>
         To scale the vectors to have the right norm, simply compute their norm and scalar-multiply the vectors by the inverse of the norm, so that they have $|\cdot|=1$.
         Then scalar multiply them by <code>r</code>.
       </p>
-      <p>Then plot these scaled points using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html">plt.plot()</a>.</p>
-    </li>
-    <li>
-      <p><strong>My circles aren't circles. Help!</strong></p>
-      <p>That's not a question, but we understand. Use <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_aspect.html">plt.gca().set_aspect('equal')</a> to get an aspect ratio of 1:1 in the plots (so the shape of the plots looks appropriate).</p>
-      <p>
-        <strong>Note:</strong> Specifying a radius of ball doesn't imply that the ball will be a circle.
+<p>Then plot these scaled points using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html">plt.plot()</a>.</p>
+</li>
+<li>
+<p><strong>My circles aren't circles. Help!</strong></p>
+<p>That's not a question, but we understand. Use <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_aspect.html">plt.gca().set_aspect('equal')</a> to get an aspect ratio of 1:1 in the plots (so the shape of the plots looks appropriate).</p>
+<p>
+<strong>Note:</strong> Specifying a radius of ball doesn't imply that the ball will be a circle.
         It simply means that the vectors will have $|\cdot|= $<code>r</code>.
         The shape of the ball is entirely dependent on the norm used.
         Also, make sure that when plotting you use the results of $cos(\phi)$ as the "x" coordinates.
       </p>
-    </li>
-  </ul>
-  <p> The setup code gives the following variables: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-  <p> Your code snippet should define the following variables: </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-  <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
-  </pl-file-editor>
+</li>
+</ul>
+<p> The setup code gives the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following variables: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
 </pl-question-panel>
 <pl-submission-panel>
-  <!-- <pl_file_preview /> -->
-  <pl-external-grader-results></pl-external-grader-results>
-  <pl-file-preview></pl-file-preview>
+<!-- <pl_file_preview /> -->
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

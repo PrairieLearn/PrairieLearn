@@ -1,9 +1,9 @@
 <pl-question-panel>
-  <p>
+<p>
     You are developing a new electronic device for which it is critical to know
     how much power each of its 10 components uses.
   </p>
-  <p>
+<p>
     You find you can not directly measure the power use of each component. 
     Instead, you can only measure how much energy the
     entire device uses and the duration for which each component operates. (<em>Exemplī grātiā</em>:
@@ -12,13 +12,13 @@
     per second by each component on the device. You will do this by setting up
     and solving a linear system.
   </p>
-  <p>You are given a Python dictionary called <code>test_data</code> containing
+<p>You are given a Python dictionary called <code>test_data</code> containing
     measurements from 10 different tests. Each test is stored as a Python list of tuples
     (<em>e.g.</em> <code>[('LED0', 0.58), ('Screen', 0.24), ('EnergyConsumed', 1.2), ...]</code>).
     The tuple with first entry equal to <code>'EnergyConsumed'</code> is the energy consumed by
     the device on that test. The other tuples indicate the length of time each component operated.
   </p>
-  <p>
+<p>
     You are also given a Python list of the component IDs called <code>components</code>.
     Using these two inputs, build a linear system $\mathbf{Ax} = \mathbf{b}$ to solve for the rate of energy use
     of each component. You may use <code>numpy.linalg.solve</code> to solve your
@@ -27,17 +27,21 @@
     the first entry of <code>power_usage</code> should be the amount of energy per second that <code>'Screen'</code>
     consumes).
   </p>
-
-  <p> The setup code provides the following variables: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-  <p> Your code snippet should define the following variables: </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-
-  <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
-  </pl-file-editor>
+<p> The setup code provides the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following variables: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
 </pl-question-panel>
-
 <pl-submission-panel>
-  <pl-external-grader-results></pl-external-grader-results>
-  <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,6 +1,6 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Find values for the variables <code>start</code>, <code>stop</code>, and <code>step</code> such that the given code
   </p>
 <pl-code language="python" prevent-select="true">
@@ -8,18 +8,23 @@ integers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 for i in range(start, stop, step):
   print(integers[i])
 </pl-code>
-  <p>
+<p>
     prints exactly the following:
   </p>
-  <p>
+<p>
 {{{params.result}}}
 </p>
 </pl-question-panel>
-
 <pl-multiple-choice answers-name="student">
-    <pl-answer correct="false"><code>start</code> = 0; <code>stop</code> = 3; <code>step</code> = -2</pl-answer>
-    <pl-answer correct="false"><code>start</code> = 1; <code>stop</code> = 5; <code>step</code> = 2</pl-answer>
-    <pl-answer correct="true"><code>start</code> = {{params.AA}}; <code>stop</code> = {{params.BB}}; <code>step</code> = {{params.CC}}</pl-answer>
-    <pl-answer correct="false"><code>start</code> = 7; <code>stop</code> = 0; <code>step</code> = 1</pl-answer>
-    <pl-answer correct="false"><code>start</code> = 8; <code>stop</code> = 1; <code>step</code> = 1</pl-answer>
+<pl-answer correct="false"><code>start</code> = 0; <code>stop</code> = 3; <code>step</code> = -2</pl-answer>
+<pl-answer correct="false"><code>start</code> = 1; <code>stop</code> = 5; <code>step</code> = 2</pl-answer>
+<pl-answer correct="true"><code>start</code> = {{params.AA}}; <code>stop</code> = {{params.BB}}; <code>step</code> = {{params.CC}}</pl-answer>
+<pl-answer correct="false"><code>start</code> = 7; <code>stop</code> = 0; <code>step</code> = 1</pl-answer>
+<pl-answer correct="false"><code>start</code> = 8; <code>stop</code> = 1; <code>step</code> = 1</pl-answer>
 </pl-multiple-choice>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

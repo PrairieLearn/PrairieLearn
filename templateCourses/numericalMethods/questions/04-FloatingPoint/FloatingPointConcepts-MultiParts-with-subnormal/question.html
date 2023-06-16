@@ -3,73 +3,54 @@ New PrairieLearn implementation. Multianswer type.
 Same question used in lecture (iclicker)
 Can be added to homework, but should not be used in quizzes.
 -->
-
 <pl-question-panel>
-
-  <p>
+<p>
     For the following problems, consider a floating 
     point number system that can be represented as
     {{params.representation}} and $b_i \in \{0,1\}$.
   </p>
-
-
-  <p>  
+<p>  
     a. What is the smallest positive normalized floating point number?
     Use decimal representation. Enter your answer exactly with no rounding.
   </p>
 </pl-question-panel>
-
-  <p>
-    <pl-number-input answers-name="snfp" comparison="sigfig" digits="6"></pl-number-input>
-  </p>
-
+<p>
+<pl-number-input answers-name="snfp" comparison="sigfig" digits="6"></pl-number-input>
+</p>
 <pl-question-panel>
-
-  <p>
+<p>
     b. What is the smallest positive subnormal floating point number?
   </p>
 </pl-question-panel>
-  
 <p>
-  <pl-number-input answers-name="ssfp" comparison="relabs" rtol="1e-3" atol="1e-8"></pl-number-input>
+<pl-number-input answers-name="ssfp" atol="1e-8" comparison="relabs" rtol="1e-3"></pl-number-input>
 </p>
-
-
 <pl-question-panel>
-  <p> 
+<p> 
     c. What is the largest positive normalized floating point number?
     Use decimal representation.
     Enter your answer exactly with no rounding.
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-number-input answers-name="lfp"  comparison="sigfig" digits="5"  ></pl-number-input>
+<pl-number-input answers-name="lfp" comparison="sigfig" digits="5"></pl-number-input>
 </p>
-
-
 <pl-question-panel>
-  <p>
+<p>
     e. How many additional numbers (positive and negative, not including zero) can be represented 
     when using the subnormal representation? Your answer should be an integer.
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-integer-input answers-name="n"></pl-integer-input>
+<pl-integer-input answers-name="n"></pl-integer-input>
 </p>
-
-
-
-
 <pl-question-panel>
-  <p>  
+<p>  
     f. What is the value of machine epsilon for this system? Use decimal representation.
     Enter your answer exactly with no rounding.</p>
 </pl-question-panel>
-
 <p>
-  <pl-number-input answers-name="emach"  comparison="sigfig" digits="4" ></pl-number-input>
+<pl-number-input answers-name="emach" comparison="sigfig" digits="4"></pl-number-input>
 </p>
 
 {{#feedback.question_feedback}}
@@ -78,3 +59,10 @@ Can be added to homework, but should not be used in quizzes.
 </pl-answer-panel>
 {{/feedback.question_feedback}}
 
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

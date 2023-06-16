@@ -1,13 +1,12 @@
 
 <pl-question-panel>
-  <p>
+<p>
       You have decided that you don't like any of the norms we have learned in
       class so far and you decide to make your own norm $|| \cdot ||_{\text{me}}$.
       While pouring through your notes you realize you already had this idea
       before and you have written:
   </p>
-
-  <p>
+<p>
     $\left|\left|
     \begin{bmatrix}
     1 \\
@@ -15,8 +14,7 @@
     \end{bmatrix}
     \right|\right|_{\text{me}} = {{params.e1_me}}$
   </p>
-  
-  <p>
+<p>
     $\left|\left|
     \begin{bmatrix}
     1 \\
@@ -24,40 +22,32 @@
     \end{bmatrix}
     \right|\right|_{\text{me}} = {{params.e2_me}}$
   </p>
-  
-  <p>
+<p>
     This is great news because you know the properties of norms and you are
     interested in finding and bounding the norms of the vectors below.
     (For the second problem, find the tightest bound. The fact that
     it is $\leq \infty$ does not tell us much).
   </p>
-
-
-  <p>
+<p>
     $ {\bf x} =
 
     <pl-matrix-latex params-name="x"> </pl-matrix-latex>
     $
   </p>
-
 </pl-question-panel>
-
 <p>
-  <pl-number-input label=" $\| \mathbf{x} \|_{\text{me}} = $" answers-name="homogenous" comparison="sigfig" digits="3"></pl-number-input>
+<pl-number-input answers-name="homogenous" comparison="sigfig" digits="3" label=" $\| \mathbf{x} \|_{\text{me}} = $"></pl-number-input>
 </p>
-
-
 <pl-question-panel>
-  <p>
+<p>
     $ {\bf y} =
 
     <pl-matrix-latex params-name="y"> </pl-matrix-latex>
     $
   </p>
 </pl-question-panel>
-
 <p>
-  <pl-number-input label=" $\| \mathbf{y} \|_{\text{me}} \leq $" answers-name="lin" comparison="sigfig" digits="3"></pl-number-input>
+<pl-number-input answers-name="lin" comparison="sigfig" digits="3" label=" $\| \mathbf{y} \|_{\text{me}} \leq $"></pl-number-input>
 </p>
 
 {{#feedback.question_feedback}}
@@ -66,3 +56,10 @@
 </pl-answer-panel>
 {{/feedback.question_feedback}}
 
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

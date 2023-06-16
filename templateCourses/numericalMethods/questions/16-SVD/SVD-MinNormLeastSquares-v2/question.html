@@ -1,36 +1,33 @@
 <pl-question-panel>
 <p>
   The singular matrix $\mathbf{A}$ has the following full singular value decomposition </p>
-
-    <p>
-        $\mathbf{A} = <pl-matrix-latex params_name="U" digits="0"></pl-matrix-latex>$
-        $<pl-matrix-latex params_name="S" digits="0"></pl-matrix-latex>$
-        $<pl-matrix-latex params_name="Vt" digits="2"></pl-matrix-latex>$
+<p>
+        $\mathbf{A} = <pl-matrix-latex digits="0" params_name="U"></pl-matrix-latex>$
+        $<pl-matrix-latex digits="0" params_name="S"></pl-matrix-latex>$
+        $<pl-matrix-latex digits="2" params_name="Vt"></pl-matrix-latex>$
     </p>
-
-    <p>You wish to find the least-squares solution $\mathbf{x}$ of <strong>minimal 2-norm</strong> to the problem</p>
-
-    <p>
-        $\mathbf{A}\mathbf{x} \approx \mathbf{b} = <pl-matrix-latex params_name="b" digits="0"></pl-matrix-latex>$
+<p>You wish to find the least-squares solution $\mathbf{x}$ of <strong>minimal 2-norm</strong> to the problem</p>
+<p>
+        $\mathbf{A}\mathbf{x} \approx \mathbf{b} = <pl-matrix-latex digits="0" params_name="b"></pl-matrix-latex>$
 
     </p>
-
-
-    <p>Which of the following vectors is the solution?  </p>
-
-
+<p>Which of the following vectors is the solution?  </p>
 </pl-question-panel>
-
-
 <pl-multiple-choice answers-name="ans" weight="1">
-  <pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_1"></pl-matrix-latex>$ </pl-answer>
-  <pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_2"></pl-matrix-latex>$</pl-answer>
-  <pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_3"></pl-matrix-latex>$</pl-answer>
-  <pl-answer correct="true">  $\mathbf{x} = <pl-matrix-latex params-name="x"></pl-matrix-latex>$</pl-answer>
-  <pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_4"></pl-matrix-latex>$</pl-answer>
+<pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_1"></pl-matrix-latex>$ </pl-answer>
+<pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_2"></pl-matrix-latex>$</pl-answer>
+<pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_3"></pl-matrix-latex>$</pl-answer>
+<pl-answer correct="true">  $\mathbf{x} = <pl-matrix-latex params-name="x"></pl-matrix-latex>$</pl-answer>
+<pl-answer correct="false"> $\mathbf{x} = <pl-matrix-latex params-name="y_4"></pl-matrix-latex>$</pl-answer>
 </pl-multiple-choice>
-
 <pl-answer-panel>
-	<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD, then the solution of minimal 2-norm is given by $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
-	<p>If $\mathbf{\Sigma} = \text{diag}(\sigma_1,\sigma_2,\sigma_3,0)$, then $\mathbf{\Sigma}^{+} = \left(\frac{1}{\sigma_1},\frac{1}{\sigma_2},\frac{1}{\sigma_3},0\right)$  </p>
+<p>If $\mathbf{A} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T$ is the SVD, then the solution of minimal 2-norm is given by $\mathbf{x} = \mathbf{V}\mathbf{\Sigma}^{+}\mathbf{U}^T\mathbf{b}$</p>
+<p>If $\mathbf{\Sigma} = \text{diag}(\sigma_1,\sigma_2,\sigma_3,0)$, then $\mathbf{\Sigma}^{+} = \left(\frac{1}{\sigma_1},\frac{1}{\sigma_2},\frac{1}{\sigma_3},0\right)$  </p>
 </pl-answer-panel>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

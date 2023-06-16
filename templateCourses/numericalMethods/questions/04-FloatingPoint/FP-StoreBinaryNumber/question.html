@@ -1,48 +1,44 @@
 
-
-
 <pl-question-panel>
-
-  <p>
+<p>
    You are working for Sony developing an emulator for a collection of games released on the original Playstation One.
    Unfortunately, the 3D graphics engines of old video game consoles used fixed-point arithmetic.
    Your job is to update the code to use IEEE single precison floating-point numbers.
   </p>
-  <p>
+<p>
   Suppose you encounter the following <strong>binary</strong> number:
   </p>
-
-  <p>
+<p>
    $$x = {{params.number}}$$
   </p>
-  <p>
+<p>
     How would you store this number as an IEEE <strong>single precision</strong> number?
     Specify the sign, exponent, and significand.  Think carefully about how this information is stored.
      Is the exponent stored directly, or in some other manner?  Do all digits of the binary number need to be stored?
     </p>
-  <p>
+<p>
   Your answers should be strings of 1's and 0's.  The significand of a single precision number consists of 23 bits; for this number, the last 17 bits are zero, so you only need to enter the <strong>first six bits</strong>.
   </p>
 </pl-question-panel>
-
-<p><pl-string-input answers-name="sign" label="Sign: " display="inline"
-  placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
+<p><pl-string-input answers-name="sign" display="inline" label="Sign: " placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
 </pl-string-input></p>
-
-<p><pl-string-input answers-name="exponent" label="Exponent: " display="inline"
-  placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
+<p><pl-string-input answers-name="exponent" display="inline" label="Exponent: " placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
 </pl-string-input></p>
-
-<p><pl-string-input answers-name="significand" label="Significand (first 6 digits): " display="inline"
-  placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
+<p><pl-string-input answers-name="significand" display="inline" label="Significand (first 6 digits): " placeholder="strings of 1's and 0's" remove-leading-trailing="true" remove-spaces="true">
 </pl-string-input></p>
-
 <pl-question-panel>
 For more info on IEEE single precision numbers, including their representation, please consult the <a href="https://courses.grainger.illinois.edu/cs357/fa2020/notes/ref-4-fp.html">reference page</a>.
 </pl-question-panel>
 
 {{#feedback.question_feedback}}
 <pl-answer-panel>
-	<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

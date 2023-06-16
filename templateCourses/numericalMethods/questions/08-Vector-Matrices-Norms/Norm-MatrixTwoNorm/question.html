@@ -1,19 +1,13 @@
 <pl-question-panel>
-  <p>
-    Consider the following matrix:
-    <p>${\bf A} = <pl-matrix-latex params-name="A" digits=1></pl-matrix-latex>$</p>
-  </p>
-  <p>Calculate the $2$ norm.</p>
-</pl-question-panel>
-
 <p>
-  <pl-number-input
-  answers-name="two-norm"
-  display="block"
-  comparison="relabs"
-  atol=1e-6
-  label='${||{\bf A}||}_2 = $'>
-  </pl-number-input>
+    Consider the following matrix:
+    <p>${\bf A} = <pl-matrix-latex digits="1" params-name="A"></pl-matrix-latex>$</p>
+</p>
+<p>Calculate the $2$ norm.</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="two-norm" atol="1e-6" comparison="relabs" display="block" label="${||{\bf A}||}_2 = $">
+</pl-number-input>
 </p>
 
 {{#feedback.question_feedback}}
@@ -21,3 +15,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

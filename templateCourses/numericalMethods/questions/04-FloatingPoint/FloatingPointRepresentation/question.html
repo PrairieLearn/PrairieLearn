@@ -1,19 +1,16 @@
 
-
 <pl-question-panel>
-  <p>
+<p>
     Represent the decimal number as a floating point number.
   </p>
 </pl-question-panel>
-
-  <p>
+<p>
     $({{ params.ndec }})_{10}$ =
-    <pl-string-input answers-name="g"  size = 10  show-help-text="false" remove-spaces="true" remove-leading-trailing="true"></pl-string-input>
+    <pl-string-input answers-name="g" remove-leading-trailing="true" remove-spaces="true" show-help-text="false" size="10"></pl-string-input>
     $\times 2^{{params.mv}}$
   </p>
-
 <pl-question-panel>
-  <p>
+<p>
     You should enter the significant $q$ in binary form. Your answer is graded as a string.
   </p>
 </pl-question-panel>
@@ -23,3 +20,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

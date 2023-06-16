@@ -1,15 +1,13 @@
 
 <pl-question-panel>
-  <p>
+<p>
     The error of a method is $E(h) = h^{{params.exp1}}+{{params.coeff2}}h^{{params.exp2}}$, for any
-    $0 < h < 1$. What is the exponent of the tightest asymptotic (big-O) bound on the error, i.e.,
+    $0 &lt; h &lt; 1$. What is the exponent of the tightest asymptotic (big-O) bound on the error, i.e.,
     what is $\alpha$ where the tightest asymptotic bound is $O(h^\alpha)$?
     Note: The answer is an integer.
 
   </p>
-
-
-  <p><pl-integer-input label="$\alpha = $" answers-name="alpha"></pl-integer-input></p>
+<p><pl-integer-input answers-name="alpha" label="$\alpha = $"></pl-integer-input></p>
 </pl-question-panel>
 
 {{#feedback.question_feedback}}
@@ -17,3 +15,10 @@
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

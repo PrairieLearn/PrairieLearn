@@ -1,6 +1,6 @@
 
 <pl-question-panel>
-    <p>
+<p>
         In the IEEE 754 floating point standard (for double precision), machine numbers are written in the following form:
 
         $$
@@ -10,7 +10,7 @@
 
         Where the $\cdot \cdot \cdot $ implies the intermediate digits are all zero.
     </p>
-    <p>
+<p>
         To convert to a (base ten) decimal representation, we use the following formula:
         $$
         (-1)^s  \times (1.f) \times 2^{c - 1023}
@@ -21,33 +21,35 @@
         with the powers of $2$ increasing to the left. $f$ is the fractional part
         of the significand.
     </p>
-
-    <p>
+<p>
         Find the decimal representation of the two following machine numbers.
     </p>
-
-    <p>
-        <strong>a) </strong>${{params.machine_number_1}}$
+<p>
+<strong>a) </strong>${{params.machine_number_1}}$
     </p>
 </pl-question-panel>
-
 <p>
-  <pl-number-input answers-name="decimal_1"  comparison="relabs" rtol="1e-5" atol="1e-6"></pl-number-input>
+<pl-number-input answers-name="decimal_1" atol="1e-6" comparison="relabs" rtol="1e-5"></pl-number-input>
 </p>
-
 <pl-question-panel>
-    <p><strong>b) </strong>${{params.machine_number_2}}$</p>
+<p><strong>b) </strong>${{params.machine_number_2}}$</p>
 </pl-question-panel>
 <p>
-  <pl-number-input answers-name="decimal_2" comparison="relabs" rtol="1e-5" atol="1e-6"></pl-number-input>
+<pl-number-input answers-name="decimal_2" atol="1e-6" comparison="relabs" rtol="1e-5"></pl-number-input>
 </p>
-
 <pl-question-panel>
 <p>For more info on IEEE double precision numbers, including their representation, please consult the <a href="https://courses.grainger.illinois.edu/cs357/fa2020/notes/ref-4-fp.html">reference page</a>.</p>
 </pl-question-panel>
 
 {{#feedback.question_feedback}}
 <pl-answer-panel>
-	<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

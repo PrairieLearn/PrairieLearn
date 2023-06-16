@@ -2,9 +2,6 @@
 Modification from the relate questions:
 PrairieLearn/pl-cs357/blob/hw3/relate-questions/quiz-like-questions/error/medium-rel-error-product.yml
 -->
-
-
-
 <pl-question-panel>
 <p>
     The current flowing through a wire($I$) is 1 ampere with a relative
@@ -15,12 +12,11 @@ PrairieLearn/pl-cs357/blob/hw3/relate-questions/quiz-like-questions/error/medium
     knowing the voltage is given by, $V=IR$?
 </p>
 </pl-question-panel>
-
 <pl-multiple-choice answers-name="t" weight="1">
-  <pl-answer correct="false"> {{params.wrong1}}% </pl-answer>
-  <pl-answer correct="false"> {{params.wrong2}}% </pl-answer>
-  <pl-answer correct="true">  {{params.correct}}%   </pl-answer>
-  <pl-answer correct="false"> {{params.wrong3}}% </pl-answer>
+<pl-answer correct="false"> {{params.wrong1}}% </pl-answer>
+<pl-answer correct="false"> {{params.wrong2}}% </pl-answer>
+<pl-answer correct="true">  {{params.correct}}%   </pl-answer>
+<pl-answer correct="false"> {{params.wrong3}}% </pl-answer>
 </pl-multiple-choice>
 
 {{#feedback.question_feedback}}
@@ -28,3 +24,10 @@ PrairieLearn/pl-cs357/blob/hw3/relate-questions/quiz-like-questions/error/medium
 <p class="mt-4"> {{{ feedback.question_feedback }}} </p>
 </pl-answer-panel>
 {{/feedback.question_feedback}}
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

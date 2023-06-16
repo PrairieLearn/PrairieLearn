@@ -1,20 +1,21 @@
 
 <pl-question-panel>
-  <p>
+<p>
     Given a numpy array <code>a</code> of shape ({{params.a}}, {{params.b}}, {{params.c}}).
   </p>
-  <p>The shape of </p>
-  
+<p>The shape of </p>
 <pl-code language="python" prevent-select="true">
 a[:{{params.d}}, {{params.e}}:, {{params.f}}:{{params.g}}] 
-</pl-code>  
-
+</pl-code>
 <p>is given by the tuple <code>(x,y,z)</code>. Enter the values for $x$, $y$ and $z$ below.</p>
-
 </pl-question-panel>
+<p><pl-integer-input answers-name="shape0" label="$x = $"></pl-integer-input></p>
+<p><pl-integer-input answers-name="shape1" label="$y = $"></pl-integer-input></p>
+<p><pl-integer-input answers-name="shape2" label="$z = $"></pl-integer-input></p>
 
-<p><pl-integer-input label="$x = $" answers-name="shape0"></pl-integer-input></p>
-
-<p><pl-integer-input label="$y = $" answers-name="shape1"></pl-integer-input></p>
-
-<p><pl-integer-input label="$z = $" answers-name="shape2"></pl-integer-input></p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,6 +1,6 @@
 <pl-question-panel>
-  <h2>Normalized Power Iteration, Normalized Inverse Power Iteration, and Normalized Shifted Inverse Iteration</h2>
-  <p>
+<h2>Normalized Power Iteration, Normalized Inverse Power Iteration, and Normalized Shifted Inverse Iteration</h2>
+<p>
     In this question, you are given <code>As</code>, a numpy array of shape $n \times 2 \times 2$,
     where each element <code>As[i]</code> is a $2 \times 2$ matrix. You need to use normalized
     power iteration and normalized inverse power iteration to figure
@@ -9,26 +9,26 @@
     We will then look at the factors which influence the convergence rate of
     power iteration.
   </p>
-  <p>In other words, for each $\mathbf{A}$ in <code>As</code>:</p>
-  <ol>
-    <li>
-      <p>Implement the normalized power iteration and run it on $\mathbf{A}$. Use the following vector
+<p>In other words, for each $\mathbf{A}$ in <code>As</code>:</p>
+<ol>
+<li>
+<p>Implement the normalized power iteration and run it on $\mathbf{A}$. Use the following vector
         as your initial guess $\mathbf{x}_0$:
         $$
         \begin{pmatrix} \dfrac{1}{\sqrt{2}}, \
         \dfrac{1}{\sqrt{2}}\end{pmatrix}
         $$
       </p>
-      <p>Let $\mathbf{x}_{k}$ be the vector obtained in the
+<p>Let $\mathbf{x}_{k}$ be the vector obtained in the
         $k$th round of normalized power iteration. Stop the iteration if $\mathbf{x}$ has
         stopped changing, i.e. if $\|\mathbf{x}_{k+1} - \mathbf{x}_k\|_2 &lt; 10^{-12}$. Also, use the 2-norm for normalization.</p>
-      <p>Use the final $\mathbf{x}$ and $\mathbf{A}$ to figure out the significant eigenvalue and
+<p>Use the final $\mathbf{x}$ and $\mathbf{A}$ to figure out the significant eigenvalue and
         its corresponding eigenvector of matrix $\mathbf{A}$. Save them separately as an entry in
         <code>eigenval1</code> and <code>eigenvec1</code>.
         In addition, for each of the eigenvalues, record the number of iterations you compute as an entry in <code>cnt</code>.</p>
-    </li>
-    <li>
-      <p>Next implement ($2$-norm normalized) inverse power iteration and run it on $\mathbf{A}$. Use the same
+</li>
+<li>
+<p>Next implement ($2$-norm normalized) inverse power iteration and run it on $\mathbf{A}$. Use the same
         initial guess and stopping condition as in part 1.
         You may not use the inverse of the matrix explictly, (i.e. not np.linalg.solve).
         Instead compute an LU-factorization and use it throughout your code.
@@ -39,9 +39,9 @@
         Find the smallest magnitude eigenvalue and its
         corresponding eigenvector. Save them separately as an entry in
         <code>eigenval2</code> and <code>eigenvec2</code>. (You do not need to record number of iterations in this part)</p>
-    </li>
-    <li>
-        <p>
+</li>
+<li>
+<p>
             Then implement ($2$-norm normalized) shifted inverse power iteration (with shift value $\sigma = 1$) and run it on $\mathbf{A}$. Use the same
             initial guess as in part 1, but run the method for 500 iterations.
             Just like part 2, you may not compute use the inverse of the matrix explicitly. Use the LU factorization just like in part 2.
@@ -49,23 +49,28 @@
             Save them separately as an entry in
             <code>shifted_eigval</code> and <code>shifted_eigvec</code>. (You do not need to record number of iterations in this part also)
         </p>
-    </li>
-    <li>
-      <p>After you complete the above steps for all the $n$ matrices in <code>As</code>. Save $\dfrac{|\lambda_2|}{|\lambda_1|}$ 
+</li>
+<li>
+<p>After you complete the above steps for all the $n$ matrices in <code>As</code>. Save $\dfrac{|\lambda_2|}{|\lambda_1|}$ 
         in a variable <code>ratios</code> and plot the graph of <code>ratios</code> vs. <code>cnt</code> ($\lambda_1$ is the most significant
         eigenvalue of the matrix, and the $\lambda_2$ is the smaller one).
         Is there a relationship between the speed of convergence and the ratio of the eigenvalues?
-    </li>
-  </ol>
-  <p> The setup code gives the following variables: </p>
-  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
-  <p> Your code snippet should define the following variables: </p>
-  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-  <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
-  </pl-file-editor>
+    </p></li>
+</ol>
+<p> The setup code gives the following variables: </p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+<p> Your code snippet should define the following variables: </p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor ace_mode="ace/mode/python" file_name="user_code.py" source-file-name="tests/initial_code.py">
+</pl-file-editor>
 </pl-question-panel>
-
 <pl-submission-panel>
-  <pl-external-grader-results></pl-external-grader-results>
-  <pl-file-preview></pl-file-preview>
+<pl-external-grader-results></pl-external-grader-results>
+<pl-file-preview></pl-file-preview>
 </pl-submission-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

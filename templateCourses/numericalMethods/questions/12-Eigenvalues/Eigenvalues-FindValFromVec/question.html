@@ -7,26 +7,28 @@ quiz-questions/eigen/easy-eigval-from-eigvec-v4.yml
 quiz-questions/eigen/easy-eigval-from-eigvec-v5.yml
 quiz-questions/eigen/easy-eigval-from-eigvec-v6.yml
 -->
-
-
 <pl-question-panel>
-  <p>
+<p>
     In class, we discussed the eigenvalues of triangular matrices. Suppose you are given the following $2 \times 2$ matrix:
   </p>
-  <p>
-  ${\bf A} = <pl-matrix-latex params_name="A" digits="1"></pl-matrix-latex>$
+<p>
+  ${\bf A} = <pl-matrix-latex digits="1" params_name="A"></pl-matrix-latex>$
   </p>
-  <p>
+<p>
   and one of the eigenvectors
   </p>
-  <p>
-  ${\bf v} = <pl-matrix-latex params_name="v" digits="0"></pl-matrix-latex>$
+<p>
+  ${\bf v} = <pl-matrix-latex digits="0" params_name="v"></pl-matrix-latex>$
   </p>
-  <p>What is the corresponding eigenvalue?
+<p>What is the corresponding eigenvalue?
 </p>
-
 </pl-question-panel>
-
 <p> For triangular matrices, the eigenvalues will always appear on the diagonal. In this case, you just need to figure which eigenvalue $v$ corresponds to. Given a vector $v$, find $\lambda$ such that $Av=\lambda v$ <p>
-
-<p><pl-number-input label = "eigenvalue = " answers-name='f' comparison = 'relabs' rtol = '1e-3' atol = '1e-4'/></p>
+<p><pl-number-input answers-name="f" atol="1e-4" comparison="relabs" label="eigenvalue = " rtol="1e-3"></pl-number-input></p>
+</p></p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,10 +1,10 @@
 <pl-question-panel>
-  <p>
+<p>
     Given the following ${{params.m}}$ data points
     $$\begin{array}{l|{{params.cm}}}
-    x & {{params.x}} \\
+    x &amp; {{params.x}} \\
     \hline
-    y & {{params.y}} \\
+    y &amp; {{params.y}} \\
     \end{array}$$
 
     If you'd like to use normal equation to solve for the coefficients of
@@ -13,19 +13,25 @@
 
   </p>
 </pl-question-panel>
-
 <pl-multiple-choice answers-name="student" fixed-order="false">
 choices:
     <pl-answer correct="{{params.correct1}}">
     There is a unique solution to $\mathbf{A}\mathbf{x}\cong\mathbf{b}$.
     </pl-answer>
-    <pl-answer correct="{{params.correct2}}">
+<pl-answer correct="{{params.correct2}}">
     The solution to $\mathbf{A}\mathbf{x}\cong\mathbf{b}$ is not unique.
     </pl-answer>
-    <pl-answer correct="false">
+<pl-answer correct="false">
     There is no solution to this least square problem.
     </pl-answer>
-    <pl-answer correct="false">
+<pl-answer correct="false">
     The number of solutions cannot be determined by the given information.
     </pl-answer>
 </pl-multiple-choice>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

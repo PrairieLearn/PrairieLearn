@@ -1,63 +1,53 @@
 <!--
 Not directly associated to any relate question
 -->
-
 <pl-question-panel>
 <p>
   A matrix ${\bf A}$ has the following full singular value decomposition </p>
-
-    <p>
-        ${\bf A} = <pl-matrix-latex params_name="U" digits="2"></pl-matrix-latex>$
-        $<pl-matrix-latex params_name="sigma" digits="0"></pl-matrix-latex>$
-        $<pl-matrix-latex params_name="Vt" digits="2"></pl-matrix-latex>$
+<p>
+        ${\bf A} = <pl-matrix-latex digits="2" params_name="U"></pl-matrix-latex>$
+        $<pl-matrix-latex digits="0" params_name="sigma"></pl-matrix-latex>$
+        $<pl-matrix-latex digits="2" params_name="Vt"></pl-matrix-latex>$
     </p>
-
-
-    <p>
+<p>
         If we compute the <strong> reduced </strong> SVD of $\bf{A}$,
         what are the shapes of the matrices
         ${\bf U}$, ${\bf \Sigma}$, and ${\bf V}$?
     </p>
-
-
 </pl-question-panel>
-
 <p> shape of ${\bf U} = $
-  <pl-number-input answers-name="u1" size="4" show-help-text="false" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
+  <pl-number-input answers-name="u1" comparison="sigfig" digits="2" show-correct-answer="false" show-help-text="false" show-placeholder="false" size="4"></pl-number-input>
   $\, \times$
-  <pl-number-input answers-name="u2" size="4" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
+  <pl-number-input answers-name="u2" comparison="sigfig" digits="2" show-correct-answer="false" show-placeholder="false" size="4"></pl-number-input>
 </p>
-
 <p> shape of ${\bf \Sigma} = $
-<pl-number-input answers-name="s1" size="4" show-help-text="false" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
+<pl-number-input answers-name="s1" comparison="sigfig" digits="2" show-correct-answer="false" show-help-text="false" show-placeholder="false" size="4"></pl-number-input>
 $\, \times$
-<pl-number-input answers-name="s2" size="4" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
+<pl-number-input answers-name="s2" comparison="sigfig" digits="2" show-correct-answer="false" show-placeholder="false" size="4"></pl-number-input>
 </p>
-
 <p> shape of ${\bf V} = $
-  <pl-number-input answers-name="v1" size="4" show-help-text="false" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
+  <pl-number-input answers-name="v1" comparison="sigfig" digits="2" show-correct-answer="false" show-help-text="false" show-placeholder="false" size="4"></pl-number-input>
   $\, \times$
-  <pl-number-input answers-name="v2" size="4" show-placeholder="false" comparison="sigfig" digits="2" show-correct-answer="false"></pl-number-input>
-
+  <pl-number-input answers-name="v2" comparison="sigfig" digits="2" show-correct-answer="false" show-placeholder="false" size="4"></pl-number-input>
 </p>
-
 <pl-question-panel>
-  <p>What is the $2$-norm of the matrix ${\bf A}$?</p>
+<p>What is the $2$-norm of the matrix ${\bf A}$?</p>
 </pl-question-panel>
-
 <p>
-<pl-number-input answers-name="norm2" label="$||{\bf A}||_2 = $" comparison="sigfig" digits="3"></pl-number-input>
+<pl-number-input answers-name="norm2" comparison="sigfig" digits="3" label="$||{\bf A}||_2 = $"></pl-number-input>
 </p>
-
 <pl-question-panel>
-  <p>What is the $2$-norm condition number of the matrix ${\bf A}$?</p>
+<p>What is the $2$-norm condition number of the matrix ${\bf A}$?</p>
 </pl-question-panel>
-
 <p>
-<pl-number-input answers-name="cond2" label="$\rm cond_2({\bf A}) = $" comparison="sigfig" digits="3"></pl-number-input>
+<pl-number-input answers-name="cond2" comparison="sigfig" digits="3" label="$\rm cond_2({\bf A}) = $"></pl-number-input>
 </p>
 <pl-answer-panel>
-	<p> Remember that the Euclidean norm of a matrix is given by the largest singular value. Then what is the norm of its (pseudo)inverse?</p>
-
-
+<p> Remember that the Euclidean norm of a matrix is given by the largest singular value. Then what is the norm of its (pseudo)inverse?</p>
 </pl-answer-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

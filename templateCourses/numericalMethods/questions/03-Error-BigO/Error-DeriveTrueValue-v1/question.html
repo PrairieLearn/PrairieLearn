@@ -2,9 +2,8 @@
 <pl-question-panel>
       {{{params.prompt}}}
 </pl-question-panel>
-
 <p><br/></p>
-<pl-number-input answers-name="ans" label="suggested value= " comparison="relabs" atol="1e-8" rtol="1e-3"></pl-number-input>
+<pl-number-input answers-name="ans" atol="1e-8" comparison="relabs" label="suggested value= " rtol="1e-3"></pl-number-input>
 
 {{#feedback.question_feedback}}
 <pl-answer-panel>
@@ -12,3 +11,10 @@
 </pl-answer-panel>
 {{/feedback.question_feedback}}
 
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
