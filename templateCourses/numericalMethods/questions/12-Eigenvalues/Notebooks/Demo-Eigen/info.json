@@ -1,0 +1,29 @@
+{
+  "uuid": "C0C8A43F-1B5C-4CBC-A8C0-D670017BCE1A",
+  "title": "Workspace: Eigenvalues",
+  "topic": "Eigenvalues",
+  "tags": [
+    "Sp21",
+    "mfsilva",
+    "workspace",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  },
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-collab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+      "12-eigen.ipynb"
+    ]
+  }
+}

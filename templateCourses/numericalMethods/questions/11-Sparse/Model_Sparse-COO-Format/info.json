@@ -1,0 +1,17 @@
+{
+  "uuid": "a5eba989-610e-46d0-8580-d26924781bc7",
+  "title": "Representing a Sparse Matrix in COO Format",
+  "topic": "Model-sparse",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "jjdoher2",
+    "nontest",
+    "calculate",
+    "medium",
+    "COO",
+    "storage",
+    "rand",
+    "shared"
+  ]
+}

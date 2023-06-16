@@ -1,0 +1,25 @@
+{
+  "uuid": "ec7394af-7a31-4447-ab36-e041f7adacf3",
+  "title": "Approximation of an Infinite Series",
+  "topic": "TaylorSeries",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "nontest",
+    "non-rand",
+    "approx-f",
+    "medium",
+    "good",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

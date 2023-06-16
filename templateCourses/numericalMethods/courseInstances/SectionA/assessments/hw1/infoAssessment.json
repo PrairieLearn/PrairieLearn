@@ -1,0 +1,228 @@
+{
+    "uuid": "13D012E4-9C66-4092-BA1A-1445919DB0C3",
+    "type": "Homework",
+    "title": "Question Bank",
+    "set": "questionBank",
+    "number": "1",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2040-12-31T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Python Intro",
+            "questions": [
+                {"id": "02-Python/Notebooks/Lesson1-Tutorial-Basic", "points": 0, "maxPoints": 0},
+                {"id": "02-Python/Notebooks/Lesson1-Tutorial-Numpy", "points": 0, "maxPoints": 0},
+                {"id": "02-Python/Notebooks/Lesson1-Tutorial-Plot", "points": 0, "maxPoints": 0},
+                {"id": "02-Python/Python-Properties", "points": 1, "maxPoints": 1},
+                {"id": "02-Python/Python-ReverseRangeLoop", "points": 1, "maxPoints": 1},
+                {"id": "02-Python/Python-IndexSlicing", "points": 1, "maxPoints": 3},
+                {"id": "02-Python/Python-ListSort-code-v1", "points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Errors",
+            "questions": [
+                {"id": "03-Error-BigO/Notebooks/Demo-Errors", "points": 0, "maxPoints": 0},
+                {"id": "03-Error-BigO/Simulation-vs-Exact", "points": 1, "maxPoints": 3},
+                {"id": "03-Error-BigO/Error-AbsoluteAndRelative-v1", "points": 1, "maxPoints": 3},
+                {"id": "03-Error-BigO/Error-DeriveTrueValue-v1", "points": 1, "maxPoints": 3},
+                {"id": "03-Error-BigO/BigO-DetermineBigO", "points": 1, "maxPoints": 3},
+                {"id": "03-Error-BigO/Error-MediumRelativeErrorProduct", "points": 1, "maxPoints": 3},
+               {"id": "03-Error-BigO/Error-RelativeErrorCoding_v1", "points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Floating Point",
+            "questions": [
+                {"id": "04-FloatingPoint/Notebooks/Demo-FP", "points": 0, "maxPoints": 0},
+                {"id": "04-FloatingPoint/FP-ExactRange","points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FP-Precision", "points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FloatingPointRepresentation","points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FloatingPoint-DecodeNumber","points": 3, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FP-BinaryToDecimal","points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FP-StoreBinaryNumber","points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FP-Underflow","points": 1, "maxPoints": 1},
+                {"id": "04-FloatingPoint/FloatingPointConcepts-MultiParts-with-subnormal","points": 1, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Rounding",
+            "questions": [
+                {"id": "04-FloatingPoint/Notebooks/Demo-Rounding", "points": 0, "maxPoints": 0},
+                {"id": "04-FloatingPoint/FP-RoundingErrorDecimalToBinary-v2","points": 1, "maxPoints": 3},
+                {"id": "04-FloatingPoint/FP-LoopTermination","points": 1, "maxPoints": 1},
+                {"id": "04-FloatingPoint/FP-ShowAddNonassociative", "points": 1,  "maxPoints": 1},
+                {"id": "04-FloatingPoint/FloatingPoint-Summation","points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Taylor Series",
+            "questions": [
+                {"id": "06-TaylorSeries/Notebooks/Demo-Taylor", "points": 0, "maxPoints": 0},
+                {"id": "06-TaylorSeries/Taylor-Approximation-v3","points": 1, "maxPoints": 1},
+                {"id": "06-TaylorSeries/TaylorSeriesApproximation-MultiParts-Hw","points": 1, "maxPoints": 3},
+                {"id": "06-TaylorSeries/Taylor-Approximation-Derivative-v1","points": 1, "maxPoints": 1},
+                {"id": "06-TaylorSeries/Taylor-Approximation-Derivative-v2","points": 1, "maxPoints": 1},
+                {"id": "06-TaylorSeries/Taylor-Sin-Approx","points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Monte Carlo Simulations",
+            "questions": [
+                {"id": "07-Random-MonteCarlo/Notebooks/Demo-MC", "points": 0, "maxPoints": 0},
+                {"id": "07-Random-MonteCarlo/MC-Estimation","points": 1, "maxPoints": 3},
+                {"id": "07-Random-MonteCarlo/MC-CalculatePI","points": 3, "maxPoints": 3},
+                {"id": "07-Random-MonteCarlo/MonteCarlo-calculate-volume", "points": 3, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Matrices and Norms",
+            "questions": [
+                {"id": "08-Vector-Matrices-Norms/Notebooks/Demo-Norms", "points": 0, "maxPoints": 0},
+                {"id": "08-Vector-Matrices-Norms/Norm-MatrixTwoNorm","points": 1, "maxPoints": 3},
+                {"id": "08-Vector-Matrices-Norms/Norm-InducedNorm-v1","points": 1, "maxPoints": 1},
+                {"id": "08-Vector-Matrices-Norms/Norm-MatrixNormImage", "points": 1, "maxPoints": 3},
+                {"id": "08-Vector-Matrices-Norms/Norm-VectorNormProperties", "points": 1, "maxPoints": 3},
+                {"id": "08-Vector-Matrices-Norms/Norm-PlotUnitBall", "points": 3, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Linear System of Equations",
+            "questions": [
+                {"id": "09-Linsys/Notebooks/Demo-Linsys", "points": 0, "maxPoints": 0},
+                {"id": "09-Linsys/LinearSystem-Computers","points": 1, "maxPoints": 1},
+                {"id": "09-Linsys/LinearSystem-SettingUpMatrix","points": 1, "maxPoints": 3},
+                {"id": "09-Linsys/Linsys-Choose-Partial-Pivot","points": 1, "maxPoints": 3},
+                {"id": "09-Linsys/LinearSystem-TimeComplexityLU-v2","points": 1, "maxPoints": 3},
+                {"id": "09-Linsys/Linsys-Setup-Solve","points": 3, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Conditioning",
+            "questions": [
+                {"id": "10-Linsys-Conditioning/Notebooks/Demo-Condition", "points": 0, "maxPoints": 0},
+                {"id": "10-Linsys-Conditioning/Cond-IdentifyPicture","points": 1, "maxPoints": 2},
+                {"id": "10-Linsys-Conditioning/Norm-ConditionNumberEst","points": 1, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Sparse Matrices",
+            "questions": [
+                {"id": "11-Sparse/Notebooks/Demo-Sparse", "points": 0, "maxPoints": 0},
+                {"id": "11-Sparse/Model_Mat-AveragingMatrix","points": 1, "maxPoints": 1},
+                {"id": "11-Sparse/Model_sparse-DensevsCSR","points": 1, "maxPoints": 2},
+                {"id": "11-Sparse/Model_Sparse-COO-Format","points": 1, "maxPoints": 2},
+                {"id": "11-Sparse/Model_sparse-CSR-v2","points": 1, "maxPoints": 2},
+                {"id": "11-Sparse/Model_Sparse-CSR-Format","points": 1, "maxPoints": 1},
+                {"id": "11-Sparse/Model_sparse-PlayerAttributesInCOO","points": 3, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Eigenvalues",
+            "questions": [
+                {"id": "12-Eigenvalues/Notebooks/Demo-Eigen", "points": 0, "maxPoints": 0},
+                {"id": "12-Eigenvalues/Eigenvalues-FindValFromVec", "points": 1, "maxPoints": 2},
+                {"id": "12-Eigenvalues/Eigenvalue-TransformEigen", "points": 1, "maxPoints": 2},
+                {"id": "12-Eigenvalues/Eigenvalue-TransformedEigvals", "points": 1, "maxPoints": 2},
+                {"id": "12-Eigenvalues/Eigenvalues-Complexities", "points": 1, "maxPoints": 1},
+                {"id": "12-Eigenvalues/Eigenvalues-ShiftedInverseIteration", "points": 1, "maxPoints": 2},
+                {"id": "12-Eigenvalues/Eigenvalues-CompareConvergenceAfterShift", "points": 1, "maxPoints": 2},
+              {"id": "12-Eigenvalues/Eigen-Power-Iteration", "points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Markov Chains",
+            "questions": [
+                {"id": "12-Eigenvalues/Notebooks/Demo-Markov", "points": 0, "maxPoints": 0},
+                {"id": "13-MarkovChains/Model_graph-ConstructTransitionMatrix", "points": 1, "maxPoints": 1},
+                {"id": "12-Eigenvalues/Eigen-Easy-Code-Markov-Drug-Metabolism","points": 3,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Finite Difference Methods",
+            "questions": [
+                {"id": "06-TaylorSeries/Notebooks/Demo-FD", "points": 0, "maxPoints": 0},
+                {"id": "06-TaylorSeries/Error-FiniteDiff","points": 1, "maxPoints": 2},
+                {"id": "06-TaylorSeries/FiniteDiff-Gradient","points": 1, "maxPoints": 2},
+                {"id": "06-TaylorSeries/FloatingPoint-FiniteDifference","points": 3, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Nonlinear problems",
+            "questions": [
+                {"id": "14-NonlinearSystems/Notebooks/Demo-Nonlinear", "points": 0, "maxPoints": 0},
+                {"id": "14-NonlinearSystems/Nonlinear1D-BisectionMethod-DetermineIntervalSize", "points": 1, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/Nonlinear1D-NewtonStepsToConvergence", "points": 1, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/Solve1d-OneStepAll", "points": 1, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/NonlinearSolveND-NewtonSolve", "points": 1, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/Nonlinear1D-ConvergenceNewton", "points": 1, "maxPoints": 1},
+                {"id": "14-NonlinearSystems/NonlinearSolve1D-NewtonvsSecant", "points": 1, "maxPoints": 1},
+                {"id": "14-NonlinearSystems/Solve1d-compareMethods", "points": 1, "maxPoints": 1},
+                {"id": "14-NonlinearSystems/NonlinearSolveND-FiniteDifferenceJacobian", "points": 1, "maxPoints": 1},
+                {"id": "14-NonlinearSystems/Solve1d-Bisection", "points": 2, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/Solve1d-Secant", "points": 2, "maxPoints": 2},
+                {"id": "14-NonlinearSystems/Solvend-Newton", "points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Optimization problems",
+            "questions": [
+                {"id": "15-Optimization/Notebooks/Demo-Optimization", "points": 0, "maxPoints": 0},
+                {"id": "15-Optimization/Optimization1D-NewtonStep", "points": 1, "maxPoints": 2},
+                {"id": "15-Optimization/Optimization1D-GoldenSectionConcept", "points": 1, "maxPoints": 1},
+                {"id": "15-Optimization/OptimizationND-Newton2dQuadratic", "points": 1, "maxPoints": 2},
+                {"id": "15-Optimization/OptimizationND-NewtonOneStep", "points": 1, "maxPoints": 2},
+                {"id": "15-Optimization/OptimizationND-NewtonOneStepPartsDynamic", "points": 1, "maxPoints": 2},
+                {"id": "15-Optimization/OptimizationND-NewtonOneStepParts", "points": 1, "maxPoints": 2},
+                {"id": "15-Optimization/Optimization1D-Golden", "points": 2, "maxPoints": 2},
+                {"id": "15-Optimization/OptimizationND-NewtonSteepest", "points": 2, "maxPoints": 2},
+                {"id": "15-Optimization/Optimization1D-NewtonV2", "points": 2, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Linear Least Squares",
+            "questions": [
+                {"id": "Demos-Workspaces/Demo-LeastSquares", "points": 0, "maxPoints": 0},
+                {"id": "17-LinearLeastSquares/LeastSquares-PossibleResidualVector", "points": 1, "maxPoints": 2},
+                {"id": "17-LinearLeastSquares/LeastSquares-NumberOfSolutions", "points": 1, "maxPoints": 2},
+                {"id": "17-LinearLeastSquares/LeastSquares-MaximumPolynomialFit", "points":1, "maxPoints":2},
+                {"id": "17-LinearLeastSquares/LeastSquares-Line-Fit", "points": 2, "maxPoints":2},
+                {"id": "17-LinearLeastSquares/LeastSquares-Quadratic-Fit","points": 2, "maxPoints":2},
+                {"id": "17-LinearLeastSquares/LeastSquares-FindFunctionValue", "points": 2, "maxPoints":2},
+                {"id": "17-LinearLeastSquares/LeastSquares-PseudoInverse", "points": 1, "maxPoints": 1},
+                {"id": "16-SVD/SVD-MinNormLeastSquares-v2", "points": 1, "maxPoints": 2},
+                {"id": "17-LinearLeastSquares/LeastSquares-FromSVD", "points": 1, "maxPoints": 2},
+                {"id": "17-LinearLeastSquares/LeastSquares-Residual", "points": 1, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Singular Value Decomposition",
+            "questions": [
+                {"id": "Demos-Workspaces/Demo-SVD", "points": 0, "maxPoints": 0},
+                {"id": "16-SVD/SVD-Facts", "points": 1, "maxPoints":2},
+                {"id": "16-SVD/SVD-FullSVDSize", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-TimeComplexity", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-ObtainSVD-Guided", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-FindUMatrix", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-FindEigsATA-GivenSingular", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-FindSingularValues-GivenEigs-v2-2", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-MultiParts", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-APP-RelativeError", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-APP-LowRank-v2", "points": 1, "maxPoints": 1},
+                {"id": "16-SVD/SVD-RankN-Approximation", "points": 1, "maxPoints": 2},
+                {"id": "16-SVD/SVD-FindPseudoInverse-v2", "points": 1, "maxPoints":1},
+                {"id": "16-SVD/SVD-FindLowRankApprox", "points": 1, "maxPoints": 1}
+            ]
+        }
+    ],
+    "text": "<p>This assignment includes all the questions available in the template course Numerical Methods. 'Worspaces' contain examples from each topic, they are not graded activities. You can use these questions to create separate assessments in your course.</p>"
+}
+
+
+

@@ -1,0 +1,25 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/python/3-medium-indexing-slicing.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Given a numpy array <code>a</code> of shape ({{params.a}}, {{params.b}}, {{params.c}}).
+  </p>
+  <p>The shape of </p>
+  
+<pl-code language="python" prevent-select="true">
+a[:{{params.d}}, {{params.e}}:, {{params.f}}:{{params.g}}] 
+</pl-code>  
+
+<p>is given by the tuple <code>(x,y,z)</code>. Enter the values for $x$, $y$ and $z$ below.</p>
+
+</pl-question-panel>
+
+<p><pl-integer-input label="$x = $" answers-name="shape0"></pl-integer-input></p>
+
+<p><pl-integer-input label="$y = $" answers-name="shape1"></pl-integer-input></p>
+
+<p><pl-integer-input label="$z = $" answers-name="shape2"></pl-integer-input></p>

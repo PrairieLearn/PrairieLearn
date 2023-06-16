@@ -1,0 +1,31 @@
+<pl-question-panel>
+
+  <p>
+	A $3 \times 3$ matrix $\mathbf A$ has eigenvalues $\lambda_1 = {{params.lm_1}},\  \lambda_2 = {{params.lm_2}},\ \text{and } \lambda_3 = {{params.lm_3}}$.  An eigenvector corresponding to $\lambda_3$ is given by $\mathbf u = [{{params.u1}}, {{params.u2}}, {{params.u3}}]^T$.  (Notice that $\|\mathbf u\|_{\infty} = 1$.)  Suppose we perform inverse iteration, and normalize with respect to the infinity norm, $\|\cdot\|_{\infty}$.  The initial guess $\mathbf{x}_0 = [{{params.x1}}, {{params.x2}}, {{params.x3}}]^T$ is used.
+  </p>
+
+
+  <p>  
+    a. What is the approximate error $\|\mathbf{x}_{{params.iters}} - \mathbf{u}\|_{\infty}$ after performing {{params.iters}} iterations of normalized inverse iteration?
+  </p>
+</pl-question-panel>
+
+  <p>
+    <pl-number-input answers-name="sol_1" comparison="relabs" rtol="1e-3", atol="1e-8"></pl-number-input>
+  </p>
+
+<pl-question-panel>
+
+  <p>
+    b. Suppose we start with the same initial guess but use shifted inverse iteration with shift $\sigma = {{params.shift}}$.  What is the approximate error $\|\mathbf{x}_{{params.iters}} - \mathbf{u}\|_{\infty}$ after {{params.iters}} iterations?
+  </p>
+</pl-question-panel>
+  
+<p>
+  <pl-number-input answers-name="sol_2" comparison="relabs" rtol="1e-3", atol="1e-8"></pl-number-input>
+</p>
+
+<pl-answer-panel>
+<p> To solve this question you need to understand convergence rates of shifted inverse iteration. This      rate does not just depend on the smallest eigenvalue of $A-\sigma I$, but rather the ratio of the two smallest eigenvalues. See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues     section</a>   of the course notes.</p>
+</pl-answer-panel>
+

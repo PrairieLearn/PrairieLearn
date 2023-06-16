@@ -1,0 +1,60 @@
+<pl-question-panel>
+  <p>
+    Recall that a function $f(x)$ can be expressed 
+    as a Taylor Series <em>centered</em> at a number $x_0$:
+
+    $$
+    f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n
+    $$
+  </p>
+  <p>
+    which can be truncated at any integer $N$ to approximate $f(x)$ 
+    with varying levels of accuracy. 
+    Usually, the closer $x$ is to $x_0$, the better the truncated series 
+    approximates $f(x)$.
+  </p>
+
+  <p>
+    Below is a plot of $\sin(x)$, $f(x) = x$, and
+    the $n=3$ Taylor series expansion of $\sin(x)$.
+  </p>
+
+  <div style="text-align:center">
+    <pl-figure file-name="taylor_series_approx.svg" directory="clientFilesQuestion"></pl-figure>
+  </div>
+
+  <p>
+    Often $f(x) = x$ is used to approximate $\sin(x)$.
+    You can verify that this is the first nonzero term of the Taylor series of
+    $\sin(x)$ about $x_0 = 0$.
+    This estimate is valid only in a small neighborhood near $x=0$. We want to
+    examine its behavior at points progressively further 
+    from the center of the Taylor series for a particular value of $\hat{x} = 0.7$:
+  </p>
+    <ul>
+    <li>Calculate the $n = 1$ and $n = 3$ Taylor series expansions of $\sin(x)$
+    about $x_0 = 0$ evaluated at $\hat{x}$.</li>
+    <li>Calculate the $n = 3$ Taylor series expansion of $\sin(x)$ about
+    $x_0 = \frac{\pi}{4}$ evaluated at $\hat{x}$.</li>
+    <li>Calculate the true value of $\sin(\hat{x})$. Use this value
+    to calculate the relative errors of the approximations. Save the results
+    in <code>err_0_1</code>, <code>err_0_3</code>, and <code>err_pi4_3</code>.</li>
+    </ul>
+  <p>
+    Remember that the formula for relative error is
+    $\left|\frac{y_{approx} - y_{true}}{y_{true}}\right|$.
+  </p>
+
+  <p> Your code snippet should define the following variables: </p>
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+  <pl-file-editor
+      file_name="user_code.py"
+      ace_mode="ace/mode/python">
+  </pl-file-editor>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

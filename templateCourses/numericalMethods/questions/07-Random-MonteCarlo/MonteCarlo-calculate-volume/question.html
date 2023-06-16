@@ -1,0 +1,58 @@
+<pl-question-panel>
+
+    <h2>Calculating a Volume of Intersection</h2>
+
+    <p>
+        One of the most important applications of Monte Carlo methods is in estimating volumes and areas, also known as integrating, that are difficult to compute analytically.
+    </p>
+
+    <p> In this exercise, we will use Monte Carlo integration to compute a volume of intersection between two cylinders. This integral is possible to compute analytically, so we can compare our answer to the true result and see how accurate it is.
+    </p>
+
+    <p>
+        The shape formed by the intersection of two cylinders at a right angle is called the <i>Steinmetz</i> solid (right). Your task is to determine an approximation for the volume of this solid.
+    </p>
+
+    <pl-figure file-name="steinmetz.jpg"></pl-figure>
+
+
+    <h3>Part 1</h3>
+    <p>Write the function <code>insideCylinders</code> that given a NumPy array representing some arbitrary point in $3D$ space returns <i>true</i> if the point is inside both cylinders. Assume the solid is centered at the origin, the cylinders are along the $x$ and $z$ axes and both have radius $r$.</p>
+
+    <h3>Part 2</h3>
+    <p>Write the function <code>prob_inside_volume</code> that takes a number of random samples $N$ and the radius $r$ and approximates the probability that the numbers are inside the given volume.</p>
+    <p>You should generate points such that the $x$, $y$, and $z$ coordinates all range from $-r$ to $r$, or more formally such that the points fit in a cube centered at the origin with side length $2r$. </p>
+
+    <h3>Part 3</h3>
+
+    <p> Estimate the volume of intersection for $N=1000$ and $r=1$. Store your approximation in the variable <code>volume_approx</code>. </p>
+
+    <p>
+        For reference, the volume of the above solid is given by
+        $$V = \int_{-r}^{r}\left(2 \sqrt{r^2 - z^2}\right)^2 dz = \frac{16}{3}r^3$$
+        You can use this to double check your answer.
+    </p>
+
+    <hr>
+
+    <!--
+    <p>You are given the following variables:</p>
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+    -->
+
+    <p>Your code snippet should define the following variables:</p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+
+    <pl-file-editor
+        file-name="user_code.py"
+        ace-mode="ace/mode/python"
+        source-file-name="tests/initial_code.py">
+    </pl-file-editor>
+
+</pl-question-panel>
+
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

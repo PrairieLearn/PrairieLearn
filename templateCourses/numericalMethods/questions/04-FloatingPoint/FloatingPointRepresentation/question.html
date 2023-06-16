@@ -1,0 +1,25 @@
+
+
+<pl-question-panel>
+  <p>
+    Represent the decimal number as a floating point number.
+  </p>
+</pl-question-panel>
+
+  <p>
+    $({{ params.ndec }})_{10}$ =
+    <pl-string-input answers-name="g"  size = 10  show-help-text="false" remove-spaces="true" remove-leading-trailing="true"></pl-string-input>
+    $\times 2^{{params.mv}}$
+  </p>
+
+<pl-question-panel>
+  <p>
+    You should enter the significant $q$ in binary form. Your answer is graded as a string.
+  </p>
+</pl-question-panel>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

@@ -1,0 +1,22 @@
+{
+  "uuid": "d7fe4bae-bde0-45e4-bb23-050f7e9e2413",
+  "title": "Bisection",
+  "topic": "NonlinearSolve1D",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "easy",
+    "test",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

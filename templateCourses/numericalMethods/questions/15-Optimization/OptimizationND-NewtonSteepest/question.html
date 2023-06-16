@@ -1,0 +1,44 @@
+<pl-question-panel>
+<h1>Newton&rsquo;s Method vs. Steepest Descent</h1>
+<p>In the last MC question, you calculated the first iteration of Newton&rsquo;s Method and
+Steepest Descent for the following function:</p>
+<p>$$f(x, y) = 3 + \frac{x^2}{8} + \frac{y^2}{8} - \sin\left(x\right)\cos\left(\frac{\sqrt{2}}{2}y\right)$$</p>
+<p>In this question, you need to implement both of these methods to find the minimum of
+this function. You should start each method with the initial guess <code>r_init</code>, and stop
+when the 2-norm of the gradient of the current iteration is
+less than <code>stop</code>. Save the estimate of the minimum from Newton&rsquo;s Method as <code>r_newton</code> and
+the number of iterations to obtain this minimum as <code>iteration_count_newton</code>. Save the estimate
+of the minimum from Steepest Descent as <code>r_sd</code> and the number of iterations to obtain this
+minimum as <code>iteration_count_sd</code>.</p>
+<p><strong>Hint</strong>: You may find <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize_scalar.html" target="_blank"><code>scipy.optimize.minimize_scalar()</code></a>
+useful to find $\alpha$ in steepest descent.</p>
+<p>Finally, make one figure and add two lines using <code>plt.plot()</code> that represent the error of each
+iteration. In the figure, the x-axis represents the number of iterations, and the y-axis is
+the log value of 2-norm of error between the $r$ in each iteration and the calculated solution. 
+We include a template for the plot function, but you still need to complete it.
+The error plot should include the error for the initial value and <strong>NOT</strong> include the last iteration (can you guess why we do that?), 
+so Newton's method plot should contain <code>iteration_count_newton</code> data points, and Steepest Descent plot should contain <code>iteration_count_sd</code> data points. </p>
+<h3>Questions to Consider</h3>
+<p>How might you test that your solution is a minimum of the function?
+What will the convergence rates of each of these methods be?
+Given the convergence rate, what do you expect the plots to show?</p>
+    <p> The setup code gives the following variables: </p>
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+
+    <p> Your code snippet should define the following variables: </p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-file-editor
+        file_name="user_code.py"
+        source-file-name="tests/initial_code.py"
+        ace_mode="ace/mode/python">
+    </pl-file-editor>
+
+
+    </pl-question-panel>
+
+    <pl-submission-panel>
+
+    <!-- <pl_file_preview /> -->
+    <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+    </pl-submission-panel>

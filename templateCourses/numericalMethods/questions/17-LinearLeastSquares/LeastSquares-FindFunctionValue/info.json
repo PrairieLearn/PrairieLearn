@@ -1,0 +1,23 @@
+{
+  "uuid": "A8F961C2-823C-4110-BABF-0A2B677C516E",
+  "title": "Find Function Value",
+  "topic": "LinearLeastSquares",
+  "tags": [
+    "Fa18",
+    "mfsilva",
+    "short-coding",
+    "rand",
+    "test",
+    "curve-fitting",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  }
+}

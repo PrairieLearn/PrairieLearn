@@ -1,0 +1,25 @@
+{
+  "uuid": "6C634EC9-F1A7-4683-9E64-6B04DFD755B6",
+  "title": "Storing Player Attributes in a COO Matrix",
+  "topic": "Model-sparse",
+  "tags": [
+    "Fa19",
+    "xiaoyan5",
+    "short-coding",
+    "rand",
+    "test",
+    "application",
+    "COO",
+    "sync",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  }
+}

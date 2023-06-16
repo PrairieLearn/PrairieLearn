@@ -1,0 +1,29 @@
+<pl-question-panel>
+    <p>
+        The Parks and Rec department has an opening for a <i>Solver of Linear Equations</i>.
+        Since Leslie is great at solving systems of linear equations she zealously offers to give all candidates a quick demonstration.</p>
+
+    <p>
+        She finds the LU factorization of a ${{params.n0}} \times {{params.n0}}$ matrix ${\bf M}$ in {{params.t0}} seconds.
+        She then takes another {{params.t1}} seconds to apply both triangular substitutions (backward and forward)
+         to solve the system of equations ${\bf M x} = {\bf y}$ for a given vector ${\bf y}$.
+    </p>
+    <p>
+      The candidates are supposed to estimate (without actually running any code)
+      the time it takes to factorize
+      and efficiently solve a similar system of linear equations
+      ${\bf A x} = {\bf b}$, where ${\bf A}$ is a square matrix with dimension ${{params.n1}}$, given
+      ${{params.b}}$ different right-hand side ${\bf b}$ vectors.
+      Provide your time estimate $t$ in the answer box below.
+
+        <!-- As Leslie's assistant, you don't think the department needs
+        to hire a new person since you know how to solve similar system of linear equations
+        $Ax = b$, where $A$ is a square matrix and $b$ has ${{params.n1}}$ rows.
+        Based on Leslie's demonstration, how much time $t$ it takes to factorize
+        and efficiently solve for ${{params.b}}$ different $b$ vectors? -->
+    </p>
+
+
+</pl-question-panel>
+
+    <pl-number-input answers-name="t2" label="$ t = $" suffix = "seconds" comparison="sigfig" digits="4"></pl-number-input>

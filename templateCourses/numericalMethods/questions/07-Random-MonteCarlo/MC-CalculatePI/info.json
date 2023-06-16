@@ -1,0 +1,23 @@
+{
+  "uuid": "3fba86d1-03be-44e0-8530-9de599bf0dea",
+  "title": "Calculating pi using Monte Carlo",
+  "topic": "MonteCarlo",
+  "tags": [
+    "Fa18",
+    "mfsilva",
+    "short-coding",
+    "medium",
+    "test",
+    "area-volume",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

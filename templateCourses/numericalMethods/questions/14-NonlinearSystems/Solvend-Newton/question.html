@@ -1,0 +1,27 @@
+<pl-question-panel>
+    <h1>Newton&rsquo;s Method for Root-Finding in 2-d</h1>
+    <p>
+        Consider the function
+        $$\mathbf{f}(x,y) = \begin{pmatrix} x^3 - y^2 \\
+        x + x^2y - 2\end{pmatrix}$$
+    </p>
+    <p>
+        We wish to find a root $(x^*,y^*)$ such that
+        $\mathbf{f}(x^*,y^*) = \mathbf{0}$.
+    </p>
+    <p>
+        Implement Newton's Method to find this root.
+        For termination criteria, stop when $\| \mathbf{f}(x,y)
+        \|_2 &lt; \text{tol}$.
+    </p>
+    <p> The setup code gives the following variables: </p>
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+    <p> Your code snippet should define the following variables: </p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
+    </pl-file-editor>
+</pl-question-panel>
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

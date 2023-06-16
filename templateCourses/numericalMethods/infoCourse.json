@@ -1,0 +1,49 @@
+{
+    "uuid": "28d7be8c-4e01-41e0-bd6b-6827ef18aef9",
+    "name": "OER 103",
+    "title": "Numerical Methods",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+    "assessmentSets": [  
+      {"abbreviation": "QB", "name": "questionBank", "heading": "Question Bank", "color": "pink1"}
+    ],
+    "assessmentModules": [
+    ],
+    "topics": [
+      {"name" : "GeneralQuestions", "color": "brown1"},
+      {"name" : "Intro", "color": "brown1"},
+      {"name" : "LinearAlgebra", "color": "brown2"},
+      {"name" : "Python", "color": "brown3"},
+      {"name" : "Convergence", "color": "red3"},
+      {"name" : "Errors", "color": "red1"},
+      {"name" : "BigO", "color": "red2"},
+      {"name" : "MonteCarlo", "color": "yellow1"},
+      {"name" : "RandomNumbers", "color": "yellow2"},
+      {"name" : "TaylorSeries", "color": "red1"},
+      {"name" : "FloatingPoint", "color": "red2"},
+      {"name" : "Model-matrices", "color": "gray1"},
+      {"name" : "Model-vectors", "color": "gray1"},
+      {"name" : "Norms", "color": "gray1"},
+      {"name" : "Conditioning", "color": "gray1"},
+      {"name" : "LinearSystemEquations", "color": "brown1"},
+      {"name" : "LU-app", "color": "brown1"},
+      {"name" : "Eigenvalues", "color": "green1"},
+      {"name" : "Eigenvalues-app", "color": "green1"},
+      {"name" : "SVD", "color": "green2"},
+      {"name" : "SVD-app", "color": "green2"},
+      {"name" : "Model-sparse", "color": "green3"},
+      {"name" : "Model-graphs", "color": "green3"},
+      {"name" : "LinearLeastSquares", "color": "green1"},
+      {"name" : "Interpolation", "color": "green2"},
+      {"name" : "NonlinearSolve1D", "color": "brown1"},
+      {"name" : "NonlinearSolveND", "color": "brown2"},
+      {"name" : "Optimization1D", "color": "blue2"},
+      {"name" : "OptimizationND", "color": "blue2"},
+      {"name" : "NonlinearLeastSquares", "color": "blue3"}
+
+		],
+    "tags": [
+        {"name": "short-coding", "color": "red1"}
+    ]
+}

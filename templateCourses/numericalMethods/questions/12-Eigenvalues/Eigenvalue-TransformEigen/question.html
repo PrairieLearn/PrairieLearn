@@ -1,0 +1,32 @@
+<!--
+Relate question:
+cs357-sp18-dev/relate-quiz-like-questions/easy-transform-eigen.yml
+cs357-sp18-dev/relate-quiz-like-questions/easy-transform-eigen-v2.yml
+cs357-sp18-dev/relate-quiz-like-questions/easy-transform-eigen-v3.yml
+cs357-sp18-dev/relate-quiz-like-questions/easy-transform-eigen-v4.yml
+cs357-sp18-dev/relate-quiz-like-questions/easy-transform-eigen-v5.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Let ${\bf A}$ be an $n\times n$ matrix with full rank
+    and one of the eigenvalues of $({\bf I}-{{params.coe}}{\bf A})$ is ${{params.e1}}$.
+  </p>
+
+  <p>
+    Given ${\bf A}^{-1}$ exists, name one of its eigenvalues of ${\bf A}^{-1}$.
+  </p>
+
+  <p>
+    <i>Note:</i> ${\bf I}$ is the $n\times n$ identity matrix.
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="eigenvalue" comparison="relabs" rtol="1e-2"></pl-number-input>
+
+<pl-answer-panel>
+   <p> To solve this question you need to understand how to find the eigenvalues of a shifted matrix and eigenvalues of an inverse matrix. See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a> of the course notes.</p>
+</pl-answer-panel>
+
+

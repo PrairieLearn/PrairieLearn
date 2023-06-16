@@ -1,0 +1,124 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      3891,        114]
+NotebookOptionsPosition[      3340,         93]
+NotebookOutlinePosition[      3696,        109]
+CellTagsIndexPosition[      3653,        106]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"A", "=", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"2", ",", "1", ",", "3"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"0", ",", "2.5", ",", "3"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"1.5", ",", "0", ",", "2"}], "}"}]}], "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"MatrixForm", "[", 
+  RowBox[{"Transpose", "[", "A", "]"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"b", "=", 
+   RowBox[{"{", 
+    RowBox[{"27.5", ",", "22", ",", "57"}], "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"LinearSolve", "[", 
+  RowBox[{
+   RowBox[{"Transpose", "[", "A", "]"}], ",", "b"}], "]"}]}], "Input",
+ CellChangeTimes->{{3.733262480240856*^9, 3.733262554271942*^9}, {
+  3.733262706131464*^9, 3.733262735735257*^9}, {3.733262796260395*^9, 
+  3.7332628252107077`*^9}, {3.73326291282716*^9, 3.733262926743444*^9}, {
+  3.733262979647175*^9, 3.733262979864141*^9}, {3.733263270247025*^9, 
+  3.733263309407805*^9}, {3.7332639334281683`*^9, 3.733263971530254*^9}, {
+  3.7332640367327623`*^9, 3.73326406353918*^9}, {3.733264171435884*^9, 
+  3.733264265578038*^9}},ExpressionUUID->"5519dd01-a8b4-42d8-b6eb-\
+43137de84045"],
+
+Cell[BoxData[
+ TagBox[
+  RowBox[{"(", "\[NoBreak]", GridBox[{
+     {"2", "0", "1.5`"},
+     {"1", "2.5`", "0"},
+     {"3", "3", "2"}
+    },
+    GridBoxAlignment->{
+     "Columns" -> {{Center}}, "ColumnsIndexed" -> {}, "Rows" -> {{Baseline}}, 
+      "RowsIndexed" -> {}},
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.7]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.4]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}], "\[NoBreak]", ")"}],
+  Function[BoxForm`e$, 
+   MatrixForm[BoxForm`e$]]]], "Output",
+ CellChangeTimes->{{3.7332625287789392`*^9, 3.733262554845058*^9}, 
+   3.7332627360010853`*^9, {3.73326280108104*^9, 3.733262825579541*^9}, 
+   3.7332629272867527`*^9, 3.733262980359231*^9, 3.7332633098390913`*^9, 
+   3.733263971816401*^9, 3.733264064065453*^9, {3.733264196904388*^9, 
+   3.7332642173213873`*^9}, 
+   3.733264265954076*^9},ExpressionUUID->"cd8b956b-37a9-4db3-92d6-\
+8e1f2700068e"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"7.000000000000001`", ",", "5.999999999999999`", ",", "9.`"}], 
+  "}"}]], "Output",
+ CellChangeTimes->{{3.7332625287789392`*^9, 3.733262554845058*^9}, 
+   3.7332627360010853`*^9, {3.73326280108104*^9, 3.733262825579541*^9}, 
+   3.7332629272867527`*^9, 3.733262980359231*^9, 3.7332633098390913`*^9, 
+   3.733263971816401*^9, 3.733264064065453*^9, {3.733264196904388*^9, 
+   3.7332642173213873`*^9}, 
+   3.733264265978444*^9},ExpressionUUID->"855807b0-434b-460b-a66d-\
+4a7272a80340"]
+}, Open  ]]
+},
+WindowSize->{808, 705},
+WindowMargins->{{Automatic, -212}, {5, Automatic}},
+FrontEndVersion->"11.1 for Mac OS X x86 (32-bit, 64-bit Kernel) (April 18, \
+2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 1197, 29, 96, "Input", "ExpressionUUID" -> \
+"5519dd01-a8b4-42d8-b6eb-43137de84045"],
+Cell[1780, 53, 1021, 25, 74, "Output", "ExpressionUUID" -> \
+"cd8b956b-37a9-4db3-92d6-8e1f2700068e"],
+Cell[2804, 80, 520, 10, 66, "Output", "ExpressionUUID" -> \
+"855807b0-434b-460b-a66d-4a7272a80340"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+

@@ -1,0 +1,69 @@
+<style>
+table.cs357 {
+  border-collapse: collapse;
+}
+table.cs357 td,
+table.cs357 th {
+  border: 1px solid black;
+  padding: 4px;
+  text-align: center;
+}
+</style>
+<pl-question-panel>
+  <h1>Fitting with a Quadratic</h1>
+  <p>
+    When working on the previous problem, you probably realized that a linear line of best fit is a rather poor approximation for the data.
+    You are given a table with the exact same data as the previous question.
+    This time, you will use linear least squares to find the <em>quadratic</em> function of best fit through the data.
+    (Note that there is no data from 2007.)
+  </p>
+  <p>The data in the table is provided as two numpy arrays <code>year</code> and <code>percent</code> for your convenience.</p>
+  <table class="cs357">
+    <tr>
+      <th>Year</th>
+      <td>2005</td>
+      <td>2006</td>
+      <td>2008</td>
+      <td>2009</td>
+      <td>2010</td>
+      <td>2011</td>
+      <td>2012</td>
+      <td>2013</td>
+      <td>2014</td>
+      <td>2015</td>
+    </tr>
+    <tr>
+      <th>Percent</th>
+      <td align="right">12</td>
+      <td align="right">41</td>
+      <td align="right">63</td>
+      <td align="right">72</td>
+      <td align="right">78</td>
+      <td align="right">80</td>
+      <td align="right">83</td>
+      <td align="right">88</td>
+      <td align="right">84</td>
+      <td align="right">90</td>
+    </tr>
+  </table>
+  <br>
+  <p><strong>Hint:</strong> Numpy has a <a href="https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.linalg.lstsq.html"><code>np.linalg.lstsq</code></a> function for solving for the coefficients of the least squares problem.</p>
+  <p>
+    Store the coefficients as <code>c0</code>, <code>c1</code>, and <code>c2</code> such that your quadratic could be written as $y = c_0 + c_1x + c_2x^2$.
+    Then, plot the data points and your quadratic of best fit on the same figure.
+    The data should be plotted using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.scatter.html"><code>plt.scatter</code></a>
+    while the quadratic of best fit should be plotted using <a href="https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html"><code>plt.plot</code></a>.
+    Use the same $x$-values when plotting the data and line of best fit.
+    Be sure to include an appropriate title and labels on your plot.
+  </p>
+  <p>The setup code gives the following variables:</p>
+  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+  <p> Your code snippet should define the following variables: </p>
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+  <pl-file-editor file_name="user_code.py" source-file-name="tests/initial_code.py" ace_mode="ace/mode/python">
+  </pl-file-editor>
+</pl-question-panel>
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

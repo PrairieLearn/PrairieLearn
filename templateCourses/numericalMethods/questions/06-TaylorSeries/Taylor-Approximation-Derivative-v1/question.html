@@ -1,0 +1,17 @@
+<pl-question-panel>
+  <p>
+    Consider the Taylor expansion for ${{params.function}}$ 
+  </p>
+  
+  <p>
+    Approximate the <strong>first derivative</strong> of $f(x)$ at $x={{params.x}}$
+    by computing the derivative of the degree-{{params.degree}} Taylor expansion about $x_0 = 0$.
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="f" comparison="relabs" rtol="1e-3" atol="1e-6"></pl-number-input>
+
+<pl-answer-panel>
+	<p> The answer corresponds to the first derivative of the degree-{{params.degree}} Taylor polynomial: $t'_{{params.degree}}({{params.x}})$.  </p>
+
+</pl-answer-panel>

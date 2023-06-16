@@ -1,0 +1,22 @@
+{
+  "uuid": "9f65128a-91cf-4fad-a753-9b3b08c73344",
+  "title": "Norm Ball",
+  "topic": "Norms",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "nontest",
+    "nonrand",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

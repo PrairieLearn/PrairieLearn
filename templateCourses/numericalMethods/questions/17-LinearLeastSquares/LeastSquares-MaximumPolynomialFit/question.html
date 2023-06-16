@@ -1,0 +1,22 @@
+<pl-question-panel>
+  <p>
+    Suppose you want to use the normal equation to solve for the coefficients of a least square problem. The equation you
+    want to fit is a degree $k$ polynomial of the following format:
+  </p>
+  <p>
+    $$y = c_1 x + c_2 x^2 + c_3 x^3 + ... + c_k x^k$$
+  </p>
+  <p>If the dataset you try to fit consists of the following ${{params.m}}$ data points:
+    $$\begin{array}{l|{{params.cm}}}
+    x & {{params.x}} \\
+    \hline
+    y & {{params.y}} \\
+    \end{array}$$
+
+    What is the maximum degree $k$ of the polynomial such that the least square problem still
+    has a unique solution?
+
+  </p>
+</pl-question-panel>
+
+<p><pl-integer-input label="maximum degree k =" answers-name="rank"></pl-integer-input></p>

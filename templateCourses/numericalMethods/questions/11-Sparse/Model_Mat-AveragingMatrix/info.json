@@ -1,0 +1,19 @@
+{
+  "uuid": "90c31000-bc5e-11e8-a355-529269fb1459",
+  "title": "Averaging Neighboring Values",
+  "topic": "Model-sparse",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "azhang38",
+    "jinlinx2",
+    "nontest",
+    "calculate",
+    "medium",
+    "rand",
+    "apply-transformation",
+    "storage",
+    "COO",
+    "shared"
+  ]
+}

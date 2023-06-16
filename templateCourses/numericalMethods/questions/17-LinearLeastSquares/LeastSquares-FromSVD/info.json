@@ -1,0 +1,17 @@
+{
+  "uuid": "96bf0baf-553c-4b70-ba13-eb05f81c1324",
+  "title": "Calculate Least Squares Solution using SVD",
+  "topic": "LinearLeastSquares",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "cmurray6",
+    "quiz-like",
+    "medium",
+    "calculate",
+    "rand",
+    "test",
+    "SVD",
+    "shared"
+  ]
+}

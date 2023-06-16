@@ -1,0 +1,16 @@
+<pl-question-panel>
+  
+<p>  Consider a Taylor expansion of $f(x) = {{params.a}}x^3 + {{params.b}}x^2 + {{params.c}}x + {{params.d}}$ expanded at the point $x_0 = 0$. Use the degree-{{params.degree}} Taylor expansion to approximate the value of $f(x)$ at $x = {{params.x}}$.
+</p>
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="deriv" rtol="1e-3" atol="1e-6"></pl-number-input>
+</p>
+
+<pl-answer-panel>
+
+	<p> The Taylor series of a polynomial is just the polynomial itself.  Just drop any terms of degree higher than {{params.degree}}.</p>
+
+
+</pl-answer-panel>

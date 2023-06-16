@@ -1,0 +1,31 @@
+
+
+<pl-question-panel>
+  <p>Consider the matrix $A$ given using the CSR format</p>
+
+  <p>
+  ${\bf A.data} = <pl-matrix-latex params-name="data"></pl-matrix-latex>$
+
+  </p>
+  <p>
+    ${\bf A.rowptr} = <pl-matrix-latex params-name="row"></pl-matrix-latex>$
+  </p>
+  <p>
+    ${\bf A.col} = <pl-matrix-latex params-name="col"></pl-matrix-latex>$
+  </p>
+
+  <p>
+    Construct the matrix A in the dense form below:
+  </p>
+
+  <pl-matrix-component-input answers-name="A" comparison="relabs" rtol="1e-3" atol="1e-2" label="A=" allow-partial-credit="true"></pl-matrix-component-input>
+
+  <hr>
+  <p>For more info on CSR format, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+
+
+</pl-question-panel>
+
+
+
+

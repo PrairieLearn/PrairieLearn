@@ -1,0 +1,29 @@
+{
+  "uuid": "A5D436EA-7847-43D6-B480-38A57108CBFB",
+  "title": "Workspace: Finite Difference Methods",
+  "topic": "TaylorSeries",
+  "tags": [
+    "Sp21",
+    "mfsilva",
+    "workspace",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  },
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-collab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+      "19-FiniteDifference.ipynb"
+    ]
+  }
+}

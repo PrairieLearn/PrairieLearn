@@ -1,0 +1,14 @@
+
+<pl-question-panel>
+      {{{params.prompt}}}
+</pl-question-panel>
+
+<p><br/></p>
+<pl-number-input answers-name="ans" label="suggested value= " comparison="relabs" atol="1e-8" rtol="1e-3"></pl-number-input>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}
+

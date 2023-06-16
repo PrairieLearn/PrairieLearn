@@ -1,0 +1,29 @@
+{
+  "uuid": "CCD8FFAF-EA2E-40EA-A72E-0FB2B001F655",
+  "title": "Workspace: Singular Value Decomposition and some applications",
+  "topic": "SVD",
+  "tags": [
+    "Sp21",
+    "mfsilva",
+    "workspace",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  },
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-collab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+      "16-svd.ipynb"
+    ]
+  }
+}

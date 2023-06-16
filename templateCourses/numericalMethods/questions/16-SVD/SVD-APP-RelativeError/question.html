@@ -1,0 +1,35 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/svd_app/medium-low-rank-rel-error.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Consider the matrix ${\bf A}$ with the SVD
+  </p>
+  
+  $${\bf A}={\bf U}<pl-matrix-latex params-name="A" digits='1'></pl-matrix-latex>{\bf V}^{T}$$
+ 
+  <p>
+    Given the rank-{{params.rank}} approximation ${\bf A}_{{params.rank}}$ to ${\bf A}$ that minimizes
+    $\|{\bf A}-{\bf A}_{{params.rank}}\|_2$, what is the <i>relative</i> approximation error
+    $ \frac{\displaystyle \|{\bf A}-{\bf A}_{{params.rank}}\|_2}{\displaystyle \| {\bf A}\|_2}$?
+  </p>
+
+</pl-question-panel>
+  <p>
+    <pl-number-input 
+        answers-name="f" 
+        comparison="relabs" 
+        atol="1e-6" 
+        rtol="1e-2" 
+    >
+    </pl-number-input>
+  </p>
+  
+<pl-answer-panel>
+	<p>If you don't remember what is rank approximation, see <a href="https://courses.engr.illinois.edu/cs357/fa2021/assets/lectures/complete-slides/16-SVD.pdf">Singular Value Decomposistion </a>  </p>
+
+</pl-answer-panel>
+

@@ -1,0 +1,51 @@
+<!-- 
+cs357-s18/homework-problems/opt_nd/jacobian-v2-fill-in.yml
+cs357-s18/homework-problems/opt_nd/hessian-v2-fill-in.yml
+cs357-s18/homework-problems/opt_nd/1step-2d-newton-fill-in.yml
+
+-->
+
+
+<pl-question-panel>
+	<p>
+		Suppose you are given the following function $f$ and asked to
+		to find a minimum of it.
+
+		$${{params.func_string}}$$
+	
+		To do so, first we must construct the gradient of $f$.
+		What is the gradient, evaluated at the starting point 
+		$\mathbf{x_0} = [{{params.x0}}, {{params.y0}}]$?
+	</p>
+</pl-question-panel>
+
+<pl-matrix-component-input answers-name="df" label="$\nabla f(\mathbf{x_0}) = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+<br><br>
+<pl-question-panel>
+	<p>
+		Now let us construct the Hessian $H_f$ of the function.	
+		What is the Hessian, evaluated at the starting point, $\mathbf{x_0}$?
+	</p>
+</pl-question-panel>
+
+<pl-matrix-component-input answers-name="H" label="$H(\mathbf{x_0}) = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+
+<br><br>
+<pl-question-panel>
+	<p>
+		Now, calculate the first iteration, $\mathbf{x_1}$,
+		using Newton's Method.
+	</p>
+</pl-question-panel>
+
+<pl-matrix-component-input answers-name="newton_iterate" label="$\mathbf{x_1}^{newton} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+<br><br>
+<pl-question-panel>
+	<p>
+		Using the same initial condition,
+		what is the descent direction for the first iteration of Steepest Descent? 
+    </p>
+</pl-question-panel>
+
+
+<pl-matrix-component-input answers-name="steepest_direction" label="$\mathbf{s_1}^{steepest} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>

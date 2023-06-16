@@ -1,0 +1,23 @@
+<pl-question-panel>
+  <p>
+    Consider the following matrix:
+    <p>${\bf A} = <pl-matrix-latex params-name="A" digits=1></pl-matrix-latex>$</p>
+  </p>
+  <p>Calculate the $2$ norm.</p>
+</pl-question-panel>
+
+<p>
+  <pl-number-input
+  answers-name="two-norm"
+  display="block"
+  comparison="relabs"
+  atol=1e-6
+  label='${||{\bf A}||}_2 = $'>
+  </pl-number-input>
+</p>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

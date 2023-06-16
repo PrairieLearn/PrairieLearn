@@ -1,0 +1,24 @@
+{
+  "uuid": "f9a6770f-e7bd-4f06-aeb7-16c885996dd5",
+  "title": "Investigating Power Usage",
+  "topic": "LinearSystemEquations",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "zzhou36",
+    "short-coding",
+    "application",
+    "medium",
+    "setup-system",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

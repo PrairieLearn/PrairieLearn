@@ -1,0 +1,21 @@
+{
+  "uuid": "ff884dbf-c554-4f89-9b9a-727bea54960f",
+  "title": "Relative Error Evaluation",
+  "topic": "Errors",
+  "tags": [
+    "Fa19",
+    "malachi2",
+    "short-coding",
+    "test",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

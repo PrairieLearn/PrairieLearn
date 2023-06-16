@@ -1,0 +1,32 @@
+<!--
+relate question:
+quiz-questions/eigen/easy-eigval-from-eigvec-v1.yml
+quiz-questions/eigen/easy-eigval-from-eigvec-v2.yml
+quiz-questions/eigen/easy-eigval-from-eigvec-v3.yml
+quiz-questions/eigen/easy-eigval-from-eigvec-v4.yml
+quiz-questions/eigen/easy-eigval-from-eigvec-v5.yml
+quiz-questions/eigen/easy-eigval-from-eigvec-v6.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    In class, we discussed the eigenvalues of triangular matrices. Suppose you are given the following $2 \times 2$ matrix:
+  </p>
+  <p>
+  ${\bf A} = <pl-matrix-latex params_name="A" digits="1"></pl-matrix-latex>$
+  </p>
+  <p>
+  and one of the eigenvectors
+  </p>
+  <p>
+  ${\bf v} = <pl-matrix-latex params_name="v" digits="0"></pl-matrix-latex>$
+  </p>
+  <p>What is the corresponding eigenvalue?
+</p>
+
+</pl-question-panel>
+
+<p> For triangular matrices, the eigenvalues will always appear on the diagonal. In this case, you just need to figure which eigenvalue $v$ corresponds to. Given a vector $v$, find $\lambda$ such that $Av=\lambda v$ <p>
+
+<p><pl-number-input label = "eigenvalue = " answers-name='f' comparison = 'relabs' rtol = '1e-3' atol = '1e-4'/></p>

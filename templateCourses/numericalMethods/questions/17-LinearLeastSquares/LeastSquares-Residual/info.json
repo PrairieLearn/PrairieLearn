@@ -1,0 +1,17 @@
+{
+  "uuid": "3EB9F98B-47A9-4EE2-BB60-858DF5E35DC8",
+  "title": "Find the Residual",
+  "topic": "LinearLeastSquares",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "cmurray6",
+    "easy",
+    "calculate",
+    "rand",
+    "test",
+    "SVD",
+    "residual",
+    "shared"
+  ]
+}

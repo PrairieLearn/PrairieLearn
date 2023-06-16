@@ -1,0 +1,24 @@
+{
+  "uuid": "62ba886d-9b23-4b16-a04e-3a9a914170fb",
+  "title": "Floating Point Summation",
+  "topic": "FloatingPoint",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "easy",
+    "nontest",
+    "rand",
+    "good",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

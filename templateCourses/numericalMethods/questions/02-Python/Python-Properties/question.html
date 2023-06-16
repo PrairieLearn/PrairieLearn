@@ -1,0 +1,32 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/python/medium-python-properties.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Consider the following initial Python code
+  </p>
+<pl-code language="python">
+A = [1,2,3,4]
+B = A
+C = A
+
+B.append(5)
+C = C + [6]
+B.append(6)
+</pl-code>
+  <p>
+    After this code, which of the following Python statements would evaluate to <b>True</b>?
+  </p>
+</pl-question-panel>
+
+<pl-checkbox answers-name="student" hide-answer-panel="true" partial-credit="true">
+    <pl-answer correct="true">$A == B$</pl-answer>
+    <pl-answer correct="true">$A$ is $B$</pl-answer>
+    <pl-answer correct="true">$B == C$</pl-answer>
+    <pl-answer correct="true">$A == C$</pl-answer>
+    <pl-answer correct="false">$B$ is $C$</pl-answer>
+    <pl-answer correct="false">$A$ is $C$</pl-answer>
+</pl-checkbox>

@@ -1,0 +1,30 @@
+<!--
+Modification from the relate questions:
+PrairieLearn/pl-cs357/blob/hw3/relate-questions/quiz-like-questions/error/medium-rel-error-product.yml
+-->
+
+
+
+<pl-question-panel>
+<p>
+    The current flowing through a wire($I$) is 1 ampere with a relative
+    error of {{params.I_err}}%.<br/>
+    The resistance of the wire($R$) is 20 ohms with a relative error of
+    {{params.R_err}}%.<br/>
+    What is the relative error in the voltage across the wire
+    knowing the voltage is given by, $V=IR$?
+</p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="t" weight="1">
+  <pl-answer correct="false"> {{params.wrong1}}% </pl-answer>
+  <pl-answer correct="false"> {{params.wrong2}}% </pl-answer>
+  <pl-answer correct="true">  {{params.correct}}%   </pl-answer>
+  <pl-answer correct="false"> {{params.wrong3}}% </pl-answer>
+</pl-multiple-choice>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

@@ -1,0 +1,29 @@
+{
+  "uuid": "B6D436BB-7847-43D6-B481-48A57108CBEB",
+  "title": "Workspace: Sparse Matrices",
+  "topic": "LinearSystemEquations",
+  "tags": [
+    "Sp21",
+    "mfsilva",
+    "workspace",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  },
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-collab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+      "11-sparse.ipynb"
+    ]
+  }
+}

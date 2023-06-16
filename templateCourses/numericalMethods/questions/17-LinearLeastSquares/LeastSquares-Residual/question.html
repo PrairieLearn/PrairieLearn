@@ -1,0 +1,49 @@
+<!-- <--
+converted from
+relate-questions/quiz-like-questions/least_squares/easy-least-square-residual-v*.yml -->
+
+<pl-question-panel>
+  <p> 
+    Consider solving the least squares problem $\mathbf{Ax} \cong \mathbf{b}$
+    given below where the SVD is given for $\mathbf{A}$.
+    What will be the 2-norm of the residual, i.e., $\|\mathbf{b}-\mathbf{Ax}\|_2$ 
+    for this linear least squares problem?
+  </p>
+  <p>
+  $
+  \begin{bmatrix}
+    {{params.U00}} & {{params.U01}} & 0 & 0   \\
+    {{params.U10}} & {{params.U11}} & 0 & 0 \\
+    0 & 0 & 0 & 1\\
+    0 & 0 & 1 & 0 \\
+  \end{bmatrix}
+  \begin{bmatrix}
+    {{params.sv0}} & 0 & 0 \\
+    0 & {{params.sv1}} & 0 \\
+    0 & 0 & 0 \\
+    0 & 0 & 0 \\
+  \end{bmatrix}
+  \begin{bmatrix}
+    {{params.Vh00}} & {{params.Vh01}} & 0 \\
+    {{params.Vh10}} & {{params.Vh11}} & 0 \\
+    0 & 0 & 1 \\
+  \end{bmatrix}
+  \mathbf x
+  \cong
+  <pl-matrix-latex params-name="y"></pl-matrix-latex>
+  $
+  </p>
+
+  <p>
+    <b>Hint: </b> Think about which rows of this system can never be satisfied.
+  </p>
+  
+</pl-question-panel>
+  <p>
+    <pl-number-input answers-name="r" label="$\|\mathbf{b}-\mathbf{Ax}\|_2 = $" comparison="relabs" atol=1e-4> </pl-number-input>
+  </p>
+
+<pl-answer-panel>
+	<p>If you carry out the multiplication of $\mathbf{A}\mathbf{x} = \mathbf{U}\mathbf{\Sigma}\mathbf{V}^T\mathbf{x}$ on the left-hand-side, you should get a vector of the form $\mathbf{Ax} = \begin{pmatrix} \left(\mathbf{Ax} \right)_1 \\ \left(\mathbf{Ax} \right)_2 \\ 0 \\ 0\end{pmatrix}$.  So the residual must have the form $\mathbf{b} - \mathbf{Ax} = \begin{pmatrix} b_1 - \left(\mathbf{Ax} \right)_1 \\ b_2 - \left(\mathbf{Ax} \right)_2 \\ b_3 \\ b_4\end{pmatrix}$.</p>
+	<p>Is there a vector $\mathbf{x}$ such that $b_1 - \left(\mathbf{Ax} \right)_1 = 0$ and $b_2 - \left(\mathbf{Ax} \right)_2 = 0$?  </p>
+</pl-answer-panel>

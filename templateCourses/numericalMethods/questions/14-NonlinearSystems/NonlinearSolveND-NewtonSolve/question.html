@@ -1,0 +1,44 @@
+<!--
+quiz-like-questions/solve_nd/easy-newton-solve.yml
+-->
+
+<pl-question-panel>
+
+  <p>
+    For the following function:
+      $$ f(x_1, x_2) =
+      <pl-matrix-latex params-name="coeffs"></pl-matrix-latex>
+
+        \begin{bmatrix}
+        x_1^2 \\
+        x_1\\
+        1\\
+        x_2^2\\
+        x_2\\
+        x_1 x_2
+        \end{bmatrix}
+        $$
+
+
+    What is the Jacobian matrix evaluated at the point
+    $x_1 = {{params.x}}$ and $x_2 = {{params.y}}$?
+  </p>
+  </pl-question-panel>
+
+ <pl-matrix-component-input answers-name="jac" label="${\bf J} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+<p></p>
+
+
+
+
+
+<pl-question-panel>
+  <p>
+    With a starting guess of $ \mathbf{x}^{(0)} = [x_1, x_2]$, $x_1 = {{params.x}}$ and $x_2 = {{params.y}}$, what is the
+    result of the first iteration of Newton's method, solving
+    for $f(x_1, x_2) = (0, 0)$?
+  </p>
+  </pl-question-panel>
+
+    <pl-matrix-component-input answers-name="iterate" label="$ \mathbf{x}^{(1)} = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>
+

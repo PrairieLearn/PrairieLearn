@@ -1,0 +1,22 @@
+{
+  "uuid": "acc94184-4867-4534-8219-6f4d4c0d1611",
+  "title": "Golden Section Search",
+  "topic": "Optimization1D",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "nlbowma2",
+    "short-coding",
+    "easy",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

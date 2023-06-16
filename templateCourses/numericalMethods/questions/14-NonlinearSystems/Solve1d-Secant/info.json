@@ -1,0 +1,21 @@
+{
+  "uuid": "d5831afe-005c-4127-ba49-c6c84f8cf050",
+  "title": "Secant",
+  "topic": "NonlinearSolve1D",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "easy",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

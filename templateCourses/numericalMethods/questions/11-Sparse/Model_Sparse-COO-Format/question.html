@@ -1,0 +1,44 @@
+<!--
+Relate question:
+quiz-like-questions/model_sparse/easy-coo-format.yml
+-->
+
+<pl-question-panel>
+  <p>
+    Consider the following matrix:
+  </p>
+
+  <center>
+    ${\bf A} =  <pl-matrix-latex params-name="A"></pl-matrix-latex>$
+  </center>
+<br>
+  <p>
+    Complete the information below, to show how ${\bf A}$ is
+    represented in COO format.
+  </p>
+</pl-question-panel>
+
+
+<center>${\bf A}$.data $ =  <pl-matrix-latex params-name="Adata"></pl-matrix-latex>$</center>
+<br>
+
+<center><pl-matrix-component-input answers-name="Row" comparison="relabs" rtol="1e-3" atol="1e-2" label="${\bf A}$.row ="></pl-matrix-component-input></center>
+<br>
+<center><pl-matrix-component-input answers-name="Col" comparison="relabs" rtol="1e-3" atol="1e-2" label="${\bf A}$.col = "></pl-matrix-component-input></center>
+<br>
+
+
+<pl-question-panel>
+  <p>
+    Given that data is stored as an array of 64-bit floats, and row and column
+    indices and are stored as arrays of 32-bit integers, how many bytes
+    in total are stored? (1 byte = 8 bits)
+  </p>
+  <p>
+    <pl-number-input answers-name="bytes" label="Total Storage = "  suffix= "bytes" comparison="relabs" rtol="1e-6" atol="1e-2"></pl-number-input>
+  </p>
+  <hr>
+  <p>For more info on COO representation, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+
+</pl-question-panel>
+

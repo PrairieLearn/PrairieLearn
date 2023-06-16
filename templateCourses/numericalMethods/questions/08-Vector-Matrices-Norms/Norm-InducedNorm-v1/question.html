@@ -1,0 +1,23 @@
+<!--
+Relate question:
+cs357-sp18/quiz-questions/taylor/medium-taylor-error-estimate-exponent-v1.yml
+cs357-sp18/quiz-questions/taylor/medium-taylor-error-estimate-exponent-v2.yml
+cs357-sp18/quiz-questions/taylor/medium-taylor-error-estimate-exponent-v3.yml
+-->
+
+<pl-question-panel>
+  <p>
+   Find the induced $\infty$-norm of the following matrix:
+  </p>
+
+  <p> $$
+    <pl-matrix-latex params_name="matrix" digits="2"></pl-matrix-latex>$$</p>
+</pl-question-panel>
+
+<pl-integer-input answers-name="f"></pl-integer-input>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

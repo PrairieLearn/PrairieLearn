@@ -1,0 +1,15 @@
+{
+  "uuid": "0e0ad589-1ec8-4525-b35f-07607d22ad6a",
+  "title": "Error in Low-Rank Approximation",
+  "topic": "SVD",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "jinlinx2",
+    "nontest",
+    "calculate",
+    "medium",
+    "svd-low-rank",
+    "shared"
+  ]
+}

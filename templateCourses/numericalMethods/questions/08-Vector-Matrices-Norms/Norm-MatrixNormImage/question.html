@@ -1,0 +1,37 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/norm/medium-matrix-norm-image.yml
+cs357-su18-dev/relate-quiz-like-questions/norm/medium-matrix-norm-image-v2.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Consider a $2 \times 2$ matrix $A$ which transforms the unit ball
+    with respect to the ${{params.p}}$-norm into the figure shown below:
+     <pl-figure file-name="matrix-ellipse.png" type="dynamic" width="500px"></pl-figure>
+  </p>
+  <p>
+    The unit vectors, with respect to the ${{params.p}}$-norm,
+    $\mathbf{v_1}$ and $\mathbf{v_2}$, which are oriented
+    $\frac{\pi}{4}$ and $\frac{3 \pi}{4}$ radians counter-clockwise 
+    from the positive x-axis respectively, are transformed as follows:
+  </p>
+  <p>
+    $A\mathbf{v_1} = \begin{bmatrix} {{params.Av1_1}} & {{params.Av1_2}} \end{bmatrix}^T$ and
+    $A\mathbf{v_2} = \begin{bmatrix} {{params.Av2_1}} & {{params.Av2_2}} \end{bmatrix}^T$.
+  </p>
+  <p>
+    What is the matrix norm $\|A\|_{{params.p}}$?
+  </p>
+</pl-question-panel>
+
+<p>
+  <pl-number-input answers-name="ans" comparison="sigfig" digits="3"></pl-number-input>
+</p>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

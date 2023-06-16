@@ -1,0 +1,22 @@
+{
+  "uuid": "594A3E83-0DBF-4749-8DDD-684A6D557C33",
+  "title": "Using Newton's Method for Minimization",
+  "topic": "Optimization1D",
+  "tags": [
+    "Sp20",
+    "dpaez2",
+    "short-coding",
+    "secret",
+    "sync",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

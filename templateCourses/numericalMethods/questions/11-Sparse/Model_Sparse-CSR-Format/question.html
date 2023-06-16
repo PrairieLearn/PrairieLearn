@@ -1,0 +1,48 @@
+<!--
+Relate question:
+https://github.com/PrairieLearn/pl-cs357/blob/hw6/relate-questions/quiz-like-questions/model_sparse/hard-csr-format.yml
+-->
+
+
+<pl-question-panel>
+  <p>Consider the following matrix:</p>
+
+  <p>
+    ${\bf A} = <pl-matrix-latex params-name="A"></pl-matrix-latex>$
+  </p>
+
+  <p>
+    Fill in the entries to show how ${\bf A}$ is
+    represented in CSR format (<a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix"> more information about
+    csr storage using scipy sparse library </a>)
+  </p>
+
+</pl-question-panel>
+
+<p>
+  <pl-matrix-component-input answers-name="ans" comparison="relabs" rtol="1e-3" atol="1e-2" label="A.data ="></pl-matrix-component-input>
+</p>
+
+<p>
+  <pl-matrix-component-input answers-name="col" comparison="relabs" rtol="1e-3" atol="1e-2" label="A.col ="></pl-matrix-component-input>
+</p>
+
+<p>
+  <pl-matrix-component-input answers-name="row" comparison="relabs" rtol="1e-3" atol="1e-2" label="A.rowptr = "></pl-matrix-component-input>
+</p>
+
+
+<pl-question-panel>
+  <p>
+    Given that data is stored as an array of 64-bit floats, and row and column
+    indices and are stored as arrays of 32-bit integers, how many bytes
+    in total are stored?
+  </p>
+
+<p>
+  <pl-number-input answers-name="B" label="Total Storage = "  suffix= "bytes" comparison="relabs" rtol="1e-6" atol="1e-2"></pl-number-input>
+</p>
+
+<hr>
+<p>For more info on CSR format, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+</pl-question-panel>

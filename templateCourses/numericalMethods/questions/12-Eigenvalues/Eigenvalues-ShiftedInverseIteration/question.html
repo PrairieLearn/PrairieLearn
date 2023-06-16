@@ -1,0 +1,36 @@
+<!--
+Relate question:
+quiz-like/eigen/medium-eigenvalue-found-by-inv-iteration.yml
+quiz-like/eigen/medium-eigenvalue-found-by-inv-iteration-v1.yml
+quiz-like/eigen/medium-eigenvalue-found-by-inv-iteration-v2.yml
+quiz-like/eigen/medium-eigenvalue-found-by-inv-iteration-v3.yml
+quiz-like/eigen/medium-eigenvalue-found-by-inv-iteration-v4.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Given the following matrix:
+  </p>
+  <p>
+    $\mathbf{A} = <pl-matrix-latex params-name="A" digits="0"></pl-matrix-latex>$
+  </p>
+  <p>
+    Suppose <b>inverse iteration</b> is performed on the matrix
+    $\mathbf{B}$, where $\mathbf{B} = \mathbf{A} {{params.shift}}\mathbf{I}$
+    ($\mathbf{I}$ is the identity matrix).
+
+    When finished, the inverse iteration converges to an eigenvector corresponding to an 
+    eigenvalue $(\sigma)$ of $\mathbf{B}$.  What is the corresponding eigenvalue 
+    $(\lambda)$ of $\mathbf{A}$.
+  </p>
+
+  <p>
+    <pl-integer-input answers-name="closest_eigenvalue"label="$\lambda = $"></pl-integer-input>
+  </p>
+
+</pl-question-panel>
+
+<pl-answer-panel>
+  <p> To solve this question you need to understand how to determine the eigenvalues of a shifted matrix,   and the eigenvalues of an inverse matrix. See <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-12-eigen.html">eigenvalues section</a>   of the course notes.</p>
+</pl-answer-panel>

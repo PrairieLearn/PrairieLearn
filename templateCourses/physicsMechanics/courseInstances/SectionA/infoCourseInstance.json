@@ -1,7 +1,7 @@
 {
     "uuid": "a2c16a02-7f73-43d0-b5ec-5eb1efb8ae51",
-    "shortName": "Sp23",
-    "longName": "Spring 2023",
+    "shortName": "SX",
+    "longName": "Semester X",
     "allowAccess": [
         {
             "comment": "you probably want to set access to just your institution and semester start/end dates",

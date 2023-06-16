@@ -1,0 +1,18 @@
+<!-- Similar to relate question:
+cs357-s18/quiz-questions/solve_1d/medium-several-steps-bisection-v1.yml
+cs357-s18/quiz-questions/solve_1d/medium-several-steps-bisection-v2.yml
+cs357-s18/quiz-questions/solve_1d/medium-several-steps-bisection-v3.yml
+PL question asks for interval length. Relate questions ask for L and R bounds.
+Still need to implement the same question as relate.
+-->
+
+<pl-question-panel>
+<p>
+  You wish to find a root of the function $f(x) = (x-{{params.a}})^3$. You use the
+  bisection method with an initial interval that has the left and right endpoints
+  $L = {{params.L}}$ and $R = {{params.R}}$. What is the length of the interval
+ after {{params.n}} iterations of bisection?
+</p>
+</pl-question-panel>
+
+ <p><pl-number-input answers-name="h" label=" Interval length = " comparison="sigfig" digits="4"></pl-number-input></p>

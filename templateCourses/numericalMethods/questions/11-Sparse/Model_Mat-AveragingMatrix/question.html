@@ -1,0 +1,41 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/taylor/easy-taylor-convergence-radius.yml
+-->
+
+<pl-question-panel>
+  <p>
+    Assume $\mathbf{v}$ is a vector in $\mathbb{R}^{{params.dimensions}}$. You wish to compute a
+    vector $\mathbf{w}$ such that the $i$th entry of $\mathbf w$, denoted $w_i$,
+    is the average of {{params.window}}. For example, {{params.example_entry}} is
+    the average of {{params.example_window}}.
+  </p>
+  <p>
+    For elements at the endpoints of
+    $\mathbf w$, you will account for all available elements in your average. For example,
+    {{params.example_endpoint}} (assuming zero-based indexing) is the 
+    average of {{params.example_endpoint_window}}.
+  </p>
+  <p>
+    Construct a matrix $\mathbf{A}$ such that $\mathbf{A} \mathbf v = \mathbf w$. Fill in the entries of $\mathbf{A}$
+    below.
+  </p>
+
+  <pl-matrix-component-input answers-name="A" comparison="sigfig" digits="3" label="$\mathbf{A}=$"></pl-matrix-component-input>
+
+  <p>
+    If $\mathbf{A}$ is stored in sparse COO format,
+    with $64$-bit floats used for the data and $32$-bit 
+    integers for the indices,
+    how many bytes does it takes to store $\mathbf{A}$?
+  </p>
+  
+  <pl-integer-input answers-name="num_bytes"  label='$\text{num_bytes} = $ '></pl-integer-input>
+
+</pl-question-panel>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+	<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

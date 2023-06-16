@@ -1,0 +1,18 @@
+{
+  "uuid": "254c7f2f-9149-4d5f-8fdf-7575f3e0c11c",
+  "title": "Newton Solve",
+  "topic": "NonlinearSolveND",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "jjdoher2",
+    "quiz-like",
+    "nontest",
+    "calculate",
+    "multianswer",
+    "medium",
+    "rand",
+    "NewtonND-compute",
+    "shared"
+  ]
+}

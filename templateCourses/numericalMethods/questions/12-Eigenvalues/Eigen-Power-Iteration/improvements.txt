@@ -1,0 +1,5 @@
+When checking if a valid eigenvector the ref eigenvalues should
+be used. Otherwise if their eigenvalue is wrong they will never
+have a right eigenvector. And it makes it difficult to debug
+if their power iteration is wrong or if they just did the Rayleigh
+Quotient incorrectly.

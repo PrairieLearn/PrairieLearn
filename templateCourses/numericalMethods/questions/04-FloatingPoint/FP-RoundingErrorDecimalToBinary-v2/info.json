@@ -1,0 +1,18 @@
+{
+  "uuid": "84e63beb-6d84-4271-bfd8-71f141d08a31",
+  "title": "Rounding Error - Decimal to Binary Floating Point",
+  "topic": "FloatingPoint",
+  "type": "v3",
+  "tags": [
+    "Sp20",
+    "sentz2",
+    "test",
+    "calculation",
+    "medium",
+    "rounding",
+    "toy",
+    "rand",
+    "good",
+    "shared"
+  ]
+}

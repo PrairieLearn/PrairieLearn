@@ -1,0 +1,2 @@
+- Make the size of the matrix be a random parameter
+- Consider adding questions about sparsity, number of nonzeros, and storage cost 

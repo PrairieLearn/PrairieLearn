@@ -1,0 +1,66 @@
+<!-- Small modification from the Relate questions:
+cs357-s18/quiz-questions/model_vec/medium-smoothies-entry-v1.yml
+cs357-s18/quiz-questions/model_vec/medium-smoothies-entry-v2.yml
+cs357-s18/quiz-questions/model_vec/medium-smoothies-entry-v3.yml
+-->
+
+<pl-question-panel>
+  <p>
+    Suppose you're the owner of a smoothie shop and that you have three
+    fruits available to make smoothies: bananas, blueberries, and
+    strawberries.  You sell three types of smoothies, and each type requires a
+    different amount of each fruit. See below the ingredient list for each smoothie:
+  </p>
+
+  <p>  Classic:  {{params.a}} bananas, {{params.b}} cups of blueberries, and {{params.c}} cup of
+    strawberries </p>
+
+  <p>   Blue:  {{params.d}} cups of blueberries and {{params.f}} cups of strawberries</p>
+
+  <p>  Strawnana:  {{params.e}} bananas and {{params.g}} cups of strawberries </p>
+
+  <p>
+    At the end of the day you have used the following ingredients:  {{params.bananas}} bananas,
+     {{params.blueberries}} cups of blueberries and {{params.strawberries}} cups of strawberries.
+  </p>
+
+  <p>
+     To figure out how many smoothies of each type were sold during the day,
+    you set up the linear system:
+  </p>
+
+  <p>
+    $
+    \begin{bmatrix}
+  a_{11} & 0 & a_{13} \\
+  a_{21}  & a_{22} &  0\\
+    {{params.c}} & a_{32} & {{params.g}}\\
+    \end{bmatrix}
+    \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix}
+    =
+    \begin{bmatrix} {{params.bananas}} \\ {{params.blueberries}} \\ {{params.strawberries}} \end{bmatrix}.
+    $
+  </p>
+
+  <p>
+    What is the entry ${{params.outputlabel}}$ in the matrix?
+  </p>
+
+</pl-question-panel>
+
+<p>
+  <pl-integer-input answers-name="out" label="${{params.outputlabel}} = $"></pl-integer-input>
+</p>
+
+
+<pl-question-panel>
+
+  <p>
+  Using the system above, you determined that you sold {{params.Nclassic}} Classic smoothies. How many {{params.label2}} smoothies did you sell?
+  </p>
+
+</pl-question-panel>
+
+<p>
+  <pl-integer-input answers-name="out2" label="Number of {{params.label2}} smoothies = "></pl-integer-input>
+</p>

@@ -1,0 +1,29 @@
+{
+  "uuid": "8216A86A-2C52-4F00-BD3F-0645C2526323",
+  "title": "Workspace: Basic Python",
+  "topic": "Python",
+  "tags": [
+    "Sp21",
+    "mfsilva",
+    "workspace",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 60
+  },
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-collab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+      "basic_python_demo.ipynb"
+    ]
+  }
+}

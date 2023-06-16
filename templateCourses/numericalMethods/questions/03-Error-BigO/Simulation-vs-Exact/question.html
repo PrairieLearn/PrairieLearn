@@ -1,0 +1,48 @@
+<!--
+Modification from Relate questions:
+cs357-s18/quiz-questions/mc/easy-simulation-vs-exact-v1.yml
+cs357-s18/quiz-questions/mc/easy-simulation-vs-exact-v2.yml
+cs357-s18/quiz-questions/mc/easy-simulation-vs-exact-v3.yml
+PrairieLearn generate dynamic plots
+-->
+
+<pl-question-panel>
+<p>
+
+  You need to model the temperature on the surface of a metal undergoing
+  a complicated chemical reaction. You have two options for doing so:
+</p>
+<p>
+  <strong> Program A</strong> is an exact model that gives you the correct temperature with
+  no error. It is expensive to run, however, taking ${{params.time}}$ minutes on your
+  best available computer.
+</p>
+<p>
+  <strong>Program B</strong> is a numerical model that gets more accurate the longer you
+  allow it to run. When run on your best available computer, the error vs
+  time tradeoff is shown in the plot below. </p>
+
+<p>
+    <pl-figure file-name="figure.png" type="dynamic" width="500px"></pl-figure>
+</p>
+
+<hr></hr>
+<p>
+Which program will run faster, assuming that you need to approximate the
+temperature with an error of at most $10^{-{{params.c}}}$ degree Celsius?
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="t" weight="1" fixed-order="true">
+  <pl-answer correct="{{params.Aans}}">Program A</pl-answer>
+  <pl-answer correct="{{params.Bans}}">Program B</pl-answer>
+  <pl-answer correct="false"> Both programs will take the same amount of time </pl-answer>
+</pl-multiple-choice>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}
+

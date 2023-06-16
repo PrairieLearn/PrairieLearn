@@ -1,0 +1,43 @@
+<!--
+Relate question:
+relate-quiz-like-questions/linsys/computers.yml
+-->
+
+<pl-question-panel>
+  <p>
+    A computer manufacturer sells motherboards, CPUs, and cases.  They only
+    sell products in packages.
+  </p>
+
+  <ul>
+    <li>Package 1 contains {{params.a}} motherboard(s) and {{params.b}} case(s).</li>
+    <li>Package 2 contains {{params.c}} motherboard(s) and {{params.d}} CPU(s). </li>
+    <li>Package 3 contains {{params.e}} case(s).  </li>
+  </ul>
+
+  <p>
+    In total, the company owns {{params.motherboards}} motherboards, {{params.cpus}} CPUs, and {{params.cases}} cases.
+    What unique combination of package sales will allow the company to get rid
+    of its entire inventory?
+
+  </p>
+
+  <p>
+    $\textbf{Hint:}$
+    You should set up and solve a linear system to find the answer. If you
+    find it helpful, you are welcome to use numpy to solve the system.
+  </p>
+</pl-question-panel>
+
+
+<p>
+  <pl-integer-input answers-name='p1' label="Package 1: " ></pl-integer-input>
+</p>
+
+<p>
+  <pl-integer-input answers-name='p2' label="Package 2: "></pl-integer-input>
+</p>
+
+<p>
+  <pl-integer-input answers-name='p3' label="Package 3: "></pl-integer-input>
+</p>

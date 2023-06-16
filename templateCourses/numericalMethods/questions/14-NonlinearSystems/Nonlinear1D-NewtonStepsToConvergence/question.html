@@ -1,0 +1,17 @@
+<!-- Converted from:
+quiz-like-questions/solve_1d/newton-steps-until-convergence.yml
+ -->
+
+
+<pl-question-panel>
+    <p>
+        Given a starting guess of $x_0 = {{params.x0}}$, how many steps of Newton's method
+        must you take to approximate the root of $f(x) = {{params.equation}}$
+        to a residual tolerance of ${{params.tolerance}}$?  The residual here is <i>how close</i> the solution is to being a root and is defined as $\left\lvert f(x) \right\rvert$.
+    </p>
+    <p><b>Note:</b> You need to carry out the iteration to solve this question.</p>
+</pl-question-panel>
+
+<p>
+    <pl-integer-input answers-name="num_its" label="number of iterations: "></pl-integer-input>
+</p>

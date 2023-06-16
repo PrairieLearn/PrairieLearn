@@ -1,0 +1,38 @@
+<pl-question-panel>
+  <p>
+    Which of the following statements, regarding methods for solving a nonlinear
+    equation $f(x) = 0$, are true?
+  </p>
+</pl-question-panel>
+<pl-checkbox answers-name="students" number-answers=4>
+    <pl-answer correct="true">
+    Newton's method can achieve quadratic convergence, but requires
+    knowledge of the derivative $f'(x)$.
+    </pl-answer>
+    <br/>
+    <pl-answer correct="true">
+    Secant method is only locally convergent
+    </pl-answer>
+    <br/>
+    <pl-answer correct="false">
+    Newton's method requires two starting guesses.
+    </pl-answer>
+    <br/>
+    <pl-answer correct="false">
+    The Secant method is quadratically convergent, and doesn't require
+    knowledge of the derivative $f'(x)$.
+    </pl-answer>
+    <br/>
+    <pl-answer correct="false">
+    The Bisection method offers superlinear (i.e. faster than linear)
+	convergence as long as $f'(a) \neq 0$ at the exact solution $x=a$.
+    </pl-answer>
+    <br/>
+    <pl-answer correct="true">
+    The computational cost for Bisection and Secant method are roughtly the same while Secant method offers better convergence rate.
+    </pl-answer>
+    <br/>
+    <pl-answer correct="true">
+    The Bisection method can always find a root for continuous functions given the starting interval $[a, b]$ where $sgn(f(a)) = - sgn(f(b))$.
+    </pl-answer>
+</pl-checkbox>

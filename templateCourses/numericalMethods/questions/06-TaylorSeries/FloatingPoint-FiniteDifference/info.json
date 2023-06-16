@@ -1,0 +1,21 @@
+{
+  "uuid": "df48f02c-385c-4b51-ae21-b3f83d293d05",
+  "title": "Finite Difference",
+  "topic": "Finite Difference",
+  "tags": [
+    "Sp19",
+    "qiuchen2",
+    "short-coding",
+    "easy",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

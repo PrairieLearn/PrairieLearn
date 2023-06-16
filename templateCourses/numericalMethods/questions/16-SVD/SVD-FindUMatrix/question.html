@@ -1,0 +1,44 @@
+
+
+<pl-question-panel>
+
+  <p>
+Suppose the eigendecomposition of the matrix ${\bf A}^T {\bf A}$ is given by:
+  </p>
+<p>
+  ${\bf A}^T {\bf A} = {\bf X} {\bf D} {\bf X}^{-1} =  <pl-matrix-latex params_name="X" digits="2"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="eigs" digits="0"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="Xt" digits="2"></pl-matrix-latex>$
+</p>
+
+<p>
+and the matrix-matrix multiplication ${\bf A} {\bf V}$ is:
+</p>
+
+<p>
+${\bf A} {\bf V} =  <pl-matrix-latex params_name="AV" digits="3"></pl-matrix-latex>$
+</p>
+
+<p>
+or in python format:
+</p>
+
+<p>
+  <pl-matrix-output digits='3'>
+    <variable params_name="AV">AV</variable>
+    <variable params_name="X">X</variable>
+      <variable params_name="eigs">D</variable>
+  </pl-matrix-output>
+</p>
+
+  <p> Enter the matrix ${\bf U}$ from the SVD of the matrix ${\bf A} = {\bf U \Sigma V^T}$.</p>
+
+   </pl-question-panel>
+
+ <p>
+   <pl-matrix-input answers-name="Uans" comparison="relabs" rtol="1e-2" atol='1e-8' label="${\bf U} = $"></pl-matrix-input>
+ </p>
+
+ <pl-answer-panel>
+   <p>  For more information on obtaining the SVD decomposition from $A^TA$ see the <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
+ </pl-answer-panel>

@@ -1,0 +1,16 @@
+{
+  "uuid": "94d4b8c1-9d52-4e85-b2e7-36726601c6d6",
+  "title": "Construct a Matrix from CSR Format",
+  "topic": "Model-sparse",
+  "tags": [
+    "sp20",
+    "wjiang24",
+    "calculate",
+    "sync",
+    "test",
+    "rand",
+    "CSR",
+    "shared"
+  ],
+  "type": "v3"
+}

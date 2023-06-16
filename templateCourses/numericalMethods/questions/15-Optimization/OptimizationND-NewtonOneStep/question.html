@@ -1,0 +1,18 @@
+<!-- 
+cs357-s18/quiz-like-questions/opt_nd/medium-newton-one-step.yml
+-->
+
+<pl-question-panel>
+	<p>
+		Use Newton’s method to minimize
+		$$f(\mathbf{x})={{params.a}}x_1^2 + {{params.b}}x_1x_2 + {{params.c}}x_2^2$$
+
+		Using $\mathbf{x_0} = \begin{bmatrix} {{params.x1_init}} \\ {{params.x2_init}} \end{bmatrix}$ as the
+		initial guess, what is $\mathbf{s_0}$?
+		
+		Recall that for Newton's Method:
+		$$\mathbf{x_{i+1}} = \mathbf{x_i} + \mathbf{s_i}$$
+	</p>
+</pl-question-panel>
+
+<pl-matrix-component-input answers-name="s0" label="$\mathbf{s_0}^T = $" comparison="relabs" rtol="1e-2" atol="1e-8"></pl-matrix-component-input>

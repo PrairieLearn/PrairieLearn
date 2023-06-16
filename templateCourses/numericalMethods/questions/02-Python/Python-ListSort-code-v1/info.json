@@ -1,0 +1,23 @@
+{
+  "uuid": "9EB42B8E-DA70-40F4-8CA5-5340BB2E9D8B",
+  "title": "List sorting in-place",
+  "topic": "Python",
+  "tags": [
+    "Fa20",
+    "aukey2",
+    "short-coding",
+    "easy",
+    "test",
+    "rand",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

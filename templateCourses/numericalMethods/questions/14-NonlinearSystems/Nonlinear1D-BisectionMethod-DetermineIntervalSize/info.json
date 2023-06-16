@@ -1,0 +1,17 @@
+{
+  "uuid": "a68c06b3-e02c-494b-8cb3-a87becdceab0",
+  "title": "Determine the length of the interval",
+  "topic": "NonlinearSolve1D",
+  "type": "v3",
+  "tags": [
+    "Fa18",
+    "mfsilva",
+    "quiz-like",
+    "calculate",
+    "easy",
+    "bisection",
+    "nontest",
+    "rand",
+    "shared"
+  ]
+}

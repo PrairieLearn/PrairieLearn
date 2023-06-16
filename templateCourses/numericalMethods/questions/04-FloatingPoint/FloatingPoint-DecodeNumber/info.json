@@ -1,0 +1,26 @@
+{
+  "uuid": "0d787142-a3c9-405d-873e-11dd3af0853f",
+  "title": "Decoding a Floating Point Number",
+  "topic": "FloatingPoint",
+  "tags": [
+    "Fa19",
+    "malachi2",
+    "short-coding",
+    "test",
+    "easy",
+    "toy",
+    "good",
+    "conceptual",
+    "rand",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

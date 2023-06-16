@@ -1,0 +1,26 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/intro/medium-determine-big-o.yml
+cs357-su18-dev/relate-quiz-like-questions/intro/medium-determine-big-o-v2.yml
+
+-->
+
+
+<pl-question-panel>
+  <p>
+    The error of a method is $E(h) = h^{{params.exp1}}+{{params.coeff2}}h^{{params.exp2}}$, for any
+    $0 < h < 1$. What is the exponent of the tightest asymptotic (big-O) bound on the error, i.e.,
+    what is $\alpha$ where the tightest asymptotic bound is $O(h^\alpha)$?
+    Note: The answer is an integer.
+
+  </p>
+
+
+  <p><pl-integer-input label="$\alpha = $" answers-name="alpha"></pl-integer-input></p>
+</pl-question-panel>
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

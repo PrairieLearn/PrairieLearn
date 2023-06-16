@@ -1,0 +1,52 @@
+<!--
+Multianswer question, new PrairieLearn implementation
+Combine concepts that appear in the following Relate questions:
+cs357-s18/quiz-questions/taylor/medium-taylor-error-estimate-exponent-v1
+cs357-s18/quiz-questions/taylor/medium-taylor-enter-approx-v1
+cs357-s18/quiz-questions/taylor/easy-taylor-deriv-v1
+-->
+
+<pl-question-panel>
+
+<p>  Consider the Taylor series for $f(x) = \ln({1+x})$ expanded about $x_0=0$,
+  which is </p>
+
+  $$x - \frac{x^2}{2} + \frac{x^3}{3} - \frac{x^4}{4} + \frac{x^5}{5}\cdots .$$
+
+<p>  Approximate the function $f(x)$ at $x={{params.xo}}$ using the Taylor expansion of degree 2. </p>
+
+  </pl-question-panel>
+
+ <p>
+   <pl-number-input answers-name="f" label="$ f({{params.xo}}) \approx $" comparison="sigfig" digits="3"></pl-number-input>
+</p>
+
+
+<pl-question-panel>
+
+<p>  Approximate the <strong>second</strong> derivative of $f(x)$ at $x={{params.x1}}$ by
+  computing the second derivative of the Taylor expansion of degree 3. </p>
+</pl-question-panel>
+
+<p>
+  <pl-number-input answers-name="d2f" label="$ f''({{params.x1}}) \approx $" comparison="sigfig" digits="3"></pl-number-input>
+</p>
+
+<pl-question-panel>
+
+  <p>  If we evaluate $f(x)$ as {{params.bigOapprox}}, what is the exponent of the tightest
+    asymptotic (big-O) bound on the error as $x \to 0$? Your answer should be the integer $n$,
+    following the big-O notation $O(x^n)$.</p>
+
+</pl-question-panel>
+
+<p>
+  <pl-integer-input answers-name="n" label="$n = $"></pl-number-input>
+</p>
+
+<pl-answer-panel>
+	<p> The degree-2 Taylor expansion of $f$ is $t_2(x) = x - \frac{x^2}{2}$.</p>
+	<p> The degree-3 Taylor expansion of $f$ is $t_3(x) = x - \frac{x^2}{2} + \frac{x^3}{3}$.  What is $t''_3({{params.x1}})$? </p>
+	<p> As $x \to 0$, the error is dictated by the power of the first neglected term of the Taylor series. </p>
+
+</pl-answer-panel>

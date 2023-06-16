@@ -1,0 +1,24 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/fp/medium-fp-exact-range.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Consider a (binary) floating point system of the form
+    $(-1)^s \times$ {{params.representation}} where $s \in \{0, 1\}$ and $m \in \mathbb{Z}: $ {{params.exp_range}}.
+    What is the largest value, $k$, for which all of the
+    integers in the range $[-k, k]$ are exactly representable in this floating point
+    system?
+  </p>
+</pl-question-panel>
+
+<pl-integer-input answers-name="f"></pl-integer-input>
+
+
+{{#feedback.question_feedback}}
+<pl-answer-panel>
+<p class="mt-4"> {{{ feedback.question_feedback }}} </p>
+</pl-answer-panel>
+{{/feedback.question_feedback}}

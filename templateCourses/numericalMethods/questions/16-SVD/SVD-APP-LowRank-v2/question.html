@@ -1,0 +1,37 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/svd_app/medium-low-rank-error-v2.yml
+-->
+
+
+<pl-question-panel>
+<p>
+  Consider the matrix ${\bf A}$:
+</p>
+ $${\bf A}=<pl-matrix-latex params-name="A" digits='0'></pl-matrix-latex>$$
+ <p>
+   What is the minimal approximation error
+    $\|{\bf A}-{\bf A}_1\|_2$ achievable by a rank-1 approximation ${\bf A}_1$ to ${\bf A}$?
+ </p>
+
+  Hint: Can you determine this without explicitly calculating the SVD?
+ <pl-number-input answers-name="f" comparison="sigfig"></pl-number-input>
+ </pl-question-panel>
+
+
+
+<pl-answer-panel>
+  Make sure you are getting this question correctly without having to perform
+  the SVD of the matrix A. Can you tell what is the rank of the matrix A?
+  What do you know about the error of the best rank-k approximation?
+</pl-answer-panel>
+
+
+
+
+ <!--
+ <pl-answer-panel>
+Matrix A has rank equal to 1 (only one linearly independent column),
+so the rank one approximation is exact.
+</pl-answer-panel>
+-->

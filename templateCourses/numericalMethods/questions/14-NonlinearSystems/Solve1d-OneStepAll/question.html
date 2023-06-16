@@ -1,0 +1,40 @@
+<pl-question-panel>
+  <p>
+      Apply one step of Newton's method to find a zero of the equation
+      $f(x) = \sin(\frac{x}{{{params.coeff}}})$ given a starting guesses of
+      $x_1={{params.x1}}$.
+  </p>
+</pl-question-panel>
+  <p>
+    <pl-number-input answers-name="x2newton" label="$x_2 = $"  comparison="relabs" rtol="1e-3" atol="1e-8"></pl-number-input>
+  </p>
+
+
+
+<pl-question-panel>
+  <p>
+      Apply one step of the Secant method to find a zero of the same equation
+      given starting guesses of $x_0={{params.x0}}$ and $x_1={{params.x1}}$.
+  </p>
+</pl-question-panel>
+  <p>
+    <pl-number-input answers-name="x2secant" label="$x_2 = $"  comparison="relabs" rtol="1e-3" atol="1e-8"></pl-number-input>
+  </p>
+
+
+
+<pl-question-panel>
+  <p>
+      Apply {{params.n}} steps of the Bisection method to find a zero of the same equation
+      given the starting bracket of $a={{params.a}}$ and $b={{params.b}}$. Write what
+      the brackets would be at this step.
+  </p>
+
+  </pl-question-panel>
+
+  <p>
+    <pl-number-input answers-name="ap" label="$a' = $"  comparison="relabs" rtol="1e-3" atol="1e-2"></pl-number-input>
+  </p>
+  <p>
+    <pl-number-input answers-name="bp" label="$b' = $"  comparison="relabs" rtol="1e-3" atol="1e-2"></pl-number-input>
+  </p>

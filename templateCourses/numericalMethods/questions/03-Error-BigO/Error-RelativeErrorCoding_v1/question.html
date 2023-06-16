@@ -1,0 +1,37 @@
+<pl-question-panel>
+
+<p>
+Suppose in the year 2102 that evaluating $x^{0.72}$ for an input parameter $x$ becomes an important operation to do quickly.
+As such, CPU manufacturers want to approximate this operation in hardware using a single x86 operation, <code>f_p72</code>.
+As a computer engineer, you are tasked with creating the necessary components to execute the <code>f_p72</code> instruction.
+Suppose that the function <code>f_hat(x)</code> carries out the <code>f_p72</code> instruction for a given floating point input <code>x</code>.
+That is, <code>f_hat(x)</code> evaluates the approximation of $x^{0.72}$.
+</p>
+
+<p>
+Write a short program that evaluates the magnitude of the relative error in approximating $x^{0.72}$ using <code>f_hat</code> for the input <code>x</code>.
+</p>
+
+<p>
+<code>f_hat(x)</code> is a function that returns the approximation $x^{0.72}$ for a given floating point input
+<code>x</code>.
+Store the magnitude of the relative error in using the approximation <code>f_hat</code> in <code>relative_error</code>.
+</p>
+
+<p>The setup code gives the following variables: </p>
+  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+
+  <p> Your code snippet should define the following variables: </p>
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-file-editor
+    file_name="user_code.py"
+    ace_mode="ace/mode/python">
+</pl-file-editor>
+
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

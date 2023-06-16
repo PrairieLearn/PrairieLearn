@@ -1,0 +1,35 @@
+<!--
+Relate question:
+cs357-su18-dev/relate-quiz-like-questions/mc/easy-mc-point-validation.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    We want to use Monte Carlo method to compute the volume of the
+    following complicated region in the 3d-space $(x,y,z)$.
+  </p>
+  \[
+  \begin{cases}
+      0\leq x\leq 1,\ 0\leq y\leq 1, \ 0\leq z\leq 1 & \newline
+      x^2 + \sin y\leq z & \newline
+      x-z+e^y\leq 1 & \newline
+    \end{cases}
+  \]
+  <p> For all points $(x, y, z)$, the volume is defined when each of these inequalities is satisfied.</p>
+  <p>
+    Then, suppose we use a variable <code>counter</code> to count the number of points
+    inside the volume, and we have the following 4 random points:
+  </p>
+  \[
+  (0,0,1),
+  (0,\frac{\pi}{2},1),
+  ({{params.a}},\frac{\pi}{{{params.b}}},{{params.c}}),
+  ({{params.d}},{{params.e}},{{params.f}})
+  \]
+  <p>
+    What is the correct value of <code>counter</code>?
+  </p>
+</pl-question-panel>
+
+<pl-integer-input label="counter = " answers-name="g"></pl-integer-input>

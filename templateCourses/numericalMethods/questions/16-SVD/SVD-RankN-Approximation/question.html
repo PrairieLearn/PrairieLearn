@@ -1,0 +1,55 @@
+<!--
+Not directly associated to any relate question
+-->
+
+<pl-question-panel>
+<p>
+  A matrix ${\bf A}$ has the following full singular value decomposition 
+</p>
+<p>
+  ${\bf A} =  <pl-matrix-latex params_name="U" digits="2"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="sigma" digits="0"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="Vt" digits="2"></pl-matrix-latex>$
+</p>
+
+<p>
+  For your convenience, here are the variables.
+  <pl-matrix-output digits="2">
+    <variable params-name="U">U</variable>
+    <variable params-name="sigma">sigma</variable>
+    <variable params-name="Vt">Vt</variable>
+  </pl-matrix-output>
+</p>
+
+<p>  What is the best rank-1 approximation of ${\bf A}$? </p>
+
+</pl-question-panel>
+<p>
+  <pl-matrix-input answers-name="A1" comparison="relabs" rtol="1e-2" atol="1e-8" label="${\bf A}_1 = $"></pl-matrix-input>
+</p>
+
+
+<pl-question-panel>
+  <p>  What is the best rank-2 approximation of ${\bf A}$? </p>
+</pl-question-panel>
+<p>
+  <pl-matrix-input answers-name="A2" comparison="relabs" rtol="1e-2" atol="1e-8" label="${\bf A}_2 = $"></pl-matrix-input>
+
+</p>
+
+<pl-question-panel>
+  <p>What is the norm of the error for the rank-{{params.N}} approximation, i.e.,
+    $||{\bf A} - {\bf A}_{{params.N}}||_2$?
+  </p>
+
+</pl-question-panel>
+
+<p>
+  <pl-number-input answers-name="rankNerror" comparison="relabs" atol="1e-4" label="$||{\bf A} - {\bf A}_{{params.N}}||_2$ = "></pl-number-input>
+</p>
+  
+<pl-answer-panel>
+	<p>For rank approximation, see <a href="https://courses.engr.illinois.edu/cs357/fa2021/assets/lectures/complete-slides/16-SVD.pdf">Singular Value Decomposistion </a>  </p>
+
+</pl-answer-panel>
+

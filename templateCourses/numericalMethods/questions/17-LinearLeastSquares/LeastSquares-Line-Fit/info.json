@@ -1,0 +1,24 @@
+{
+  "uuid": "92ccef70-eac6-4368-b699-1cc6af707db8",
+  "title": "Line Fit",
+  "topic": "LinearLeastSquares",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "test",
+    "nonrand",
+    "application",
+    "curve-fitting",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "uuid": "d865150e-dfd5-4c9b-b7b4-4ac2aec798a4",
+  "title": "Eigen Iteration Schemes",
+  "topic": "Eigenvalues",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "dpaez2",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 30
+  }
+}

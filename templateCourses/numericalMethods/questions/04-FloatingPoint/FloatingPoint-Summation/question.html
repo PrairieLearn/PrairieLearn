@@ -1,0 +1,37 @@
+<pl-question-panel>
+<p>Numerical methods are implementations of mathematical algorithms, but
+constructed with special consideration for accuracy of solutions and
+computational run-time.</p>
+<p>The order in which we implement floating point arithmetic for any numerical
+method will effect the accuracy of the final computed value.
+For this reason, extra thought must be placed on our basic mathematical operations.</p>
+<p>In this problem, you are asked to add-up the values in a large array called <code>data</code>.
+How should you do this to achieve the most accurate final sum?
+Return your summation as a floating point variable named <code>data_sum</code>.</p>
+<p>The values and size of <code>data</code> will vary in length, so make sure your code
+is written in a generic fashion to handle this aspect.</p>
+<p> The setup code gives the following variable: </p>                                                                                                     
+  <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>                                                                    
+                                                                                                                                                             
+  <p> Your code snippet should define the following variable: </p>                                                                                          
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>    
+
+  <p>
+  <i>Note:</i> <code>data</code> can contain negative numbers as well.
+  </p>
+
+
+<pl-file-editor                                                                                                                                              
+    file_name="user_code.py"                                                                                                                                 
+    ace_mode="ace/mode/python">                                                                                                                              
+</pl-file-editor>                                                                                                                                            
+                                                                                                                                                             
+                                                                                                                                                             
+</pl-question-panel>                                                                                                                                         
+                                                                                                                                                             
+<pl-submission-panel>                                                                                                                                        
+                                                                                                                                                             
+  <!-- <pl_file_preview /> -->                                                                                                                               
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>                                                                                                                        
+</pl-submission-panel>          

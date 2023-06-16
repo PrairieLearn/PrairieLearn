@@ -1,0 +1,24 @@
+<pl-question-panel>
+  <p>
+  Suppose you are approximating the {{params.eigen_type}} eigenvalues of two matrices using {{params.iter_type}}{{params.LU_info}}
+  The run-time for $k$ iterations of this method applied to an $n\times n$ matrix can be modeled as $t\approx {{params.complexity}}$ for some integer $p$, and some constant $C$.
+</p>
+<p>
+Suppose the first matrix is of size ${{params.n1}} \times {{params.n1}}$, and the run-time for {{params.k1}} iterations of {{params.iter_type}} is {{params.t1}} {{params.sec}}.
+</p>
+<p>
+If the second matrix is of size ${{params.n2}} \times {{params.n2}}$ and you run {{params.k2}} iterations of {{params.iter_type}}, approximately how long will the run-time be?
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name='students'>
+  <pl-answer correct="false">{{params.false0}} seconds</pl-answer>
+  <pl-answer correct="false">{{params.false1}} seconds</pl-answer>
+  <pl-answer correct="true">{{params.true}} seconds</pl-answer>
+  <pl-answer correct="false">{{params.false2}} seconds</pl-answer>
+</pl-multiple-choice>
+
+<pl-answer-panel>
+ <p> In order to answer this question you need to know the complexity of performing a solve using a precomuted LU decompostion ($O(n^p)$). Using the complexity relationship and the provided parameters ($k, t, n$) you shuld be able to figure out the constant $C$. </p>
+</pl-answer-panel>

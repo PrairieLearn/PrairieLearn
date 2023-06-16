@@ -1,0 +1,22 @@
+{
+  "uuid": "75058a05-3128-4f1c-8b5c-e0ec6a531188",
+  "title": "Find Low-Rank Approximation Given SVD",
+  "topic": "SVD",
+  "tags": [
+    "Sp20",
+    "sentz2",
+    "short-coding",
+    "medium",
+    "test",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 30
+  }
+}

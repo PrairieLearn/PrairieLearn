@@ -1,0 +1,41 @@
+<pl-question-panel>
+    <p>
+    As discussed in lecture, basic algebra operations actually break down in
+    floating point arithmetic. Take for instance the associativity property of
+    the real numbers under addition where the following would be true,
+
+    <br><br>
+
+    $$
+    x + (y + z) = (x + y) + z \qquad x, y, z, \in \mathbb{R}
+    $$
+
+    <br><br>
+
+    But in floating point arithmetic, the equality relation does not necessarily
+    hold. 
+
+    <br><br>
+
+    Find an $x, y, z$ such that, $x + (y + z) \neq (x + y) + z$. Enter your
+    numbers below.  
+    
+    <br><br>
+    <i>Hint:</i> think about the concept of machine epsilon.
+    
+    </p>
+
+</pl-question-panel>
+
+<p><pl-number-input answers-name="x" label="$x = $" comparison='sigfig' digits='16'></pl-number-input></p>
+
+<p><pl-number-input answers-name="y" label="$y = $" comparison='sigfig' digits='16'></pl-number-input></p>
+
+<p><pl-number-input answers-name="z" label="$z = $" comparison='sigfig' digits='16'></pl-number-input></p>
+
+
+<pl-answer-panel>
+
+  <p> Due to roundoff error associativity property does not always hold. Try to think of $x,y,z$ values that result ion large roundoff error. Refer to slide 12-17 'Rounding errors' section for more hints.</p>
+
+</pl-answer-panel>

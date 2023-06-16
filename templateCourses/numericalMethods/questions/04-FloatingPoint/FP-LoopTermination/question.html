@@ -1,0 +1,45 @@
+<!--
+Relate question:
+cs357-sp18/relate-questions/quiz-questions/fp/hard-loop-termination.yml
+-->
+
+<pl-question-panel>
+ <p>
+    What is the result if the following code is run with IEEE
+    double-precision floating point numbers?
+</p>
+<pl-code language="python" prevent-select="true">
+x = 1.0  # 'x' is a a double precision FP number
+
+while x < 10**{{params.exp}}:
+    x += 0.5
+</pl-code>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="student">
+    <pl-answer correct="true">
+    The loop never terminates.
+    </pl-answer>
+    <pl-answer correct="false">
+    The loop terminates when <code>x==10**{{params.exp}}</code>.
+    </pl-answer>
+    <pl-answer correct="false">
+    The loop terminates when <code>x</code> overflows to infinity.
+    </pl-answer>
+    <pl-answer correct="false">
+    The loop terminates when <code>x</code> is approximately, but not exactly,
+    $10^{ {{params.exp}} }$.
+    </pl-answer>
+</pl-multiple-choice>
+
+
+<pl-answer-panel>
+
+  <p> Python loop will always terminate if the condition can be evaluated and met. </p>
+  
+  <p> An approximate maximum double precision value that can be stored is $1.8 \times 10^{308}$ </p>
+
+  <p> In case of equality condition, precision is the problem. Double precision offers 52 bits for the decimal part, which along with the one before the decimal point gives you 53 bits. The number of consecutive halves(0.5, 1, 1.5...) that can be represented by this system is $2^{52}$, which is way less than $10^{90}$. This tells you that once you add to $2^{52}$, the machine can no longer represent $2^{52}+0.5$ exactly, and gets truncated to $2^{52}$. Then no matter how many 0.5 you add to this number you will always get $2^{52}$. </p>
+
+</pl-answer-panel>

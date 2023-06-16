@@ -1,0 +1,24 @@
+{
+  "uuid": "e37ac889-e09b-470c-96a7-df7fe14e0b5c",
+  "title": "Newton",
+  "topic": "NonlinearSolveND",
+  "tags": [
+    "Fa18",
+    "enache2",
+    "short-coding",
+    "test",
+    "medium",
+    "non-rand",
+    "newtonND-code",
+    "shared"
+  ],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 15
+  }
+}

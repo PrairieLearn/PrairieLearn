@@ -1,0 +1,31 @@
+<!--
+Relate question:
+cs357-s18/quiz-questions/svd_app/easy-ATA-eigvals.yml
+-->
+
+<pl-question-panel>
+
+  <p>
+ Matrix ${\bf A}$ has the following Singular Value Decomposition :
+  </p>
+<p>
+  ${\bf A} = <pl-matrix-latex params_name="U" digits="2"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="sigma" digits="0"></pl-matrix-latex>$
+  $<pl-matrix-latex params_name="Vt" digits="2"></pl-matrix-latex>$
+</p>
+
+<p> Determine the  eigenvalues of ${\bf A}^T {\bf A}$ , such that
+  $\lambda_1 > \lambda_2 > \lambda_3$.</p>
+
+  <p><pl-number-input answers-name="s1" label="$\lambda_1 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
+
+  <p><pl-number-input answers-name="s2" label="$\lambda_2 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
+
+  <p><pl-number-input answers-name="s3" label="$\lambda_3 = $  " comparison="sigfig" digits="3"></pl-number-input></p>
+
+</pl-question-panel>
+
+<pl-answer-panel>
+  <p>  Hint: consider the properties of $U$ and $V$ matrices. For more information see  <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html"> SVD </a> section of the course notes</p>
+</pl-answer-panel>
+

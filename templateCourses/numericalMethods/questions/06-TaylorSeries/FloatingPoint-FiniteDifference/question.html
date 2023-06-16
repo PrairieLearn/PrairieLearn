@@ -1,0 +1,67 @@
+<pl-question-panel>
+
+<p> Use the finite difference method to obtain an approximation for the gradient
+ of a function $f:\mathbb{R}^2 \rightarrow \mathbb{R}$ defined as:</p>
+
+$$ f({\bf x}) = 2\,x_1^2 - 0.5\,x_1\,x_2 + 5\,x_2^3 $$
+
+<p> The gradient of $f$ is given by: </p>
+
+$$\nabla{f}({\bf x}) = \left[ \frac{\partial f}{\partial x_1} , \frac{\partial f}{\partial x_2}\right]^T$$
+
+<p> The setup code provides the vector ${\bf x} = [x_1,x_2]^T$ as a 1d numpy array
+<code>xvec = np.array([x1,x2])</code>. </p>
+
+<p> Write a code snippet that defines the following functions:
+<ul>
+    <li>
+        <p> <code>func</code>: a function that accepts <code>xvec</code> as an argument and returns the value of the function $f$.</p>
+    </li>
+    <li>
+        <p> <code>dfunc</code>: a function that accepts <code>xvec</code> as an argument and returns
+          the analytical expression for the gradient $\nabla f({\bf x})$. (*) </p>
+    </li>
+    <li>
+        <p> <code>fd</code>: a function that accepts <code>xvec</code> and a perturbation <code>dx</code> as arguments
+          and returns an approximation to the gradient $\nabla f({\bf x})$ using the finite difference method.
+          This should be the first order, forward finite difference approximation.</p>
+    </li>
+</ul>
+<p><small>(*) In general, we do not perform finite difference computations when analytical expressions can be easily derived,
+as in this example. However, here we use the exact gradient for comparison purposes.</small></p>
+
+<p> To compute the finite difference approximation, consecutively add the perturbation <code>dx</code> ("small" increment)
+  to each entry of the variable vector ${\bf x}$. Only one component should be perturbed at a time. You may want to read the
+  <a href="https://relate.cs.illinois.edu/course/cs357-s19/page/ref-taylor/">reference page</a> for the
+definition of the finite difference approximation. </p>
+
+<p>After defining the three functions above, compute
+the finite difference approximation of $\nabla f({\bf x})$ for decreasing
+values of the perturbation <code>dx</code> stored in the 1d numpy array <code>dxvec</code>.
+For each perturbation <code>dx</code>, compute the error between the approximated and exact derivative.
+This result should be an array. Compute the infinity p-norm of this array. Store this result in the
+variable
+<code>error</code>, which should have the same shape as the array
+<code>dxvec</code>.
+
+<p>Plot the error as a function of the perturbation size. What do you observe? Can you explain your results?</p>
+
+<p>The setup code gives the following variables:</p>
+    <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+
+<p>Your code snippet should define the following function(s)/variable: </p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+
+  <pl-file-editor
+      file_name="user_code.py"
+      ace_mode="ace/mode/python"
+      source-file-name="tests/initial_code.py">
+
+  </pl-file-editor>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

@@ -1,0 +1,23 @@
+<pl-question-panel>
+  <p>
+  Suppose you are interested in computing the SVD of two matrices.
+  The time complexity of SVD for an $n\times n$ matrix can be modeled as $t\approx Cn^p$ for some integer $p$, and some constant $C$.
+</p>
+<p>
+Suppose the first matrix is of size ${{params.n1}} \times {{params.n1}}$ and takes {{params.t1}} {{params.sec}} to compute.
+</p>
+<p>
+If the second matrix is of size ${{params.n2}} \times {{params.n2}}$, approximately how long will it take to compute the SVD of the second matrix?
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name='students'>
+  <pl-answer correct="false">{{params.false1}} seconds</pl-answer>
+  <pl-answer correct="false">{{params.false2}} seconds</pl-answer>
+  <pl-answer correct="true">{{params.true}} seconds</pl-answer>
+  <pl-answer correct="false">{{params.false3}} seconds</pl-answer>
+</pl-multiple-choice>
+<pl-answer-panel>
+  <p>  For more information on time complexity see <a href="https://courses.grainger.illinois.edu/cs357/fa2021/notes/ref-16-svd.html">Time Complexity </a> section of the course notes</p>
+</pl-answer-panel>

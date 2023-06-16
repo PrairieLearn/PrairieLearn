@@ -1,0 +1,174 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      5860,        166]
+NotebookOptionsPosition[      5077,        139]
+NotebookOutlinePosition[      5432,        155]
+CellTagsIndexPosition[      5389,        152]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"f", "[", "x_", "]"}], "=", 
+   RowBox[{"x", "-", 
+    RowBox[{
+     SuperscriptBox["x", "2"], "/", "2"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"df", "[", "x_", "]"}], "=", 
+   RowBox[{"1", "-", "x", "+", 
+    SuperscriptBox["x", "2"]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"df2", "[", "x_", "]"}], "=", 
+    RowBox[{
+     RowBox[{"-", "1"}], "+", 
+     RowBox[{"2", " ", "x"}]}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{"f", "[", "0.6", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"df2", "[", "0.4", "]"}]}], "Input",
+ CellChangeTimes->{{3.733248552207713*^9, 3.7332486060538063`*^9}, {
+  3.733248877082993*^9, 3.733248877415941*^9}, {3.733249291928163*^9, 
+  3.733249307950536*^9}, {3.7332499756881447`*^9, 3.733249975855598*^9}, {
+  3.733250049224409*^9, 3.7332500531439667`*^9}, {3.733250109461875*^9, 
+  3.7332501097027597`*^9}, {3.733250151482175*^9, 3.7332501517026052`*^9}, {
+  3.745672058859764*^9, 3.745672063718367*^9}, {3.745672093747426*^9, 
+  3.7456721490840387`*^9}, {3.745672285089305*^9, 3.745672333440114*^9}, {
+  3.74567249733389*^9, 3.7456725016628523`*^9}, {3.7456731594826117`*^9, 
+  3.745673163990954*^9}, {3.7456731948527927`*^9, 
+  3.745673194985186*^9}},ExpressionUUID->"cf96c81a-9079-4f31-969b-\
+7566e889e46e"],
+
+Cell[BoxData["0.42`"], "Output",
+ CellChangeTimes->{{3.733248603590226*^9, 3.733248628113583*^9}, 
+   3.733248877659493*^9, {3.7332492927447767`*^9, 3.7332493084581127`*^9}, 
+   3.733249876725753*^9, 3.733249976181985*^9, 3.733250053381873*^9, 
+   3.7332501099334917`*^9, 3.7332501535019627`*^9, {3.7456721283371058`*^9, 
+   3.745672149546187*^9}, {3.745672302784111*^9, 3.7456723336639833`*^9}, 
+   3.7456725020371304`*^9, 3.745673164191412*^9, {3.745673195222485*^9, 
+   3.7456732037302856`*^9}},ExpressionUUID->"fec6b531-8903-4778-92d8-\
+8b76a50f12d9"],
+
+Cell[BoxData[
+ RowBox[{"-", "0.19999999999999996`"}]], "Output",
+ CellChangeTimes->{{3.733248603590226*^9, 3.733248628113583*^9}, 
+   3.733248877659493*^9, {3.7332492927447767`*^9, 3.7332493084581127`*^9}, 
+   3.733249876725753*^9, 3.733249976181985*^9, 3.733250053381873*^9, 
+   3.7332501099334917`*^9, 3.7332501535019627`*^9, {3.7456721283371058`*^9, 
+   3.745672149546187*^9}, {3.745672302784111*^9, 3.7456723336639833`*^9}, 
+   3.7456725020371304`*^9, 3.745673164191412*^9, {3.745673195222485*^9, 
+   3.7456732037398357`*^9}},ExpressionUUID->"926fdfc4-9832-407c-8937-\
+be253df0f999"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Series", "[", 
+  RowBox[{
+   RowBox[{"Log", "[", 
+    RowBox[{"1", "+", "x"}], "]"}], ",", " ", 
+   RowBox[{"{", 
+    RowBox[{"x", ",", "0", ",", "10"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7456725358071203`*^9, 3.745672567341012*^9}, {
+  3.7456726163837214`*^9, 3.745672630195545*^9}, {3.745672789117003*^9, 
+  3.745672789215952*^9}, {3.7456728340951157`*^9, 3.7456728608905573`*^9}, {
+  3.745672899863893*^9, 3.745672916375963*^9}, {3.7456729504666443`*^9, 
+  3.7456729831004763`*^9}},ExpressionUUID->"b8d62951-5991-4624-85cb-\
+92bd912442eb"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"x", "-", 
+   FractionBox[
+    SuperscriptBox["x", "2"], "2"], "+", 
+   FractionBox[
+    SuperscriptBox["x", "3"], "3"], "-", 
+   FractionBox[
+    SuperscriptBox["x", "4"], "4"], "+", 
+   FractionBox[
+    SuperscriptBox["x", "5"], "5"], "-", 
+   FractionBox[
+    SuperscriptBox["x", "6"], "6"], "+", 
+   FractionBox[
+    SuperscriptBox["x", "7"], "7"], "-", 
+   FractionBox[
+    SuperscriptBox["x", "8"], "8"], "+", 
+   FractionBox[
+    SuperscriptBox["x", "9"], "9"], "-", 
+   FractionBox[
+    SuperscriptBox["x", "10"], "10"], "+", 
+   InterpretationBox[
+    SuperscriptBox[
+     RowBox[{"O", "[", "x", "]"}], "11"],
+    SeriesData[$CellContext`x, 0, {}, 1, 11, 1],
+    Editable->False]}],
+  SeriesData[$CellContext`x, 0, {1, 
+    Rational[-1, 2], 
+    Rational[1, 3], 
+    Rational[-1, 4], 
+    Rational[1, 5], 
+    Rational[-1, 6], 
+    Rational[1, 7], 
+    Rational[-1, 8], 
+    Rational[1, 9], 
+    Rational[-1, 10]}, 1, 11, 1],
+  Editable->False]], "Output",
+ CellChangeTimes->{{3.745672561689279*^9, 3.745672567941566*^9}, {
+   3.745672617238188*^9, 3.74567263056868*^9}, 3.745672789540604*^9, {
+   3.745672834509924*^9, 3.745672861222579*^9}, 3.745672916869598*^9, {
+   3.7456729571143217`*^9, 
+   3.745672983447229*^9}},ExpressionUUID->"23d25bf3-6b89-4422-aa13-\
+1dc397076538"]
+}, Open  ]]
+},
+WindowSize->{547, 706},
+WindowMargins->{{Automatic, 39}, {24, Automatic}},
+FrontEndVersion->"11.1 for Mac OS X x86 (32-bit, 64-bit Kernel) (April 18, \
+2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 1382, 32, 139, "Input", "ExpressionUUID" -> \
+"cf96c81a-9079-4f31-969b-7566e889e46e"],
+Cell[1965, 56, 555, 8, 32, "Output", "ExpressionUUID" -> \
+"fec6b531-8903-4778-92d8-8b76a50f12d9"],
+Cell[2523, 66, 587, 9, 66, "Output", "ExpressionUUID" -> \
+"926fdfc4-9832-407c-8937-be253df0f999"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3147, 80, 580, 12, 32, "Input", "ExpressionUUID" -> \
+"b8d62951-5991-4624-85cb-92bd912442eb"],
+Cell[3730, 94, 1331, 42, 52, "Output", "ExpressionUUID" -> \
+"23d25bf3-6b89-4422-aa13-1dc397076538"]
+}, Open  ]]
+}
+]
+*)
+

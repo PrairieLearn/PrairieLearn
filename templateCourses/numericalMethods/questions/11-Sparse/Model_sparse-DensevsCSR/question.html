@@ -1,0 +1,36 @@
+<!--
+Relate question:
+cs357-su18-dev/quiz-questions/model_sparse/dense-csr-efficient-v1.yml
+cs357-su18-dev/quiz-questions/model_sparse/dense-csr-efficient-v2.yml
+cs357-su18-dev/quiz-questions/model_sparse/dense-csr-efficient-v3.yml
+-->
+
+
+<pl-question-panel>
+  <p>
+    Consider a ${{params.a}}\times{{params.a}}$ matrix of integers.
+    There are $n$ nonzero entries, where
+    $n\ll{{params.b}}$ and the rest of the entries are all $0$'s.
+  </p>
+  <p>
+    This matrix can be stored in two formats
+  </p>
+  <p>
+    1) Dense Representation: Each entry uses $4$ bytes of storage.
+  </p>
+  <p>
+    2) CSR format: Each column index, data value and row
+    start pointer uses $4$ bytes of storage.
+  </p>
+  <p>
+    What is the largest value of $n$ (i.e. the largest number of nonzeros)
+    for which storing in CSR format is more memory efficient?
+  </p>
+
+  <p>
+    <pl-integer-input label='largest n = ' answers-name="f"/>
+  </p>
+
+  <hr>
+  <p>For more info on sparse matrix, please consult the <a href="https://courses.engr.illinois.edu/cs357/sp2021/notes/ref-11-sparse.html">reference page</a>.</p>
+</pl-question-panel>
