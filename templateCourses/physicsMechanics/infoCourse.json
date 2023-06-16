@@ -18,6 +18,8 @@
         {"name": "calculation", "color": "blue2", "description": "numerical input is expected resulting from calculations"},
         {"name": "mc", "color": "green1", "description": "multiple-choice question"},
         {"name": "dropdown", "color": "green2", "description": "dropdown menu question"},
-        {"name": "not-randomized", "color": "purple1", "description": "question without randomization"}
+        {"name": "not-randomized", "color": "purple1", "description": "question without randomization"},
+        {"name": "author:prairielearn.com", "color": "blue3", "description": "questions created by prairielearn team"},
+        {"name": "license:CC-BY-NC", "color": "yellow3", "description": "license for all prairielearn.com questions"}
     ]
 }

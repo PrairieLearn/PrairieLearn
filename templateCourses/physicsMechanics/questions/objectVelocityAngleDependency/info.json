@@ -3,7 +3,8 @@
     "title": "Speed and angle dependency",
     "topic": "Kinematics2D",
     "tags": [
-        "mariana@prairielearn.com",
+        "author:prairielearn.com", 
+        "license:CC-BY-NC",
         "sp23",
         "mc",
         "not-randomized"
