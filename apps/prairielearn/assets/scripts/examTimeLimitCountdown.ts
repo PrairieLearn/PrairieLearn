@@ -1,6 +1,7 @@
 import { Countdown } from './lib/countdown';
 import { saveQuestionFormData } from './lib/confirmOnUnload';
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 onDocumentReady(() => {
   const timeLimitData = decodeData<{
@@ -23,7 +24,7 @@ onDocumentReady(() => {
         saveQuestionFormData(document.querySelector('form.question-form'));
         const form = parseHTMLElement(
           document,
-          `<form method="POST">
+          html`<form method="POST">
             <input type="hidden" name="__action" value="timeLimitFinish" />
             <input type="hidden" name="__csrf_token" value="${timeLimitData.csrfToken}" />
           </form>`
