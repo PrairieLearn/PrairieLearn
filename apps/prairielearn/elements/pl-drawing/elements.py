@@ -1727,6 +1727,51 @@ class Spring(BaseElement):
         ]
 
 
+class Coil(BaseElement):
+    def generate(el, data):
+        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
+        if "x2" in el.attrib and "y2" in el.attrib:
+            x2 = pl.get_float_attrib(el, "x2")
+            y2 = pl.get_float_attrib(el, "y2")
+        else:
+            w = pl.get_float_attrib(el, "width", 80)
+            angle = pl.get_float_attrib(el, "angle", drawing_defaults["angle"])
+            x2 = x1 + w * math.cos(angle * math.pi / 180)
+            y2 = y1 + w * math.sin(angle * math.pi / 180)
+        return {
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "height": pl.get_float_attrib(el, "height", 15),
+            "originX": "center",
+            "originY": "center",
+            "stroke": stroke_color,
+            "strokeWidth": pl.get_float_attrib(
+                el, "stroke-width", drawing_defaults["stroke-width"]
+            ),
+            "drawPin": pl.get_boolean_attrib(el, "draw-pin", False),
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"],
+        }
+
+    def get_attributes():
+        return [
+            "x1",
+            "y1",
+            "width",
+            "angle",
+            "height",
+            "x2",
+            "y2",
+            "stroke-color",
+            "stroke-width",
+            "draw-pin",
+        ]
+
+
 class Line(BaseElement):
     def generate(el, data):
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
@@ -2302,6 +2347,7 @@ elements["pl-rectangle"] = Rectangle
 elements["pl-rod"] = Rod
 elements["pl-roller"] = Roller
 elements["pl-spring"] = Spring
+elements["pl-coil"] = Coil
 elements["pl-text"] = Text
 elements["pl-triangle"] = Triangle
 elements["pl-vector"] = Vector

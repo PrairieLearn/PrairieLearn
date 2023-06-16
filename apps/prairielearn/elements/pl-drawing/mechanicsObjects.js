@@ -106,6 +106,76 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
   },
 });
 
+mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
+  type: 'coil',
+  initialize: function (options) {
+    options = options || {};
+    this.callSuper('initialize', options);
+    this.left = this.x1;
+    this.top = this.y1;
+    this.originY = 'center';
+    this.originX = 'left';
+    this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
+    this.h = this.height;
+    this.width = this.length;
+    this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
+    this.angle = (180 / Math.PI) * this.angleRad;
+    this.objectCaching = false;
+
+    this.on('scaling', function () {
+      this.length = this.width * this.scaleX;
+      this.h = this.h * this.scaleY;
+      this.x1 = this.left;
+      this.y1 = this.top;
+      this.angleRad = (Math.PI / 180) * this.angle;
+      this.x2 = this.x1 + Math.cos(this.angleRad) * this.length;
+      this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
+      this.dirty = true;
+    });
+  },
+  _render: function (ctx) {
+    let len = this.length;
+    let R2 = this.h;
+    let R  = 0.5*R2
+    let offsetAngle = 50*Math.PI/180
+    let n = Math.floor( (len - 3*R - 2*R*Math.cos(offsetAngle))/(2*R*Math.cos(offsetAngle)) )
+    let l2 = len / 2;
+
+    // Undo fabric's scale tranformations 
+    ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
+    
+    ctx.beginPath();
+    ctx.moveTo(-l2, 0);
+    var dx = (len - ((n+1)*2*R*Math.cos(offsetAngle)+2*R))/2
+    var start = -l2 + dx
+    var xpos = start+R
+    ctx.lineTo(start, 0);
+    ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI, 2*Math.PI+offsetAngle);
+    for (var i = 0; i < n; i++) {
+      xpos += 2*R*Math.cos(offsetAngle);
+      ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI-offsetAngle, 2*Math.PI+offsetAngle);
+    }
+    xpos += 2*R*Math.cos(offsetAngle);
+    ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI-offsetAngle, 2*Math.PI);
+    ctx.lineTo(l2, 0);
+    ctx.strokeStyle = this.stroke;
+    this._renderStroke(ctx);
+
+    if (this.drawPin) {
+      this.fill = this.stroke;
+      ctx.beginPath();
+      ctx.arc(-l2, 0, 4, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(l2, 0, 4, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
+});
+
 mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
   type: 'rod',
   initialize: function (options) {
@@ -2128,6 +2198,33 @@ mechanicsObjects.byType['pl-spring'] = class extends PLDrawingBaseElement {
 
   static get_button_tooltip() {
     return 'Add spring';
+  }
+};
+
+mechanicsObjects.byType['pl-coil'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options, submittedAnswer) {
+    let obj = new mechanicsObjects.Coil(options);
+    if (!('id' in obj)) {
+      obj.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(obj);
+
+    if (options.selectable) {
+      let modify = function (subObj) {
+        subObj.x1 = obj.x1;
+        subObj.y1 = obj.y1;
+        subObj.x2 = obj.x2;
+        subObj.y2 = obj.y2;
+        subObj.height = obj.h;
+      };
+      submittedAnswer.registerAnswerObject(options, obj, modify);
+    }
+
+    return obj;
+  }
+
+  static get_button_tooltip() {
+    return 'Add coil';
   }
 };
 
