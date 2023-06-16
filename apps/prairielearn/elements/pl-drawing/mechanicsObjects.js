@@ -3933,23 +3933,6 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       canvas.add(objPin1, objPin2);
     }
 
-    // if (options.drawAction) {
-    //   var vecOptions = _.defaults(
-    //     {
-    //       color: "green",
-    //       originX: 'center',
-    //       originY: 'center',
-    //       left: xm1,
-    //       top: ym1,
-    //     },
-    //     options
-    //   );
-    // var obj = new mechanicsObjects.arcVector(options);
-    // if (!('id' in obj)) {
-    //   obj.id = window.PLDrawingApi.generateID();
-    // }
-    // canvas.add(obj);
-
     // Switch line
     var theta2 = (options.switchAngle * Math.PI) / 180;
     var l = options.interval / Math.cos(theta2);
@@ -3969,11 +3952,10 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     }
     canvas.add(obj3);
 
+    // Label
     if (options.label) {
       var offsetlabel = 10
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        // left: cx + options.offsetx,
-        // top: cy + 10 + options.offsety,
         left: xm1 + l/2 * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2+theta),
         top: ym1 + l/2 * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2+theta),
         textAlign: 'left',
