@@ -116,7 +116,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     this.originY = 'center';
     this.originX = 'left';
     this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
-    this.h = this.height;
+    this.h = this.height/2;
     this.width = this.length;
     this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
     this.angle = (180 / Math.PI) * this.angleRad;
@@ -143,7 +143,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
 
     // Undo fabric's scale tranformations 
     ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
-    
+
     ctx.beginPath();
     ctx.moveTo(-l2, 0);
     var dx = (len - ((n+1)*2*R*Math.cos(offsetAngle)+2*R))/2

@@ -1745,7 +1745,7 @@ class Coil(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "height": pl.get_float_attrib(el, "height", 15),
+            "height": pl.get_float_attrib(el, "height", 30),
             "originX": "center",
             "originY": "center",
             "stroke": stroke_color,
