@@ -1419,12 +1419,20 @@ More information about the grading attributes in the Grading section below.
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
-    <pl-drawing-initial>
-        <pl-switch x1="20" y1="20" x2="140" y2="20" label="A"></pl-switch>
-        <pl-switch x1="180" y1="60" angle="90" width="120" label="B" stroke-color="blue"  ></pl-switch>
-        <pl-switch x1="20" y1="120" angle="20" width="120" switch-angle="45" label="S_1" draw-pin="false"></pl-switch>
-        <pl-switch x1="20" y1="100" angle="0" width="120" switch-angle="0"></pl-switch>
-    </pl-drawing-initial>
+  <pl-drawing-initial>
+    <pl-switch x1="20" y1="20" x2="140" y2="20" label="A"></pl-switch>
+    <pl-switch x1="180" y1="60" angle="90" width="120" label="B" stroke-color="blue"></pl-switch>
+    <pl-switch
+      x1="20"
+      y1="120"
+      angle="20"
+      width="120"
+      switch-angle="45"
+      label="S_1"
+      draw-pin="false"
+    ></pl-switch>
+    <pl-switch x1="20" y1="100" angle="0" width="120" switch-angle="0"></pl-switch>
+  </pl-drawing-initial>
 </pl-drawing>
 ```
 
@@ -1432,23 +1440,23 @@ More information about the grading attributes in the Grading section below.
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                           |
-| -------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float  | 40      | `x` position for the first end of the switch, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
-| `y1`           | float  | 40      | `y` position for the first end of the switch, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
-| `angle`        | float  | 0       | Angle of rotation around the start point of the switch. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
-| `width`        | float  | 60      | Length of the switch                                                                                                                                                                                                                                  |
-| `x2`           | float  | -       | `x` position for the end point for the switch, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
-| `y2`           | float  | -       | `y` position for the end point for the switch, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
-| `switch-angle` | float  | 30      | Angle of switch opening.                                                                                                                                                                                                                              |
-| `interval`     | float  | 40      | Distance of the switch opening.                                                                                                                                                                                                                       |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the switch.                                                                                                                         |
-| `label`        | string | -       | Text to label the switch.                                                                                                                                                                                                                             |
-| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                      |
-| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                    |
-| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                      |
-| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                      |
-| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                           |
+| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the switch, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float   | 40      | `y` position for the first end of the switch, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float   | 0       | Angle of rotation around the start point of the switch. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float   | 60      | Length of the switch                                                                                                                                                                                                                                  |
+| `x2`           | float   | -       | `x` position for the end point for the switch, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float   | -       | `y` position for the end point for the switch, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `switch-angle` | float   | 30      | Angle of switch opening.                                                                                                                                                                                                                              |
+| `interval`     | float   | 40      | Distance of the switch opening.                                                                                                                                                                                                                       |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the switch.                                                                                                                                                                                                     |
+| `label`        | string  | -       | Text to label the switch.                                                                                                                                                                                                                             |
+| `font-size`    | float   | 16      | Label font size.                                                                                                                                                                                                                                      |
+| `offsetx`      | float   | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                    |
+| `offsety`      | float   | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                      |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                                                                                                      |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
 
 #### Example implementations
 

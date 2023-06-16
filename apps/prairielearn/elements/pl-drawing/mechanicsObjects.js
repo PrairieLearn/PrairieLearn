@@ -3954,10 +3954,10 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
 
     // Label
     if (options.label) {
-      var offsetlabel = 10
+      var offsetlabel = 10;
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: xm1 + l/2 * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2+theta),
-        top: ym1 + l/2 * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2+theta),
+        left: xm1 + (l / 2) * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2 + theta),
+        top: ym1 + (l / 2) * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2 + theta),
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
