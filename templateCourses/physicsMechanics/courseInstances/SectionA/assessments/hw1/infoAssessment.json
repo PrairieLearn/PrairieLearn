@@ -1,0 +1,60 @@
+{
+    "uuid": "13D012E4-9C66-4092-BA1A-1445919DB0C3",
+    "type": "Homework",
+    "title": "Question Bank",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2040-12-31T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Kinematics",
+            "questions": [
+                {"id": "velocityplot", "points": 1,"maxPoints": 3},
+                {"id": "velocityplot_slopeconcept", "points": 1, "maxPoints": 3},
+                {"id": "accelerationplot", "points": 1,"maxPoints": 3},
+                {"id": "kinematicsDroptower", "points": 1,"maxPoints": 3,"triesPerVariant": 2},
+                {"id": "ballDrop", "points": 1,"maxPoints": 1},
+                {"id": "objectVelocityAngleDependency", "points": 1,"maxPoints": 1},
+                {"id": "kinematics2dCannonBall", "points": 1,"maxPoints": 3},
+                {"id": "kinematics2dCarOffTable", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Forces",
+            "questions": [
+                {"id": "pulleyHorizontalPlane", "points": 1,"maxPoints": 3},
+                {"id": "pulleyInclinedPlane", "points": 1,"maxPoints": 3},
+                {"id": "pulleyInclinedPlaneFriction", "points": 1,"maxPoints": 3},
+                {"id": "twoBoxesFrictionless", "points": 1,"maxPoints": 3},
+                {"id": "hangingObjectCable", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Impulse and Momentum",
+            "questions": [
+                {"id": "ballCollisionElastic", "points": 1,"maxPoints": 3},
+                {"id": "ballCollisionInelastic", "points": 1,"maxPoints": 3},
+                {"id": "billiardElasticCollision", "points": 1,"maxPoints": 3},
+                {"id": "forceTimePlot", "points": 1,"maxPoints": 3},
+                {"id": "pendulumElasticCollision", "points": 1,"maxPoints": 3},
+                {"id": "pendulumInelasticCollision", "points": 1,"maxPoints": 3},
+                {"id": "pendulumPerfectlyInelasticCollision", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Energy",
+            "questions": [
+                {"id": "springGivenExpression", "points": 1,"maxPoints": 3},
+                {"id": "rampCarStopEnd", "points": 1,"maxPoints": 3}
+            ]
+        }
+    ],
+    "text": "<p>This assignment includes all the questions available in the template course Physics: Mechanics.</p>"
+}

@@ -1,0 +1,67 @@
+<pl-question-panel>
+<p>
+  The velocity of a particle (in m/s) as a function of time (in seconds) 
+  is represented by the plot below. What do you know about the acceleration 
+  for each time interval? Select the appropriate answer using the 
+  dropdown menu in each interval.
+   
+</p>  
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+  <pl-overlay width="600" height="440" clip="false">
+    <pl-background>
+      <pl-drawing answers-name="diag" width="560" height="400" hide-answer-panel="false">
+        <pl-drawing-initial>
+      
+            <pl-axes origin="{{params.V_origin}}"
+                    xpos = 440
+                    label-x="t"
+                    label-y="{{params.ylab}}"
+                    offsetx-label-y=-50 
+                    supporting-lines="{{params.sup_line_M}}"
+                    >
+            </pl-axes>
+      
+            <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}" > </pl-graph-line>
+            <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}" >  </pl-graph-line>
+            <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V3}}" >  </pl-graph-line>
+            <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V4}}" >  </pl-graph-line>
+          
+          </pl-drawing-initial>
+      
+      </pl-drawing>
+    </pl-background>
+    <pl-location left="130" top="360">
+        <pl-dropdown sort="random" answers-name="interval1">
+          {{#params.interval1}}
+          <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+          {{/params.interval1}}
+        </pl-dropdown>
+    </pl-location>
+    <pl-location left="230" top="360">
+        <pl-dropdown sort="random" answers-name="interval2">
+          {{#params.interval2}}
+          <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+          {{/params.interval2}}
+        </pl-dropdown>
+    </pl-location>
+    <pl-location left="330" top="360">
+      <pl-dropdown sort="random" answers-name="interval3">
+        {{#params.interval3}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+        {{/params.interval3}}
+      </pl-dropdown>
+    </pl-location>
+    <pl-location left="430" top="360">
+      <pl-dropdown sort="random" answers-name="interval4">
+        {{#params.interval4}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+        {{/params.interval4}}
+      </pl-dropdown>
+    </pl-location>
+
+  </pl-overlay>
+</pl-hide-in-panel>
+
+

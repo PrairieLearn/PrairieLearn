@@ -1,0 +1,45 @@
+<pl-question-panel>
+
+<p>
+
+    A ballistic pendulum is used to measure the speed of a projectile: a $m = {{params.m}}$ gram bullet is fired into a $M = {{params.M}}$ kg block of wood. The bullet sticks into the wood, and the bullet-block 
+    swing up to a height of $h = {{params.h}}$ m. Assume the acceleration of gravity equal to $9.8$ m/s$^2$.
+</p>
+
+<pl-drawing gradable="false" grid-size="0"  width="380" height="200">
+    <pl-drawing-initial>
+        <pl-fixed-pin x1="180" y1="40" color="green1" angle="-180" height="30"></pl-fixed-pin>
+        <pl-line x1="180" y1="40" width="120" angle="120" dashed-size="2" stroke-width="1"></pl-line>
+        <pl-rectangle x1="120" y1="144" width="40" height="40" angle=30 color="gray1" stroke-width="1"></pl-rectangle>
+        <pl-line x1="180" y1="40" width="140" angle="90"></pl-line>
+        <pl-rectangle x1="180" y1="160" width="40" height="40" color="gray1" ></pl-rectangle>
+        <pl-text x1="180" y1="160" label="M" offsetx="-5"></pl-text>
+        <pl-arc-dimensions x1="180" y1="40" start-angle="90" end-angle="120" radius="60" label="\\theta" offsetx="5" offsety="-5"></pl-arc-dimensions>
+        <pl-fixed-pin x1="300" y1="160" color="gray3" height="10" width="10" draw-ground="false" angle="-90" draw-pin="false"></pl-fixed-pin>
+        <pl-vector  x1="320" y1="140" color="purple" width="40" angle=180 label="v" offsety="-20" offsetx="10"></pl-vector>
+        <pl-fixed-pin x1="133" y1="152" color="gray3" height="10" width="10" draw-ground="false" angle="-60" draw-pin="false"></pl-fixed-pin>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<br>
+
+</pl-question-panel>
+
+<p>What is the speed of the block + projectile right after the collision?</p>
+
+<p>
+    <pl-number-input answers-name="vb" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
+
+<p>What is the speed of the projectile just before it hits the block?</p>
+
+<p>
+    <pl-number-input answers-name="v" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
+
+<p>Determine the amount of energy lost in the collision. </p>
+
+<p>
+    <pl-number-input answers-name="E" label=" Energy lost $= $" suffix="J" ></pl-number-input>
+</p>
+    

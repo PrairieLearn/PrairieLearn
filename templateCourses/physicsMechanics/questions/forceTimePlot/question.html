@@ -1,0 +1,32 @@
+<pl-question-panel>
+<p>
+  An object of mass  $m = 20$ kg experience a force $F$ according to the graph below
+  For the interval from $t=0$ to $t=4$ seconds, what is the total change in momentum of the object? 
+</p>  
+<pl-drawing answers-name="diag" width="560" height="240" hide-answer-panel="false">
+  <pl-drawing-initial>
+      <pl-axes origin="{{params.V_origin}}"
+               grid-label="{{params.label_V}}"
+               xpos = 440
+               yneg = 20  
+               label-x="t[s]"
+               label-y="F(t)[N]"
+               offsetx-label-y=-50 
+               offsety-label-y=-25 
+              >
+      </pl-axes>
+      <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}" > </pl-graph-line>
+      <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}" >  </pl-graph-line>
+      <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V3}}" >  </pl-graph-line>
+    
+    </pl-drawing-initial>
+
+</pl-drawing>
+<br>
+
+</pl-question-panel>
+
+<p>  
+  <pl-number-input answers-name="ans" label="change in momentum $= $ " suffix="kg $\cdot$ m/s" comparison="sigfig" digits="3" ></pl-number-input>
+</p>
+

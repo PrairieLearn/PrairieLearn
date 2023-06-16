@@ -1,0 +1,25 @@
+<pl-question-panel>
+
+  <p>
+    Two balls experience a free fall, starting from rest.
+    Ball 1 falls freely for {{params.t1}} seconds a distance $d_1$ 
+    and ball 2 falls freely for {{params.t2}} seconds a distance $d_2$. 
+    Select the correct answer:
+  </p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="ans" weight="1">
+  <pl-answer correct="false">$d_1 = 2 d_2$</pl-answer>
+  <pl-answer correct="false">$d_2 = 2 d_1$</pl-answer>
+  <pl-answer correct="false">$d_1 = 3 d_2$</pl-answer>
+  <pl-answer correct="false">$d_2 = 3 d_1$</pl-answer>
+  <pl-answer correct={{params.ans1}}>$d_1 = 4 d_2$</pl-answer>
+  <pl-answer correct={{params.ans2}}>$d_2 = 4 d_1$</pl-answer>
+  <pl-answer correct="false">$d_2 = 6 d_1$</pl-answer>
+  <pl-answer correct="false">$d_1 = 6 d_2$</pl-answer>
+  <pl-answer correct="false">$d_2 = 8 d_1$</pl-answer>
+  <pl-answer correct="false">$d_1 = 8 d_2$</pl-answer>
+  <pl-answer correct={{params.ans3}}>$d_2 = 9 d_1$</pl-answer>
+  <pl-answer correct={{params.ans4}}>$d_1 = 9 d_2$</pl-answer>
+</pl-multiple-choice>

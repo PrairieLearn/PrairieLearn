@@ -1,0 +1,59 @@
+<pl-question-panel>
+  <p>
+    Bobby pushes a toy car off a table
+    with height 
+    $h = {{params.h}}\rm\ m$, at a speed of ${{params.v0}} \rm\ m/s$. Assume the acceleration due to gravity is $g=9.8 \rm\ m/s^2$. 
+  </p>
+
+  <p>
+    <pl-drawing gradable="false" grid-size="0"  width="300" height=210>
+        <pl-drawing-initial>
+            <pl-rectangle x1=20 y1=130 width="40" height="140" color="gray"></pl-rectangle>
+            <pl-circle x1=40 y1=50 radius="10" color="blue"></pl-circle>
+            <pl-vector x1=40 y1=50 angle=0 width="80" label="v_0"></pl-vector>
+            <pl-dimensions x1="40" y1="200" x2="40"  y2="50" dim-offset="200" end-support-line="true" label="h" ></pl-dimensions>
+            <pl-line x1="0" y1="200" x2="300" y2="200"
+            stroke-width="1" ></pl-line>
+            <pl-coordinates x1="40" y1="200" angle="0"
+            label-x="i" offsety-label-x="-20"
+            label-y="j" offsetx-label-y="5"></pl-coordinates>
+        </pl-drawing-initial>
+    </pl-drawing>
+  </p>
+  
+</pl-question-panel>
+ 
+  <p>  
+    How long will it take for the toy car to reach the ground?
+  </p>
+  <p>  
+  <pl-number-input answers-name="tb" label="Time = " size="25"  suffix="seconds"></pl-number-input>
+  </p>
+  <p>  
+    What is the velocity of the toy car when it reaches the ground? 
+  </p>
+  <p>
+  <pl-number-input answers-name="vbx" label="Velocity = " suffix="$\hat{\textbf{i}} $"
+  show-placeholder="false" show-help-text="false" size="8">
+  </pl-number-input>
+  <pl-number-input answers-name="vby" 
+  label="$+$"
+  show-placeholder="false" show-help-text="false" size="8" suffix="$\hat{\textbf{j}} \rm \; m/s$">
+  </pl-number-input>
+  </p>
+  <p>  
+    What is the corresponding speed?
+  </p>
+  <p>
+  <pl-number-input answers-name="vmag" label="Speed = " size="25"  suffix="m/s"></pl-number-input>
+  </p>
+  <p>  
+    How far from the table will the car be when it reaches the ground?
+  </p>
+  <p>
+  <pl-number-input answers-name="d" label="Distance = " size="25"  suffix="m"></pl-number-input>
+  </p>
+
+  
+
+  

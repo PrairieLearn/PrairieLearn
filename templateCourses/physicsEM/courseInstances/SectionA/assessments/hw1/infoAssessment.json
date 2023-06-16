@@ -1,0 +1,36 @@
+{
+    "uuid": "13D012E4-9C66-4092-BA1A-1445919DB0C3",
+    "type": "Homework",
+    "title": "Question Bank",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2040-12-31T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Electrostatics",
+            "questions": [
+                {"id": "twoSpheresDistance", "points": 1,"maxPoints": 3},
+                {"id": "twoSpheresAddCharge", "points": 1, "maxPoints": 3},
+                {"id": "particlesOnIncline", "points": 1,"maxPoints": 6},
+                {"id": "particleElectricField", "points": 1,"maxPoints": 3},
+                {"id": "electronPerpendicularElectricFieldSymbolic", "points": 1,"maxPoints": 1},
+                {"id": "electronPerpendicularElectricField", "points": 1,"maxPoints": 3, "triesPerVariant": 2},
+                {"id": "dipoleElectricField", "points": 1,"maxPoints": 3, "triesPerVariant": 2}
+            ]
+        },
+        {
+            "title": "Capacitors",
+            "questions": [
+                {"id": "equivalentCapacitance", "points": 1,"maxPoints": 6}
+            ]
+        }
+    ],
+    "text": "<p>This assignment includes all the questions available in the template course Physics: E&M.</p>"
+}

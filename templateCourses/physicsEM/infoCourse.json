@@ -1,0 +1,19 @@
+{
+    "uuid": "29760b11-beb1-4507-bb0a-a15bc8eaf091",
+    "name": "OER 102",
+    "title": "Physics: E&M",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+    "assessmentSets": [],
+    "assessmentModules": [],
+    "topics": [
+        {"name": "Electrostatics",      "color": "red1", "description": " "}
+    ],
+    "tags": [  
+        {"name": "calculation", "color": "blue2", "description": "numerical input is expected resulting from calculations"},
+        {"name": "mc", "color": "green1", "description": "multiple-choice question"},
+        {"name": "dropdown", "color": "green2", "description": "dropdown menu question"},
+        {"name": "not-randomized", "color": "purple1", "description": "question without randomization"}
+    ]
+}

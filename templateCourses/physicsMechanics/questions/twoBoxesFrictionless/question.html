@@ -1,0 +1,27 @@
+<pl-question-panel>
+
+<p>
+    The frictionless system below is accelerated by the applied force F. Write an expression for the tension 
+    in the string between the two blocks. 
+</p>
+
+<pl-drawing gradable="false"  width="400" height="140" grid-size="0">
+    <pl-drawing-initial>
+        <pl-rectangle x1="200" y1="130" width="400" height="20" color="gray"></pl-rectangle>
+        <pl-line x1="80" y1="100" x2="260" y2="100" ></pl-line>
+        <pl-rectangle x1="80" y1="100" width="80" height="40" color="orange"></pl-rectangle>
+        <pl-text x1="80" y1="100" label="{{params.m1}}"></pl-text>
+        <pl-vector x1="260" y1="100" width="100" label="F"></pl-vector>
+        <pl-rectangle x1="260" y1="100" width="80" height="40" color="orange"></pl-rectangle>
+        <pl-text x1="260" y1="100" label="{{params.m2}}"></pl-text>        
+    </pl-drawing-initial>
+</pl-drawing>
+
+</pl-question-panel>
+
+<br>
+<p>
+<pl-symbolic-input answers-name="T" label=" Tension $=$" variables="{{params.F}}" ></pl-symbolic-input>
+</p>
+
+

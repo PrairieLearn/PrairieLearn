@@ -1,0 +1,58 @@
+<pl-question-panel>
+
+<p>
+    A pendulum of length $L = {{params.L}}$ m and bob with mass $m = {{params.m}}$ kg is released from rest at an angle $\theta = {{params.theta}}^o$ from the vertical. When the pendulum reaches the vertical position, the bob strikes an object with mass $M = {{params.M}}$ kg that is resting on a frictionless surface as illustrated below. Assume the collision is elastic and that the acceleration of gravity equal to $9.8$ m/s$^2$.
+</p>
+
+<p>
+<pl-drawing gradable="false" grid-size="0"  width="500" height="300">
+    <pl-drawing-initial>
+        <pl-fixed-pin x1="180" y1="40" color="green1" angle="-180" height="30"></pl-fixed-pin>
+        <pl-line x1="180" y1="40" width="120" angle="120" ></pl-line>
+        <pl-circle x1="120" y1="144" radius="20" color="gray1"></pl-circle>
+        <pl-line x1="180" y1="40" width="120" angle="90" dashed-size="2" stroke-width="1"></pl-line>
+        <pl-circle x1="180" y1="160" radius="20" color="gray1" stroke-width="1" opacity="0.6"></pl-circle>
+        <pl-text x1="120" y1="144" label="m" offsetx="-5"></pl-text>
+        <pl-rectangle x1="140" y1="250" width="280" height="100" color="orange1"></pl-rectangle>
+        <pl-rectangle x1="240" y1="160" width="80" height="80" color="green2"></pl-rectangle>
+        <pl-text x1="240" y1="160" label="M"></pl-text>
+        <pl-arc-dimensions x1="180" y1="40" start-angle="90" end-angle="120" radius="60" label="\\theta" offsetx="5" offsety="-5" draw-start-arrow="true" draw-end-arrow="false"></pl-arc-dimensions>
+        <pl-dimensions x1="240" y1="200" x2="240" y2="300" label="h"></pl-dimensions>
+        <pl-dimensions x1="280" y1="280" x2="380" y2="280" label="d = ?"></pl-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<br>
+
+</pl-question-panel>
+
+<p>What is the speed of the bob just before it hits the object with mass $M$?</p>
+
+<p>
+    <pl-number-input answers-name="v" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
+
+<p>What is the speed of the bob just after the elastic collision? Hint: 
+    use the formula for the elastic collision.</p>
+<p>
+    <pl-number-input answers-name="vb" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
+
+<p>What is the speed of the object of mass $M$ just after the elastic collision?</p>
+
+<p>
+    <pl-number-input answers-name="vo" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
+
+<p>What is the impulse acting on the object with mass $M$ during the collision?</p>
+
+<p>
+    <pl-number-input answers-name="imp" label="Impulse $=$" suffix="m/s" ></pl-number-input>
+</p>
+    
+<p>If h = {{params.H}} m, how far from the edge of the surface will the box hit the ground?</p>
+
+<p>
+    <pl-number-input answers-name="d" label=" $d = $" suffix="m" ></pl-number-input>
+</p>
+    

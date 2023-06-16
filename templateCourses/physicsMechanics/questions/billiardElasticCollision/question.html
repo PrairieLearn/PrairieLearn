@@ -1,0 +1,39 @@
+<pl-question-panel>
+
+<p>Ball 1 is traveling towards ball 2 with velocity $v_0 = {{params.v0}}$ m/s as illustrated below. Ball 2 is stationary. Both balls are identical.</p>
+<p>
+<pl-drawing gradable="false" grid-size="0"  width="500" height="300">
+    <pl-drawing-initial>
+        <pl-axes origin="{{params.V_origin}}" yneg="120" stroke-width="1">
+        </pl-axes>
+        <pl-circle x1="{{params.pA.0}}" y1="{{params.pA.1}}" radius="{{params.r}}" color="green3"></pl-circle>
+        <pl-text x1="{{params.pA.0}}" y1="{{params.pA.1}}" label="1" offsetx="-5" offsety="-5"></pl-text>
+        <pl-circle x1="{{params.pC.0}}" y1="{{params.pC.1}}" radius="{{params.r}}" color="red3"></pl-circle>
+        <pl-text x1="{{params.pC.0}}" y1="{{params.pC.1}}" label="2" offsetx="-5" offsety="-5"></pl-text>
+        <pl-vector x1="{{params.pA.0}}" y1="{{params.pA.1}}" label="v_0" color="green3"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+<p>After the elastic collision, ball 2 starts to travel with velocity $v_2$, and ball 1 experiences a change of direction, and continues traveling with velocity $v_1$. </p>
+<pl-drawing gradable="false" grid-size="0"  width="500" height="300">
+    <pl-drawing-initial>
+        <pl-axes origin="{{params.V_origin}}" yneg="120" stroke-width="1">
+        </pl-axes>
+        <pl-circle x1="{{params.pB.0}}" y1="{{params.pB.1}}" radius="{{params.r}}" color="green3" stroke-width="1" opacity="0.4" ></pl-circle>
+        <pl-circle x1="{{params.pC.0}}" y1="{{params.pC.1}}" radius="{{params.r}}" color="red3" stroke-width="1" opacity="0.4"></pl-circle>
+        <pl-circle x1="{{params.pD.0}}" y1="{{params.pD.1}}" radius="{{params.r}}" color="red3"></pl-circle>
+        <pl-circle x1="{{params.pE.0}}" y1="{{params.pE.1}}" radius="{{params.r}}" color="green3"></pl-circle>
+        <pl-vector x1="{{params.pE.0}}" y1="{{params.pE.1}}" label="v_1" angle="{{params.theta.0}}" color="green3"></pl-vector>
+        <pl-vector x1="{{params.pD.0}}" y1="{{params.pD.1}}" label="v_2" angle="{{params.theta.1}}" color="red3"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+<br>
+<p>
+{{params.statement}}, what is the speed of ball 1 after the collision?
+</p>
+
+</pl-question-panel>
+
+<p>
+    <pl-number-input answers-name="v1" label="Speed $=$" suffix="m/s" ></pl-number-input>
+</p>
