@@ -7,9 +7,6 @@ np.random.seed(seed)
 size = 10**7
 
 
-import math
-
-import matplotlib.pyplot as plt
 import numpy as np
 
 # There are actually 2 possible orders in which to produce random numbers,

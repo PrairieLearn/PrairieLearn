@@ -1,9 +1,4 @@
-import io
 import random
-
-import matplotlib.pyplot as plt
-import numpy as np
-import prairielearn as pl
 
 
 def generate(data):

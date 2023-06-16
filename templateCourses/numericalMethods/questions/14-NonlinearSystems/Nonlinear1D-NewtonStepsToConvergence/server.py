@@ -1,8 +1,6 @@
 import math
 from random import randint
 
-import prairielearn as pl
-
 
 def generate(data):
 

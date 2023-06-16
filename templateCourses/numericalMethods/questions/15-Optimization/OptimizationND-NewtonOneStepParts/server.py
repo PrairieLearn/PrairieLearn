@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.linalg as la
 import prairielearn as pl
-import scipy.optimize as opt
 
 
 def generate(data):

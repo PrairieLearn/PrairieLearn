@@ -1,7 +1,6 @@
 import random
 
 import numpy as np
-import numpy.linalg as la
 import scipy.linalg as sla
 
 M = random.randint(20, 31)

@@ -1,6 +1,3 @@
-import numpy as np
-
-
 # complete the function below
 def dfunc(x):
     # Add your code here

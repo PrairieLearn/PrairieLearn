@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 def func(x):
@@ -10,7 +9,6 @@ def func(x):
     f: scalar function value
     """
     # WRITE YOUR CODE HERE
-    pass
 
 
 def dfunc(x):
@@ -21,7 +19,6 @@ def dfunc(x):
     df: 1D numpy array containing first derivatives wrt x
     """
     # WRITE YOUR CODE HERE
-    pass
 
 
 def fd(x, dx):
@@ -33,7 +30,6 @@ def fd(x, dx):
     df: 1D numpy array containing approximations for the first derivatives wrt x
     """
     # WRITE YOUR CODE HERE
-    pass
 
 
 # COMPUTE FINITE DIFFERENCE APPROXIMATIONS FOR DECREASING VALUES OF dx

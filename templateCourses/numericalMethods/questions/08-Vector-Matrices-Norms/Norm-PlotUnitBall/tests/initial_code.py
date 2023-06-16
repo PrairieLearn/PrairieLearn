@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -13,7 +12,6 @@ def norm(x, p):
     Returns:
         (float): the p-norm of the array
     """
-    pass
 
 
 ps = [1, 2, 5, 0.5]

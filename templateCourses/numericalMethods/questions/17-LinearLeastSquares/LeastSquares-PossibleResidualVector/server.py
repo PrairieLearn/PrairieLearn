@@ -42,5 +42,3 @@ def generate(data):
     data["params"]["notcorrect1"] = pl.to_json(notcorrect1.reshape(4, 1))
     data["params"]["notcorrect2"] = pl.to_json(notcorrect2.reshape(4, 1))
     data["params"]["notcorrect3"] = pl.to_json(notcorrect3.reshape(4, 1))
-
-    pass

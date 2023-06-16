@@ -5,7 +5,7 @@ import numpy.linalg as la
 import scipy.linalg as spla
 from code_feedback import Feedback as feedback
 from pl_helpers import name, not_repeated, points
-from pl_unit_test import PLTestCase, PLTestCaseWithPlot
+from pl_unit_test import PLTestCaseWithPlot
 
 
 class Test(PLTestCaseWithPlot):

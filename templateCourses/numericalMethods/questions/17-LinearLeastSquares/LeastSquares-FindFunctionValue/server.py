@@ -1,11 +1,8 @@
 import io
 import random
 
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.linalg as la
-import prairielearn as pl
 
 
 def file(data):

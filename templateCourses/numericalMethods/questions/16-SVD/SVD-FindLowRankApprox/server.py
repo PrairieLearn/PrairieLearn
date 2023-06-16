@@ -1,11 +1,3 @@
-import json
-from random import sample
-
-import numpy as np
-import numpy.linalg as la
-import prairielearn as pl
-
-
 def generate(data):
 
     names_for_user = [

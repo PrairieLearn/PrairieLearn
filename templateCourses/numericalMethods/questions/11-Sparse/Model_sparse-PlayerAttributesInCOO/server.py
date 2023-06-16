@@ -1,6 +1,3 @@
-import random
-
-
 def generate(data):
 
     data["params"]["names_for_user"] = [

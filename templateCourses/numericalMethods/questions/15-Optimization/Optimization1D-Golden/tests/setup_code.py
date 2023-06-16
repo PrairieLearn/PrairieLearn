@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.optimize as opt
-from code_feedback import Feedback
 
 a = a_start = -10
 b = b_start = 10

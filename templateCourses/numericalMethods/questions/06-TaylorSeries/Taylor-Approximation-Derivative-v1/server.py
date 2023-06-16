@@ -1,7 +1,5 @@
 import random
 
-import numpy as np
-
 
 def cos_first_derivative(x):
     return -x
