@@ -1419,18 +1419,12 @@ More information about the grading attributes in the Grading section below.
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
-  <pl-drawing-initial>
-    <pl-switch x1="20" y1="40" x2="140" y2="40" label="A"></pl-switch>
-    <pl-switch
-      x1="180"
-      y1="60"
-      angle="90"
-      width="120"
-      stroke-color="blue"
-      stroke-width="3"
-    ></pl-switch>
-    <pl-switch x1="20" y1="100" angle="30" width="120" switch-angle="-45"></pl-switch>
-  </pl-drawing-initial>
+    <pl-drawing-initial>
+        <pl-switch x1="20" y1="20" x2="140" y2="20" label="A"></pl-switch>
+        <pl-switch x1="180" y1="60" angle="90" width="120" label="B" stroke-color="blue"  ></pl-switch>
+        <pl-switch x1="20" y1="120" angle="20" width="120" switch-angle="45" label="S_1" draw-pin="false"></pl-switch>
+        <pl-switch x1="20" y1="100" angle="0" width="120" switch-angle="0"></pl-switch>
+    </pl-drawing-initial>
 </pl-drawing>
 ```
 
