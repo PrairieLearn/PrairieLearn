@@ -1499,6 +1499,45 @@ More information about the grading attributes in the Grading section below.
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-inductor` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200" grid-size="20">
+    <pl-drawing-initial>
+        <pl-inductor ></pl-inductor>
+        <pl-inductor x1="40" y1="80" x2="180" y2="120" stroke-color="red" label="4 H"></pl-inductor>
+        <pl-inductor x1="30" y1="160" width="140" interval="60" height="30" stroke-color="purple" label="2 H"></pl-inductor>
+    </pl-drawing-initial>
+</pl-drawing>
+```
+
+<img src="pl-inductor.png" width=50%>
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                                                                                                                                                                                                                                             |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 40      | `x` position for the first end of the inductor, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                       |
+| `y1`           | float  | 40      | `y` position for the first end of the inductor, i.e., the vertical distance from the top border of the canvas.                                                                                                                                          |
+| `angle`        | float  | 0       | Angle of rotation around the start point of the inductor. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
+| `width`        | float  | 60      | Length of the inductor                                                                                                                                                                                                                                  |
+| `x2`           | float  | -       | `x` position for the end point for the inductor, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
+| `y2`           | float  | -       | `y` position for the end point for the inductor, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `height`       | float  | 20      | Height of the spring-like region of the inductor.                                                                                                                                                                                                       |
+| `interval`     | float  | 40      | Length of the spring-like region of the inductor.                                                                                                                                                                                                       |
+| `label`        | string | -       | Text to label the inductor.                                                                                                                                                                                                                             |
+| `font-size`    | float  | 16      | Label font size.                                                                                                                                                                                                                                        |
+| `offsetx`      | float  | 2       | Horizontal offset for the `label`.                                                                                                                                                                                                                      |
+| `offsety`      | float  | 2       | Vertical offset for the `label`.                                                                                                                                                                                                                        |
+| `stroke-color` | string | black   | Set the stroke color of the rod.                                                                                                                                                                                                                        |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                            |
+
+#### Example implementations
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ## Creating group of elements
 
 ### `pl-drawing-group` element
