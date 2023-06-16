@@ -4,15 +4,9 @@
   "topic": "LinearSystemEquations",
   "type": "v3",
   "tags": [
-    "Fa20",
-    "csharma4",
-    "quiz-like",
-    "easy",
-    "calculate",
-    "rand",
-    "nontest",
-    "triangular-solve",
-    "complexity",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "calculation"
   ]
 }

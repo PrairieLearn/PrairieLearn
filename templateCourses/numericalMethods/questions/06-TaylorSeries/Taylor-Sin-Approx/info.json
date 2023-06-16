@@ -3,15 +3,10 @@
   "title": "Approximation of an Infinite Series",
   "topic": "TaylorSeries",
   "tags": [
-    "Fa18",
-    "enache2",
-    "short-coding",
-    "nontest",
-    "non-rand",
-    "approx-f",
-    "medium",
-    "good",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

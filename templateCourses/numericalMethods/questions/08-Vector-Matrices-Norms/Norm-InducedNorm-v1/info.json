@@ -3,14 +3,10 @@
   "title": "Induced Norm",
   "topic": "Norms",
   "tags": [
-    "Fa20",
-    "csharma4",
-    "easy",
-    "nontest",
-    "quiz-like",
-    "calculate",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "calculation"
   ],
   "type": "v3"
 }

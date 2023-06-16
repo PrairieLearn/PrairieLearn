@@ -4,11 +4,9 @@
   "topic": "Finite Difference",
   "type": "v3",
   "tags": [
-    "Fa19",
-    "njchris2",
-    "nontest",
-    "calculate",
-    "medium",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa19",
+    "calculation"
   ]
 }

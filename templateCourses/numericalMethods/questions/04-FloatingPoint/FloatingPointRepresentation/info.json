@@ -4,13 +4,9 @@
   "topic": "FloatingPoint",
   "type": "v3",
   "tags": [
-    "Fa20",
-    "mfsilva",
-    "easy",
-    "nontest",
-    "calculate",
-    "representation",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "calculation"
   ]
 }

@@ -3,13 +3,10 @@
   "title": "List sorting in-place",
   "topic": "Python",
   "tags": [
-    "Fa20",
-    "aukey2",
-    "short-coding",
-    "easy",
-    "test",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

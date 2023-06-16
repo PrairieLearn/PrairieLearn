@@ -4,12 +4,9 @@
   "topic": "SVD",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jinlinx2",
-    "nontest",
-    "calculate",
-    "medium",
-    "svd-low-rank",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

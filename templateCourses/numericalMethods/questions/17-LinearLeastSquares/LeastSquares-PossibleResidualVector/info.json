@@ -4,14 +4,9 @@
   "topic": "LinearLeastSquares",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "sliu134",
-    "test",
-    "medium",
-    "choice",
-    "rand",
-    "residual",
-    "conceptual",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "mc"
   ]
 }

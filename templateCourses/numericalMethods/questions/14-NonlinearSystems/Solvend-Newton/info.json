@@ -3,14 +3,10 @@
   "title": "Newton",
   "topic": "NonlinearSolveND",
   "tags": [
-    "Fa18",
-    "enache2",
-    "short-coding",
-    "test",
-    "medium",
-    "non-rand",
-    "newtonND-code",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

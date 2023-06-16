@@ -3,12 +3,10 @@
   "title": "Find Pseudo-Inverse Given SVD",
   "topic": "SVD",
   "tags": [
-    "Sp20",
-    "peiyaol2",
-    "short-coding",
-    "medium",
-    "test",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp20",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

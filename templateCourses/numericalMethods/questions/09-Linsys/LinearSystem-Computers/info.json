@@ -4,11 +4,9 @@
   "topic": "LinearSystemEquations",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "sliu134",
-    "nontest",
-    "easy",
-    "calculate",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

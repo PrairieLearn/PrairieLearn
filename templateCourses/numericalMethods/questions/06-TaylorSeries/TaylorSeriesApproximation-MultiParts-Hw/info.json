@@ -4,17 +4,9 @@
   "topic": "TaylorSeries",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jjdoher2",
-    "multianswer",
-    "quiz-like",
-    "calculate",
-    "medium",
-    "test",
-    "rand",
-    "approx-f",
-    "approx-df",
-    "good",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

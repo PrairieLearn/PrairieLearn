@@ -3,12 +3,10 @@
   "title": "Find Low-Rank Approximation Given SVD",
   "topic": "SVD",
   "tags": [
-    "Sp20",
-    "sentz2",
-    "short-coding",
-    "medium",
-    "test",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp20",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

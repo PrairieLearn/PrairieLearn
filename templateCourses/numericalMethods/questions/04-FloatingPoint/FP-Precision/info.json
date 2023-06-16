@@ -4,17 +4,9 @@
   "topic": "FloatingPoint",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jinlinx2",
-    "sliu134",
-    "test",
-    "calculation",
-    "medium",
-    "representation",
-    "rounding",
-    "good",
-    "short-answer",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

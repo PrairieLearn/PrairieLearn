@@ -4,11 +4,9 @@
   "topic": "Finite Difference",
   "type": "v3",
   "tags": [
-    "Fa20",
-    "voronin2",
-    "calculate",
-    "easy",
-    "test",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "calculation"
   ]
 }

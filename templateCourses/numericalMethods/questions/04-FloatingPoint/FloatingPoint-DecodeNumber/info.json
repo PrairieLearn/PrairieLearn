@@ -3,16 +3,10 @@
   "title": "Decoding a Floating Point Number",
   "topic": "FloatingPoint",
   "tags": [
-    "Fa19",
-    "malachi2",
-    "short-coding",
-    "test",
-    "easy",
-    "toy",
-    "good",
-    "conceptual",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa19",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

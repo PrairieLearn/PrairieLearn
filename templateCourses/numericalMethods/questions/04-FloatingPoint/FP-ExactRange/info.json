@@ -4,18 +4,9 @@
   "topic": "FloatingPoint",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jinlinx2",
-    "jjdoher2",
-    "ecarrie2",
-    "test",
-    "calculation",
-    "medium",
-    "features",
-    "toy",
-    "rand",
-    "short-answer",
-    "good",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

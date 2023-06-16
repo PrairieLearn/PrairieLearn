@@ -4,14 +4,9 @@
   "topic": "NonlinearSolve1D",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "quiz-like",
-    "calculate",
-    "easy",
-    "bisection",
-    "nontest",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

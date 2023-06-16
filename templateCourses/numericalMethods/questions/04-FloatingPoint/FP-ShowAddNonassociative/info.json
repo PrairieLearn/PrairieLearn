@@ -3,11 +3,10 @@
   "title": "FP Show Nonassociativity of Addition",
   "topic": "FloatingPoint",
   "tags": [
-    "Fa18",
-    "ecarrie2",
-    "nontest",
-    "arithmetic",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "conceptual"
   ],
   "type": "v3"
 }

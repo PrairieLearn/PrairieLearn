@@ -4,11 +4,9 @@
   "topic": "SVD",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "nontest",
-    "medium",
-    "calculate",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

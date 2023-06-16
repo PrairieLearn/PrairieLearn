@@ -4,16 +4,9 @@
   "topic": "FloatingPoint",
   "type": "v3",
   "tags": [
-    "Sp20",
-    "sentz2",
-    "test",
-    "calculation",
-    "medium",
-    "IEEE",
-    "representation",
-    "rand",
-    "good",
-    "short-answer",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp20",
+    "calculation"
   ]
 }

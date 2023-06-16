@@ -3,13 +3,10 @@
   "title": "Calculating pi using Monte Carlo",
   "topic": "MonteCarlo",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "short-coding",
-    "medium",
-    "test",
-    "area-volume",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

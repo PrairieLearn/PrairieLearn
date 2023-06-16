@@ -4,14 +4,9 @@
   "topic": "FloatingPoint",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jinlinx2",
-    "nontest",
-    "choice",
-    "medium",
-    "conceptual",
-    "non-rand",
-    "good",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "mc"
   ]
 }

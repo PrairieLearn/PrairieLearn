@@ -3,16 +3,10 @@
   "title": "Taylor Series approximation",
   "topic": "TaylorSeries",
   "tags": [
-    "wjiang24",
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
     "sp20",
-    "sync",
-    "calculation",
-    "test",
-    "non-rand",
-    "approx-f",
-    "medium",
-    "good",
-    "shared"
+    "calculation"
   ],
   "type": "v3"
 }

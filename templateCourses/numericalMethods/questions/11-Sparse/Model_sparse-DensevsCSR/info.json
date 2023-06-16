@@ -4,16 +4,9 @@
   "topic": "Model-sparse",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "yuchens6",
-    "test",
-    "calculate",
-    "medium",
-    "sync",
-    "rand",
-    "conceptual",
-    "storage",
-    "CSR",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

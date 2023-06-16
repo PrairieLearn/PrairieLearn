@@ -4,15 +4,9 @@
   "topic": "LinearSystemEquations",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "sliu134",
-    "test",
-    "easy",
-    "create-model",
-    "multianswer",
-    "calculate",
-    "setup-system",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

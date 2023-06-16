@@ -3,13 +3,10 @@
   "title": "Understanding SVD components",
   "topic": "SVD",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "easy",
-    "quiz-like",
-    "nontest",
-    "choice",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "mc"
   ],
   "type": "v3"
 }

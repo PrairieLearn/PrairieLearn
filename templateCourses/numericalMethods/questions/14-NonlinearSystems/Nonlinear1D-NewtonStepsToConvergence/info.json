@@ -3,13 +3,10 @@
   "title": "Newton's Method - How many iterations?",
   "topic": "NonlinearSolve1D",
   "tags": [
-    "Fa18",
-    "cmurray6",
-    "calculate",
-    "medium",
-    "nontest",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ],
   "type": "v3"
 }

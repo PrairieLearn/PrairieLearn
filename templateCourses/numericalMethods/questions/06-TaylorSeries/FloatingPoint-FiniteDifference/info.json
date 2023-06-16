@@ -3,11 +3,10 @@
   "title": "Finite Difference",
   "topic": "Finite Difference",
   "tags": [
-    "Sp19",
-    "qiuchen2",
-    "short-coding",
-    "easy",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp19",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

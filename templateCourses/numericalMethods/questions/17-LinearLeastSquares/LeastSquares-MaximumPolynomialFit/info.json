@@ -4,14 +4,9 @@
   "topic": "LinearLeastSquares",
   "type": "v3",
   "tags": [
-    "Fa20",
-    "siyuan3",
-    "calculate",
-    "easy",
-    "rand",
-    "test",
-    "conceptual",
-    "curve-fitting",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "calculation"
   ]
 }

@@ -221,7 +221,7 @@
             ]
         }
     ],
-    "text": "<p>This assignment includes all the questions available in the template course Numerical Methods. 'Worspaces' contain examples from each topic, they are not graded activities. You can use these questions to create separate assessments in your course.</p>"
+    "text": "<p>This assignment includes all the questions available in the template course Numerical Methods. 'Worspace' contains a Jupyter Notebook with examples from each topic; they are not graded activities. You can use these questions to create separate assessments in your course.</p>"
 }
 
 

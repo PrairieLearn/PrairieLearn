@@ -3,13 +3,10 @@
   "title": "Find Function Value",
   "topic": "LinearLeastSquares",
   "tags": [
-    "Fa18",
-    "mfsilva",
-    "short-coding",
-    "rand",
-    "test",
-    "curve-fitting",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

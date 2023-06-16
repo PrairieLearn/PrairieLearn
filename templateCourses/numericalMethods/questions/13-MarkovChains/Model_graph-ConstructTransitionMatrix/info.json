@@ -1,15 +1,12 @@
 {
   "uuid": "4ab9989b-4093-4346-9cbb-28f5d9bbf86d",
   "title": "Weighted Adjacency Matrix",
-  "topic": "Model-graphs",
+  "topic": "MarkovChains",
   "type": "v3",
   "tags": [
-    "Sp19",
-    "gwang10",
-    "nnytko2",
-    "nontest",
-    "calculate",
-    "easy",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp19",
+    "calculation"
   ]
 }

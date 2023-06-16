@@ -3,13 +3,10 @@
   "title": "Newton vs. Steepest Descent",
   "topic": "OptimizationND",
   "tags": [
-    "Fa18",
-    "enache2",
-    "short-coding",
-    "medium",
-    "nonrand",
-    "test",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

@@ -3,10 +3,10 @@
   "title": "Workspace: Sparse Matrices",
   "topic": "LinearSystemEquations",
   "tags": [
-    "Sp21",
-    "mfsilva",
-    "workspace",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "sp21",
+    "workspace"
   ],
   "type": "v3",
   "singleVariant": true,

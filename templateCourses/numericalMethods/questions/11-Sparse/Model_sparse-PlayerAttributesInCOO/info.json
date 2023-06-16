@@ -3,15 +3,10 @@
   "title": "Storing Player Attributes in a COO Matrix",
   "topic": "Model-sparse",
   "tags": [
-    "Fa19",
-    "xiaoyan5",
-    "short-coding",
-    "rand",
-    "test",
-    "application",
-    "COO",
-    "sync",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa19",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

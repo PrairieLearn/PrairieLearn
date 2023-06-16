@@ -4,13 +4,9 @@
   "topic": "Norms",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "cmurray6",
-    "nontest",
-    "calculate",
-    "quiz-like",
-    "easy",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

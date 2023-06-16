@@ -1,13 +1,12 @@
 {
   "uuid": "4e11c876-5b11-4c27-b915-f293d90d25ca",
   "title": "Drug Metabolism",
-  "topic": "Markov Chain",
+  "topic": "MarkovChains",
   "tags": [
-    "Fa18",
-    "enache2",
-    "short-coding",
-    "easy",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

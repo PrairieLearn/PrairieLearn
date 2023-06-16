@@ -4,16 +4,9 @@
   "topic": "Model-sparse",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "azhang38",
-    "jinlinx2",
-    "nontest",
-    "calculate",
-    "medium",
-    "rand",
-    "apply-transformation",
-    "storage",
-    "COO",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

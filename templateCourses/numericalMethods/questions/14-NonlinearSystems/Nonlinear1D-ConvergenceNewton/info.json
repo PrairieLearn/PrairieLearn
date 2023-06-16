@@ -4,13 +4,9 @@
   "topic": "NonlinearSolve1D",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "sliu134",
-    "quiz-like",
-    "choice",
-    "easy",
-    "nontest",
-    "non-rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "mc"
   ]
 }

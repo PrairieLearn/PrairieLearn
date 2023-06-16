@@ -4,13 +4,9 @@
   "topic": "Python",
   "type": "v3",
   "tags": [
-    "Fa20",
-    "csharma4",
-    "test",
-    "choice",
-    "easy",
-    "control-flow",
-    "rand",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa20",
+    "mc"
   ]
 }

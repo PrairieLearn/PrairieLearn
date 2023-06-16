@@ -3,14 +3,10 @@
   "title": "Line Fit",
   "topic": "LinearLeastSquares",
   "tags": [
-    "Fa18",
-    "enache2",
-    "short-coding",
-    "test",
-    "nonrand",
-    "application",
-    "curve-fitting",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,

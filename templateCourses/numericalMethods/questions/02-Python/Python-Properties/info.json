@@ -4,13 +4,9 @@
   "topic": "Python",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jinlinx2",
-    "nontest",
-    "choice",
-    "medium",
-    "non-rand",
-    "names-values",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "mc"
   ]
 }

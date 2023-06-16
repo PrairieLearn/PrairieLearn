@@ -4,13 +4,9 @@
   "topic": "OptimizationND",
   "type": "v3",
   "tags": [
-    "Fa18",
-    "jjdoher2",
-    "nontest",
-    "calculate",
-    "easy",
-    "rand",
-    "newtonND",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "calculation"
   ]
 }

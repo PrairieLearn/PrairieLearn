@@ -3,14 +3,10 @@
   "title": "Investigating Power Usage",
   "topic": "LinearSystemEquations",
   "tags": [
-    "Fa18",
-    "enache2",
-    "zzhou36",
-    "short-coding",
-    "application",
-    "medium",
-    "setup-system",
-    "shared"
+    "author:prairielearn.com",
+    "license:CC-BY-NC",
+    "fa18",
+    "short-coding"
   ],
   "type": "v3",
   "singleVariant": true,
