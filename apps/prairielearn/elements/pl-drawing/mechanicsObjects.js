@@ -116,7 +116,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     this.originY = 'center';
     this.originX = 'left';
     this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
-    this.h = this.height/2;
+    this.h = this.height / 2;
     this.width = this.length;
     this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
     this.angle = (180 / Math.PI) * this.angleRad;
@@ -136,27 +136,29 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
   _render: function (ctx) {
     let len = this.length;
     let R2 = this.h;
-    let R  = 0.5*R2
-    let offsetAngle = 50*Math.PI/180
-    let n = Math.floor( (len - 3*R - 2*R*Math.cos(offsetAngle))/(2*R*Math.cos(offsetAngle)) )
+    let R = 0.5 * R2;
+    let offsetAngle = (50 * Math.PI) / 180;
+    let n = Math.floor(
+      (len - 3 * R - 2 * R * Math.cos(offsetAngle)) / (2 * R * Math.cos(offsetAngle))
+    );
     let l2 = len / 2;
 
-    // Undo fabric's scale tranformations 
+    // Undo fabric's scale tranformations
     ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
 
     ctx.beginPath();
     ctx.moveTo(-l2, 0);
-    var dx = (len - ((n+1)*2*R*Math.cos(offsetAngle)+2*R))/2
-    var start = -l2 + dx
-    var xpos = start+R
+    var dx = (len - ((n + 1) * 2 * R * Math.cos(offsetAngle) + 2 * R)) / 2;
+    var start = -l2 + dx;
+    var xpos = start + R;
     ctx.lineTo(start, 0);
-    ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI, 2*Math.PI+offsetAngle);
+    ctx.ellipse(xpos, 0, R, R2, 0, Math.PI, 2 * Math.PI + offsetAngle);
     for (var i = 0; i < n; i++) {
-      xpos += 2*R*Math.cos(offsetAngle);
-      ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI-offsetAngle, 2*Math.PI+offsetAngle);
+      xpos += 2 * R * Math.cos(offsetAngle);
+      ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI + offsetAngle);
     }
-    xpos += 2*R*Math.cos(offsetAngle);
-    ctx.ellipse(xpos, 0, R, R2, 0,  Math.PI-offsetAngle, 2*Math.PI);
+    xpos += 2 * R * Math.cos(offsetAngle);
+    ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI);
     ctx.lineTo(l2, 0);
     ctx.strokeStyle = this.stroke;
     this._renderStroke(ctx);
@@ -4002,7 +4004,7 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
     }
     canvas.add(obj1, obj2);
 
-    var posSpring = getPositions(1.05*options.interval, d, theta, options);
+    var posSpring = getPositions(1.05 * options.interval, d, theta, options);
 
     var coilOptions = _.defaults(
       {
@@ -4021,8 +4023,8 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: coilOptions.x1 + options.height/2 * Math.sin(theta) + options.offsetx,
-        top: coilOptions.y1 - options.height* Math.cos(theta) - 10 + options.offsety,
+        left: coilOptions.x1 + (options.height / 2) * Math.sin(theta) + options.offsetx,
+        top: coilOptions.y1 - options.height * Math.cos(theta) - 10 + options.offsety,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,

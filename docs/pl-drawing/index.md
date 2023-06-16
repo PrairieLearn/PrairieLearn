@@ -700,11 +700,11 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
-    <pl-drawing-initial>
-      <pl-coil x1=50 y1=40  draw-pin="true"></pl-coil>
-      <pl-coil x1=20 y1=100 angle=20 width=120 height=80></pl-coil>
-      <pl-coil x1=20 y1=180 width=40 height=20 stroke-color="purple3"></pl-coil>
-    </pl-drawing-initial>
+  <pl-drawing-initial>
+    <pl-coil x1="50" y1="40" draw-pin="true"></pl-coil>
+    <pl-coil x1="20" y1="100" angle="20" width="120" height="80"></pl-coil>
+    <pl-coil x1="20" y1="180" width="40" height="20" stroke-color="purple3"></pl-coil>
+  </pl-drawing-initial>
 </pl-drawing>
 ```
 
@@ -712,8 +712,8 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                           |
-| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attribute      | Type    | Default | Description                                                                                                                                                                                                                                         |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `x1`           | float   | 20      | `x` position for the start point for the coil, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                    |
 | `y1`           | float   | 20      | `y` position for the start point for the coil, i.e., the vertical distance from the top border of the canvas.                                                                                                                                       |
 | `width`        | float   | 80      | Length of the coil.                                                                                                                                                                                                                                 |
@@ -722,7 +722,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `x2`           | float   | -       | `x` position for the end point for the coil, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
 | `y2`           | float   | -       | `y` position for the end point for the coil, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
 | `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                  |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
 | `draw-pin`     | boolean | false   | Draw points at the coil ends.                                                                                                                                                                                                                       |
 
 #### Example implementations
@@ -1505,11 +1505,19 @@ More information about the grading attributes in the Grading section below.
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
-    <pl-drawing-initial>
-        <pl-inductor ></pl-inductor>
-        <pl-inductor x1="40" y1="80" x2="180" y2="120" stroke-color="red" label="4 H"></pl-inductor>
-        <pl-inductor x1="30" y1="160" width="140" interval="60" height="30" stroke-color="purple" label="2 H"></pl-inductor>
-    </pl-drawing-initial>
+  <pl-drawing-initial>
+    <pl-inductor></pl-inductor>
+    <pl-inductor x1="40" y1="80" x2="180" y2="120" stroke-color="red" label="4 H"></pl-inductor>
+    <pl-inductor
+      x1="30"
+      y1="160"
+      width="140"
+      interval="60"
+      height="30"
+      stroke-color="purple"
+      label="2 H"
+    ></pl-inductor>
+  </pl-drawing-initial>
 </pl-drawing>
 ```
 
