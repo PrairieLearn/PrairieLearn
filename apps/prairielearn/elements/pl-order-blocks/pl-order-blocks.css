@@ -23,10 +23,6 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable {
-  padding: 20px;
-  height: 100%;
-}
 
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag){
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
@@ -59,11 +55,6 @@ li.ui-state-highlight {
 div.pl-order-blocks-container {
   display: flex;
   flex-direction: column;
-}
-
-div.dropzone-container {
-  width: 100%;
-  height: 100%;
 }
 
 .pl-order-blocks-container .pl-order-block,
