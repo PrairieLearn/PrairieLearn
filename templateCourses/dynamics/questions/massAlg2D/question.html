@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A plate of uniform areal density $\rho = {{params.rho}}\rm\
   kg/m^2$ is bounded by the four curves:
   \[\begin{aligned}
@@ -10,9 +10,7 @@
   \end{aligned}\]
   where $x$ and $y$ are in meters.
 </p>
-
-<pl-figure file-name="figure.png" type="dynamic" inline="true"></pl-figure>
-
+<pl-figure file-name="figure.png" inline="true" type="dynamic"></pl-figure>
 <p>
 <pre>
 Python Inputs:
@@ -29,14 +27,17 @@ x1 = {{params.x1}}
 x2 = {{params.x2}}
 </pre>
 </p>
-
 <p>
   What is the mass $m$ of the plate?
 </p>
-
 </pl-question-panel>
-
 <p>
 $m = $
-<pl-number-input answers-name="m" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ kg$
+<pl-number-input answers-name="m" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\rm\ kg$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

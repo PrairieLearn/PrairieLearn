@@ -1,5 +1,5 @@
 <pl-question-panel>
-  <p>
+<p>
     A particle $P$ starts at time $t = 0\rm\ s$ at the position
     \[\begin{aligned}
     r &amp;= {{params.r0}} {\rm\ m} \\
@@ -9,82 +9,77 @@
     basis associated with its current position, and is:
     $$\vec{v} = {{params.v}} {\rm\ m/s}$$.
   </p>
-  
-  <p>
+<p>
     We will first find a function for $r(t)$. Fully solve for the constant of integration for $r(t)$ and
     provide $r(t)$ in terms of the scalar variable <code>t</code> only.
   </p>
 </pl-question-panel>
-  <b>
+<b>
     For symbolic inputs, do not enter decimals as part of the input. For example, if the answer is 
     $2t$, enter $2t$ as <code>2*t</code>, not <code>2.0*t</code>.
   </b>
-  <p>
+<p>
     $r(t) = $
-    <pl-symbolic-input answers-name="r" variables="t" size="45" allow-blank="true"></pl-symbolic-input>${\rm\ m}$
+    <pl-symbolic-input allow-blank="true" answers-name="r" size="45" variables="t"></pl-symbolic-input>${\rm\ m}$
   </p>
 <pl-question-panel>
-  <p>
-    <small>
+<p>
+<small>
       Give your answers in symbolic form. You should use the scalar
       <code>t</code>. Functions are available
       like <code>sin()</code>, <code>cos()</code>, <code>atan2()</code>, <code>sqrt()</code>,
       and <code>log()</code>, as well as the mathematical
       constants <code>pi</code> and <code>e</code>.
     </small>
-
-  </p>
-  <p>
+</p>
+<p>
     Recall that polar velocity is in the form $\vec{v} = \dot{r} \hat{e}_r + r\dot{\theta} \hat{e}_\theta$. We need to find a function for $\theta(t)$. Let's keep the constant of integration $C$ as part of the expression for now:
     
   </p>
-  <p>
-    <small> 
+<p>
+<small> 
       Note that if $\theta$ is constant, then you can just enter $C$ as the answer. 
     </small>
-
-  </p>
+</p>
 </pl-question-panel>
-
 <p>
   $\theta(t) = $
-  <pl-symbolic-input answers-name="theta" variables="t, C" size="45" allow-blank="true"></pl-symbolic-input>$\rm\ rad$
+  <pl-symbolic-input allow-blank="true" answers-name="theta" size="45" variables="t, C"></pl-symbolic-input>$\rm\ rad$
 </p>
-
 <pl-question-panel>
-  <b>Use capitalized <code>C</code> for the constant of integration!</b> 
+<b>Use capitalized <code>C</code> for the constant of integration!</b>
 </pl-question-panel>
 <pl-question-panel>
-  <small>
+<small>
     Give your answers in symbolic form. You should use the scalar
     variables <code>C</code> and <code>t</code>. Functions are available
     like <code>sin()</code>, <code>cos()</code>, <code>atan2()</code>, <code>sqrt()</code>,
     and <code>log()</code>, as well as the mathematical
     constants <code>pi</code> and <code>e</code>.
   </small>
-
-
-
-  <p>
+<p>
     Notice we can again use the inital condition for $\theta$ to find what the constant of integration $C$ for $\theta$
     is. 
   </p>
 </pl-question-panel>
 <p>
   $C = $
-  <pl-number-input answers-name="C2" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input>$\rm\ rad$ 
+  <pl-number-input allow-blank="true" answers-name="C2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>$\rm\ rad$ 
+</p>
+<pl-question-panel>
+<p>
+      Altogether, what are the values of $r(t)$ and $\theta(t)$ at $t = {{params.t}}$?
+    </p>
+</pl-question-panel>
+<p>
+  $r({{params.t}})=$
+  <pl-number-input allow-blank="true" answers-name="rf" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>$\rm\ m$, $\theta({{params.t}})=$
+  <pl-number-input allow-blank="true" answers-name="thetaf" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>$\rm\ rad$
 </p>
 
 <pl-question-panel>
-    <p>
-      Altogether, what are the values of $r(t)$ and $\theta(t)$ at $t = {{params.t}}$?
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
     </p>
-
-
 </pl-question-panel>
-
-<p>
-  $r({{params.t}})=$
-  <pl-number-input answers-name="rf" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input>$\rm\ m$, $\theta({{params.t}})=$
-  <pl-number-input answers-name="thetaf" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input>$\rm\ rad$
-</p>

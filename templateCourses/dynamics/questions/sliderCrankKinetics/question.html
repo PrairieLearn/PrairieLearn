@@ -7,24 +7,22 @@
   constrained to move in a slot.  Forces $\vec{F}_P$ and
   $\vec{F}_Q$ are exerted on the rod by pins $P$ and $Q$,
   respectively, and there is no gravity or friction.
-</p> 
-
-<pl-drawing grid-size="0" width="420" height="420">
-    <pl-drawing-initial>
-        <pl-circle x1="{{params.Ox}}" y1="{{params.Oy}}" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
-        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" height="12" width="12" draw-pin="false"></pl-fixed-pin>
-        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" radius="2" label="O" offsetx="-20" offsety="-20"></pl-point>
+</p>
+<pl-drawing grid-size="0" height="420" width="420">
+<pl-drawing-initial>
+<pl-circle color="#FFFFFF" radius="{{params.r}}" stroke-width="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-circle>
+<pl-fixed-pin color="#FFFFFF" draw-pin="false" height="12" width="12" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-fixed-pin>
+<pl-point label="O" offsetx="-20" offsety="-20" radius="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-point>
         {{{params.drawGround1}}}
         {{{params.drawGround2}}}
-        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" width="10" draw-pin="false"></pl-rod>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="2" label="P"></pl-point>
-        <pl-point x1="{{params.Cx}}" y1="{{params.Cy}}" radius="2" label="C"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}"></pl-point>
-        <pl-text x1="{{params.B1x1}}" y1="{{params.B1y1}}" label="\\mathcal{B}_1"></pl-text>
-        <pl-text x1="{{params.B2x1}}" y1="{{params.B2y1}}" label="\\mathcal{B}_2"></pl-text>
-    </pl-drawing-initial>
+        <pl-rod draw-pin="false" width="10" x1="{{params.Px}}" x2="{{params.Qx}}" y1="{{params.Py}}" y2="{{params.Qy}}"></pl-rod>
+<pl-point label="P" radius="2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-point label="C" radius="2" x1="{{params.Cx}}" y1="{{params.Cy}}"></pl-point>
+<pl-point label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-text label="\\mathcal{B}_1" x1="{{params.B1x1}}" y1="{{params.B1y1}}"></pl-text>
+<pl-text label="\\mathcal{B}_2" x1="{{params.B2x1}}" y1="{{params.B2y1}}"></pl-text>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
   At the current instant we have:
   \[\begin{aligned}
@@ -51,28 +49,30 @@
   {{{params.givenString}}}
   \end{aligned}\]
 </p>
-
 <p>
-<pl-variable-output digits="3" default-tab="sympy">
-    <variable params-name="m1">m1</variable>
-    <variable params-name="m2">m2</variable>
-    <variable params-name="I1">I1</variable>
-    <variable params-name="I2">I2</variable>
-    <variable params-name="rOP">rOP</variable>
-    <variable params-name="rPQ">rPQ</variable>
-    <variable params-name="omega1">omega1</variable>
-    <variable params-name="omega2">omega2</variable>
-    <variable params-name="vP">vP</variable>
-    <variable params-name="vQ">vQ</variable>
+<pl-variable-output default-tab="sympy" digits="3">
+<variable params-name="m1">m1</variable>
+<variable params-name="m2">m2</variable>
+<variable params-name="I1">I1</variable>
+<variable params-name="I2">I2</variable>
+<variable params-name="rOP">rOP</variable>
+<variable params-name="rPQ">rPQ</variable>
+<variable params-name="omega1">omega1</variable>
+<variable params-name="omega2">omega2</variable>
+<variable params-name="vP">vP</variable>
+<variable params-name="vQ">vQ</variable>
     {{{params.pl_var_output_string}}}
 </pl-variable-output>
 </p>
-
 <p>What is ${{params.ansVar}}$?</p>
-
 </pl-question-panel>
-
 <p>
 ${{params.ansVar}} = $
 {{{params.ansCode}}} ${{params.ansUnits}}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

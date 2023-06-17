@@ -2,7 +2,6 @@
 <p>
   A particle has position vector $\vec{r}(t) = ({{params.position_x}})\hat{\imath} + ({{params.position_y}})\hat{\jmath} + ({{params.position_z}})\hat{k}\rm\ m$, where $t$ is in seconds.
 </p>
-
 <p>
 <pre>
 Python Inputs:
@@ -16,13 +15,16 @@ r = Matrix([{{params.rx}}, {{params.ry}}, {{params.rz}}])
 t_v = {{params.t}}
 </pre>
 </p>
-
 <p>What is
   its speed $v$ at time $t = {{params.t}}\rm\ s$?</p>
-
 </pl-question-panel>
-
 <p>
 $v = $
-	<pl-number-input answers-name="v" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s}$
+	<pl-number-input answers-name="v" atol="1e-5" comparison="relabs" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m/s}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

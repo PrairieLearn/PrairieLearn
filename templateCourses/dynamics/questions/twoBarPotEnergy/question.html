@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   Two uniform rigid rods are connected with pin joints at $O$ and
   $P$ as shown, and they have masses and positions given by:
 
@@ -17,36 +17,37 @@
   to be the reference height for zero gravitational potential
   energy.
 	</p>
-
-<pl-drawing grid-size="0" width="502" height="310">
-    <pl-drawing-initial>
-        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" width="20" height="25" draw-pin="false"></pl-fixed-pin>
-        <pl-rod x1="{{params.Ox}}" y1="{{params.Oy}}" x2="{{params.Px}}" y2="{{params.Py}}" draw-pin="false" width="15"></pl-rod>
-        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" draw-pin="false" width="15"></pl-rod>
-        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" label="O" radius="2"></pl-point>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" label="P" radius="2"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2"></pl-point>
-        <pl-vector x1="450" y1="100" width="80" angle="90" label="g" stroke-width="1.5" color="#FF00FF"></pl-vector>
-    </pl-drawing-initial>
+<pl-drawing grid-size="0" height="310" width="502">
+<pl-drawing-initial>
+<pl-fixed-pin color="#FFFFFF" draw-pin="false" height="25" width="20" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-fixed-pin>
+<pl-rod draw-pin="false" width="15" x1="{{params.Ox}}" x2="{{params.Px}}" y1="{{params.Oy}}" y2="{{params.Py}}"></pl-rod>
+<pl-rod draw-pin="false" width="15" x1="{{params.Px}}" x2="{{params.Qx}}" y1="{{params.Py}}" y2="{{params.Qy}}"></pl-rod>
+<pl-point label="O" radius="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-point>
+<pl-point label="P" radius="2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-point label="Q" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-vector angle="90" color="#FF00FF" label="g" stroke-width="1.5" width="80" x1="450" y1="100"></pl-vector>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="m1">m1</variable>
-    <variable params-name="m2">m2</variable>
-    <variable params-name="rOP">rOP</variable>
-    <variable params-name="rPQ">rPQ</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="m1">m1</variable>
+<variable params-name="m2">m2</variable>
+<variable params-name="rOP">rOP</variable>
+<variable params-name="rPQ">rPQ</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the total gravitational potential energy $V$ of the two
   rods?
 </p>
-
 </pl-question-panel>
-
 <p>
 $V = $
-	<pl-number-input answers-name="V" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input>$\rm\ J$
+	<pl-number-input answers-name="V" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>$\rm\ J$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

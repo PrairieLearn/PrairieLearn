@@ -1,34 +1,38 @@
 <pl-question-panel>
-	<p>
+<p>
   A circular rigid body is rolling without slipping on a flat
   surface in 2D as shown with point $Q$ attached to the body. At
   the instant shown, the body has {{params.givenExp}} and point
   $Q$ is at the {{params.QPos}} of the body with velocity
   $\vec{v}_Q = {{params.vQ_vec}}{\rm \ m/s}$.
 </p>
-
-<pl-drawing grid-size="0" width="600" height="300">
-    <pl-drawing-initial>
-        <pl-circle x1="300" y1="150" radius="100" color="#FFFFFF" stroke-width="2"></pl-circle>
-        <pl-line x1="0" y1="250" angle="0" width="600" stroke-width="2.5"></pl-line>
-        <pl-rectangle x1="300" y1="256.7" stroke-width="0.0" angle="90" width="10" height="600" color="#DCDCDC"></pl-rectangle>
-        <pl-point x1="300" y1="150" radius="2" label="C"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q"></pl-point>
-    </pl-drawing-initial>
+<pl-drawing grid-size="0" height="300" width="600">
+<pl-drawing-initial>
+<pl-circle color="#FFFFFF" radius="100" stroke-width="2" x1="300" y1="150"></pl-circle>
+<pl-line angle="0" stroke-width="2.5" width="600" x1="0" y1="250"></pl-line>
+<pl-rectangle angle="90" color="#DCDCDC" height="600" stroke-width="0.0" width="10" x1="300" y1="256.7"></pl-rectangle>
+<pl-point label="C" radius="2" x1="300" y1="150"></pl-point>
+<pl-point label="Q" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
-    <variable params-name="vQ">vQ</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
+<variable params-name="vQ">vQ</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the {{params.ansDescription}} ${{params.ansVar}}$?
 </p>
 </pl-question-panel>
 <p>
 ${{params.ansVar}}$ = 
-<pl-number-input answers-name="ansValue" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input>${{params.ansUnits}}$
+<pl-number-input answers-name="ansValue" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>${{params.ansUnits}}$
 </p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

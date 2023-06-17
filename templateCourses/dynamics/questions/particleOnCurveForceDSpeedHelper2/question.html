@@ -1,6 +1,5 @@
 <pl-question-panel>
-    
-    <p>
+<p>
         A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
         a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters. Gravity
         $\vec{g} = -9.8\hat\jmath\rm\ m/s^2$ acts vertically. At the
@@ -10,7 +9,6 @@
         {{params.sddotDir}} at a rate of
         ${{params.sddotMag}}\rm\ m/s^2$.
     </p>
-
 <p>
 <pre>
 Python Inputs:
@@ -28,17 +26,19 @@ vMag = {{params.v}}
 vDot = {{params.sddotMag}}
 </pre>
 </p>
-
-    <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
-    <p>
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+<p>
         What is the particle's acceleration in <b>tangential-normal basis</b>?
     </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{a} =$
-	<pl-number-input answers-name="tangentialComp" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{e}_t + $
-	<pl-number-input answers-name="normalComp" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{e}_n$ ${\rm \ m/s^2}$
+	<pl-number-input answers-name="tangentialComp" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{e}_t + $
+	<pl-number-input answers-name="normalComp" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{e}_n$ ${\rm \ m/s^2}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

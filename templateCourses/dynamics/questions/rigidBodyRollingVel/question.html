@@ -1,16 +1,16 @@
 <pl-question-panel>
-	<p>
+<p>
   A circular rigid body is rolling without slipping on a flat
   surface in 2D as shown.
-</p> 
-	<pl-drawing grid-size="0" width="600" height="300">
-    <pl-drawing-initial>
-        <pl-circle x1="300" y1="150" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
+</p>
+<pl-drawing grid-size="0" height="300" width="600">
+<pl-drawing-initial>
+<pl-circle color="#FFFFFF" radius="{{params.r}}" stroke-width="2" x1="300" y1="150"></pl-circle>
         {{{params.drawGround}}}
-        <pl-point x1="300" y1="150" label="C" radius="2"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="3"></pl-point>
-        <pl-vector x1="300" y1="150" angle="{{params.rCQangle}}" width="{{params.rCQwidth}}" stroke-width="1.5" color="blue3"></pl-vector>
-    </pl-drawing-initial>
+        <pl-point label="C" radius="2" x1="300" y1="150"></pl-point>
+<pl-point label="Q" radius="3" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-vector angle="{{params.rCQangle}}" color="blue3" stroke-width="1.5" width="{{params.rCQwidth}}" x1="300" y1="150"></pl-vector>
+</pl-drawing-initial>
 </pl-drawing>
 <p>
   Point $Q$ has:
@@ -19,21 +19,24 @@
   \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}.
   \end{aligned}\]
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="rCQ">rCQ</variable>
-    <variable params-name="vQ">vQ</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="rCQ">rCQ</variable>
+<variable params-name="vQ">vQ</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the angular velocity $\vec\omega$?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{\omega} = $
-<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s} $
+<pl-number-input answers-name="omega" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{k}{\rm\ rad/s} $
 </p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

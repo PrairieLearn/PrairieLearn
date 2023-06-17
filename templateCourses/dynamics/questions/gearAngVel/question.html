@@ -7,28 +7,29 @@
   ${{params.givenOmegaVar}} = {{params.givenOmega}}
   \hat{k}\rm\ rad/s$.
 </p>
-
-<pl-drawing grid-size="0" width="600" height="400">
-    <pl-drawing-initial>
+<pl-drawing grid-size="0" height="400" width="600">
+<pl-drawing-initial>
       {{{params.drawCode}}}
     </pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
+<pl-variable-output default-tab="sympy" digits="0">
     {{{params.pl_var_output}}}
     <variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the angular velocity ${{params.ansOmegaVar}}$ of the gear
   at ${{params.ansCenter}}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.ansOmegaVar}} = $
-<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s}$
+<pl-number-input answers-name="omega" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{k}{\rm\ rad/s}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

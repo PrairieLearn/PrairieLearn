@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A particle $P$ is moving in the plane around a curve defined in
   polar coordinates by
   \[r(\theta) = ({{params.rlatex}}){\rm\ m}.\]
@@ -9,7 +9,6 @@
   {{params.omega}}{\rm\ rad/s}$, and $\alpha =
   {{params.alpha}}{\rm\ rad/s^2}$.
 </p>
-
 <p>
 <pre>
 Python Inputs: 
@@ -25,16 +24,19 @@ omega = {{params.omega}}
 alpha = {{params.alpha}}
 </pre>
 </p>
-
 <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
 <p>
   What is the acceleration $\vec{a}$ of $P$?
 </p>
-
 </pl-question-panel>
 <p>
 $\vec{a} = $
-	<pl-number-input answers-name="ax" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-	<pl-number-input answers-name="ay" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
+	<pl-number-input answers-name="ax" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="ay" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

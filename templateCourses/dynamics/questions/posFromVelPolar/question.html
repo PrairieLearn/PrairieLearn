@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A particle $P$ starts at time $t = 0\rm\ s$ at the position
   \[\begin{aligned}
   x &amp;= {{params.x0}}{\rm\ m} \\
@@ -9,15 +9,18 @@
   basis associated with its current position, and is:
   \[\vec{v} = {{params.v}}{\rm\ m/s}.\]
 </p>
-
 <p>
   What is the position of $P$ at $t = {{params.t}}{\rm\ s}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 $x = $
-<pl-number-input answers-name="x" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m}$, $y = $
-<pl-number-input answers-name="y" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m} $
+<pl-number-input answers-name="x" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m}$, $y = $
+<pl-number-input answers-name="y" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m} $
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

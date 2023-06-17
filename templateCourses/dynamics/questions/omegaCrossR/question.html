@@ -1,26 +1,28 @@
 <pl-question-panel>
-
 <p>
   Consider vectors $\vec\omega = \omega\hat{k}$, where $\omega =
   {{params.omega}}{\rm\ rad/s}$, and $\vec{r} = {{params.r_vec}}{\rm\ m}$.
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="r">r</variable>
-    <variable params-name="omega">omega</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="r">r</variable>
+<variable params-name="omega">omega</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is ${{params.quantity}} = {{params.expr}}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.quantity}} = $
-	<pl-number-input answers-name="ansValue1" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-    <pl-number-input answers-name="ansValue2" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\jmath} + $
-    <pl-number-input answers-name="ansValue3" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{k}{{params.units}}$ 
+	<pl-number-input answers-name="ansValue1" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="ansValue2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="ansValue3" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{k}{{params.units}}$ 
 </p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

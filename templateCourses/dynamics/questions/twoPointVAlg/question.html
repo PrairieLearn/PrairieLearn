@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A 2D rigid body is rotating with angular velocity $\vec\omega =
   {{params.omega_vec}}\rm\ rad/s$. There are two points $P$
   and $Q$ on the body, so that:
@@ -8,23 +8,25 @@
   \vec{v}_P &amp;= {{params.vP_vec}}{\rm\ m/s}.
   \end{aligned}\]
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="rPQ">rPQ</variable>
-    <variable params-name="vP">vP</variable>
-    <variable params-name="omega">omega</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="rPQ">rPQ</variable>
+<variable params-name="vP">vP</variable>
+<variable params-name="omega">omega</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the velocity $\vec{v}_Q$ of point Q?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{v}_Q = $
-	<pl-number-input answers-name="vQx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-<pl-number-input answers-name="vQy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
+	<pl-number-input answers-name="vQx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="vQy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

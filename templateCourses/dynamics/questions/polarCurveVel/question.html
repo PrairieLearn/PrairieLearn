@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A particle $P$ is moving in the plane around a curve defined in
   polar coordinates by
   \[r(\theta) = ({{params.rlatex}}){\rm\ m}.\]
@@ -7,7 +7,6 @@
   are $\theta = {{params.theta}}{\rm\ rad}$ and $\omega =
   {{params.omega}}{\rm\ rad/s}$.
 </p>
-
 <p>
 <pre>
 Python Inputs: 
@@ -22,17 +21,20 @@ theta_v = {{params.theta}} # in radians
 omega = {{params.omega}}
 </pre>
 </p>
-
 <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
 <p>
   What is the velocity $\vec{v}$ of $P$?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{v} = $
-	<pl-number-input answers-name="vx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-	<pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
+	<pl-number-input answers-name="vx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="vy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
 </p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

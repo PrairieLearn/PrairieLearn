@@ -1,25 +1,27 @@
 <pl-question-panel>
-  <p>
+<p>
   A point currently has velocity $\vec{v} = {{params.v_vec}}\rm\ m/s$ due to rotation about the origin in
   the $x$-$y$ plane with angular velocity $\omega =
   {{params.omega}}\rm\ rad/s$.
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="v">v</variable>
-    <variable params-name="omega">omega</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="v">v</variable>
+<variable params-name="omega">omega</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the position vector $\vec{r}$ of the point?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{r} = $
-  <pl-number-input answers-name="rx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-  <pl-number-input answers-name="ry" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}\rm\ m$
+  <pl-number-input answers-name="rx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="ry" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}\rm\ m$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

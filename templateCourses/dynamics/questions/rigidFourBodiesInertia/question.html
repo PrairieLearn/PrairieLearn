@@ -1,37 +1,37 @@
 <pl-question-panel>
-	<p>
+<p>
   	A rigid body consists of four bodies joined together, as drawn below to scale.
 	</p>
-
-<pl-drawing grid-size="0" width="500" height="500">
-    <pl-drawing-initial>
-        <pl-circle x1="{{params.CDiskx}}" y1="{{params.CDisky}}" radius="{{params.radius_pl}}" color="#FFFFFF" stroke-width="2" label="m_1" offsetx="-12" offsety="-5"></pl-circle>
-        <pl-line x1="{{params.linex1}}" y1="{{params.liney1}}" x2="{{params.linex2}}" y2="{{params.liney2}}" stroke-width="3"></pl-line>
-        <pl-rectangle x1="{{params.CRectx}}" y1="{{params.CRecty}}" width="{{params.width_pl}}" height="{{params.height_pl}}" color="#FFFFFF" stroke-width="2"></pl-rectangle>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="6" label="P"></pl-point>
-        <pl-text x1="{{params.CLinex}}" y1="{{params.CLiney}}" label="m_2" latex="true"></pl-text>
-        <pl-text x1="{{params.CRectx}}" y1="{{params.CRecty}}" label="m_3" latex="true" offsetx="-12" offsety="-5"></pl-text>
-    </pl-drawing-initial>
+<pl-drawing grid-size="0" height="500" width="500">
+<pl-drawing-initial>
+<pl-circle color="#FFFFFF" label="m_1" offsetx="-12" offsety="-5" radius="{{params.radius_pl}}" stroke-width="2" x1="{{params.CDiskx}}" y1="{{params.CDisky}}"></pl-circle>
+<pl-line stroke-width="3" x1="{{params.linex1}}" x2="{{params.linex2}}" y1="{{params.liney1}}" y2="{{params.liney2}}"></pl-line>
+<pl-rectangle color="#FFFFFF" height="{{params.height_pl}}" stroke-width="2" width="{{params.width_pl}}" x1="{{params.CRectx}}" y1="{{params.CRecty}}"></pl-rectangle>
+<pl-point label="P" radius="6" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-text label="m_2" latex="true" x1="{{params.CLinex}}" y1="{{params.CLiney}}"></pl-text>
+<pl-text label="m_3" latex="true" offsetx="-12" offsety="-5" x1="{{params.CRectx}}" y1="{{params.CRecty}}"></pl-text>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
   The point $P$ is at {{params.PDesr}} and the component bodies are:
 </p>
-
 <ol>
 <li>A uniform disk of radius ${{params.radius}} {\rm\ m}$ and mass $m_1 = {{params.m1}} {\rm\ kg}$.</li>
 <li>A uniform rod of length ${{params.length}} {\rm\ m}$ and mass $m_2 = {{params.m2}} {\rm\ kg}$.</li>
 <li>A uniform rectangle with side lengths ${{params.width}} {\rm\ m}$ and ${{params.height}} {\rm\ m}$, and mass $m_3 = {{params.m3}} {\rm\ kg}$.</li>
 <li>A point mass at $P$ with mass $m_4 = {{params.m4}} {\rm\ kg}$.</li>
 </ol>
-
 <p>
   What is the {{params.answerDesc}}?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.answerExp}} = $
-	<pl-number-input answers-name="IP" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ {{params.answerUnits}}}$
+	<pl-number-input answers-name="IP" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ {{params.answerUnits}}}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

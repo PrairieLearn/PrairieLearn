@@ -1,22 +1,24 @@
 <pl-question-panel>
-	<p>
+<p>
   A uniform rigid hoop with mass $m = {{params.m}}\rm\ kg$ and
   radius $r = {{params.r}}\rm\ m$ rolls down a slope without
   slipping under the influence of gravity $g = 9.8\rm\ m/s^2$, as
   shown (not to scale). The {{params.desc1}} and the
   {{params.desc2}}.
 </p>
-
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="orient" width="300" height="300"></pl-prairiedraw-figure>
-
+<pl-prairiedraw-figure height="300" param-names="orient" script-name="drawFigure.js" width="300"></pl-prairiedraw-figure>
 <p>
   What is the {{params.ansDesc}}?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.ansVar}} = $
-	<pl-number-input answers-name="ans" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ {{params.ansUnits}}$
+	<pl-number-input answers-name="ans" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\rm\ {{params.ansUnits}}$
 </p>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

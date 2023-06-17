@@ -1,100 +1,97 @@
 import random
+
 import numpy as np
-import sympy
-from sympy import *
 import prairielearn as pl
+import sympy
+from pl_geom import *
 from pl_random import *
 from pl_template import *
-from pl_geom import *
+from sympy import *
+
 
 def rationalize_coeffs(expr):
     for i in expr.atoms(sympy.Float):
         r = sympy.Rational(str(i)).limit_denominator(1000)
         expr = expr.subs(i, r)
-    return expr    
+    return expr
+
 
 def generate(data):
 
+    r0 = random.choice([4, 5, 6, 7, 2, 9])
+    theta0 = random.choice([1, 2, 3, 4])
+    theta0 *= random.choice([-1, 1])
+    t_val = random.choice([1, 2, 3, 4])
+    t, C = symbols("t C")
+    # 0 is when ethetahat is 0
+    # 1 is when erhat is 0
+    # 2 is when both are given
+    basis_choice = random.choice([0, 1, 2])
 
-	r0 = random.choice([4,5,6,7,2,9])
-	theta0 = random.choice([1,2,3,4])
-	theta0 *= random.choice([-1,1])
-	t_val = random.choice([1,2,3,4])
-	t,C = symbols('t C')
-	# 0 is when ethetahat is 0
-	# 1 is when erhat is 0
-	# 2 is when both are given
-	basis_choice = random.choice([0, 1, 2])
+    if basis_choice == 2:
 
-	if basis_choice == 2:
+        ercomp, ethcomp = random.choice(
+            [(1, 1), (1, -1), [1, 2], [2, 4], [3, 6], [4, 8], [5, 10]]
+        )
 
-		
-		ercomp,ethcomp = random.choice([(1,1),(1,-1),[1,2],[2,4],[3,6],[4,8],[5,10]])
+        rdot = int(ercomp)
+        r_expr = integrate(rdot, t)
 
+        C1 = r0 - int(r_expr.subs(t, 0).evalf())
 
-		rdot = int(ercomp)
-		r_expr = integrate(rdot, t)
+        r_expr = r_expr + C1
 
-		C1 = r0 - int(r_expr.subs(t, 0).evalf())
+        C2_val = int(theta0) - int(ethcomp / ercomp) * log(C1)
+        theta_expr = int(ethcomp / ercomp) * log(int(ercomp) * t + int(C1)) + C
+        rf = float(r_expr.subs(t, t_val).evalf())
+        thetaf = float((theta_expr.subs(t, t_val).subs(C, C2_val)).evalf())
 
-		r_expr = r_expr + C1
+    elif basis_choice == 1:
+        ercomp = random.choice([cos(2 * t), sin(2 * t), cos(t), sin(t), 2 * sin(t)])
+        ethcomp = 0
+        C2_val = int(theta0)
+        rdot = ercomp
+        r_expr = integrate(rdot, t)
+        C1 = int(r0) - r_expr.subs(t, 0).evalf()
 
-		C2_val = int(theta0) - int(ethcomp/ercomp) * log(C1)
-		theta_expr = int(ethcomp/ercomp) * log(int(ercomp)*t + int(C1)) + C
-		rf = float(r_expr.subs(t, t_val).evalf())
-		thetaf = float((theta_expr.subs(t, t_val).subs(C, C2_val)).evalf())
-		
-	elif basis_choice == 1:
-		ercomp = random.choice([cos(2*t), sin(2*t),cos(t),sin(t), 2*sin(t)])
-		ethcomp = 0
-		C2_val = int(theta0)
-		rdot = ercomp
-		r_expr = integrate(rdot, t)
-		C1 = int(r0) - r_expr.subs(t, 0).evalf()
-		
-		r_expr = r_expr + C1
-		r_expr = rationalize_coeffs(r_expr)
-		theta_expr = C	
-		rf = float(r_expr.subs(t, t_val).evalf())
-		thetaf = float(theta0)
-		ercomp = f'({latex(ercomp)})'
+        r_expr = r_expr + C1
+        r_expr = rationalize_coeffs(r_expr)
+        theta_expr = C
+        rf = float(r_expr.subs(t, t_val).evalf())
+        thetaf = float(theta0)
+        ercomp = f"({latex(ercomp)})"
 
-		
-	else:
-		r0 = 2
-		ercomp = 0
-		#ethcomp = random.choice([0,1,2,3,4])
-		
+    else:
+        r0 = 2
+        ercomp = 0
+        # ethcomp = random.choice([0,1,2,3,4])
 
-		ethcomp = random.choice([cos(2*t), sin(2*t),cos(t),sin(t), 2*sin(t)])
+        ethcomp = random.choice([cos(2 * t), sin(2 * t), cos(t), sin(t), 2 * sin(t)])
 
+        rf = r0
+        r_expr = r0
+        thetadot = ethcomp / r0
+        C1 = r0
+        theta_expr = integrate(thetadot, t) + C
+        theta_expr = rationalize_coeffs(theta_expr)
+        theta_prop = integrate(thetadot, t)
+        C2_val = float(theta0 - float(theta_prop.subs(t, 0).evalf()))
 
-		rf = r0
-		r_expr = r0
-		thetadot = ethcomp/r0
-		C1 = r0
-		theta_expr = integrate(thetadot, t) + C
-		theta_expr = rationalize_coeffs(theta_expr)
-		theta_prop = integrate(thetadot, t)
-		C2_val = float(theta0 - float(theta_prop.subs(t,0).evalf()))
+        thetaf = float(theta_expr.subs(t, t_val).subs(C, C2_val).evalf())
+        ethcomp = f"({latex(ethcomp)})"
 
-		thetaf = float(theta_expr.subs(t, t_val).subs(C, C2_val).evalf())
-		ethcomp = f'({latex(ethcomp)})'
+    v = np.array([ercomp, ethcomp, 0])
+    # data['params']['ercomp'] = ercomp
+    # data['params']['ethcomp'] = ethcomp
+    data["params"]["v"] = polarVector(v)
+    data["params"]["r0"] = r0
+    data["params"]["theta0"] = theta0
+    data["params"]["t"] = t_val
 
+    data["correct_answers"]["r"] = pl.to_json(sympify(r_expr))
+    data["correct_answers"]["theta"] = pl.to_json(sympify(theta_expr))
+    data["correct_answers"]["C2"] = float(C2_val)
+    data["correct_answers"]["rf"] = rf
+    data["correct_answers"]["thetaf"] = thetaf
 
-	v = np.array([ercomp, ethcomp, 0])
-	#data['params']['ercomp'] = ercomp
-	#data['params']['ethcomp'] = ethcomp
-	data['params']['v'] = polarVector(v)
-	data['params']['r0'] = r0
-	data['params']['theta0'] = theta0
-	data['params']['t'] = t_val
-	
-	data['correct_answers']['r'] = pl.to_json(sympify(r_expr))
-	data['correct_answers']['theta'] = pl.to_json(sympify(theta_expr))
-	data['correct_answers']['C2'] = float(C2_val)
-	data['correct_answers']['rf'] = rf
-	data['correct_answers']['thetaf'] = thetaf
-
-
-	return data
+    return data

@@ -1,29 +1,31 @@
 <pl-question-panel>
-	<p>
+<p>
   A point is currently at position $x = {{params.x}}\rm\ m$, $y =
   {{params.y}}\rm\ m$, $z = {{params.z}}\rm\ m$ and is rotating
   about the origin with angular velocity $\vec\omega =
   {{params.omega_vec}}\rm\ rad/s$.
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="x">x</variable>
-    <variable params-name="y">y</variable>
-    <variable params-name="z">z</variable>
-    <variable params-name="omega">omega</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="x">x</variable>
+<variable params-name="y">y</variable>
+<variable params-name="z">z</variable>
+<variable params-name="omega">omega</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the velocity $\vec{v}$ of the point?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{v} = $
-	<pl-number-input answers-name="vx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-	<pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\jmath} + $
-	<pl-number-input answers-name="vz" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{k} \rm\ m/s$
+	<pl-number-input answers-name="vx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="vy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{\jmath} + $
+	<pl-number-input answers-name="vz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="14"></pl-number-input> $\hat{k} \rm\ m/s$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

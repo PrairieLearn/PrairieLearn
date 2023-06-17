@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A set of gears with fixed centers are connected in 2D as
   shown. The gear radii are {{params.radiusExps}}, where the
   numbers correspond to the gear center numbers.  Point $P$ is
@@ -11,31 +11,32 @@
   is rotating {{params.givenDirDescription}} at
   {{params.givenDirRateChange}} rate.
 	</p>
-
-<pl-drawing grid-size="0" width="600" height="400">
-    <pl-drawing-initial>
+<pl-drawing grid-size="0" height="400" width="600">
+<pl-drawing-initial>
       {{{params.drawCode}}}
-      <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="2.2" label="P"></pl-point>
-    </pl-drawing-initial>
+      <pl-point label="P" radius="2.2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
+<pl-variable-output default-tab="sympy" digits="0">
 	{{{params.pl_var_output}}}
   <variable params-name="givenAMag">aP</variable>
-	<variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
+<variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
 </pl-variable-output>
-</p> 
-
+</p>
 <p>
   What is the {{params.ansDescription}} ${{params.ansVar}}$ of
   the gear at $C_{{params.ansNum}}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.ansVar}} = $
-<pl-number-input answers-name="ans" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ {{params.ansUnits}}}$
+<pl-number-input answers-name="ans" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{k}{\rm\ {{params.ansUnits}}}$
 
 {{params.aP}}</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

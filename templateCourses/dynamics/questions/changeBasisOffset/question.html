@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   The basis $\hat{u},\hat{v}$ is rotated by $\theta =
   {{params.theta}}^\circ$ from horizontal, as shown. The
   points $O$, $Q$, and $P$ are related by:
@@ -8,41 +8,38 @@
   \vec{r}_{QP} &amp;= {{params.rQP_vec}}{\rm\ m}.
   \end{aligned}\]
 </p>
-
-<pl-drawing grid-size="0" width="500" height="310">
-    <pl-drawing-initial>
-        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" label="O" radius="2"></pl-point>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" label="P" radius="2"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}"></pl-point>
-        <pl-vector x1="{{params.Ox}}" y1="{{params.Oy}}" label="\\hat{\\imath}" angle="0" stroke-width="1.5" color="#000000" width="50"></pl-vector>
-        <pl-vector x1="{{params.Ox}}" y1="{{params.Oy}}" label="\\hat{\\jmath}" angle="-90" stroke-width="1.5" color="#000000" width="50" offsety="-15" offsetx="-15"></pl-vector>
-
-        <pl-line x1="{{params.Qx}}" y1="{{params.Qy}}" angle="0" stroke-width="2" stroke-color="#c8c8c8"></pl-line>
-
-        <pl-vector x1="{{params.Qx}}" y1="{{params.Qy}}" angle="{{params.u_theta}}" label="\\hat{u}" color="#0000FF" stroke-width="1.5"></pl-vector>
-
-        <pl-vector x1="{{params.Qx}}" y1="{{params.Qy}}" angle="{{params.v_theta}}" label="\\hat{v}" color="#0000FF" stroke-width="1.5"></pl-vector>
-
-        <pl-arc-dimensions x1="{{params.Qx}}" y1="{{params.Qy}}" start-angle="{{params.startAngle}}" end-angle="{{params.endAngle}}" radius="30" offsetx="{{params.offsetx}}" offsety="{{params.offsety}}" label="\\theta" draw-start-arrow="{{params.drawStartArrow}}" draw-end-arrow="{{params.drawEndArrow}}"></pl-arc-dimensions>
-    </pl-drawing-initial>
+<pl-drawing grid-size="0" height="310" width="500">
+<pl-drawing-initial>
+<pl-point label="O" radius="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-point>
+<pl-point label="P" radius="2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-point label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-vector angle="0" color="#000000" label="\\hat{\\imath}" stroke-width="1.5" width="50" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-vector>
+<pl-vector angle="-90" color="#000000" label="\\hat{\\jmath}" offsetx="-15" offsety="-15" stroke-width="1.5" width="50" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-vector>
+<pl-line angle="0" stroke-color="#c8c8c8" stroke-width="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-line>
+<pl-vector angle="{{params.u_theta}}" color="#0000FF" label="\\hat{u}" stroke-width="1.5" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-vector>
+<pl-vector angle="{{params.v_theta}}" color="#0000FF" label="\\hat{v}" stroke-width="1.5" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-vector>
+<pl-arc-dimensions draw-end-arrow="{{params.drawEndArrow}}" draw-start-arrow="{{params.drawStartArrow}}" end-angle="{{params.endAngle}}" label="\\theta" offsetx="{{params.offsetx}}" offsety="{{params.offsety}}" radius="30" start-angle="{{params.startAngle}}" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-arc-dimensions>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="theta" comment="in degrees">theta</variable>
-    <variable params-name="rOQ">rOQ</variable>
-    <variable params-name="rQP">rQP</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable comment="in degrees" params-name="theta">theta</variable>
+<variable params-name="rOQ">rOQ</variable>
+<variable params-name="rQP">rQP</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is $\vec{r}_{OP}$ in the $\hat{u},\hat{v}$ basis?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{r}_{OP} = $
-	<pl-number-input answers-name="rOPu" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{u} + $
-	<pl-number-input answers-name="rOPv" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{v} {\rm\ m}$
+	<pl-number-input answers-name="rOPu" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{u} + $
+	<pl-number-input answers-name="rOPv" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{v} {\rm\ m}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

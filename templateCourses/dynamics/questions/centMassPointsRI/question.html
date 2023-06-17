@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   Three point masses have position vectors and masses given by:
   \[\begin{aligned}
   m_1 &amp;= {{params.m1}}{\rm\ kg}
@@ -16,26 +16,28 @@
   \end{aligned}\]
   The center of mass has position vector $\vec{r}_C = {{params.rC_vec}}\rm\ m$.
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="m1">m1</variable>
-    <variable params-name="m2">m2</variable>
-    <variable params-name="m3">m3</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="m1">m1</variable>
+<variable params-name="m2">m2</variable>
+<variable params-name="m3">m3</variable>
     {{{params.pl_var_output}}}
     <variable params-name="rC">rC</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the position vector $\vec{r}_{{params.findI}}$ of mass
   {{params.findI}}?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{r}_{{params.findI}} = $
-	<pl-number-input answers-name="ansValue1" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-<pl-number-input answers-name="ansValue2" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m}$
+	<pl-number-input answers-name="ansValue1" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="ansValue2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

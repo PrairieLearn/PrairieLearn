@@ -1,8 +1,8 @@
 <pl-question-panel>
-    <p>
+<p>
         This question focuses on expressing $\hat{e}_t$ and $\hat{e}_n$ in terms of the cartesian basis.
     </p>
-    <p>
+<p>
         A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
         a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters. Gravity
         $\vec{g} = -9.8\hat\jmath\rm\ m/s^2$ acts vertically. At the
@@ -12,9 +12,8 @@
         {{params.sddotDir}} at a rate of
         ${{params.sddotMag}}\rm\ m/s^2$.
     </p>
-
-    <p>
-        <pre>
+<p>
+<pre>
             Python Inputs:
 
             import numpy as np
@@ -29,26 +28,27 @@
             vMag = {{params.v}}
             vDot = {{params.sddotMag}}
         </pre>
-    </p>
-
-    <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
-    <p>
+</p>
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+<p>
         What are $\hat{e}_t$ and $\hat{e}_n$ expressed in cartesian coordinates? Recall that $\hat{e}_t = \hat{v}$, and $\hat{e}_n$ points
         towards center of the instantaneous osculating circle. Try to sketch out the graph and draw out where would 
         $\hat{e}_t \text{ and } \hat{e}_n$ would point towards.
     </p>
-
 </pl-question-panel>
-
 <p>
     $\hat{e}_t = $
-    <pl-number-input answers-name="ethati" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-    <pl-number-input answers-name="ethatj" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}$
+    <pl-number-input answers-name="ethati" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="ethatj" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}$
 </p>
-
 <p>
     $\hat{e}_n = $
-    <pl-number-input answers-name="enhati" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-    <pl-number-input answers-name="enhatj" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}$
+    <pl-number-input answers-name="enhati" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="enhatj" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,26 +1,24 @@
 <pl-question-panel>
-	<p>
+<p>
   Body $\mathcal{B}_1$ is a uniform rigid disk that rotates about
   the fixed center $O$. Body $\mathcal{B}_2$ is a uniform thin
   rigid rod that connects pins $P$ and $Q$, and point $Q$ is
   constrained to move in a slot.
 	</p>
-
-<pl-drawing grid-size="0" width="420" height="420">
-    <pl-drawing-initial>
-        <pl-circle x1="{{params.Ox}}" y1="{{params.Oy}}" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
-        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" height="12" width="12" draw-pin="false"></pl-fixed-pin>
-        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" radius="2" label="O" offsetx="-20" offsety="-20"></pl-point>
+<pl-drawing grid-size="0" height="420" width="420">
+<pl-drawing-initial>
+<pl-circle color="#FFFFFF" radius="{{params.r}}" stroke-width="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-circle>
+<pl-fixed-pin color="#FFFFFF" draw-pin="false" height="12" width="12" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-fixed-pin>
+<pl-point label="O" offsetx="-20" offsety="-20" radius="2" x1="{{params.Ox}}" y1="{{params.Oy}}"></pl-point>
         {{{params.drawGround1}}}
         {{{params.drawGround2}}}
-        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" width="10" draw-pin="false"></pl-rod>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="2" label="P"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}"></pl-point>
-        <pl-text x1="{{params.B1x1}}" y1="{{params.B1y1}}" label="\\mathcal{B}_1"></pl-text>
-        <pl-text x1="{{params.B2x1}}" y1="{{params.B2y1}}" label="\\mathcal{B}_2"></pl-text>
-    </pl-drawing-initial>
+        <pl-rod draw-pin="false" width="10" x1="{{params.Px}}" x2="{{params.Qx}}" y1="{{params.Py}}" y2="{{params.Qy}}"></pl-rod>
+<pl-point label="P" radius="2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-point label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-text label="\\mathcal{B}_1" x1="{{params.B1x1}}" y1="{{params.B1y1}}"></pl-text>
+<pl-text label="\\mathcal{B}_2" x1="{{params.B2x1}}" y1="{{params.B2y1}}"></pl-text>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
   At the current instant we have:
   \[\begin{aligned}
@@ -40,26 +38,28 @@
   {{params.givenVar}} &amp;= {{params.givenVals_vec}} {\rm\ {{params.givenUnits}} }
   \end{aligned}\]
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="rOP">rOP</variable>
-    <variable params-name="rPQ">rPQ</variable>
-    <variable params-name="omega1">omega1</variable>
-    <variable params-name="omega2">omega2</variable>
-    <variable params-name="vP">vP</variable>
-    <variable params-name="vQ">vQ</variable>
-    <variable params-name="{{params.givenName}}">{{params.givenName}}</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="rOP">rOP</variable>
+<variable params-name="rPQ">rPQ</variable>
+<variable params-name="omega1">omega1</variable>
+<variable params-name="omega2">omega2</variable>
+<variable params-name="vP">vP</variable>
+<variable params-name="vQ">vQ</variable>
+<variable params-name="{{params.givenName}}">{{params.givenName}}</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is ${{params.findVar}}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.findVar}} = $
 	{{{params.submitAnswer}}} $\rm\ {{params.findUnits}}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

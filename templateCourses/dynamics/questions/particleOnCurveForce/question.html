@@ -1,14 +1,12 @@
 <pl-question-panel>
-  <p>
+<p>
   A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
   a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters.  The
   particle's horizontal velocity component is a constant $v_x =
   {{params.vx}} {\rm\ m/s}$ and gravity $\vec{g} =
   -9.8\hat\jmath\rm\ m/s^2$ acts vertically.
 </p>
-
 <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
 <p>
 <pre>
 Python Inputs:
@@ -24,16 +22,19 @@ g = -9.8
 x_v = {{params.x_value}}
 </pre>
 </p>
-
 <p>
   What is the force $\vec{F}_{\rm w}$ of the wire on the particle
   when $x = {{params.x_value}} {\rm\ m}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{F}_{w} = $
-  <pl-number-input answers-name="Fwx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-  <pl-number-input answers-name="Fwy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ N}$
+  <pl-number-input answers-name="Fwx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="Fwy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ N}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   A rigid body is moving in 2D with angular velocity
   $\omega = {{params.omega_vec}}\rm\ rad/s$
   and angular acceleration
@@ -10,25 +10,27 @@
   \vec{a}_P    &amp;= {{params.aP_vec}}{\rm\ m/s^2}.
   \end{aligned}\]
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="omega">omega</variable>
-    <variable params-name="alpha">alpha</variable>
-    <variable params-name="rPQ">rPQ</variable>
-    <variable params-name="aP">aP</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="omega">omega</variable>
+<variable params-name="alpha">alpha</variable>
+<variable params-name="rPQ">rPQ</variable>
+<variable params-name="aP">aP</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the acceleration of point $Q$?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\vec{a}_{Q} = $
-	<pl-number-input answers-name="aQx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-  <pl-number-input answers-name="aQy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
+	<pl-number-input answers-name="aQx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="aQy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
 </p>
 
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

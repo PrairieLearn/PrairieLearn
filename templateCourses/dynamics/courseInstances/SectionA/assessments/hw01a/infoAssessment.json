@@ -96,7 +96,6 @@
         "questions": [
             {"id": "polyPosEN",                  "points": 3, "maxPoints": 15},
             {"id": "polyDistCurveAcc",           "points": 1, "maxPoints": 5},
-            {"id": "speedGraphSDDot",            "points": 1, "maxPoints": 5},
             {"id": "polyPosOscCent",             "points": 3, "maxPoints": 15}
 
         ]
@@ -155,10 +154,8 @@
         "title": "Friction, Momentum and Energy",
         "questions": [
             {"id": "slopeFrictionMaxAngle",  "points": 1, "maxPoints": 5},
-            {"id": "slideMassEnergy2",       "points": 1, "maxPoints": 5},
             {"id": "twoBarPotEnergy",        "points": 1, "maxPoints": 5},
             {"id": "diskSlopeEnergy2",       "points": 2, "maxPoints": 10},
-            {"id": "slideMassEnergy3",       "points": 2, "maxPoints": 10},
             {"id": "pointMassWork",          "points": 2, "maxPoints": 10}
         ]
     }

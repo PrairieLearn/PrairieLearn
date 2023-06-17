@@ -1,6 +1,5 @@
 <pl-question-panel>
-    
-    <p>
+<p>
         A particle $P$ starts at time $t = 0\rm\ s$ at the polar position
         \[\begin{aligned}
         r &amp;= {{params.r0}}{\rm\ m} \\
@@ -11,39 +10,34 @@
         \[\vec{v} = {{params.v}}{\rm\ m/s}.\]
 
     </p>
-    <p>
+<p>
         From the <a href="http://mechref.engr.illinois.edu/dyn/rkv.html">course webpage</a>, the velocity for polar coordinates is expressed in the form of 
         $\vec{v} = \dot{r} \hat{e}_r + r \dot{\theta} \hat{e}_{\theta}$. This means we have
     </p>
-    
 </pl-question-panel>
-
 <p>
     $\dot{r} = $
-    <pl-number-input answers-name="rdot" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input> ${\rm\ m/s }$,
+    <pl-number-input allow-blank="true" answers-name="rdot" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m/s }$,
     $r\dot{\theta} = $
-    <pl-number-input answers-name="eth_comp" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input> ${\rm\ m/s}$.
+    <pl-number-input allow-blank="true" answers-name="eth_comp" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m/s}$.
 </p>
-
 <pl-question-panel>
-    
-    <p>
+<p>
         Let's first find an expression for $r(t)$. Write an expression for $r(t)$, and <b> leave the constant of integration $C$ as part of your answer. For example $17t+C$ would be <code>17*t+C</code>. Use capitalized <code>C</code> as your 
         constant of integration</b>
-    </p>
-    <b>
+</p>
+<b>
         For symbolic inputs, do not enter decimals as part of the input. For example, if the answer is 
         $2t$, enter $2t$ as <code>2*t</code>, not <code>2.0*t</code>.
     </b>
 </pl-question-panel>
-
 <p>
     $r(t) = $
-    <pl-symbolic-input answers-name="symbolic_r" variables="t, C" size="15" show-help-text="true" allow-blank="true"></pl-symbolic-input>${\rm\ m}$
+    <pl-symbolic-input allow-blank="true" answers-name="symbolic_r" show-help-text="true" size="15" variables="t, C"></pl-symbolic-input>${\rm\ m}$
 </p>
 <pl-question-panel>
-    <p>
-        <small>
+<p>
+<small>
             Give your answers in symbolic form. You should use the scalar
             variables <code>t</code> and <code>C</code>. Functions are available
             like <code>sin()</code>, <code>cos()</code>, <code>atan2()</code>, <code>sqrt()</code>,
@@ -55,57 +49,55 @@
             <code>x^y</code>
             means <code>x</code> to the power of <code>y</code>. 
         </small>
-
-    </p>
-    <p>
+</p>
+<p>
         To find what the constant of integration $C$ is, we can use the inital condition.
     </p>
 </pl-question-panel>
 <p>
     $r(0) = $
-    <pl-number-input answers-name="r_0" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input>${\rm\ m}$
+    <pl-number-input allow-blank="true" answers-name="r_0" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>${\rm\ m}$
 </p>
 <pl-question-panel>
-    <p>
+<p>
 
         Now, we can solve for $C$ using the inital condition. The expression for $r(t)$ is:
     </p>
 </pl-question-panel>
-
 <p>
     $r(t) = $
-    <pl-symbolic-input answers-name="final_r" variables="t, C" size="15"></pl-symbolic-input>${\rm\ m}$
+    <pl-symbolic-input answers-name="final_r" size="15" variables="t, C"></pl-symbolic-input>${\rm\ m}$
 </p>
 <pl-question-panel>
-    <p>
-        <small>
+<p>
+<small>
             Give your answers in symbolic form. You should use the scalar
             variable <code>t</code>.
         </small>
-
-    </p>
+</p>
 </pl-question-panel>
-
 <p>
     Is the value for $\theta$ changing?
 </p>
 <pl-multiple-choice answers-name="acc" weight="1">
-    <pl-answer correct="false">Yes</pl-answer>
-    <pl-answer correct="true">No</pl-answer>
+<pl-answer correct="false">Yes</pl-answer>
+<pl-answer correct="true">No</pl-answer>
 </pl-multiple-choice>
-
 <pl-question-panel>
-
-     <p>
+<p>
         What are the values of $r$ and $\theta$ at time $t = {{params.t}}$?
     </p>
-
 </pl-question-panel>
-
 <p>
     $r({{params.t}})=$
-    <pl-number-input answers-name="r_f" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input> ${\rm\ m}$, 
+    <pl-number-input allow-blank="true" answers-name="r_f" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m}$, 
     $\theta({{params.t}})=$
-    <pl-number-input answers-name="theta_f" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input>$\rm\ rad$
+    <pl-number-input allow-blank="true" answers-name="theta_f" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input>$\rm\ rad$
     
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,29 +1,31 @@
 <pl-question-panel>
-	<p>
+<p>
   A point is currently at position $x = {{params.x}}\rm\ m$, $y =
   {{params.y}}\rm\ m$, $z = {{params.z}}\rm\ m$ and is rotating
   about the origin with angular velocity $\vec\omega$. The speed
   of the particle is $v = {{params.v}}{\rm\ m/s}$ and $\vec\omega$
   is parallel to the vector $\vec{u} = {{params.u_vec}}$.
 </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="x">x</variable>
-    <variable params-name="y">y</variable>
-    <variable params-name="z">z</variable>
-    <variable params-name="v">vMag</variable>
-    <variable params-name="u">u</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="x">x</variable>
+<variable params-name="y">y</variable>
+<variable params-name="z">z</variable>
+<variable params-name="v">vMag</variable>
+<variable params-name="u">u</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is the magnitude $\omega$ of the angular velocity vector?
 </p>
-
 </pl-question-panel>
-
 <p>
 $\omega = $
-	<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ rad/s}$
+	<pl-number-input answers-name="omega" atol="1e-5" comparison="relabs" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ rad/s}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

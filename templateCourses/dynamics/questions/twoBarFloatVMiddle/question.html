@@ -1,5 +1,5 @@
 <pl-question-panel>
-	<p>
+<p>
   Two rods are connected with a pin joint at $A$ as
   shown, and at the current instant we have:
   \[\begin{aligned}
@@ -11,36 +11,38 @@
   &amp;
   \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}.
   \end{aligned}\]
-</p> 
-	<pl-drawing grid-size="0" width="400" height="400">
-    <pl-drawing-initial>
-        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Ax}}" y2="{{params.Ay}}" width="10" draw-pin="false"></pl-rod>
-        <pl-rod x1="{{params.Qx}}" y1="{{params.Qy}}" x2="{{params.Ax}}" y2="{{params.Ay}}" width="10" draw-pin="false"></pl-rod>
-        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" label="P" radius="2"></pl-point>
-        <pl-point x1="{{params.Ax}}" y1="{{params.Ay}}" label="A" radius="2"></pl-point>
-        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2"></pl-point>
-        <pl-vector x1="{{params.Px}}" y1="{{params.Py}}" angle="{{params.vPangle}}" width="{{params.vPwidth}}" label="\\vec{v}_P" stroke-width="1.5" color="green2"></pl-vector>
-        <pl-vector x1="{{params.Qx}}" y1="{{params.Qy}}" angle="{{params.vQangle}}" width="{{params.vQwidth}}" label="\\vec{v}_Q" stroke-width="1.5" color="green2"></pl-vector>
-    </pl-drawing-initial>
+</p>
+<pl-drawing grid-size="0" height="400" width="400">
+<pl-drawing-initial>
+<pl-rod draw-pin="false" width="10" x1="{{params.Px}}" x2="{{params.Ax}}" y1="{{params.Py}}" y2="{{params.Ay}}"></pl-rod>
+<pl-rod draw-pin="false" width="10" x1="{{params.Qx}}" x2="{{params.Ax}}" y1="{{params.Qy}}" y2="{{params.Ay}}"></pl-rod>
+<pl-point label="P" radius="2" x1="{{params.Px}}" y1="{{params.Py}}"></pl-point>
+<pl-point label="A" radius="2" x1="{{params.Ax}}" y1="{{params.Ay}}"></pl-point>
+<pl-point label="Q" radius="2" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-point>
+<pl-vector angle="{{params.vPangle}}" color="green2" label="\\vec{v}_P" stroke-width="1.5" width="{{params.vPwidth}}" x1="{{params.Px}}" y1="{{params.Py}}"></pl-vector>
+<pl-vector angle="{{params.vQangle}}" color="green2" label="\\vec{v}_Q" stroke-width="1.5" width="{{params.vQwidth}}" x1="{{params.Qx}}" y1="{{params.Qy}}"></pl-vector>
+</pl-drawing-initial>
 </pl-drawing>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="rPA">rPA</variable>
-    <variable params-name="rQA">rQA</variable>
-    <variable params-name="vP">vP</variable>
-    <variable params-name="vQ">vQ</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="rPA">rPA</variable>
+<variable params-name="rQA">rQA</variable>
+<variable params-name="vP">vP</variable>
+<variable params-name="vQ">vQ</variable>
 </pl-variable-output>
 </p>
-
 <p>
   What is $\vec{v}_A$?
 </p>
-
 </pl-question-panel>
-
 <p>
 	$\vec{v}_A = $
-<pl-number-input answers-name="vAx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
-<pl-number-input answers-name="vAy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
+<pl-number-input answers-name="vAx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="vAy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

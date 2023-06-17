@@ -1,10 +1,10 @@
 <pl-question-panel>
-    <p>
+<p>
         This question marks the beginning of the guide-through problems for Force on a particle moving along a wire with varying speed.
         The helper questions offer one possible way to solve the original problem. Try the original question first 
         before trying the helper questions.
     </p>
-    <p>
+<p>
 
 
         A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
@@ -16,7 +16,6 @@
         {{params.sddotDir}} at a rate of
         ${{params.sddotMag}}\rm\ m/s^2$.
     </p>
-
 <p>
 <pre>
 Python Inputs:
@@ -34,26 +33,27 @@ vMag = {{params.v}}
 vDot = {{params.sddotMag}}
 </pre>
 </p>
-
-    <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
-
-    <p>
-        What is the radius of curvature ($\rho$), and the particle's speed ($\dot{s}$), change in speed ($\ddot{s}$)? You can learn how to find $\rho$ near the bottom of this page  
-        <a href="http://mechref.engr.illinois.edu/dyn/rkt.html">http://mechref.engr.illinois.edu/dyn/rkt.html</a> 
-    </p>
-
-</pl-question-panel>
-
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
 <p>
-
+        What is the radius of curvature ($\rho$), and the particle's speed ($\dot{s}$), change in speed ($\ddot{s}$)? You can learn how to find $\rho$ near the bottom of this page  
+        <a href="http://mechref.engr.illinois.edu/dyn/rkt.html">http://mechref.engr.illinois.edu/dyn/rkt.html</a>
+</p>
+</pl-question-panel>
+<p>
 </p><p>
     $\rho = $
-    <pl-number-input answers-name="rho" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m^{-1}}$
+    <pl-number-input answers-name="rho" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m^{-1}}$
 
 
 </p>
     $\dot{s} =$
-	<pl-number-input answers-name="sdot" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm \ m/s}$, $\ddot{s} = $
-	<pl-number-input answers-name="sddot" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s^2}$
+	<pl-number-input answers-name="sdot" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm \ m/s}$, $\ddot{s} = $
+	<pl-number-input answers-name="sddot" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" show-placeholder="false" size="15"></pl-number-input> ${\rm\ m/s^2}$
     
 <p></p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

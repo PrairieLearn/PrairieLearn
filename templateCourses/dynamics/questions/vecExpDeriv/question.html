@@ -1,26 +1,28 @@
 <pl-question-panel>
-  <p>
+<p>
   At a certain time instant, the vector $\vec{a}(t)$ has
   \[\begin{aligned}
   \vec{a} &amp;= {{params.a_vec}}{\rm\ m} \\
   \dot{\vec{a}} &amp;= {{params.aDot_vec}}{\rm\ m/s}.
   \end{aligned}\]
   </p>
-
 <p>
-<pl-variable-output digits="0" default-tab="sympy">
-    <variable params-name="a">a</variable>
-    <variable params-name="aDot">aDot</variable>
+<pl-variable-output default-tab="sympy" digits="0">
+<variable params-name="a">a</variable>
+<variable params-name="aDot">aDot</variable>
 </pl-variable-output>
 </p>
-
 <p>
   At this same instant of time, what is ${{params.expr}}$?
 </p>
-
 </pl-question-panel>
-
 <p>
 ${{params.expr}} = $ 
   {{{params.submitAnswer}}} ${{params.units}}$
 </p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
