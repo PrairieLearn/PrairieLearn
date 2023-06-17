@@ -4,10 +4,10 @@
   "topic": "Cartesian and polar coordinates",
   "type": "v3",
   "tags": [
-    "fmarrar",
-    "Su21",
+    "license:CC-BY-NC",
+    "author:fmarrar@illinois.edu",
+    "su21",
     "concept",
-    "MC",
-    "shared"
+    "MC"
   ]
 }

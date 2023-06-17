@@ -1,7 +1,0 @@
-<p>
-  <% if (params.answerScalar) { %>
-    ${{params.answerExp}} = {{trueAnswer.answer}}\hat{k}\rm\ {{params.answerUnits}}$
-  <% } else { %>
-    ${{params.answerExp}} = {{trueAnswer.answer | cartesianVector}}\rm\ {{params.answerUnits}}$
-  <% } %>
-</p>

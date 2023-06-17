@@ -4,10 +4,9 @@
   "topic": "Constrained motion",
   "type": "v3",
   "tags": [
+    "license:CC-BY-NC",
     "numeric",
-    "gupatil2",
-    "Sp19",
-    "CoViD19",
-    "shared"
+    "author:gupatil2@illinois.edu",
+    "sp19"
   ]
 }

@@ -4,10 +4,10 @@
   "topic": "Polar velocities and accelerations",
   "type": "v3",
   "tags": [
+    "license:CC-BY-NC",
     "numeric",
     "symbolic",
-    "yihanwu4",
-    "Sp22",
-    "shared"
+    "author:yihanwu4@illinois.edu",
+    "sp22"
   ]
 }

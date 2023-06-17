@@ -4,9 +4,9 @@
   "topic": "Moment of inertia",
   "type": "v3",
   "tags": [
-    "fmarrar",
+    "license:CC-BY-NC",
+    "author:fmarrar@illinois.edu",
     "numeric",
-    "Sp22",
-    "shared"
+    "sp22"
   ]
 }

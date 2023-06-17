@@ -4,9 +4,9 @@
   "topic": "Vector operations and arithmetic",
   "type": "v3",
   "tags": [
-    "fmarrar",
+    "license:CC-BY-NC",
+    "author:fmarrar@illinois.edu",
     "numeric",
-    "Fa21",
-    "shared"
+    "fa21"
   ]
 }

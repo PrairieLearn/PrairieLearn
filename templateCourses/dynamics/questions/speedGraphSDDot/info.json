@@ -4,10 +4,10 @@
   "topic": "Tangential/normal basis",
   "type": "v3",
   "tags": [
-    "fmarrar",
+    "license:CC-BY-NC",
+    "author:fmarrar@illinois.edu",
     "numeric",
-    "Sp22",
-    "graph",
-    "shared"
+    "sp22",
+    "graph"
   ]
 }

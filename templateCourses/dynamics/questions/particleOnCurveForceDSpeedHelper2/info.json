@@ -4,9 +4,9 @@
   "topic": "Point-mass kinetics",
   "type": "v3",
   "tags": [
-    "yihanwu4",
+    "license:CC-BY-NC",
+    "author:yihanwu4@illinois.edu",
     "numeric",
-    "Sp22",
-    "shared"
+    "sp22"
   ]
 }
