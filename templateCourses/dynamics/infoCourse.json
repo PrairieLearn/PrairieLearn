@@ -102,66 +102,8 @@
         }
     ],
     "tags": [
-        {
-            "name": "tracker",
-            "color": "turquoise2",
-            "description": "Question testing Tracker use."
-        },
-        {
-            "name": "matlab",
-            "color": "turquoise1",
-            "description": "Question testing Matlab use or syntax."
-        },
-        {
-            "name": "worksheet",
-            "color": "turquoise3",
-            "description": "Question testing concepts from TAM 212 Worksheets."
-        },
-        {
-            "name": "untested",
-            "color": "red1",
-            "description": "These questions have NOT been tested or proofread by a TA/instructor (other than the developers)."
-        },
-        {
-            "name": "v3",
-            "color": "green1",
-            "description": "This is a PLv3 (Python) question."
-        },
-        {
-            "name": "legacy",
-            "color": "yellow1",
-            "description": "This question was written before Fa17 (author and/or semester unknown)."
-        },
-        {
-            "name": "ressick2",
-            "color": "gray1",
-            "description": "This question was written by Ray Essick (ressick2@illinois.edu)."
-        },
-        {
-            "name": "xianz",
-            "color": "gray1",
-            "description": "This question was written by Xian Zhang (xianz@illinois.edu)."
-        },
-        {
-            "name": "kmatlack",
-            "color": "gray1",
-            "description": "This question was written by Katie Matlack (kmatlack@illinois.edu)."
-        },
-        {
-            "name": "gupatil2",
-            "color": "gray1",
-            "description": "This question was written by Ganesh Patil (gupatil2@illinois.edu)."
-        },
-        {
-            "name": "wlchang",
-            "color": "gray1",
-            "description": "This question was written by Wayne Chang (wlchang@illinois.edu)."
-        },
-        {
-            "name": "needsDP",
-            "color": "red1",
-            "description": "These questions need a figure added that requires dynamic programming."
-        }
+        {"name": "author:prairielearn.com", "color": "blue3", "description": "questions created by prairielearn team"},
+        {"name": "license:CC-BY-NC", "color": "yellow3", "description": "license for all prairielearn.com questions"}    
     ],
     "options": {
         "useNewQuestionRenderer": true

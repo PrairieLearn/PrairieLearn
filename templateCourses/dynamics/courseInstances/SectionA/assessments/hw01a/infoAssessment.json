@@ -1,7 +1,7 @@
 {
     "uuid": "f5edd592-08b9-4d8f-9466-f1b0e6b8a3ed",
     "type": "Homework",
-    "title": "Coordinates and Vectors",
+    "title": "Question Bank",
     "set": "Homework",
     "number": "1",
     "allowAccess": [
@@ -12,6 +12,7 @@
     ],
     "zones": [
         {
+            "title": "Coordinate and Vectors",
             "questions": [
                 {"id": "basisComp",            "points": 1, "maxPoints": 5},
                 {"id": "changeBasis",          "points": 1, "maxPoints": 5},
@@ -22,7 +23,145 @@
                 {"id": "PolarBasis2Quadrant",  "points": 3, "maxPoints": 15},
                 {"id": "basisRotationAngle",   "points": 3, "maxPoints": 15}
             ]
-        }
+        },
+        {
+        "title": "Vector Calculus and Rotations",
+        "questions": [
+            {
+                "id": "angleRateFromRV",
+                "points": 1,
+                "maxPoints": 5
+            },
+            {
+                "id": "fcnPosSpeed",
+                "points": 1,
+                "maxPoints": 5
+            },
+            {
+                "id": "distFromVel",
+                "points": 1,
+                "maxPoints": 5
+            },
+            {
+                "id": "TimeDerAngularBasis",
+                "points": 2,
+                "maxPoints": 10
+            },
+            {
+                "id": "polarCurveAccQual",
+                "points": 2,
+                "maxPoints": 10
+            },
+            {
+                "id": "polarCurveVel",
+                "points": 3,
+                "maxPoints": 15
+            },
+            {
+                "id": "vecExpDeriv",
+                "points": 3,
+                "maxPoints": 15
+            },
+            {
+                "id": "polarCurveAcc",
+                "points": 3,
+                "maxPoints": 15
+            },
+            {"id": "angVelToVel",                 "points": 1, "maxPoints": 5},
+            {"id": "rotPointVel",                 "points": 1, "maxPoints": 5},
+            {"id": "particleVelOnCurve",          "points": 2, "maxPoints": 10},
+            {"id": "rotPointLoc",                 "points": 2, "maxPoints": 10},
+            {"id": "particleAccelOnCurve",        "points": 3, "maxPoints": 15},
+            {"id": "angVelMagFromV",              "points": 3, "maxPoints": 15}
+        ]
+    },
+    {
+    "title": "Try to complete the question 'Position from polar velocity' first. If you get stuck, you may want to use the Helper questions.",
+    "maxPoints": 15,
+    "questions": [
+            {"id": "posFromVelPolar",             "points": 3, "maxPoints": 15},
+            {"id": "findFinalPolarQuantitiesPart1",         "points": 1, "maxPoints": 1},
+            {"id": "findFinalPolarQuantitiesPart2",         "points": 1, "maxPoints": 1},
+            {"id": "findFinalPolarQuantitiesPart3",         "points": 1, "maxPoints": 1}
+        ]
+    },
+    {   "title": "Particle Kinetics",
+        "questions": [
+            {"id": "massFromCurveRad",           "points": 1, "maxPoints": 5},
+            {"id": "particleOnCurveForceToAcc",  "points": 2, "maxPoints": 10},
+            {"id": "particleOnCurveForce",       "points": 3, "maxPoints": 15}
+        ]
+    },
+    {   "title": "Tangential/Normal Basis",
+        "questions": [
+            {"id": "polyPosEN",                  "points": 3, "maxPoints": 15},
+            {"id": "polyDistCurveAcc",           "points": 1, "maxPoints": 5},
+            {"id": "speedGraphSDDot",            "points": 1, "maxPoints": 5},
+            {"id": "polyPosOscCent",             "points": 3, "maxPoints": 15}
+
+        ]
+    },
+    {
+        "title": "Try to complete the question 'Force on a particle moving ...' first. If you get stuck, you may want to use the following Helper questions.",
+        "maxPoints": 15,
+        "questions": [
+            {"id": "particleOnCurveForceDSpeed", "points": 3, "maxPoints": 15},
+            {"id": "particleOnCurveForceDSpeedHelper1",     "points": 1, "maxPoints": 1},
+            {"id": "particleOnCurveForceDSpeedHelper2",     "points": 1, "maxPoints": 1},
+            {"id": "particleOnCurveForceDSpeedHelper3",     "points": 1, "maxPoints": 1},
+            {"id": "particleOnCurveForceDSpeedHelper4",     "points": 1, "maxPoints": 1}
+            
+            
+        ]
+    },
+    {
+        "title": "Rigid Body Kinematics",
+        "questions": [
+            {"id": "rbmOmega",                "points": 1, "maxPoints": 5},
+            {"id": "twoPointVAlg",            "points": 1, "maxPoints": 5},
+            {"id": "rbmAccelNum",             "points": 1, "maxPoints": 5},
+            {"id": "twoBarFloatVMiddle",      "points": 2, "maxPoints": 10},
+            {"id": "rigidBodyPinVel",         "points": 3, "maxPoints": 15},
+            {"id": "sliderCrankAcc",          "points": 3, "maxPoints": 15},
+            {"id": "twoBarAPoint",            "points": 1, "maxPoints": 5},
+            {"id": "twoBarOmegaFromV",        "points": 1, "maxPoints": 5},
+            {"id": "fourBarAngVel",           "points": 2, "maxPoints": 10},
+            {"id": "crankOmegaScotchYoke",    "points": 3, "maxPoints": 15}
+        ]
+    },
+    {   
+        "title": "Gears and Rigid Body Kinetics",
+        "questions": [
+            {"id": "gearAngVel",              "points": 1, "maxPoints": 5},
+            {"id": "gearAccAndAngAcc",        "points": 3, "maxPoints": 15},
+            {"id": "massAlg2D",               "points": 1, "maxPoints": 10},
+            {"id": "centMassPointsRI",        "points": 1, "maxPoints": 5},
+            {"id": "momInertiaCBarSeg",       "points": 2, "maxPoints": 10},
+            {"id": "rigidFourBodiesInertia",  "points": 3, "maxPoints": 10},
+            {"id": "momInertiaCAlg2D",        "points": 3, "maxPoints": 15},
+            {"id": "sliderCrankKinetics",     "points": 3, "maxPoints": 15}
+        ]
+    },
+    {
+        "title": "Instantaneous Centers and Rolling",
+        "questions": [
+            {"id": "rbmInstCentVOmega",       "points": 3, "maxPoints": 15},
+            {"id": "rigidBodyRollingVel",     "points": 2, "maxPoints": 10},
+            {"id": "rbRollOtherVel",          "points": 2, "maxPoints": 10},
+            {"id": "rbRollOtherAcc",          "points": 3, "maxPoints": 15}
+        ]
+    },
+    {
+        "title": "Friction, Momentum and Energy",
+        "questions": [
+            {"id": "slopeFrictionMaxAngle",  "points": 1, "maxPoints": 5},
+            {"id": "slideMassEnergy2",       "points": 1, "maxPoints": 5},
+            {"id": "twoBarPotEnergy",        "points": 1, "maxPoints": 5},
+            {"id": "diskSlopeEnergy2",       "points": 2, "maxPoints": 10},
+            {"id": "slideMassEnergy3",       "points": 2, "maxPoints": 10},
+            {"id": "pointMassWork",          "points": 2, "maxPoints": 10}
+        ]
+    }
     ]
 }
 
