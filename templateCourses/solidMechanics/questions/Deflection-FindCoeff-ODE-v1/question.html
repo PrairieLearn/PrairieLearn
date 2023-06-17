@@ -1,0 +1,37 @@
+<pl-question-panel>
+	<p>
+		The simply supported beam has length $L$, elasticity modulus $E$, and cross-section with moment of inertia $I$. A concentrated force is applied at half point, as illustrated below
+	</p>
+	<p>
+		<pl-figure file-name="{{params.imgFile}}" width="400"></pl-figure>
+	</p>
+	<p>
+		The deflection curve for the the first half of the beam is given by:
+	</p>
+	<p>
+		$ y_1(x) = \frac{P}{EI} \left( - \frac{L^2 x}{16} +  \frac{x^3}{12} \right)$
+	</p>
+	<p>
+		Obtain the equation for the deflection curve $y_2(x)$ for $L/2 \lt x \lt L$, where:
+	</p>
+	<p>
+		$ y_2(x) = \frac{P}{E I} \left(A_o + A_1 \ x + A_2 \ x^2 + A_3 \ x^3 \right )$
+	</p>
+	<p>
+		When solving this problem symbolically, you will notice that the coefficients above depend only on the length of the beam $L$. Determine the remaining coefficients when $L = {{params.L}} \rm\ m$.
+	</p>
+</pl-question-panel>
+
+<p>
+	$ y_2(x) = \frac{P}{E I} ($ <pl-number-input answers-name="ao_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input>  +
+	<pl-number-input answers-name="a1_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x$ +
+	<pl-number-input answers-name="a2_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2$ +
+	${{params.a3_2}} \ x^3 ) \rm\ [m]$
+</p>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>

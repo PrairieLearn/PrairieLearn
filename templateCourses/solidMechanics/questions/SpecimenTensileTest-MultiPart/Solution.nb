@@ -1,0 +1,154 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 9.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[      5572,        145]
+NotebookOptionsPosition[      5100,        125]
+NotebookOutlinePosition[      5445,        140]
+CellTagsIndexPosition[      5402,        137]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"P", "=", "122000"}], ";", 
+  RowBox[{"d", "=", "30"}], ";", 
+  RowBox[{"Lo", "=", "200"}], ";", 
+  RowBox[{"\[Sigma]y", "=", "350"}], ";", 
+  RowBox[{"G", "=", "139"}], ";", 
+  RowBox[{"\[Delta]", "=", "0.1"}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"A", "=", 
+   RowBox[{"\[Pi]", " ", 
+    RowBox[{
+     SuperscriptBox["d", "2"], "/", "4"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{"\[Sigma]", "=", 
+  RowBox[{
+   FractionBox["P", "A"], "//", "N"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"\[Epsilon]", "=", 
+   RowBox[{"\[Delta]", "/", "Lo"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{"Ee", "=", 
+  RowBox[{"\[Sigma]", "/", "\[Epsilon]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"\[Nu]n", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{"G", "\[Equal]", 
+     FractionBox[
+      RowBox[{"Ee", "/", "1000"}], 
+      RowBox[{"2", 
+       RowBox[{"(", 
+        RowBox[{"1", "+", "\[Nu]"}], ")"}]}]]}], ",", "\[Nu]"}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"\[Delta]d", "=", 
+  RowBox[{
+   RowBox[{"d", " ", "\[Nu]", " ", 
+    RowBox[{"\[Delta]", "/", "Lo"}]}], "/.", "\[Nu]n"}]}]}], "Input",
+ CellChangeTimes->{{3.6429604575299044`*^9, 3.642960626874837*^9}, {
+  3.6429610812122664`*^9, 3.6429610909642415`*^9}, {3.6429617131384525`*^9, 
+  3.6429617208342223`*^9}, {3.642961773332472*^9, 3.642961813989537*^9}, {
+  3.6429618523033676`*^9, 3.642961866047742*^9}, {3.6429621110972443`*^9, 
+  3.64296217375451*^9}, {3.642962251325266*^9, 3.6429623114962826`*^9}, {
+  3.6429623460577383`*^9, 3.6429623856346955`*^9}, {3.642962466013733*^9, 
+  3.642962475277659*^9}}],
+
+Cell[BoxData["172.5946938418776`"], "Output",
+ CellChangeTimes->{
+  3.64296052969212*^9, {3.642960594109561*^9, 3.6429606273748875`*^9}, {
+   3.642961077316877*^9, 3.6429610931454597`*^9}, 3.642961721662305*^9, {
+   3.6429617745645947`*^9, 3.6429618142005577`*^9}, 3.642961866498787*^9, {
+   3.642962131804315*^9, 3.6429621742805624`*^9}, {3.6429622861327467`*^9, 
+   3.642962311924325*^9}, {3.6429623610472374`*^9, 3.642962389631095*^9}, 
+   3.6429624767128024`*^9}],
+
+Cell[BoxData["345189.38768375525`"], "Output",
+ CellChangeTimes->{
+  3.64296052969212*^9, {3.642960594109561*^9, 3.6429606273748875`*^9}, {
+   3.642961077316877*^9, 3.6429610931454597`*^9}, 3.642961721662305*^9, {
+   3.6429617745645947`*^9, 3.6429618142005577`*^9}, 3.642961866498787*^9, {
+   3.642962131804315*^9, 3.6429621742805624`*^9}, {3.6429622861327467`*^9, 
+   3.642962311924325*^9}, {3.6429623610472374`*^9, 3.642962389631095*^9}, 
+   3.6429624767148027`*^9}],
+
+Cell[BoxData[
+ RowBox[{
+  StyleBox[
+   RowBox[{"Solve", "::", "ratnz"}], "MessageName"], 
+  RowBox[{
+  ":", " "}], "\<\"Solve was unable to solve the system with inexact \
+coefficients. The answer was obtained by solving a corresponding exact system \
+and numericizing the result. \\!\\(\\*ButtonBox[\\\"\[RightSkeleton]\\\", \
+ButtonStyle->\\\"Link\\\", ButtonFrame->None, \
+ButtonData:>\\\"paclet:ref/Solve\\\", ButtonNote -> \
+\\\"Solve::ratnz\\\"]\\)\"\>"}]], "Message", "MSG",
+ CellChangeTimes->{{3.642960614178568*^9, 3.642960627420892*^9}, {
+   3.6429610774048853`*^9, 3.6429610931814632`*^9}, 3.6429617217043095`*^9, {
+   3.6429617746075993`*^9, 3.6429618142425623`*^9}, 3.6429618665407915`*^9, {
+   3.6429621318493195`*^9, 3.6429621743225665`*^9}, {3.6429622861737504`*^9, 
+   3.6429623119673295`*^9}, {3.6429623610902414`*^9, 3.6429623896741*^9}, 
+   3.642962476756807*^9}],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"{", 
+   RowBox[{"\[Nu]", "\[Rule]", "0.24168844490559438`"}], "}"}], 
+  "}"}]], "Output",
+ CellChangeTimes->{
+  3.64296052969212*^9, {3.642960594109561*^9, 3.6429606273748875`*^9}, {
+   3.642961077316877*^9, 3.6429610931454597`*^9}, 3.642961721662305*^9, {
+   3.6429617745645947`*^9, 3.6429618142005577`*^9}, 3.642961866498787*^9, {
+   3.642962131804315*^9, 3.6429621742805624`*^9}, {3.6429622861327467`*^9, 
+   3.642962311924325*^9}, {3.6429623610472374`*^9, 3.642962389631095*^9}, 
+   3.642962476757807*^9}],
+
+Cell[BoxData[
+ RowBox[{"{", "0.0036253266735839155`", "}"}]], "Output",
+ CellChangeTimes->{
+  3.64296052969212*^9, {3.642960594109561*^9, 3.6429606273748875`*^9}, {
+   3.642961077316877*^9, 3.6429610931454597`*^9}, 3.642961721662305*^9, {
+   3.6429617745645947`*^9, 3.6429618142005577`*^9}, 3.642961866498787*^9, {
+   3.642962131804315*^9, 3.6429621742805624`*^9}, {3.6429622861327467`*^9, 
+   3.642962311924325*^9}, {3.6429623610472374`*^9, 3.642962389631095*^9}, 
+   3.642962476758807*^9}]
+}, Open  ]]
+},
+WindowSize->{707, 817},
+WindowMargins->{{Automatic, 24}, {12, Automatic}},
+FrontEndVersion->"9.0 for Microsoft Windows (64-bit) (November 20, 2012)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[579, 22, 1632, 41, 188, "Input"],
+Cell[2214, 65, 467, 7, 31, "Output"],
+Cell[2684, 74, 468, 7, 31, "Output"],
+Cell[3155, 83, 883, 16, 39, "Message"],
+Cell[4041, 101, 549, 11, 31, "Output"],
+Cell[4593, 114, 491, 8, 63, "Output"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

@@ -1,0 +1,63 @@
+<pl-question-panel>
+	<p>
+		The compressed-air tank has an inner radius $r$ and uniform wall thickness $t$. The gage pressure inside the tank is $p$ and the centric axial load $F$ is applied at the end cap.	Use $p = {{params.p}} \rm\ kPa$, $F = {{params.F}} \rm\ kN$, $t = {{params.t}} \rm\ mm$ and $r = {{params.r}} \rm\ mm$.
+	</p>
+
+	<p align="center">
+		<pl-figure file-name="{{params.imgFile}}" width="450"></pl-figure>
+	</p>
+
+	<pl-variable-output digits="0">
+		<variable params-name="p" comment="kPa">p</variable>
+		<variable params-name="F" comment="kN">F</variable>
+		<variable params-name="t" comment="mm">t</variable>
+		<variable params-name="r" comment="mm">r</variable>
+		<variable params-name="sigY" comment="MPa">sigmaY</variable>
+	</pl-variable-output>
+
+	<p>
+		Obtain the state of plane stress at point $H$ in the $x-y$ coordinate system:
+	</p>
+</pl-question-panel>
+
+<p>
+	<pl-number-input answers-name="sigmax" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_x=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+<p>
+	<pl-number-input answers-name="sigmay" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_y=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+<pl-number-input answers-name="tauxy" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\tau_{xy}=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+<p></p>
+
+<hr>
+<p>
+	Determine the principal stresses $\sigma_{1}$ and $\sigma_{2}$ at point $H$:
+</p>
+<p>
+	<pl-number-input answers-name="sigma1" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_1=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+<p>
+	<pl-number-input answers-name="sigma2" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_2=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+
+
+<hr>
+<p>
+	Determine the principal plane defined by the rotation $\theta_{p1}$:
+</p>
+<pl-number-input answers-name="thetap1" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\theta_{p1}=$" suffix="$^o$ " weight="2"></pl-number-input>
+
+
+<hr>
+<p>
+	Determine the factor of safety against yielding of the material at point $H$ on the basis of the Von-Mises criterion. The material has yielding stress $\sigma_Y = {{params.sigY}} \rm\ MPa$.
+</p>
+<pl-number-input answers-name="FS" comparison="relabs" rtol="1e-2" atol="1e-5" label="$FS=$" weight="2"></pl-number-input>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>
+  

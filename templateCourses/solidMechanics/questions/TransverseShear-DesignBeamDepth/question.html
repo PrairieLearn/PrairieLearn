@@ -1,0 +1,31 @@
+<pl-question-panel>
+  <p>
+    A simply supported beam of length $a = {{params.a}} \rm\ mm $ has rectangular cross-section with width $b = {{params.b}} \rm\ mm$ and height $h$ and is subjected to the loading condition ${{params.load}} = {{params.P}} \rm\ {{params.unit}}$, indicated below.
+    The beam is made of a material with allowable normal stress $\sigma_a = {{params.sigma}} \rm\ MPa$ and allowable shear stress  $\tau_a = {{params.tau}} \rm\ MPa$.
+  </p>
+
+
+  <pl-figure file-name="{{params.imgFile}}" width="400"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="b" comment="mm">b</variable>
+    <variable params-name="a" comment="mm">a</variable>
+    <variable params-name="P" comment="{{params.unit}}">{{params.load}}</variable>
+    <variable params-name="sigma" comment="MPa">sigmaAll</variable>
+    <variable params-name="tau" comment="MPa">tauAll</variable>
+  </pl-variable-output>
+
+  <p>
+    Determine the minimum required height $h$ of the cross-section.
+  </p>
+</pl-question-panel>
+
+
+<pl-number-input answers-name="h" comparison="relabs" rtol="1e-2" atol="1e-5" label="$h=$" suffix="$\rm\ mm$ " weight="2"></pl-number-input>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+</pl-question-panel>

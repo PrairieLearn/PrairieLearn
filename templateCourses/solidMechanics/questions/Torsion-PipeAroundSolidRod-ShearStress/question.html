@@ -1,0 +1,30 @@
+<pl-question-panel>
+<p>
+ A composite shaft with length $L = {{params.L}} \rm\ in$ is made by fitting an aluminum sleeve ($G_a = {{params.Ga}} \times 10^3  \rm\ ksi$) over a steel core ($G_s = {{params.Gs}} \times 10^3 \rm\ ksi$), as illustrated below. The composite shaft is fixed against rotation at the wall $A$ and has outside diameter $d_a = {{params.da}} \rm\ in$. The steel core has diameter $d_s = {{params.ds}} \rm\ in$. A torque $T_B = {{params.tb}}  \rm\ kip \cdot in$ is applied to the composite shaft at $B$.
+</p>
+
+<pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="L" comment="in">L</variable>
+    <variable params-name="GaLong" comment="ksi">Ga</variable>
+    <variable params-name="GsLong" comment="ksi">Gs</variable>
+    <variable params-name="da" comment="in">da</variable>
+    <variable params-name="ds" comment="in">ds</variable>
+    <variable params-name="tb" comment="kip.in">Tb</variable>
+</pl-variable-output>
+
+<p>
+Determine the <em>magnitude</em> of the maximum shear stress, $|\tau_{max}|$, in the <strong>{{params.option}} </strong>.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="taumax" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|\tau_{max}|=$" suffix="$ \rm\ ksi$ " weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>

@@ -1,0 +1,13 @@
+{
+    "uuid": "c570a46d-d02e-40d6-a02a-d1eae64eaa43",
+    "title": "Normal stresses in composite shaft - rod + tube",
+	"topic": "Stress",
+    "type": "v3",
+	"tags": [
+		"fa15",
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"calculation"
+	]
+}
+

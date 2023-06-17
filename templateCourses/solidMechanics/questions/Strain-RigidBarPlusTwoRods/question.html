@@ -1,0 +1,46 @@
+<pl-question-panel>
+  <p>
+    The rigid beam $AD$ is supported by a smooth pin $A$ and two rods at $B$ and $C$.
+
+    A load $P > 0$ causes the rigid beam to rotate by an angle $\theta$ as indicated below, in which point $C$ has a vertical displacement $\delta_C = {{params.deltaC}} \rm \ mm$. Consider $a = {{params.a}} \rm\ mm$ and $h = {{params.h}} \rm\ mm$.
+  </p>
+  <p>
+  <pl-drawing width="{{params.width}}" height="{{params.height}}" grid-size="0">
+    <pl-drawing-initial>
+        <pl-fixed-pin x1="{{params.Ax}}" y1="{{params.Ay}}" angle="90"></pl-fixed-pin>
+        <pl-fixed-pin x1="{{params.Ex}}" y1="{{params.Ey}}" angle="180"></pl-fixed-pin>
+        <pl-fixed-pin x1="{{params.Fx}}" y1="{{params.Fy}}" angle="180"></pl-fixed-pin>
+        <pl-rod x1="{{params.Ax}}" y1="{{params.Ay}}" x2="{{params.Dx}}" y2="{{params.Dy}}" label1="A" offsetx1="0" offsety1="10" label2="D" offsetx2="0" offsety2="10"></pl-rod>
+        <pl-rod x1="{{params.Ex}}" y1="{{params.Ey}}" x2="{{params.Bx}}" y2="{{params.By}}" label1="E" offsetx1="15" offsety1="-10" label2="B" offsetx2="-10" offsety2="10"></pl-rod>
+        <pl-rod x1="{{params.Fx}}" y1="{{params.Fy}}" x2="{{params.Cx}}" y2="{{params.Cy}}" label1="F" offsetx1="15" offsety1="-10" label2="C" offsetx2="-10" offsety2="10"></pl-rod>
+        <pl-vector x1="{{params.Dx}}" y1="{{params.Dy}}" width="80" angle="90" color="red3" anchor-is-tail="false" label="P" offsety="-80"></pl-vector>
+        <pl-dimensions x1="{{params.Ax}}" y1="{{params.Ay}}" x2="{{params.Bx}}" y2="{{params.By}}" dim-offset="60" stroke-color="blue3" start-support-line="true" end-support-line="true" label="a"></pl-dimensions>
+        <pl-dimensions x1="{{params.Ax}}" y1="{{params.Ay}}" x2="{{params.Cx}}" y2="{{params.Cy}}" dim-offset="80" stroke-color="blue3" start-support-line="true" end-support-line="true" label="2a"></pl-dimensions>
+        <pl-dimensions x1="{{params.Ax}}" y1="{{params.Ay}}" x2="{{params.Ex}}" y2="{{params.Ey}}" dim-offset="-80" stroke-color="blue3" start-support-line="true" end-support-line="true" label="h" dim-offset-angle="-90" offsetx="5"></pl-dimensions>
+        <pl-arc-dimensions x1="{{params.Ax}}" y1="{{params.Ay}}" end-angle="30" label="\\theta" offsetx="10" offsety="5" start-support-line="true" end-support-line="true" stroke-color="red3" radius="60"></pl-arc-dimensions>
+        <pl-text x1="{{params.label_1x}}" y1="{{params.label_1y}}" label="(1)" offsetx="10"></pl-text>
+        <pl-text x1="{{params.label_2x}}" y1="{{params.label_2y}}" label="(2)" offsetx="10"></pl-text>
+      </pl-drawing-initial>
+  </pl-drawing>
+  </p>
+
+  <pl-variable-output digits="0">
+    <variable params-name="h" comment="mm">h</variable>
+    <variable params-name="a" comment="mm">a</variable>
+    <variable params-name="deltaC" comment="mm" digits="1">deltaC</variable>
+  </pl-variable-output>
+
+  <p>
+    Determine the resulting normal strain in rod $(1)$. <em>Assume small rotations.</em>
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="epsilon" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\epsilon=$" suffix="$\times \ 10^{-3} \rm\ mm/mm$ " weight="2"></pl-number-input>
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>
+  

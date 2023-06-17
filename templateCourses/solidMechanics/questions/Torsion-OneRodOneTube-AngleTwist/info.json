@@ -1,0 +1,12 @@
+{
+    "uuid": "ecbfc50f-6063-4326-9660-40fa6b2d127e",
+    "title": "Torsion - solid+hollow shaft - twist angle",
+	"topic": "Torsion",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"su15",
+        "calculation"
+	]
+}

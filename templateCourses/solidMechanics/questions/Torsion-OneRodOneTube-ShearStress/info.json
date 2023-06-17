@@ -1,0 +1,12 @@
+{
+    "uuid": "84c0e246-5fad-4c76-ad05-fbd6e40affba",
+    "title": "Torsion - solid+hollow shaft - shear stress",
+	"topic": "Torsion",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"su15",
+        "calculation"
+	]
+}

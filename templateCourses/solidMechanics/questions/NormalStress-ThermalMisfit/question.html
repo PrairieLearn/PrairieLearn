@@ -1,0 +1,32 @@
+<pl-question-panel>
+  <p>
+    At its initial temperature, the bar is too long by a distance of $\delta = {{params.delta}} \times 10^{-2} \rm\ in$ to fit into the gap between the
+    rigid walls, which are separated by a distance $L = {{params.L}} \rm\ in$. In order to make it fit tightly, the bar is cooled to a very low temperature so that it shrinks enough to fit easily into the gap. After it is fit in the gap, the temperature of the bar is raised to a temperature $\Delta T$ below the initial temperature and the bar fits tight between the walls.
+  </p>
+  <p>
+    The bar has elastic modulus $E = {{params.E}} \times 10^{3}  \rm\ ksi$, thermal expansion coefficient $\alpha = {{params.alpha}} \times 10^{-6} \rm\ /^o F$ and cross-sectional area $A = {{params.A}} \rm\ in^2$.
+  </p>
+
+  <pl-figure file-name="Picture1.png" width="450"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="deltaM" comment="in" digits="2">delta</variable>
+    <variable params-name="L" comment="in">L</variable>
+    <variable params-name="Eexp" comment="ksi">E</variable>
+    <variable params-name="alphaExp" comment="/degrees F" digits="6">alpha</variable>
+    <variable params-name="A" comment="in^2">A</variable>
+    <variable params-name="deltaT" comment="degrees F">dT</variable>
+  </pl-variable-output>
+
+  <p> What is the stress $\sigma$ in the bar at this temperature $\Delta T = {{params.deltaT}} \rm\ ^o F$?</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="sigma" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma=$" suffix="$ \rm\ ksi$" weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>

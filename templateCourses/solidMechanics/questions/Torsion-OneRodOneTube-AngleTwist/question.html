@@ -1,0 +1,27 @@
+<pl-question-panel>
+<p> In the system below, the shaft is hollow from $A$ to $B$, solid from $B$ to $C$ and is made of a material with shear modulus $G = {{params.G}} \rm\ GPa$. The shaft  has  outer diameter $d = {{params.d}} \rm\ mm$ and the hollow segment has inner diameter $d_i = d/2$. A torque $T_B = {{params.tb}} \rm\ N \cdot m$ is applied at $B$. Ends $A$ and $C$ are fixed to rigid walls. Consider $L={{params.L}} \rm\ mm$.
+</p>
+
+<pl-figure file-name="Picture1.png" width="500"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="L" comment="mm">L</variable>
+    <variable params-name="G" comment="GPa">G</variable>
+    <variable params-name="tb" comment="N.m">TB</variable>
+</pl-variable-output>
+
+<p>
+Determine the <b>magnitude</b> of twist angle at $B$, $|\phi_B|$.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="phib" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|\phi_B|=$" suffix="$ \rm\ rad$ " weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>

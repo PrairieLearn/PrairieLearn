@@ -1,0 +1,32 @@
+<pl-question-panel>
+  <p>
+    Certain application requires plates $(1)$ and $(2)$ to be attached to each other using glue, as indicated below. During fabrication plate $(1)$ was made $\delta_M={{params.deltaM}} \rm\ mm$ smaller than needed. Plate $(1)$ was placed in an oven to increase its length so that it would perfectly match the size of plate $(2)$. The plates were then immediately glued together.
+  </p>
+  <p>
+    Plate $(1)$ has stiffness $k_1 = {{params.k1}} \times 10^3 \rm\ N/mm$, plate $(2)$ has stiffness $k_2 = {{params.k2}} \times 10^3 \rm\  N/mm$ and $L = {{params.L}} \times 10^2 \rm\  mm$.
+  </p>
+
+  <pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="deltaM" comment="mm">deltaM</variable>
+    <variable params-name="k1long" comment="N/mm">k1</variable>
+    <variable params-name="k2long" comment="N/mm">k2</variable>
+    <variable params-name="Lexp" comment="mm">L</variable>
+  </pl-variable-output>
+
+  <p>
+    Determine the extensional strain $\epsilon$ of plate $({{params.n}})$ after plate $(1)$ returns to its original temperature.
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="epsilon" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\varepsilon=$" suffix="$\cdot 10^{-3} \rm\ mm/mm$" weight="2">
+</pl-number-input>
+
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>

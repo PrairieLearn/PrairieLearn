@@ -1,0 +1,12 @@
+{
+    "uuid": "552e51f0-263e-4a08-b1b8-a70ab26015e4",
+    "title": "Stress-Strain diagram (load and unload)",
+    "topic": "Mechanical Properties of Materials",
+    "type": "v3",
+    "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+        "su15",
+        "calculation"
+    ]
+}

@@ -1,0 +1,30 @@
+<pl-question-panel>
+  <p>
+    The aluminum rod ($E_1 = {{params.E1}} \rm\ GPa$) is reinforced with the  firmly bonded steel tube  ($E_2 = {{params.E2}} \rm\ GPa$). The diameter of the aluminum rod is $d = {{params.d}} \rm\ mm$ and the outside diameter of the steel tube is $D = {{params.D}} \rm\ mm$. The length of the composite column is $L = {{params.L}} \rm\ mm$. A force $P = {{params.P}} \rm\ kN$ is applied at the top surface, distributed across both the rod and tube.
+  </p>
+
+  <pl-figure file-name="Figure1.png" width="400"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="E1" comment="GPa">E1</variable>
+    <variable params-name="E2" comment="GPa">E2</variable>
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="D" comment="mm">D</variable>
+    <variable params-name="L" comment="mm">L</variable>
+    <variable params-name="P" comment="kN">P</variable>
+  </pl-variable-output>
+
+  <p>
+    Determine the normal stress $\sigma$ in the {{params.string}}. Hint: remember the sign convention!
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="sigma" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma=$" suffix="$ \rm\ MPa$" weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>

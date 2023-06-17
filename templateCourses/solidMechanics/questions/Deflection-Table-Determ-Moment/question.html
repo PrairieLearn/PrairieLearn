@@ -1,0 +1,46 @@
+<pl-question-panel>
+	<p>
+		The cantilever beam $AC$ with length $L = {{params.L}} \rm\ m$ has elasticity modulus $E = {{params.E}} \rm\ GPa$, cross-section with moment of inertia $I = {{params.Iz}} \times 10^{-6} \rm\ m^4$ and supports a uniform distributed load of intensity $w = {{params.w}} \rm\ kN/m$ over half of its length and a couple moment $M_o = \frac{w L^2}{24}$ at the end $C$.
+	</p>
+	<p align="center">
+		<pl-figure file-name="{{params.imgFile}}" width="400"></pl-figure>
+	</p>
+
+	<pl-variable-output digits="0">
+		<variable params-name="w" comment="kN/m">w</variable>
+		<variable params-name="L" comment="m">L</variable>
+		<variable params-name="E" comment="GPa">E</variable>
+		<variable params-name="IzVar" comment="m^4" digits="6">Iz</variable>
+	</pl-variable-output>
+
+	<p>
+		Determine the deflection $y_c$ at the  tip of the beam (point $C$).
+	</p>
+</pl-question-panel>
+
+<p>
+	<pl-number-input answers-name="yc" comparison="relabs" rtol="1e-2" atol="1e-5" label="$y_c$" suffix="$\rm\ mm$"></pl-number-input>
+</p>
+
+<pl-question-panel>
+	<p>
+		Determine the slope $\theta_c$ at the  tip of the beam (point $C$).
+	</p>
+</pl-question-panel>
+
+<p>
+	<pl-number-input answers-name="dyc" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\theta_c$" suffix="$\rm\ rad$"></pl-number-input>
+</p>
+
+<hr>
+<pl-question-panel>
+<p> <em>Note:</em> You are encouraged to use the superposition method.</p>
+</pl-question-panel>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>
+

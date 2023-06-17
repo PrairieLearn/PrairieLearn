@@ -1,0 +1,122 @@
+<pl-question-panel>
+
+  <p>
+	A beam lies flat on the ground and is subjected to two concentrated forces as illustrated below. 
+	Assume that the reaction of the ground is uniformily distributed.
+
+	(1) Draw the free-body digram and corresponding 
+	(2) shear force and (3) bending moment diagrams.
+   </p>
+   
+</pl-question-panel>
+
+
+
+<p>
+<pl-drawing gradable="true" answers-name="vm_diag" width="540" height="1300" hide-answer-panel="false">
+
+    <pl-drawing-initial>
+	
+        <pl-rectangle x1="{{params.xm}}" y1="{{params.y_ground}}" width="{{params.ground_width}}" height="{{params.ground_height}}" color="gray1" stroke-width="0"> 
+		</pl-rectangle>
+	
+        <pl-rectangle x1="{{params.xm}}" y1="{{params.ym}}" width="{{params.rec_width}}" height="{{params.rec_height}}" color="white"> </pl-rectangle>
+        
+        
+		<pl-point x1="{{params.x1}}" y1="{{params.ym}}" radius="2" offsety="-10" label="A"></pl-point>
+		<pl-point x1="{{params.x2}}" y1="{{params.ym}}" radius="2" offsety="-10" label="B"></pl-point>
+		<pl-point x1="{{params.x3}}" y1="{{params.ym}}" radius="2" offsety="-10" label="C"></pl-point>
+		<pl-point x1="{{params.x4}}" y1="{{params.ym}}" radius="2" offsety="-10" label="D"></pl-point>
+		
+        <pl-vector x1="{{params.Px1}}" y1="{{params.Py1}}" width="50" angle="90" label="P" offsetx="10" offsety="-60"></pl-vector>
+		
+        <pl-vector x1="{{params.Px2}}" y1="{{params.Py2}}" width="50" angle="90" label="P" offsetx="10" offsety="-60"></pl-vector>
+		
+        
+		<pl-dimensions x1="{{params.x1}}" y1="{{params.y_dim}}" x2="{{params.x2}}" y2="{{params.y_dim}}" dim-offset="80" label="0.2L"></pl-dimensions>
+        <pl-dimensions x1="{{params.x2}}" y1="{{params.y_dim}}" x2="{{params.x3}}" y2="{{params.y_dim}}" dim-offset="80" label="0.6L"></pl-dimensions>
+        <pl-dimensions x1="{{params.x3}}" y1="{{params.y_dim}}" x2="{{params.x4}}" y2="{{params.y_dim}}" dim-offset="80" label="0.2L"></pl-dimensions>
+        
+        
+        <!-- Drawing the free body diagram -->
+        <pl-text x1="40" y1="240" label="FBD"></pl-text> 
+		
+        <pl-rectangle x1="{{params.xm}}" y1="{{params.y_fbd}}" width="{{params.rec_width}}" height="{{params.rec_height}}" color="white"> </pl-rectangle>
+		
+		<pl-point x1="{{params.x1}}" y1="{{params.y_fbd}}" radius="2" offsety="-10" label="A"></pl-point>
+		<pl-point x1="{{params.x2}}" y1="{{params.y_fbd}}" radius="2" offsety="-10" label="B"></pl-point>
+		<pl-point x1="{{params.x3}}" y1="{{params.y_fbd}}" radius="2" offsety="-10" label="C"></pl-point>
+		<pl-point x1="{{params.x4}}" y1="{{params.y_fbd}}" radius="2" offsety="-10" label="D"></pl-point>
+		
+		
+        <!-- Drawing the shear diagram -->
+        <pl-axes origin="{{params.V_origin}}" grid-label="{{params.label_V}}" supporting-lines="{{params.sup_line}}" label-y="V">
+        </pl-axes>
+     
+        <!-- Drawing the moment diagram -->
+        <pl-axes origin="{{params.M_origin}}" grid-label="{{params.label_M}}" supporting-lines="{{params.sup_line_M}}" label-y="M">
+        </pl-axes>
+		
+	   
+		
+<!-- Draw temporarily correct answers-->		
+
+	  
+
+		
+    </pl-drawing-initial>
+
+<!---Answer object-->
+	
+    <pl-drawing-answer draw-error-box="true">
+
+		<!--FBD-->
+		<pl-vector x1="{{params.x2}}" y1="250" angle="90" offset-backward="10" offset-forward="110"></pl-vector>
+		<pl-vector x1="{{params.x3}}" y1="250" angle="90" offset-backward="10" offset-forward="110"></pl-vector>
+		
+	    <pl-distributed-load x1="{{params.xm}}" y1="360" width="300" w1="30" w2="30" offsetx1="70" offsety1="0" angle="180" offset-backward="10" offset-forward="110">
+		</pl-distributed-load>
+		
+		<!-- shear diagram--> 
+	    <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}"></pl-graph-line>
+	    <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}"></pl-graph-line>
+		<pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V3}}"></pl-graph-line>
+
+   	 	<!-- moment diamgram-->
+		
+    	<pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M1}}" end-gradients="{{params.dM1}}" offset-control-tol-y="20" offset-control-tol-x="30">
+		</pl-graph-line>
+	
+    	<pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M2}}" end-gradients="{{params.dM2}}" offset-control-tol-y="40" offset-control-tol-x="30">
+		</pl-graph-line>
+	
+    	<pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M3}}" end-gradients="{{params.dM3}}" offset-control-tol-y="20" offset-control-tol-x="30">
+		</pl-graph-line>
+	
+	
+    	</pl-drawing-answer>
+
+
+<!-- Drwaing element for students-->
+    <pl-controls>
+      <pl-controls-group label="Graded objects:">
+          <pl-drawing-button type="pl-distributed-load"></pl-drawing-button> 
+	  	  <pl-drawing-button type="pl-vector"></pl-drawing-button> 	
+          <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
+          <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
+      </pl-controls-group>
+      <pl-controls-group label="Help buttons (not graded):">
+          <pl-drawing-button type="delete"></pl-drawing-button>
+          <pl-drawing-button type="help-line"></pl-drawing-button>
+      </pl-controls-group>
+  </pl-controls>
+
+</pl-drawing>
+</p>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+</pl-question-panel>

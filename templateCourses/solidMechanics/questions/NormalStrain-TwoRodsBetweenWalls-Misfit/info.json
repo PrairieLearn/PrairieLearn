@@ -1,0 +1,12 @@
+{
+    "uuid": "3b25b96a-3df8-46bf-ab2a-5958e0738f38",
+    "title": "Normal Strain in rods constrained by walls with misfit",
+   	"topic": "Axial Loading",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"fa15",
+		"calculation"		
+	]
+}

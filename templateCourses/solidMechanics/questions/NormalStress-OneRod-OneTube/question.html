@@ -1,0 +1,33 @@
+<pl-question-panel>
+<p>
+  Two cylindrical bars $(1)$ and $(2)$ are welded together and loaded as shown. Bar $(1)$ is hollow with outer diameter $d = {{params.d}} \rm\ mm$ and inner diameter $d/2$. Bar $(2)$ is solid with diameter $d$.
+</p>
+
+<p>
+<pl-figure file-name="Picture1.png" width="450"></pl-figure>
+</p>
+
+<pl-variable-output digits="0">
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="p1" comment="kN">P</variable>
+</pl-variable-output>
+
+<p>
+   Determine the normal stresses $\sigma_1$ in bar $(1)$ and $\sigma_2$ in bar $(2)$ if $P = {{params.p1}} \rm\ kN$.
+  </p>
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="sigma1" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_1=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+<p>
+<pl-number-input answers-name="sigma2" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_2=$" suffix="$ \rm\ MPa$ " weight="2"></pl-number-input>
+</p>
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+      </p>
+  </pl-question-panel>
+  

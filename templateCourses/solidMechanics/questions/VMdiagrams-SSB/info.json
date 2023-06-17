@@ -1,0 +1,12 @@
+{
+    "uuid": "5ED16FE1-8E9B-43C8-8BBF-47658AC1BF76",
+    "title": "Simply supported beam with concentrated load",
+    "topic": "Bending",
+    "type": "v3",
+    "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"fa19",
+        "graph"
+    ]
+}

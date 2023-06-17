@@ -1,0 +1,45 @@
+<pl-question-panel>
+	<p>
+		The cantilever beam has length $2L$ where $L = {{params.L}} \rm\ m$, elasticity modulus $E = {{params.E}} \rm\ GPa$, and cross-section with moment of inertia $I = {{params.Iz}} \times 10^{-6} \rm\ m^4$. A force $P = {{params.P}} \rm\ kN$ and a couple moment $M = {{params.M}} \rm\ kN.m$ are applied at midpoint as indicated below.
+	</p>
+	<p align="center">
+		<pl-figure file-name="{{params.imgFile}}" width="400"></pl-figure>
+	</p>
+
+	<pl-variable-output digits="0">
+		<variable params-name="P" comment="kN">P</variable>
+		<variable params-name="M" comment="kN.m">M</variable>
+		<variable params-name="L" comment="m">L</variable>
+		<variable params-name="E" comment="GPa">E</variable>
+		<variable params-name="IzVar" comment="m^4" digits="6">Iz</variable>
+	</pl-variable-output>
+	<p>
+		Obtain an expression for the deflection curve $y(x)$ in each of the intervals below. You need to write the numeric coefficients of the equations. Note that $x$ is given in ${\rm\ meters \ [m]}$.
+	</p>
+</pl-question-panel>
+
+<p>
+	$0 \lt x \lt L $:
+</p>
+$y_1(x)$ = <pl-number-input answers-name="ao_1" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> +
+<pl-number-input answers-name="a1_1" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x$ +
+<pl-number-input answers-name="a2_1" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2$ +
+<pl-number-input answers-name="a3_1" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^3$ +
+<pl-number-input answers-name="a4_1" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^4 \rm\ [m]$
+
+<hr>
+<p>
+	$L \lt x \lt 2L $:
+</p>
+$y_2(x)$ = <pl-number-input answers-name="ao_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> +
+<pl-number-input answers-name="a1_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x$ +
+<pl-number-input answers-name="a2_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2$ +
+<pl-number-input answers-name="a3_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^3$ +
+<pl-number-input answers-name="a4_2" size="5" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^4 \rm\ [m]$
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>

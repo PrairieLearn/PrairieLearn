@@ -1,0 +1,42 @@
+<pl-question-panel>
+  <p>
+    The cross section below has dimensions $h = {{params.h}} \rm\ mm$, $b = {{params.b}} \rm\ mm$, $t_1 = {{params.t1}} \rm\ mm$, and $t_2 = {{params.t2}} \rm\ mm$.
+  </p>
+
+  <pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="h" comment="mm">h</variable>
+    <variable params-name="b" comment="mm">b</variable>
+    <variable params-name="t1" comment="mm">t1</variable>
+    <variable params-name="t2" comment="mm">t2</variable>
+    <variable params-name="M" comment="N.m">Mz</variable>
+  </pl-variable-output>
+
+  <p>Determine the centroid position $\bar y$.</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="ybar" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\bar y = $" suffix="$ \rm\ mm$ " weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel><p>
+  Determine the moment of inertia $I_z$ with respect to the centroidal axis $z$.
+</p></pl-question-panel>
+
+<pl-number-input answers-name="Iz" comparison="relabs" rtol="1e-2" atol="1e-5" label="$I_z = $" suffix="$\times 10^6 \rm\  mm^4$ " weight="2"></pl-number-input>
+
+
+<hr>
+<pl-question-panel><p>
+  Determine the <strong>magnitude</strong> of the maximum normal stress, $|\sigma|$, when the cross-section is subject to a  moment $M_z = {{params.M}} \rm\ N \cdot m$
+</p></pl-question-panel>
+
+<pl-number-input answers-name="sigma" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|\sigma|=$" suffix="$\rm\  MPa$ " weight="2"></pl-number-input>
+
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>

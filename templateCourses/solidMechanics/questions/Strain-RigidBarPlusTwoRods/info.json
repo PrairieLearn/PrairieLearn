@@ -1,0 +1,12 @@
+{
+    "uuid": "0f866349-b0f9-414e-a183-9d43946e121b",
+    "title": "Strain in vertical rod attached to rigid bar",
+	"topic": "Strain",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"su15",
+		"calculation"
+	]
+}

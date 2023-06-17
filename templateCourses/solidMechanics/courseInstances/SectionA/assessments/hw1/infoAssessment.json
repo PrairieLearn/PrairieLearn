@@ -1,0 +1,100 @@
+{
+    "uuid": "fb39c0a4-ea5b-4496-ac35-60753c356b34",
+    "type": "Homework",
+    "title": "Question Bank",
+    "set": "questionBank",
+    "number": "1",
+	"allowIssueReporting": false,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+
+    "zones": [
+		{
+        "title": "Stress and Strain",
+        "questions": [
+            {"id": "NormalStressCircularCrossSection",  "points": 1, "maxPoints": 3},
+            {"id": "NormalStressCircularCrossSection-v2",  "points": 1, "maxPoints": 3},
+            {"id": "InclinedPlane-WoodVelcro",  "points": 1, "maxPoints": 3},
+            {"id": "NormalStress-OneRod-OneTube",  "points": 1, "maxPoints": 3},
+            {"id": "NormalStress-TwoRods-MultiPart",  "points": 1, "maxPoints": 3},
+            {"id": "StrainShear-RubberBlock-TwoPart",  "points": 1, "maxPoints": 3},
+            {"id": "Strain-RigidBarPlusTwoRods",  "points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Material Properties",
+            "questions": [
+                {"id": "Stress-Strain-Material-MCRadio",  "points": 1, "maxPoints": 3},
+                {"id": "Stress-Strain-Diagram-StrainHardening",  "points": 1, "maxPoints": 3},
+                {"id": "SpecimenTensileTest-MultiPart",  "points": 1, "maxPoints": 3}
+                ]
+        },
+		{
+            "title": "Axial Loading",
+            "questions": [
+                {"id": "NormalStress-ThermalMisfit",  "points": 1, "maxPoints": 3},
+                {"id": "NormalStress-RodBondedTube",  "points": 1, "maxPoints": 3},
+                {"id": "NormalStrain-TwoRodsBetweenWalls-Misfit",  "points": 1, "maxPoints": 3},
+                {"id": "StaticallyIndeterminate-HangingSign",  "points": 1, "maxPoints": 3},
+                {"id": "Elongation-StaticallyIndeterminate-TwoRods",  "points": 1, "maxPoints": 3},
+                {"id": "Elongation-PlatesGluedTogether",  "points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Torsion",
+            "questions": [
+                {"id": "Torsion-TwoRods-TwistAngle",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-TwoRods-ShearStress",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-OneRodOneTube-AngleTwist",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-OneRodOneTube-ShearStress",      		"points": 1, "maxPoints": 3}, 
+                {"id": "Torsion-PipeAroundSolidRod-ShearStress",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-PipeAroundSolidRod-AngleTwist",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-OneRod-Wrench",      		"points": 1, "maxPoints": 3}, 
+                {"id": "Torsion-Gear-TwoRods-ShearStress",      		"points": 1, "maxPoints": 3},
+                {"id": "Torsion-Gear-ThreeRods-TwistAngle",      		"points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Beam Bending",
+            "questions": [
+                {"id": "Bending-Box-Channel-MultiPart",      		"points": 1, "maxPoints": 3},
+                {"id": "BendingDesign-cantilever",      		"points": 1, "maxPoints": 3},
+                {"id": "Bending-Extruded2-MultiPart",      		"points": 1, "maxPoints": 3},
+                {"id": "ShearBendingMomentEquation-ssb-MultiPart",      		"points": 1, "maxPoints": 3},
+                {"id": "VMdiagrams-BeamOntheGround",      		"points": 1, "maxPoints": 3},
+                {"id": "VMdiagrams-SSB",      		"points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Transverse Shear Stress",
+            "questions": [
+                {"id": "TransverseShear-DesignBeamDepth",      		"points": 1, "maxPoints": 3},
+                {"id": "TransverseShear-Extruded4-MultiPart",      		"points": 1, "maxPoints": 3},
+                {"id": "TransverseShear-UChannel-MultiPart",      		"points": 1, "maxPoints": 3}
+                ]
+        },
+		{   "title": "Stress Transformations",
+            "questions": [
+                {"id": "CombinedLoading-Pipe-GetInternalResultants",      		"points": 1, "maxPoints": 3},
+                {"id": "CombinedLoading-PressureVessel-1-MultiPart",      		"points": 1, "maxPoints": 3}
+    
+                ]
+        },
+		{
+            "title": "Deflections",
+            "questions": [
+                {"id": "Deflection-StaticallyDeterminate-ODE",      		"points": 1, "maxPoints": 3},
+                {"id": "Deflection-FindCoeff-ODE-v2",      		"points": 1, "maxPoints": 3},
+                {"id": "Deflection-FindCoeff-ODE-v1",      		"points": 1, "maxPoints": 3},
+                {"id": "Deflection-Table-Determ-Moment-y-only-v2",      		"points": 1, "maxPoints": 3},
+                {"id": "Deflection-Table-Determ-Moment",      		"points": 1, "maxPoints": 3},
+                {"id": "Deflection-StaticallyDeterminate-TableSuperposition",      		"points": 1, "maxPoints": 3}
+                ]
+            }        
+    ]
+}
+

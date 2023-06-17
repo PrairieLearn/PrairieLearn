@@ -1,0 +1,32 @@
+<pl-question-panel>
+<p>
+  The gear train illustrated below consists of three solid shafts with diameter $d = {{params.d}} \rm\ mm$ connected by four gears: two gears with radius $R_1 = {{params.r1}} \rm\ mm$ and two other gears with radius $R_2 = {{params.r2}} \rm\ mm$. The shafts are supported by the smooth journal bearings $B_1$, $B_2$, $B_3$, $B_4$, fixed at $W$ and are made with a material that has shear modulus $G = {{params.G}} \rm\ GPa$. Consider $L = {{params.L}} \rm\ mm$.
+</p>
+
+<pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="r1" comment="mm">R1</variable>
+    <variable params-name="r2" comment="mm">R2</variable>
+    <variable params-name="G" comment="GPa">G</variable>
+    <variable params-name="L" comment="mm">L</variable>
+    <variable params-name="te" comment="N.m">TE</variable>
+</pl-variable-output>
+
+<p>
+Determine the <strong>magnitude</strong> of the angle of rotation at $E$, $|\phi_E|$, when a torque $T_E = {{params.te}} \rm\ N.m$ is applied as shown. <em>Assume small rotations.</em>
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="phie" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|\phi_E|=$" suffix="$ \rm\ rad$ " weight="2">
+</pl-number-input>
+
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+  </p>
+</pl-question-panel>
+

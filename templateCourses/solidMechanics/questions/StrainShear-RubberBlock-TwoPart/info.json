@@ -1,0 +1,12 @@
+{
+    "uuid": "1179b37b-9b7a-4737-a9b3-2fe7d062b064",
+    "title": "Shear Strain in Block",
+	"topic": "Strain",
+	"type": "v3",
+	"tags": [
+		"su16",
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"calculation"
+	]
+}

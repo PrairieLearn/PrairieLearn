@@ -1,0 +1,12 @@
+{
+  "uuid": "ea806115-b9ba-4f91-9c23-adc6a876e169",
+  "title": "Cantilever beam design",
+  "topic": "Bending",
+  "type": "v3",
+  "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+    "fa15",
+    "calculation"
+  ]
+}

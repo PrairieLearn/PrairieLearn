@@ -1,0 +1,45 @@
+<pl-question-panel>
+	<p>
+		The cantilever beam illustrated below is subject to an uniform distributed load with magnitude $w$ and a couple moment with magnitude $M_o = 2\,w\,a^2$. Assume $a = {{params.a}} \rm\ mm$. The beam cross section  has dimensions $b = {{params.b}} \rm\ mm$, $h = {{params.h}} \rm\ mm$, $t_1 = {{params.t1}} \rm\ mm$, and $t_2 = {{params.t2}} \rm\ mm$. The beam is made of a material with allowable tensile stress $\sigma_{a,t} = {{params.sigmaT}} \rm\ MPa$ and allowable compressive stress $\sigma_{a,c} = {{params.sigmaC}} \rm\ MPa$.
+	</p>
+
+	<pl-figure file-name="{{params.imgFile}}.png" width="600"></pl-figure>
+
+	<pl-variable-output digits="0">
+		<variable params-name="a" comment="mm">a</variable>
+		<variable params-name="b" comment="mm">b</variable>
+		<variable params-name="h" comment="mm">h</variable>
+		<variable params-name="t1" comment="mm">t1</variable>
+		<variable params-name="t2" comment="mm">t2</variable>
+		<variable params-name="sigmaT" comment="MPa">sigmaT</variable>
+		<variable params-name="sigmaC" comment="MPa">sigmaC</variable>
+	</pl-variable-output>
+	<p>Find $\bar y$, i.e., the ${\bf \rm\ signed}$ distance from the $z$'-axis to the $z$-axis, where $z$ is the centroidal axis of the cross section.
+	</p>
+</pl-question-panel>
+<pl-number-input answers-name="yb" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\bar y = $" suffix="$ \rm\ mm$ " weight="2"></pl-number-input>
+
+<hr>
+
+<pl-question-panel><p>
+	Determine the moment of inertia $I_z$ with respect to the centroidal axis $z$.
+</p></pl-question-panel>
+
+<pl-number-input answers-name="Iz" comparison="relabs" rtol="1e-2" atol="1e-5" label="$I_z = $" suffix="$\times 10^6 \rm\  mm^4$ " weight="2"></pl-number-input>
+
+<hr>
+
+<pl-question-panel><p>
+
+</p><p>Determine the maximum magnitude of the distributed load $w$.</p>
+<p></p></pl-question-panel>
+
+<pl-number-input answers-name="w" comparison="relabs" rtol="1e-2" atol="1e-5" label="$w = $" suffix="$\rm\ N/mm$ " weight="2"></pl-number-input>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>
+  

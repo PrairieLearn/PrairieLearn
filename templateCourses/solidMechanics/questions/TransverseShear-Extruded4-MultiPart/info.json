@@ -1,0 +1,12 @@
+{
+  "uuid": "a77a5b42-39f6-4621-aa75-952391dcd340",
+  "title": "Get shear stress - Extruded cross-section",
+  "topic": "Transverse Shear",
+  "type": "v3",
+  "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+    "fa15",
+    "calculation"
+  ]
+}

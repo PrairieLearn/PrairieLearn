@@ -1,0 +1,98 @@
+<pl-question-panel>
+
+  <p>
+	Consider supported beam with concentrated force at mid spam.   
+  </p>
+   
+</pl-question-panel>
+
+
+<pl-drawing grid-size="20" width="540" height="260">
+    <pl-drawing-initial>
+
+        <pl-fixed-pin x1="{{params.x1}}" y1="{{params.y1}}" color="gray1"> </pl-fixed-pin> 
+        <pl-roller x1="{{params.x2}}" y1="{{params.y1}}" width="40" color="gray1"></pl-roller>
+        <pl-rod x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x2}}" y2="{{params.y1}}"> </pl-rod>
+        <pl-dimensions x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x3}}" y2="{{params.y1}}" dim-offset="80" label="L/2"></pl-dimensions>
+        <pl-dimensions x1="{{params.x3}}" y1="{{params.y1}}" x2="{{params.x2}}" y2="{{params.y1}}" dim-offset="80" label="L/2"></pl-dimensions>
+        
+        <pl-vector x1="{{params.Px1}}" y1="{{params.Py1}}" width="50" angle="90" label="P" offsetx="10" offsety="-60"></pl-vector>   
+		
+        
+
+		
+    </pl-drawing-initial>
+</pl-drawing>	
+<!-- Draw correct answers-->		
+
+<p>
+	(1) Draw the free-body digram and corresponding 
+	(2) shear force and (3) bending moment diagrams.
+</p>
+	
+<pl-drawing gradable="true" answers-name="vm_diag" width="540" height="1000" hide-answer-panel="false">	
+
+<pl-drawing-initial>
+
+
+    <!-- Drawing the free body diagram -->
+    <pl-text x1="40" y1="20" label="FBD"></pl-text> 
+    <pl-rod x1="{{params.x1}}" y1="{{params.y_fbd}}" x2="{{params.x2}}" y2="{{params.y_fbd}}"> </pl-rod>
+	
+	<!-- Draw support line-->
+    <pl-line x1="{{params.x3}}" y1="160" x2="{{params.x3}}" y2="30" dashed-size="2" stroke-color="blue"></pl-line>
+
+    <!-- Drawing the shear diagram -->
+    <pl-axes origin="{{params.V_origin}}" grid-label="{{params.label_V}}" supporting-lines="{{params.sup_line}}" label-y="V">
+    </pl-axes>
+ 
+    <!-- Drawing the moment diagram -->
+    <pl-axes origin="{{params.M_origin}}" grid-label="{{params.label_M}}" supporting-lines="{{params.sup_line_M}}" label-y="M">
+    </pl-axes>
+
+</pl-drawing-initial>
+
+
+<pl-drawing-answer draw-error-box="true">
+	
+	<!-- free body diagram  	 --> 
+	<pl-vector x1="{{params.x1}}" y1="160" angle="-90" offset-backward="10" offset-forward="110"></pl-vector>	
+	<pl-vector x1="{{params.x3}}" y1="30" angle="90" offset-backward="10" offset-forward="110"></pl-vector>
+	<pl-vector x1="{{params.x2}}" y1="160" angle="-90" offset-backward="10" offset-forward="110"></pl-vector>
+
+	<!-- shear diagram--> 
+    <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}"> </pl-graph-line>
+    <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}">  </pl-graph-line>
+	 
+	 <!-- moment diamgram-->
+	<pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M1}}"> 
+	</pl-graph-line>
+     <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M2}}"> 
+	</pl-graph-line>
+
+	 
+</pl-drawing-answer>
+
+
+<!-- Drwaing element for students-->
+    <pl-controls>
+      <pl-controls-group label="Graded objects:">
+	  	  <pl-drawing-button type="pl-vector"></pl-drawing-button> 	
+          <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
+          <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
+      </pl-controls-group>
+      <pl-controls-group label="Help buttons (not graded):">
+          <pl-drawing-button type="delete"></pl-drawing-button>
+          <pl-drawing-button type="help-line"></pl-drawing-button>
+      </pl-controls-group>
+  </pl-controls>
+
+</pl-drawing>
+<p></p>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+</pl-question-panel>

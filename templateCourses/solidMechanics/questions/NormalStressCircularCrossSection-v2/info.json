@@ -1,0 +1,12 @@
+{
+  "uuid": "fd451d84-e1ff-41b7-9d37-bfae77be6dbd",
+  "title": "Normal Stress Circular Cross Section - factor of safety",
+	"topic": "Stress",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"fa15",
+		"calculation"
+    ]
+}

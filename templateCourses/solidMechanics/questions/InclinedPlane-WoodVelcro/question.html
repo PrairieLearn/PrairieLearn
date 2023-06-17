@@ -1,0 +1,30 @@
+<pl-question-panel>
+<p>
+Consider the two wood pieces that are connected by a velcro as indicated below.
+The block is subjected to a tension force $P$ and has dimensions $b = {{params.b}} \rm\ in$ and $h = {{params.h}} \rm\ in$.
+The velcro can sustain the maximum normal stress $\sigma_m = {{params.sm}} \rm\ psi$ and the maximum shear stress $\tau_m = {{params.tm}} \rm\ psi$.
+Use $\alpha = {{params.alphaDeg}}^o$.
+</p>
+
+<pl-figure file-name="Wood_Inclined_Plane.png" width="400"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="b" comment="in">b</variable>
+    <variable params-name="h" comment="in">h</variable>
+    <variable params-name="sm" comment="psi">sigma</variable>
+    <variable params-name="tm" comment="psi">tau</variable>
+    <variable params-name="alphaDeg" comment="degrees">alpha</variable>
+</pl-variable-output>
+
+<p>What is the maximum value of the force $P$ that can be applied to the block before the velcro breaks connection?</p>
+
+</pl-question-panel>
+
+<pl-number-input answers-name="P" comparison="relabs" rtol="1e-2" atol="1e-5" label="$P=$" suffix="$ \rm\ lb$ " weight="2"></pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

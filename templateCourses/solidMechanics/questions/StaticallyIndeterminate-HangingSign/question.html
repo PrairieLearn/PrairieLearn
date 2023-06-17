@@ -1,0 +1,75 @@
+<pl-question-panel>
+<p>
+The rigid beam $BD$ is supported by a smooth pin $B$, two circular rods at points $C$ and $D$ and is subjected to two concentrated loads as illustrated below. Neglect the weight of the rigid beam and assume that when $W = 0$ the rigid beam is in the horizontal position and the rods are stress-free. Assume small rotations.
+</p>
+
+<pl-figure file-name="Figure1.png" width="400"></pl-figure>
+
+<p>
+Assume that $h = {{params.h}} \rm\ mm$ and $b = {{params.b}} \rm\ mm$.
+</p>
+<pl-variable-output digits="0">
+    <variable params-name="h" comment="mm">h</variable>
+    <variable params-name="b" comment="mm">b</variable>
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="e1" comment="MPa">E1</variable>
+    <variable params-name="e2" comment="MPa">E2</variable>
+    <variable params-name="w" comment="N">W</variable>
+</pl-variable-output>
+
+<p>
+Use the compatibility equations (geometry of deformation) to obtain the ratio between the change in length of rod $(1)$ and rod $(2)$, i.e., $\delta_1/\delta_2$.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="ratiodelta" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\delta_1/\delta_2 =$" weight="2">
+</pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Find the flexibility of rod $(1)$, which has elasticity modulus $E_1 = {{params.e1}} \rm\ MPa$ and diameter $d = {{params.d}} \rm\ mm$.
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="f1" comparison="relabs" rtol="1e-2" atol="1e-5" label="$f_1=$" suffix="$ \rm\ mm/N$ " weight="2">
+</pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Find the flexibility of rod $(2)$, which has elasticity modulus $E_2 = {{params.e2}} \rm\ MPa$ and diameter $d = {{params.d}} \rm\ mm$.
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="f2" comparison="relabs" rtol="1e-2" atol="1e-5" label="$f_2=$" suffix="$ \rm\ mm/N$ " weight="2">
+</pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Use the results above and the constitutive relation to determine the ratio between the internal forces in rods $(1)$ and $(2)$, i.e., $F_1/F_2$. Note that you are not expected to use equilibrium equations at this step.
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="ratioF" comparison="relabs" rtol="1e-2" atol="1e-5" label="$F_1/F_2=$" weight="2">
+</pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+By combining the relation above with equilibrium equation(s), we can obtain the internal forces $F_1$ and $F_2$ and consequently the normal stresses $\sigma_1$ and $\sigma_2$ in rods $(1)$ and $(2)$ respectively. For this step, assume the rigid beam is loaded with $W = {{params.w}} \rm\ N$.
+</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="sigma1" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_1=$" suffix="$ \rm\ MPa$" weight="2">
+</pl-number-input>
+</p>
+<p>
+<pl-number-input answers-name="sigma2" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\sigma_2=$" suffix="$ \rm\ MPa$" weight="2">
+</pl-number-input>
+</p>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

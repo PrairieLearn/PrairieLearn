@@ -1,0 +1,33 @@
+<pl-question-panel>
+	<p>
+		A horizontal beam is supported by a rigid pin at $A$ and a rod at $C$. Both beam and rod are made of the same material, with elasticity modulus $E = {{params.E}} \rm\ GPa$.
+		The beam has moment of inertia $I = {{params.Iz}} \times 10^6 \rm\ mm^4$ and the rod has cross-sectional area $A = {{params.A}} \rm\ mm^2$. Assume $P = {{params.P}} \rm\ kN$ $L = {{params.L}} \rm\ m$,  and $H = {{params.H}} \rm\ m$.
+	</p>
+	<p align="center">
+		<pl-figure file-name="{{params.imgFile}}" width="400"></pl-figure>
+	</p>
+
+	<pl-variable-output digits="0">
+		<variable params-name="P" comment="kN">P</variable>
+		<variable params-name="E" comment="GPa">E</variable>
+		<variable params-name="A" comment="mm^2">A</variable>
+		<variable params-name="L" comment="m">L</variable>
+		<variable params-name="H" comment="m">H</variable>
+		<variable params-name="IzVar" comment="mm^4">Iz</variable>
+	</pl-variable-output>
+
+	<p>
+		By superposing the deflection of a simply supported beam and the deflection that a "rigid" beam would experience due to the stretching of the rod, determine the <strong> magnitude </strong> of the total deflection of point B. Assume small deformations and small rotations.
+	</p>
+</pl-question-panel>
+
+<p>
+	<pl-number-input answers-name="yb" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|y_b|$" suffix="$\rm\ mm$"></pl-number-input>
+</p>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+  </pl-question-panel>

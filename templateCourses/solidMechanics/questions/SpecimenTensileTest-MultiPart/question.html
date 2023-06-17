@@ -1,0 +1,44 @@
+<pl-question-panel>
+<p>
+A specimen has circular cross-sectional area with initial diameter $d = {{params.d}} \rm\ mm$ and a gauge length $L_o = {{params.Lo}} \rm\ mm$. A force $P = {{params.P}} \rm\ kN$ elongates the specimen by $\delta = {{params.delta}} \rm\ mm$. The specimen material has yielding strength $\sigma_y = {{params.sigmay}} \rm\ MPa$ and shear modulus $G = {{params.G}} \rm\ GPa$.
+</p>
+
+<pl-variable-output digits="0">
+    <variable params-name="Lo" comment="mm">Lo</variable>
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="P" comment="kN">P</variable>
+    <variable params-name="delta" comment="mm" digits="1">delta</variable>
+    <variable params-name="sigmay" comment="MPa">sy</variable>
+    <variable params-name="G" comment="GPa">G</variable>
+</pl-variable-output>
+
+
+<p>
+Determine the elastic modulus $E$:
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="E" comparison="relabs" rtol="1e-2" atol="1e-5" label="$E=$" suffix="$ \rm\ GPa$" weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Determine the Poisson ratio $\nu$:
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="nu" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\nu=$" weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Determine the reduction in diameter $\delta_d$:
+</p>
+</pl-question-panel>
+<pl-number-input answers-name="deltad" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\delta_d=$" suffix="$ \rm\ mm$  " weight="2"></pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>

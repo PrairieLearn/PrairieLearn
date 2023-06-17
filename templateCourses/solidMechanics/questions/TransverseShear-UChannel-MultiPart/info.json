@@ -1,0 +1,12 @@
+{
+  "uuid": "ab5e7c4f-56a6-4c79-b9db-cd7047955742",
+  "title": "Get normal and shear stresses - U-channel - MultiPart",
+  "topic": "Transverse Shear",
+  "type": "v3",
+  "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+    "fa15",
+    "calculation"
+  ]
+}

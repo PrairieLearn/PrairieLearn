@@ -1,0 +1,66 @@
+<pl-question-panel>
+	<p>
+		The simply supported beam illustrated below is subject to an uniform distributed load with magnitude $w = {{params.w}} \rm\ kN/m$ and a concentrated force $P = {{params.P}} \rm\ kN$. Assume $a = {{params.a}} \rm\ m$. For the questions below, the dimension $x$ is given in meters.
+	</p>
+
+	<pl-figure file-name="{{params.imgFile}}" width="450">
+	</pl-figure>
+
+	<pl-variable-output digits="0">
+		<variable params-name="w" comment="kN/m">w</variable>
+		<variable params-name="P" comment="kN">P</variable>
+		<variable params-name="a" comment="m">a</variable>
+	</pl-variable-output>
+
+	<p>
+		Obtain the expressions for the shear force $V(x)$ and bending moment $M(x)$ in each of the intervals below. You need to write the numeric coefficients of the equations.
+	</p>
+</pl-question-panel>
+
+<p>$0 \lt x \lt a $:</p>
+<p>
+	$V_1(x)$ =	<pl-number-input answers-name="ao_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="a1_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="a2_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN]$
+</p>
+
+<p>
+	$M_1(x)$ = <pl-number-input answers-name="mao_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="ma1_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="ma2_1" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN \cdot m]$
+</p>
+
+
+<p>$a \lt x \lt 2a $:</p>
+<p>
+	$V_2(x)$ = <pl-number-input answers-name="ao_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="a1_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="a2_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN]$
+</p>
+
+<p>
+	$M_2(x)$ = <pl-number-input answers-name="mao_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="ma1_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="ma2_2" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN \cdot m]$
+</p>
+
+
+<p>$2a \lt x \lt 3a $:</p>
+<p>
+	$V_3(x)$ = <pl-number-input answers-name="ao_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="a1_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="a2_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN]$
+</p>
+
+<p>$M_3(x)$ = <pl-number-input answers-name="mao_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $+$
+	<pl-number-input answers-name="ma1_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x \ +$
+	<pl-number-input answers-name="ma2_3" size="10" show-help-text="false" comparison="relabs" rtol="1e-2" atol="1e-5"></pl-number-input> $x^2 \rm\ [kN \cdot m]$
+</p>
+
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+</pl-question-panel>

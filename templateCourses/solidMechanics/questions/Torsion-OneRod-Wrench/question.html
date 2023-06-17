@@ -1,0 +1,39 @@
+<pl-question-panel>
+<p>
+A socket wrench has a handle of length $a = {{params.a}} \rm\ mm$, a shaft of length $b = {{params.b}} \rm\ mm$, and a diameter $d={{params.d}} \rm\ mm$. It is made of a material with shear modulus $G = {{params.G}} \rm\  GPa$ and allowable shear stress $\tau_{all} = {{params.tall}} \rm\  MPa$.
+</p>
+
+<pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="a" comment="mm">a</variable>
+    <variable params-name="b" comment="mm">b</variable>
+    <variable params-name="d" comment="mm">d</variable>
+    <variable params-name="G" comment="GPa">G</variable>
+    <variable params-name="tall" comment="MPa">tall</variable>
+</pl-variable-output>
+
+<p>
+Determine the maximum allowable applied force $P$.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="Pmax" comparison="relabs" rtol="1e-2" atol="1e-5" label="$P =$" suffix="$\rm\ N$ " weight="2">
+</pl-number-input>
+
+<hr>
+<pl-question-panel>
+<p>
+Determine the <strong>magnitude</strong> of the corresponding twist angle of the shaft.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="phi" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\phi=$" suffix="$\rm\ rad$ " weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>

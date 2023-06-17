@@ -1,0 +1,38 @@
+<pl-question-panel>
+  <p>
+    A block with shear modulus $G = {{params.G}} \rm\ ksi$ is bonded to a fixed based and to a horizontal rigid plate to which a force $P = {{params.P}} \rm\ kips$ is applied. Assume $L = {{params.L}} \rm\ in$, $b = {{params.b}} \rm\ in$ and $t = {{params.t}} \rm\ in$.
+  </p>
+
+  <pl-figure file-name="Strain1.png" width="400"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="G" comment="ksi">G</variable>
+    <variable params-name="P" comment="kips">P</variable>
+    <variable params-name="L" comment="in">Lo</variable>
+    <variable params-name="b" comment="in">b</variable>
+    <variable params-name="t" comment="in">t</variable>
+  </pl-variable-output>
+
+  <p>
+    Determine the shear stress $\tau$ in the bonded interface.
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="tau" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\tau=$" suffix="$ \rm\ ksi$ " weight="2"></pl-number-input>
+
+<hr>
+<pl-question-panel>
+  <p>
+    Determine the horizontal displacement $u$ of the rigid plate.
+  </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="u" comparison="relabs" rtol="1e-2" atol="1e-5" label="$u=$" suffix="$ \rm\ in$ " weight="2"></pl-number-input>
+
+<pl-question-panel>
+  <hr/>
+  <p class="small text-muted">
+      Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+      </p>
+  </pl-question-panel>
+  

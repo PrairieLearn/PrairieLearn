@@ -1,0 +1,32 @@
+<pl-question-panel>
+<p>
+Rods $(1)$ and $(2)$ were supposed to fit exactly between the rigid walls at $A$ and $C$, as indicated in the figure below. However, rod $(2)$ was manufactured a small amount, $\delta_M \ll L$, too long. A technician decides to lower the temperature of rod $(2)$ by $\Delta T$ so that he can insert it in the space between $B$ and $C$. When rod $(2)$ returns to its initial temperature, the length of each rod is no longer the same as the original one, and the resulting strain is often called "residual strain"".
+</p>
+<p>
+Rod $(1)$ has Young modulus $E_1 = {{params.E1}} \rm\ GPa$ and cross-sectional area $A = {{params.A}} \rm\ mm^2$. Rod $(2)$ has Young modulus $E_2 = {{params.E2}} \rm\ GPa$ and same cross-sectional area $A$. Both rods have length  $L = {{params.L}} \rm\ mm$.
+</p>
+
+<pl-figure file-name="Picture1.png" width="450"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="E1" comment="GPa">E1</variable>
+    <variable params-name="E2" comment="GPa">E2</variable>
+    <variable params-name="A" comment="mm^2">A</variable>
+    <variable params-name="L" comment="mm">L</variable>
+    <variable params-name="deltaM" comment="mm" digits="1">deltaM</variable>
+</pl-variable-output>
+
+<p>
+Determine the resulting "residual" normal strain $\epsilon$ in rod $({{params.rod}})$ when $\delta_M = {{params.deltaM}} \rm\ mm$.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="epsilon" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\varepsilon=$" suffix="$\cdot 10^{-3} \rm\ mm/mm$" weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

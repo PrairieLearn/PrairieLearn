@@ -1,0 +1,12 @@
+{
+    "uuid": "a5662ec0-0e6d-44ca-badb-89ea9530e366",
+    "title": "Torsion - two bars - shear stress",
+	"topic": "Torsion",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"fa15",
+        "calculation"
+    ]
+}

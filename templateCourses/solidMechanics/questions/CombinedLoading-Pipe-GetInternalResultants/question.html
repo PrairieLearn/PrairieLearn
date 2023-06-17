@@ -1,0 +1,63 @@
+<pl-question-panel>
+  <p>
+    For the pipe system below, we assume the cross-section at $A$ is subject to the resultant forces $P_z = {{params.Pz}} \rm\ N$ and $P_y = {{params.Py}}\rm\ N$. Use the dimensions $a = {{params.a}}\rm\ mm$, $b = {{params.b}} \rm\ mm$ and $c = {{params.c}} \rm\ mm$.
+  </p>
+  <pl-figure file-name="{{params.imgFile}}" width="640"></pl-figure>
+
+  <pl-variable-output digits="0">
+    <variable params-name="a" comment="mm">a</variable>
+    <variable params-name="b" comment="mm">b</variable>
+    <variable params-name="c" comment="mm">c</variable>
+    <variable params-name="Pz" comment="N">Pz</variable>
+    <variable params-name="Py" comment="N">Py</variable>
+  </pl-variable-output>
+
+  <p>
+    The pipe is sectioned through points $K$ and $H$. Use an appropriate free-body diagram to determine all the resultant internal loadings at this cross-section. Remember to use the sign convention consistent with the given coordinate system.
+  </p>
+
+  <p> Shear forces (absolute value):</p>
+</pl-question-panel>
+<p>
+  <pl-number-input answers-name="Vy" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|V_y|=$" suffix="$ \rm\ N$ ">
+  </pl-number-input>
+</p>
+<p>
+  <pl-number-input answers-name="Vz" comparison="relabs" rtol="1e-2" atol="1e-5" label="$|V_z|=$" suffix="$ \rm\ N$ ">
+  </pl-number-input>
+</p>
+
+<pl-question-panel>
+  <p> Normal force:</p>
+</pl-question-panel>
+<p>
+  <pl-number-input answers-name="Fx" comparison="relabs" rtol="1e-2" atol="1e-5" label="$F_x=$" suffix="$ \rm\ N$ ">
+  </pl-number-input>
+</p>
+
+<pl-question-panel>
+  <p> Torque:</p>
+</pl-question-panel>
+<p>
+  <pl-number-input answers-name="Tx" comparison="relabs" rtol="1e-2" atol="1e-5" label="$T_x=$" suffix="$ \rm\ N.m$ ">
+  </pl-number-input>
+</p>
+
+<pl-question-panel>
+  <p> Bending moments:</p>
+</pl-question-panel>
+<p>
+  <pl-number-input answers-name="My" comparison="relabs" rtol="1e-2" atol="1e-5" label="$M_y=$" suffix="$ \rm\ N.m$ ">
+  </pl-number-input>
+</p>
+<p>
+  <pl-number-input answers-name="Mz" comparison="relabs" rtol="1e-2" atol="1e-5" label="$M_z=$" suffix="$ \rm\ N.m$ ">
+  </pl-number-input>
+</p>
+
+<pl-question-panel>
+	<hr/>
+	<p class="small text-muted">
+		Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+	</p>
+</pl-question-panel>

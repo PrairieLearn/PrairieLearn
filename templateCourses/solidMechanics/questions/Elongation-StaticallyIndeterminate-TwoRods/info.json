@@ -1,0 +1,12 @@
+{
+    "uuid": "c6be2c29-8c00-4926-b306-4480f3aeb53d",
+    "title": "Elongation - two rods attached to rigid bar",
+   	"topic": "Axial Loading",
+	"type": "v3",
+	"tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"su15",
+		"calculation"
+	]
+}

@@ -1,0 +1,12 @@
+{
+    "uuid": "2035e7ad-f928-4a0f-8e53-40bc40301c87",
+    "title": "Normal Stress in composite column",
+   	"topic": "Axial Loading",
+	"type": "v3",
+	"tags": [
+		"fa16",
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"calculation"
+	]
+}

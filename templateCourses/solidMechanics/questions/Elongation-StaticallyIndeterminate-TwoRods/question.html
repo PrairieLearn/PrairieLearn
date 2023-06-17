@@ -1,0 +1,30 @@
+<pl-question-panel>
+<p>
+The rigid beam $AC$ is supported by a smooth pin $B$, two rods at points $A$ and $C$ and is subjected to a load $P$ as illustrated below. The inclined rod $(1)$ has stiffness $k_1 = {{params.k1}} \rm\ N/mm $, length $L = {{params.L}} \rm\ mm$ and inclination $\theta = {{params.theta}}  ^o $. The vertical rod $(2)$ has stiffness $k_2 = {{params.k2}} \rm\ N/mm$ and the same length $L$. Neglect the weight of the beam $AC$ and assume that when $P = 0$ the rigid bar is in the horizontal position and the rods are stress-free. Assume small rotations.
+</p>
+
+<pl-figure file-name="Picture1.png" width="400"></pl-figure>
+
+<pl-variable-output digits="0">
+    <variable params-name="k1" comment="N/mm">k1</variable>
+    <variable params-name="k2" comment="N/mm">k2</variable>
+    <variable params-name="L" comment="mm">L</variable>
+    <variable params-name="theta" comment="degrees">theta</variable>
+    <variable params-name="P" comment="N">P</variable>
+</pl-variable-output>
+
+<p>
+Determine the change in length of rod $(2)$, $\delta_2$, when $P = {{params.P}} \rm\ N $.
+</p>
+</pl-question-panel>
+
+
+<pl-number-input answers-name="delta2" comparison="relabs" rtol="1e-2" atol="1e-5" label="$\delta_2=$" suffix="$ \rm\ mm$ " weight="2">
+</pl-number-input>
+
+<pl-question-panel>
+    <hr/>
+    <p class="small text-muted">
+        Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>

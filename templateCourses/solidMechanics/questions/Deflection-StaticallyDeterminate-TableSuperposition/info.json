@@ -1,0 +1,12 @@
+{
+  "uuid": "93ca630e-24b8-4194-9867-6251c31c009e",
+  "title": "Obtain the deflection at the mid-point",
+  "topic": "Deflection of Beams",
+  "type": "v3",
+  "tags": [
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+    "fa15",
+    "calculation"
+  ]
+}

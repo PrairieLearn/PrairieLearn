@@ -1,0 +1,12 @@
+{
+  "uuid": "33bca77e-3646-412d-a037-c372f805d3f5",
+  "title": "Normal Stress Circular Cross Section",
+	"topic": "Stress",
+	"type": "v3",
+	"tags": [
+		"fa15",
+		"author:prairielearn.com",
+		"license:CC-BY-NC",	
+		"calculation"
+    ]
+}
