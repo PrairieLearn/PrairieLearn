@@ -1,0 +1,43 @@
+<pl-question-panel>
+<p>
+  A bar of width $w = {{params.w}}\rm\ m$ is formed of three
+  uniform segments with lengths and areal densities given by:
+  \[\begin{aligned}
+  \ell_1 &amp;= {{params.l1}}{\rm\ m}
+  &amp;
+  \rho_1 = {{params.rho1}}{\rm\ kg/m^2}
+  \\
+  \ell_2 &amp;= {{params.l2}}{\rm\ m}
+  &amp;
+  \rho_2 = {{params.rho2}}{\rm\ kg/m^2}
+  \\
+  \ell_3 &amp;= {{params.l3}}{\rm\ m}
+  &amp;
+  \rho_3 = {{params.rho3}}{\rm\ kg/m^2}.
+  \end{aligned}\]
+</p>
+
+<pl-drawing grid-size="0" width="400" height="250">
+    <pl-drawing-initial>
+    	{{{params.drawCode}}}
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="w">w</variable>
+    {{{params.pl_var_output}}}
+</pl-variable-output>
+</p>
+
+<p>
+  What is the moment of inertia $I_C$ of the bar about the center
+  of mass $C$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$I_C = $
+<pl-number-input answers-name="IC" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ kg\ m^2} $
+</p>

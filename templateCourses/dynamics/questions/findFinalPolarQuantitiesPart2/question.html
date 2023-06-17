@@ -1,0 +1,51 @@
+<pl-question-panel>
+  <p>
+    A particle $P$ starts at time $t = 0\rm\ s$ at the polar position
+    \[\begin{aligned}
+    x &amp;= {{params.x0}}{\rm\ m} \\
+    y &amp;= {{params.y0}}{\rm\ m}.
+    \end{aligned}\]
+    The velocity $\vec{v}$ of the particle is written in the polar
+    basis associated with its current position, and is:
+    \[\vec{v} = {{params.v}}{\rm\ m/s}.\]
+  </p>
+  <p>
+      If we have $r_{\text{final}}$ and $\theta_{\text{final}}$, then we can find $x_{\text{final}}$ and $y_{\text{final}}$ with:
+  </p>
+  <pl-hide-in-panel answer="true">
+    <p>
+      $x_{\text{final}} =$
+      <pl-symbolic-input answers-name="symbolic_x_f" variables="r_f, theta_f" size="15" allow-blank="true"></pl-symbolic-input>${\rm\ m}$, 
+
+      $y_{\text{final}} = $
+      <pl-symbolic-input answers-name="symbolic_y_f" variables="r_f, theta_f" size="15" allow-blank="true"></pl-symbolic-input>
+      ${\rm\ m}$
+    </p>
+  </pl-hide-in-panel>
+  <p>
+    <small>
+      Give your answers in symbolic form. <b>You should use the scalar
+      variables <code>r_f</code> and <code>theta_f</code></b>. Functions are available
+      like <code>sin()</code>, <code>cos()</code>, <code>atan2()</code>, <code>sqrt()</code>,
+      and <code>log()</code>, as well as the mathematical
+      constants <code>pi</code> and <code>e</code>. The regular
+      arithmetic operators
+      are <code>+</code>, <code>-</code>, <code>*</code>,
+      and <code>/</code>, and
+      <code>x^y</code>
+      means <code>x</code> to the power of <code>y</code>. $5t+k$ would translate to <code>5*t+k</code>.
+    </small>
+  </p>
+  
+  <p>
+      Now, find the final Cartesian position of the particle at time $t={{params.tf}}$.
+  </p>
+</pl-question-panel>
+
+<p>
+  $x=$
+  <pl-number-input answers-name="xf" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input> ${\rm\ m}$, 
+  $y=$
+  <pl-number-input answers-name="yf" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false" allow-blank="true"></pl-number-input> ${\rm\ m}$
+</p>
+

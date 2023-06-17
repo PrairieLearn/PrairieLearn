@@ -1,0 +1,42 @@
+<pl-question-panel>
+	<p>
+  A plate of uniform areal density $\rho = {{params.rho}}\rm\
+  kg/m^2$ is bounded by the four curves:
+  \[\begin{aligned}
+  y &amp;= {{params.y1latex}}{\rm\ m} \\
+  y &amp;= {{params.y2latex}}{\rm\ m} \\
+  x &amp;= {{params.x1}}{\rm\ m} \\
+  x &amp;= {{params.x2}}{\rm\ m},
+  \end{aligned}\]
+  where $x$ and $y$ are in meters.
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic" inline="true"></pl-figure>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+x, y = symbols('x, y')
+
+rho = {{params.rho}}
+y1 = {{params.y1}}
+y2 = {{params.y2}}
+x1 = {{params.x1}}
+x2 = {{params.x2}}
+</pre>
+</p>
+
+<p>
+  What is the moment of inertia $I_C$ of the plate about its center of mass $C$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$I_C = $
+<pl-number-input answers-name="IC" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ kg \ m^2$
+</p>

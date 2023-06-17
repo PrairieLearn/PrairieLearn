@@ -1,0 +1,41 @@
+<pl-question-panel>
+	<p>
+  Three point masses have position vectors and masses given by:
+  \[\begin{aligned}
+  m_1 &amp;= {{params.m1}}{\rm\ kg}
+  &amp;
+  \vec{r}_1 &amp;= {{params.r1Expr}}
+  \\
+  m_2 &amp;= {{params.m2}}{\rm\ kg}
+  &amp;
+  \vec{r}_2 &amp;= {{params.r2Expr}}
+  \\
+  m_3 &amp;= {{params.m3}}{\rm\ kg}
+  &amp;
+  \vec{r}_3 &amp;= {{params.r3Expr}}
+  \end{aligned}\]
+  The center of mass has position vector $\vec{r}_C = {{params.rC_vec}}\rm\ m$.
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="m1">m1</variable>
+    <variable params-name="m2">m2</variable>
+    <variable params-name="m3">m3</variable>
+    {{{params.pl_var_output}}}
+    <variable params-name="rC">rC</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the position vector $\vec{r}_{{params.findI}}$ of mass
+  {{params.findI}}?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{r}_{{params.findI}} = $
+	<pl-number-input answers-name="ansValue1" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="ansValue2" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m}$
+</p>

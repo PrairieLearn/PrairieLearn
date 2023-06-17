@@ -1,0 +1,38 @@
+<pl-question-panel>
+	<p>
+  A block of mass $m = {{params.m}}\rm\ kg$ is initially at rest
+  on a sloped ground. The coefficient of friction between the
+  block and ground is $\mu = {{params.mu}}$, and gravity $g =
+  9.8\rm\ m/s^2$ acts vertically.
+	</p>
+
+<pl-drawing grid-size="0" width="402" height="250">
+    <pl-drawing-initial>
+        <pl-rectangle x1="201" y1="125" width="40" height="40" angle="-45" color="#FFFFFF" stroke-width="2"></pl-rectangle>
+        {{{params.drawAngleGround}}}
+        <pl-vector x1="100" y1="100" width="40" angle="90" label="g" stroke-width="1.5" color="#FF00FF"></pl-vector>
+        <pl-line x1="160" y1="200" angle="0" dashed-size="5" width="100"></pl-line>
+        <pl-arc x1="160" y1="200" start-angle="-48" end-angle="0" dashed-size="5" radius="30"></pl-arc>
+        <pl-text x1="192" y1="180" label="\\theta" latex="true"></pl-text>
+        <pl-text x1="201" y1="125" label="m" latex="true" offsetx="-8" offsety="-5" font-size="14"></pl-text>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="3" default-tab="sympy">
+    <variable params-name="m">m</variable>
+    <variable params-name="mu">mu</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the maximum angle $\theta$ of the ground so that the
+  block will not slide?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\theta = $
+	<pl-number-input answers-name="theta" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $^\circ$
+</p> 

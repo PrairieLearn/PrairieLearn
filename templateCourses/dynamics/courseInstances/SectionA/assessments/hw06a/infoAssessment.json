@@ -1,0 +1,24 @@
+{
+    "uuid": "f8ac7be3-a6e6-4c04-bb35-7b2e2e86e879",
+    "type": "Homework",
+    "title": "Instantaneous Centers and Rolling",
+    "set": "Homework",
+    "number": "6",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "rigidBodyRollingVel",     "points": 2, "maxPoints": 10},
+                {"id": "rbmInstCentVOmega",       "points": 3, "maxPoints": 15},
+                {"id": "rbRollOtherVel",          "points": 2, "maxPoints": 10},
+                {"id": "rbRollOtherAcc",          "points": 3, "maxPoints": 15}
+            ]
+        }
+    ]
+}
+

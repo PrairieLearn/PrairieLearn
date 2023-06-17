@@ -1,0 +1,28 @@
+<pl-question-panel>
+<p>
+  The basis $\hat{u},\hat{v}$ is rotated counterclockwise by
+  $\theta$ from the Cartesian $\hat\imath,\hat\jmath$ basis. A
+  certain vector $\vec{r}$ can be written in the two bases as:
+  \[\begin{aligned}
+  \vec{r} &amp;= {{params.rij_vec}}{\rm\ m} \\
+  \vec{r} &amp;= {{params.rUV_vec}}{\rm\ m}.
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="3" default-tab="sympy">
+    <variable params-name="rij">rij</variable>
+    <variable params-name="ruv">ruv</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  Given that $0 \le \theta \lt 2\pi$, what is $\theta$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\theta = $
+	<pl-number-input answers-name="theta" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ rad}$
+</p>

@@ -1,0 +1,28 @@
+<pl-question-panel>
+<p>
+  A particle has position vector $\vec{r}(t) = ({{params.position_x}})\hat{\imath} + ({{params.position_y}})\hat{\jmath} + ({{params.position_z}})\hat{k}\rm\ m$, where $t$ is in seconds.
+</p>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+t = symbols('t', real = True)
+
+r = Matrix([{{params.rx}}, {{params.ry}}, {{params.rz}}])
+t_v = {{params.t}}
+</pre>
+</p>
+
+<p>What is
+  its speed $v$ at time $t = {{params.t}}\rm\ s$?</p>
+
+</pl-question-panel>
+
+<p>
+$v = $
+	<pl-number-input answers-name="v" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s}$
+</p>

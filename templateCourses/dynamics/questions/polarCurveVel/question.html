@@ -1,0 +1,38 @@
+<pl-question-panel>
+	<p>
+  A particle $P$ is moving in the plane around a curve defined in
+  polar coordinates by
+  \[r(\theta) = ({{params.rlatex}}){\rm\ m}.\]
+  At the instant shown, the angular position and velocity of $P$
+  are $\theta = {{params.theta}}{\rm\ rad}$ and $\omega =
+  {{params.omega}}{\rm\ rad/s}$.
+</p>
+
+<p>
+<pre>
+Python Inputs: 
+
+import numpy as np
+from sympy import *
+
+theta = symbols('theta')
+
+r = {{params.r}}
+theta_v = {{params.theta}} # in radians
+omega = {{params.omega}}
+</pre>
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+  What is the velocity $\vec{v}$ of $P$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{v} = $
+	<pl-number-input answers-name="vx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
+</p>

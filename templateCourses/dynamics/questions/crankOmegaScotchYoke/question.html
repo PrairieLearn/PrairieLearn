@@ -1,0 +1,27 @@
+<pl-question-panel>
+
+<p>A simplified schematic of a mechanism that converts the rotary motion into the linear one is shown in the figure below.
+Body, $B_1$, can slide horizontally and body, $B_2$, can rotate about the fixed point $O$ (refer to the animation below). 
+A pin, $P$, firmly mounted on the body $B_2$ acts as the connecting point between $B_1$ and $B_2$. 
+The pin rotates with the body $B_2$ while sliding within the slot, which, in turn, rigidly translates with the body $B_1$.
+</p>
+<pl-figure file-name="scotchyoke.png" width="400px"></pl-figure>
+<pl-figure file-name="Animation.gif" width="400px"></pl-figure>
+
+<p>
+<pl-variable-output digits="2" default-tab="sympy">
+    <variable params-name="R">R</variable>
+    <variable params-name="V">v1</variable>
+    <variable params-name="thetaD" comment="in degrees">theta</variable>
+</pl-variable-output>
+</p>
+
+<p>If the pin is mounted at a distance of $R = {{params.R}}{\rm\ m}$ from point $O$, Determine the angular velocity, $\vec{\omega}$, of the body $B_2$
+so that the body $B_1$ moves to the {{params.dir}} at the speed of ${{params.V}}{\rm\ m/s}$ at $\theta = {{params.thetaD}}^\circ$.</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{\omega}_2 = $
+    <pl-number-input answers-name="ansValue" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s}$
+</p>

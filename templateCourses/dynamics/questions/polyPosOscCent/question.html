@@ -1,0 +1,29 @@
+<pl-question-panel>
+  <p>
+  A point is moving with position vector
+  \[\vec{r} = ({{params.r_x}})\hat{\imath} + ({{params.r_y}})\hat{\jmath}{\rm\ m}.\]
+</p>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+t = symbols('t', real = True)
+r = Matrix([{{params.rx}}, {{params.ry}}, 0])
+t_v = {{params.t}}
+</pre>
+</p>
+
+<p>What are the Cartesian coordinates $x$, $y$ of the center $C$ of
+  the osculating circle at $t = {{params.t}}\rm\ s$?</p>
+
+</pl-question-panel>
+
+<p>
+$x = $
+<pl-number-input answers-name="Cx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m}$, $y = $
+<pl-number-input answers-name="Cy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m} $
+</p>

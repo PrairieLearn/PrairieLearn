@@ -1,0 +1,39 @@
+<pl-question-panel>
+	<p>
+  A circular rigid body is rolling without slipping on a flat
+  surface in 2D as shown.
+</p> 
+	<pl-drawing grid-size="0" width="600" height="300">
+    <pl-drawing-initial>
+        <pl-circle x1="300" y1="150" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
+        {{{params.drawGround}}}
+        <pl-point x1="300" y1="150" label="C" radius="2"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="3"></pl-point>
+        <pl-vector x1="300" y1="150" angle="{{params.rCQangle}}" width="{{params.rCQwidth}}" stroke-width="1.5" color="blue3"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+<p>
+  Point $Q$ has:
+  \[\begin{aligned}
+  \vec{r}_{CQ} &amp;= {{params.rCQ_vec}}{\rm\ m} \\
+  \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}.
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="rCQ">rCQ</variable>
+    <variable params-name="vQ">vQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the angular velocity $\vec\omega$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{\omega} = $
+<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s} $
+</p>

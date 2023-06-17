@@ -1,0 +1,31 @@
+<pl-question-panel>
+	<p>
+  A point mass $m = {{params.m}}\rm\ kg$ is moving in 2D under the
+  influence of a constant force $\vec{F} = {{params.Fvec}}\rm\ N$.  At time $t = 0\rm\ s$ the mass has
+  position vector $\vec{r}_0 = {{params.r0vec}}\rm\
+  m$, while by time $t = {{params.tf}}\rm\ s$ it has moved to
+  $\vec{r}_{\rm f} = {{params.rfvec}}\rm\ m$.
+	</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="m">m</variable>
+    <variable params-name="F">F</variable>
+    <variable params-name="t0">t0</variable>
+    <variable params-name="r0">r0</variable>
+    <variable params-name="tf">tf</variable>
+    <variable params-name="rf">rf</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  How much work $W$ does the force $\vec{F}$ do on the point mass
+  between these two times?
+</p>
+
+</pl-question-panel>
+
+<p>
+$W = $
+	<pl-number-input answers-name="W" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ J$
+</p>

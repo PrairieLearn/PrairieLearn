@@ -1,0 +1,19 @@
+<pl-question-panel>
+	<p>
+  A point mass $m = {{params.m}}\rm\ kg$ slides down a
+  frictionless slope as shown under the influence of gravity $g =
+  9.8\rm\ m/s^2$. The {{params.desc1}} and the {{params.desc2}}.
+	</p>
+
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="orient" width="300" height="300"></pl-prairiedraw-figure>
+
+<p>
+  What is the {{params.ansDesc}}?
+</p>
+
+</pl-question-panel>
+
+<p>
+${{params.ansVar}} = $
+	<pl-number-input answers-name="ans" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ {{params.ansUnits}}$
+</p>

@@ -1,0 +1,35 @@
+<pl-question-panel>
+	<p>
+  The vector $\vec{a} = {{params.a_vec}}{\rm\ m}$ is
+  shown below, as well as another vector $\vec{b}$ that has length
+  $b = {{params.bLength}}{\rm\ m}$ and makes an angle $\theta = \frac{{{params.thetaCoeff1}}}{{{params.thetaCoeff2}}}\pi{\rm\ rad}$
+  with $\vec{a}$.
+</p> 
+
+<pl-drawing grid-size="0" width="500" height="310">
+    <pl-drawing-initial>
+        <pl-vector x1="{{params.Ox}}" y1="{{params.Oy}}" angle="{{params.a_angle}}" width="{{params.a_width}}" stroke-width="1.5" label="\\vec{a}" color="#0000FF"></pl-vector>
+        <pl-vector x1="{{params.Ox}}" y1="{{params.Oy}}" angle="{{params.b_angle}}" width="{{params.b_width}}" stroke-width="1.5" label="\\vec{b}" color="#0000FF"></pl-vector>
+        <pl-arc-dimensions x1="{{params.Ox}}" y1="{{params.Oy}}" start-angle="{{params.angleStart}}" end-angle="{{params.angleEnd}}" end-support-line="false" draw-end-arrow="false" stroke-width="1.7" label="\\theta" offsetx="{{params.offsetx}}" offsety="{{params.offsety}}"></pl-arc-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="3" default-tab="sympy">
+    <variable params-name="a">a</variable>
+    <variable params-name="bLength">bLength</variable>
+    <variable params-name="theta" comment="in radians">theta</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What are the components of $\vec{b}$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{b} = $
+<pl-number-input answers-name="bx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="by" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m}$
+</p>

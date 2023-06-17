@@ -1,0 +1,14 @@
+{
+    "uuid": "a2c16a02-7f73-43d0-b5ec-5eb1efb8ae51",
+    "shortName": "SX",
+    "longName": "Semester X",
+    "hideInEnrollPage": true,
+    "allowAccess": [
+        {
+            "comment": "you probably want to set access to just your institution and semester start/end dates",
+            "institution": "Any",
+            "startDate": "1800-01-19T00:00:01",
+            "endDate": "2400-05-13T23:59:59"
+        }
+    ]
+}

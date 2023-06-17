@@ -1,0 +1,34 @@
+<pl-question-panel>
+	<p>
+  A circular rigid body is rolling without slipping on a flat
+  surface in 2D as shown with point $Q$ attached to the body. At
+  the instant shown, the body has {{params.givenExp}} and point
+  $Q$ is at the {{params.QPos}} of the body with velocity
+  $\vec{v}_Q = {{params.vQ_vec}}{\rm \ m/s}$.
+</p>
+
+<pl-drawing grid-size="0" width="600" height="300">
+    <pl-drawing-initial>
+        <pl-circle x1="300" y1="150" radius="100" color="#FFFFFF" stroke-width="2"></pl-circle>
+        <pl-line x1="0" y1="250" angle="0" width="600" stroke-width="2.5"></pl-line>
+        <pl-rectangle x1="300" y1="256.7" stroke-width="0.0" angle="90" width="10" height="600" color="#DCDCDC"></pl-rectangle>
+        <pl-point x1="300" y1="150" radius="2" label="C"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q"></pl-point>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
+    <variable params-name="vQ">vQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the {{params.ansDescription}} ${{params.ansVar}}$?
+</p>
+</pl-question-panel>
+<p>
+${{params.ansVar}}$ = 
+<pl-number-input answers-name="ansValue" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input>${{params.ansUnits}}$
+</p>

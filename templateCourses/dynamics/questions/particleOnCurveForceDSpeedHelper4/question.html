@@ -1,0 +1,48 @@
+<pl-question-panel>
+    <p>
+        This question focuses on finding the acceleration in cartesian basis.
+    </p>
+    <p>
+        A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
+        a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters. Gravity
+        $\vec{g} = -9.8\hat\jmath\rm\ m/s^2$ acts vertically. At the
+        current instant the particle has $x = {{params.x_value}} {\rm\ m}$ and
+        it is moving to the {{params.vdir}}. Its current speed is
+        $v = {{params.v}} {\rm\ m/s}$, which is
+        {{params.sddotDir}} at a rate of
+        ${{params.sddotMag}}\rm\ m/s^2$.
+    </p>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+x = symbols('x', real = True)
+
+m = {{params.m}}
+y = {{params.y}}
+g = -9.8
+x_v = {{params.x_value}}
+vMag = {{params.v}}
+vDot = {{params.sddotMag}}
+</pre>
+</p>
+
+    <pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+    <p>
+        Given the particle acceleration in tangential-normal basis is 
+        $\vec{a} = {{params.sddotMag}} \hat{e}_t + {{params.enhatComp}} \hat{e}_n$. You should 
+        also verify that this true.
+        What is the particle's acceleration in cartesian basis?
+    </p>
+
+</pl-question-panel>
+
+<p>
+$\vec{a} = $
+<pl-number-input answers-name="a_i" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="a_j" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}$ ${\rm \ m/s^2}$
+</p>

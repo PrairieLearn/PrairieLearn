@@ -1,0 +1,35 @@
+<pl-question-panel>
+  <p>
+  A circular rigid body is rolling without slipping on a flat
+  surface in 2D as shown with point $Q$ attached to the body. At
+  the instant shown, the body has {{params.givenExp}} and point
+  $Q$ is at the {{params.QPos}} of the body with acceleration
+  $\vec{a}_Q = {{params.aQ_vec}}$.
+</p>
+<pl-drawing grid-size="0" width="300" height="190">
+    <pl-drawing-initial>
+        <pl-circle x1="150" y1="95" radius="60" color="#FFFFFF" stroke-width="2"></pl-circle>
+        <pl-line x1="0" y1="155" angle="0" width="600" stroke-width="2.5"></pl-line>
+        <pl-rectangle x1="300" y1="160.7" stroke-width="0.0" angle="90" width="10" height="600" color="#DCDCDC"></pl-rectangle>
+        <pl-point x1="150" y1="95" label="C" radius="2"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2"></pl-point>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
+    <variable params-name="aQ">aQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the {{params.questionStatement}} {{params.ansLabel}}?
+</p>
+
+</pl-question-panel>
+
+<p>
+{{params.ansLabel}} = 
+<pl-number-input answers-name="ansValue" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input>${{params.ansUnits}}$
+</p>

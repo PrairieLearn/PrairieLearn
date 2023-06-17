@@ -1,0 +1,27 @@
+<pl-question-panel>
+	<p>
+  A particle starts at the origin at time $t = 0\rm\ s$ and its
+  velocity is given by $\vec{v} = ({{params.v_x}})\hat{\imath} + ({{params.v_y}})\hat{\jmath} \rm\ m/s$, where $t$ is in seconds. At
+  time $t = {{params.t}}\rm\ s$, what is the particle's distance
+  $r$ from the origin?
+</p>
+
+<p>
+<pl-code language="Python">
+## Python Helper code:
+import numpy as np
+from sympy import *
+
+t = symbols('t', real = True)
+
+v = Matrix([{{params.vx}}, {{params.vy}}, 0])
+t_v = {{params.t}}
+</pl-code>
+</p>
+
+</pl-question-panel>
+
+<p>
+$r = $
+<pl-number-input answers-name="r" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m}$
+</p>

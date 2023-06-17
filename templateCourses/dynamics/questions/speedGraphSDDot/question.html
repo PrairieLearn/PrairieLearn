@@ -1,0 +1,20 @@
+<pl-question-panel>
+	<p>
+  The speed $v$ of a particle is shown below as a function of
+  time. The distance (path length) traveled by the particle since
+  time $t = 0\rm\ s$ is $s(t)$.
+</p> 
+
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="dt,vp" width="500" height="400"></pl-prairiedraw-figure>
+
+<p>
+  What is the second derivative $\ddot{s}$ of the path length when $t
+  = {{params.t}}\rm\ s$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\ddot{s} = $
+	<pl-number-input answers-name="sDDot" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s^2}$
+</p>

@@ -1,0 +1,45 @@
+<pl-question-panel>
+	<p>
+  A rigid body is moving in 2D as with angular velocity
+  $\vec{\omega} = \omega \hat{k}$. A pin at point $Q$ constrains
+  that point to move in a {{params.slotSentence}}, as shown.
+	</p> 
+	<pl-drawing grid-size="0" width="500" height="310">
+    <pl-drawing-initial>
+    	<pl-polygon plist='[{"x": {{params.px1}}, "y": {{params.py1}}}, {"x": {{params.px2}},"y": {{params.py2}}}, {"x": {{params.px3}},"y": {{params.py3}}}, {"x": {{params.px4}}, "y": {{params.py4}}}]' stroke-width="2"></pl-polygon>
+
+    	<pl-line x1="{{params.slot1x1}}" y1="{{params.slot1y1}}" x2="{{params.slot1x2}}" y2="{{params.slot1y2}}"></pl-line>
+    	<pl-line x1="{{params.slot2x1}}" y1="{{params.slot2y1}}" x2="{{params.slot2x2}}" y2="{{params.slot2y2}}"></pl-line>
+
+    	<pl-point x1="{{params.px1}}" y1="{{params.py1}}" radius="3" label="Q"></pl-point>
+    	<pl-point x1="{{params.px3}}" y1="{{params.py3}}" radius="3" label="P"></pl-point>
+
+    	<pl-vector x1="{{params.px3}}" y1="{{params.py3}}" angle="{{params.vP_angle}}" width="{{params.vP_width}}" stroke-width="1.5" color="green2" label="\\vec{v}_P"></pl-vector>
+
+    </pl-drawing-initial>
+	</pl-drawing>
+
+	<p>
+  Point $P$ on the body has
+  \[\begin{aligned}
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m} \\
+  \vec{v}_P &amp;= {{params.vP_vec}}{\rm\ m/s}.
+  \end{aligned}\]
+	</p>
+
+	<p>
+	<pl-variable-output digits="0" default-tab="sympy">
+    	<variable params-name="rPQ">rPQ</variable>
+    	<variable params-name="vP">vP</variable>
+	</pl-variable-output>
+	</p>
+
+	<p> 
+  What is {{params.findSentence}}?
+	</p>
+</pl-question-panel>
+
+<p>
+${{params.findVar}} = $
+	<pl-number-input answers-name="ansValue" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\rm\ {{params.findUnits}}$
+</p>

@@ -1,0 +1,32 @@
+<pl-question-panel>
+	<p>
+  A point is moving along a curve so that it has a distance $s = {{params.slatex}} \rm\ m$ from its starting point, where
+  $t$ is in seconds. At $t = {{params.t}}\rm\ s$ the point is at a
+  location where the curve has a radius of curvature $\rho =
+  {{params.rho}}\rm\ m$.
+</p>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+t = symbols('t', real = True)
+s = {{params.s}}
+t_v = {{params.t}}
+rho = {{params.rho}}
+</pre>
+</p>
+
+<p>
+  What is the magnitude $a$ of the acceleration at this time?
+</p>
+
+</pl-question-panel>
+
+<p>
+$a = $
+<pl-number-input answers-name="a" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s^2} $
+</p>

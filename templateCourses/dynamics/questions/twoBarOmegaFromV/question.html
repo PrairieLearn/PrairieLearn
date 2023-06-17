@@ -1,0 +1,48 @@
+<pl-question-panel>
+	<p>
+  Two rods are connected with pin joints at $O$ and $P$ as
+  shown. Rods $OP$ and $PQ$ have angular velocities $\vec\omega_1
+  = \omega_1\hat{k}$ and $\vec\omega_2 = \omega_2\hat{k}$,
+  respectively.
+  </p> 
+	<pl-drawing grid-size="0" width="502" height="350">
+    <pl-drawing-initial>
+        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" width="20" height="25" draw-pin="false"></pl-fixed-pin>
+        <pl-rod x1="{{params.Ox}}" y1="{{params.Oy}}" x2="{{params.Px}}" y2="{{params.Py}}" width="15" draw-pin="false"></pl-rod>
+        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" width="15" draw-pin="false"></pl-rod>
+        <pl-vector x1="{{params.Qx}}" y1="{{params.Qy}}" label="\\vec{v}_Q" angle="{{params.vQ_angle}}" width="{{params.vQ_width}}" stroke-width="1.5" color="green2"></pl-vector>
+        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" label="O" radius="2.5" offsetx="10" offsety="-10"></pl-point>
+        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" label="P" radius="2.5" offsetx="10" offsety="-10"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2.5" offsetx="10" offsety="-10"></pl-point>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+  At the current instant we observe:
+  \[\begin{aligned}
+  \vec{r}_{OP} &amp;= {{params.rOP_vec}}{\rm\ m}
+  &amp;
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m}
+  \\
+  &amp;
+  &amp;
+  \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}.
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="rOP">rOP</variable>
+    <variable params-name="rPQ">rPQ</variable>
+    <variable params-name="vQ">vQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is ${{params.findVar}}$?
+</p>
+</pl-question-panel>
+<p>
+${{params.findVar}} = $
+	<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s}$
+</p>

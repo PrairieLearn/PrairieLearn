@@ -1,0 +1,42 @@
+<pl-question-panel>
+<p>
+  The basis $\hat{u},\hat{v}$ is rotated by $\theta =
+  {{params.thetaAbs}}^\circ$ from the the Cartesian basis
+  $\hat\imath,\hat\jmath$, as shown. The vector $\vec{r}$ is
+  \[\begin{aligned}
+  \vec{r} &amp;= {{params.r_vec}}{\rm\ m}
+  \end{aligned}\]
+</p> 
+
+<p>
+<pl-drawing width="500" height="310" grid-size="0">
+    <pl-drawing-initial>
+        <pl-vector x1="250" y1="155" angle="0" width="70" label="\\hat{\\imath}" color="#000000" stroke-width="1.5"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="-90" width="70" label="\\hat{\\jmath}" color="#000000" stroke-width="1.5" offsetx="-15" offsety="-15"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="{{params.u_theta}}" width="70" label="\\hat{u}" color="#0000FF" stroke-width="1.5"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="{{params.v_theta}}" width="70" label="\\hat{v}" color="#0000FF" stroke-width="1.5"></pl-vector>
+        <pl-arc-dimensions x1="250" y1="155" start-angle="{{params.startAngle}}" end-angle="{{params.endAngle}}" radius="30" offsetx="{{params.offsetx}}" offsety="{{params.offsety}}" label="\\theta" draw-start-arrow="{{params.drawStartArrow}}" draw-end-arrow="{{params.drawEndArrow}}"></pl-arc-dimensions>
+        <pl-vector x1="250" y1="155" angle="{{params.r_theta}}" width="{{params.rwidth}}" label="\\vec{r}" color="#0000FF" stroke-width="1.5"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="thetaAbs" comment="in degrees">theta</variable>
+    <variable params-name="r">r</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is $\vec{r}$ in the $\hat{u},\hat{v}$ basis?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{r} = $
+  <pl-number-input answers-name="ru" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{u} + $
+<pl-number-input answers-name="rv" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{v}{\rm\ m}$
+</p>
+

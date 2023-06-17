@@ -1,0 +1,28 @@
+{
+    "uuid": "f5edd592-08b9-4d8f-9466-f1b0e6b8a3ed",
+    "type": "Homework",
+    "title": "Coordinates and Vectors",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "basisComp",            "points": 1, "maxPoints": 5},
+                {"id": "changeBasis",          "points": 1, "maxPoints": 5},
+                {"id": "dotProductsWithOrth",  "points": 2, "maxPoints": 10},
+                {"id": "changeBasisOffset",    "points": 2, "maxPoints": 10},
+                {"id": "omegaCrossR",          "points": 1, "maxPoints": 5},
+                {"id": "vectorAtAngle",        "points": 2, "maxPoints": 10},
+                {"id": "PolarBasis2Quadrant",  "points": 3, "maxPoints": 15},
+                {"id": "basisRotationAngle",   "points": 3, "maxPoints": 15}
+            ]
+        }
+    ]
+}
+

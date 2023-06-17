@@ -1,0 +1,169 @@
+{
+    "uuid": "fe472cd2-4759-4c0d-9b19-7383ca9b2817",
+    "name": "OER 104",
+    "title": "Dynamics",
+    "assessmentSets": [],
+    "topics": [
+        {
+            "name": "Vector operations and arithmetic",
+            "color": "blue3"
+        },
+        {
+            "name": "Cartesian and polar coordinates",
+            "color": "purple3"
+        },
+        {
+            "name": "Cylindrical coordinates",
+            "color": "purple2"
+        },
+        {
+            "name": "Spherical coordinates",
+            "color": "purple1"
+        },
+        {
+            "name": "Vector calculus",
+            "color": "blue2"
+        },
+        {
+            "name": "Cartesian velocities and accelerations",
+            "color": "yellow3"
+        },
+        {
+            "name": "Polar velocities and accelerations",
+            "color": "yellow2"
+        },
+        {
+            "name": "Rotations and angular velocity",
+            "color": "turquoise3"
+        },
+        {
+            "name": "Tangential/normal basis",
+            "color": "yellow1"
+        },
+        {
+            "name": "Point-mass kinetics",
+            "color": "red3"
+        },
+        {
+            "name": "Projectile",
+            "color": "orange3"
+        },
+        {
+            "name": "Rigid body kinematics",
+            "color": "green3"
+        },
+        {
+            "name": "Instantaneous centers",
+            "color": "green2"
+        },
+        {
+            "name": "Constrained motion",
+            "color": "green1"
+        },
+        {
+            "name": "Gears",
+            "color": "turquoise1"
+        },
+        {
+            "name": "Rolling motion",
+            "color": "turquoise2"
+        },
+        {
+            "name": "Center of mass",
+            "color": "brown3"
+        },
+        {
+            "name": "Moment of inertia",
+            "color": "brown2"
+        },
+        {
+            "name": "Rigid body kinetics",
+            "color": "red2"
+        },
+        {
+            "name": "Friction",
+            "color": "pink3"
+        },
+        {
+            "name": "Energy",
+            "color": "pink2"
+        },
+        {
+            "name": "Numerical methods",
+            "color": "blue1"
+        },
+        {
+            "name": "Linear and angular momentum",
+            "color": "pink1"
+        },
+        {
+            "name": "Unsorted",
+            "color": "gray3"
+        }
+    ],
+    "tags": [
+        {
+            "name": "tracker",
+            "color": "turquoise2",
+            "description": "Question testing Tracker use."
+        },
+        {
+            "name": "matlab",
+            "color": "turquoise1",
+            "description": "Question testing Matlab use or syntax."
+        },
+        {
+            "name": "worksheet",
+            "color": "turquoise3",
+            "description": "Question testing concepts from TAM 212 Worksheets."
+        },
+        {
+            "name": "untested",
+            "color": "red1",
+            "description": "These questions have NOT been tested or proofread by a TA/instructor (other than the developers)."
+        },
+        {
+            "name": "v3",
+            "color": "green1",
+            "description": "This is a PLv3 (Python) question."
+        },
+        {
+            "name": "legacy",
+            "color": "yellow1",
+            "description": "This question was written before Fa17 (author and/or semester unknown)."
+        },
+        {
+            "name": "ressick2",
+            "color": "gray1",
+            "description": "This question was written by Ray Essick (ressick2@illinois.edu)."
+        },
+        {
+            "name": "xianz",
+            "color": "gray1",
+            "description": "This question was written by Xian Zhang (xianz@illinois.edu)."
+        },
+        {
+            "name": "kmatlack",
+            "color": "gray1",
+            "description": "This question was written by Katie Matlack (kmatlack@illinois.edu)."
+        },
+        {
+            "name": "gupatil2",
+            "color": "gray1",
+            "description": "This question was written by Ganesh Patil (gupatil2@illinois.edu)."
+        },
+        {
+            "name": "wlchang",
+            "color": "gray1",
+            "description": "This question was written by Wayne Chang (wlchang@illinois.edu)."
+        },
+        {
+            "name": "needsDP",
+            "color": "red1",
+            "description": "These questions need a figure added that requires dynamic programming."
+        }
+    ],
+    "options": {
+        "useNewQuestionRenderer": true
+    }
+}

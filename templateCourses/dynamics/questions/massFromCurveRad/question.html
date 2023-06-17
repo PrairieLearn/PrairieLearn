@@ -1,0 +1,27 @@
+<pl-question-panel>
+	<p>
+  A point mass $m$ is moving with constant speed $v =
+  {{params.v}}\rm\ m/s$, driven by a force with the constant
+  magnitude $F = {{params.F}}\rm\ N$. It is observed that the
+  radius of curvature of the trajectory is $\rho =
+  {{params.rho}}\rm\ m$.
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="v">v</variable>
+    <variable params-name="F">F</variable>
+    <variable params-name="rho">rho</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the mass $m$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$m = $
+	<pl-number-input answers-name="m" comparison="relabs" rtol="1e-2" atol="1e-5" size="15" show-placeholder="false"></pl-number-input> ${\rm\ kg}$
+</p>

@@ -1,0 +1,65 @@
+<pl-question-panel>
+	<p>
+  Body $\mathcal{B}_1$ is a uniform rigid disk that rotates about
+  the fixed center $O$. Body $\mathcal{B}_2$ is a uniform thin
+  rigid rod that connects pins $P$ and $Q$, and point $Q$ is
+  constrained to move in a slot.
+	</p>
+
+<pl-drawing grid-size="0" width="420" height="420">
+    <pl-drawing-initial>
+        <pl-circle x1="{{params.Ox}}" y1="{{params.Oy}}" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
+        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" height="12" width="12" draw-pin="false"></pl-fixed-pin>
+        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" radius="2" label="O" offsetx="-20" offsety="-20"></pl-point>
+        {{{params.drawGround1}}}
+        {{{params.drawGround2}}}
+        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" width="10" draw-pin="false"></pl-rod>
+        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="2" label="P"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}"></pl-point>
+        <pl-text x1="{{params.B1x1}}" y1="{{params.B1y1}}" label="\\mathcal{B}_1"></pl-text>
+        <pl-text x1="{{params.B2x1}}" y1="{{params.B2y1}}" label="\\mathcal{B}_2"></pl-text>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+  At the current instant we have:
+  \[\begin{aligned}
+  \vec{r}_{OP} &amp;= {{params.rOP_vec}}{\rm\ m}
+  &amp;
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m}
+  \\
+  \vec{\omega}_1 &amp;= {{params.omega1_vec}}{\rm\ rad/s}
+  &amp;
+  \vec{\omega}_2 &amp;= {{params.omega2_vec}}{\rm\ rad/s}
+  \\
+  \vec{v}_P &amp;= {{params.vP_vec}}{\rm\ m/s}
+  &amp;
+  \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}
+  \\
+  &amp; &amp;
+  {{params.givenVar}} &amp;= {{params.givenVals_vec}} {\rm\ {{params.givenUnits}} }
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="rOP">rOP</variable>
+    <variable params-name="rPQ">rPQ</variable>
+    <variable params-name="omega1">omega1</variable>
+    <variable params-name="omega2">omega2</variable>
+    <variable params-name="vP">vP</variable>
+    <variable params-name="vQ">vQ</variable>
+    <variable params-name="{{params.givenName}}">{{params.givenName}}</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is ${{params.findVar}}$?
+</p>
+
+</pl-question-panel>
+
+<p>
+${{params.findVar}} = $
+	{{{params.submitAnswer}}} $\rm\ {{params.findUnits}}$
+</p>

@@ -1,0 +1,29 @@
+{
+    "uuid": "7c57c172-c45d-46e0-8d15-e6bf0095d0c7",
+    "type": "Homework",
+    "title": "Gears and Rigid Body Kinetics",
+    "set": "Homework",
+    "number": "5",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+
+    "zones": [
+        {
+            "questions": [
+                {"id": "gearAngVel",              "points": 1, "maxPoints": 5},
+                {"id": "massAlg2D",               "points": 1, "maxPoints": 10},
+                {"id": "gearAccAndAngAcc",        "points": 3, "maxPoints": 15},
+                {"id": "centMassPointsRI",        "points": 1, "maxPoints": 5},
+                {"id": "momInertiaCBarSeg",       "points": 2, "maxPoints": 10},
+                {"id": "rigidFourBodiesInertia",  "points": 3, "maxPoints": 10},
+                {"id": "momInertiaCAlg2D",        "points": 3, "maxPoints": 15},
+                {"id": "sliderCrankKinetics",     "points": 3, "maxPoints": 15}
+            ]
+        }
+    ]
+}
+

@@ -1,0 +1,34 @@
+<pl-question-panel>
+<p>
+  A set of gears with fixed centers are connected in 2D as
+  shown. The gear radii are {{params.radiusExps}}, where the
+  numbers correspond to the gear center numbers. The angular
+  velocity of the gear at ${{params.givenCenter}}$ is
+  ${{params.givenOmegaVar}} = {{params.givenOmega}}
+  \hat{k}\rm\ rad/s$.
+</p>
+
+<pl-drawing grid-size="0" width="600" height="400">
+    <pl-drawing-initial>
+      {{{params.drawCode}}}
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    {{{params.pl_var_output}}}
+    <variable params-name="{{params.givenVar}}">{{params.givenVar}}</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the angular velocity ${{params.ansOmegaVar}}$ of the gear
+  at ${{params.ansCenter}}$?
+</p>
+
+</pl-question-panel>
+
+<p>
+${{params.ansOmegaVar}} = $
+<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{k}{\rm\ rad/s}$
+</p>

@@ -1,0 +1,34 @@
+<pl-question-panel>
+  <p>
+  A particle is moving along a curve given by $y(x) =
+  {{params.ylatex}}\{{params.xFunc}} {\rm\ m}$, where $x$ is in meters.  The
+  particle's horizontal velocity component is a constant $v_x =
+  {{params.vx}} {\rm\ m/s}$.
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+<pre>
+Python Inputs:
+
+from sympy import *
+import numpy as np
+
+x = symbols('x')
+y = {{params.y}}
+vx = {{params.vx}}
+x_v = {{params.xCoeff}}*np.pi
+</pre>
+</p>
+
+<p>
+    What is the vertical component of velocity $v_y$ when $x = {{params.xCoeff_disp}}\pi {\rm\ m}$? 
+</p>
+
+</pl-question-panel>
+
+<p>
+$v_y = $
+<pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s} $
+</p>

@@ -1,0 +1,39 @@
+<pl-question-panel>
+  <p>
+  A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
+  a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters.  The
+  particle's horizontal velocity component is a constant $v_x =
+  {{params.vx}} {\rm\ m/s}$ and gravity $\vec{g} =
+  -9.8\hat\jmath\rm\ m/s^2$ acts vertically.
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+x = symbols('x', real = True)
+m = {{params.m}}
+y = {{params.y}}
+vx = {{params.vx}}
+g = -9.8
+x_v = {{params.x_value}}
+</pre>
+</p>
+
+<p>
+  What is the force $\vec{F}_{\rm w}$ of the wire on the particle
+  when $x = {{params.x_value}} {\rm\ m}$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{F}_{w} = $
+  <pl-number-input answers-name="Fwx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="Fwy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ N}$
+</p>

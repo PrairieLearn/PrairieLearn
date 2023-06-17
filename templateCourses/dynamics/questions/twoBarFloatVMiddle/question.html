@@ -1,0 +1,46 @@
+<pl-question-panel>
+	<p>
+  Two rods are connected with a pin joint at $A$ as
+  shown, and at the current instant we have:
+  \[\begin{aligned}
+  \vec{r}_{PA} &amp;= {{params.rPA_vec}}{\rm\ m}
+  &amp;
+  \vec{r}_{QA} &amp;= {{params.rQA_vec}}{\rm\ m}
+  \\
+  \vec{v}_P &amp;= {{params.vP_vec}}{\rm\ m/s}
+  &amp;
+  \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m/s}.
+  \end{aligned}\]
+</p> 
+	<pl-drawing grid-size="0" width="400" height="400">
+    <pl-drawing-initial>
+        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Ax}}" y2="{{params.Ay}}" width="10" draw-pin="false"></pl-rod>
+        <pl-rod x1="{{params.Qx}}" y1="{{params.Qy}}" x2="{{params.Ax}}" y2="{{params.Ay}}" width="10" draw-pin="false"></pl-rod>
+        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" label="P" radius="2"></pl-point>
+        <pl-point x1="{{params.Ax}}" y1="{{params.Ay}}" label="A" radius="2"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" label="Q" radius="2"></pl-point>
+        <pl-vector x1="{{params.Px}}" y1="{{params.Py}}" angle="{{params.vPangle}}" width="{{params.vPwidth}}" label="\\vec{v}_P" stroke-width="1.5" color="green2"></pl-vector>
+        <pl-vector x1="{{params.Qx}}" y1="{{params.Qy}}" angle="{{params.vQangle}}" width="{{params.vQwidth}}" label="\\vec{v}_Q" stroke-width="1.5" color="green2"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="rPA">rPA</variable>
+    <variable params-name="rQA">rQA</variable>
+    <variable params-name="vP">vP</variable>
+    <variable params-name="vQ">vQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is $\vec{v}_A$?
+</p>
+
+</pl-question-panel>
+
+<p>
+	$\vec{v}_A = $
+<pl-number-input answers-name="vAx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+<pl-number-input answers-name="vAy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s}$
+</p>

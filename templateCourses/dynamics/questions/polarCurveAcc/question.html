@@ -1,0 +1,40 @@
+<pl-question-panel>
+	<p>
+  A particle $P$ is moving in the plane around a curve defined in
+  polar coordinates by
+  \[r(\theta) = ({{params.rlatex}}){\rm\ m}.\]
+  At the instant shown, the angular position, velocity, and
+  acceleration of $P$ are
+  $\theta = {{params.theta}}{\rm\ rad}$, $\omega =
+  {{params.omega}}{\rm\ rad/s}$, and $\alpha =
+  {{params.alpha}}{\rm\ rad/s^2}$.
+</p>
+
+<p>
+<pre>
+Python Inputs: 
+
+import numpy as np
+from sympy import *
+
+theta = symbols('theta')
+
+r = {{params.r}}
+theta_v = {{params.theta}} # in radians
+omega = {{params.omega}}
+alpha = {{params.alpha}}
+</pre>
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+  What is the acceleration $\vec{a}$ of $P$?
+</p>
+
+</pl-question-panel>
+<p>
+$\vec{a} = $
+	<pl-number-input answers-name="ax" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="ay" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
+</p>

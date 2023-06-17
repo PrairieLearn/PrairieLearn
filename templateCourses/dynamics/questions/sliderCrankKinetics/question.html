@@ -1,0 +1,78 @@
+<pl-question-panel>
+<p>
+  Body $\mathcal{B}_1$ is a uniform rigid disk that rotates about
+  the fixed center $O$ as shown, driven by a pure moment
+  $\vec{M}$. Body $\mathcal{B}_2$ is a uniform thin rigid rod that
+  connects pins $P$ and $Q$ (with center $C$), and point $Q$ is
+  constrained to move in a slot.  Forces $\vec{F}_P$ and
+  $\vec{F}_Q$ are exerted on the rod by pins $P$ and $Q$,
+  respectively, and there is no gravity or friction.
+</p> 
+
+<pl-drawing grid-size="0" width="420" height="420">
+    <pl-drawing-initial>
+        <pl-circle x1="{{params.Ox}}" y1="{{params.Oy}}" radius="{{params.r}}" color="#FFFFFF" stroke-width="2"></pl-circle>
+        <pl-fixed-pin x1="{{params.Ox}}" y1="{{params.Oy}}" color="#FFFFFF" height="12" width="12" draw-pin="false"></pl-fixed-pin>
+        <pl-point x1="{{params.Ox}}" y1="{{params.Oy}}" radius="2" label="O" offsetx="-20" offsety="-20"></pl-point>
+        {{{params.drawGround1}}}
+        {{{params.drawGround2}}}
+        <pl-rod x1="{{params.Px}}" y1="{{params.Py}}" x2="{{params.Qx}}" y2="{{params.Qy}}" width="10" draw-pin="false"></pl-rod>
+        <pl-point x1="{{params.Px}}" y1="{{params.Py}}" radius="2" label="P"></pl-point>
+        <pl-point x1="{{params.Cx}}" y1="{{params.Cy}}" radius="2" label="C"></pl-point>
+        <pl-point x1="{{params.Qx}}" y1="{{params.Qy}}" radius="2" label="Q" offsetx="{{params.Qoffsetx}}" offsety="{{params.Qoffsety}}"></pl-point>
+        <pl-text x1="{{params.B1x1}}" y1="{{params.B1y1}}" label="\\mathcal{B}_1"></pl-text>
+        <pl-text x1="{{params.B2x1}}" y1="{{params.B2y1}}" label="\\mathcal{B}_2"></pl-text>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+  At the current instant we have:
+  \[\begin{aligned}
+  m_1 &amp;= {{params.m1}}{\rm\ kg}
+  &amp;
+  m_2 &amp;= {{params.m2}}{\rm\ kg}
+  \\
+  I^1_{O,\hat{k}} &amp;= {{params.I1}}{\rm\ kg\ m^2}
+  &amp;
+  I^2_{C,\hat{k}} &amp;= {{params.I2}}{\rm\ kg\ m^2}
+  \\
+  \vec{r}_{OP} &amp;= {{params.rOP_vec}}{\rm\ m}
+  &amp;
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m}
+  \\
+  \vec\omega_1 &amp;= {{params.omega1_vec}}{\rm\ rad/s}
+  &amp;
+  \vec\omega_2 &amp;= {{params.omega2_vec}}{\rm\ rad/s}
+  \\
+  \vec{v}_P &amp;= {{params.vP_vec}}{\rm\ m}
+  &amp;
+  \vec{v}_Q &amp;= {{params.vQ_vec}}{\rm\ m}
+  \\
+  {{{params.givenString}}}
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="3" default-tab="sympy">
+    <variable params-name="m1">m1</variable>
+    <variable params-name="m2">m2</variable>
+    <variable params-name="I1">I1</variable>
+    <variable params-name="I2">I2</variable>
+    <variable params-name="rOP">rOP</variable>
+    <variable params-name="rPQ">rPQ</variable>
+    <variable params-name="omega1">omega1</variable>
+    <variable params-name="omega2">omega2</variable>
+    <variable params-name="vP">vP</variable>
+    <variable params-name="vQ">vQ</variable>
+    {{{params.pl_var_output_string}}}
+</pl-variable-output>
+</p>
+
+<p>What is ${{params.ansVar}}$?</p>
+
+</pl-question-panel>
+
+<p>
+${{params.ansVar}} = $
+{{{params.ansCode}}} ${{params.ansUnits}}$
+</p>

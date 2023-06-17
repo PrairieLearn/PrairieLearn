@@ -1,0 +1,43 @@
+<pl-question-panel>
+
+<p>
+  A rotated set of basis vectors $\hat{u},\hat{v}$ is shown below
+  relative to the Cartesian basis $\hat\imath,\hat\jmath$. The
+  rotation angle is $\theta = {{params.thetaAbs}}^\circ$ as
+  shown.
+</p> 
+
+<p>
+<pl-drawing width="500" height="310" grid-size="0">
+    <pl-drawing-initial>
+        <pl-vector x1="250" y1="155" angle="0" width="100" label="\\hat{\\imath}" color="#000000" stroke-width="1.5"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="-90" width="100" label="\\hat{\\jmath}" color="#000000" stroke-width="1.5" offsetx="-15" offsety="-15"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="{{params.u_theta}}" width="100" label="\\hat{u}" color="#0000FF" stroke-width="1.5"></pl-vector>
+        <pl-vector x1="250" y1="155" angle="{{params.v_theta}}" width="100" label="\\hat{v}" color="#0000FF" stroke-width="1.5"></pl-vector>
+        <pl-arc-dimensions x1="250" y1="155" start-angle="{{params.startAngle}}" end-angle="{{params.endAngle}}" radius="30" offsetx="{{params.offsetx}}" offsety="{{params.offsety}}" label="\\theta" draw-start-arrow="{{params.drawStartArrow}}" draw-end-arrow="{{params.drawEndArrow}}"></pl-arc-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="thetaAbs" comment="in degrees">theta</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What are $\hat{u},\hat{v}$ in terms of $\hat\imath,\hat\jmath$?
+</p>
+</pl-question-panel>
+
+<p>
+$\hat{u} = $
+    <pl-number-input answers-name="ux" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="uy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}$
+</p>
+<p>
+$\hat{v} = $
+    <pl-number-input answers-name="vx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}$
+</p>
+

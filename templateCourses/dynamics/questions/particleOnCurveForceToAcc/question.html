@@ -1,0 +1,40 @@
+<pl-question-panel>
+<p>
+  A particle of mass $m = {{params.m}}\rm\ kg$ is moving along
+  a guide wire with shape given by $y(x) = {{params.ylatex}} {\rm\ m}$, where $x$ is in meters. Gravity
+  $\vec{g} = -9.8\hat\jmath\rm\ m/s^2$ acts vertically. At the
+  current instant the particle has $x = {{params.x_value}}\rm\ m$ and
+  the force of the wire on the particle is $\vec{F}_w =
+  {{params.Fw_vec}}\rm\ N$.
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+x = symbols('x')
+
+m = {{params.m}}
+y = {{params.y}}
+g = -9.8
+x_v = {{params.x_value}}
+Fw = Matrix([{{params.Fwx}}, {{params.Fwy}}, 0])
+</pre>
+</p>
+
+<p>
+  What is the acceleration $\vec{a}$ of the particle?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{a} = $
+  <pl-number-input answers-name="ax" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="ay" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
+</p>

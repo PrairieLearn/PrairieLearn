@@ -1,0 +1,26 @@
+<pl-question-panel>
+  <p>
+  A particle has position vector $\vec{r}$ and velocity vector
+  $\vec{v}$ as shown below.
+</p>
+
+<pl-drawing grid-size="0" width="300" height="185">
+    <pl-drawing-initial>
+        <pl-vector x1="{{params.rx}}" y1="{{params.ry}}" angle="{{params.rAngle}}" width="{{params.rWidth}}" stroke-width="2" color="#0000FF" label="\\vec{r}"></pl-vector>
+        <pl-vector x1="{{params.vx}}" y1="{{params.vy}}" angle="{{params.vAngle}}" width="{{params.vWidth}}" stroke-width="2" color="#00C800" label="\\vec{v}"></pl-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+
+<p>
+  If $\theta$ is the polar-coordinate angle for the particle
+  position, which statement about $\dot\theta$ is true at this
+  instant?
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="dir" weight="1" fixed-order="true" hide-letter-keys="true">
+  <pl-answer correct="{{params.bool1}}">$\dot{\theta} < 0$</pl-answer>
+  <pl-answer correct="{{params.bool2}}">$\dot{\theta} = 0$</pl-answer>
+  <pl-answer correct="{{params.bool3}}">$\dot{\theta} > 0$</pl-answer>
+</pl-multiple-choice>

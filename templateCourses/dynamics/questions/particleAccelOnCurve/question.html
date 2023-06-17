@@ -1,0 +1,34 @@
+<pl-question-panel>
+  <p>
+  A particle is moving to the {{params.vDir}} along a
+  variable-height ground. The horizontal component of its velocity has magnitude
+  ${{params.vx}}{\rm\ m/s}$ and is constant. The ground height is given by
+  $y(x) = {{params.ylatex}}
+  {\rm\ m}$, where $x$ is in meters.
+</p>
+
+<pl-figure file-name="figure.png" type="dynamic"></pl-figure>
+
+<p>
+<pre>
+Python Inputs:
+
+import numpy as np
+from sympy import *
+
+x = symbols('x')
+y = {{params.y}}
+vx = {{params.vx}}
+</pre>
+</p>
+
+<p>
+  When the particle is at the {{params.curvePos}} point on the ground, what is the vertical acceleration $a_y$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$a_y = $
+<pl-number-input answers-name="ay" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ m/s^2}$
+</p>

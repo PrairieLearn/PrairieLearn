@@ -1,0 +1,30 @@
+{
+    "uuid": "87cb4f4e-3cf0-48a7-937e-dec7fcbd533f",
+    "type": "Homework",
+    "title": "Rigid Body Kinematics",
+    "set": "Homework",
+    "number": "4",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "rbmOmega",                "points": 1, "maxPoints": 5},
+                {"id": "twoPointVAlg",            "points": 1, "maxPoints": 5},
+                {"id": "rbmAccelNum",             "points": 1, "maxPoints": 5},
+                {"id": "twoBarFloatVMiddle",      "points": 2, "maxPoints": 10},
+                {"id": "rigidBodyPinVel",         "points": 3, "maxPoints": 15},
+                {"id": "sliderCrankAcc",          "points": 3, "maxPoints": 15},
+                {"id": "twoBarAPoint",            "points": 1, "maxPoints": 5},
+                {"id": "twoBarOmegaFromV",        "points": 1, "maxPoints": 5},
+                {"id": "fourBarAngVel",           "points": 2, "maxPoints": 10},
+				{"id": "crankOmegaScotchYoke",    "points": 3, "maxPoints": 15}
+            ]
+        }
+    ]
+}
+

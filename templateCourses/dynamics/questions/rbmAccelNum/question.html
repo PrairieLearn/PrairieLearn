@@ -1,0 +1,34 @@
+<pl-question-panel>
+	<p>
+  A rigid body is moving in 2D with angular velocity
+  $\omega = {{params.omega_vec}}\rm\ rad/s$
+  and angular acceleration
+  $\alpha = {{params.alpha_vec}}\rm\ rad/s^2$.
+  Points $P$ and $Q$ on the body have:
+  \[\begin{aligned}
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m} \\
+  \vec{a}_P    &amp;= {{params.aP_vec}}{\rm\ m/s^2}.
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="omega">omega</variable>
+    <variable params-name="alpha">alpha</variable>
+    <variable params-name="rPQ">rPQ</variable>
+    <variable params-name="aP">aP</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the acceleration of point $Q$?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{a}_{Q} = $
+	<pl-number-input answers-name="aQx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+  <pl-number-input answers-name="aQy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> $\hat{\jmath}{\rm\ m/s^2}$
+</p>
+

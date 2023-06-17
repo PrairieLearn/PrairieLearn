@@ -1,0 +1,23 @@
+<pl-question-panel>
+	<p>
+  A point mass $m = {{params.m}}\rm\ kg$ starts with speed $v_0 =
+  {{params.v0}}\rm\ m/s$ at height $h = {{params.h}}\rm\ m$ on a
+  slope as shown. The mass slides down the slope under the
+  influence of gravity $g = 9.8\rm\ m/s^2$ and friction and at the
+  bottom of the slope it has speed $v_{\rm f} = {{params.vf}}\rm\
+  m/s$.
+</p>
+
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="orient" width="300" height="300"></pl-prairiedraw-figure>
+
+<p>
+  What is the work $W$ done by friction on the mass as it slides
+  down the slope?
+</p>
+
+</pl-question-panel>
+
+<p>
+$W = $
+	<pl-number-input answers-name="W" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ J}$
+</p>

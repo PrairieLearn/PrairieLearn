@@ -1,0 +1,30 @@
+<pl-question-panel>
+	<p>
+  A rigid body is moving in 2D with angular velocity $\vec\omega =
+  \omega \hat{k}$. Two points $P$ and $Q$ are fixed on the body
+  and have:
+  \[\begin{aligned}
+  \vec{r}_{PQ} &amp;= {{params.rPQ_vec}}{\rm\ m} \\
+  \vec{v}_P    &amp;= {{params.vP_vec}}{\rm\ m/s} \\
+  \vec{v}_Q    &amp;= {{params.vQ_vec}}{\rm\ m/s}.
+  \end{aligned}\]
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="rPQ">rPQ</variable>
+    <variable params-name="vP">vP</variable>
+    <variable params-name="vQ">vQ</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the angular velocity of the body?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\omega = $
+<pl-number-input answers-name="omega" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="15" show-placeholder="false"></pl-number-input> ${\rm\ rad/s} $
+</p>

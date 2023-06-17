@@ -1,0 +1,29 @@
+<pl-question-panel>
+	<p>
+  A point is currently at position $x = {{params.x}}\rm\ m$, $y =
+  {{params.y}}\rm\ m$, $z = {{params.z}}\rm\ m$ and is rotating
+  about the origin with angular velocity $\vec\omega =
+  {{params.omega_vec}}\rm\ rad/s$.
+</p>
+
+<p>
+<pl-variable-output digits="0" default-tab="sympy">
+    <variable params-name="x">x</variable>
+    <variable params-name="y">y</variable>
+    <variable params-name="z">z</variable>
+    <variable params-name="omega">omega</variable>
+</pl-variable-output>
+</p>
+
+<p>
+  What is the velocity $\vec{v}$ of the point?
+</p>
+
+</pl-question-panel>
+
+<p>
+$\vec{v} = $
+	<pl-number-input answers-name="vx" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\imath} + $
+	<pl-number-input answers-name="vy" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{\jmath} + $
+	<pl-number-input answers-name="vz" comparison="relabs" rtol="1e-2" atol="1e-5" display="inline" size="14" show-placeholder="false"></pl-number-input> $\hat{k} \rm\ m/s$
+</p>
