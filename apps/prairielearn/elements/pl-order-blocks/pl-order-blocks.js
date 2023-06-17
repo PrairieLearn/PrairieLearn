@@ -131,6 +131,22 @@ window.PLOrderBlocks = function (uuid, options) {
       placePairingIndicators();
       setAnswer();
     },
+    start: function () {
+      if (enableIndentation) {
+        $(dropzoneElementId)[0].style.background = "linear-gradient(#000, #000) no-repeat border-box, ".repeat(+maxIndent+1).slice(0, -2);
+        $(dropzoneElementId)[0].style.backgroundSize = "1px 100%, ".repeat(+maxIndent+1).slice(0, -2);
+        $(dropzoneElementId)[0].style.backgroundPosition = (function() {
+          let counter = 0;
+          let pos_string = "";
+          while (counter <= maxIndent) {
+            pos_string += `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * counter}px 0, `;
+            counter += 1;
+          }
+          console.log(pos_string);
+          return pos_string.slice(0, -2);
+        })();
+      }
+    },
     sort: function (event, ui) {
       // update the location of the placeholder as the item is dragged
       let placeholder = ui.placeholder;
@@ -142,8 +158,9 @@ window.PLOrderBlocks = function (uuid, options) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
-      setAnswer();
+      $(dropzoneElementId)[0].style.background = null;
 
+      setAnswer();
       correctPairing(ui);
     },
   });
