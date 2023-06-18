@@ -1,10 +1,6 @@
 import random
-
 import numpy as np
 import prairielearn as pl
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 
 
 def generate(data):
