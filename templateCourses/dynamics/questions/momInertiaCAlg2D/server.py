@@ -1,11 +1,7 @@
 import io
 import random
-
 import numpy as np
 from matplotlib import pyplot as plt
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 from sympy import *
 
 
@@ -122,3 +118,15 @@ def file(data):
     fig.savefig(buf, format="png")
 
     return buf
+
+def randIntNonZero(a, b):
+    """a: lower bound of the range of integers
+       b: upper bound of the range of integers
+    returns a non-zero integer in the range [a,b]
+    """
+
+    x = 0
+    while x == 0:
+        x = random.randint(a, b)
+
+    return x

@@ -1,9 +1,7 @@
 import io
 import random
-
 import numpy as np
 from matplotlib import pyplot as plt
-from pl_template import *
 from sympy import *
 
 
@@ -98,3 +96,38 @@ def file(data):
     fig.savefig(buf, format="png")
 
     return buf
+
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)
+
+
+def cartesianVector(v):
+    return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")

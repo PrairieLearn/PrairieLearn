@@ -1,12 +1,5 @@
 import random
-
 import numpy as np
-import prairielearn as pl
-from pl_draw import *
-from pl_geom import *
-from pl_random import *
-from pl_template import *
-
 
 def generate(data):
     width = random.randint(2, 3)
@@ -140,3 +133,95 @@ def generate(data):
 
     data["correct_answers"]["IC"] = IC
     return data
+
+def randIntNonZero(a, b):
+    """a: lower bound of the range of integers
+       b: upper bound of the range of integers
+    returns a non-zero integer in the range [a,b]
+    """
+
+    x = 0
+    while x == 0:
+        x = random.randint(a, b)
+
+    return x
+
+def PL_angle(x):
+    """x: angle measured counterclockwise from the x
+    returns the adjusted angle for pl-drawing"""
+
+    if x > 0:
+        x_pl = -x
+    else:
+        x_pl = abs(x)
+
+    return x_pl
+
+def vector2DAtAngle(x):
+    """x: angle measured from the x-axis, in radians
+    returns unit vector of size (3,)"""
+    return np.array([np.cos(x), np.sin(x), 0])
+
+def bboxTranslate(C, points, offsetx, offsety, width=30):
+    translated_points = []
+    """C: Center of the bounding box as a numpy array
+    points: List of vectors to offset from the center
+    offsetx: The x-offset from the top left corner, usually half the width of the figure
+    offsety: The y-offset from the top left corner, usually half the height of the figure
+    width: Width of the vector offset, default 30
+
+    returns the 2D offset (corrected) points for pl-drawing"""
+
+    for i in range(len(points)):
+        x_translated = offsetx + width * (points[i][0] - C[0])
+        y_translated = offsety - width * (points[i][1] - C[1])
+        translated_points.append(np.array(([x_translated, y_translated, 0])))
+
+    return translated_points
+
+def perp(v):
+    """v: numpy array of size (n,)
+       n: size of the array
+    returns the counterclockwise orthogonal vector to v
+    """
+    return np.array([-v[1], v[0], 0])
+
+def NChoice(n, l):
+    if n > len(l):
+        return l
+
+    choice = []
+
+    for i in range(n):
+        x = random.choice(l)
+        choice.append(x)
+        l.remove(x)
+    return choice
+
+def linearInterp(x0, x1, alpha):
+    """x0: first number
+    x1: second number
+    alpha: The propotion of x1 versus x0 (between 0 and 1)
+    """
+    return (1 - alpha) * x0 + alpha * x1
+
+
+def linearDeinterp(x0, x1, x):
+    """x0: first number
+    x1: second number
+    x: the value to be de-interpolated
+    """
+    return (x - x0) / (x1 - x0)
+
+def linearMap(x0, x1, y0, y1, x):
+    """x0: first number
+    x1: second number
+    y0: the image of x0
+    y1: the image of x1
+    x: the value to be mapped
+    returns the value y that x maps to
+    """
+    return linearInterp(y0, y1, linearDeinterp(x0, x1, x))
+
+def rgb_to_hex(rgb):
+    return ("#%02x%02x%02x" % rgb).upper()

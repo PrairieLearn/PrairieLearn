@@ -1,9 +1,5 @@
 import random
-
 import numpy as np
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 from sympy import *
 
 
@@ -120,3 +116,74 @@ def generate(data):
     data["correct_answers"]["y"] = float(y)
 
     return data
+
+def randPoly(t, n):
+
+    """t: independent variable
+        n: degree of polynomial
+    returns a polynomial of degree n
+    """
+
+    A_list = [-3, -2, -1, 1, 2, 3]
+    B_list = [-3, -2, -1, 0, 1, 2, 3]
+    C_list = B_list
+
+    if n == 1:
+        y = random.choice(A_list) * t + random.choice(B_list)
+    elif n == 2:
+        y = (
+            random.choice(A_list) * t**2
+            + random.choice(B_list) * t
+            + random.choice(C_list)
+        )
+
+    return y
+
+def randTrig(t):
+    A_list = [-3, -2, -1, 1, 2, 3]
+    trig_type = random.choice(["sin", "cos"])
+    if trig_type == "sin":
+        f = random.choice(A_list) * sin(random.choice(A_list) * t)
+    else:
+        f = random.choice(A_list) * cos(random.choice(A_list) * t)
+
+    return f
+
+
+def randExp(t):
+    A_list = [-3, -2, -1, 1, 2, 3]
+
+    return random.choice(A_list) * exp(random.choice(A_list) * t)
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)
+
+def polarVector(v):
+    return vectorInBasis(v, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}")

@@ -1,6 +1,4 @@
 import random
-
-from pl_random import *
 from sympy import *
 
 
@@ -39,3 +37,25 @@ def generate(data):
     data["correct_answers"]["Cy"] = float(C[1])
 
     return data
+
+def randPoly(t, n):
+
+    """t: independent variable
+        n: degree of polynomial
+    returns a polynomial of degree n
+    """
+
+    A_list = [-3, -2, -1, 1, 2, 3]
+    B_list = [-3, -2, -1, 0, 1, 2, 3]
+    C_list = B_list
+
+    if n == 1:
+        y = random.choice(A_list) * t + random.choice(B_list)
+    elif n == 2:
+        y = (
+            random.choice(A_list) * t**2
+            + random.choice(B_list) * t
+            + random.choice(C_list)
+        )
+
+    return y
