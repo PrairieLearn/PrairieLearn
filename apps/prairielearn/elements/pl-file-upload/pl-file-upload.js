@@ -30,6 +30,8 @@
         });
       }
 
+      this.checkIconColor = options.checkIconColor;
+
       // We need to render after we start loading the existing files so that we
       // can pick up the right values from `pendingFileDownloads`.
       this.initializeTemplate();
@@ -231,7 +233,7 @@
           );
         } else if (fileData) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fa fa-check-circle text-success" aria-hidden="true"></i>'
+            `<i class="file-status-icon fa fa-check-circle" style="color: ${this.checkIconColor}" aria-hidden="true"></i>`
           );
         } else {
           $fileStatusContainerLeft.append(
