@@ -1,11 +1,7 @@
 import random
-
 import numpy as np
 import prairielearn as pl
-from pl_draw import *
-from pl_geom import *
-from pl_random import *
-from pl_template import *
+from sympy import *
 
 
 def generate(data):
@@ -370,3 +366,135 @@ def generate(data):
     data["params"]["ansCode"] = ansCode
     data["params"]["givenString"] = givenString
     return data
+
+def perp(v):
+    """v: numpy array of size (n,)
+       n: size of the array
+    returns the counterclockwise orthogonal vector to v
+    """
+    return np.array([-v[1], v[0], 0])
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)
+
+
+def cartesianVector(v):
+    return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
+
+def randIntNonZero(a, b):
+    """a: lower bound of the range of integers
+       b: upper bound of the range of integers
+    returns a non-zero integer in the range [a,b]
+    """
+
+    x = 0
+    while x == 0:
+        x = random.randint(a, b)
+
+    return x
+
+def boundingBox2D(points):
+    xMin = points[0][0]
+    xMax = points[0][0]
+    yMin = points[0][1]
+    yMax = points[0][1]
+    for i in range(1, len(points)):
+        xMin = min(xMin, points[i][0])
+        xMax = max(xMax, points[i][0])
+        yMin = min(yMin, points[i][1])
+        yMax = max(yMax, points[i][1])
+
+    bottomLeft = np.array([xMin, yMin, 0])
+    bottomRight = np.array([xMax, yMin, 0])
+    topLeft = np.array([xMin, yMax, 0])
+    topRight = np.array([xMax, yMax, 0])
+    center = np.array([(xMin + xMax) / 2, (yMin + yMax) / 2, 0])
+    extent = np.array([xMax - xMin, yMax - yMin])
+
+    return bottomLeft, bottomRight, topLeft, topRight, center, extent
+
+def angleOf(v):
+    """v: vector of size (n,)
+    returns the true angle of the vector with respect to the x-axis, in radians
+    returns the adjusted angle for pl-drawing, in degrees"""
+    trueAngle = np.arctan2(v[1], v[0])
+    plAngle = 0
+
+    if trueAngle < 0:
+        plAngle = abs(trueAngle)
+    else:
+        plAngle = -trueAngle
+
+    return trueAngle, np.degrees(plAngle)
+
+def ground(P, en, width):
+    """
+    P: Location of the ground's center, in PL coordinates as a list or np.array
+    en: normal vector of the ground
+    width: width of the ground
+    returns the pl-drawing code to draw the ground
+    NOTE: deprecated, still used in several questions. should be replaced with groundAtAngle()
+    """
+
+    offsetx = 6
+    offsety = 6
+
+    if np.linalg.norm(en) != 0:
+        en = en / np.linalg.norm(en)
+
+    [en_angle, en_PL_angle] = angleOf(en)
+    [et_angle, et_PL_angle] = angleOf(perp(en))
+
+    linex1 = P[0] - width / 2 * np.cos(et_angle)
+    liney1 = P[1] - width / 2 * np.sin(et_angle)
+
+    linex2 = P[0] + width / 2 * np.cos(et_angle)
+    liney2 = P[1] + width / 2 * np.sin(et_angle)
+
+    rectx = P[0] - offsetx * np.sin(et_angle)
+    recty = P[1] - offsety * np.cos(et_angle)
+
+    drawGround = f'<pl-line x1={linex1} y1={liney1} x2={linex2} y2={liney2}></pl-line>\n<pl-rectangle x1={rectx} y1={recty} width={width} height="10" angle={et_PL_angle} stroke-width="0" color="#DCDCDC"></pl-rectangle>'
+
+    return drawGround
+
+def NChoice(n, l):
+    if n > len(l):
+        return l
+
+    choice = []
+
+    for i in range(n):
+        x = random.choice(l)
+        choice.append(x)
+        l.remove(x)
+    return choice
+
+
