@@ -1,12 +1,5 @@
 import random
-
 import numpy as np
-import prairielearn as pl
-from pl_draw import *
-from pl_geom import *
-from pl_random import *
-from pl_template import *
-
 
 def generate(data):
     rLen = random.randint(2, 4)
@@ -66,3 +59,26 @@ def generate(data):
     data["params"]["vWidth"] = scalar * np.linalg.norm(v)
 
     return data
+
+def polarToRect(polar_vec):
+    x = polar_vec[0] * np.cos(polar_vec[1])
+    y = polar_vec[0] * np.sin(polar_vec[1])
+
+    return np.array([x, y, 0])
+
+def randSign():
+    return random.choice([-1, 1])
+
+def angleOf(v):
+    """v: vector of size (n,)
+    returns the true angle of the vector with respect to the x-axis, in radians
+    returns the adjusted angle for pl-drawing, in degrees"""
+    trueAngle = np.arctan2(v[1], v[0])
+    plAngle = 0
+
+    if trueAngle < 0:
+        plAngle = abs(trueAngle)
+    else:
+        plAngle = -trueAngle
+
+    return trueAngle, np.degrees(plAngle)

@@ -155,7 +155,6 @@
         "questions": [
             {"id": "slopeFrictionMaxAngle",  "points": 1, "maxPoints": 5},
             {"id": "twoBarPotEnergy",        "points": 1, "maxPoints": 5},
-            {"id": "diskSlopeEnergy2",       "points": 2, "maxPoints": 10},
             {"id": "pointMassWork",          "points": 2, "maxPoints": 10}
         ]
     }
