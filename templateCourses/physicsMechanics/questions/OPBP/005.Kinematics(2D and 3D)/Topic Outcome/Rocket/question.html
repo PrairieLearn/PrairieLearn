@@ -1,0 +1,89 @@
+<pl-question-panel>
+<markdown>
+A rocket has a velocity (pointing away from the launch pad) given by $v(t)$={{ params.v_1 }}$t$-$t^2$
+where $x$ is in meters, and $t$ is in seconds.
+
+Please enter in fractions rather than decimals when applicable (e.g. use 1/2 rather than 0.5)
+
+</markdown>
+</pl-question-panel>
+
+
+<!-- ######## Start of Part 1 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(a) If the rocket started at height $x(0)$ = 0, What is the height as a function of time in $m$?
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part1_ans" variables = "t" weight = "1" allow-blank = "True" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 1 ######## -->
+
+<!-- ######## Start of Part 2 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(b) What is the acceleration as a function of time in $m/s^2$?
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part2_ans" variables = "t" weight = "1" allow-blank = "True" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 2 ######## -->
+
+<!-- ######## Start of Part 3 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(c) What is the average acceleration between $t =$ {{ params.t_1 }}$s$ and $t =$ {{ params.t_2 }}$s$?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part3_ans" rtol = "0.05" weight = "1" allow-blank = "True" label = "$a= $" suffix = "$m/s^2$" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 3 ######## -->
+
+<!-- ######## Start of Part 4 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 4</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(d) At what time does the rocket stop rising upwards and begin falling down?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part4_ans" rtol = "0.05" weight = "1" allow-blank = "True" label = "$t= $" suffix = "$s$" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 4 ######## -->
+
+<pl-question-panel>
+<markdown>
+---
+Problem is licensed under the [CC-BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).<br> ![The Creative Commons 4.0 license requiring attribution-BY, non-commercial-NC, and share-alike-SA license.](https://raw.githubusercontent.com/firasm/bits/master/by-nc-sa.png)
+</markdown>
+</pl-question-panel>

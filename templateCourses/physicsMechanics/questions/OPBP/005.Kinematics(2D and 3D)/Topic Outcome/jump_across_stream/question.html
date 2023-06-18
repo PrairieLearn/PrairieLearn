@@ -1,0 +1,219 @@
+<pl-question-panel>
+<markdown>
+A very bored {{params.m}} $kg$ bear decided to jump across a stream.
+The stream is {{params.w_s}} $m$ wide and the east bank of the stream is {{params.h_s}} $\rm{m}$ higher than the west bank (where the bear starts).
+The bear can jump with an initial velocity $\overrightarrow{V_i} = $ {{params.v_i}}$\rm{m\over s}\hat{\imath}+$ {{params.v_j}} $\rm{m\over s}\hat{\jmath}$, and decides to start from {{params.h_b}} $\rm{m}$ in the air, halfway up a sturdy tree.
+
+</markdown>
+</pl-question-panel>
+
+
+<!-- ######## Start of Part 1 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>If the origin is at the bear's foot (up in the tree), write an equation describing the $x$ coordinate of the bear while it is in the air.
+
+Use the following table as a reference. Note that it may not be necessary to use every variable.
+
+| For  | Use   |
+|----------|-------|
+| $\Delta t$  | t  |
+| $g$ | g |
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part1_ans" label = "$x = $" variables = "t, g" weight = "1" allow-blank = "False" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 1 ######## -->
+
+<!-- ######## Start of Part 2 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>If the origin is at the bear's foot (up in the tree), write an equation describing the $y$ coordinate of the bear while it is in the air.
+
+Use the following table as a reference. Note that it may not be necessary to use every variable.
+
+| For  | Use   |
+|----------|-------|
+| $\Delta t$  | t  |
+| $g$ | g |
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part2_ans" label = "$y = $" variables = "t, g" weight = "1" allow-blank = "False" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 2 ######## -->
+
+<!-- ######## Start of Part 3 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>If the origin is at the bear's foot (up in the tree), write an equation describing the $V_x$ component of the velocity of the bear while it is in the air.
+
+Use the following table as a reference. Note that it may not be necessary to use every variable.
+
+| For  | Use   |
+|----------|-------|
+| $\Delta t$  | t  |
+| $g$ | g |
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part3_ans" label = "$V_x = $" variables = "t, g" weight = "1" allow-blank = "False" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 3 ######## -->
+
+<!-- ######## Start of Part 4 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 4</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>If the origin is at the foot of the bear's jumping tree, write an equation describing the $V_y$ component of the velocity of the bear while it is in the air.
+
+Use the following table as a reference. Note that it may not be necessary to use every variable.
+
+| For  | Use   |
+|----------|-------|
+| $\Delta t$  | t  |
+| $g$ | g |
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part4_ans" label = "$V_y = $" variables = "t, g" weight = "1" allow-blank = "False" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 4 ######## -->
+
+<!-- ######## Start of Part 5 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 5</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<markdown>Does the bear make it to the other side of the stream?
+</markdown>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="part5_ans" weight = "1" >
+	<pl-answer correct= {{ params.part5.ans1.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part5.ans1.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part5.ans2.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part5.ans2.value }}  </pl-answer>
+</pl-multiple-choice>
+</div>
+</div>
+
+<!-- ######## End of Part 5 ######## -->
+
+<!-- ######## Start of Part 6 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 6</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>When the bear is at its highest ($y$ or vertical) position above the stream, what is the $x$-coordinate of the bear?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part6_ans" rtol = "0.05" weight = "1" allow-blank = "True" label = "$x= $" suffix = "$\rm{m}$" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 6 ######## -->
+
+<!-- ######## Start of Part 7 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 7</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>Where is the $y$-coordinate of the bear's highest position above the stream?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part7_ans" rtol = "0.05" weight = "1" allow-blank = "True" label = "$y= $" suffix = "$\rm{m}$" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 7 ######## -->
+
+<!-- ######## Start of Part 8 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 8</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>What is the bear's velocity when it reaches its maximum height?
+
+Use the following table as a reference.
+
+| For  | Use   |
+|----------|-------|
+| $\hat{\imath}$  | i_hat  |
+| $\hat{\jmath}$  | j_hat |
+	</markdown>
+</pl-question-panel>
+
+<pl-symbolic-input answers-name="part8_ans" label = "$\vec{V} = $" variables = "i_hat, j_hat" weight = "1" allow-blank = "False" ></pl-symbolic-input>
+</div>
+</div>
+
+<!-- ######## End of Part 8 ######## -->
+
+<!-- ######## Start of Part 9 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 9</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<markdown>This question is much easier to do in the frame of an observer moving with velocity $\vec{u}  = $ {{params.v_i}} $\rm{m\over s}\hat{\imath} + $ 0 $\rm{m\over s}\hat{\jmath}$. Describe why?
+</markdown>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="part9_ans" weight = "1" >
+	<pl-answer correct= {{ params.part9.ans1.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part9.ans1.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part9.ans2.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part9.ans2.value }}  </pl-answer>
+</pl-multiple-choice>
+</div>
+</div>
+
+<!-- ######## End of Part 9 ######## -->
+
+<pl-question-panel>
+<markdown>
+---
+Problem is licensed under the [CC-BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).<br> ![The Creative Commons 4.0 license requiring attribution-BY, non-commercial-NC, and share-alike-SA license.](https://raw.githubusercontent.com/firasm/bits/master/by-nc-sa.png)
+</markdown>
+</pl-question-panel>

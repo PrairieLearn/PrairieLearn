@@ -1,0 +1,74 @@
+<pl-question-panel>
+<markdown>
+{{params.vars.name}} is an astronaut, floating in space.
+Their rocket is powered by throwing rocks out of a hole in the back of the spaceship.
+The inertia of {{params.vars.name}} and their rocket together is {{ params.i }} kg.
+{{params.vars.name}} also (in addition to the rocket and the person) has two {{ params.m }} kg rocks on board.
+They are initially at rest.
+{{params.vars.name}} throws the first rock, and then they are moving with velocity {{ params.v_1 }} {{ params.vars.units1 }}.
+Then {{params.vars.name}} throws the second rock out of the back and they are moving with velocity {{ params.v_2 }} {{ params.vars.units1 }} .
+
+</markdown>
+</pl-question-panel>
+
+
+<!-- ######## Start of Part 1 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(a) What is the total momentum of the system?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans" rtol = "0.05" allow-blank = "True" label = "$P_{total}=$" suffix = "$kg m/s$" weight = "1" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 1 ######## -->
+
+<!-- ######## Start of Part 2 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(b) With what velocity is the first rock {{params.vars.name}} threw moving through space?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part2_ans" rtol = "0.05" allow-blank = "True" label = "$v_{f}=$" suffix = "$m/s$" weight = "1" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 2 ######## -->
+
+<!-- ######## Start of Part 3 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>(c) With what velocity is the second rock {{params.vars.name}} threw moving through space?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part3_ans" rtol = "0.05" allow-blank = "True" label = "$v_{rock f}=$" suffix = "$m/s$" weight = "1" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 3 ######## -->
+
+<pl-question-panel>
+<markdown>
+---
+Problem is licensed under the [CC-BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).<br> ![The Creative Commons 4.0 license requiring attribution-BY, non-commercial-NC, and share-alike-SA license.](https://raw.githubusercontent.com/firasm/bits/master/by-nc-sa.png)
+</markdown>
+</pl-question-panel>

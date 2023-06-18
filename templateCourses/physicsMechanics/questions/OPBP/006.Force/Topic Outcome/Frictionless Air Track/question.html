@@ -1,0 +1,114 @@
+<pl-question-panel>
+<markdown>
+Because of {{ params.vars.name }}'s excellent work in lab, their professor asks them to test out a new "frictionless" air track, which can be used to measure the acceleration due to gravity.
+In {{ params.vars.name }}'s setup, they place a cart with mass $m_1$ = {{ params.m1 }} $g$ on the track and suspend a second mass $m_2$ = {{ params.m2 }} $g$ over a (supposedly) massless, frictionless pulley.
+Using a photogate that reads the acceleration of the system at the pulley, {{ params.vars.name }} measures the acceleration in 10 trials as given in the table below.
+The uncertainty in each acceleration measurement is $\pm$ {{ params.d_a }} $m/s^2$; the uncertainties in $m_1$ and $m_2$ are negligible.
+The mean and standard deviation (SD) of the acceleration data are also given in the table.
+Given these data, would you conclude that the air track system is frictionless as claimed?
+Justify your answer!
+
+<img src="{{options.client_files_question_url}}/q14_2012Final.png" alt="Mass m one sits on a horizontal surface while mass m two is suspended over a pulley. The masses are connected by a string." width=300>
+
+| Trial     | Accel. ($m/s^2$) |
+| ----------- | ----------- |
+| 1     |  {{ params.a1 }}     |
+| 2   |   {{ params.a2 }}      |
+| 3     |  {{ params.a3 }}     |
+| 4   |   {{ params.a4 }}      |
+| 5     |  {{ params.a5 }}     |
+| 6   |   {{ params.a6 }}      |
+| 7     |  {{ params.a7 }}     |
+| 8   |   {{ params.a8 }}      |
+| 9     |  {{ params.a9 }}     |
+| 10   |   {{ params.a10 }}      |
+| **Mean** | {{ params.mean }}      |
+| **SD** | {{ params.sd }}      |
+
+</markdown>
+</pl-question-panel>
+
+
+<!-- ######## Start of Part 1 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>Calculate $a_{expected}$.
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans" weight = "1" allow-blank = "True" label = "$a_{expected}= $" suffix = "$m/s^2$" digits = "3" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 1 ######## -->
+
+<!-- ######## Start of Part 2 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>Calculate $a_{measured}$.
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part2_ans" weight = "1" allow-blank = "True" label = "$a_{measured}= $" suffix = "$m/s^2$" digits = "3" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 2 ######## -->
+
+<!-- ######## Start of Part 3 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>Calculate the standard error of $a_{measured}$.
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part3_ans" weight = "1" allow-blank = "True" label = "$\sigma_{\bar{x}} = $" suffix = "$m/s^2$" digits = "3" ></pl-number-input>
+</div>
+</div>
+
+<!-- ######## End of Part 3 ######## -->
+
+<!-- ######## Start of Part 4 ######## -->
+
+<div class="card my-2">
+<div class="card-header">Part 4</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<markdown>Would you conclude that the air track system is frictionless as claimed? Justify your answer!
+</markdown>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="part4_ans" weight = "1" >
+	<pl-answer correct= {{ params.part4.ans1.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part4.ans1.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part4.ans2.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part4.ans2.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part4.ans3.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part4.ans3.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part4.ans4.correct }} feedback = 'Feedback for this choice is not available yet.' > {{ params.part4.ans4.value }}  </pl-answer>
+</pl-multiple-choice>
+</div>
+</div>
+
+<!-- ######## End of Part 4 ######## -->
+
+<pl-question-panel>
+<markdown>
+---
+Problem is licensed under the [CC-BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).<br> ![The Creative Commons 4.0 license requiring attribution-BY, non-commercial-NC, and share-alike-SA license.](https://raw.githubusercontent.com/firasm/bits/master/by-nc-sa.png)
+</markdown>
+</pl-question-panel>
