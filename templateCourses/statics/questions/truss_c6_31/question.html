@@ -1,0 +1,38 @@
+<pl-question-panel>
+<p>
+Determine  the force ${{params.name}}$ and $F_{DJ}$
+in lb  in member {{params.member}} and DJ (use the sign convention of 
+positive for member in tension and negative for member in compression):
+</p>
+<br/>
+<p>Knowing:      
+
+
+</p><p> $F_1= {{params.F1}}$ lb </p>
+<p> $F_2= {{params.F2}}$ lb </p>
+<p> $F_3= {{params.F3}}$ lb </p>
+<p> $a = {{params.a}}$ ft </p>
+<p> $b = {{params.b}}$ ft </p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="pic1.png" width="600px"></pl-figure>
+<br/>
+<pre>
+Matlab input:
+F1= {{params.F1}};
+F2= {{params.F2}};
+F3= {{params.F3}};
+a = {{params.a}};
+b = {{params.b}};
+</pre>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="ans" atol="1e-5" comparison="relabs" display="block" label="${{params.name}} = $" rtol="1e-2" suffix="lb"></pl-number-input>
+</p>
+<p>
+<pl-number-input answers-name="fdj" atol="1e-5" comparison="relabs" display="block" label="$F_{DJ} = $" rtol="1e-2" suffix="lb"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

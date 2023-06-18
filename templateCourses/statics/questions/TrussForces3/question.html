@@ -1,0 +1,27 @@
+
+<pl-question-panel>
+<p>
+	Determine the force in the listed members of the truss below and state if the members are in tension or compression by including the right sign of the force. Adapt to the sign convension where tensile force is positive, and compressive force is negative.
+
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="tr1.png" width="500px"></pl-figure>
+<p> Given  $a = {{params.a}} \ \rm\ m$,  $b= {{params.b}} \ \rm\ m$,
+	$c= {{params.c}} \ \rm\ m$,  $P_{1} = {{params.P_D}} \ \rm\ N$ and $P_{2} = {{params.P_B}} \ \rm\ N$. </p>
+</pl-question-panel>
+<p>
+$F_{ {{params.ans1}} } = $
+    <pl-number-input answers-name="ansT1" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+
+</p>
+<p>
+$F_{ {{params.ans2}} } = $
+    <pl-number-input answers-name="ansT2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

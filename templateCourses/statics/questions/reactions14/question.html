@@ -1,0 +1,24 @@
+<pl-question-panel>
+<p>
+The rope around pulley $A$ is supporting, $F = {{params.m}} $lb of force at one end, and is attached to a fixed support at $C$. What is the reaction support force vector acting on the pulley by the smooth pin at $A$? Where $r = {{params.r}},$ $\alpha = {{params.alpha}}$
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="Presentation1.PNG" width="650px"></pl-figure>
+<pre>
+Matlab Input
+r = {{params.r}};
+alpha = {{params.alpha}};
+f = {{params.m}};
+
+</pre></pl-question-panel>
+<p>
+ ${\vec{R}} =$
+   <pl-number-input answers-name="rx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\imath$
+   $+$ <pl-number-input answers-name="ry" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\jmath$ $lb$
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

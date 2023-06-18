@@ -1,0 +1,30 @@
+
+<pl-question-panel>
+<p>
+  Consider the truss and loading shown.
+</p>
+
+Given the following:<br/>
+<br/>
+<p></p>
+<p>$p$ = {{params.p}} kN </p>
+<p>$a = {{params.a}}$ m </p>
+<p>$b = {{params.b}}$ m</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="Truss.png" width="400px"></pl-figure>
+<p>
+  Determine the force in member ${{params.name}}$.  Make sure to use the appropriate sign convention.
+</p>
+<pre>
+Matlab input:
+p = {{params.p}}; 
+a = {{params.a}};  
+b = {{params.b}}; 
+</pre>
+<pl-number-input answers-name="ans" atol="1e-5" comparison="relabs" display="block" label="${{params.name}} = $" rtol="1e-2" suffix="${\rm\ kN}$"></pl-number-input>
+</pl-question-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

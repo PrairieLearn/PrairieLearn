@@ -1,0 +1,19 @@
+<pl-question-panel>
+<p> Given that the coordinates of ${A} = ({{params.ax}} , {{params.ay}}, {{params.az}})$, ${B} = ({{params.bx}} , {{params.by}}, {{params.bz}})$ and magnitude of the force in pole ${{params.label}}$ is ${{params.mag}}$ N. Compute the force vector ${\bf {{params.label}}}$.
+</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="{{params.fig}}"></pl-figure></p>
+</pl-question-panel>
+<!-- <pl-matrix-component-input answers-name="vec_AB" label="${\bf {{params.label}}}=$"></pl-matrix-component-input> -->
+<p>
+${\bf {{params.label}}}= $
+    <pl-number-input answers-name="vec_AB_ix" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="vec_AB_iy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="vec_AB_iz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N
+
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

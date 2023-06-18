@@ -1,0 +1,28 @@
+<pl-question-panel>
+<p>
+The hydraulic crane is used to lift a crate that weighs $W = {{params.W}}$ lb.
+</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="figure.png" width="600px"></pl-figure>
+<br/>
+<p>Given that length AB = AC = BC and:<br/>
+$a = {{params.a}}$ ft <br/>
+$b = {{params.b}}$ ft <br/>
+$c = {{params.c}}$ ft <br/>
+$\alpha = {{params.alpha}}^\circ$ <br/>
+$\beta = {{params.beta}}^\circ$ <br/>
+</p>
+<p>
+Determine the magnitude of the force in member {{params.member}}, ${{params.name}}$
+when the load $W$ is held in the position shown. Assume all members have negligible mass.
+</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="ans" atol="1e-5" comparison="relabs" display="block" label="${{params.name}} = $" rtol="1e-2" suffix="lb"></pl-number-input>
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,0 +1,38 @@
+<pl-question-panel>
+<p>Consider the window crank below - note that it's components are not necessarily orthogonal.</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="doorOpener.png" width="500px"></pl-figure></p>
+<p>Given the following:<br/>
+</p><p>          $\vec{AB}$ lies in the yz-plane</p>
+<p>          $\vec{BC}$ lies in the xy-plane</p>
+<p>          The angle between $\vec{AB}$ and the z-axis measuremed below the z-axis is $\alpha$ = {{params.a}}$^{\circ}$</p>
+<p>          The angle between $\vec{BC}$ and the x-axis measured below the x-axis is $\theta$ = {{params.t}}$^{\circ}$</p>
+<p>          $\vec{CD}$ is parallel to the z-axis</p>
+<p>          Length of $\vec{AB}$ = {{params.ab}} cm</p>
+<p>          Length of $\vec{BC}$ = {{params.bc}} cm</p>
+<p>          Length of $\vec{CD}$ = {{params.cd}} cm</p>
+<p>          Force applied at of $D$ in the positive x-direction = {{params.F}} N</p>
+<p></p>
+<pre>
+Matlab input:
+alpha = {{params.a}};
+theta = {{params.t}};
+ab = {{params.ab}};
+bc = {{params.bc}};
+cd = {{params.cd}};
+F = {{params.F}};
+</pre>
+Determine the moment from the force $F$ that turns the crank about the axis along the vector $\vec{r}_{AB}$:
+</pl-question-panel>
+<!-- This adds comment in the html -->
+<p>
+${\bf M_{AB}}= $
+    <pl-number-input answers-name="Mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath}$<br/>
+    + <pl-number-input answers-name="My" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath}$<br/>
+    + <pl-number-input answers-name="Mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k}$ N$\cdot$cm
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

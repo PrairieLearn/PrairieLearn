@@ -1,0 +1,59 @@
+
+<pl-question-panel>
+<p>
+  A camera tripod is set up as shown below.  The tripod is pretty fancy and has self-balancing legs.  The camera weighs {{params.w}} N.
+</p>
+<p>
+Felicia Filmmaker has positioned the tripod as follows:
+</p>
+<p>
+    $x_A$ = {{params.Ax}} m 
+    $y_A$ = {{params.Ay}} m 
+    $z_A$ = {{params.Az}} m
+</p>
+<p>
+    $x_B$ = {{params.Bx}} m
+    $y_B$ = {{params.By}} m
+    $z_B$ = {{params.Bz}} m
+</p>
+<p>
+    $x_C$ = {{params.Cx}} m 
+    $y_C$ = {{params.Cy}} m 
+    $z_C$ = {{params.Cz}} m
+</p>
+<p>
+    $x_D$ = {{params.Dx}} m 
+    $y_D$ = {{params.Dy}} m 
+    $z_D$ = {{params.Dz}} m
+</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="equil3D.png" width="400px"></pl-figure>
+<pre>
+Matlab input:
+x_A = {{params.Ax}}  
+y_A = {{params.Ay}} 
+z_A = {{params.Az}} 
+x_B = {{params.Bx}} 
+y_B = {{params.By}} 
+z_B = {{params.Bz}} 
+x_C = {{params.Cx}} 
+y_C = {{params.Cy}}
+z_C = {{params.Cz}} 
+x_D = {{params.Dx}} 
+y_D = {{params.Dy}} 
+z_D = {{params.Dz}}
+</pre>
+<p>
+   Determine the magnitude of the force in each leg of the tripod to keep it in equilibrium:
+</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="Fad" atol="1e-5" comparison="relabs" display="block" label="${F}_{AD} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="Fbd" atol="1e-5" comparison="relabs" display="block" label="${F}_{BD} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="Fcd" atol="1e-5" comparison="relabs" display="block" label="${F}_{CD} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

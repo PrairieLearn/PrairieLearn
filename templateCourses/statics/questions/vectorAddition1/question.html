@@ -1,0 +1,30 @@
+<pl-question-panel>
+<p>
+Two forces, $\vec{F_1}$ and $\vec{F_2}$ are applied to point A and are oriented as shown below. Given $|\vec{F_1}| = {{params.f1}}$ N, $|\vec{F_2}| = {{params.f2}}$ N, $\alpha = ${{params.alpha}}$^{\circ}$, $\beta = ${{params.beta}}$^{\circ}$
+</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="forceVectPointRight.png" width="200px"></pl-figure></p>
+<pre>
+Matlab input:
+f1 = {{params.f1}}; 
+f2 = {{params.f2}};  
+a = {{params.alpha}}; 
+b = {{params.beta}}; 
+</pre>
+</pl-question-panel>
+<!-- <pl-matrix-component-input answers-name="vec_AB" label="${\bf {{params.label}}}=$"></pl-matrix-component-input> -->
+<p>
+Determine the x-component of the resultant force vector $\vec{F}$: <br/>
+$F_x = $ <pl-number-input answers-name="fx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+<br/><br/>
+Determine the y-component of the resultant force vector $\vec{F}$: <br/>
+$F_y = $ <pl-number-input answers-name="fy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+<br/><br/>
+Determine the magnitude of the resultant force vector $\vec{F}$: <br/>
+$|\vec{F}| = $ <pl-number-input answers-name="fmag" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

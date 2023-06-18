@@ -1,0 +1,38 @@
+<pl-question-panel>
+<p>
+A force $\vec{F} = {{params.f}} \ \rm\ N$ acts along line $AB$. The coordinates of points $A$ and $B$ can be obtained using the dimensions $a_{1} = {{params.a1}} \rm\ m$, $a_{2} = {{params.a2}} \rm\ m$, $a_{3} = {{params.a3}} \rm\ m$ and $b_{1} = {{params.b1}} \rm\ m$, $b_{2} = {{params.b2}} \rm\ m$ and $b_{3} = {{params.b3}} \rm\ m$.
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="v2.png" width="500px"></pl-figure>
+<p>Determine the moment of the force $\vec{F}$ about the axis passing though O with unit vector:</p>
+<p>
+$\hat{u}$ = ({{params.uvx}}, {{params.uvy}}, {{params.uvz}})
+</p>
+<pre>
+Matlab input:
+F =  {{params.f}};
+a1 = {{params.a1}};
+a2 = {{params.a2}};
+a3 = {{params.a3}}; 
+b1 = {{params.b1}};
+b2 = {{params.b2}};
+b3 = {{params.b3}};
+ux = {{params.uvx}}; 
+uy = {{params.uvy}};
+uz = {{params.uvz}};
+</pre>
+<p></p>
+</pl-question-panel>
+<p>
+$\vec{M} = $
+    <pl-number-input answers-name="Mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="My" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="Mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N-m
+
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

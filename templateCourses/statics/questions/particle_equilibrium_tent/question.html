@@ -1,0 +1,17 @@
+<pl-question-panel>
+<p>A lamp of weight ${\bf {{params.weight}}} N$ is connected and is supported by the three poles.</p>
+<p> Knowing that  ${\bf {{params.point1}}} = [{{params.point1x}} , {{params.point1y}}, {{params.point1z}}]$, ${\bf {{params.point2}}} = [{{params.point2x}} , {{params.point2y}}, {{params.point2z}}]$ , ${\bf {{params.point3}}} = [{{params.point3x}} , {{params.point3y}}, {{params.point3z}}]$ and ${\bf {{params.point4}}} = [{{params.point4x}} , {{params.point4y}}, {{params.point4z}}]$. Poles are ${{params.vec1}}$, ${{params.vec2}}$ and${{params.vec3}}$. Calculate magnitude of the force in each pole .</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="Variant1.png"></pl-figure></p>
+</pl-question-panel>
+<!-- This adds comment in the html -->
+<p>
+<pl-number-input answers-name="vec1_mag" atol="1e-5" comparison="relabs" display="block" label="${{params.vec1}} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="vec2_mag" atol="1e-5" comparison="relabs" display="block" label="${{params.vec2}} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="vec3_mag" atol="1e-5" comparison="relabs" display="block" label="${{params.vec3}} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

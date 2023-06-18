@@ -1,0 +1,28 @@
+<pl-question-panel>
+<p>
+For the box shown below weighs $W = {{params.W}} \rm\ kN$ and it's dimensions are given by 
+$L = {{params.L}} \rm\ m$, $h = {{params.h}} \rm\ m$ and $d = {{params.d}} \rm\ m$. 
+The coefficient of static friction between the box and the ground, $\mu_s = {{params.mu}}$.
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="figure.png" width="400px"></pl-figure>
+<pre>
+Matlab input:
+W = {{params.W}}; 
+L = {{params.L}};
+h = {{params.h}};
+d = {{params.d}};
+mu = {{params.mu}};
+</pre>
+<p>
+Determine the minimum force $P$ required to move the box (tip or slide).
+</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="Pmin" atol="1e-5" comparison="relabs" display="block" label="$P_{min}=$" rtol="1e-2" suffix="kN"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

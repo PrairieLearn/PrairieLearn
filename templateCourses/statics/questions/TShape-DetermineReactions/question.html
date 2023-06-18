@@ -1,0 +1,28 @@
+<pl-question-panel>
+<p>
+The lifting mechanism below is driven by a chain connected at $A$ that exerts a force $P = {{params.P}} \rm\ lb$ at the equilibrium configuration shown below. The rollers at $A$ and $B$ have frictionless bearings and ride freely along the inclined track. 
+</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="Figure1.png"></pl-figure></p>
+<p> The dimensions in the figure are $a = {{params.a}} \rm\ in$, $b = {{params.b}} \rm\ in$ and $d = {{params.d}} \rm\ in$.
+
+<pre>
+Matlab/Mathematica input:
+a = {{params.a}};
+b = {{params.b}};
+d = {{params.d}};
+P = {{params.P}};
+</pre>
+</p><p>Determine the weight $W$ placed at position $d$ and the magnitudes of the reaction forces at the supports $A$ and $B$.</p>
+</pl-question-panel>
+<!-- This adds comment in the html -->
+<p>
+<pl-number-input answers-name="W" atol="1e-5" comparison="relabs" display="block" label="$W = $" rtol="1e-2" suffix="${\rm\ lb}$"></pl-number-input>
+<pl-number-input answers-name="Ra" atol="1e-5" comparison="relabs" display="block" label="$R_A = $" rtol="1e-2" suffix="${\rm\ lb}$"></pl-number-input>
+<pl-number-input answers-name="Rb" atol="1e-5" comparison="relabs" display="block" label="$R_B = $" rtol="1e-2" suffix="${\rm\ lb}$"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

@@ -1,0 +1,31 @@
+<pl-question-panel>
+<p>
+
+Three rods support a vertical weight $\vec{W} = -{{params.W}} \,\textrm{N} \,\hat k$ at $B$. The rods are fixed at $A$, $C$ and $D$. The coordinates of points $A$, $B$, $C$ and $D$ can be obtained using the dimensions $a = {{params.a1}} \rm\ m$, $b = {{params.a2}} \rm\ m$, $c = {{params.b1}} \rm\ m$,  $d = {{params.b2}} \rm\ m$, $e = {{params.c1}} \rm\ m$ and $f = {{params.c2}} \rm\ m$.
+</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="FBD.png" width="450px"></pl-figure></p>
+<pre>
+Matlab input:
+a = {{params.a1}};
+b = {{params.a2}};
+c = {{params.b1}};
+d = {{params.b2}};
+e = {{params.c1}};
+f = {{params.c2}};
+W = {{params.W}};
+</pre>
+<p>Determine the force $\vec{F}$ that rod ${{params.optionLine}}$ acts on point $B$, represented as a cartesian vector.</p>
+<p>
+${\bf F}_R = $ 
+    <pl-number-input answers-name="Tvec_x" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath}$ 
+	<br/>$+$
+    <pl-number-input answers-name="Tvec_y" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath}$
+	<br/>$+$
+    <pl-number-input answers-name="Tvec_z" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} \quad [\mathrm{N}]$ 
+</p></pl-question-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

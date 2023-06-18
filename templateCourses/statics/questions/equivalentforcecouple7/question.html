@@ -1,0 +1,57 @@
+<pl-question-panel>
+<p>
+In biomechanics models, muscle forces are often reduced to single line of action forces with origins at their attachment points on bone. 
+More than 20 muscles span the femur (your thigh bone).  Three of them are shown below: the quadriceps, iliopsoas, and the gluteus medius.  <br/>
+</p>
+<p>
+Given the following:<br/>
+          $|\vec{F_G}| =   {{params.Fg}}$ N
+          $|\vec{F_I}| =   {{params.Fi}}$ N
+          $|\vec{F_Q}| =   {{params.Fq}}$ N</p>
+<p>
+          $\alpha =   {{params.alpha}}^o$
+          $\beta =   {{params.beta}}^o$ </p>
+<p>
+          $a =   {{params.a}}$ cm
+          $b =   {{params.b}}$ cm
+          $c =   {{params.c}}$ cm
+          $d =   {{params.d}}$ cm</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="forcesBone.png" width="300px"></pl-figure>
+<p>
+Replace the force system acting on the bone below by a resultant force and couple moment acting at O (the insertion of the quad force, FQ)
+</p>
+<br/>
+<pre>
+Matlab input: 
+Fg = {{params.Fg}};
+Fi = {{params.Fi}};
+Fq = {{params.Fq}};
+a = {{params.a}};
+b = {{params.b}};
+c = {{params.c}};
+d = {{params.d}};
+alpha = {{params.alpha}};
+beta = {{params.beta}};
+</pre>
+<br/>
+</pl-question-panel>
+<p>
+</p><p>
+${\bf F}_O = $
+    <pl-number-input answers-name="Fx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="Fy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="Fz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N
+</p>
+<p>
+${\bf M}_O = $
+    <pl-number-input answers-name="mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="my" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N-m
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

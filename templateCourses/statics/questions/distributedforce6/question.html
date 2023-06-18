@@ -1,0 +1,31 @@
+<pl-question-panel>
+<p>Consider a beam with distributed loads.  Given the following:</p>
+<p>          $L={{params.L}} $ m </p>
+<p>          $W_0={{params.W0}} $ N/m </p>
+<p>          $W_1={{params.W1}} $ N/m </p>
+<p><pl-figure "="" file-name="DistributedLoadonBeam.png" width="500px"></pl-figure></p>
+<pre>
+Matlab input:
+L={{params.L}};
+W_0={{params.W0}}; 
+W_1={{params.W1}};
+</pre>
+<p>Determine the required reaction force ${\bf R}_A$ in N and moment ${\bf M}_A$ in N$\cdot$m at fixed support A
+to achieve equilibrium.</p>
+</pl-question-panel>
+<!-- This adds comment in the html -->
+<p>
+${\bf R}_A = $
+    <pl-number-input answers-name="fx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath}$<br/>
+    + <pl-number-input answers-name="fy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath}$ N
+</p>
+<p>
+${\bf M}_A = $
+    <pl-number-input answers-name="mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k}$ N$\cdot$m
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

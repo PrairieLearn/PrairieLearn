@@ -1,0 +1,54 @@
+<pl-question-panel>
+<p>
+Amy was doing her morning work-out using a tension cable with force $F_T$, when a gust of wind $F_W$ hit the rigid bar at B.  <br/>
+<br/> 
+          $a =   {{params.a}}$ m
+          $b =   {{params.b}}$ m
+          $c =   {{params.c}}$ m</p>
+<p>
+          $d =   {{params.d}}$ m
+          $e =   {{params.e}}$ m 
+          $\alpha =   {{params.alpha}}^o$ </p>
+<p>
+          $F_W =   {{params.f1}}$ N
+          $F_T =   {{params.f2}}$ N 
+</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="equivalentforcecouple6.png" width="400px"></pl-figure>
+<p>
+Replace the force system by an equivalent resultant force and couple moment at 0.
+</p>
+<pre>
+Matlab input: 
+a = {{params.a}};
+b = {{params.b}};
+c = {{params.c}};
+d = {{params.d}};
+e = {{params.e}};
+alpha = {{params.alpha}};
+F_W = {{params.f1}};
+F_T = {{params.f2}};
+
+
+
+
+</pre></pl-question-panel>
+<p>
+</p><p>
+${\bf F}_O = $
+    <pl-number-input answers-name="Fx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="Fy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="Fz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N
+</p>
+<p>
+${\bf M}_O = $
+    <pl-number-input answers-name="mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="my" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N-m
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

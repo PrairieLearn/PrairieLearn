@@ -1,0 +1,48 @@
+<pl-question-panel>
+<p>
+Consider the basketball pole and hoop modeled in two dimensions below.  The base of the pole is cemented to the ground.
+Prof. Juarez and Prof. Kersh come to the net to block a shot and land on the hoop with forces $\vec{F_J}$ and 
+$\vec{F_K}$ at point $A$.
+</p>
+<p>
+Given the following:<br/>
+          $|\vec{F_J}| =   {{params.Fj}}$ N
+          $|\vec{F_K}| =   {{params.Fk}}$ N</p>
+<p>
+          $alpha =   {{params.alpha}}^o$</p>
+<p>
+          $a =   {{params.a}}$ m
+          $b =   {{params.b}}$ m</p>
+<br/>
+<pl-figure directory="clientFilesQuestion" file-name="Presentation1.PNG" width="650px"></pl-figure>
+<br/>
+<p>
+Determine the reactions acting at the base O.
+</p>
+<br/>
+<pre>
+Matlab input: 
+Fj = {{params.Fj}};
+Fk = {{params.Fk}};
+a = {{params.a}};
+b = {{params.b}};
+alpha = {{params.alpha}};
+</pre>
+<br/>
+</pl-question-panel>
+<p>
+  $F_{o} =$
+   <pl-number-input answers-name="fx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\imath$
+   $+$ <pl-number-input answers-name="fy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\jmath$ $+$ <pl-number-input answers-name="fz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k}$	<br/>
+<br/>
+ $M_{o} =$
+   <pl-number-input answers-name="m1" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\imath$
+   $+$ <pl-number-input answers-name="m2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\jmath$ $+$ <pl-number-input answers-name="m3" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k}$        
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

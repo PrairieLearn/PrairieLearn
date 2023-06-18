@@ -1,0 +1,32 @@
+<pl-question-panel>
+<p>
+When improperly designed, a concrete dam idealized as a concrete block on top 
+of a flat surface may overturn from the inner water pressure built up. Hence, a safy factor (SF), 
+the stabilizing moment due to the weight of the dam divided 
+by the overturning moment by the water pressure force about the tipping point of the dam, $A$,
+is used when designing the dam to prevent such event from happening.
+</p>
+<br/>
+<table>
+<tr>
+<td><pl-figure "="" directory="clientFilesQuestion" file-name="Picture1.png" width="300px"></pl-figure></td>
+<td><pl-figure "="" directory="clientFilesQuestion" file-name="dam.jpg" width="300px"></pl-figure></td>
+</tr>
+</table>
+<br/>
+<p>
+If the dam has a cross-section that has the shape of a quarter circle with radius 
+$r$ = {{params.r}} m, density $\rho_{concrete}=$ 2.5 Mg/m$^3$, and {{params.given}}, find {{params.question}}.
+Use $\rho_{water}=$ 1 Mg/m$^3$ for the density of water, and assume the width of the dam is the same as the 
+width of the water reservoir.
+</p>
+<br/>
+</pl-question-panel>
+<pl-number-input answers-name="unknown" atol="1e-5" comparison="relabs" display="block" label="{{params.answer}}" rtol="1e-2" suffix="{{params.unit}}">
+</pl-number-input>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

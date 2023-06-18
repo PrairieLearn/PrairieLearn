@@ -1,0 +1,55 @@
+<pl-question-panel>
+<p>
+Body builder Betty is working out using hand weights.   
+The position of her shoulder (S), elbow (E), and wrist (W) is shown below. 
+</p>
+<p>
+         
+  	$x_S$ = {{params.Sx}} cm    
+  	$y_S$ = {{params.Sy}} cm    
+</p>
+<p>
+         
+  	$x_E$ = {{params.Ex}} cm    
+  	$y_E$ = {{params.Ey}} cm    
+</p>
+<p>
+         
+  	$x_W$ = {{params.Wx}} cm    
+  	$y_W$ = {{params.Wy}} cm    
+</p>
+<p>
+The mass of the weight is {{params.m}} kg.
+</p>
+<p>
+Assume the weight is applied at the wrist. Neglect the mass of her arm.
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="handWeightMoment.png" width="300px"></pl-figure>
+<br/>
+<pre>
+Matlab input:
+x_S = {{params.Sx}}  
+y_S = {{params.Sy}}  
+x_E = {{params.Ex}} 
+y_E = {{params.Ey}} 
+x_W = {{params.Wx}} 
+y_W = {{params.Wy}}
+m = {{params.m}} 
+</pre>
+What is the moment vector, in N-cm,  at her shoulder (S) due to the weight when her body is rigidly holding the weight as shown? 
+<br/>
+</pl-question-panel>
+<p>
+$\vec{M} = $
+    <pl-number-input answers-name="Mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="My" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="Mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N-cm
+
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

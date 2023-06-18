@@ -1,0 +1,25 @@
+<pl-question-panel>
+<p>Two force vectors are applied to a particle as shown below. Force $\vec{F_1}$ comes from a spring with stiffness {{params.k}} N/mm.  In the deformed configuration shown, the spring has been stretched {{params.d}} mm.</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="vectorAddition03.png" width="300px"></pl-figure></p>
+<p>Determine the magnitude of $\vec{F_2}$ and it's orientation,$\alpha$, if the resultant force, $\vec{F_R}$, is {{params.F_R}} N in the direction of the unit vector,
+<br/>
+$\mathbf{u}$ = 3/5$\hat{\imath}$ + 4/5$\hat{\jmath}$.</p>
+<!-- <pl-matrix-component-input answers-name="vec_AB" label="${\bf {{params.label}}}=$"></pl-matrix-component-input> -->
+<pre>
+Matlab input:
+k = {{params.k}};
+d = {{params.d}};
+F_R = {{params.F_R}};
+</pre>
+</pl-question-panel>
+<p>
+$F_2$ = <pl-number-input answers-name="F_2" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N
+<br/><br/>
+$\alpha$ = <pl-number-input answers-name="alpha_deg" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input>$^{\circ}$ 
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

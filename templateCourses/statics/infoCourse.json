@@ -1,0 +1,16 @@
+{
+    "uuid": "fe472cd2-4759-4c0d-9b19-7383ca9b2817",
+    "name": "OER 103",
+    "title": "Statics",
+    "assessmentSets": [],
+    "topics": [
+  
+    ],
+    "tags": [
+        {"name": "author:prairielearn.com", "color": "blue3", "description": "questions created by prairielearn team"},
+        {"name": "license:CC-BY-NC", "color": "yellow3", "description": "license for all prairielearn.com questions"}  
+    ],
+    "options": {
+        "useNewQuestionRenderer": true
+    }
+}

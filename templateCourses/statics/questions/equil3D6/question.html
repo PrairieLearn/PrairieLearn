@@ -1,0 +1,82 @@
+
+<pl-question-panel>
+<p>
+You are walking down the street in your hometown of DefinitelyARealPlace, USA when you come across your good friend officer Stickman. Officer Stickman remembers that your are a bright TAM 210/211 student, and decides to ask you what the reaction forces are at point a of the traffic light shown. The officer tells you that you may neglect the weight of the poles, all weights act in the negative y-direction, and that you are only looking for the reactions caused by the light fixtures. Ever the prepared student, you spring into action and calculate the reactions.
+</p>
+<p>
+Given the mass and coordinates for a, b, c, d, and e.
+</p>
+<p>
+         
+  	$x_a = {{params.Ax}} $ m    
+  	$y_a = {{params.Ay}} $ m    
+  	$z_a = {{params.Az}} $ m
+</p>
+<p>
+         
+  	$x_b = {{params.Bx}} $ m    
+  	$y_b = {{params.By}} $ m    
+  	$z_b = {{params.Bz}} $ m
+</p>
+<p>
+         
+  	$x_c = {{params.Cx}} $ m    
+  	$y_c = {{params.Cy}} $ m    
+  	$z_c = {{params.Cz}} $ m
+</p>
+<p>
+         
+  	$x_d = {{params.Dx}} $ m    
+  	$y_d = {{params.Dy}} $ m    
+  	$z_d = {{params.Dz}} $ m
+</p>
+<p>
+         
+    $x_e = {{params.Ex}} $ m    
+    $y_e = {{params.Ey}} $ m    
+    $z_e = {{params.Ez}} $ m
+</p>
+<p>
+         
+    $m_1 = {{params.w1}} $ kg    
+    $m_2 = {{params.w2}} $ kg    
+    $m_3 = {{params.w3}} $ kg
+</p>
+<pl-figure "="" directory="clientFilesQuestion" file-name="Trafficlights_3DEquil6.png" width="480px"></pl-figure>
+<pre>
+Matlab input:
+x_a = {{params.Ax}};  
+y_a = {{params.Ay}};
+z_a = {{params.Az}};
+x_b = {{params.Bx}};
+y_b = {{params.By}}; 
+z_b = {{params.Bz}}; 
+x_c = {{params.Cx}}; 
+y_c = {{params.Cy}};
+z_c = {{params.Cz}};
+x_d = {{params.Dx}}; 
+y_d = {{params.Dy}};
+z_d = {{params.Dz}};
+x_e = {{params.Ex}}; 
+y_e = {{params.Ey}}; 
+z_e = {{params.Ez}};
+m1={{params.w1}};
+m2={{params.w2}};
+m3={{params.w3}};
+
+</pre>
+<p></p>
+</pl-question-panel>
+<pl-number-input answers-name="Rx" atol="1e-5" comparison="relabs" display="block" label="${R}_{a,x} = $ " rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="Ry" atol="1e-5" comparison="relabs" display="block" label="${R}_{a,y} = $ " rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="Rz" atol="1e-5" comparison="relabs" display="block" label="${R}_{a,z} = $ " rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="mx" atol="1e-5" comparison="relabs" display="block" label="${M}_{a,x} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="my" atol="1e-5" comparison="relabs" display="block" label="${M}_{a,y} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+<pl-number-input answers-name="mz" atol="1e-5" comparison="relabs" display="block" label="${M}_{a,z} = $" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

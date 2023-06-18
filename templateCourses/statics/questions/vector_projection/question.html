@@ -1,0 +1,18 @@
+<pl-question-panel>
+<p> Given the coordinates ${{{params.point1}}} = ({{params.point1x}} , {{params.point1y}}, {{params.point1z}})$, ${{{params.point2}}} = ({{params.point2x}} , {{params.point2y}}, {{params.point2z}})$ and ${{{params.point3}}} = ({{params.point3x}} , {{params.point3y}}, {{params.point3z}})$. And magnitudes of the forces in pole $\bf {{params.vec1}}$ is ${{params.mag1}}$ N and pole $\bf {{params.vec2}}$ is ${{params.mag2}}$ N. Calculate the projection of force vector ${\bf {{params.vec1}}}$ onto ${\bf {{params.vec2}}}$ .</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="{{params.fig}}"></pl-figure></p>
+</pl-question-panel>
+<!-- <pl-matrix-component-input answers-name="proj" label="${\bf Projection}=$"></pl-matrix-component-input> -->
+<p>
+${\bf Projection}= $
+    <pl-number-input answers-name="proj_ix" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="proj_iy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="proj_iz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N
+
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

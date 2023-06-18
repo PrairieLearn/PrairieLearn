@@ -1,0 +1,57 @@
+<pl-question-panel>
+<p> In the truss with two force loading at {{params.location}} as illustrated below, $a= {{params.a}}\rm\ ft$, 
+  $b = {{params.b}} \rm\ ft$ and $P = {{params.P}}$ kip.</p>
+<!-- This adds comment in the html -->
+<pl-drawing height="300" width="500" grid-size="0">
+<pl-drawing-initial>
+<!--
+        <pl-polygon plist='[{"x": 0, "y": 260}, {"x": 140,"y": 260}, {"x": 140,"y": 340}, {"x": 640,"y": 340}, {"x": 640,"y": 380}, {"x": 0,"y": 380}]' ></pl-polygon>
+-->
+<pl-fixed-pin color="gray2" label="A" offsetx="-40" offsety="-10" x1="100" y1="200"></pl-fixed-pin>
+<pl-roller color="gray2" label="G" offsetx="20" offsety="-10" x1="400" y1="200"></pl-roller>
+<pl-rod width="10" x1="100" x2="200" y1="200" y2="50"></pl-rod> <!-- AB -->
+<pl-rod width="10" x1="100" x2="200" y1="200" y2="200"></pl-rod> <!-- AC -->
+<pl-rod width="10" x1="200" x2="200" y1="50" y2="200"></pl-rod> <!-- BC -->
+<pl-rod width="10" x1="200" x2="300" y1="50" y2="50"></pl-rod> <!-- BD -->
+<pl-rod width="10" x1="200" x2="300" y1="50" y2="200"></pl-rod> <!-- BE -->
+<pl-rod width="10" x1="200" x2="300" y1="200" y2="200"></pl-rod> <!-- CE -->
+<pl-rod width="10" x1="300" x2="300" y1="50" y2="200"></pl-rod> <!-- DE -->
+<pl-rod width="10" x1="300" x2="400" y1="50" y2="50"></pl-rod> <!-- DF -->
+<pl-rod width="10" x1="300" x2="400" y1="50" y2="200"></pl-rod> <!-- DG -->
+<pl-rod width="10" x1="300" x2="400" y1="200" y2="200"></pl-rod> <!-- EG -->
+<pl-rod width="10" x1="400" x2="400" y1="50" y2="200"></pl-rod> <!-- FG -->
+<pl-text font-size="14" label="B" offsety="-30" x1="200" y1="50"></pl-text>
+<pl-text font-size="14" label="C" offsety="10" x1="200" y1="200"></pl-text>
+<pl-text font-size="14" label="D" offsety="-30" x1="300" y1="50"></pl-text>
+<pl-text font-size="14" label="E" offsety="10" x1="300" y1="200"></pl-text>
+<pl-text font-size="14" label="F" offsety="-30" x1="400" y1="50"></pl-text>
+<pl-dimensions dim-offset="60" label="a" x1="100" x2="200" y1="200" y2="200"></pl-dimensions>
+<pl-dimensions dim-offset="60" label="a" x1="200" x2="300" y1="200" y2="200"></pl-dimensions>
+<pl-dimensions dim-offset="60" label="a" x1="300" x2="400" y1="200" y2="200"></pl-dimensions>
+<pl-dimensions dim-offset="-40" label="b" x1="400" x2="400" y1="50" y2="200"></pl-dimensions>
+<pl-vector angle="{{params.Fangle1}}" label="P" width="70" x1="{{params.Fx1}}" y1="{{params.Fy1}}"></pl-vector>
+<pl-vector angle="{{params.Fangle2}}" label="P" width="70" x1="{{params.Fx2}}" y1="{{params.Fy2}}"></pl-vector>
+</pl-drawing-initial>
+</pl-drawing>
+<br/>
+<p>
+(a) How many zero-force members are in this truss?<br/>
+</p>
+</pl-question-panel>
+<p>
+<pl-integer-input answers-name="zfm" label="Number of zero-force members ="></pl-integer-input>
+</p>
+<pl-question-panel>
+<p>
+(b) Determine the force in member ${{params.name}}$. Recall that a tensile force is positive and a compressive force is negative.
+</p>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="F" atol="1e-5" comparison="relabs" display="block" label="$F=$" rtol="1e-2" suffix="kip"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

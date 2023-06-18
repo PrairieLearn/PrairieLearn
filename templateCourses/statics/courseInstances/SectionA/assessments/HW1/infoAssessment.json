@@ -1,0 +1,90 @@
+{
+    "uuid": "ade75c45-a92f-45eb-b125-2326dfeef71d",
+    "type": "Homework",
+    "title": "Question Bank",
+    "set": "Homework",
+    "number": "1",
+    "allowIssueReporting": false,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {   
+            "title": "Force vectors and particle equilibrium",
+            "questions": [
+                {"id": "crossproduct_sti2",      		"points": 1, "maxPoints": 1},
+                {"id": "dotproduct",      		"points": 1, "maxPoints": 1},
+                {"id": "forcevector2",      		"points": 1, "maxPoints": 1},
+                {"id": "vectorAddition1",      		"points": 1, "maxPoints": 1},
+                {"id": "vectorAddition03",      		"points": 1, "maxPoints": 1},
+                {"id": "equil3D",      			"points": 1, "maxPoints": 3},           
+                {"id": "unitvector",      			"points": 1, "maxPoints": 3},
+                {"id": "unitvector_magnitude",      			"points": 1, "maxPoints": 3},
+                {"id": "particle_equilibrium_tent",      			"points": 1, "maxPoints": 3},
+                {"id": "vector_projection",      			"points": 1, "maxPoints": 3},
+                {"id": "ParticleEquilibrium3D-CartesianVector", "points": 1, "maxPoints": 3},
+                {"id": "sumforces1", "points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Moment and moment about an axis",
+            "questions": [
+                {"id": "moment2d1",      		"points": 1, "maxPoints": 3},
+                {"id": "moment2d3",      		"points": 1, "maxPoints": 3},
+                {"id": "couple1",     			"points": 1, "maxPoints": 3},
+                {"id": "MomentOfAxis3D_v1",     			"points": 1, "maxPoints": 3},
+                {"id": "MomentOfAxis3D_v2",     			"points": 1, "maxPoints": 3}
+                ]
+        },
+		{
+            "title": "Equivalent Systems and Distributed Loading",
+            "questions": [
+                {"id": "moment3d1a",            "points": 1, "maxPoints": 3},
+                {"id": "equivalentsystemTri",     "points": 1, "maxPoints": 3},
+                {"id": "equivalentsystemDistributeload_v1",     "points": 1, "maxPoints": 3},
+                {"id": "equivalentforcecouple9",     "points": 1, "maxPoints": 3},
+                {"id": "equivalentforcecouple7",     "points": 1, "maxPoints": 3},
+                {"id": "equivalentforcecouple5",     "points": 1, "maxPoints": 3},
+                {"id": "equivalentforcecouple6",     "points": 1, "maxPoints": 3},
+                {"id": "resultantforce3",       "points": 1, "maxPoints": 3},
+                {"id": "distributedforce6",     "points": 1, "maxPoints": 3}
+            ]
+        },
+		{
+            "title": "Constraints & Rigid Body Equilibrium",
+            "questions": [
+                {"id": "reactions3", 	 "points": 1, "maxPoints": 3},
+                {"id": "equil3D6", "points": 1, "maxPoints": 3},
+                {"id": "TShape-DetermineReactions", "points": 1, "maxPoints": 3},   
+                {"id": "reactions14", "points": 1, "maxPoints": 3},
+                {"id": "reactions13", "points": 1, "maxPoints": 3},
+                {"id": "np_sp18_ch1_3", "points": 1, "maxPoints": 3},
+                {"id": "equil5", "points": 1, "maxPoints": 3},
+                {"id": "CollarBC-Reactions-calc", "points": 1, "maxPoints": 3}
+                ]
+        },
+		{
+            "title": "Trusses and Machines",
+            "questions": [
+                {"id": "truss15", "points": 1, "maxPoints": 3},
+                {"id": "truss_c6_31", "points": 1, "maxPoints": 3},
+                {"id": "truss6", "points": 1, "maxPoints": 3},
+                {"id": "TrussForces", "points": 1, "maxPoints": 3},
+                {"id": "TrussForces3", "points": 1, "maxPoints": 3},
+                {"id": "TrussForcesMoJv2", "points": 1, "maxPoints": 3},
+                {"id": "machine-crane", "points": 1, "maxPoints": 3}
+                ]
+        },
+        {
+            "title": "Fluid Pressure and Friction",
+            "questions": [
+                {"id": "pressure9",      "points": 1, "maxPoints": 3},
+                {"id": "pressure10",      "points": 1, "maxPoints": 3},
+                {"id": "friction12", "points": 1, "maxPoints": 3}
+                ]
+        }
+    ]
+}

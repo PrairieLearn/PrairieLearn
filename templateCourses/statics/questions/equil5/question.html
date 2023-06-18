@@ -1,0 +1,35 @@
+
+<pl-question-panel>
+<p>
+Consider the loads applied to beam AB as shown below.
+</p>
+<p>
+Given    $\vec{F} =   {{params.f}}   $ kN </p>
+<p>           $w =   {{params.w}}$ kN/m </p>
+<p>           $a =   {{params.a}}$m </p>
+<pl-figure directory="clientFilesQuestion" file-name="equil5.png" width="550px"></pl-figure>
+<br/>
+<p> 
+ Determine the reaction forces at C. 
+</p>
+<pre>
+Matlab input:
+f = {{params.f}}; 
+w = {{params.w}};  
+a = {{params.a}}; 
+</pre>
+</pl-question-panel>
+<p>
+$\vec{F_C} = $ 
+    <pl-number-input answers-name="cx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="cy" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="cz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ kN
+
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

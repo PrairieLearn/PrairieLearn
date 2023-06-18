@@ -1,0 +1,35 @@
+
+<pl-question-panel>
+<p>
+The force P is applied perpendicular to point C of the bent bar. Notice that BC and AB is a rigid body.  
+</p>
+<p>
+Given the following:
+</p>
+<p>$p = {{params.p}}$ N</p>
+<p>$l= {{params.l}}$ m</p>
+<p>$\theta = {{params.theta}}^o$ </p>
+<pl-figure directory="clientFilesQuestion" file-name="bentbar.png" width="300px"></pl-figure>
+<pre>
+Matlab input:
+p = {{params.p}}  
+theta = {{params.theta}}  
+l = {{params.l}} 
+</pre> 
+   
+Determine the moment due to P about point <strong>{{params.optionPoint}}</strong>. 
+</pl-question-panel>
+<p>
+$\vec{M} = $
+    <pl-number-input answers-name="Mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath} + $
+    <pl-number-input answers-name="My" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath} + $
+    <pl-number-input answers-name="Mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} $ N-m
+
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

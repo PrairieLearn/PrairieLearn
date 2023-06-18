@@ -1,0 +1,46 @@
+<pl-question-panel>
+<p>
+To properly position their raft before they hit the narrows on their whitewater trip down the Boneyard, the 6 man Tau Beta Pi crew must perform a pivot maneuver in which the port (left) side paddles foward and the starboard (right) side paddles backward.	
+</p>
+<p><pl-figure directory="clientFilesQuestion" file-name="raft.jpg" width="350px"></pl-figure></p>
+<p>
+Given the following: <br/>	
+
+paddle length $l={{params.l}} \rm\ cm$  <br/>
+paddle force (Magnitude) $|F|={{params.f}} \rm\ N$  <br/>
+paddle spacing $a={{params.a}} \rm\ cm$  <br/>
+raft beam $b={{params.b}} \rm\ cm$  <br/>
+paddle angle $\alpha={{params.alpha}} \rm\ (degree)$  <br/>
+</p>
+<br/>
+The free body diagram is drawn
+
+<p><pl-figure directory="clientFilesQuestion" file-name="FBD_cleaned.png" width="500px"></pl-figure></p>
+
+
+Determine the net moments $M_{{params.optionPoint}}$ at the point ${{params.optionPoint}}$.
+
+
+<br/>
+<pre>
+Matlab input:
+l = {{params.l}};
+f = {{params.f}};
+b = {{params.b}};
+a = {{params.a}};
+alpha = {{params.alpha}};
+</pre>
+<p>
+${\bf M}_{{params.optionPoint}} = $ 
+    <pl-number-input answers-name="Mx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\imath}$ 
+	<br/>$+$
+    <pl-number-input answers-name="My" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{\jmath}$
+	<br/>$+$
+    <pl-number-input answers-name="Mz" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat{k} \quad [\mathrm{N}\cdot \mathrm{m}]$ 
+</p></pl-question-panel>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

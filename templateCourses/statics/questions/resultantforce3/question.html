@@ -1,0 +1,46 @@
+<pl-question-panel>
+<p>
+A typical TAM 210 student opens up their lunchbox to find that they packed their favorite lunch: an engineering potato.
+ Instead of eating the special potato, our student decides to apply forces to the potato to see what happens.  
+ Given the following:
+<br/><br/>
+
+$F_1$ = {{params.F1x}}${\hat{\bf \imath}}$ + ({{params.F1y}}${\hat{\bf \jmath}}$) N      
+$F_2$ = {{params.F2x}}${\hat{\bf \imath}}$ + ({{params.F2y}}${\hat{\bf \jmath}}$) N      
+$F_3$ = {{params.F3x}}${\hat{\bf \imath}}$ + ({{params.F3y}}${\hat{\bf \jmath}}$) N
+
+</p><p>$x_1 = ${{params.X1}} m       $x_2 = ${{params.X2}} m       
+$y_1 = ${{params.Y1}} m       $y_2 = ${{params.Y2}} m      $y_3 = ${{params.Y3}} m      </p>
+<br/>
+<p></p>
+<pl-figure directory="clientFilesQuestion" file-name="Potato_Resultant.png" width="400px"></pl-figure>
+<pre>
+Matlab/Mathematica input:
+F1x = {{params.F1x}};
+F1y = {{params.F1y}};
+F2x = {{params.F2x}};
+F2y = {{params.F2y}};
+F3x = {{params.F3x}};
+F3y = {{params.F3y}};
+x1 = {{params.X1}};
+y1 = {{params.Y1}};
+x2 = {{params.X2}};
+y2 = {{params.Y2}};
+y3 = {{params.Y3}};
+</pre>
+<p>
+  Replace the force system acting on the potato with a single force and moment applied at the origin. What are the magnitudes of the single force and moment?
+</p>
+</pl-question-panel>
+<p>
+  ${F}$ = <pl-number-input answers-name="F" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" suffix="${\rm\ N}$"></pl-number-input>
+</p>
+<p>
+  ${M}$ = <pl-number-input answers-name="M" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2" suffix="${\rm\ N \cdot m}$"></pl-number-input>
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

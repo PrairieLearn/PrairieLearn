@@ -1,0 +1,41 @@
+<pl-question-panel>
+<p>
+A force $P = {{params.P}} \rm\ kN$ is applied at the rigid bar $BD$, 
+which is supported by a roller at $E$ and a frictionless collar at $B$, 
+that slides on the fixed bar $AC$. Assume $a = {{params.a}} \rm\ mm$, $b = {{params.b}} \rm\ mm$ 
+and $c = {{params.c}} \rm\ mm$.
+</p>
+<p><pl-figure "="" file-name="Figure1.png" width="500px"></pl-figure></p>
+<pre>
+MATLAB input:
+a = {{params.a}};
+b = {{params.b}};
+c = {{params.c}};
+P = {{params.P}};
+</pre>
+<p>
+Determine the <u>magnitudes</u> of support reaction forces and moments on rigid bar $BD$ at collar $B$ and roller $E$:
+</p>
+</pl-question-panel>
+<!-- This adds comment in the html -->
+<p>
+$R_B= $
+    <pl-number-input answers-name="FB" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> kN
+</p>
+<p>
+$M_B= $
+    <pl-number-input answers-name="MB" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N$\cdot$m
+</p>
+$R_E= $
+    <pl-number-input answers-name="FE" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> kN
+<p></p>
+<p>
+$M_E= $
+    <pl-number-input answers-name="ME" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> N$\cdot$m
+</p>
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>

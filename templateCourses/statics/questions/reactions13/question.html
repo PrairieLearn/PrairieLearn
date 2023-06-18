@@ -1,0 +1,30 @@
+<pl-question-panel>
+<p>
+Bar $AD$ has a mass of ${{params.m}}$ kg and its center of mass is located at $G$. It is supported by a pin in a smooth slot at $C$, and a roller plus a cord $AB$ at $A$. Determine the support reaction (force vector) on bar $AD$ by the joint at ${{params.disp}}$. Where, $a = {{params.a}},$ $b = {{params.b}},$ $c = {{params.c}},$ $\alpha = {{params.alpha}},$ $\beta = {{params.beta}}$.
+<br/>
+Note: The diagram is not to scale.
+</p>
+<pl-figure directory="clientFilesQuestion" file-name="Presentation1.PNG" width="650px"></pl-figure>
+<pre>
+Matlab Input
+m = {{params.m}};
+a = {{params.a}};
+b = {{params.b}};
+c = {{params.c}};
+alpha = {{params.alpha}};
+beta = {{params.beta}};
+
+
+</pre></pl-question-panel>
+<p>
+ ${\vec{R_{{{params.disp}}}}} =$
+   <pl-number-input answers-name="rx" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\imath$
+   $+$ <pl-number-input answers-name="ry" atol="1e-5" comparison="relabs" display="inline" rtol="1e-2"></pl-number-input> $\hat\jmath$ $N$
+</p>
+
+<pl-question-panel>
+<hr/>
+<p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
