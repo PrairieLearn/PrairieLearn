@@ -1,12 +1,6 @@
 import random
-
 import numpy as np
 import prairielearn as pl
-from pl_draw import *
-from pl_geom import *
-from pl_random import *
-from pl_template import *
-
 
 def generate(data):
     nGears = 4
@@ -181,3 +175,58 @@ def generate(data):
     data["params"]["ansUnits"] = ansUnits
 
     return data
+
+def NChoice(n, l):
+    if n > len(l):
+        return l
+
+    choice = []
+
+    for i in range(n):
+        x = random.choice(l)
+        choice.append(x)
+        l.remove(x)
+    return choice
+
+def boundingBox2D(points):
+    xMin = points[0][0]
+    xMax = points[0][0]
+    yMin = points[0][1]
+    yMax = points[0][1]
+    for i in range(1, len(points)):
+        xMin = min(xMin, points[i][0])
+        xMax = max(xMax, points[i][0])
+        yMin = min(yMin, points[i][1])
+        yMax = max(yMax, points[i][1])
+
+    bottomLeft = np.array([xMin, yMin, 0])
+    bottomRight = np.array([xMax, yMin, 0])
+    topLeft = np.array([xMin, yMax, 0])
+    topRight = np.array([xMax, yMax, 0])
+    center = np.array([(xMin + xMax) / 2, (yMin + yMax) / 2, 0])
+    extent = np.array([xMax - xMin, yMax - yMin])
+
+    return bottomLeft, bottomRight, topLeft, topRight, center, extent
+
+def bboxTranslate(C, points, offsetx, offsety, width=30):
+    translated_points = []
+    """C: Center of the bounding box as a numpy array
+    points: List of vectors to offset from the center
+    offsetx: The x-offset from the top left corner, usually half the width of the figure
+    offsety: The y-offset from the top left corner, usually half the height of the figure
+    width: Width of the vector offset, default 30
+
+    returns the 2D offset (corrected) points for pl-drawing"""
+
+    for i in range(len(points)):
+        x_translated = offsetx + width * (points[i][0] - C[0])
+        y_translated = offsety - width * (points[i][1] - C[1])
+        translated_points.append(np.array(([x_translated, y_translated, 0])))
+
+    return translated_points
+
+
+def vector2DAtAngle(x):
+    """x: angle measured from the x-axis, in radians
+    returns unit vector of size (3,)"""
+    return np.array([np.cos(x), np.sin(x), 0])

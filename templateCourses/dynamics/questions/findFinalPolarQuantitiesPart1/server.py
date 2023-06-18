@@ -3,9 +3,6 @@ import random
 import numpy as np
 import prairielearn as pl
 import sympy as sp
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 
 
 def generate(data):
@@ -20,22 +17,18 @@ def generate(data):
     ethcomp = 0
 
     r_expr_with_C = ercomp * t + C
-    r_expr = integrate(ercomp, t)
+    r_expr = sp.integrate(ercomp, t)
 
     C1 = float(r0 - float(r_expr.subs(t, 0).evalf()))
 
     t_value = random.randint(2, 3)
 
     r = r_expr + C1
-    # C2 = float(theta0 - ethcomp/ercomp * log(C1))
-    # theta_t_value = ethcomp/ercomp * log(ercomp*t_value + C1) + C2
     r_f = r.subs(t, t_value)
 
     v = np.array([ercomp, ethcomp, 0])
 
     data["params"]["v"] = polarVector(v)
-    # data['params']['x0'] = x0
-    # data['params']['y0'] = y0
     data["params"]["t"] = t_value
     data["params"]["r0"] = r0
     data["params"]["theta0"] = theta0
@@ -49,3 +42,36 @@ def generate(data):
     data["correct_answers"]["theta_f"] = np.pi / theta0
 
     return data
+
+def polarVector(v):
+    return vectorInBasis(v, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}")
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)

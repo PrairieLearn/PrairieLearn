@@ -2,16 +2,12 @@ import random
 
 import numpy as np
 import prairielearn as pl
-import sympy
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 from sympy import *
 
 
 def rationalize_coeffs(expr):
-    for i in expr.atoms(sympy.Float):
-        r = sympy.Rational(str(i)).limit_denominator(1000)
+    for i in expr.atoms(Float):
+        r = Rational(str(i)).limit_denominator(1000)
         expr = expr.subs(i, r)
     return expr
 
@@ -95,3 +91,36 @@ def generate(data):
     data["correct_answers"]["thetaf"] = thetaf
 
     return data
+
+def polarVector(v):
+    return vectorInBasis(v, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}")
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)
