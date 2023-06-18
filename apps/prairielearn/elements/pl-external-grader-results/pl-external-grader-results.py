@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 import ansi2html.style as ansi2html_style
 import chevron
 import lxml.html
@@ -28,10 +30,11 @@ ansi2html_style.SCHEME["iterm"] = (
     "#5ffdff",
     "#feffff",
 )
-conv = Ansi2HTMLConverter(inline=True, scheme="iterm")
+
+conv: Ansi2HTMLConverter = Ansi2HTMLConverter(inline=True, scheme="iterm")
 
 
-def ansi_to_html(output):
+def ansi_to_html(output: Optional[str]) -> Optional[str]:
     if output is None:
         return None
     try:
@@ -40,18 +43,18 @@ def ansi_to_html(output):
         return f"[Error converting ANSI to HTML: {e}]\n\n{output}"
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = []
-    optional_attribs = []
+    required_attribs: List[str] = []
+    optional_attribs: List[str] = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def round_value(val, digits=2):
+def round_value(val: float, digits: int = 2) -> str:
     return format(val, f".{digits}f").rstrip("0").rstrip(".")
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "submission":
         html_params = {"submission": True, "graded": True, "uuid": pl.get_uuid()}
 

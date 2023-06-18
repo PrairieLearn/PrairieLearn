@@ -17,6 +17,7 @@ from typing import (
     Literal,
     Optional,
     Type,
+    List,
     TypedDict,
     TypeVar,
     Union,
@@ -486,7 +487,7 @@ def compat_get(object, attrib, default):
     return old_attrib in object
 
 
-def compat_array(arr: list[str]) -> list[str]:
+def compat_array(arr: List[str]) -> List[str]:
     new_arr = []
     for i in arr:
         new_arr.append(i)
@@ -496,8 +497,8 @@ def compat_array(arr: list[str]) -> list[str]:
 
 def check_attribs(
     element: lxml.html.HtmlElement,
-    required_attribs: list[str],
-    optional_attribs: list[str],
+    required_attribs: List[str],
+    optional_attribs: List[str],
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
