@@ -1,5 +1,8 @@
 # Development
 
+## External grading
+/pl_ag_jobs
+
 ## Custom scripts
 /start-custom.sh
 
@@ -59,7 +62,7 @@ docker-compose.override.yml
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
 
-## Yarn 
+## Yarn
 node_modules
 yarn-error.log
 .pnp.*
