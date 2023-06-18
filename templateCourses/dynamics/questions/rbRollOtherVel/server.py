@@ -1,10 +1,6 @@
 import random
-
 import numpy as np
 import prairielearn as pl
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 from sympy import *
 
 
@@ -75,3 +71,59 @@ def generate(data):
     data["correct_answers"]["ansValue"] = ansValue
 
     return data
+
+
+def perp(v):
+    """v: numpy array of size (n,)
+       n: size of the array
+    returns the counterclockwise orthogonal vector to v
+    """
+    return np.array([-v[1], v[0], 0])
+
+def vectorInBasis(v, basis1, basis2, basis3):
+    """v: numpy array of size (3,)
+    basis1: first basis vector
+    basis2: second basis vector
+    basis3: third basis vector, default ""
+    """
+
+    basis_list = [basis1, basis2, basis3]
+    s = []
+    e = 0
+    v = v.tolist()
+    for i in range(len(v)):
+        if type(v[i]) == float:
+            if v[i] == int(v[i]):
+                v[i] = int(v[i])
+        e = str(v[i])
+        if e == "0":
+            continue
+        if e == "1" and basis_list[i] != "":
+            e = ""
+        if e == "-1" and basis_list[i] != "":
+            e = "-"
+        e += basis_list[i]
+        if len(s) > 0 and e[0] != "-":
+            e = "+" + e
+        s.append(e)
+    if len(s) == 0:
+        s.append("0")
+    return "".join(s)
+
+def cartesianVector(v):
+    return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
+
+def NChoice(n, l):
+    if n > len(l):
+        return l
+
+    choice = []
+
+    for i in range(n):
+        x = random.choice(l)
+        choice.append(x)
+        l.remove(x)
+    return choice
+
+
+

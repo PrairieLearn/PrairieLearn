@@ -1,11 +1,6 @@
 import random
-
 import numpy as np
 import prairielearn as pl
-from pl_draw import *
-from pl_geom import *
-from pl_random import *
-from pl_template import *
 
 
 def generate(data):
@@ -214,3 +209,24 @@ def generate(data):
     data["params"]["angleFactor"] = float(angleFactor)
 
     return data
+
+
+def boundingBox2D(points):
+    xMin = points[0][0]
+    xMax = points[0][0]
+    yMin = points[0][1]
+    yMax = points[0][1]
+    for i in range(1, len(points)):
+        xMin = min(xMin, points[i][0])
+        xMax = max(xMax, points[i][0])
+        yMin = min(yMin, points[i][1])
+        yMax = max(yMax, points[i][1])
+
+    bottomLeft = np.array([xMin, yMin, 0])
+    bottomRight = np.array([xMax, yMin, 0])
+    topLeft = np.array([xMin, yMax, 0])
+    topRight = np.array([xMax, yMax, 0])
+    center = np.array([(xMin + xMax) / 2, (yMin + yMax) / 2, 0])
+    extent = np.array([xMax - xMin, yMax - yMin])
+
+    return bottomLeft, bottomRight, topLeft, topRight, center, extent
