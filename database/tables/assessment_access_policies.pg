@@ -1,0 +1,17 @@
+columns
+    assessment_id: bigint not null
+    created_at: timestamp with time zone not null
+    created_by: bigint not null
+    credit: integer
+    end_date: timestamp with time zone not null
+    group_id: bigint
+    note: text
+    start_date: timestamp with time zone not null
+    type: enum_type not null
+    user_id: bigint
+
+foreign-key constraints
+    assessment_access_policies_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id)
+    assessment_access_policies_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(user_id)
+    assessment_access_policies_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id)
+    assessment_access_policies_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)

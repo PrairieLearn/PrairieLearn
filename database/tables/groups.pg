@@ -18,6 +18,7 @@ foreign-key constraints
     groups_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    assessment_access_policies: FOREIGN KEY (group_id) REFERENCES groups(id)
     assessment_instances: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_user_roles: FOREIGN KEY (group_id) REFERENCES groups(id)
     group_users: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

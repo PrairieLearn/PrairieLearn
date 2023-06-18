@@ -3,6 +3,11 @@
     urlSuffix:      '/assessment/'+assessment.id+'/access',
     iconClasses:    'far fa-calendar-alt',
     tabLabel:       'Access'}) %>
+<%- include('navTab', {
+        activeSubPage:  'assessment_overrides',
+        urlSuffix:      '/assessment/'+assessment.id+'/assessment_overrides',
+        iconClasses:    'fa fa-undo',
+        tabLabel:       'Assessment Overrides'}) %>
 <% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'downloads',

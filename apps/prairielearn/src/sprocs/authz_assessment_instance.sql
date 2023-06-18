@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN req_date timestamptz,
         IN display_timezone text,
         IN group_work boolean,
+        -- IN deadline_override interval DEFAULT NULL, -- New input parameter for the deadline override
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
@@ -25,6 +26,7 @@ AS $$
 DECLARE
     assessment_instance assessment_instances;
     assessment_result record;
+    -- deadline_override_end timestamptz;
 BEGIN
     SELECT ai.*
     INTO assessment_instance
@@ -53,6 +55,14 @@ BEGIN
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN
         time_limit_expired := TRUE;
     END IF;
+
+    --    -- Apply the deadline override
+    -- IF deadline_override IS NOT NULL THEN
+    --     deadline_override_end := req_date + deadline_override;
+    --     IF deadline_override_end > assessment_instance.date_limit THEN
+    --         assessment_instance.date_limit := deadline_override_end;
+    --     END IF;
+    -- END IF;
 
     -- We start with the same access to the assessment instance as to the assessment.
     authorized := assessment_result.authorized;

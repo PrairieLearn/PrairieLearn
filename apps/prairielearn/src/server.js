@@ -755,6 +755,8 @@ module.exports.initExpress = function () {
     require('./pages/elementExtensionFiles/elementExtensionFiles')
   );
 
+  
+
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -790,6 +792,15 @@ module.exports.initExpress = function () {
       next();
     }
   );
+// Endpoint for assessment overrides 
+  app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_overrides', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'override';
+      next();
+    },
+    require('./pages/instructorAssessmentOverrides/instructorAssessmentOverrides'),
+  ]);
+  
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', [
     function (req, res, next) {
       res.locals.navSubPage = 'settings';
@@ -821,6 +832,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
   ]);
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics',
     [
