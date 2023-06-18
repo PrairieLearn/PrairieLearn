@@ -1,7 +1,9 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 from sympy import *
+
 
 def generate(data):
     soln = []
@@ -255,6 +257,7 @@ def generate(data):
 
     return data
 
+
 def NChoice(n, l):
     if n > len(l):
         return l
@@ -267,6 +270,7 @@ def NChoice(n, l):
         l.remove(x)
     return choice
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -278,6 +282,7 @@ def randIntNonZero(a, b):
         x = random.randint(a, b)
 
     return x
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
@@ -313,6 +318,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def boundingBox2D(points):
     xMin = points[0][0]
     xMax = points[0][0]
@@ -333,6 +339,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def bboxTranslate(C, points, offsetx, offsety, width=30):
     translated_points = []
     """C: Center of the bounding box as a numpy array
@@ -350,6 +357,7 @@ def bboxTranslate(C, points, offsetx, offsety, width=30):
 
     return translated_points
 
+
 def angleOf(v):
     """v: vector of size (n,)
     returns the true angle of the vector with respect to the x-axis, in radians
@@ -364,6 +372,7 @@ def angleOf(v):
 
     return trueAngle, np.degrees(plAngle)
 
+
 def PL_angle(x):
     """x: angle measured counterclockwise from the x
     returns the adjusted angle for pl-drawing"""
@@ -374,6 +383,7 @@ def PL_angle(x):
         x_pl = abs(x)
 
     return x_pl
+
 
 def groundAtAngle(P, angle, width):
     """P: Location of the ground's center, in PL coordinates
@@ -398,6 +408,7 @@ def groundAtAngle(P, angle, width):
     drawAngleGround = f'<pl-line x1={linex1} y1={liney1} x2={linex2} y2={liney2}></pl-line><pl-rectangle x1={rectx} y1={recty} width={width} height="8" angle={angle_for_rectangle} stroke-width="0" color="#DCDCDC"></pl-rectangle>'
 
     return drawAngleGround
+
 
 def arcArrow(
     C,

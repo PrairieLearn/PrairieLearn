@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -113,6 +114,7 @@ def generate(data):
     data["correct_answers"]["omega"] = ansOmega
     return data
 
+
 def NChoice(n, l):
     if n > len(l):
         return l
@@ -124,6 +126,7 @@ def NChoice(n, l):
         choice.append(x)
         l.remove(x)
     return choice
+
 
 def boundingBox2D(points):
     xMin = points[0][0]
@@ -144,6 +147,7 @@ def boundingBox2D(points):
     extent = np.array([xMax - xMin, yMax - yMin])
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
+
 
 def bboxTranslate(C, points, offsetx, offsety, width=30):
     translated_points = []
@@ -167,4 +171,3 @@ def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
     returns unit vector of size (3,)"""
     return np.array([np.cos(x), np.sin(x), 0])
-

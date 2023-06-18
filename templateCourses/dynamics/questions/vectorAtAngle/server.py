@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -114,6 +115,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def randIntNonZeroArray(n, a, b, step=1):
 
     """n: size of the array
@@ -141,6 +143,7 @@ def randIntNonZeroArray(n, a, b, step=1):
 
     return r
 
+
 def boundingBox2D(points):
     xMin = points[0][0]
     xMax = points[0][0]
@@ -161,6 +164,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def angleOf(v):
     """v: vector of size (n,)
     returns the true angle of the vector with respect to the x-axis, in radians
@@ -175,8 +179,8 @@ def angleOf(v):
 
     return trueAngle, np.degrees(plAngle)
 
+
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
     returns unit vector of size (3,)"""
     return np.array([np.cos(x), np.sin(x), 0])
-

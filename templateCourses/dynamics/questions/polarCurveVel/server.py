@@ -1,5 +1,6 @@
 import io
 import random
+
 import numpy as np
 from matplotlib import pyplot as plt
 from sympy import *
@@ -84,6 +85,7 @@ def file(data):
     fig.savefig(buf, format="png")
 
     return buf
+
 
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers

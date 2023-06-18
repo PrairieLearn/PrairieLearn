@@ -1,6 +1,8 @@
 import random
+
 import numpy as np
 import prairielearn as pl
+
 
 def generate(data):
     thetaDeg = random.choice([45, 135, -45, -135])
@@ -92,6 +94,7 @@ def generate(data):
     data["correct_answers"]["rOPv"] = rOPuv[1]
     return data
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -139,12 +142,14 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def perp(v):
     """v: numpy array of size (n,)
        n: size of the array
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def angleOf(v):
     """v: vector of size (n,)
@@ -159,6 +164,7 @@ def angleOf(v):
         plAngle = -trueAngle
 
     return trueAngle, np.degrees(plAngle)
+
 
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians

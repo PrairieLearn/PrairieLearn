@@ -1,5 +1,7 @@
 import random
+
 import numpy as np
+
 
 def generate(data):
     rLen = random.randint(2, 4)
@@ -60,14 +62,17 @@ def generate(data):
 
     return data
 
+
 def polarToRect(polar_vec):
     x = polar_vec[0] * np.cos(polar_vec[1])
     y = polar_vec[0] * np.sin(polar_vec[1])
 
     return np.array([x, y, 0])
 
+
 def randSign():
     return random.choice([-1, 1])
+
 
 def angleOf(v):
     """v: vector of size (n,)

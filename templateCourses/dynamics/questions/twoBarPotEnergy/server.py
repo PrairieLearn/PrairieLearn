@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -74,6 +75,7 @@ def generate(data):
 
     return data
 
+
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
     basis1: first basis vector
@@ -108,6 +110,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def randIntNonZeroArray(n, a, b, step=1):
 
     """n: size of the array
@@ -135,6 +138,7 @@ def randIntNonZeroArray(n, a, b, step=1):
 
     return r
 
+
 def boundingBox2D(points):
     xMin = points[0][0]
     xMax = points[0][0]
@@ -155,6 +159,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def bboxTranslate(C, points, offsetx, offsety, width=30):
     translated_points = []
     """C: Center of the bounding box as a numpy array
@@ -171,4 +176,3 @@ def bboxTranslate(C, points, offsetx, offsety, width=30):
         translated_points.append(np.array(([x_translated, y_translated, 0])))
 
     return translated_points
-

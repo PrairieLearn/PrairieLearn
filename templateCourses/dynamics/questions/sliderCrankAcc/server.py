@@ -1,6 +1,8 @@
 import random
+
 import numpy as np
 import prairielearn as pl
+
 
 def generate(data):
     rOP = np.array(random.choice([[1, 3], [1, 2]]))
@@ -242,6 +244,7 @@ def perp(v):
     """
     return np.array([-v[1], v[0], 0])
 
+
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
     basis1: first basis vector
@@ -276,6 +279,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -287,6 +291,7 @@ def randIntNonZero(a, b):
         x = random.randint(a, b)
 
     return x
+
 
 def boundingBox2D(points):
     xMin = points[0][0]
@@ -308,6 +313,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def angleOf(v):
     """v: vector of size (n,)
     returns the true angle of the vector with respect to the x-axis, in radians
@@ -321,6 +327,7 @@ def angleOf(v):
         plAngle = -trueAngle
 
     return trueAngle, np.degrees(plAngle)
+
 
 def ground(P, en, width):
     """
@@ -352,4 +359,3 @@ def ground(P, en, width):
     drawGround = f'<pl-line x1={linex1} y1={liney1} x2={linex2} y2={liney2}></pl-line>\n<pl-rectangle x1={rectx} y1={recty} width={width} height="10" angle={et_PL_angle} stroke-width="0" color="#DCDCDC"></pl-rectangle>'
 
     return drawGround
-

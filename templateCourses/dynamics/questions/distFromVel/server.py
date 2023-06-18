@@ -30,6 +30,7 @@ def generate(data):
 
     return data
 
+
 def randPoly(t, n):
 
     """t: independent variable

@@ -1,6 +1,8 @@
 import random
+
 import numpy as np
 import prairielearn as pl
+
 
 def generate(data):
 
@@ -64,6 +66,7 @@ def generate(data):
 
     return data
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -75,6 +78,7 @@ def randIntNonZero(a, b):
         x = random.randint(a, b)
 
     return x
+
 
 def randIntNonZeroArray(n, a, b, step=1):
 
@@ -102,6 +106,7 @@ def randIntNonZeroArray(n, a, b, step=1):
             )
 
     return r
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
@@ -137,12 +142,14 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def perp(v):
     """v: numpy array of size (n,)
        n: size of the array
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def angleOf(v):
     """v: vector of size (n,)
@@ -157,6 +164,7 @@ def angleOf(v):
         plAngle = -trueAngle
 
     return trueAngle, np.degrees(plAngle)
+
 
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
@@ -184,6 +192,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def rightAngle(O, v1, v2):
     """
     O: origin of vectors v1, v2, in PL coordinates
@@ -203,4 +212,3 @@ def rightAngle(O, v1, v2):
 					<pl-line x1={startLine2x} y1={startLine2y} angle={v1PLangle} width="11" stroke-width="1"></pl-line>'
 
     return drawRightAngle
-

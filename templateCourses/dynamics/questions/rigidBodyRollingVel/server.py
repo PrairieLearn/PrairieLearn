@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -94,6 +95,7 @@ def randIntNonZero(a, b):
 
     return x
 
+
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
     basis1: first basis vector
@@ -124,8 +126,10 @@ def vectorInBasis(v, basis1, basis2, basis3):
         s.append("0")
     return "".join(s)
 
+
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
+
 
 def angleOf(v):
     """v: vector of size (n,)
@@ -141,12 +145,14 @@ def angleOf(v):
 
     return trueAngle, np.degrees(plAngle)
 
+
 def perp(v):
     """v: numpy array of size (n,)
        n: size of the array
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def ground(P, en, width):
     """

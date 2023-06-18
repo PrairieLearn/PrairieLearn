@@ -1,7 +1,7 @@
 import random
+
 import numpy as np
 import prairielearn as pl
-
 
 
 def generate(data):
@@ -32,6 +32,7 @@ def generate(data):
 
     return data
 
+
 def randIntNonZeroArray(n, a, b, step=1):
 
     """n: size of the array
@@ -58,6 +59,7 @@ def randIntNonZeroArray(n, a, b, step=1):
             )
 
     return r
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)

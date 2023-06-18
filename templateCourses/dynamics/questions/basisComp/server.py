@@ -1,5 +1,7 @@
 import random
+
 import numpy as np
+
 
 def generate(data):
     theta = (random.randint(8, 14) * 5 + random.choice([0, 90])) * random.choice(
@@ -47,10 +49,12 @@ def generate(data):
 
     return data
 
+
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
     returns unit vector of size (3,)"""
     return np.array([np.cos(x), np.sin(x), 0])
+
 
 def perp(v):
     """v: numpy array of size (n,)
@@ -58,6 +62,7 @@ def perp(v):
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def angleOf(v):
     """v: vector of size (n,)

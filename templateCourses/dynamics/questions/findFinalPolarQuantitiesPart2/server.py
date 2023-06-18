@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 from sympy import *
@@ -48,8 +49,10 @@ def generate(data):
 
     return data
 
+
 def polarVector(v):
     return vectorInBasis(v, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}")
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)

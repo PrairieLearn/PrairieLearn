@@ -3,6 +3,7 @@ import random
 import numpy as np
 import prairielearn as pl
 
+
 def generate(data):
     theta = (random.randint(0, 3) / 2 + random.uniform(0.1, 0.4)) * np.pi
     u = np.array([np.cos(theta), np.sin(theta)])
@@ -19,6 +20,7 @@ def generate(data):
     data["correct_answers"]["theta"] = theta
 
     return data
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)

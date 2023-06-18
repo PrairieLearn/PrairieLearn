@@ -1,5 +1,7 @@
 import random
+
 import numpy as np
+
 
 def generate(data):
     width = random.randint(2, 3)
@@ -134,6 +136,7 @@ def generate(data):
     data["correct_answers"]["IC"] = IC
     return data
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -146,6 +149,7 @@ def randIntNonZero(a, b):
 
     return x
 
+
 def PL_angle(x):
     """x: angle measured counterclockwise from the x
     returns the adjusted angle for pl-drawing"""
@@ -157,10 +161,12 @@ def PL_angle(x):
 
     return x_pl
 
+
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
     returns unit vector of size (3,)"""
     return np.array([np.cos(x), np.sin(x), 0])
+
 
 def bboxTranslate(C, points, offsetx, offsety, width=30):
     translated_points = []
@@ -179,12 +185,14 @@ def bboxTranslate(C, points, offsetx, offsety, width=30):
 
     return translated_points
 
+
 def perp(v):
     """v: numpy array of size (n,)
        n: size of the array
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def NChoice(n, l):
     if n > len(l):
@@ -197,6 +205,7 @@ def NChoice(n, l):
         choice.append(x)
         l.remove(x)
     return choice
+
 
 def linearInterp(x0, x1, alpha):
     """x0: first number
@@ -213,6 +222,7 @@ def linearDeinterp(x0, x1, x):
     """
     return (x - x0) / (x1 - x0)
 
+
 def linearMap(x0, x1, y0, y1, x):
     """x0: first number
     x1: second number
@@ -222,6 +232,7 @@ def linearMap(x0, x1, y0, y1, x):
     returns the value y that x maps to
     """
     return linearInterp(y0, y1, linearDeinterp(x0, x1, x))
+
 
 def rgb_to_hex(rgb):
     return ("#%02x%02x%02x" % rgb).upper()

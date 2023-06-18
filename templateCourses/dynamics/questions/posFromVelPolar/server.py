@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 from sympy import *
 
@@ -117,6 +118,7 @@ def generate(data):
 
     return data
 
+
 def randPoly(t, n):
 
     """t: independent variable
@@ -139,6 +141,7 @@ def randPoly(t, n):
 
     return y
 
+
 def randTrig(t):
     A_list = [-3, -2, -1, 1, 2, 3]
     trig_type = random.choice(["sin", "cos"])
@@ -154,6 +157,7 @@ def randExp(t):
     A_list = [-3, -2, -1, 1, 2, 3]
 
     return random.choice(A_list) * exp(random.choice(A_list) * t)
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
@@ -184,6 +188,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
     if len(s) == 0:
         s.append("0")
     return "".join(s)
+
 
 def polarVector(v):
     return vectorInBasis(v, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}")

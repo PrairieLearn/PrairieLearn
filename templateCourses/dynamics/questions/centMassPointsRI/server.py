@@ -84,6 +84,7 @@ def generate(data):
     data["params"]["pl_var_output"] = pl_var_output
     return data
 
+
 def randIntNonZeroArray(n, a, b, step=1):
 
     """n: size of the array

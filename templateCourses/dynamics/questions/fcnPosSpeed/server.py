@@ -1,4 +1,5 @@
 import random
+
 from sympy import *
 
 
@@ -28,6 +29,7 @@ def generate(data):
     data["correct_answers"]["v"] = v_answer
 
     return data
+
 
 # Create a random array of functions, where t is the variable, and n is the dimension of the vector
 def randFuncArray(t, n):
@@ -104,4 +106,3 @@ def randFuncArray(t, n):
         r = Matrix([rx, ry, rz])
 
     return r
-

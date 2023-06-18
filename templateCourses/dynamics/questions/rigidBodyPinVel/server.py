@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -169,6 +170,7 @@ def randIntNonZeroArray(n, a, b, step=1):
 
     return r
 
+
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
     basis1: first basis vector
@@ -203,10 +205,12 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def vector2DAtAngle(x):
     """x: angle measured from the x-axis, in radians
     returns unit vector of size (3,)"""
     return np.array([np.cos(x), np.sin(x), 0])
+
 
 def perp(v):
     """v: numpy array of size (n,)
@@ -214,6 +218,7 @@ def perp(v):
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def boundingBox2D(points):
     xMin = points[0][0]
@@ -234,6 +239,7 @@ def boundingBox2D(points):
     extent = np.array([xMax - xMin, yMax - yMin])
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
+
 
 def angleOf(v):
     """v: vector of size (n,)

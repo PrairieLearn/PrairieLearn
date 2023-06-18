@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -20,6 +21,7 @@ def generate(data):
 
     return data
 
+
 def PL_angle(x):
     """x: angle measured counterclockwise from the x
     returns the adjusted angle for pl-drawing"""
@@ -30,6 +32,7 @@ def PL_angle(x):
         x_pl = abs(x)
 
     return x_pl
+
 
 def groundAtAngle(P, angle, width):
     """P: Location of the ground's center, in PL coordinates

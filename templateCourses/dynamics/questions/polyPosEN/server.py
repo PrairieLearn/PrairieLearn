@@ -1,4 +1,5 @@
 import random
+
 from sympy import *
 
 
@@ -32,6 +33,7 @@ def generate(data):
     data["correct_answers"]["eny"] = float(en[1])
 
     return data
+
 
 def randPoly(t, n):
 

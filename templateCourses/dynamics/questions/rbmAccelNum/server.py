@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -66,6 +67,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
+
 
 def randIntNonZeroArray(n, a, b, step=1):
 

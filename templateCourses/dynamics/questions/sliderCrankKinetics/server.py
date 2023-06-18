@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 from sympy import *
@@ -367,12 +368,14 @@ def generate(data):
     data["params"]["givenString"] = givenString
     return data
 
+
 def perp(v):
     """v: numpy array of size (n,)
        n: size of the array
     returns the counterclockwise orthogonal vector to v
     """
     return np.array([-v[1], v[0], 0])
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
@@ -408,6 +411,7 @@ def vectorInBasis(v, basis1, basis2, basis3):
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -419,6 +423,7 @@ def randIntNonZero(a, b):
         x = random.randint(a, b)
 
     return x
+
 
 def boundingBox2D(points):
     xMin = points[0][0]
@@ -440,6 +445,7 @@ def boundingBox2D(points):
 
     return bottomLeft, bottomRight, topLeft, topRight, center, extent
 
+
 def angleOf(v):
     """v: vector of size (n,)
     returns the true angle of the vector with respect to the x-axis, in radians
@@ -453,6 +459,7 @@ def angleOf(v):
         plAngle = -trueAngle
 
     return trueAngle, np.degrees(plAngle)
+
 
 def ground(P, en, width):
     """
@@ -485,6 +492,7 @@ def ground(P, en, width):
 
     return drawGround
 
+
 def NChoice(n, l):
     if n > len(l):
         return l
@@ -496,5 +504,3 @@ def NChoice(n, l):
         choice.append(x)
         l.remove(x)
     return choice
-
-

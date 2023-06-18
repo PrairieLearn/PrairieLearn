@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -21,6 +22,7 @@ def generate(data):
     data["correct_answers"]["ry"] = float(r[1])
 
     return data
+
 
 def randIntNonZeroArray(n, a, b, step=1):
 
@@ -48,6 +50,7 @@ def randIntNonZeroArray(n, a, b, step=1):
             )
 
     return r
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)

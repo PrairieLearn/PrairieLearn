@@ -1,5 +1,6 @@
 import io
 import random
+
 import numpy as np
 from matplotlib import pyplot as plt
 from sympy import *

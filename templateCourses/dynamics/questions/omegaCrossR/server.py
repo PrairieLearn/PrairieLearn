@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -39,6 +40,7 @@ def generate(data):
 
     return data
 
+
 def randIntNonZero(a, b):
     """a: lower bound of the range of integers
        b: upper bound of the range of integers
@@ -50,6 +52,7 @@ def randIntNonZero(a, b):
         x = random.randint(a, b)
 
     return x
+
 
 def randIntNonZeroArray(n, a, b, step=1):
 
@@ -77,6 +80,7 @@ def randIntNonZeroArray(n, a, b, step=1):
             )
 
     return r
+
 
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)

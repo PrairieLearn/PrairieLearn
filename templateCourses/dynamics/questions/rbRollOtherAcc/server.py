@@ -1,4 +1,5 @@
 import random
+
 import numpy as np
 import prairielearn as pl
 
@@ -120,6 +121,7 @@ def perp(v):
     """
     return np.array([-v[1], v[0], 0])
 
+
 def vectorInBasis(v, basis1, basis2, basis3):
     """v: numpy array of size (3,)
     basis1: first basis vector
@@ -150,8 +152,6 @@ def vectorInBasis(v, basis1, basis2, basis3):
         s.append("0")
     return "".join(s)
 
+
 def cartesianVector(v):
     return vectorInBasis(v, "\\hat{\\imath}", "\\hat{\\jmath}", "\\hat{k}")
-
-
-
