@@ -1,0 +1,46 @@
+<pl-question-panel>
+<p>
+Point charges $q_1 = {{params.q1}}\rm\ \mu C$ and $q_2 = {{params.q2}}\rm\ \mu C$ are placed ${{params.d}}\rm\ m$ apart.
+</p>
+</pl-question-panel>
+
+<pl-question-panel>
+  <hr></hr>
+</pl-question-panel>
+
+<pl-question-panel>
+<p>
+What is the force on a third charge $q_3 = {{params.q3}}\rm\ \mu C$ placed midway between $q_1$ and $q_2$?
+</p>
+</pl-question-panel>
+
+Magnitude:
+<pl-number-input answers-name="part1_ans" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$F=$" suffix="$\rm N$" show-help-text = "True" weight = "1" custom-format = ".3g"></pl-number-input>
+
+<pl-question-panel>
+<p></p>
+</pl-question-panel>
+
+Direction:
+<pl-multiple-choice answers-name="part2_ans" weight = "1" >
+	<pl-answer correct = {{ params.part2.ans1.correct }} feedback = '{{ params.part2.ans1.feedback }}' > {{ params.part2.ans1.value }}  </pl-answer>
+	<pl-answer correct = {{ params.part2.ans2.correct }} feedback = '{{ params.part2.ans2.feedback }}' > {{ params.part2.ans2.value }}  </pl-answer>
+	<pl-answer correct = {{ params.part2.ans3.correct }} feedback = '{{ params.part2.ans3.feedback }}' > {{ params.part2.ans3.value }}  </pl-answer>
+</pl-multiple-choice>
+
+
+<pl-submission-panel><br>
+{{feedback.F}}
+</pl-submission-panel>
+
+
+<pl-answer-panel>
+</pl-answer-panel>
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

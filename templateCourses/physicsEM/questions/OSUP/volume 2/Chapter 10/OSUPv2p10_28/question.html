@@ -1,0 +1,96 @@
+<pl-question-panel>
+<markdown>
+A ${{ params.P_T }}\rm\ W$ toaster, a ${{ params.P_S }}\rm\ W$ speaker, and {{ params.prep }} ${{ params.P_L }}\rm\ W$ lamp are plugged into the same outlet which provides ${{ params.V }}\rm\ V$ and has a ${{ params.I_F }}\rm\ A$ fuse.
+(The three devices are in parallel when plugged into the same socket.)
+
+</markdown>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>What is the current drawn by the toaster?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans" rtol = "0.03" label = "$I_1=$" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" suffix = "$\rm\ A$" custom-format = ".3g" weight = "1" ></pl-number-input>
+<pl-submission-panel><br>
+{{ feedback.part1_ans }}
+ </pl-submission-panel>
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>What is the current drawn by the speaker?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part2_ans" rtol = "0.03" label = "$I_2=$" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" suffix = "$\rm\ A$" custom-format = ".3g" weight = "1" ></pl-number-input>
+<pl-submission-panel><br>
+{{ feedback.part2_ans }}
+ </pl-submission-panel>
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>What is the current drawn by the lamp?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part3_ans" rtol = "0.03" label = "$I_3=$" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" suffix = "$\rm\ A$" custom-format = ".3g" weight = "1" ></pl-number-input>
+<pl-submission-panel><br>
+{{ feedback.part3_ans }}
+ </pl-submission-panel>
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 4</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<markdown>Will this combination blow the ${{ params.I_F }}\rm\ A$ fuse?
+</markdown>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="part4_ans" weight = "1" >
+	<pl-answer correct= {{ params.part4.ans1.correct }} feedback = '{{ params.part4.ans1.feedback }}' > {{ params.part4.ans1.value }}  </pl-answer>
+	<pl-answer correct= {{ params.part4.ans2.correct }} feedback = '{{ params.part4.ans2.feedback }}' > {{ params.part4.ans2.value }}  </pl-answer>
+</pl-multiple-choice>
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

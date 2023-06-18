@@ -1,0 +1,78 @@
+<pl-question-panel>
+<p>
+A total charge of ${{params.q}}\times 10^{ {{params.p}} }\rm\ C$ is distributed uniformly throughout a cubical volume whose edges are ${{params.d}}\rm\ cm$ long.
+</p>
+</pl-question-panel>
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<p>
+What is the charge density in the cube?
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="rho" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$\rho=$" suffix="$\rm\ C/m^3$" show-help-text = "True" weight = "1" custom-format = ".3g"></pl-number-input>
+
+<pl-submission-panel><br>
+{{ feedback.rho }}
+ </pl-submission-panel>
+
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<p>
+What is the electric flux through a cube with ${{params.d1}}\rm\ cm$ edges that is concentric with the charge distribution?
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="Phi1" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$\Phi_1=$" suffix="$\rm\ N m^2/C$" show-help-text = "True" weight = "1" custom-format = ".3g"></pl-number-input>
+
+<pl-submission-panel><br>
+{{ feedback.Phi1 }}
+ </pl-submission-panel>
+
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-header">Part 3</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+<p>
+What is the electric flux through a spherical surface of radius ${{params.r}}\rm\ cm$ that is also concentric with the charge distribution?
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="Phi2" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$\Phi_2=$" suffix="$\rm\ N m^2/C$" show-help-text = "True" weight = "1" custom-format = ".3g"></pl-number-input>
+
+<pl-submission-panel><br>
+{{ feedback.Phi2 }}
+ </pl-submission-panel>
+
+</div>
+</div>
+
+
+<pl-answer-panel>
+</pl-answer-panel>
+
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

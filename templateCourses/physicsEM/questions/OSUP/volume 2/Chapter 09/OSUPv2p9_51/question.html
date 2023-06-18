@@ -1,0 +1,58 @@
+<pl-question-panel>
+<markdown>
+A resistor rated at ${{params.R}}\rm\ k\Omega$ is connected across two batteries (each ${{params.V}}\rm\ V$) in series, with a total voltage of ${{params.Vtotal}}\rm\ V$.
+The manufacturer advertises that their resistors are within ${{params.p}}\rm\ \%$ of the rated value.
+What are the possible minimum current and maximum current through the resistor?  Give your answer in units of $\rm \mu A$.
+
+</markdown>
+</pl-question-panel>
+
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans" rtol = "0.03" weight = "1" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" label = "$I_\mathrm{min} =$"  suffix = "$\rm\ {\mu A}$" custom-format = ".3g"></pl-number-input>
+<pl-submission-panel><br>
+{{ feedback.part1_ans }}
+ </pl-submission-panel>
+
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+<pl-hide-in-panel answer="false">
+<div class="card my-2">
+<div class="card-header">Part 2</div>
+
+<div class="card-body">
+
+<pl-question-panel>
+	<markdown>	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part2_ans" rtol = "0.03" weight = "1" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" label = "$I_\mathrm{max} =$" suffix = "$\rm\ {\mu A}$" custom-format = ".3g"></pl-number-input>
+<pl-submission-panel><br>
+{{ feedback.part2_ans }}
+ </pl-submission-panel>
+
+
+</div>
+</div>
+
+
+</pl-hide-in-panel>
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

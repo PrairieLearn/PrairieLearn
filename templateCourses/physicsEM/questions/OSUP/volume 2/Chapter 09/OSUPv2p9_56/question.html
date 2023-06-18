@@ -1,0 +1,19 @@
+<pl-hide-in-panel answer="false">
+<pl-question-panel>
+	<markdown>What is the maximum voltage that can be applied to a ${{params.R}}\rm\ k\Omega$ resistor rated at ${{params.P}}\rm\ W$?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans"rtol = "0.03" weight = "1" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" label = "$V= $" suffix = "$\rm\ V$" custom-format = ".3g"></pl-number-input>
+</pl-hide-in-panel>
+<pl-submission-panel><br>
+{{ feedback.part1_ans }}
+ </pl-submission-panel>
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

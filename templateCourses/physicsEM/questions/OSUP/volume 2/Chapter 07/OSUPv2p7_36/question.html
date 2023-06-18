@@ -1,0 +1,33 @@
+<pl-question-panel>
+<p>
+What is the strength of the electric field between two parallel conducting plates separated by ${{params.d}}\rm\ cm$ and having a potential difference of ${{params.V}}\times 10^{ {{params.p}} }\rm\ V$ between them?
+</p>
+</pl-question-panel>
+
+<div class="card my-2">
+<div class="card-header">Part 1</div>
+
+<div class="card-body">
+
+
+<pl-number-input answers-name="E" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$E=$" suffix="$\rm\ N/C$" show-help-text = "True" weight = "1" custom-format = ".3g"></pl-number-input>
+
+<pl-submission-panel><br>
+{{ feedback.E }}
+ </pl-submission-panel>
+
+</div>
+</div>
+
+
+<pl-answer-panel>
+</pl-answer-panel>
+
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>

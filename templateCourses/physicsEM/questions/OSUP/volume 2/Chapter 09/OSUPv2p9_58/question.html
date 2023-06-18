@@ -1,0 +1,22 @@
+<pl-hide-in-panel answer="false">
+<pl-question-panel>
+	<markdown>A more sustainable alternative to CFL bulbs and incandescent bulbs are light-emitting diode (LED) bulbs.
+A $100\rm\ W$ incandescent bulb can be replaced by a $16\rm\ W$ LED bulb. Both produce $1600\rm\ lumens$ of light.
+
+Assuming the cost of electricity is $\rm\ {$}{{params.c}}\textrm{ per kilowatt-hour}$, how much does it cost to run the LED bulb for one year if it runs for, on average, ${{params.h}}\textrm{ hours per day}$?
+	</markdown>
+</pl-question-panel>
+
+<pl-number-input answers-name="part1_ans" rtol = "0.03" weight = "1" allow-blank = "False" show-correct-answer = "True" show-help-text = "True" label = "$\textrm{Cost} = $" custom-format = ".4g"></pl-number-input>
+</pl-hide-in-panel>
+<pl-submission-panel><br>
+{{ feedback.part1_ans }}
+ </pl-submission-panel>
+
+<pl-question-panel>
+<markdown>
+
+---
+Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
+</markdown>
+</pl-question-panel>
