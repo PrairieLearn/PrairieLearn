@@ -2,76 +2,39 @@
 <p>
 A point charge $q = {{params.q}}\times 10^{ {{params.p}} }\rm\ C$ is placed at the centre of a spherical conducting shell of inner radius ${{params.rin}}\rm\ cm$ and outer radius ${{params.rout}}\rm\ cm$.  The electric field just above the surface of the conductor is directed radially outward and has magnitude ${{params.E}}\rm\ N/C$.
 </p>
-</pl-question-panel>
 
-<div class="card my-2">
-<div class="card-header">Part 1</div>
-
-<div class="card-body">
-
-<pl-question-panel>
 <p>
 What is the charge density on the inner surface of the shell?
 </p>
 </pl-question-panel>
-<pl-number-input answers-name="sigInner" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$\sigma_\mathrm{inner}=$" suffix="$\rm C/m^2$" show-help-text="true" weight = "1" custom-format = ".3g"></pl-number-input>
 
-<pl-submission-panel><br>
-{{ feedback.sigInner }}
-</pl-submission-panel>
-
-</div>
-</div>
-
-
-<div class="card my-2">
-<div class="card-header">Part 2</div>
-
-<div class="card-body">
-
+<p>
+<pl-number-input answers-name="sigInner"  label="$\sigma_\mathrm{inner}=$" suffix="$\rm C/m^2$" ></pl-number-input>
+</p>
 
 <pl-question-panel>
 <p>
 What is the charge density on the outer surface of the shell?
 </p>
 </pl-question-panel>
-<pl-number-input answers-name="sigOuter" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$\sigma_\mathrm{outer}=$" suffix="$\rm C/m^2$" show-help-text="true" weight = "1" custom-format = ".3g"></pl-number-input>
+<p>
+<pl-number-input answers-name="sigOuter" label="$\sigma_\mathrm{outer}=$" suffix="$\rm C/m^2$" ></pl-number-input>
+</p>
 
-<pl-submission-panel><br>
-{{ feedback.sigOuter }}
-</pl-submission-panel>
-
-</div>
-</div>
-
-
-<div class="card my-2">
-<div class="card-header">Part 3</div>
-
-<div class="card-body">
 
 <pl-question-panel>
 <p>
 What is the net charge on the conductor?
 </p>
 </pl-question-panel>
-<pl-number-input answers-name="Q" show-correct-answer="true" allow-blank = "False" comparison="relabs" rtol={{params.rtol}} atol="0" label="$Q=$" suffix="$\rm C$" show-help-text="true" weight = "1" custom-format = ".3g"></pl-number-input>
 
-<pl-submission-panel><br>
-{{ feedback.Q }}
-</pl-submission-panel>
-
-</div>
-</div>
-
-<pl-answer-panel>
-</pl-answer-panel>
-
-
+<p>
+<pl-number-input answers-name="Q" label="$Q=$" suffix="$\rm C$"></pl-number-input>
+</p>
 <pl-question-panel>
-<markdown>
-
----
-Problem is from the [OpenStax University Physics Volume 2](https://openstax.org/details/books/university-physics-volume-2) textbook, licensed under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/).<br>![Image representing the Creative Commons 4.0 BY license.](https://raw.githubusercontent.com/firasm/bits/master/by.png)
-</markdown>
-</pl-question-panel>
+    <hr />
+    <p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, adapted from the <a href="https://openstax.org/details/books/university-physics-volume-2">OpenStax University Physics Volume 2</a> and the
+  <a href="https://firas.moosvi.com/oer/physics_bank/files/bio.html">Open Problem Bank in Physics</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+  </pl-question-panel>
