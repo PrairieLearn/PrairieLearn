@@ -1,0 +1,36 @@
+<pl-question-panel>
+<p>
+Consider the point charges in the figure below. They are both given in units of $\mu C$.
+</p>
+<p>
+  <pl-drawing width="400" height="300"  grid-size="0" answers-name="answer">
+    <pl-drawing-initial>
+        <pl-line   x1="200" y1="290" x2="200" y2="10" stroke-width="1"></pl-line>
+        <pl-line   x1="10" y1="150" x2="390" y2="150" stroke-width="1"></pl-line>
+        <pl-dimensions x1={{params.pP.0}} y1={{params.pP.1}} x2={{params.pA.0}} y2={{params.pA.1}} dim-offset="130" label="{{params.d}}" start-support-line="true"></pl-dimensions>
+        <pl-dimensions x1={{params.pA.0}} y1={{params.pA.1}} x2={{params.pM.0}} y2={{params.pM.1}} dim-offset="130" label="{{params.d}}" end-support-line="true"></pl-dimensions>
+        <pl-circle x1={{params.pP.0}} y1={{params.pP.1}} color="red1"></pl-circle>
+        <pl-circle x1={{params.pM.0}} y1={{params.pM.1}} color="blue1"></pl-circle>
+        <pl-text   x1={{params.pP.0}} y1={{params.pP.1}} label="{{params.q1}}" offsetx="-10" offsety="-40"></pl-text>
+        <pl-text   x1={{params.pM.0}} y1={{params.pM.1}} label="{{params.q2}}" offsetx="-10" offsety="-40"></pl-text>
+        <pl-point x1={{params.p.0}} y1={{params.p.1}} label="P"></pl-point>
+        <pl-dimensions x1={{params.pA.0}} y1={{params.pA.1}} x2={{params.p.0}} y2={{params.p.1}} dim-offset="40" label="{{params.dP}}" offsetx={{params.offset}} end-support-line="true"></pl-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+<p>
+Find the potential at point $P$.
+</p>
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="V" label="$V=$" suffix="$\rm\ V$"></pl-number-input>
+</p>
+
+<pl-question-panel>
+    <hr />
+    <p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, adapted from the <a href="https://openstax.org/details/books/university-physics-volume-2">OpenStax University Physics Volume 2</a> and the
+  <a href="https://firas.moosvi.com/oer/physics_bank/files/bio.html">Open Problem Bank in Physics</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
