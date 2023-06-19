@@ -1,10 +1,11 @@
 {
   "uuid": "d4d949c2-a46f-4c89-a1a1-e5101e494862",
   "title": "OpenStax University Physics vol. 2 P5.51",
-  "topic": "force between point charges",
+  "topic": "Electrostatics",
   "tags": [
     "license:CC-BY-NC",
-    "author:jake.bobowski@ubc.ca"
+    "author:jake.bobowski@ubc.ca",
+    "not-randomized"
   ],
   "type": "v3"
 }

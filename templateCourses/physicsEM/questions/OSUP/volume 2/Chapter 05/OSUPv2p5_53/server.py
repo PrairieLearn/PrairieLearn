@@ -1,32 +1,13 @@
-import math
+
 import random
 from collections import defaultdict
-
-import ext
 import numpy as np
-import problem_bank_helpers as pbh
 
 nested_dict = lambda: defaultdict(nested_dict)
-
-# Tolerance for pl-number-input
-rtol = 0.03
-
-# For error checking...
-errorCheck = "true"
-
-# For the attribution...
-displayAttribution = "true"
-source = "OSUP"
-volume = 2
-chapter = 5
-
 
 def generate(data):
     # Start problem code
     data2 = nested_dict()
-
-    # Pass the rtol value to {{params.rtol}}.
-    data2["params"]["rtol"] = str(rtol)
 
     # Sample a random number
     sign1 = random.choice([-1, 1])
@@ -51,12 +32,8 @@ def generate(data):
     # Put the solutions into data['correct_answers']
     if F == 0:
         data2["correct_answers"]["part1_ans"] = F
-        # Write the solutions formatted using scientific notation while keeping 3 sig figs.
-        data2["correct_answers"]["Fstr"] = "0.0"
     else:
-        data2["correct_answers"]["part1_ans"] = np.abs(ext.round_sig(F, 3))
-        # Write the solutions formatted using scientific notation while keeping 3 sig figs.
-        data2["correct_answers"]["Fstr"] = "{:.2e}".format(np.abs(F))
+        data2["correct_answers"]["part1_ans"] = np.abs(round(F, 3))
 
     # Define correct answers for multiple choice
     data2["params"]["part2"]["ans1"]["value"] = "towards q1"
@@ -69,7 +46,7 @@ def generate(data):
         data2["params"]["part2"]["ans2"]["correct"] = False
         data2["params"]["part2"]["ans2"][
             "feedback"
-        ] = "Consider q1 and q2. What is the sign of the larger charge? What is the sign of q3? Is q3 attracted to or repelled by the lager charge?"
+        ] = "Consider q1 and q2. What is the sign of the larger charge? What is the sign of q3? Is q3 attracted to or repelled by the larger charge?"
         data2["params"]["part2"]["ans3"]["correct"] = False
         data2["params"]["part2"]["ans3"][
             "feedback"
@@ -79,7 +56,7 @@ def generate(data):
         data2["params"]["part2"]["ans1"]["correct"] = False
         data2["params"]["part2"]["ans1"][
             "feedback"
-        ] = "Consider q1 and q2. What is the sign of the larger charge? What is the sign of q3? Is q3 attracted to or repelled by the lager charge?"
+        ] = "Consider q1 and q2. What is the sign of the larger charge? What is the sign of q3? Is q3 attracted to or repelled by the larger charge?"
         data2["params"]["part2"]["ans2"]["correct"] = True
         data2["params"]["part2"]["ans2"]["feedback"] = "Great! You got it."
         data2["params"]["part2"]["ans3"]["correct"] = False
@@ -98,46 +75,5 @@ def generate(data):
         data2["params"]["part2"]["ans3"]["correct"] = True
         data2["params"]["part2"]["ans3"]["feedback"] = "Great! You got it."
 
-    # To display an attribution, use ext.attribution(displayAttribution, source, volume, chapter).
-    # displatAttribution is a string and should be either 'true' or 'false'.  The source parameter
-    # is also a string.  Currently, the allowed values are 'original' (the default) and 'OSUP' for
-    # Open Stax University Physics.  The volume and chapter parameters are integers and the default
-    # values are zero.
-    data2["params"]["attribution"] = ext.attribution(
-        displayAttribution, source, volume, chapter
-    )
-
     data.update(data2)
 
-
-# Access the submitted answers
-varstr = ["part1_ans"]
-stringData = ["part1_ans"]
-units = ["$~\mathrm{N}$"]  # Use LaTeX notation $~\mathrm{unit}$
-
-
-def parse(data):
-    # Call a function to check if the submitted answers should be re-expressed using scientific notation.
-    cnt = 0
-    for k in varstr:
-        data["submitted_answers"][k + "str"] = ext.sigFigCheck(
-            data["submitted_answers"][k], stringData[cnt], units[cnt]
-        )
-        cnt += 1
-
-
-# Provide hints.
-def grade(data):
-    # Call a function to check for easily-identifiable errors.
-    # The syntax is ext.ErrorCheck(errorCheck, submittedAnswer, correctAnswer, LaTeXsyntax, relativeTolerance)
-    # To enable error checking, set check = 'true'.
-    cnt = 0
-    for k in varstr:
-        data["feedback"][k] = ext.ErrorCheck(
-            errorCheck,
-            data["submitted_answers"][k],
-            data["correct_answers"][k],
-            stringData[cnt],
-            rtol,
-        )
-        cnt += 1
