@@ -1,7 +1,10 @@
 {
-            "uuid": "e1155418-bb98-470e-8b12-52a80c90b1db",
-            "title": "Circuit Loop within a Loop",
-            "topic": "Circuits",
-            "tags":  ["OSUP", "volume 2", "chapter 10", "problem 40", "circuits", "Kirchhoff's rules", "multi-part", "JW"],
-            "type": "v3"
-        }
+  "uuid": "e1155418-bb98-470e-8b12-52a80c90b1db",
+  "title": "Circuit Loop within a Loop",
+  "topic": "Circuits",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
+}

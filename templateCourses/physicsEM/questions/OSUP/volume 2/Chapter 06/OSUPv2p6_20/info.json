@@ -1,7 +1,10 @@
 {
-    "uuid": "6e73b4bb-b6a1-4f2d-814d-022fadff8e13",
-    "title": "OpenStax University Physics vol. 2 P6.20",
-    "topic": "electric flux",
-    "tags": ["bobowski", "PHYS121", "ch6", "p20", "electric flux"],
-    "type": "v3"
+  "uuid": "6e73b4bb-b6a1-4f2d-814d-022fadff8e13",
+  "title": "OpenStax University Physics vol. 2 P6.20",
+  "topic": "electric flux",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
 }

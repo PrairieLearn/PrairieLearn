@@ -1,7 +1,10 @@
 {
-            "uuid": "4b821540-4995-44ec-b29a-291b6b64536b",
-            "title": "Magnetic Force on Airplane",
-            "topic": "Magnetism",
-            "tags":  ["OSUP", "chapter 11", "problem 21", "VS", "magnetic force"],
-            "type": "v3"
-        }
+  "uuid": "4b821540-4995-44ec-b29a-291b6b64536b",
+  "title": "Magnetic Force on Airplane",
+  "topic": "Magnetism",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
+}

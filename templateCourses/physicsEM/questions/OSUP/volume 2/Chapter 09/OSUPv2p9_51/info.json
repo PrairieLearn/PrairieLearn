@@ -1,7 +1,10 @@
 {
-            "uuid": "11517faa-6ce4-45dc-a925-11282277c5f9",
-            "title": "Range of Current Through Resistor",
-            "topic": "Current",
-            "tags":  ["OSUP", "Chapter 9", "Problem 51", "resistance", "current", "VS", "range"],
-            "type": "v3"
-        }
+  "uuid": "11517faa-6ce4-45dc-a925-11282277c5f9",
+  "title": "Range of Current Through Resistor",
+  "topic": "Current",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
+}

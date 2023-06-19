@@ -1,7 +1,10 @@
 {
-            "uuid": "d61d0fb3-ede9-4366-aed9-8c2c1d6ce3d6",
-            "title": "Circuit with Multiple Loops",
-            "topic": "Circuits",
-            "tags":  ["OSUP", "volume 2", "chapter 10", "problem 38", "circuits", "Kirchhoff's rules", "multi-part", "JW"],
-            "type": "v3"
-        }
+  "uuid": "d61d0fb3-ede9-4366-aed9-8c2c1d6ce3d6",
+  "title": "Circuit with Multiple Loops",
+  "topic": "Circuits",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
+}

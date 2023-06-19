@@ -1,7 +1,11 @@
 {
-            "uuid": "40cdd6a9-c524-4d3a-af4a-d9bcd23ac008",
-            "title": "Charge Stored in a Capacitor",
-            "topic": "Circuits",
-            "tags":  ["OSUP", "volume 2", "chapter 8", "problem 19", "capacitors", "numeric", "AC"],
-            "type": "v3"
-        }
+  "uuid": "40cdd6a9-c524-4d3a-af4a-d9bcd23ac008",
+  "title": "Charge Stored in a Capacitor",
+  "topic": "Circuits",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

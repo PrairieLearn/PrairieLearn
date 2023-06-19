@@ -1,7 +1,10 @@
 {
-    "uuid": "085eb9fc-c731-442b-8574-b0d13c2fd026",
-    "title": "OpenStax University Physics vol. 2 P5.70",
-    "topic": "electric field",
-    "tags": ["bobowski", "PHYS121", "ch5", "p70", "electric field"],
-    "type": "v3"
+  "uuid": "085eb9fc-c731-442b-8574-b0d13c2fd026",
+  "title": "OpenStax University Physics vol. 2 P5.70",
+  "topic": "electric field",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
 }

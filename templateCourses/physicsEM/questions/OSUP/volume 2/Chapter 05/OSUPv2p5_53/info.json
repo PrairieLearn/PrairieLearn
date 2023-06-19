@@ -1,7 +1,10 @@
 {
-    "uuid": "dcacac5d-165f-43ec-8bb3-7504f06ce929",
-    "title": "OpenStax University Physics vol. 2 P5.53",
-    "topic": "force between point charges",
-    "tags": ["bobowski", "PHYS121", "ch5", "p53", "electric force"],
-    "type": "v3"
+  "uuid": "dcacac5d-165f-43ec-8bb3-7504f06ce929",
+  "title": "OpenStax University Physics vol. 2 P5.53",
+  "topic": "force between point charges",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
 }

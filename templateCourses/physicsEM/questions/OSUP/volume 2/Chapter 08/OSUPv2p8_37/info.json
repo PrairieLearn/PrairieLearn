@@ -1,7 +1,11 @@
 {
-            "uuid": "9e2d00c8-f417-449e-a912-8e96ff75d9ca",
-            "title": "Adding Capacitances",
-            "topic": "Circuits",
-            "tags":  ["OSUP", "volume 2", "chapter 8", "problem 37", "capacitors", "numeric", "AC"],
-            "type": "v3"
-        }
+  "uuid": "9e2d00c8-f417-449e-a912-8e96ff75d9ca",
+  "title": "Adding Capacitances",
+  "topic": "Circuits",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

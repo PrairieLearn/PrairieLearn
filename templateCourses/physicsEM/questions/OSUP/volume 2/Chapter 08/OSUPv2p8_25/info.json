@@ -1,7 +1,11 @@
 {
-            "uuid": "c028a719-7ad5-4c32-9069-2416c03926bb",
-            "title": "Area of Capacitor Plates",
-            "topic": "Circuits",
-            "tags":  ["OSUP", "volume 2", "chapter 8", "problem 25", "capacitors", "numeric", "AC"],
-            "type": "v3"
-        }
+  "uuid": "c028a719-7ad5-4c32-9069-2416c03926bb",
+  "title": "Area of Capacitor Plates",
+  "topic": "Circuits",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

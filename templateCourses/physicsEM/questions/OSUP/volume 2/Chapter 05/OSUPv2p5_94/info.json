@@ -1,7 +1,10 @@
 {
-    "uuid": "a8552ee4-8060-4f7b-9999-c740f95fe0c0",
-    "title": "OpenStax University Physics vol. 2 P5.94",
-    "topic": "electric force",
-    "tags": ["bobowski", "PHYS121", "ch5", "p94", "electric field"],
-    "type": "v3"
+  "uuid": "a8552ee4-8060-4f7b-9999-c740f95fe0c0",
+  "title": "OpenStax University Physics vol. 2 P5.94",
+  "topic": "electric force",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:jake.bobowski@ubc.ca"
+  ],
+  "type": "v3"
 }
