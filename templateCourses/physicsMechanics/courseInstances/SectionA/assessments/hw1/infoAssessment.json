@@ -41,6 +41,7 @@
                 {"id": "twoBoxesFrictionless", "points": 1,"maxPoints": 3},
                 {"id": "hangingObjectCable", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/006.Force/Free Body Diagrams/Car in Ditch", "points": 1,"maxPoints": 3},
+                {"id": "OPBP/006.Force/Newton's Second Law/Force_On_An_Object", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/006.Force/Friction/Block on a Wall", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/006.Force/Friction/spring_on_ramp", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/006.Force/Topic Outcome/Frictionless Air Track", "points": 1,"maxPoints": 3},
