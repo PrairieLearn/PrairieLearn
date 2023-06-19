@@ -1,7 +1,12 @@
 {
-            "uuid": "401a6773-d9a1-30e2-9034-0eba01cb280d",
-            "title": "Jump Across Stream",
-            "topic": "Kinematics(2D and 3D)",
-            "tags":  ["multi_part", "multiple-choice", "number-input", "symbolic-input", "AK", "PW"],
-            "type": "v3"
-        }
+  "uuid": "401a6773-d9a1-30e2-9034-0eba01cb280d",
+  "title": "Jump Across Stream",
+  "topic": "Kinematics(2D and 3D)",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "mc",
+    "calculation"
+  ],
+  "type": "v3"
+}

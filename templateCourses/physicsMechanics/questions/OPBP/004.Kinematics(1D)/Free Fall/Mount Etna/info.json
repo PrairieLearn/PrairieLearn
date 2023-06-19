@@ -1,7 +1,11 @@
 {
-            "uuid": "97abcc78-e468-39d7-aa57-179bf7ff3e25",
-            "title": "Eruption of Mount Etna",
-            "topic": "Kinematics(1D)",
-            "tags":  ["number-input", "PW"],
-            "type": "v3"
-        }
+  "uuid": "97abcc78-e468-39d7-aa57-179bf7ff3e25",
+  "title": "Eruption of Mount Etna",
+  "topic": "Kinematics(1D)",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

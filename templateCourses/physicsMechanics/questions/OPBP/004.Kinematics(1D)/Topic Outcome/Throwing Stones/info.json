@@ -1,7 +1,10 @@
 {
-            "uuid": "284804d5-42eb-334e-8c4c-6da28e813474",
-            "title": "Throwing Stones",
-            "topic": "Kinematics(1D)",
-            "tags":  ["number-input", "PW"],
-            "type": "v3"
-        }
+  "uuid": "284804d5-42eb-334e-8c4c-6da28e813474",
+  "title": "Throwing Stones",
+  "topic": "Kinematics(1D)",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca"
+  ],
+  "type": "v3"
+}

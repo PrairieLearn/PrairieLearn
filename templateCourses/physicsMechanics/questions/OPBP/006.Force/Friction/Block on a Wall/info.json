@@ -1,7 +1,11 @@
 {
-            "uuid": "f95e9b5b-8ee0-3bd1-98e6-1cfb10e4920d",
-            "title": "Block on a Wall",
-            "topic": "Force",
-            "tags":  ["number-input", "MP"],
-            "type": "v3"
-        }
+  "uuid": "f95e9b5b-8ee0-3bd1-98e6-1cfb10e4920d",
+  "title": "Block on a Wall",
+  "topic": "Force",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

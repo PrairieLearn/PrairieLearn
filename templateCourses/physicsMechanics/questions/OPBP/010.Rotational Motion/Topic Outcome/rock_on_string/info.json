@@ -1,7 +1,11 @@
 {
-            "uuid": "dd5d810a-314a-3849-84bb-0e8ad05ca273",
-            "title": "Rock on a String",
-            "topic": "Rotational Dynamics",
-            "tags":  ["multiple-choice", "MP"],
-            "type": "v3"
-        }
+  "uuid": "dd5d810a-314a-3849-84bb-0e8ad05ca273",
+  "title": "Rock on a String",
+  "topic": "Rotational Dynamics",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "mc"
+  ],
+  "type": "v3"
+}

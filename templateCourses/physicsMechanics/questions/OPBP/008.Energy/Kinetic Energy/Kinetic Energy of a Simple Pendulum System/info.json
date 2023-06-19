@@ -1,7 +1,11 @@
 {
-            "uuid": "55407ec8-20b0-393b-b49c-167e1437ae81",
-            "title": "Kinetic Energy of a Simple Pendulum System",
-            "topic": "Energy",
-            "tags":  ["number-input", "PW"],
-            "type": "v3"
-        }
+  "uuid": "55407ec8-20b0-393b-b49c-167e1437ae81",
+  "title": "Kinetic Energy of a Simple Pendulum System",
+  "topic": "Energy",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

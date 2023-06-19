@@ -1,7 +1,11 @@
 {
-            "uuid": "0dba9dd4-c15f-3632-9957-3d01ea4415d4",
-            "title": "Equilibrium Length of a Spring",
-            "topic": "Energy",
-            "tags":  ["number-input", "PW"],
-            "type": "v3"
-        }
+  "uuid": "0dba9dd4-c15f-3632-9957-3d01ea4415d4",
+  "title": "Equilibrium Length of a Spring",
+  "topic": "Energy",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}

@@ -1,7 +1,11 @@
 {
-            "uuid": "dc3d3408-5a22-3377-bbdf-c10f53102c64",
-            "title": "Force On An Object",
-            "topic": "Force",
-            "tags":  ["multiple-choice", "EW"],
-            "type": "v3"
-        }
+  "uuid": "dc3d3408-5a22-3377-bbdf-c10f53102c64",
+  "title": "Force On An Object",
+  "topic": "Force",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "mc"
+  ],
+  "type": "v3"
+}

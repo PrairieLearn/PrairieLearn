@@ -1,7 +1,10 @@
 {
-            "uuid": "98d01549-c95e-3351-9b84-ac5e8454d85c",
-            "title": "Rotating Buckets",
-            "topic": "Rotational Motion",
-            "tags":  ["symbolic-input", "PW"],
-            "type": "v3"
-        }
+  "uuid": "98d01549-c95e-3351-9b84-ac5e8454d85c",
+  "title": "Rotating Buckets",
+  "topic": "Rotational Motion",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca"
+  ],
+  "type": "v3"
+}

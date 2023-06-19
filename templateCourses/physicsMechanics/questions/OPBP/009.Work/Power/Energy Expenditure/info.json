@@ -1,7 +1,11 @@
 {
-            "uuid": "16112e76-62e3-3b1d-a3c5-56adafdfe7a9",
-            "title": "The Energy Expenditure of a Jogger",
-            "topic": "Work",
-            "tags":  ["multiple-choice", "PW"],
-            "type": "v3"
-        }
+  "uuid": "16112e76-62e3-3b1d-a3c5-56adafdfe7a9",
+  "title": "The Energy Expenditure of a Jogger",
+  "topic": "Work",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "mc"
+  ],
+  "type": "v3"
+}

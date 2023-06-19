@@ -1,7 +1,11 @@
 {
-            "uuid": "97d0cda0-4dd9-34c9-9870-b6ec652cef89",
-            "title": "Car in Ditch",
-            "topic": "Force",
-            "tags":  ["number-input", "NR"],
-            "type": "v3"
-        }
+  "uuid": "97d0cda0-4dd9-34c9-9870-b6ec652cef89",
+  "title": "Car in Ditch",
+  "topic": "Force",
+  "tags": [
+    "license:CC-BY-NC",
+    "author:firas.moosvi@ubc.ca",
+    "calculation"
+  ],
+  "type": "v3"
+}
