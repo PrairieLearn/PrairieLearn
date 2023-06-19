@@ -1,10 +1,10 @@
 {
-  "uuid": "2cd41e4e-f686-4893-9802-f2b64c5e0f8b",
+  "uuid": "2cd41e4e-f686-5893-9802-f2b64c5e0f8b",
   "title": "Equivalent Capacitance",
-  "topic": "Circuits",
+  "topic": "Capacitance",
   "tags": [
     "license:CC-BY-NC",
-    "author:jake.bobowski@ubc.ca",
+    "author:prairielearn.com",
     "calculation"
   ],
   "type": "v3"
