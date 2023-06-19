@@ -12,7 +12,9 @@
         {"name": "Kinematics",          "color": "red2", "description": " "},
         {"name": "Kinematics2D",        "color": "red3", "description": " "},
         {"name": "Energy",              "color": "orange1", "description": " "},
-        {"name": "Impulse/Momentum",    "color": "orange2", "description": " "}
+        {"name": "Work",                "color": "orange2", "description": " "},
+        {"name": "Impulse/Momentum",    "color": "orange3", "description": " "},
+        {"name": "Rotational Motion",   "color": "brown1", "description": " "}
     ],
     "tags": [  
         {"name": "calculation", "color": "blue2", "description": "numerical input is expected resulting from calculations"},
