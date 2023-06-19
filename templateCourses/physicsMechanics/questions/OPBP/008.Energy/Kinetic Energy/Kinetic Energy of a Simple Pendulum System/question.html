@@ -1,10 +1,19 @@
 <pl-question-panel>
 <markdown>
 The figure below shows a simple pendulum. The length of the string is $l$ and the bob has mass $m_1$.
-
-<img src="{{options.client_files_question_url}}/2017Mid2S002Q5.png" alt="Figure of a pendulum. The angle between the displaced string of the pendulum and the vertical axis is theta." >
-
 </markdown>
+<p>
+<pl-drawing gradable="false" grid-size="0"  width="320" height="200">
+    <pl-drawing-initial>
+        <pl-fixed-pin x1="180" y1="40" color="gray3" angle="-180" height="30" label="l" offsetx="-40" offsety="40"></pl-fixed-pin>
+        <pl-line x1="180" y1="40" width="120" angle="120" ></pl-line>
+        <pl-circle x1="120" y1="144" radius="20" color="gray1"></pl-circle>
+        <pl-line x1="180" y1="40" width="120" angle="90" dashed-size="2" stroke-width="1"></pl-line>
+        <pl-text x1="120" y1="144" label="m_1" offsetx="-5"></pl-text>
+        <pl-arc-dimensions x1="180" y1="40" start-angle="90" end-angle="120" radius="60" label="\\theta" offsetx="5" offsety="-5" draw-start-arrow="false" draw-end-arrow="false"></pl-arc-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
 </pl-question-panel>
 
 
@@ -20,8 +29,10 @@ The figure below shows a simple pendulum. The length of the string is $l$ and th
 <!-- ######## End of Part 1 ######## -->
 
 <pl-question-panel>
-<markdown>
----
-Problem is licensed under the [CC-BY-NC-SA 4.0 license](https://creativecommons.org/licenses/by-nc-sa/4.0/).<br> ![The Creative Commons 4.0 license requiring attribution-BY, non-commercial-NC, and share-alike-SA license.](https://raw.githubusercontent.com/firasm/bits/master/by-nc-sa.png)
-</markdown>
+    <hr />
+    <p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, adapted from 
+	<a href="https://firas.moosvi.com/oer/physics_bank/files/bio.html">Open Problem Bank in Physics</a>
+	and licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
 </pl-question-panel>

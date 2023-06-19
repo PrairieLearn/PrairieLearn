@@ -2,21 +2,19 @@ import random as rd
 import numpy as np
 import pandas as pd
 import math
-import problem_bank_helpers as pbh
 
-def imports(data):
-    import random as rd
-    import numpy as np
-    import pandas as pd
-    import math
-    import problem_bank_helpers as pbh
+
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
     # Start problem code
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # define or load names/items/objects from server files
-    names = pbh.names.copy()
+    names = pd.read_csv("https://raw.githubusercontent.com/open-resources/problem_bank_helpers/main/data/names.csv")["Names"].tolist()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "A Frictionless Air Track?"
@@ -24,9 +22,9 @@ def generate(data):
     data2["params"]["vars"]["units"] = "$m/s^2$"
     
     # define bounds of the variables
-    m1 = pbh.roundp( rd.uniform(100.0, 500.0) , sigfigs = 4)
-    m2 = pbh.roundp( rd.uniform(10.0, 80.0) , sigfigs = 4)
-    d_a = pbh.roundp( rd.uniform(0.01, 0.03) , sigfigs = 1) # uncertainty in acceleration
+    m1 = round( rd.uniform(100.0, 500.0) , 1)
+    m2 = round( rd.uniform(10.0, 80.0) , 1)
+    d_a = round( rd.uniform(0.01, 0.03) , 2) # uncertainty in acceleration
     
     # store the variables in the dictionary "params"
     data2["params"]["m1"] = m1
@@ -37,11 +35,11 @@ def generate(data):
     g = 9.81
     
     # generate the table
-    a_meas = [pbh.roundp(rd.uniform(1.3,1.8), sigfigs=3) for _ in range(10)]
+    a_meas = [round(rd.uniform(1.3,1.8), 2) for _ in range(10)]
     
     # calculate mean measured acceleration and standard deviation
-    mean = pbh.roundp(float(np.mean(a_meas)), sigfigs=3)
-    sd = pbh.roundp(float(np.std(a_meas)), sigfigs = 3)
+    mean = round(float(np.mean(a_meas)), 2)
+    sd = round(float(np.std(a_meas)), 3)
     
     # save table values in dictionary
     data2["params"]["mean"] = mean
@@ -55,7 +53,7 @@ def generate(data):
     ## Part 1
     
     # define correct answer, a_expected
-    a_exp = pbh.roundp((m2/(m1+m2))*g, sigfigs = 4)
+    a_exp = round((m2/(m1+m2))*g, 4)
     data2["correct_answers"]["part1_ans"] = a_exp
     
     ## Part 2
@@ -66,7 +64,7 @@ def generate(data):
     ## Part 3
     
     # define correct answer
-    error = pbh.roundp(sd/(math.sqrt(10)), sigfigs = 4)
+    error = round(sd/(math.sqrt(10)), 4)
     data2["correct_answers"]["part3_ans"] = error
     
     ## Part 4. Define correct answer depending on whether the results are within error or not
@@ -99,12 +97,4 @@ def generate(data):
     # Update the data object with a new dict
     data.update(data2)
     
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
     

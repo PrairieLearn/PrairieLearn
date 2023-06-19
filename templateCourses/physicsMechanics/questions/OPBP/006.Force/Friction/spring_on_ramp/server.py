@@ -1,16 +1,14 @@
 import random
-import pandas as pd
 import math
-import problem_bank_helpers as pbh
+import numpy as np
 
-def imports(data):
-    import random
-    import pandas as pd
-    import math
-    import problem_bank_helpers as pbh
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "Spring on Ramp"
@@ -34,22 +32,12 @@ def generate(data):
     ## Part 1
     
     # define correct answers
-    data2["correct_answers"]["part1_ans"] = pbh.roundp((m*g/k)*(us*math.cos(math.radians(theta))+math.sin(math.radians(theta))), sigfigs=3)
+    data2["correct_answers"]["part1_ans"] = round((m*g/k)*(us*math.cos(math.radians(theta))+math.sin(math.radians(theta))), 2)
     
     ## Part 2
     
     # define correct answers
-    data2["correct_answers"]["part2_ans"] = pbh.roundp((m*g/k)*(uk*math.cos(math.radians(theta))+math.sin(math.radians(theta))), sigfigs=3)
+    data2["correct_answers"]["part2_ans"] = round((m*g/k)*(uk*math.cos(math.radians(theta))+math.sin(math.radians(theta))), 2)
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
-    

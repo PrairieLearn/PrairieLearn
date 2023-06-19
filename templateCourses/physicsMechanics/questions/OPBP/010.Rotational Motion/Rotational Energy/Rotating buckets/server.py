@@ -1,16 +1,14 @@
 import random as rd
 import sympy as sp
-import problem_bank_scripts.prairielearn as pl
-import problem_bank_helpers as pbh
+from collections import defaultdict
+import prairielearn as pl
 
-def imports(data):
-    import random as rd
-    import sympy as sp
-    import problem_bank_scripts.prairielearn as pl
-    import problem_bank_helpers as pbh
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "Rotating Buckets"
@@ -19,7 +17,7 @@ def generate(data):
     # define bounds of the variables
     # use m1 for mass because m needs to be used as a sympy symbol
     # c is the constant divisor in part 2
-    m1 = pbh.roundp(rd.uniform(1.00, 3.00), sigfigs = 3)
+    m1 = round(rd.uniform(1.00, 3.00),  2)
     c = rd.randint (2,6)
     
     # store the variables in the dictionary "params"
@@ -47,13 +45,5 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
+
     

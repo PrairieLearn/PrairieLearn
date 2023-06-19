@@ -1,17 +1,12 @@
 import random as rd
+from collections import defaultdict
 import pandas as pd
-import problem_bank_helpers as pbh
-
-def imports(data):
-    import random as rd
-    import pandas as pd
-    import problem_bank_helpers as pbh
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # define or load names/items/objects
-    names = pbh.names.copy()
+    names = pd.read_csv("https://raw.githubusercontent.com/open-resources/problem_bank_helpers/main/data/names.csv")["Names"].tolist()
     
     # store phrases etc
     data2["params"]["vars"]["name"] = rd.choice(names)
@@ -19,7 +14,7 @@ def generate(data):
     data2["params"]["vars"]["units"] = "$s$"
     
     # define bounds of the variables
-    v = pbh.roundp(rd.uniform(10.0,30.0), sigfigs = 3)
+    v = round(rd.uniform(10.0,30.0), 1)
     
     # store the variables in the dictionary "params"
     data2["params"]["v"] = v
@@ -32,13 +27,8 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
-    
+
+def create_data2():
+
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()

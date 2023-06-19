@@ -1,18 +1,11 @@
 import random as rd
 import sympy as sp
 import pandas
-import problem_bank_scripts.prairielearn as pl
-import problem_bank_helpers as pbh
-
-def imports(data):
-    import random as rd
-    import sympy as sp
-    import pandas
-    import problem_bank_scripts.prairielearn as pl
-    import problem_bank_helpers as pbh
+import prairielearn as pl
+from collections import defaultdict
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "Jump Across Stream"
@@ -20,11 +13,11 @@ def generate(data):
     
     # define bounds of the variables
     m = rd.randint(100,500)                                    # mass of the bear
-    w_s = pbh.roundp(rd.uniform(2.0,5.0), sigfigs = 2)         # width of the stream
-    h_s = pbh.roundp(rd.uniform(1.0,2.0), sigfigs = 2)         # difference in height between the two banks
+    w_s = round(rd.uniform(2.0,5.0), 1)         # width of the stream
+    h_s = round(rd.uniform(1.0,2.0), 1)         # difference in height between the two banks
     v_i = rd.randint(2,4)                                      # i-component of the initial velocity
     v_j = rd.randint(2,4)                                      # j-component of the initial velocity
-    h_b = pbh.roundp(rd.uniform(h_s+1,h_s+3), sigfigs = 2)     # bear's initial height - always higher than the other bank
+    h_b = round(rd.uniform(h_s+1,h_s+3), 1)     # bear's initial height - always higher than the other bank
     
     # store the variables in the dictionary "params"
     data2["params"]["m"] = m
@@ -133,12 +126,8 @@ def generate(data):
     # Update the data object with a new dict
     data.update(data2)
     
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
-    
+
+def create_data2():
+
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()

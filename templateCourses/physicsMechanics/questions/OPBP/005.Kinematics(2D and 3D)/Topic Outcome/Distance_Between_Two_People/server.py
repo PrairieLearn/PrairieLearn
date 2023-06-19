@@ -1,19 +1,13 @@
 import random
 import math
 import pandas as pd
-import problem_bank_helpers as pbh
-
-def imports(data):
-    import random
-    import math
-    import pandas as pd
-    import problem_bank_helpers as pbh
+from collections import defaultdict
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # define or load names/items/objects from server files
-    names = pbh.names.copy()
+    names = pd.read_csv("https://raw.githubusercontent.com/open-resources/problem_bank_helpers/main/data/names.csv")["Names"].tolist()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = 'Distance Between Two People'
@@ -78,31 +72,31 @@ def generate(data):
     wrong_ans_sum = abs(ans_i + ans_j)
     wrong_ans_diff = abs(ans_i - ans_j)
     
-    data2["params"]["part1"]["ans1"]["value"] = pbh.roundp(ans, sigfigs = 2)
+    data2["params"]["part1"]["ans1"]["value"] = round(ans, 2)
     data2["params"]["part1"]["ans1"]["correct"] = True
     
     if ans > 1:
     
-        data2["params"]["part1"]["ans2"]["value"] = pbh.roundp(ans/2, sigfigs = 2)
+        data2["params"]["part1"]["ans2"]["value"] = round(ans/2,  2)
         data2["params"]["part1"]["ans2"]["correct"] = False
     
-        data2["params"]["part1"]["ans3"]["value"] = pbh.roundp(ans**2, sigfigs = 2)
+        data2["params"]["part1"]["ans3"]["value"] = round(ans**2,  2)
         data2["params"]["part1"]["ans3"]["correct"] = False
     
         if ans_i == 0 or ans_j == 0:
             # otherwise would typically have ans4 = ans 5
     
-            data2["params"]["part1"]["ans4"]["value"] = pbh.roundp(math.sqrt(ans**2 + 1), sigfigs = 2)
+            data2["params"]["part1"]["ans4"]["value"] = round(math.sqrt(ans**2 + 1), 2)
             data2["params"]["part1"]["ans4"]["correct"] = False
     
             data2["params"]["part1"]["ans5"]["value"] = 0
             data2["params"]["part1"]["ans5"]["correct"] = False
     
         else:
-            data2["params"]["part1"]["ans4"]["value"] = pbh.roundp(wrong_ans_sum, sigfigs = 2)
+            data2["params"]["part1"]["ans4"]["value"] = round(wrong_ans_sum, 2)
             data2["params"]["part1"]["ans4"]["correct"] = False
     
-            data2["params"]["part1"]["ans5"]["value"] = pbh.roundp(wrong_ans_diff, sigfigs = 2)
+            data2["params"]["part1"]["ans5"]["value"] = round(wrong_ans_diff,  2)
             data2["params"]["part1"]["ans5"]["correct"] = False
     
     else:
@@ -114,7 +108,7 @@ def generate(data):
         data2["params"]["part1"]["ans3"]["value"] = 0.5
         data2["params"]["part1"]["ans3"]["correct"] = False
     
-        data2["params"]["part1"]["ans4"]["value"] = pbh.roundp(math.sqrt(2), sigfigs = 2)
+        data2["params"]["part1"]["ans4"]["value"] = round(math.sqrt(2), 2)
         data2["params"]["part1"]["ans4"]["correct"] = False
     
         data2["params"]["part1"]["ans5"]["value"] = 2
@@ -122,13 +116,8 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
-    
+
+def create_data2():
+
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()

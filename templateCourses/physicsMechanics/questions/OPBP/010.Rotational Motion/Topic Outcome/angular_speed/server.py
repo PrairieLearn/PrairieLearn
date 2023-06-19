@@ -1,16 +1,13 @@
 import random
 import math
-import pandas as pd
-import problem_bank_helpers as pbh
+from collections import defaultdict
 
-def imports(data):
-    import random
-    import math
-    import pandas as pd
-    import problem_bank_helpers as pbh
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = 'Angular Speed'
@@ -23,28 +20,18 @@ def generate(data):
     data2["params"]["rev"] = rev
     
     # define possible answers
-    data2["params"]["part1"]["ans1"]["value"] = pbh.roundp((2*math.pi)/rev, sigfigs = 2)
+    data2["params"]["part1"]["ans1"]["value"] = round((2*math.pi)/rev,  2)
     data2["params"]["part1"]["ans1"]["correct"] = False
     
-    data2["params"]["part1"]["ans2"]["value"] = pbh.roundp(rev*(math.pi), sigfigs = 2)
+    data2["params"]["part1"]["ans2"]["value"] = round(rev*(math.pi),  2)
     data2["params"]["part1"]["ans2"]["correct"] = False
     
-    data2["params"]["part1"]["ans3"]["value"] = pbh.roundp(rev*(2*math.pi), sigfigs = 2)
+    data2["params"]["part1"]["ans3"]["value"] = round(rev*(2*math.pi),  2)
     data2["params"]["part1"]["ans3"]["correct"] = True
     
-    data2["params"]["part1"]["ans4"]["value"] = pbh.roundp(rev/(2*math.pi), sigfigs = 2)
+    data2["params"]["part1"]["ans4"]["value"] = round(rev/(2*math.pi), 2)
     data2["params"]["part1"]["ans4"]["correct"] = False
     
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
-    

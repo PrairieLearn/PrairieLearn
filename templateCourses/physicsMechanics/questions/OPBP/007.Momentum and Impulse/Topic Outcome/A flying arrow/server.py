@@ -1,17 +1,16 @@
 import random as rd
 import pandas as pd
-import problem_bank_helpers as pbh
 
-def imports(data):
-    import random as rd
-    import pandas as pd
-    import problem_bank_helpers as pbh
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # define or load names/items/objects
-    names = pbh.names.copy()
+    names =  pd.read_csv("https://raw.githubusercontent.com/open-resources/problem_bank_helpers/main/data/names.csv")["Names"].tolist()
     name1 = rd.choice(names)
     names.remove(name1)
     name2 = rd.choice(names)
@@ -29,10 +28,10 @@ def generate(data):
     sign = rd.choice(signs)
     
     # define bounds of the variables
-    m = pbh.roundp(rd.uniform(0.10, 0.50), sigfigs = 3)
-    v_x = sign * pbh.roundp(rd.uniform(70, 120), sigfigs = 3)
-    x1 = pbh.roundp(rd.uniform(5, 25), sigfigs = 3)
-    x2 = pbh.roundp(rd.uniform(5, 25), sigfigs = 3)
+    m = round(rd.uniform(0.10, 0.50),  3)
+    v_x = sign * round(rd.uniform(70, 120),  1)
+    x1 = round(rd.uniform(5, 25), 1)
+    x2 = round(rd.uniform(5, 25), 1)
     
     # store the variables in the dictionary "params"
     data2["params"]["m"] = m
@@ -65,13 +64,4 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
     

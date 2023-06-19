@@ -1,19 +1,17 @@
 import random
 import pandas as pd
 import math
-import problem_bank_helpers as pbh
 
-def imports(data):
-    import random
-    import pandas as pd
-    import math
-    import problem_bank_helpers as pbh
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # define or load names/items/objects
-    vehicles = pbh.vehicles.copy()
+    vehicles = pd.read_csv("https://raw.githubusercontent.com/open-resources/problem_bank_helpers/main/data/vehicles.csv")["Vehicles"].tolist()
     
     # store phrases etc
     data2["params"]["vars"]["vehicle"] = random.choice(vehicles)
@@ -21,8 +19,8 @@ def generate(data):
     data2["params"]["vars"]["units"] = "$m/s^2$"
     
     # define bounds of the variables
-    mu_k = pbh.roundp(random.uniform(0.2, 0.5), decimals = 2)
-    mu_s = pbh.roundp(random.uniform(mu_k + 0.1, 1.0), decimals = 2)
+    mu_k = round(random.uniform(0.2, 0.5), 2)
+    mu_s = round(random.uniform(mu_k + 0.1, 1.0), 2)
     theta = random.randint(10, 30)
     
     # store the variables in the dictionary "params"
@@ -42,13 +40,4 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
     

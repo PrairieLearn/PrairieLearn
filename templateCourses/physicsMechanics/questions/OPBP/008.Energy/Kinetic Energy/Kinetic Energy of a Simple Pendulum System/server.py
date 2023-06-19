@@ -1,21 +1,20 @@
 import random as rd
 import math
-import problem_bank_helpers as pbh
 
-def imports(data):
-    import random as rd
-    import math
-    import problem_bank_helpers as pbh
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "Kinetic Energy of a Simple Pendulum System"
     data2["params"]["vars"]["units"] = "degrees"
     
     # define bounds of the variables
-    theta = pbh.roundp(rd.uniform(10.00,90.0), sigfigs = 3)
+    theta = round(rd.uniform(10.00,90.0), 1)
     
     # store the variables in the dictionary "params"
     data2["params"]["theta"] = theta
@@ -32,12 +31,4 @@ def generate(data):
     # Update the data object with a new dict
     data.update(data2)
     
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
     

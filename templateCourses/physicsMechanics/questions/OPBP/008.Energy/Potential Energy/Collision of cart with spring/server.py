@@ -1,14 +1,13 @@
 import random as rd
 import math
-import problem_bank_helpers as pbh
 
-def imports(data):
-    import random as rd
-    import math
-    import problem_bank_helpers as pbh
+from collections import defaultdict
+def create_data2():
+    nested_dict = lambda: defaultdict(nested_dict)
+    return nested_dict()
     
 def generate(data):
-    data2 = pbh.create_data2()
+    data2 = create_data2()
     
     # store phrases etc
     data2["params"]["vars"]["title"] = "Collision of a Cart with a Spring"
@@ -29,13 +28,4 @@ def generate(data):
     
     # Update the data object with a new dict
     data.update(data2)
-    
-def prepare(data):
-    pass
-    
-def parse(data):
-    pass
-    
-def grade(data):
-    pass
     
