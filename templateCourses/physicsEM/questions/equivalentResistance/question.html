@@ -1,0 +1,44 @@
+
+<pl-question-panel>
+	<p>Consider the circuit illustrated below:
+  </p>
+
+  <p>
+    <pl-drawing width="320" height="220"  grid-size="0" answers-name="answer">
+        <pl-drawing-initial>
+            <pl-battery x1={{params.pA.0}} y1={{params.pA.1}} x2={{params.pD.0}} y2={{params.pD.1}} label={{params.V}}></pl-battery>
+            {{{params.randomItems}}}
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+</pl-drawing>
+
+<p>What is the equivalent resistance of the circuit?</p>
+
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="Req" label = "$R_{eq}= $" suffix = "$\rm\ \Omega$"></pl-number-input>
+</p>
+
+
+<pl-question-panel>
+<p>What is the current across the ${{params.R}} \Omega$ resistor?</p>
+</pl-question-panel>
+<p>
+    <pl-number-input answers-name="i" label = "current = " suffix = "$A$"></pl-number-input>
+</p>
+
+<pl-question-panel>
+    <p>What is the voltage across the ${{params.R2}} \Omega$ resistor?</p>
+</pl-question-panel>
+<p>
+    <pl-number-input answers-name="v" label = "voltage = " suffix = "$V$"></pl-number-input>
+</p>
+
+<pl-question-panel>
+    <hr />
+    <p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
