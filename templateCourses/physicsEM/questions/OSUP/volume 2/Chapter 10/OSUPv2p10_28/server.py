@@ -1,22 +1,13 @@
-import random
 
 import numpy as np
-import pandas as pd
-import problem_bank_helpers as pbh
+import random
+from collections import defaultdict
 
-# Feedback params
-rtol = 0.03
-errorCheck = "True"
-
-feedback_dict = {
-    "vars": ["part1_ans", "part2_ans", "part3_ans"],
-    "stringData": ["I_1", "I_2", "I_3"],
-    "units": ["$~\mathrm{A}$", "$~\mathrm{A}$", "$~\mathrm{A}$"],
-}
-
+nested_dict = lambda: defaultdict(nested_dict)
 
 def generate(data):
-    data2 = pbh.create_data2()
+    # Start problem code
+    data2 = nested_dict()
 
     # Sample random numbers
     P_T = random.choice(np.linspace(1710, 1890, num=19))  # W
@@ -74,26 +65,3 @@ def generate(data):
 
     # Update the data object with a new dict
     data.update(data2)
-
-
-def prepare(data):
-    pass
-
-
-def parse(data):
-    pass
-
-
-def grade(data):
-    # Call a function to check for easily-identifiable errors.
-    # The syntax is pbh.ErrorCheck(errorCheck, submittedAnswer, correctAnswer, LaTeXsyntax, relativeTolerance)
-    # To enable error checking, set check = 'true'.
-
-    for i, k in enumerate(feedback_dict["vars"]):
-        data["feedback"][k] = pbh.ErrorCheck(
-            errorCheck,
-            data["submitted_answers"][k],
-            data["correct_answers"][k],
-            feedback_dict["stringData"][i],
-            rtol,
-        )
