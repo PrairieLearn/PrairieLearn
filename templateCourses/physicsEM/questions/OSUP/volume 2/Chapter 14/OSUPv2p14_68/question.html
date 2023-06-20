@@ -1,0 +1,54 @@
+<pl-question-panel>
+<p>
+Consider the switched $LC$ circuit shown below.
+</p>
+
+  <p>
+    <pl-drawing width="400" height="320"  grid-size="0" answers-name="answer">
+        <pl-drawing-initial>
+            <pl-line        x1={{params.pA.0}} y1={{params.pA.1}} x2={{params.pC.0}} y2={{params.pC.1}}></pl-line>
+            <pl-line        x1={{params.pD.0}} y1={{params.pD.1}} x2={{params.pF.0}} y2={{params.pF.1}}></pl-line>
+			      <pl-capacitor   x1={{params.pC.0}} y1={{params.pC.1}} x2={{params.pD.0}} y2={{params.pD.1}} label="{{params.C}}"></pl-capacitor>
+			      <pl-inductor    x1={{params.pE.0}} y1={{params.pE.1}} x2={{params.pF.0}} y2={{params.pF.1}} label="{{params.L}}"></pl-inductor>
+			      <pl-battery     x1={{params.pB.0}} y1={{params.pB.1}} x2={{params.pD.0}} y2={{params.pD.1}} label="{{params.V}}"></pl-battery>
+            <pl-switch      x1={{params.pB.0}} y1={{params.pB.1}} x2={{params.pA.0}} y2={{params.pA.1}} switch-angle="0" label="S_1"></pl-switch>
+            <pl-switch      x1={{params.pE.0}} y1={{params.pE.1}} x2={{params.pC.0}} y2={{params.pC.1}} label="S_2"></pl-switch>
+        </pl-drawing-initial>
+    </pl-drawing>
+</p>
+
+<p>
+Consider the case that $\rm S_1$ is opened and $\rm S_2$ is closed simultaneously.
+</p>
+
+<markdown>What is the frequency of the resulting oscillations?
+</markdown>
+
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="part1_ans" label = "$f = $" allow-blank = "False" show-correct-answer = "False" comparison = "relabs" rtol = "0.03" atol = "0" show-help-text = "True" suffix = "$\rm\ Hz$" weight = "1" custom-format = ".3g" ></pl-number-input>
+</p>
+<pl-question-panel>
+	<markdown>What is the maximum charge on the capacitor?
+	</markdown>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="part2_ans" label = "$Q_{C, \rm\ max} = $" allow-blank = "False" show-correct-answer = "False" comparison = "relabs" rtol = "0.03" atol = "0" show-help-text = "True" suffix = "$\rm\ C$" weight = "1" custom-format = ".3g" ></pl-number-input>
+</p>
+
+<pl-question-panel>
+	<markdown>What is the maximum current through the inductor?
+	</markdown>
+</pl-question-panel>
+<p>
+<pl-number-input answers-name="part3_ans" label = "$I_{L, \rm\ max} = $" allow-blank = "False" show-correct-answer = "False" comparison = "relabs" rtol = "0.03" atol = "0" show-help-text = "True" suffix = "$\rm\ A$" weight = "1" custom-format = ".3g" ></pl-number-input>
+</p>
+
+<pl-question-panel>
+    <hr />
+    <p class="small text-muted">
+    Problem is from the <a href="https://www.prairielearn.com/oer">PrairieLearn OER repository</a>, adapted from the <a href="https://openstax.org/details/books/university-physics-volume-2">OpenStax University Physics Volume 2</a> and the
+  <a href="https://firas.moosvi.com/oer/physics_bank/files/bio.html">Open Problem Bank in Physics</a>, licensed under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0 license</a>.
+    </p>
+</pl-question-panel>
+
