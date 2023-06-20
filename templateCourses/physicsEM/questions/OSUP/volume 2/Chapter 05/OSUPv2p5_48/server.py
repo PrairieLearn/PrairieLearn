@@ -1,6 +1,7 @@
-
 import random
+
 import numpy as np
+
 
 def generate(data):
 
@@ -23,4 +24,3 @@ def generate(data):
 
     # Put the solution into data['correct_answers']
     data["correct_answers"]["d"] = d
-

@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 
+
 def generate(data):
 
     # define bounds of the variables

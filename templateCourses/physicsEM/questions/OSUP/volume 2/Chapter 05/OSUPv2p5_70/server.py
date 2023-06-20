@@ -1,8 +1,8 @@
-
 import random
 
+
 def generate(data):
-    
+
     # Sample a random number
     s = random.choice([1, 2, 3])
     if s == 1:
@@ -30,7 +30,8 @@ def generate(data):
 
 
 def round_sig(x, sig):
-    from math import log10, floor
+    from math import floor, log10
+
     if x == 0:
         y = 0
     else:

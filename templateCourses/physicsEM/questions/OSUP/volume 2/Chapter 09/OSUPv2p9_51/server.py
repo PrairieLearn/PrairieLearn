@@ -1,7 +1,8 @@
 import random
 
+
 def generate(data):
-    
+
     # define bounds of the variables
     R = random.randint(50, 300)
     V = round(random.uniform(1, 5), 1)

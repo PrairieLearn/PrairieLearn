@@ -1,4 +1,3 @@
-
 import random
 
 import numpy as np
@@ -24,5 +23,5 @@ def generate(data):
     E2 = q * 10**-6 / (4 * np.pi * e0 * (r2 / 100) ** 2)
 
     # Put the solutions into data['correct_answers']
-    data["correct_answers"]["E1"] = E1 
-    data["correct_answers"]["E2"] = E2 
+    data["correct_answers"]["E1"] = E1
+    data["correct_answers"]["E2"] = E2

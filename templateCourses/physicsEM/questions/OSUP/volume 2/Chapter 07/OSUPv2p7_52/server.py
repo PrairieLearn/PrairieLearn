@@ -1,7 +1,7 @@
-
 import random
 
 import numpy as np
+
 
 def generate(data):
 
@@ -28,4 +28,4 @@ def generate(data):
     V = q1 / (4 * np.pi * e0 * d1) + q2 / (4 * np.pi * e0 * d2)
 
     # Put the solution into data['correct_answers']
-    data["correct_answers"]["V"] = V #ext.round_sig(V, 3)
+    data["correct_answers"]["V"] = V  # ext.round_sig(V, 3)

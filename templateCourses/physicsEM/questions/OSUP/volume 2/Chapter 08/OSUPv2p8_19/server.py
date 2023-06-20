@@ -1,8 +1,10 @@
 import random
 from collections import defaultdict
+
 import numpy as np
 
 nested_dict = lambda: defaultdict(nested_dict)
+
 
 def generate(data):
     data2 = nested_dict()

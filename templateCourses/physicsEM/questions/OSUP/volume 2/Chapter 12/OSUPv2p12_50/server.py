@@ -2,8 +2,8 @@ import random
 
 import numpy as np
 
-def generate(data):
 
+def generate(data):
 
     # define bounds of the variables
     n = random.choice(np.linspace(8, 20, num=13))  # turns/cm
@@ -12,9 +12,7 @@ def generate(data):
 
     # store the variables in the dictionary "params"
     data["params"]["n"] = "{:.0f}".format(n)
-    data["params"]["B"] = (
-        "{:.1f}".format(B) + "\\times 10^{" + "{:.0f}".format(p) + "}"
-    )
+    data["params"]["B"] = "{:.1f}".format(B) + "\\times 10^{" + "{:.0f}".format(p) + "}"
 
     # fix units
     n = n * 100  # turns/m

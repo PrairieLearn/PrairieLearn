@@ -1,6 +1,7 @@
-
 import random
+
 import numpy as np
+
 
 def generate(data):
 
@@ -20,8 +21,10 @@ def generate(data):
     # Put the solution into data['correct_answers']
     data["correct_answers"]["phi"] = round_sig(phi, 3)
 
+
 def round_sig(x, sig):
-    from math import log10, floor
+    from math import floor, log10
+
     if x == 0:
         y = 0
     else:

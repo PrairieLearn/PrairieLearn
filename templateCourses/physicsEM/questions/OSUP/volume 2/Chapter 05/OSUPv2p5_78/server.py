@@ -1,10 +1,10 @@
-
 import random
 
 import numpy as np
 
+
 def generate(data):
-    
+
     # Sample a random number
     sign1 = random.choice([-1, 1])
     q1 = sign1 * random.choice(np.linspace(1.5, 5.5, num=5))
@@ -26,8 +26,10 @@ def generate(data):
     # Put the solution into data['correct_answers']
     data["correct_answers"]["x2"] = round_sig(x2, 3)
 
+
 def round_sig(x, sig):
-    from math import log10, floor
+    from math import floor, log10
+
     if x == 0:
         y = 0
     else:

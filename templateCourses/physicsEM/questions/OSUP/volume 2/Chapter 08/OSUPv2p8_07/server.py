@@ -1,8 +1,10 @@
 import random
 from collections import defaultdict
+
 import numpy as np
 
 nested_dict = lambda: defaultdict(nested_dict)
+
 
 def generate(data):
     data2 = nested_dict()
@@ -36,6 +38,5 @@ def generate(data):
 
     # define correct answer for part 2
     data2["correct_answers"]["part2_ans"] = B
-
 
     data.update(data2)

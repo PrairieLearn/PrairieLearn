@@ -1,9 +1,10 @@
 import random
+
 import numpy as np
 
 
 def generate(data):
-    
+
     # define bounds of the variables
     B = random.choice(np.linspace(1, 9, num=41))  # uT
     d = random.choice(np.linspace(10, 80, num=36))  # cm

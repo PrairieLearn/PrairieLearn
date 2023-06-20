@@ -1,9 +1,10 @@
-
 import random
 from collections import defaultdict
+
 import numpy as np
 
 nested_dict = lambda: defaultdict(nested_dict)
+
 
 def generate(data):
     # Start problem code
@@ -76,4 +77,3 @@ def generate(data):
         data2["params"]["part2"]["ans3"]["feedback"] = "Great! You got it."
 
     data.update(data2)
-

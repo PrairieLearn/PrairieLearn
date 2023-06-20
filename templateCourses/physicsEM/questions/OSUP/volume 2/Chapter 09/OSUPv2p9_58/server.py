@@ -1,5 +1,6 @@
 import random
 
+
 def generate(data):
 
     # define bounds of the variables

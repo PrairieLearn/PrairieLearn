@@ -1,6 +1,7 @@
-
 import random
+
 import numpy as np
+
 
 def generate(data):
 
@@ -20,4 +21,4 @@ def generate(data):
     E = V / d  # N/C
 
     # Put the solution into data['correct_answers']
-    data["correct_answers"]["E"] = E 
+    data["correct_answers"]["E"] = E
