@@ -25,8 +25,8 @@ import sys
 import time
 from inspect import signature
 
-import zygote_utils as zu
 import question_phases
+import zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
