@@ -130,12 +130,19 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_name = req.body.group_name;
       if (!group_name || String(group_name).length < 1) {
-        flash('error', 'Group name cannot be empty');
+        flash('error', 'Group name cannot be empty.');
         res.redirect(req.originalUrl);
         return;
       }
+
       const uids = req.body.uids;
-      const uidlist = uids.split(/[ ,]+/);
+      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
+      if (uidlist.length === 0) {
+        flash('error', 'Group must be created with at least one user.');
+        res.redirect(req.originalUrl);
+        return;
+      }
+
       let updateList = [];
       uidlist.forEach((uid) => {
         updateList.push([group_name, uid]);
@@ -144,7 +151,6 @@ router.post(
       const result = await sqldb.callAsync('assessment_groups_update', params);
 
       const notExist = result.rows[0].not_exist_user;
-      console.log(notExist);
       if (notExist) {
         flash(
           'error',
@@ -165,7 +171,7 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
       const uids = req.body.add_member_uids;
-      const uidlist = uids.split(/[ ,]+/);
+      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
       let failedUids = [];
       for (const uid of uidlist) {
         let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];
@@ -187,7 +193,7 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
       const uids = req.body.delete_member_uids;
-      const uidlist = uids.split(/[ ,]+/);
+      const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
       let failedUids = [];
       for (const uid of uidlist) {
         let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];

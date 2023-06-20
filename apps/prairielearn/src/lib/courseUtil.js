@@ -31,7 +31,7 @@ module.exports.getCommitHashAsync = promisify(getCommitHash);
  * will also add the `commit_hash` property to the given course object.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.updateCourseCommitHash = function (course, callback) {
   getCommitHash(course.path, (err, hash) => {
@@ -59,7 +59,7 @@ module.exports.updateCourseCommitHashAsync = promisify(module.exports.updateCour
  * updated during course sync.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
   if (course.commit_hash) {
