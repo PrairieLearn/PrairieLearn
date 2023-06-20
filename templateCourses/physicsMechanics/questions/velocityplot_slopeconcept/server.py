@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 
+
 def generate(data):
 
     # We can select the plot to show acceleration or velocity

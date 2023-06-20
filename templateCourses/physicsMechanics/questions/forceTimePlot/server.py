@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 
+
 def generate(data):
 
     ratiox = 100
@@ -91,23 +92,24 @@ def generate(data):
         lab_y = [str(v1 / ratioy), str(v2 / ratioy)]  # text
     # data params (no need to change this)
     supp_lines = "["
-    labels = '['
+    labels = "["
     for i in range(len(loc_x)):
         labels += create_dict_labels("x", loc_x[i], lab_x[i])
         labels += ","
     for i in range(len(loc_y)):
         labels += create_dict_labels("y", loc_y[i], lab_y[i], offsetx=-20)
-        supp_lines += '{"y": ' + str(loc_y[i]) + '}'
+        supp_lines += '{"y": ' + str(loc_y[i]) + "}"
         if i != len(loc_y) - 1:
             labels += ","
             supp_lines += ","
     labels += "]"
-    supp_lines += ']'
+    supp_lines += "]"
 
     data["params"]["label_V"] = labels
     data["params"]["supp_lines"] = supp_lines
 
     return data
+
 
 def create_dict_labels(axis, loc, lab, offsetx=None, offsety=None):
     text = '{"axis": "' + axis + '", "pos": ' + str(loc) + ', "lab": "' + lab + '" '

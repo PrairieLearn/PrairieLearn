@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 
+
 def generate(data):
 
     # We can select the plot to show acceleration or velocity
@@ -115,7 +116,8 @@ def generate(data):
 
     return data
 
-def create_label_list(Ori, p, ratio,  ox=5, oy=-30):
+
+def create_label_list(Ori, p, ratio, ox=5, oy=-30):
     x1 = int(Ori[0] + p[0])
     y1 = int(Ori[1] - p[1])
     return [
