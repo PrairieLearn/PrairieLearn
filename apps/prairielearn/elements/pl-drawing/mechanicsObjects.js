@@ -151,18 +151,21 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     var dx = (len - ((n + 1) * 2 * R * Math.cos(offsetAngle) + 2 * R)) / 2;
     var start = -l2 + dx;
     var xpos = start + R;
+    // Add the first ellipse
     ctx.lineTo(start, 0);
     ctx.ellipse(xpos, 0, R, R2, 0, Math.PI, 2 * Math.PI + offsetAngle);
+    // Add additional ellipses, depending on the size of the coil
     for (var i = 0; i < n; i++) {
       xpos += 2 * R * Math.cos(offsetAngle);
       ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI + offsetAngle);
     }
     xpos += 2 * R * Math.cos(offsetAngle);
+    // Add last ellipse
     ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI);
     ctx.lineTo(l2, 0);
     ctx.strokeStyle = this.stroke;
     this._renderStroke(ctx);
-
+    // Add "pins" at the end of the coil
     if (this.drawPin) {
       this.fill = this.stroke;
       ctx.beginPath();
@@ -3701,13 +3704,14 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
     var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    // Capacitor legs
+    // Start and end positons for the capacitor supporting lines
+    // which removes the distance between capacitor plates (gap)
     var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
     var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
     var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
     var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
-    let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: options.selectable,
@@ -3715,10 +3719,10 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
       originX: options.originX,
       originY: options.originY,
     });
-    if (!('id' in obj1)) {
-      obj1.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
     }
-    let obj2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: options.selectable,
@@ -3726,12 +3730,12 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
       originX: options.originX,
       originY: options.originY,
     });
-    if (!('id' in obj2)) {
-      obj2.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
     }
 
-    // Capacitor lines
-    var cline = options.height;
+    // Start and end positions for the lines that will define the capacitor plates
+    var cline = options.height; // height of capacitor plate
     var c1x1 = xm1 - cline * Math.sin(theta);
     var c1y1 = ym1 + cline * Math.cos(theta);
     var c1x2 = xm1 + cline * Math.sin(theta);
@@ -3741,7 +3745,7 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
     var c2x2 = xm2 + cline * Math.sin(theta);
     var c2y2 = ym2 - cline * Math.cos(theta);
 
-    let obj3 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
+    let capacitorPlate1 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: options.selectable,
@@ -3749,10 +3753,10 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
       originX: options.originX,
       originY: options.originY,
     });
-    if (!('id' in obj3)) {
-      obj3.id = window.PLDrawingApi.generateID();
+    if (!('id' in capacitorPlate1)) {
+      capacitorPlate1.id = window.PLDrawingApi.generateID();
     }
-    let obj4 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
+    let capacitorPlate2 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: options.selectable,
@@ -3760,11 +3764,11 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
       originX: options.originX,
       originY: options.originY,
     });
-    if (!('id' in obj4)) {
-      obj4.id = window.PLDrawingApi.generateID();
+    if (!('id' in capacitorPlate2)) {
+      capacitorPlate2.id = window.PLDrawingApi.generateID();
     }
 
-    canvas.add(obj1, obj2, obj3, obj4);
+    canvas.add(supportingLine1, supportingLine2, capacitorPlate1, capacitorPlate2);
 
     if (options.polarized) {
       var xm3 = xm2 + 4 * Math.cos(theta);
@@ -3807,13 +3811,14 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
     var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    // Battery "legs"
+    // Start and end positons for the battery supporting lines
+    // which removes the distance between battery plates (gap)
     var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
     var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
     var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
     var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
-    let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3821,10 +3826,10 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj1)) {
-      obj1.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
     }
-    let obj2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3832,13 +3837,13 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj2)) {
-      obj2.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
     }
 
-    // Battery lines
-    var cline1 = options.height / 2;
-    var cline2 = options.height;
+    // Start and end positions for the lines that will define the battery plates
+    var cline1 = options.height / 2;  // height of smaller battery plate
+    var cline2 = options.height;      // height of bigger battery plate
 
     var c1x1 = xm1 - cline1 * Math.sin(theta);
     var c1y1 = ym1 + cline1 * Math.cos(theta);
@@ -3849,7 +3854,7 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     var c2x2 = xm2 + cline2 * Math.sin(theta);
     var c2y2 = ym2 - cline2 * Math.cos(theta);
 
-    let obj3 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
+    let batteryPlate1 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3857,10 +3862,10 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj3)) {
-      obj3.id = window.PLDrawingApi.generateID();
+    if (!('id' in batteryPlate1)) {
+      batteryPlate1.id = window.PLDrawingApi.generateID();
     }
-    let obj4 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
+    let batteryPlate2 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3868,11 +3873,11 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj4)) {
-      obj4.id = window.PLDrawingApi.generateID();
+    if (!('id' in batteryPlate2)) {
+      batteryPlate2.id = window.PLDrawingApi.generateID();
     }
 
-    canvas.add(obj1, obj2, obj3, obj4);
+    canvas.add(supportingLine1, supportingLine2, batteryPlate1, batteryPlate2);
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
