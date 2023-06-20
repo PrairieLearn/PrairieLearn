@@ -28,13 +28,75 @@
                 {"id": "OSUP/volume 2/Chapter 05/OSUPv2p5_58", "points": 1,"maxPoints": 3},
                 {"id": "OSUP/volume 2/Chapter 05/OSUPv2p5_70", "points": 1,"maxPoints": 3},
                 {"id": "OSUP/volume 2/Chapter 05/OSUPv2p5_78", "points": 1,"maxPoints": 3},
-                {"id": "OSUP/volume 2/Chapter 05/OSUPv2p5_94", "points": 1,"maxPoints": 3}
+                {"id": "OSUP/volume 2/Chapter 05/OSUPv2p5_94", "points": 1,"maxPoints": 3},
+                {"id": "dipoleElectricField", "points": 1,"maxPoints": 3}
             ]
         },
         {
-            "title": "Capacitors",
+            "title": "Gauss's Law",
             "questions": [
-                {"id": "equivalentCapacitance", "points": 1,"maxPoints": 6}
+                {"id": "OSUP/volume 2/Chapter 06/OSUPv2p6_20", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 06/OSUPv2p6_40", "points": 1, "maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 06/OSUPv2p6_44", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 06/OSUPv2p6_51", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 06/OSUPv2p6_70", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Electric Potential",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 07/OSUPv2p7_36", "points": 1, "maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 07/OSUPv2p7_52", "points": 1,"maxPoints": 3},
+                {"id": "twoParticlesFindPotential", "points": 1,"maxPoints": 6}
+            ]
+        },
+        {
+            "title": "Capacitance",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 08/OSUPv2p8_07", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 08/OSUPv2p8_19", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 08/OSUPv2p8_25", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 08/OSUPv2p8_31", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 08/OSUPv2p8_40", "points": 1,"maxPoints": 3},
+                {"id": "equivalentCapacitance", "points": 1,"maxPoints": 6},
+                {"id": "equivalentCapacitance2", "points": 1,"maxPoints": 6},
+                {"id": "equivalentCapacitance3", "points": 1,"maxPoints": 6}
+            ]
+        },
+        {
+            "title": "Current and Resistance",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 09/OSUPv2p9_36", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 09/OSUPv2p9_51", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 09/OSUPv2p9_56", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 09/OSUPv2p9_58", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Circuits",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 10/OSUPv2p10_28", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 10/OSUPv2p10_30", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 10/OSUPv2p10_38", "points": 1,"maxPoints": 3},
+                {"id": "equivalentResistance", "points": 1,"maxPoints": 6},
+                {"id": "resistorCapacitorCircuit1", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Magnetism",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 11/OSUPv2p11_21", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 11/OSUPv2p11_51", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 12/OSUPv2p12_23", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 12/OSUPv2p12_50", "points": 1,"maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Inductance",
+            "questions": [
+                {"id": "OSUP/volume 2/Chapter 13/OSUPv2p13_24", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 14/OSUPv2p14_15", "points": 1,"maxPoints": 3},
+                {"id": "OSUP/volume 2/Chapter 14/OSUPv2p14_68", "points": 1,"maxPoints": 3}
             ]
         }
     ],
