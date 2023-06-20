@@ -548,7 +548,7 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 #### Integer range
 
-pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string.
+pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string. Note that answers can include underscores (which are ignored).
 
 #### Example implementations
 

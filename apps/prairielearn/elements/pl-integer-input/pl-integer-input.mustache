@@ -124,7 +124,7 @@
 {{#format}}
 <p>
 Your answer must be an integer{{^default_base}} in base {{base}}{{/default_base}}{{#zero_base}} in base 10. You may also use an integer in base 16 with the prefix <code>0x</code> (e.g., 0x1a), in base 2 with the prefix <code>0b</code> (e.g. 0b1101), or in base 8 with the prefix <code>0o</code> (e.g., 0o777){{/zero_base}}.
-It must not contain a decimal.
+It must not contain a decimal, though it may contain underscores (which are ignored).
 No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted.
 Scientific notation is not accepted.
 </p>
