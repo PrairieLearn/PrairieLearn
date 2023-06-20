@@ -9,13 +9,13 @@
 </pl-question-panel>
 
 <pl-hide-in-panel answer="true">
-  <pl-overlay width="600" height="440" clip="false">
+  <pl-overlay width="800" height="440" clip="false">
     <pl-background>
-      <pl-drawing answers-name="diag" width="560" height="400" hide-answer-panel="false">
+      <pl-drawing answers-name="diag" width="700" height="400" hide-answer-panel="false">
         <pl-drawing-initial>
       
             <pl-axes origin="{{params.V_origin}}"
-                    xpos = 440
+                    xpos = 600
                     label-x="t"
                     label-y="{{params.ylab}}"
                     offsetx-label-y=-50 
@@ -32,28 +32,28 @@
       
       </pl-drawing>
     </pl-background>
-    <pl-location left="130" top="360">
+    <pl-location left="150" top="360">
         <pl-dropdown sort="random" answers-name="interval1">
           {{#params.interval1}}
           <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
           {{/params.interval1}}
         </pl-dropdown>
     </pl-location>
-    <pl-location left="230" top="360">
+    <pl-location left="290" top="360">
         <pl-dropdown sort="random" answers-name="interval2">
           {{#params.interval2}}
           <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
           {{/params.interval2}}
         </pl-dropdown>
     </pl-location>
-    <pl-location left="330" top="360">
+    <pl-location left="430" top="360">
       <pl-dropdown sort="random" answers-name="interval3">
         {{#params.interval3}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
         {{/params.interval3}}
       </pl-dropdown>
     </pl-location>
-    <pl-location left="430" top="360">
+    <pl-location left="570" top="360">
       <pl-dropdown sort="random" answers-name="interval4">
         {{#params.interval4}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>

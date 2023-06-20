@@ -16,20 +16,21 @@
         {
             "title": "Kinematics",
             "questions": [
-                {"id": "velocityplot", "points": 1,"maxPoints": 3},
-                {"id": "velocityplot_slopeconcept", "points": 1, "maxPoints": 3},
-                {"id": "accelerationplot", "points": 1,"maxPoints": 3},
-                {"id": "kinematicsDroptower", "points": 1,"maxPoints": 3,"triesPerVariant": 2},
-                {"id": "ballDrop", "points": 1,"maxPoints": 1},
                 {"id": "OPBP/004.Kinematics(1D)/Free Fall/Mount Etna", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/004.Kinematics(1D)/Topic Outcome/Electrons_Accelerating", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/004.Kinematics(1D)/Topic Outcome/Throwing Stones", "points": 1,"maxPoints": 3},
-                {"id": "objectVelocityAngleDependency", "points": 1,"maxPoints": 1},
-                {"id": "kinematics2dCannonBall", "points": 1,"maxPoints": 3},
-                {"id": "kinematics2dCarOffTable", "points": 1,"maxPoints": 3},
+                {"id": "kinematicsDroptower", "points": 1,"maxPoints": 3,"triesPerVariant": 2},
+                {"id": "ballDrop", "points": 1,"maxPoints": 1},
+                {"id": "velocityplot", "points": 1,"maxPoints": 3},
+                {"id": "velocityplot_slopeconcept", "points": 1, "maxPoints": 3},
+                {"id": "accelerationplot", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/005.Kinematics(2D and 3D)/Topic Outcome/Distance_Between_Two_People", "points": 1,"maxPoints": 3},
                 {"id": "OPBP/005.Kinematics(2D and 3D)/Topic Outcome/jump_across_stream", "points": 1,"maxPoints": 3},
-                {"id": "OPBP/005.Kinematics(2D and 3D)/Topic Outcome/Rocket", "points": 1,"maxPoints": 3}
+                {"id": "OPBP/005.Kinematics(2D and 3D)/Topic Outcome/Rocket", "points": 1,"maxPoints": 3},
+                {"id": "objectVelocityAngleDependency", "points": 1,"maxPoints": 1},
+                {"id": "kinematics2dCannonBall", "points": 1,"maxPoints": 3},
+                {"id": "kinematics2dCarOffTable", "points": 1,"maxPoints": 3}
+
             ]
         },
         {

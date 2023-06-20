@@ -2,23 +2,6 @@ import random
 
 import numpy as np
 
-
-def create_label_list(Ori, p, ratio, ox=0, oy=-10):
-    x1 = int(Ori[0] + p[0])
-    y1 = int(Ori[1] - p[1])
-    return [
-        x1,
-        y1,
-        "(" + str(int(p[0] / ratio)) + "," + str(int(p[1] / ratio)) + ")",
-        ox,
-        oy,
-    ]
-
-
-def create_dict_xy_coord(p):
-    return '{"x": ' + str(p[0]) + ',"y": ' + str(p[1]) + "}"
-
-
 def generate(data):
 
     # We can select the plot to show acceleration or velocity
@@ -32,7 +15,7 @@ def generate(data):
     # Each square represents on unit in both x and y directions
     ratio = 20
     # space to define time interval
-    T = 100  # each time interval will have 5 squares
+    T = 140  # each time interval will have 7 squares
 
     # Values for either acceleration or velocity for the interval ends
     v0 = random.choice([40, 60, 80, 100])
@@ -55,11 +38,11 @@ def generate(data):
 
     def check_slope(slope):
         if slope == 0:
-            return "constant", "positive", "negative"
+            return "zero", "positive", "negative"
         elif slope > 0:
-            return "positive", "constant", "negative"
+            return "positive", "zero", "negative"
         else:
-            return "negative", "constant", "positive"
+            return "negative", "zero", "positive"
 
     ans = check_slope(s1)
     data["params"]["interval1"] = [
@@ -164,5 +147,17 @@ def generate(data):
     return data
 
 
-# def grade(data):
-#     data["partial_scores"]["interval4"] = { 'feedback': None }
+def create_label_list(Ori, p, ratio, ox=0, oy=-10):
+    x1 = int(Ori[0] + p[0])
+    y1 = int(Ori[1] - p[1])
+    return [
+        x1,
+        y1,
+        "(" + str(int(p[0] / ratio)) + "," + str(int(p[1] / ratio)) + ")",
+        ox,
+        oy,
+    ]
+
+
+def create_dict_xy_coord(p):
+    return '{"x": ' + str(p[0]) + ',"y": ' + str(p[1]) + "}"

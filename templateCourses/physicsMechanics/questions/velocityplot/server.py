@@ -2,23 +2,6 @@ import random
 
 import numpy as np
 
-
-def create_label_list(Ori, p, ratio, ox=0, oy=-10):
-    x1 = int(Ori[0] + p[0])
-    y1 = int(Ori[1] - p[1])
-    return [
-        x1,
-        y1,
-        "(" + str(int(p[0] / ratio)) + "," + str(int(p[1] / ratio)) + ")",
-        ox,
-        oy,
-    ]
-
-
-def create_dict_xy_coord(p):
-    return '{"x": ' + str(p[0]) + ',"y": ' + str(p[1]) + "}"
-
-
 def generate(data):
 
     # We can select the plot to show acceleration or velocity
@@ -64,7 +47,6 @@ def generate(data):
         dt = time - 10
         da = v2 / ratio * dt + s3 / 2 * (dt) ** 2
         A = A1 + A2 + da
-    # print(A1,A2,A3,da)
     # Final variable of interest (velocity or position)
     data["correct_answers"]["ans"] = initial + A
 
@@ -98,7 +80,7 @@ def generate(data):
         "[" + create_dict_xy_coord(p0) + "," + create_dict_xy_coord(p1) + "]"
     )
     # labels
-    data["params"]["lp0"] = create_label_list(Ori, p0, ratio)
+    data["params"]["lp0"] = create_label_list(Ori, p0, ratio, -40, -10)
     data["params"]["lp1"] = create_label_list(Ori, p1, ratio)
 
     """Interval 2:"""
@@ -128,6 +110,21 @@ def generate(data):
     data["params"]["V4"] = (
         "[" + create_dict_xy_coord(p3) + "," + create_dict_xy_coord(p4) + "]"
     )
-    data["params"]["lp4"] = create_label_list(Ori, p4, ratio)
+    data["params"]["lp4"] = create_label_list(Ori, p4, ratio,10, -10)
 
     return data
+
+def create_label_list(Ori, p, ratio, ox=5, oy=-30):
+    x1 = int(Ori[0] + p[0])
+    y1 = int(Ori[1] - p[1])
+    return [
+        x1,
+        y1,
+        "(" + str(int(p[0] / ratio)) + "," + str(int(p[1] / ratio)) + ")",
+        ox,
+        oy,
+    ]
+
+
+def create_dict_xy_coord(p):
+    return '{"x": ' + str(p[0]) + ',"y": ' + str(p[1]) + "}"
