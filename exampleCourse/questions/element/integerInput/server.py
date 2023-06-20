@@ -31,7 +31,6 @@ def generate(data):
 
     c_large = "9007199254740991999"
     data["correct_answers"]["c_large"] = c_large
-    data["params"]["c_large"] = c_large
 
     d = 16
     data["params"]["d"] = d
