@@ -3,8 +3,8 @@ import random
 
 def generate(data):
 
-    str1 = " + + + + + + + + + + + +  "
-    str2 = " - - - - - - - - - - - -  "
+    str1 = " + + + + + + + + + + + + + + "
+    str2 = " _  _  _  _  _  _  _  _  _  _  _  _   "
 
     data["params"]["plus"] = str1
     data["params"]["minus"] = str2
