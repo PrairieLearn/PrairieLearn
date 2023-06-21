@@ -3796,8 +3796,6 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
       });
       canvas.add(textObj);
     }
-
-    return;
   }
 
   static get_button_tooltip() {
@@ -3891,8 +3889,6 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
       });
       canvas.add(textObj);
     }
-
-    return;
   }
 
   static get_button_tooltip() {
@@ -3971,8 +3967,6 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
       });
       canvas.add(textObj);
     }
-
-    return;
   }
 
   static get_button_tooltip() {
@@ -4048,8 +4042,6 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
       });
       canvas.add(textObj);
     }
-
-    return;
   }
 
   static get_button_tooltip() {
@@ -4160,8 +4152,6 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       });
       canvas.add(textObj);
     }
-
-    return;
   }
 
   static get_button_tooltip() {
