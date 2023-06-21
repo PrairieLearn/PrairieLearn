@@ -4063,13 +4063,14 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
     var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
 
-    // Switch "legs"
+    // Start and end positons for the switch supporting lines
+    // which removes the region (gap) that will be filled with the switch
     var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
     var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
     var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
     var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
-    let obj1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -4077,10 +4078,10 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj1)) {
-      obj1.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
     }
-    let obj2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -4088,11 +4089,12 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj2)) {
-      obj2.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
     }
-    canvas.add(obj1, obj2);
+    canvas.add(supportingLine1, supportingLine2);
 
+    // Add pins (small filled circles) denoting the start and end of switch region
     if (options.drawPin) {
       var circleOptions = _.defaults(
         {
@@ -4123,13 +4125,15 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       canvas.add(objPin1, objPin2);
     }
 
-    // Switch line
+    // Add Switch between supporting lines
+    // Uses the angle of the switch to find the end position of the switch 
+    // in the case it is open
     var theta2 = (options.switchAngle * Math.PI) / 180;
     var l = options.interval / Math.cos(theta2);
     var cx = xm1 + l * Math.cos(theta2 + theta);
     var cy = ym1 + l * Math.sin(theta2 + theta);
 
-    let obj3 = new fabric.Line([xm1, ym1, cx, cy], {
+    let objSwitch = new fabric.Line([xm1, ym1, cx, cy], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -4137,12 +4141,12 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj3)) {
-      obj3.id = window.PLDrawingApi.generateID();
+    if (!('id' in objSwitch)) {
+      objSwitch.id = window.PLDrawingApi.generateID();
     }
-    canvas.add(obj3);
+    canvas.add(objSwitch);
 
-    // Label
+    // Add Label
     if (options.label) {
       var offsetlabel = 10;
       let textObj = new mechanicsObjects.LatexText(options.label, {
