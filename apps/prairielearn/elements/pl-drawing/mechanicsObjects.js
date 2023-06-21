@@ -3904,17 +3904,16 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
     var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+    var gap = options.interval;
 
-    function getPositions(gap, d, theta, options) {
-      var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
-      var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
-      var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
-      var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
-      return [xm1, ym1, xm2, ym2];
-    }
+    // Start and end positons for the resistor supporting lines
+    // which removes the region (gap) that will be filled with a Spring 
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
 
-    var pos = getPositions(options.interval, d, theta, options);
-    let obj1 = new fabric.Line([options.x1, options.y1, pos[0], pos[1]], {
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3922,10 +3921,10 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj1)) {
-      obj1.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
     }
-    let obj2 = new fabric.Line([pos[2], pos[3], options.x2, options.y2], {
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
       stroke: options.stroke,
       strokeWidth: options.strokeWidth,
       selectable: false,
@@ -3933,27 +3932,38 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
       originX: 'center',
       originY: 'center',
     });
-    if (!('id' in obj2)) {
-      obj2.id = window.PLDrawingApi.generateID();
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
     }
-    canvas.add(obj1, obj2);
+    canvas.add(supportingLine1, supportingLine2);
 
-    var posSpring = getPositions(1.05 * options.interval, d, theta, options);
-    options.x1 = posSpring[0];
-    options.y1 = posSpring[1];
-    options.x2 = posSpring[2];
-    options.y2 = posSpring[3];
-    options.dx = options.interval / 10;
-    let obj = new mechanicsObjects.Spring(options);
-    if (!('id' in obj)) {
-      obj.id = window.PLDrawingApi.generateID();
+    // Add Spring between supporting lines
+    /*  In theory, x1, y1, x2, y2 should be the same positions used when creating the 
+        supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using  
+        these parameters, supportingLine 1 does not connect with the start of the spring.
+        Hack solution: to increase the spring region by increasing the value of the "gap"  
+        when defining the start and end positions
+    */
+    var springOptions = _.defaults(
+      {
+        x1: options.x1 + ((d - 1.06*gap) / 2) * Math.cos(theta),
+        y1: options.y1 + ((d - 1.06*gap) / 2) * Math.sin(theta),
+        x2: options.x1 + ((d + 1.06*gap) / 2) * Math.cos(theta),
+        y2: options.y1 + ((d + 1.06*gap) / 2) * Math.sin(theta),
+        dx: gap / 10 
+      },
+      options
+    );
+    let resistorSpring = new mechanicsObjects.Spring(springOptions);
+    if (!('id' in resistorSpring)) {
+      resistorSpring.id = window.PLDrawingApi.generateID();
     }
-    canvas.add(obj);
+    canvas.add(resistorSpring);
 
     if (options.label) {
       let textObj = new mechanicsObjects.LatexText(options.label, {
-        left: options.x2 - options.height * Math.sin(theta) + options.offsetx,
-        top: options.y2 + options.height * Math.cos(theta) + options.offsety - 30,
+        left: xm2 - options.height * Math.sin(theta) + options.offsetx,
+        top: ym2 + options.height * Math.cos(theta) + options.offsety - 30,
         textAlign: 'left',
         fontSize: options.fontSize,
         selectable: false,
