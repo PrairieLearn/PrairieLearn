@@ -133,6 +133,14 @@ router.post(
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });
+    } else if (req.body.__action === 'update_group_roles') {
+      await groupAssessmentHelper.updateGroupRoles(
+        req.body,
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      );
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
