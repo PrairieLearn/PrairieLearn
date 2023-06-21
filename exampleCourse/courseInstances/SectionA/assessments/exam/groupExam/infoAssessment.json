@@ -5,33 +5,11 @@
     "set": "Exam",
     "number": "5",
     "groupMaxSize": 5,
-    "groupMinSize": 2,
+    "groupMinSize": 1,
     "groupWork": true,
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
-    "groupRoles": [
-        {
-            "name": "Manager",
-            "minimum": 1,
-            "maximum": 1,
-            "canAssignRolesAtStart": true,
-            "canAssignRolesDuringAssessment": true
-        },
-        {
-            "name": "Recorder",
-            "minimum": 1,
-            "maximum": 1
-        },
-        {
-            "name": "Reflector",
-            "minimum": 1,
-            "maximum": 1
-        },
-        {
-            "name": "Contributor"
-        }
-    ],
     "allowAccess": [
         {
             "mode": "Public",
@@ -47,8 +25,6 @@
                 {
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/calculation"},
                         {"id": "demo/matrixAlgebra"}
@@ -57,8 +33,6 @@
                 {
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/fixedCheckbox"},
                         {"id": "demo/randomPlot"}
@@ -72,8 +46,6 @@
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/matrixComplexAlgebra"},
                         {"id": "demo/randomCheckbox"}
@@ -82,8 +54,6 @@
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/randomMultipleChoice"}
                     ]
@@ -96,8 +66,6 @@
                 {
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/randomDataFrame"},
                         {"id": "demo/randomSymbolic"}
@@ -106,8 +74,6 @@
                 {
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
-                    "canView": ["Reflector"],
-                    "canSubmit": ["Reflector"],
                     "alternatives": [
                         {"id": "demo/custom/element"},
                         {"id": "demo/custom/gradeFunction"}

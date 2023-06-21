@@ -35,7 +35,9 @@
   <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupMembers: groupMembers, groupName: groupName}); %>
   <% if (groupConfig.has_roles) { %>
     <% if (canViewRoleTable) { %>
-    <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+    <%- include('../shared/groupRoleSelectTable.ejs', {rolesInfo: rolesInfo}); %>
+    <% } else { %>
+    <%- include('../shared/groupRoleErrors.ejs', {rolesInfo: rolesInfo}); %>
     <% } %>
   <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>

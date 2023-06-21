@@ -104,7 +104,10 @@ router.get(
           );
           res.locals.canViewRoleTable = result.can_assign_roles_at_start;
         }
+        res.locals.canViewRoleTable = res.locals.canViewRoleTable ?? false;
       }
+    } else {
+      res.locals.canViewRoleTable = false;
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
