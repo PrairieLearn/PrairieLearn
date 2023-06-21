@@ -3840,8 +3840,8 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
     }
 
     // Start and end positions for the lines that will define the battery plates
-    var cline1 = options.height / 2;  // height of smaller battery plate
-    var cline2 = options.height;      // height of bigger battery plate
+    var cline1 = options.height / 2; // height of smaller battery plate
+    var cline2 = options.height; // height of bigger battery plate
 
     var c1x1 = xm1 - cline1 * Math.sin(theta);
     var c1y1 = ym1 + cline1 * Math.cos(theta);
@@ -3903,7 +3903,7 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
     var gap = options.interval;
 
     // Start and end positons for the resistor supporting lines
-    // which removes the region (gap) that will be filled with a Spring 
+    // which removes the region (gap) that will be filled with a Spring
     var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
     var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
     var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
@@ -3934,18 +3934,18 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
     canvas.add(supportingLine1, supportingLine2);
 
     // Add Spring between supporting lines
-    // In theory, x1, y1, x2, y2 should be the same positions used when creating the 
-    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using  
+    // In theory, x1, y1, x2, y2 should be the same positions used when creating the
+    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using
     // these parameters, supportingLine 1 does not connect with the start of the spring.
-    // Hack solution: to increase the spring region by increasing the value of the "gap"  
+    // Hack solution: to increase the spring region by increasing the value of the "gap"
     // when defining the start and end positions
     var springOptions = _.defaults(
       {
-        x1: options.x1 + ((d - 1.06*gap) / 2) * Math.cos(theta),
-        y1: options.y1 + ((d - 1.06*gap) / 2) * Math.sin(theta),
-        x2: options.x1 + ((d + 1.06*gap) / 2) * Math.cos(theta),
-        y2: options.y1 + ((d + 1.06*gap) / 2) * Math.sin(theta),
-        dx: gap / 10 
+        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
+        dx: gap / 10,
       },
       options
     );
@@ -3981,7 +3981,7 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
     var gap = options.interval;
 
     // Start and end positons for the inductor supporting lines
-    // which removes the region (gap) that will be filled with a Coil 
+    // which removes the region (gap) that will be filled with a Coil
     var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
     var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
     var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
@@ -4012,17 +4012,17 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
     canvas.add(supportingLine1, supportingLine2);
 
     // Add Coil between supporting lines
-    // In theory, x1, y1, x2, y2 should be the same positions used when creating the 
-    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using  
+    // In theory, x1, y1, x2, y2 should be the same positions used when creating the
+    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using
     // these parameters, supportingLine 1 does not connect with the start of the coil.
-    // Hack solution: to increase the coil region by increasing the value of the "gap"  
+    // Hack solution: to increase the coil region by increasing the value of the "gap"
     // when defining the start and end positions
     var coilOptions = _.defaults(
       {
-        x1: options.x1 + ((d - 1.06*gap) / 2) * Math.cos(theta),
-        y1: options.y1 + ((d - 1.06*gap) / 2) * Math.sin(theta),
-        x2: options.x1 + ((d + 1.06*gap) / 2) * Math.cos(theta),
-        y2: options.y1 + ((d + 1.06*gap) / 2) * Math.sin(theta),
+        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
       },
       options
     );
@@ -4118,7 +4118,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
     }
 
     // Add Switch between supporting lines
-    // Uses the angle of the switch to find the end position of the switch 
+    // Uses the angle of the switch to find the end position of the switch
     // in the case it is open
     var theta2 = (options.switchAngle * Math.PI) / 180;
     var l = options.interval / Math.cos(theta2);
