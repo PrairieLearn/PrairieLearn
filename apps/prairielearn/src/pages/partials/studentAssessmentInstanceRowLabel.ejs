@@ -1,4 +1,4 @@
-<% if (sequence_locked) { %>
+<% if (sequence_locked || !can_view) { %>
   <span class="text-muted">
     <%= rowLabelText %>
   </span>
@@ -8,11 +8,16 @@
   </a>
 <% } %>
 
-<% if (sequence_locked) { %>
+<% if (sequence_locked || !can_view) { %>
   <%
-  var lockedPopoverText = prev_sequence_locked
-    ? `A previous question must be completed before you can access this one.` 
-    : `You must score at least ${prev_advance_score_perc}% on ${prev_title} to unlock this question.`;
+  var lockedPopoverText;
+  if (!can_view) {
+    lockedPopoverText = "Your current group role doesn't have permission to view this question."
+  } else if (prev_sequence_locked) {
+    lockedPopoverText = `A previous question must be completed before you can access this one.`;
+  } else {
+    lockedPopoverText = `You must score at least ${prev_advance_score_perc}% on ${prev_title} to unlock this question.`;
+  }
   %>
   <a tabindex="0" class="btn btn-xs border text-secondary ml-1" role="button"
     data-toggle="popover" data-trigger="focus" data-container="body"

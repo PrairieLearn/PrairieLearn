@@ -111,7 +111,7 @@
               </th>
             </tr>
             <% } %>
-            <tr class="<% if (question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
+            <tr class="<% if (question.sequence_locked || !question.can_view) { %>bg-light pl-sequence-locked<% } %>">
               <td>
                 <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', {
                   ...question,
