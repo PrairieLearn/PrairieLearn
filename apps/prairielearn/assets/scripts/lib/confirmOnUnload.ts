@@ -3,15 +3,14 @@ function getQuestionFormData(form: HTMLFormElement): string {
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);
   formData.delete('__csrf_token');
-  form.querySelectorAll('[data-skip-unload-check]').forEach((input: HTMLInputElement) => {
+  form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]').forEach((input) => {
     if (input.name) formData.delete(input.name);
   });
   return formData.toString();
 }
 
-export function saveQuestionFormData(form: HTMLFormElement) {
-  if (!form) return;
-  form.dataset.originalFormData = getQuestionFormData(form);
+export function saveQuestionFormData(form: HTMLFormElement | null) {
+  if (form) form.dataset.originalFormData = getQuestionFormData(form);
 }
 
 export function confirmOnUnload(form: HTMLFormElement) {
@@ -26,11 +25,11 @@ export function confirmOnUnload(form: HTMLFormElement) {
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
     if (!isSameForm) {
-      // Supported in most modern browsers
+      // event.preventDefault() is used in Safari/Firefox, but not supported by Chrome/Edge/etc.
+      // Returning a string is supported in almost all browsers that support beforeunload.
+      // Safari on iOS does not support confirmation on beforeunload at all.
+      // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
       event.preventDefault();
-
-      // Fallback for legacy browsers
-      event.returnValue = '';
       return '';
     }
   });
