@@ -181,7 +181,7 @@ function setupDynamicObjects() {
   // Enable popover
   $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
 
-  try {
+  if (document.getElementById('submission-suspended-data')) {
     const countdownData = decodeData<{
       serverTimeLimitMS: number;
       serverRemainingMS: number;
@@ -201,8 +201,6 @@ function setupDynamicObjects() {
           });
       }
     );
-  } catch (err) {
-    // If there is no submission-suspended-data object, return
   }
 }
 
