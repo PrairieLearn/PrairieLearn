@@ -105,7 +105,7 @@
         <% } else { %>
             <% throw Error('unknown question_context: ' + question_context); %>
         <% } %>
-        <% if (course.template_course && authz_data.editable_courses.length > 0) { %>
+        <% if (question_copy_targets?.length > 0 && question_context != 'manual_grading') { %>
           <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
             <i class="fa fa-clone"></i>
             Copy question
@@ -228,13 +228,38 @@
             Select one of course courses to copy this question.
           </p>
           <select class="form-control" name="to_course_id" required>
-            <% authz_data.editable_courses.forEach(function(course) { %>
-              <option value="<%= course.id %>"><%= course.short_name %></option>
+            <% question_copy_targets?.forEach(function(course) { %>
+              <option
+                value="<%= course.id %>"
+                data-csrf-token="<%= course.__csrf_token %>"
+                data-transfer-url="<%= course.transfer_url %>"
+              >
+                <%= course.short_name %>
+              </option>
             <% }); %>
           </select>
+          <script>
+            $(() => {
+              const form = document.querySelector('#copyQuestionModal form');
+              const csrfTokenInput = form.querySelector('input[name="__csrf_token"]');
+              const courseSelect = document.querySelector('#copyQuestionModal select[name="to_course_id"]');
+
+              function updateFormValues() {
+                const value = courseSelect.value;
+                const option = courseSelect.querySelector(`option[value="${value}"]`);
+
+                form.action = option.dataset.transferUrl;
+                csrfTokenInput.value = option.dataset.csrfToken;
+              }
+
+              courseSelect.addEventListener('change', updateFormValues);
+            });
+          </script>
         </div>
         <div class="modal-footer">
-          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+          <input type="hidden" name="__csrf_token" value="" />
+          <input type="hidden" name="question_id" value="<%= question.id %>" />
+          <input type="hidden" name="course_id" value="<%= course.id %>" /> 
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           <button name="__action" value="copy_question" class="btn btn-primary">Copy question</button>
         </div>

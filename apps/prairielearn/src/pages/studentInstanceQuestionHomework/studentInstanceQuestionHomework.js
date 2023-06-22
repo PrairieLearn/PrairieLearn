@@ -9,7 +9,7 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
-const { copyQuestion } = require('../../lib/copy-question');
+const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active) {
@@ -160,10 +160,6 @@ router.post('/', function (req, res, next) {
           variant_id
       );
     });
-  } else if (req.body.__action === 'copy_question') {
-    copyQuestion(res, next, {
-      to_course_id: req.body.to_course_id,
-    });
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
@@ -199,6 +195,7 @@ router.get('/', function (req, res, next) {
     logPageView(req, res, (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
+      setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
   });

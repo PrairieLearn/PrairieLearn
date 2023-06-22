@@ -1,5 +1,3 @@
-import { copyQuestion } from '../../lib/copy-question';
-
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
@@ -11,11 +9,18 @@ const sqldb = require('@prairielearn/postgres');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { logger } = require('@prairielearn/logger');
-const { QuestionRenameEditor, QuestionDeleteEditor } = require('../../lib/editors');
+const {
+  QuestionRenameEditor,
+  QuestionDeleteEditor,
+  QuestionCopyEditor,
+} = require('../../lib/editors');
 const { config } = require('../../lib/config');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
+const { idsEqual } = require('../../lib/id');
 const { generateSignedToken } = require('@prairielearn/signed-token');
+const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
+const { callbackify } = require('node:util');
 
 router.post(
   '/test',
@@ -111,7 +116,47 @@ router.post('/', function (req, res, next) {
     }
   } else if (req.body.__action === 'copy_question') {
     debug('Copy question');
-    copyQuestion(res, next, { to_course_id: req.body.to_course_id });
+    if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
+      // In this case, we are making a duplicate of this question in the same course
+      const editor = new QuestionCopyEditor({
+        locals: res.locals,
+      });
+      editor.canEdit((err) => {
+        if (ERR(err, next)) return;
+        editor.doEdit((err, job_sequence_id) => {
+          if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+          } else {
+            debug(
+              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
+            );
+            sqldb.queryOneRow(
+              sql.select_question_id_from_uuid,
+              { uuid: editor.uuid, course_id: res.locals.course.id },
+              (err, result) => {
+                if (ERR(err, next)) return;
+                res.redirect(
+                  res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
+                );
+              }
+            );
+          }
+        });
+      });
+    } else {
+      callbackify(copyQuestionBetweenCourses)(
+        res,
+        {
+          fromCourse: res.locals.course,
+          toCourseId: req.body.to_course_id,
+        },
+        (err) => {
+          if (ERR(err, next)) return;
+          // `copyQuestionBetweenCourses` performs the redirect automatically,
+          // so if there wasn't an error, there's nothing to do here.
+        }
+      );
+    }
   } else if (req.body.__action === 'delete_question') {
     debug('Delete question');
     const editor = new QuestionDeleteEditor({
