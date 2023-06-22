@@ -14,6 +14,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
 export function setQuestionCopyTargets(res: Response) {
   res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
     const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
+
+    // The question copy form will POST to a different URL for each course, so
+    // we need to generate a corresponding CSRF token for each one.
     const csrfToken = generateSignedToken(
       {
         url: copyUrl,
@@ -21,6 +24,7 @@ export function setQuestionCopyTargets(res: Response) {
       },
       config.secretKey
     );
+
     return {
       id: course.id,
       short_name: course.short_name,
