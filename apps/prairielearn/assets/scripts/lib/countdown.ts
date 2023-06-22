@@ -65,8 +65,8 @@ export class Countdown {
     serverUpdateFailFn: () => void = null,
     backgroundColorFn: (number) => string = null
   ) {
-    this.countdownDisplay = document.querySelector(displaySelector) as HTMLElement;
-    this.countdownProgress = document.querySelector(progressSelector) as HTMLElement;
+    this.countdownDisplay = document.querySelector<HTMLElement>(displaySelector);
+    this.countdownProgress = document.querySelector<HTMLElement>(progressSelector);
 
     if (!this.countdownDisplay || !this.countdownProgress) return;
 

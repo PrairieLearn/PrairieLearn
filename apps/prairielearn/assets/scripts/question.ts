@@ -12,7 +12,7 @@ declare global {
 }
 
 onDocumentReady(() => {
-  const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
+  const { gradingMethod } = document.querySelector<HTMLElement>('.question-container').dataset;
   if (gradingMethod === 'External') {
     externalGradingLiveUpdate();
   }
@@ -22,8 +22,8 @@ onDocumentReady(() => {
 });
 
 function externalGradingLiveUpdate() {
-  const { variantId, variantToken } = (document.querySelector('.question-container') as HTMLElement)
-    .dataset;
+  const { variantId, variantToken } =
+    document.querySelector<HTMLElement>('.question-container').dataset;
 
   // Render initial grading states into the DOM
   let gradingPending = false;
@@ -88,7 +88,7 @@ function fetchResults(socket, submissionId) {
     questionContext,
     csrfToken,
     authorizedEdit,
-  } = (document.querySelector('.question-container') as HTMLElement).dataset;
+  } = document.querySelector<HTMLElement>('.question-container').dataset;
 
   const modal = $('#submissionInfoModal-' + submissionId);
   const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
@@ -193,14 +193,12 @@ function setupDynamicObjects() {
       countdownData.serverTimeLimitMS,
       null, // No Ajax update
       () => {
-        (document.querySelector('.question-grade') as HTMLButtonElement).disabled = false;
-        (
-          document.querySelectorAll(
-            '.submission-suspended-msg, .grade-rate-limit-popover'
-          ) as NodeListOf<HTMLElement>
-        ).forEach((elem) => {
-          elem.style.display = 'none';
-        });
+        document.querySelector<HTMLButtonElement>('.question-grade').disabled = false;
+        document
+          .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
+          .forEach((elem) => {
+            elem.style.display = 'none';
+          });
       }
     );
   } catch (err) {
@@ -209,7 +207,7 @@ function setupDynamicObjects() {
 }
 
 function disableOnSubmit() {
-  const form = document.querySelector('form.question-form') as HTMLFormElement;
+  const form = document.querySelector<HTMLFormElement>('form.question-form');
   form.addEventListener('submit', () => {
     if (!form.dataset.submitted) {
       form.dataset.submitted = 'true';
