@@ -15,8 +15,7 @@ FROM
 WHERE
   q.uuid = $uuid
   AND q.course_id = $course_id
-  AND q.deleted_at IS NULL
-  AND c.deleted_at IS NULL;
+  AND q.deleted_at IS NULL;
 
 -- BLOCK select_assessments_with_question_for_display
 SELECT
