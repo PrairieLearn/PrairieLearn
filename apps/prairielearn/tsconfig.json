@@ -1,11 +1,8 @@
 {
-  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist"
-  },
-  "include": ["src/**/*"],
-  "ts-node": {
-    "transpileOnly": true
-  }
+  "files": [],
+  "include": [],
+  "references": [
+    { "path": "./src/tsconfig.json" },
+    { "path": "./assets/scripts/tsconfig.json" }
+  ]
 }

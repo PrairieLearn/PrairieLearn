@@ -5,6 +5,10 @@ const { promisify } = require('util');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
+/**
+ * @param {string} coursePath
+ * @param {(err: Error, hash: string) => void} callback
+ */
 function getCommitHash(coursePath, callback) {
   const execOptions = {
     cwd: coursePath,
@@ -20,13 +24,14 @@ function getCommitHash(coursePath, callback) {
   });
 }
 module.exports.getCommitHash = getCommitHash;
+module.exports.getCommitHashAsync = promisify(getCommitHash);
 
 /**
  * Loads the current commit hash from disk and stores it in the database. This
  * will also add the `commit_hash` property to the given course object.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.updateCourseCommitHash = function (course, callback) {
   getCommitHash(course.path, (err, hash) => {
@@ -54,7 +59,7 @@ module.exports.updateCourseCommitHashAsync = promisify(module.exports.updateCour
  * updated during course sync.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
   if (course.commit_hash) {

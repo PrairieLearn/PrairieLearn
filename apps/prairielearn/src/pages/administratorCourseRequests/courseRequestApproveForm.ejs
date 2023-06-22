@@ -5,9 +5,9 @@
 
     <div class="form-group">
         <label>Institution:</label>
-        <select name="institution_id" class="form-control">
+        <select name="institution_id" class="form-control" onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;">
             <% institutions.forEach(function(i) { %>
-                <option value="<%= i.id %>"><%= i.short_name %></option>
+                <option value="<%= i.id %>" data-timezone="<%= i.display_timezone %>"><%= i.short_name %></option>
             <% }); %>
         </select>
     </div>
@@ -21,7 +21,7 @@
     </div>
     <div class="form-group">
         <label for="courseRequestAddInputTimezone">Timezone:</label>
-        <input type="text" class="form-control" id="courseRequestAddInputTimezone" name="display_timezone" value="America/Chicago">
+        <input type="text" class="form-control" id="courseRequestAddInputTimezone" name="display_timezone" value="<%= institutions[0]?.display_timezone %>">
     </div>
     <% const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase(); %>
     <div class="form-group">

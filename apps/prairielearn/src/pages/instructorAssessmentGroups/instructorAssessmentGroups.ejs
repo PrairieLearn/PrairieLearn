@@ -287,7 +287,9 @@
             <tr>
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
-              <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
+              <td class="text-center" style="word-break:break-all;">
+                <small><%= row.uid_list.length > 0 ? row.uid_list : '(empty)' %></small>
+              </td>
               <% if (authz_data.has_course_instance_permission_edit) { %>
               <td class="text-center">
                 <div class="dropdown">
@@ -370,8 +372,8 @@
               not yet assigned:
             </strong>
             <ul class="mb-0">
-              <% notAssigned.forEach(function(row, iRow) {%>
-              <li><%= row.uid %></li>
+              <% notAssigned.forEach(function(uid) {%>
+              <li><%= uid %></li>
               <% }); %>
             </ul>
             <% } %>

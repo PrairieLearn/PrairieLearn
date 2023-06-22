@@ -1165,6 +1165,19 @@ async function validateAssessment(assessment, questions) {
               'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
             );
           }
+
+          const hasSplitPoints =
+            alternative.autoPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined ||
+            alternative.manualPoints !== undefined;
+          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const isNonIncreasing = pointsList.every(
+            (points, index) => index === 0 || points <= pointsList[index - 1]
+          );
+          if (!isNonIncreasing) {
+            errors.push('Points for a question must be non-increasing');
+          }
         }
         if (assessment.type === 'Homework') {
           if (
@@ -1222,6 +1235,56 @@ async function validateAssessment(assessment, questions) {
       });
     });
   });
+
+  if (assessment.groupRoles) {
+    // Ensure at least one role can assign roles before and during an assessment
+    let foundCanAssignRolesAtStart = false;
+    let foundCanAssignRolesDuringAssessment = false;
+
+    assessment.groupRoles.forEach((role) => {
+      if (role.canAssignRolesAtStart && role.minimum >= 1) {
+        foundCanAssignRolesAtStart = true;
+      }
+      if (role.canAssignRolesDuringAssessment && role.minimum >= 1) {
+        foundCanAssignRolesDuringAssessment = true;
+      }
+    });
+
+    if (!foundCanAssignRolesAtStart) {
+      errors.push(
+        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".'
+      );
+    }
+    if (!foundCanAssignRolesDuringAssessment) {
+      errors.push(
+        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".'
+      );
+    }
+
+    // Ensure values for role minimum and maximum are within bounds
+    assessment.groupRoles.forEach((role) => {
+      if (role.minimum > assessment.groupMinSize) {
+        warnings.push(
+          `Group role "${role.name}" has a minimum greater than the group's minimum size.`
+        );
+      }
+      if (role.minimum && role.minimum > assessment.groupMaxSize) {
+        errors.push(
+          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`
+        );
+      }
+      if (role.maximum && role.maximum > assessment.groupMaxSize) {
+        errors.push(
+          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`
+        );
+      }
+      if (role.minimum > role.maximum) {
+        errors.push(
+          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`
+        );
+      }
+    });
+  }
 
   return { warnings, errors };
 }

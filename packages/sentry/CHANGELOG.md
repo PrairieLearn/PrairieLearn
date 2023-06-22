@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 1.0.4
+
+### Patch Changes
+
+- 8fd47d928: Upgrade all dependencies
+
 ## 1.0.3
 
 ### Patch Changes

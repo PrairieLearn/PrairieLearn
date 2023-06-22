@@ -1,14 +1,10 @@
 // @ts-check
-const chaiAsPromised = require('chai-as-promised');
-const chai = require('chai');
-chai.use(chaiAsPromised);
+const { assert } = require('chai');
 const fs = require('fs-extra');
 const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');
 const { idsEqual } = require('../../lib/id');
-
-const { assert } = chai;
 
 /**
  * Makes an empty course instance.
