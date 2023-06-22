@@ -40,102 +40,87 @@ server, and at this point we update clientStart as well.
 
 *********************************************************************/
 
-export class Countdown {
-  serverRemainingMS: number;
-  serverTimeLimitMS: number;
-  clientStart: number;
-  updateServerIfExpired = true;
-  serverUpdateURL: string;
+export function setupCountdown(options: {
+  displaySelector: string;
+  progressSelector: string;
+  initialServerRemainingMS: number;
+  initialServerTimeLimitMS: number;
+  serverUpdateURL?: string;
+  timerOutFn?: () => void;
+  serverUpdateFailFn?: () => void;
+  backgroundColorFn?: (number) => string;
+}) {
+  const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
+  const countdownProgress = document.querySelector<HTMLElement>(options.progressSelector);
 
-  countdownDisplay: HTMLElement;
-  countdownProgress: HTMLElement;
-  countdownProgressBar: HTMLElement;
+  if (!countdownDisplay || !countdownProgress) return;
 
-  timerOutFn: () => void;
-  serverUpdateFailFn: () => void;
-  backgroundColorFn: (number) => string;
+  let serverRemainingMS: number;
+  let serverTimeLimitMS: number;
+  let clientStart: number;
+  let updateServerIfExpired = true;
 
-  constructor(
-    displaySelector: string,
-    progressSelector: string,
-    initialServerRemainingMS: number,
-    initialServerTimeLimitMS: number,
-    serverUpdateURL: string = null,
-    timerOutFn: () => void = null,
-    serverUpdateFailFn: () => void = null,
-    backgroundColorFn: (number) => string = null
-  ) {
-    this.countdownDisplay = document.querySelector<HTMLElement>(displaySelector);
-    this.countdownProgress = document.querySelector<HTMLElement>(progressSelector);
+  countdownProgress.classList.add('progress');
+  countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
+  const countdownProgressBar = countdownProgress.querySelector('div');
 
-    if (!this.countdownDisplay || !this.countdownProgress) return;
+  handleServerResponseRemainingMS({
+    serverRemainingMS: options.initialServerRemainingMS,
+    serverTimeLimitMS: options.initialServerTimeLimitMS,
+  });
 
-    this.serverUpdateURL = serverUpdateURL;
-    this.timerOutFn = timerOutFn;
-    this.serverUpdateFailFn = serverUpdateFailFn;
-    this.backgroundColorFn = backgroundColorFn || (() => 'bg-info');
-
-    this.countdownProgress.classList.add('progress');
-    this.countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
-    this.countdownProgressBar = this.countdownProgress.querySelector('div');
-
-    this.handleServerResponseRemainingMS({
-      serverRemainingMS: initialServerRemainingMS,
-      serverTimeLimitMS: initialServerTimeLimitMS,
-    });
-
-    if (this.serverUpdateURL) {
-      window.setInterval(this.updateServerRemainingMS.bind(this), 60000);
-    }
+  if (options.serverUpdateURL) {
+    window.setInterval(updateServerRemainingMS, 60000);
   }
 
-  handleServerResponseRemainingMS(data) {
-    this.serverRemainingMS = data.serverRemainingMS;
-    this.serverTimeLimitMS = data.serverTimeLimitMS;
-    this.clientStart = Date.now();
+  function handleServerResponseRemainingMS(data) {
+    serverRemainingMS = data.serverRemainingMS;
+    serverTimeLimitMS = data.serverTimeLimitMS;
+    clientStart = Date.now();
 
-    console.log('Time remaining: ' + this.serverRemainingMS + ' ms');
-    if (this.serverRemainingMS <= 0) {
-      this.timerOutFn?.();
-      this.updateServerIfExpired = false;
+    console.log('Time remaining: ' + serverRemainingMS + ' ms');
+    if (serverRemainingMS <= 0) {
+      options.timerOutFn?.();
+      updateServerIfExpired = false;
     } else {
-      this.displayCountdown();
+      // TODO Cancel any existing timeouts for this function
+      // to avoid duplication
+      displayCountdown();
     }
   }
 
-  updateServerRemainingMS() {
-    if (this.serverUpdateURL) {
-      fetch(this.serverUpdateURL)
+  function updateServerRemainingMS() {
+    if (options.serverUpdateURL) {
+      fetch(options.serverUpdateURL)
         .then(async (response) => {
-          this.handleServerResponseRemainingMS(await response.json());
+          handleServerResponseRemainingMS(await response.json());
         })
         .catch((err) => {
           console.log('Error retrieving remaining time', err);
-          this.serverUpdateFailFn?.();
+          options.serverUpdateFailFn?.();
         });
     }
   }
 
-  displayCountdown() {
-    const remainingMS = Math.max(0, this.serverRemainingMS - (Date.now() - this.clientStart));
+  function displayCountdown() {
+    const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
     const remainingSec = Math.floor(remainingMS / 1000);
     const remainingMin = Math.floor(remainingSec / 60);
-    const perc = 100 - Math.max(0, Math.min(100, (remainingMS / this.serverTimeLimitMS) * 100));
-    const backgroundColor = this.backgroundColorFn(remainingSec);
+    const perc = 100 - Math.max(0, Math.min(100, (remainingMS / serverTimeLimitMS) * 100));
+    const backgroundColor = options.backgroundColorFn?.(remainingSec) || 'bg-info';
 
-    this.countdownProgressBar.style.width = perc + '%';
-    this.countdownProgressBar.className = 'progress-bar ' + backgroundColor;
-    this.countdownDisplay.innerText =
-      remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
+    countdownProgressBar.style.width = perc + '%';
+    countdownProgressBar.className = 'progress-bar ' + backgroundColor;
+    countdownDisplay.innerText = remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
 
     if (remainingMS > 0) {
       // reschedule for the next half-second time
-      window.setTimeout(this.displayCountdown.bind(this), (remainingMS - 500) % 1000);
-    } else if (this.serverUpdateURL && this.updateServerIfExpired) {
+      window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
+    } else if (options.serverUpdateURL && updateServerIfExpired) {
       // If the timer runs out, trigger a new server update to confirm before closing
-      this.updateServerRemainingMS();
+      updateServerRemainingMS();
     } else {
-      this.timerOutFn?.();
+      options.timerOutFn?.();
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Countdown } from './lib/countdown';
+import { setupCountdown } from './lib/countdown';
 import { saveQuestionFormData } from './lib/confirmOnUnload';
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
@@ -11,13 +11,13 @@ onDocumentReady(() => {
     canTriggerFinish: boolean;
     csrfToken: string;
   }>('time-limit-data');
-  new Countdown(
-    '#countdownDisplay',
-    '#countdownProgress',
-    timeLimitData.serverRemainingMS,
-    timeLimitData.serverTimeLimitMS,
-    timeLimitData.serverUpdateURL,
-    () => {
+  setupCountdown({
+    displaySelector: '#countdownDisplay',
+    progressSelector: '#countdownProgress',
+    initialServerRemainingMS: timeLimitData.serverRemainingMS,
+    initialServerTimeLimitMS: timeLimitData.serverTimeLimitMS,
+    serverUpdateURL: timeLimitData.serverUpdateURL,
+    timerOutFn: () => {
       // if viewing exam as a different effective user, do not trigger time limit finish
       if (timeLimitData.canTriggerFinish) {
         // do not trigger unsaved warning dialog
@@ -33,11 +33,11 @@ onDocumentReady(() => {
         form.submit();
       }
     },
-    () => {
+    serverUpdateFailFn: () => {
       // On time limit fail, reload the page
       window.location.reload();
     },
-    (remainingSec) => {
+    backgroundColorFn: (remainingSec) => {
       if (remainingSec >= 180) {
         return 'bg-primary';
       } else if (remainingSec >= 60) {
@@ -45,6 +45,6 @@ onDocumentReady(() => {
       } else {
         return 'bg-danger';
       }
-    }
-  );
+    },
+  });
 });

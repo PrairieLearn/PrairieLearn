@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
 import './mathjax';
-import { Countdown } from './lib/countdown';
+import { setupCountdown } from './lib/countdown';
 import { confirmOnUnload } from './lib/confirmOnUnload';
 
 declare global {
@@ -186,21 +186,20 @@ function setupDynamicObjects() {
       serverTimeLimitMS: number;
       serverRemainingMS: number;
     }>('submission-suspended-data');
-    new Countdown(
-      '#submission-suspended-display',
-      '#submission-suspended-progress',
-      countdownData.serverRemainingMS,
-      countdownData.serverTimeLimitMS,
-      null, // No Ajax update
-      () => {
+    setupCountdown({
+      displaySelector: '#submission-suspended-display',
+      progressSelector: '#submission-suspended-progress',
+      initialServerRemainingMS: countdownData.serverRemainingMS,
+      initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
+      timerOutFn: () => {
         document.querySelector<HTMLButtonElement>('.question-grade').disabled = false;
         document
           .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
           .forEach((elem) => {
             elem.style.display = 'none';
           });
-      }
-    );
+      },
+    });
   }
 }
 
@@ -212,7 +211,6 @@ function disableOnSubmit() {
 
       // Since `.disabled` buttons don't POST, clone and hide as workaround
       form.querySelectorAll('.disable-on-submit').forEach((element: HTMLButtonElement) => {
-        console.log(element);
         // Create disabled clone of button
         const clonedElement = element.cloneNode(true) as HTMLButtonElement;
         clonedElement.id = '';
