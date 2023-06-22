@@ -95,7 +95,7 @@
   <% if (question.type == 'Freeform') { %>
   <form class="question-form" name="question-form" method="POST" autocomplete="off">
     <div class="card mb-4 question-block">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
         <% if (question_context == 'student_homework') { %>
           <%= instance_question_info.question_number %>. <%= question.title %>
         <% } else if (question_context == 'student_exam') { %>
@@ -104,6 +104,12 @@
           <%= question.title %>
         <% } else { %>
             <% throw Error('unknown question_context: ' + question_context); %>
+        <% } %>
+        <% if (course.template_course && authz_data.editable_courses.length > 0) { %>
+          <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
+            <i class="fa fa-clone"></i>
+            Copy question
+          </button>
         <% } %>
       </div>
       <div class="card-body question-body">
@@ -204,4 +210,35 @@
 
   <% } %> <%# endif showSubmissions %>
 
+</div>
+
+<div id="copyQuestionModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title">Copy question</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            This question can be copied to any course for which you have editor permissions.
+            Select one of course courses to copy this question.
+          </p>
+          <select class="form-control" name="to_course_id" required>
+            <% authz_data.editable_courses.forEach(function(course) { %>
+              <option value="<%= course.id %>"><%= course.short_name %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button name="__action" value="copy_question" class="btn btn-primary">Copy question</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
