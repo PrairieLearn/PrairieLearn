@@ -214,68 +214,70 @@
 
 </div>
 
-<div id="copyQuestionModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST">
-        <div class="modal-header">
-          <h5 class="modal-title">Copy question</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <% if (question_copy_targets?.length === 0) { %>
-            <p>
-              You can&apos;t copy this question because you don&apos;t have editor permissions in any courses.
-              <a href="/pl/request_course">Request a course</a> if you don&apos;t have one already.
-              Otherwise, contact the owner of the course you expected to have access to.
-            </p>
-          <% } else { %>
-            <p>
-              This question can be copied to any course for which you have editor permissions.
-              Select one of courses to copy this question.
-            </p>
-            <select class="form-control" name="to_course_id" required>
-              <% question_copy_targets?.forEach(function(course) { %>
-                <option
-                  value="<%= course.id %>"
-                  data-csrf-token="<%= course.__csrf_token %>"
-                  data-copy-url="<%= course.copy_url %>"
-                >
-                  <%= course.short_name %>
-                </option>
-              <% }); %>
-            </select>
-            <script>
-              $(() => {
-                const form = document.querySelector('#copyQuestionModal form');
-                const csrfTokenInput = form.querySelector('input[name="__csrf_token"]');
-                const courseSelect = document.querySelector('#copyQuestionModal select[name="to_course_id"]');
+<% if (typeof question_copy_targets !== 'undefined') { %>
+  <div id="copyQuestionModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title">Copy question</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <% if (question_copy_targets.length === 0) { %>
+              <p>
+                You can&apos;t copy this question because you don&apos;t have editor permissions in any courses.
+                <a href="/pl/request_course">Request a course</a> if you don&apos;t have one already.
+                Otherwise, contact the owner of the course you expected to have access to.
+              </p>
+            <% } else { %>
+              <p>
+                This question can be copied to any course for which you have editor permissions.
+                Select one of courses to copy this question.
+              </p>
+              <select class="form-control" name="to_course_id" required>
+                <% question_copy_targets.forEach(function(course) { %>
+                  <option
+                    value="<%= course.id %>"
+                    data-csrf-token="<%= course.__csrf_token %>"
+                    data-copy-url="<%= course.copy_url %>"
+                  >
+                    <%= course.short_name %>
+                  </option>
+                <% }); %>
+              </select>
+              <script>
+                $(() => {
+                  const form = document.querySelector('#copyQuestionModal form');
+                  const csrfTokenInput = form.querySelector('input[name="__csrf_token"]');
+                  const courseSelect = document.querySelector('#copyQuestionModal select[name="to_course_id"]');
 
-                function updateFormValues() {
-                  const value = courseSelect.value;
-                  const option = courseSelect.querySelector(`option[value="${value}"]`);
+                  function updateFormValues() {
+                    const value = courseSelect.value;
+                    const option = courseSelect.querySelector(`option[value="${value}"]`);
 
-                  form.action = option.dataset.copyUrl;
-                  csrfTokenInput.value = option.dataset.csrfToken;
-                }
+                    form.action = option.dataset.copyUrl;
+                    csrfTokenInput.value = option.dataset.csrfToken;
+                  }
 
-                courseSelect.addEventListener('change', updateFormValues);
-              });
-            </script>
-          <% } %>
-        </div>
-        <div class="modal-footer">
-          <input type="hidden" name="__csrf_token" value="" />
-          <input type="hidden" name="question_id" value="<%= question.id %>" />
-          <input type="hidden" name="course_id" value="<%= course.id %>" /> 
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <% if (question_copy_targets?.length > 0) { %>
-            <button type="submit" name="__action" value="copy_question" class="btn btn-primary">Copy question</button>
-          <% } %>
-        </div>
-      </form>
+                  courseSelect.addEventListener('change', updateFormValues);
+                });
+              </script>
+            <% } %>
+          </div>
+          <div class="modal-footer">
+            <input type="hidden" name="__csrf_token" value="" />
+            <input type="hidden" name="question_id" value="<%= question.id %>" />
+            <input type="hidden" name="course_id" value="<%= course.id %>" /> 
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <% if (question_copy_targets?.length > 0) { %>
+              <button type="submit" name="__action" value="copy_question" class="btn btn-primary">Copy question</button>
+            <% } %>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
-</div>
+<% } %>
