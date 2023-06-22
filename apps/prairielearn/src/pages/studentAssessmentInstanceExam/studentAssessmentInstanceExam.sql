@@ -1,4 +1,16 @@
 -- BLOCK select_instance_questions
+WITH
+  group_role_ids AS (
+    SELECT
+      group_role_id
+    FROM
+      group_user_roles AS gur
+      JOIN groups AS g ON gur.group_id = g.id
+      JOIN assessment_instances AS ai ON g.id = ai.group_id
+    WHERE
+      gur.user_id = $user_id
+      AND ai.id = $assessment_instance_id
+  )
 SELECT
   iq.*,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
@@ -27,7 +39,22 @@ SELECT
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   'Question ' || (lag(qo.question_number) OVER w) AS prev_title,
   (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
-  iqnag.*
+  iqnag.*,
+  (
+    SELECT
+      bool_or(aqrp.can_view)
+    FROM
+      assessment_questions AS aq
+      JOIN assessment_question_role_permissions AS aqrp ON aqrp.assessment_question_id = aq.id
+    WHERE
+      aq.id = iq.assessment_question_id
+      AND aqrp.group_role_id IN (
+        SELECT
+          group_role_id
+        FROM
+          group_role_ids
+      )
+  ) AS can_view
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
