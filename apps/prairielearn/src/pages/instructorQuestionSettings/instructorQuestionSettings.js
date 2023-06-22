@@ -149,6 +149,7 @@ router.post('/', function (req, res, next) {
         {
           fromCourse: res.locals.course,
           toCourseId: req.body.to_course_id,
+          question: res.locals.question,
         },
         (err) => {
           if (ERR(err, next)) return;

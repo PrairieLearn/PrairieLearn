@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import { Course } from './db-types';
+import { Course, Question } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -37,7 +37,15 @@ export function setQuestionCopyTargets(res: Response) {
 
 export async function copyQuestionBetweenCourses(
   res: Response,
-  { fromCourse, toCourseId }: { fromCourse: Course; toCourseId: string }
+  {
+    fromCourse,
+    toCourseId,
+    question,
+  }: {
+    fromCourse: Course;
+    toCourseId: string;
+    question: Question;
+  }
 ) {
   // In this case, we are sending a copy of this question to a different course.
   //
@@ -51,6 +59,10 @@ export async function copyQuestionBetweenCourses(
     throw new Error(`Course ${fromCourse.id} does not have a path`);
   }
 
+  if (!question.qid) {
+    throw new Error(`Question ${question.id} does not have a qid`);
+  }
+
   const f = uuidv4();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
@@ -58,7 +70,7 @@ export async function copyQuestionBetweenCourses(
     to_course_id: toCourseId,
     user_id: res.locals.user.user_id,
     transfer_type: 'CopyQuestion',
-    from_filename: path.join(fromCourse.path, 'questions', res.locals.question.qid),
+    from_filename: path.join(fromCourse.path, 'questions', question.qid),
     storage_filename: path.join(relDir, f.slice(6)),
   };
 

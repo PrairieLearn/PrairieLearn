@@ -14,18 +14,9 @@ const sql = loadSqlEquiv(__filename);
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const {
-      // The ID of the question to copy.
-      question_id,
-      // The ID of the course to copy the question from.
-      course_id,
-    } = req.body;
-
-    console.log(question_id, course_id);
-
     // It doesn't make much sense to transfer a template course question to
     // the same template course, so we'll explicitly forbid that.
-    if (idsEqual(course_id, res.locals.course.id)) {
+    if (idsEqual(req.body.course_id, res.locals.course.id)) {
       throw error.make(400, 'Template course questions cannot be copied to the same course.');
     }
 
@@ -34,8 +25,10 @@ router.post(
     const result = await queryRow(
       sql.select_question,
       {
-        question_id,
-        course_id,
+        // The ID of the question to copy.
+        question_id: req.body.question_id,
+        // The ID of the course to copy the question from.
+        course_id: req.body.course_id,
       },
       z.object({
         question: QuestionSchema,
@@ -47,12 +40,10 @@ router.post(
       throw error.make(400, 'The given course is not a template course.');
     }
 
-    // `copyQuestion` expects this to be populated.
-    res.locals.question = result.question;
-
     await copyQuestionBetweenCourses(res, {
       fromCourse: result.course,
       toCourseId: res.locals.course.id,
+      question: result.question,
     });
   })
 );
