@@ -166,7 +166,7 @@ router.post(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, uniqueGroupName, invalidGroupName, permissions) {
+        function (err, succeeded, uniqueGroupName, invalidGroupName, groupConfig) {
           if (ERR(err, next)) return;
           if (succeeded) {
             res.redirect(req.originalUrl);
@@ -176,8 +176,9 @@ router.post(
             } else {
               res.locals.uniqueGroupName = uniqueGroupName;
             }
-            res.locals.permissions = permissions;
-            res.locals.groupsize = 0;
+            res.locals.notInGroup = true;
+            res.locals.groupConfig = groupConfig;
+            res.locals.groupSize = 0;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
         }
