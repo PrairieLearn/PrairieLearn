@@ -21,6 +21,7 @@ const { idsEqual } = require('../../lib/id');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
 const { callbackify } = require('node:util');
+const { flash } = require('@prairielearn/flash');
 
 router.post(
   '/test',
@@ -135,6 +136,10 @@ router.post('/', function (req, res, next) {
               { uuid: editor.uuid, course_id: res.locals.course.id },
               (err, result) => {
                 if (ERR(err, next)) return;
+                flash(
+                  'success',
+                  'Question copied successfully. You are now viewing your copy of the question.'
+                );
                 res.redirect(
                   res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
                 );
