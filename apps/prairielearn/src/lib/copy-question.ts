@@ -12,11 +12,6 @@ import { Course, Question } from './db-types';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export function setQuestionCopyTargets(res: Response) {
-  if (!res.locals.course.template_course) {
-    res.locals.question_copy_targets = [];
-    return;
-  }
-
   res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
     const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
     const csrfToken = generateSignedToken(

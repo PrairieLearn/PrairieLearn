@@ -7,7 +7,6 @@ const async = require('async');
 const sqldb = require('@prairielearn/postgres');
 const { logger } = require('@prairielearn/logger');
 const { flash } = require('@prairielearn/flash');
-const html = require('@prairielearn/html');
 const { QuestionTransferEditor } = require('../../lib/editors');
 const { config } = require('../../lib/config');
 const { idsEqual } = require('../../lib/id');
@@ -93,7 +92,6 @@ router.get('/:file_transfer_id', function (req, res, next) {
                 { uuid: editor.uuid, course_id: res.locals.course.id },
                 (err, result) => {
                   if (ERR(err, next)) return;
-                  // TODO: handle copies within course.
                   flash(
                     'success',
                     'Question copied successfully. You are now viewing your copy of the question.'
