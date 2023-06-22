@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { promisify } from 'node:util';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryOneRowAsync } from '@prairielearn/postgres';
 
@@ -39,8 +38,8 @@ router.post(
     res.locals.question = result.rows[0];
 
     await copyQuestionBetweenCourses(res, {
-      from_course_id: course_id,
-      to_course_id: res.locals.course.id,
+      fromCourse: course_id,
+      toCourseId: res.locals.course.id,
     });
   })
 );
