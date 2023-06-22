@@ -10,6 +10,7 @@ const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
+const { copyQuestion } = require('../../lib/copy-question');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.assessment_instance.open) {
@@ -193,6 +194,10 @@ router.post('/', function (req, res, next) {
           '/?variant_id=' +
           variant_id
       );
+    });
+  } else if (req.body.__action === 'copy_question') {
+    copyQuestion(res, next, {
+      to_course_id: res.body.to_course_id,
     });
   } else {
     return next(

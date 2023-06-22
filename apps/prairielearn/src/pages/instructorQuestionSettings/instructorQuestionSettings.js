@@ -1,3 +1,5 @@
+import { copyQuestion } from '../../lib/copy-question';
+
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
@@ -6,20 +8,13 @@ const async = require('async');
 const error = require('@prairielearn/error');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/postgres');
-const fs = require('fs-extra');
-const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { logger } = require('@prairielearn/logger');
-const {
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
-} = require('../../lib/editors');
+const { QuestionRenameEditor, QuestionDeleteEditor } = require('../../lib/editors');
 const { config } = require('../../lib/config');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
-const { idsEqual } = require('../../lib/id');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
 router.post(
@@ -116,78 +111,7 @@ router.post('/', function (req, res, next) {
     }
   } else if (req.body.__action === 'copy_question') {
     debug('Copy question');
-    if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
-      // In this case, we are making a duplicate of this question in the same course
-      const editor = new QuestionCopyEditor({
-        locals: res.locals,
-      });
-      editor.canEdit((err) => {
-        if (ERR(err, next)) return;
-        editor.doEdit((err, job_sequence_id) => {
-          if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-          } else {
-            debug(
-              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
-            );
-            sqldb.queryOneRow(
-              sql.select_question_id_from_uuid,
-              { uuid: editor.uuid, course_id: res.locals.course.id },
-              (err, result) => {
-                if (ERR(err, next)) return;
-                res.redirect(
-                  res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
-                );
-              }
-            );
-          }
-        });
-      });
-    } else {
-      // In this case, we are sending a copy of this question to a different course
-      debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
-      if (!res.locals.authz_data.has_course_permission_view) {
-        return next(error.make(403, 'Access denied (must be a course Viewer)'));
-      }
-      let params = {
-        from_course_id: res.locals.course.id,
-        to_course_id: req.body.to_course_id,
-        user_id: res.locals.user.user_id,
-        transfer_type: 'CopyQuestion',
-        from_filename: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
-      };
-      async.waterfall(
-        [
-          (callback) => {
-            const f = uuidv4();
-            const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
-            params.storage_filename = path.join(relDir, f.slice(6));
-            if (config.filesRoot == null) return callback(new Error('config.filesRoot is null'));
-            fs.copy(
-              params.from_filename,
-              path.join(config.filesRoot, params.storage_filename),
-              { errorOnExist: true },
-              (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            sqldb.queryOneRow(sql.insert_file_transfer, params, (err, result) => {
-              if (ERR(err, callback)) return;
-              callback(null, result.rows[0]);
-            });
-          },
-        ],
-        (err, results) => {
-          if (ERR(err, next)) return;
-          res.redirect(
-            `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${results.id}`
-          );
-        }
-      );
-    }
+    copyQuestion(res, next, { to_course_id: req.body.to_course_id });
   } else if (req.body.__action === 'delete_question') {
     debug('Delete question');
     const editor = new QuestionDeleteEditor({
