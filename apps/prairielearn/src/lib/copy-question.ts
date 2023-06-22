@@ -18,10 +18,10 @@ export function setQuestionCopyTargets(res: Response) {
   }
 
   res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
-    const transferUrl = `/pl/course/${course.id}/transfer_template_course_question`;
+    const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
     const csrfToken = generateSignedToken(
       {
-        url: transferUrl,
+        url: copyUrl,
         authn_user_id: res.locals.authn_user.user_id,
       },
       config.secretKey
@@ -29,7 +29,7 @@ export function setQuestionCopyTargets(res: Response) {
     return {
       id: course.id,
       short_name: course.short_name,
-      transfer_url: transferUrl,
+      copy_url: copyUrl,
       __csrf_token: csrfToken,
     };
   });

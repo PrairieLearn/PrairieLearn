@@ -224,15 +224,16 @@
         </div>
         <div class="modal-body">
           <p>
+            <!-- TODO: if not editor courses, CTA to request course. -->
             This question can be copied to any course for which you have editor permissions.
-            Select one of course courses to copy this question.
+            Select one of courses to copy this question.
           </p>
           <select class="form-control" name="to_course_id" required>
             <% question_copy_targets?.forEach(function(course) { %>
               <option
                 value="<%= course.id %>"
                 data-csrf-token="<%= course.__csrf_token %>"
-                data-transfer-url="<%= course.transfer_url %>"
+                data-copy-url="<%= course.copy_url %>"
               >
                 <%= course.short_name %>
               </option>
@@ -248,7 +249,7 @@
                 const value = courseSelect.value;
                 const option = courseSelect.querySelector(`option[value="${value}"]`);
 
-                form.action = option.dataset.transferUrl;
+                form.action = option.dataset.copyUrl;
                 csrfTokenInput.value = option.dataset.csrfToken;
               }
 

@@ -1603,8 +1603,8 @@ module.exports.initExpress = function () {
   // question transfer machinery relies on access to course repositories on disk,
   // which don't exist on chunk servers
   app.use(
-    '/pl/course/:course_id/transfer_template_course_question',
-    require('./pages/instructorTransferTemplateCourseQuestion/instructorTransferTemplateCourseQuestion')
+    '/pl/course/:course_id/copy_template_course_question',
+    require('./pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion')
       .default
   );
 

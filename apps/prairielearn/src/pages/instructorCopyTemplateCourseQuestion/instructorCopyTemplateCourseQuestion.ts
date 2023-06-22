@@ -29,8 +29,8 @@ router.post(
       throw error.make(400, 'Template course questions cannot be copied to the same course.');
     }
 
-    // This query will do two things: validate that the question belongs to
-    // the given course, and validate that the course is a template course.
+    // This query will implicitly check that the question belongs to the given
+    // course. We ensure below that the course is in fact a template course.
     const result = await queryRow(
       sql.select_question,
       {
@@ -42,6 +42,10 @@ router.post(
         course: CourseSchema,
       })
     );
+
+    if (result.course.template_course === false) {
+      throw error.make(400, 'The given course is not a template course.');
+    }
 
     // `copyQuestion` expects this to be populated.
     res.locals.question = result.question;
