@@ -4,6 +4,7 @@ import io
 import os
 import pathlib
 import sys
+import warnings
 from typing import Any, Literal, Optional, Tuple, TypedDict
 
 import lxml.html
@@ -75,6 +76,10 @@ def process(
         nonlocal result
 
         if element.tag not in elements:
+            # Give a warning for unrecognized pl elements.
+            if element.tag.startswith("pl-"):
+                warnings.warn(f"Unrecognized pl element: {element.tag}")
+
             return element
 
         try:
