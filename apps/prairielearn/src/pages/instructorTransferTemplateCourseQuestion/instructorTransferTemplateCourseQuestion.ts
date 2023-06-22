@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import { z } from 'zod';
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryOneRowAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { copyQuestionBetweenCourses } from '../../lib/copy-question';
 import { idsEqual } from '../../lib/id';
+import { CourseSchema, QuestionSchema } from '../../lib/db-types';
 
 const router = Router();
 const sql = loadSqlEquiv(__filename);
@@ -24,21 +26,28 @@ router.post(
     // It doesn't make much sense to transfer a template course question to
     // the same template course, so we'll explicitly forbid that.
     if (idsEqual(course_id, res.locals.course.id)) {
-      throw error.make(400, 'Template course questions cannot be transferred to the same course.');
+      throw error.make(400, 'Template course questions cannot be copied to the same course.');
     }
 
     // This query will do two things: validate that the question belongs to
     // the given course, and validate that the course is a template course.
-    const result = await queryOneRowAsync(sql.select_question, {
-      question_id,
-      course_id,
-    });
+    const result = await queryRow(
+      sql.select_question,
+      {
+        question_id,
+        course_id,
+      },
+      z.object({
+        question: QuestionSchema,
+        course: CourseSchema,
+      })
+    );
 
     // `copyQuestion` expects this to be populated.
-    res.locals.question = result.rows[0];
+    res.locals.question = result.question;
 
     await copyQuestionBetweenCourses(res, {
-      fromCourse: course_id,
+      fromCourse: result.course,
       toCourseId: res.locals.course.id,
     });
   })
