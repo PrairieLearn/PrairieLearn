@@ -95,7 +95,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   async loadAndValidate(sources: ConfigSource[] = []) {
     let config = this.schema.parse({});
     // If the config setting is an array, override instead of merge
-    const mergeRule = (_obj: any, src: any) => (_.isArray(src) ? src : undefined);
+    const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
     for (const source of sources) {
       config = _.mergeWith(config, await source.load(config), mergeRule);
