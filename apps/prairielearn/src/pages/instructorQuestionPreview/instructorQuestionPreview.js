@@ -10,6 +10,7 @@ const question = require('../../lib/question');
 const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
+const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
 const router = express.Router();
 
@@ -182,6 +183,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
+      setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
   );
