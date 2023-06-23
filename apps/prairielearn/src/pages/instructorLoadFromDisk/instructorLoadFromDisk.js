@@ -13,6 +13,7 @@ var serverJobs = require('../../lib/server-jobs-legacy');
 var syncFromDisk = require('../../sync/syncFromDisk');
 var chunks = require('../../lib/chunks');
 const { chalk, chalkDim } = require('../../lib/chalk');
+const { REPOSITORY_ROOT_PATH } = require('../../lib/paths');
 
 var update = function (locals, callback) {
   debug('update()');
@@ -43,7 +44,7 @@ var update = function (locals, callback) {
       async.eachOfSeries(
         config.courseDirs || [],
         function (courseDir, index, callback) {
-          courseDir = path.resolve(process.cwd(), courseDir);
+          courseDir = path.resolve(REPOSITORY_ROOT_PATH, courseDir);
           debug('loading course', { courseDir });
           job.info(chalk.bold(courseDir));
           var infoCourseFile = path.join(courseDir, 'infoCourse.json');
