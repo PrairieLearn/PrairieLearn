@@ -14,10 +14,10 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
+    List,
     Literal,
     Optional,
     Type,
-    List,
     TypedDict,
     TypeVar,
     Union,

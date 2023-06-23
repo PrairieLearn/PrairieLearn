@@ -45,12 +45,12 @@ def get_css_color(name: str) -> Optional[str]:
     Tries to look up a hex code value from a named css color, otherwise will
     return None if not a valid color.
     """
-
     name = name.lower()
     if name in pl_colors:
         return pl_colors[name]
-    try:
-        return Color(name).to_string(hex=True)
-    except ValueError:
+
+    if Color.match(name) is None:
         warnings.warn(f"{name} is not a valid color name; defaulting to no color")
         return None
+
+    return Color(name).to_string(hex=True)
