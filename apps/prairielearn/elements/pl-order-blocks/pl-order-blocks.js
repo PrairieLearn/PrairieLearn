@@ -120,10 +120,13 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function drawIndentLocationLines(dropzoneElementId) {
+    // draw the grid lines maxIndent number of times
     $(dropzoneElementId)[0].style.background = 'linear-gradient(#000, #000) no-repeat border-box, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
+    // set the appearance (thickness) of the grid lines
     $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
+    // translate the grid lines to the correct positions
     $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
       { length: maxIndent + 1 },
       (value, index) => {
@@ -145,6 +148,8 @@ window.PLOrderBlocks = function (uuid, options) {
       setAnswer();
     },
     start: function () {
+      // the start event is only called once when user starts dragging
+      // this is suitable for drawing the indent grid lines, which is static 
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
       }
