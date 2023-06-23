@@ -1,4 +1,4 @@
-<% if (sequence_locked || !can_view) { %>
+<% if (sequence_locked || (can_view !== null && !can_view)) { %>
   <span class="text-muted">
     <%= rowLabelText %>
   </span>
@@ -8,10 +8,10 @@
   </a>
 <% } %>
 
-<% if (sequence_locked || !can_view) { %>
+<% if (sequence_locked || (can_view !== null && !can_view)) { %>
   <%
   var lockedPopoverText;
-  if (!can_view) {
+  if (can_view !== null && !can_view) {
     lockedPopoverText = "Your current group role doesn't have permission to view this question."
   } else if (prev_sequence_locked) {
     lockedPopoverText = `A previous question must be completed before you can access this one.`;
