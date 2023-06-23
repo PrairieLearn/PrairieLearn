@@ -122,7 +122,7 @@
             }
         },
         "canSubmit": {
-            "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+            "description": "A list of group role names that can submit questions in this assessment. Only applicable for group assessments.",
             "type": "array",
             "items": {
                 "type": "string"
@@ -131,7 +131,7 @@
             "default": []
         },
         "canView": {
-            "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+            "description": "A list of group role names that can view questions in this assessment. Only applicable for group assessments.",
             "type": "array",
             "items": {
                 "type": "string"
