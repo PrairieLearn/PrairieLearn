@@ -149,7 +149,7 @@ window.PLOrderBlocks = function (uuid, options) {
     },
     start: function () {
       // the start event is only called once when user starts dragging
-      // this is suitable for drawing the indent grid lines, which is static 
+      // this is suitable for drawing the indent grid lines, which is static
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
       }
