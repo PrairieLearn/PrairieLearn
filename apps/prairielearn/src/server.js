@@ -1597,7 +1597,7 @@ module.exports.initExpress = function () {
   );
 
   // This route is used to initiate a transfer of a question from a template course.
-  // It is not actually page; it's just used to initiate the transfer. The reason
+  // It is not actually a page; it's just used to initiate the transfer. The reason
   // that this is a route on the target course and not handled by the source question
   // pages is that the source question pages are served by chunk servers, but the
   // question transfer machinery relies on access to course repositories on disk,
