@@ -1554,6 +1554,10 @@ module.exports = {
       locals.showTrueAnswer = false;
     }
 
+    if (!instance_question.can_user_submit) {
+      locals.disableGradeButton = true;
+    }
+
     return locals;
   },
 
