@@ -319,6 +319,8 @@ const FILE_UUID_REGEX =
  * @property {ZoneQuestion[]} questions
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
@@ -356,6 +358,8 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
  * @property {GroupRole[]} groupRoles
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
@@ -1212,30 +1216,6 @@ async function validateAssessment(assessment, questions) {
     );
   }
 
-  const validRoleNames = new Set();
-  assessment.groupRoles?.forEach((role) => {
-    validRoleNames.add(role.name);
-  });
-
-  (assessment.zones || []).forEach((zone) => {
-    (zone.questions || []).forEach((zoneQuestion) => {
-      (zoneQuestion.canView || []).forEach((roleName) => {
-        if (!validRoleNames.has(roleName)) {
-          errors.push(
-            `A zone question's "canView" permission contains the non-existent group role name "${roleName}".`
-          );
-        }
-      });
-      (zoneQuestion.canSubmit || []).forEach((roleName) => {
-        if (!validRoleNames.has(roleName)) {
-          errors.push(
-            `A zone question's "canSubmit" permission contains the non-existent group role name "${roleName}".`
-          );
-        }
-      });
-    });
-  });
-
   if (assessment.groupRoles) {
     // Ensure at least one role can assign roles before and during an assessment
     let foundCanAssignRolesAtStart = false;
@@ -1283,6 +1263,45 @@ async function validateAssessment(assessment, questions) {
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`
         );
       }
+    });
+
+    const validRoleNames = new Set();
+    assessment.groupRoles?.forEach((role) => {
+      validRoleNames.add(role.name);
+    });
+
+    /** @type {(canView: string[], canSubmit: string[], area: string) => void} */
+    const validateViewAndSubmitRolePermissions = (canView, canSubmit, area) => {
+      (canView || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+      (canSubmit || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+    };
+
+    // Validate role names at the assessment level
+    validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
+
+    // Validate role names for each zone
+    (assessment.zones || []).forEach((zone) => {
+      validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
+      // Validate role names for each question
+      (zone.questions || []).forEach((zoneQuestion) => {
+        validateViewAndSubmitRolePermissions(
+          zoneQuestion.canView,
+          zoneQuestion.canSubmit,
+          'zone question'
+        );
+      });
     });
   }
 

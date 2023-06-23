@@ -121,6 +121,24 @@
                 "$ref": "#/definitions/groupRole"
             }
         },
+        "canSubmit": {
+            "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true,
+            "default": []
+        },
+        "canView": {
+            "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true,
+            "default": []
+        },
         "studentGroupCreate": {
             "description": "Whether students can create groups.",
             "type": "boolean",
@@ -327,6 +345,24 @@
                     "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "number",
                     "minimum": 0
+                },
+                "canSubmit": {
+                    "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": []
+                },
+                "canView": {
+                    "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": []
                 }
             },
             "required": [

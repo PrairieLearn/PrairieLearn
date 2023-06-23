@@ -899,7 +899,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment?.sync_errors,
-      /A zone question's "canView" permission contains the non-existent group role name "Invalid"./
+      /The zone question's "canView" permission contains the non-existent group role name "Invalid"./
     );
   });
 
