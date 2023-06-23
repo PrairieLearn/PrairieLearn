@@ -62,85 +62,84 @@
           Docker images
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                  <th>Image name</th>
-                  <th>Tag</th>
-                  <th>Digest</th>
-                  <th>Image size</th>
-                  <th>Last sync</th>
-                  <th>Actions</th>
-                  <th>Used by</th>
-              </tr>
-            </thead>
-            <tbody>
-            <% images.forEach((image) => { %>
-              <tr>
-                <td><%= image.image %></td>
-                <td><%= image.tag %></td>
-                <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
-                <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
-                <td>
-                  <% if (image.imageSyncNeeded) { %>
-                  <span class="text-warning">Not found in PL registry</span>
-                  <% } else { %>
-                  <%= image.pushed_at_formatted %>
-                  <% } %>
-                </td>
-                <td>
-                  <% if (config.cacheImageRegistry) { %>
-                    <form method="POST">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <input type="hidden" name="__action" value="syncImages">
-                        <input type="hidden" name="single_image" value="<%= image.image %>">
-                        <button type="submit" class="btn btn-xs btn-primary">
-                          <i class="fa fa-sync" aria-hidden="true"></i> Sync
-                        </button>
-                    </form>
-                  <% } %>
-                </td>
-                <td>
-                  <% if (image.questions.length > 0) { %>
-                  <%= image.questions.length %> question<% if (image.questions.length > 1) { %>s<% } %>
+        <% if (images.length > 0) { %>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                    <th>Image name</th>
+                    <th>Tag</th>
+                    <th>Digest</th>
+                    <th>Image size</th>
+                    <th>Last sync</th>
+                    <th>Actions</th>
+                    <th>Used by</th>
+                </tr>
+              </thead>
+              <tbody>
+              <% images.forEach((image) => { %>
+                <tr>
+                  <td><%= image.image %></td>
+                  <td><%= image.tag %></td>
+                  <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
+                  <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
+                  <td>
+                    <% if (image.imageSyncNeeded) { %>
+                    <span class="text-warning">Not found in PL registry</span>
+                    <% } else { %>
+                    <%= image.pushed_at_formatted %>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (config.cacheImageRegistry) { %>
+                      <form method="POST">
+                          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                          <input type="hidden" name="__action" value="syncImages">
+                          <input type="hidden" name="single_image" value="<%= image.image %>">
+                          <button type="submit" class="btn btn-xs btn-primary">
+                            <i class="fa fa-sync" aria-hidden="true"></i> Sync
+                          </button>
+                      </form>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (image.questions.length > 0) { %>
+                    <%= image.questions.length %> question<% if (image.questions.length > 1) { %>s<% } %>
 
-                  <a class="btn btn-xs btn-secondary" role="button"
-                   tabindex="0" data-toggle="popover" data-html="true"
-                   title="Questions using <%= image.image %>"
-                   data-content="<%= include('listQuestionsPopover', {image}); %>"
-                   data-trigger="focus" href="#">
-                    Show
-                  </a>
-                  <% } else { %>
-                  No questions
-                  <% } %>
-                </td>
-              </tr>
-            <% }); %>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan=10>
-                  <% if (images.length == 0) { %>
-                    <em>No questions are using docker images.</em>
-                  <% } else if (config.cacheImageRegistry) { %>
-                    <form name="confirm-form" method="POST">
-                      <input type="hidden" name="__action" value="syncImages">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="fa fa-sync" aria-hidden="true"></i>
-                        Sync all images from Docker Hub to PrairieLearn
-                      </button>
-                    </form>
-                  <% } else { %>
-                      Local image repository not configured
-                  <% } %>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+                    <a class="btn btn-xs btn-secondary" role="button"
+                    tabindex="0" data-toggle="popover" data-html="true"
+                    title="Questions using <%= image.image %>"
+                    data-content="<%= include('listQuestionsPopover', {image}); %>"
+                    data-trigger="focus" href="#">
+                      Show
+                    </a>
+                    <% } else { %>
+                    No questions
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="card-body">
+            <em>No questions are using Docker images.</em>
+          </div>
+        <% } %>
+
+        <% if (config.cacheImageRegistry) { %>
+          <div class="card-footer">
+            <form name="confirm-form" method="POST">
+              <input type="hidden" name="__action" value="syncImages">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-sm btn-primary">
+                <i class="fa fa-sync" aria-hidden="true"></i>
+                Sync all images from Docker Hub to PrairieLearn
+              </button>
+            </form>
+          </div>
+        <% } %>
       </div>
 
       <%# Sync history %> 
