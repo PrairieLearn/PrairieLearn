@@ -14,11 +14,13 @@ export function saveQuestionFormData(form: HTMLFormElement | null) {
 }
 
 export function confirmOnUnload(form: HTMLFormElement) {
-  // Set form state on load and submit
-  saveQuestionFormData(form);
-  form.addEventListener('submit', () => {
-    saveQuestionFormData(form);
-  });
+  // Set form state on load. Use timeout of zero to trigger this change in the
+  // next event cycle. This ensures any initialization code done by elements is
+  // executed before saving the data.
+  setTimeout(() => saveQuestionFormData(form), 0);
+
+  // Set form state on submit, since in this case the "unsaved" data is being saved
+  form.addEventListener('submit', () => saveQuestionFormData(form));
 
   // Check form state on unload
   window.addEventListener('beforeunload', (event) => {
