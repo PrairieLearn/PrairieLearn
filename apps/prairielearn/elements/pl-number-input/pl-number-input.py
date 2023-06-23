@@ -354,7 +354,7 @@ def get_format_string(is_complex=False, allow_fractions=False, message=None) -> 
         return chevron.render(f, params).strip()
 
 
-def parse(element_html, data: pl.QuestionData) -> None:
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_complex = pl.get_boolean_attrib(
@@ -380,7 +380,7 @@ def parse(element_html, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def grade(element_html, data: pl.QuestionData) -> None:
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -450,7 +450,7 @@ def grade(element_html, data: pl.QuestionData) -> None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data: pl.QuestionData) -> None:
+def test(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
