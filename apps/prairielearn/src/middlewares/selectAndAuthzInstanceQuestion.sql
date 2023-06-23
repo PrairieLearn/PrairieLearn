@@ -1,5 +1,32 @@
 -- BLOCK select_and_auth
 WITH
+  group_role_ids AS (
+    SELECT
+      group_role_id
+    FROM
+      group_user_roles AS gur
+      JOIN groups AS g ON gur.group_id = g.id
+      JOIN assessment_instances AS ai ON g.id = ai.group_id
+      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+    WHERE
+      gur.user_id = $user_id
+      AND iq.id = $instance_question_id
+  ),
+  visibility_info AS (
+    SELECT
+      iq.id AS instance_question_id,
+      bool_or(aqrp.can_view) AS can_user_view,
+      bool_or(aqrp.can_submit) AS can_user_submit
+    FROM
+      assessment_question_role_permissions AS aqrp
+      JOIN assessment_questions AS aq ON (aq.id = aqrp.assessment_question_id)
+      JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+    WHERE
+      iq.id = $instance_question_id
+      AND aqrp.group_role_id IN (SELECT * FROM group_role_ids)
+    GROUP BY 
+      iq.id
+  ),
   instance_questions_info AS (
     SELECT
       iq.id,
@@ -13,13 +40,16 @@ WITH
         (lead(qo.sequence_locked) OVER w)
       ) AS next_instance_question,
       qo.question_number,
-      qo.sequence_locked
+      qo.sequence_locked,
+      vi.can_user_view,
+      vi.can_user_submit
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      LEFT JOIN visibility_info AS vi ON (vi.instance_question_id = iq.id)
     WHERE
       ai.id IN (
         SELECT
@@ -93,7 +123,11 @@ SELECT
     'last_grader_name',
     COALESCE(ulg.name, ulg.uid),
     'modified_at_formatted',
-    format_date_short (iq.modified_at, ci.display_timezone)
+    format_date_short (iq.modified_at, ci.display_timezone),
+    'can_user_view',
+    iqi.can_user_view,
+    'can_user_submit',
+    iqi.can_user_submit
   ) AS instance_question,
   jsonb_build_object(
     'id',
