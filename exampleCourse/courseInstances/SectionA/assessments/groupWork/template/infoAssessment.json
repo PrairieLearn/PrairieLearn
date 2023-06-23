@@ -40,17 +40,17 @@
             "credit": 100
         }
     ],
+    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
     "zones": [
         {
             "title": "Fundamental questions",
             "bestQuestions": 3,
+            "canSubmit": ["Recorder"],
             "questions": [
                 {
                     "id": "demo/demoNewton-page1",
                     "points": 1, 
-                    "maxPoints": 5, 
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"]
+                    "maxPoints": 5
                 },
                 {
                     "id": "demo/demoNewton-page2", 

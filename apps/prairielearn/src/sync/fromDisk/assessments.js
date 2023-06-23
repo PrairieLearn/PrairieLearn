@@ -119,16 +119,19 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
+  let assessmentCanView = _.has(assessment, 'canView') ? assessment?.canView : [];
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
+    let zoneCanView = _.has(zone, 'canView') ? zone?.canView : assessmentCanView;
     return zone.questions.map((question) => {
       /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
       let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
+      let questionCanView = _.has(question, 'canView') ? question.canView : zoneCanView;
       if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
@@ -152,7 +155,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
-            canView: alternative?.canView ?? question?.canView ?? null,
+            canView: _.has(alternative, 'canView') ? alternative?.canView : questionCanView,
             canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
           };
         });
@@ -169,7 +172,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: question.canView,
+            canView: questionCanView,
             canSubmit: question.canSubmit,
           },
         ];
