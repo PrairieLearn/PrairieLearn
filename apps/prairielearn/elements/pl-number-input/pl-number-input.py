@@ -25,7 +25,7 @@ CUSTOM_FORMAT_DEFAULT = ".12g"
 SHOW_SCORE_DEFAULT = True
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -69,7 +69,7 @@ def prepare(element_html, data):
             raise Exception("invalid custom format: %s" % custom_format) from None
 
 
-def format_true_ans(element, data, name):
+def format_true_ans(element, data: pl.QuestionData, name: str) -> str:
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
     if a_tru is not None:
         # Get format and comparison parameters
@@ -94,7 +94,7 @@ def format_true_ans(element, data, name):
     return a_tru
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", None)
@@ -343,7 +343,7 @@ def render(element_html, data):
     return html
 
 
-def get_format_string(is_complex=False, allow_fractions=False, message=None):
+def get_format_string(is_complex=False, allow_fractions=False, message=None) -> str:
     params = {
         "complex": is_complex,
         "format_error": True,
@@ -354,7 +354,7 @@ def get_format_string(is_complex=False, allow_fractions=False, message=None):
         return chevron.render(f, params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_complex = pl.get_boolean_attrib(
@@ -380,7 +380,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -450,7 +450,7 @@ def grade(element_html, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
