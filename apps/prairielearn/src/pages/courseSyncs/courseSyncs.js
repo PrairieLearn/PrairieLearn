@@ -41,15 +41,21 @@ router.get('/', function (req, res, next) {
             // Default to get overwritten later
             image.pushed_at = null;
             image.imageSyncNeeded = false;
+            image.invalid = false;
             var params = {
               repositoryName: repository.getRepository(),
             };
             ecr.describeImages(params, (err, data) => {
-              if (err && err.name === 'RepositoryNotFoundException') {
-                image.imageSyncNeeded = true;
-                return callback(null);
-              } else if (ERR(err, callback)) {
-                return;
+              if (err) {
+                if (err.name === 'InvalidParameterException') {
+                  image.invalid = true;
+                  return callback(null);
+                } else if (err.name === 'RepositoryNotFoundException') {
+                  image.imageSyncNeeded = true;
+                  return callback(null);
+                } else if (ERR(err, callback)) {
+                  return;
+                }
               }
               res.locals.ecrInfo = {};
               data.imageDetails.forEach((imageDetails) => {

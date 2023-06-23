@@ -79,7 +79,14 @@
               <tbody>
               <% images.forEach((image) => { %>
                 <tr>
-                  <td><%= image.image %></td>
+                  <td>
+                    <div class="d-flex flex-row align-items-center">
+                      <span class="mr-2"><%= image.image %></span>
+                      <% if (image.invalid) { %>
+                        <span class="badge badge-danger">Invalid image name</span>
+                      <% } %>
+                    </div>
+                  </td>
                   <td><%= image.tag %></td>
                   <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
                   <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
