@@ -141,7 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception:
-                raise ValueError("invalid score" + score)
+                raise ValueError("invalid score" + str(score))
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
@@ -311,7 +311,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:
                     html_params["incorrect"] = True
             except Exception:
-                raise ValueError("invalid score" + score)
+                raise ValueError("invalid score" + str(score))
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
@@ -452,7 +452,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html: str, data: pl.QuestionData) -> None:
+def test(element_html: str, data) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
