@@ -343,7 +343,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     return html
 
 
-def get_format_string(is_complex=False, allow_fractions=False, message=None) -> str:
+def get_format_string(
+    is_complex: bool = False, allow_fractions: bool = False, message: str = None
+) -> str:
     params = {
         "complex": is_complex,
         "format_error": True,
