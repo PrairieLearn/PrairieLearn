@@ -4,7 +4,6 @@ CREATE FUNCTION
         IN authz_data JSONB,
         IN req_date timestamptz,
         IN display_timezone text,
-        -- IN deadline_override interval DEFAULT NULL, -- New input parameter for the deadline override
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when will access end?
         OUT credit integer,          -- How much credit will they receive?
@@ -22,7 +21,7 @@ CREATE FUNCTION
 AS $$
 DECLARE
     user_result record;
-    -- deadline_override_end timestamptz;
+    
 BEGIN
     -- authorization for the effective user
     SELECT *
@@ -83,13 +82,7 @@ BEGIN
     -- both of which are now subsumed by "has_course_instance_permission_view" and
     -- "has_course_instance_permission_edit" - permissions that, as we've said, the
     -- authn user is already known to have.
-    -- Apply the deadline override
-    -- IF deadline_override IS NOT NULL THEN
-    --     deadline_override_end := req_date + deadline_override;
-    --     IF deadline_override_end > assessment_instance.date_limit THEN
-    --         assessment_instance.date_limit := deadline_override_end;
-    --     END IF;
-    -- END IF;
+    
     authorized := user_result.authorized;
 
     -- all other variables are from the effective user authorization

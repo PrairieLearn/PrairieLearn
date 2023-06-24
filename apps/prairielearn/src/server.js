@@ -793,7 +793,7 @@ module.exports.initExpress = function () {
     }
   );
 // Endpoint for assessment overrides 
-  app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_overrides', [
+  app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access_overrides', [
     function (req, res, next) {
       res.locals.navSubPage = 'override';
       next();

@@ -2,13 +2,16 @@ columns
     assessment_id: bigint not null
     created_at: timestamp with time zone not null
     created_by: bigint not null
-    credit: integer
+    credit: integer not null
     end_date: timestamp with time zone not null
+    extension_type: enum_assessment_access_policy_type not null
     group_id: bigint
     note: text
     start_date: timestamp with time zone not null
-    type: enum_type not null
     user_id: bigint
+
+check constraints
+    assessment_access_policies_check: CHECK (user_id IS NOT NULL AND group_id IS NULL OR user_id IS NULL AND group_id IS NOT NULL)
 
 foreign-key constraints
     assessment_access_policies_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id)

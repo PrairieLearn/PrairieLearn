@@ -10,10 +10,42 @@
     <script>
         $(function () {
             $('[data-toggle="popover"]').popover({sanitize: false})
-             // set the assessment id in the form
+            $('#add_new_override').on('submit', function (event) {
+                var startDate = new Date($('#start_date').val());
+                var endDate = new Date($('#end_date').val());
+
+                if (startDate >= endDate) {
+                    event.preventDefault();
+                    $('#end_date').addClass('is-invalid');
+                    $('#end_date_error').text('End date should be greater than the start date.').show();
+                }
+                // Check if either user_id or group_id is not empty
+                if (userId === '' && groupId === '') {
+                    event.preventDefault();
+                    $('#group_id').addClass('is-invalid');
+                    $('#group_id_error').text('Either user ID or group ID should be filled.').show();
+                }
+            });
+
+
+          // set the assessment id in the form
           var assessment_id = <%= assessment_id %> ;
           $('#assessment_id').val(assessment_id);
+          var current_user_id= <%=current_user_id%> ;
+          $('#current_user_id').val(current_user_id);
+          // Set the current timestamp for created_at field
+          function convertToChicagoTime(utcDate) {
+              const chicagoOffset = -5; // UTC offset for Chicago (in hours)
+              const chicagoTime = new Date(utcDate);
+              chicagoTime.setHours(chicagoTime.getHours() + chicagoOffset);
+              return chicagoTime.toISOString().slice(0, 16);
+            }
+          var currentDate = convertToChicagoTime(new Date());;
+          var createdAtField = $('#created_at');
+          createdAtField.val(currentDate);
+          createdAtField.prop('readonly', true);
         });
+        
     </script>
     <%- include('../partials/navbar'); %>
     <main id="content" class="container-fluid">
@@ -46,11 +78,16 @@
                                 </div>
                                 <div class="form-group">
                                   <label for="user_id">User ID</label>
-                                  <input type="number" class="form-control" id="user_id" name="user_id" required>
+                                  <input type="number" class="form-control" id="user_id" name="user_id">
+                                </div>
+                                <div class="form-group">
+                                  <label for="group_id">Group ID</label>
+                                  <input type="number" class="form-control" id="group_id" name="group_id">
+                                  <div id="group_id_error" class="invalid-feedback" style="display: none; color: red;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="created_at">Created At</label>
-                                    <input type="datetime-local" class="form-control" id="created_at" name="created_at" required>
+                                    <input type="datetime-local" class="form-control" id="created_at" name="created_at" required readonly>
                                 </div>
                                 <div class="form-group">
                                   <label for="start_date">Start Date</label>
@@ -59,20 +96,18 @@
                                 <div class="form-group">
                                   <label for="end_date">End Date</label>
                                   <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+                                  <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
                                 </div>
                                 <div class="form-group">
                                   <label for="created_by">Created By</label>
-                                  <input type="number" class="form-control" id="created_by" name="created_by" required>
+                                  <input type="number" class="form-control" id="current_user_id" name="current_user_id" value="current_user_id" required readonly>
                                 </div>
                                 <div class="form-group">
                                     <label for="credit">Credit</label>
                                     <input type="number" class="form-control" id="credit" name="credit">
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label for="group_id">Group ID</label>
-                                    <input type="number" class="form-control" id="group_id" name="group_id">
-                                </div>
+                                
                                 <div class="form-group">
                                     <label for="note">Note</label>
                                     <textarea class="form-control" id="note" name="note"></textarea>
@@ -137,7 +172,6 @@
            </table>
          </div>
          <div class="card-footer">
-          <small>Instructions on how to change the access overrides can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/" target="_blank">PrairieLearn documentation</a>.</small>
       </div>
     </div>
   </main>

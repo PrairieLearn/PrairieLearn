@@ -8,7 +8,7 @@ SELECT
   COALESCE(aap.group_id::text, '—') AS group_id,
   COALESCE(aap.note, '—') AS note,
   COALESCE(format_date_full_compact(aap.start_date, 'America/Chicago'), '—') AS start_date,
-  COALESCE(aap.type::text, '—') AS type,
+  COALESCE(aap.extension_type::text, '—') AS type,
   COALESCE(aap.user_id::text, '—') AS user_id
 FROM
   assessment_access_policies AS aap

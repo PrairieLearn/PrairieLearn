@@ -5,14 +5,16 @@ const { loadSqlEquiv } = require('@prairielearn/postgres');
 const sqldb = require('@prairielearn/postgres');
 const { config } = require('../../lib/config');
 
+
 const sql = loadSqlEquiv(__filename);
 
 router.get('/', async (req, res, next) => {
+  // console.log(res.locals);
   try {
     const params = {
       assessment_id: res.locals.assessment.id,
+      current_user_id: res.locals.user.user_id, 
       link_exam_id: config.syncExamIdAccessRules,
-      
     };
 
     const result = await sqldb.queryAsync(sql.assessment_access_policies, params);
@@ -20,6 +22,7 @@ router.get('/', async (req, res, next) => {
     res.render(__filename.replace(/\.js$/, '.ejs'), { 
       policies: result.rows,
       assessment_id: params.assessment_id,
+      current_user_id: params.current_user_id, 
     });
   } catch (error) {
     next(error);
@@ -43,7 +46,7 @@ router.post('/', async (req, res, next) => {
 
     const insertQuery = `
       INSERT INTO assessment_access_policies
-      (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date, type, user_id)
+      (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date, extension_type, user_id)
       VALUES
       ($assessment_id, $created_at, $created_by, $credit, $end_date, $group_id, $note, $start_date, $type, $user_id)
     `;
