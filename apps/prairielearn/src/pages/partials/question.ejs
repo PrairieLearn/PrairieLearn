@@ -107,7 +107,12 @@
         <% } %>
       </div>
       <div class="card-body question-body">
-        <%- questionHtml %>
+        <!-- TODO: Make this message prettier somehow? -->
+        <% if (!canViewQuestion) { %>
+          Your group role doesn't allow you to view this question.
+        <% } else { %>
+          <%- questionHtml %>
+        <% } %>
       </div>
       <%- include('questionFooter'); %>
     </div>
