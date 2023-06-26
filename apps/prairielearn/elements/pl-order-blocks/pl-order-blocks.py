@@ -566,29 +566,19 @@ def parse(element_html, data):
     )
     correct_answers = data["correct_answers"][answer_name]
 
-    if grading_mode == "ranking":
-        for answer in student_answer:
-            search = next(
-                (
-                    item
-                    for item in correct_answers
-                    if item["inner_html"] == answer["inner_html"]
-                ),
-                None,
-            )
+    for answer in student_answer:
+        search = next(
+            (
+                item
+                for item in correct_answers
+                if item["inner_html"] == answer["inner_html"]
+            ),
+            None,
+        )
+        answer["tag"] = search["tag"] if search is not None else None
+
+        if grading_mode == "ranking":
             answer["ranking"] = search["ranking"] if search is not None else None
-            answer["tag"] = search["tag"] if search is not None else None
-    elif grading_mode == "dag":
-        for answer in student_answer:
-            search = next(
-                (
-                    item
-                    for item in correct_answers
-                    if item["inner_html"] == answer["inner_html"]
-                ),
-                None,
-            )
-            answer["tag"] = search["tag"] if search is not None else None
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
         for html_tags in element:
@@ -662,17 +652,18 @@ def grade(element_html, data):
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_mode == "ordered":
-        student_answer = [ans["inner_html"] for ans in student_answer]
-        true_answer = [ans["inner_html"] for ans in true_answer_list]
-        final_score = 1 if student_answer == true_answer else 0
-
-    elif grading_mode in ["ranking", "dag"]:
+    elif grading_mode in ["ranking", "dag", "ordered"]:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
-        if grading_mode == "ranking":
+        if grading_mode == "ordered":
+            for index, answer in enumerate(
+                true_answer_list
+            ):  # REVIEWER: there should be a one liner for this
+                answer["ranking"] = index
+
+        if grading_mode in ["ranking", "ordered"]:
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
