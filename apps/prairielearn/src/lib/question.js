@@ -1459,7 +1459,6 @@ module.exports = {
     locals.variantAttemptsLeft = 0;
     locals.variantAttemptsTotal = 0;
     locals.submissions = [];
-    locals.canViewQuestion = true;
 
     if (!assessment) {
       // instructor question pages
@@ -1557,12 +1556,6 @@ module.exports = {
 
     if (instance_question.can_user_submit !== null && !instance_question.can_user_submit) {
       locals.disableGradeButton = true;
-    }
-
-    if (instance_question.can_user_view !== null && !instance_question.can_user_view) {
-      locals.canViewQuestion = false;
-      locals.showGradeButton = false;
-      locals.showSaveButton = false;
     }
 
     return locals;

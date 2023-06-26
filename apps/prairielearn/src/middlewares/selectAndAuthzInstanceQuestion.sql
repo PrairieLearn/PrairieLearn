@@ -54,7 +54,6 @@ WITH
       ) AS next_instance_question,
       qo.question_number,
       qo.sequence_locked,
-      vi.can_user_view,
       vi.can_user_submit
     FROM
       assessment_instances AS ai
@@ -141,8 +140,6 @@ SELECT
     COALESCE(ulg.name, ulg.uid),
     'modified_at_formatted',
     format_date_short (iq.modified_at, ci.display_timezone),
-    'can_user_view',
-    iqi.can_user_view,
     'can_user_submit',
     iqi.can_user_submit
   ) AS instance_question,
