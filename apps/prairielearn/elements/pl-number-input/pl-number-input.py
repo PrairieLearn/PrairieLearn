@@ -1,6 +1,7 @@
 import math
 import random
 from html import escape
+from typing import Optional
 
 import chevron
 import lxml.html
@@ -132,16 +133,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + str(score))
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
@@ -303,11 +296,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         score = partial_score.get("score", None)
 
         if score is not None:
-            try:
-                score_type, score_value = pl.determine_score_params(score)
-                html_params[score_type] = score_value
-            except Exception:
-                raise ValueError("invalid score" + str(score))
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
@@ -340,7 +330,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 
 def get_format_string(
-    is_complex: bool = False, allow_fractions: bool = False, message: str = None
+    is_complex: bool = False,
+    allow_fractions: bool = False,
+    message: Optional[str] = None,
 ) -> str:
     params = {
         "complex": is_complex,
