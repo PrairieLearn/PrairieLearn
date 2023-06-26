@@ -11,6 +11,7 @@ const { createServerJob } = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const chunks = require('../../lib/chunks');
 const { chalk } = require('../../lib/chalk');
+const { REPOSITORY_ROOT_PATH } = require('../../lib/paths');
 
 async function update(locals) {
   const serverJob = await createServerJob({
@@ -22,7 +23,7 @@ async function update(locals) {
   serverJob.executeInBackground(async (job) => {
     let anyCourseHadJsonErrors = false;
     await async.eachOfSeries(config.courseDirs || [], async (courseDir, index) => {
-      courseDir = path.resolve(process.cwd(), courseDir);
+      courseDir = path.resolve(REPOSITORY_ROOT_PATH, courseDir);
       job.info(chalk.bold(courseDir));
       var infoCourseFile = path.join(courseDir, 'infoCourse.json');
       const hasInfoCourseFile = await fs.pathExists(infoCourseFile);

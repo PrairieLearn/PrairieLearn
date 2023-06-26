@@ -6,6 +6,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const async = require('async');
 const sqldb = require('@prairielearn/postgres');
 const { logger } = require('@prairielearn/logger');
+const { flash } = require('@prairielearn/flash');
 const { QuestionTransferEditor } = require('../../lib/editors');
 const { config } = require('../../lib/config');
 const { idsEqual } = require('../../lib/id');
@@ -41,7 +42,7 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
           { course_id: file_transfer.from_course_id },
           (err, result) => {
             if (ERR(err, callback)) return;
-            file_transfer.from_course_short_name = result.rows[0].short_name;
+            file_transfer.from_course = result.rows[0];
             callback(null);
           }
         );
@@ -65,7 +66,7 @@ router.get('/:file_transfer_id', function (req, res, next) {
     const editor = new QuestionTransferEditor({
       locals: res.locals,
       from_qid: qid,
-      from_course_short_name: file_transfer.from_course_short_name,
+      from_course_short_name: file_transfer.from_course.short_name,
       from_path: path.join(config.filesRoot, file_transfer.storage_filename),
     });
     editor.canEdit((err) => {
@@ -91,6 +92,10 @@ router.get('/:file_transfer_id', function (req, res, next) {
                 { uuid: editor.uuid, course_id: res.locals.course.id },
                 (err, result) => {
                   if (ERR(err, next)) return;
+                  flash(
+                    'success',
+                    'Question copied successfully. You are now viewing your copy of the question.'
+                  );
                   res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
                 }
               );
