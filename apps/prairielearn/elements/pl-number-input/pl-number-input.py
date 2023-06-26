@@ -7,11 +7,18 @@ import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from typing_extensions import assert_never
 
 
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+
+
+class ComparisonType(Enum):
+    RELABS = "relabs"
+    SIGFIG = "sigfig"
+    DECDIG = "decdig"
 
 
 RTOL_DEFAULT = 1e-2
@@ -20,7 +27,7 @@ SIZE_DEFAULT = 35
 DIGITS_DEFAULT = 2
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
-COMPARISON_DEFAULT = "relabs"
+COMPARISON_DEFAULT = ComparisonType.RELABS
 ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 SHOW_PLACEHOLDER_DEFAULT = True
@@ -83,23 +90,23 @@ def format_true_ans(
     if a_tru is not None:
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonType, COMPARISON_DEFAULT
+        )
+
         if custom_format is not None:
             a_tru = ("{:" + custom_format + "}").format(a_tru)
-        elif comparison == "relabs":
+        elif comparison is ComparisonType.RELABS:
             # FIXME: render correctly with respect to rtol and atol
             a_tru = "{:.12g}".format(a_tru)
-        elif comparison == "sigfig":
+        elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
-        elif comparison == "decdig":
+        elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             a_tru = "{:.{ndigits}f}".format(a_tru, ndigits=digits)
         else:
-            raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
-            )
+            assert_never(comparison)
     return a_tru
 
 
@@ -146,8 +153,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-        if comparison == "relabs":
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonType, COMPARISON_DEFAULT
+        )
+
+        if comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
@@ -164,7 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "rtol": "{:g}".format(rtol),
                 "atol": "{:g}".format(atol),
             }
-        elif comparison == "sigfig":
+        elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(
@@ -177,7 +187,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
                 "digits_plural": digits > 1,
             }
-        elif comparison == "decdig":
+        elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(
@@ -191,10 +201,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "digits_plural": digits > 1,
             }
         else:
-            raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
-            )
+            assert_never(comparison)
 
         # Update parameters for the info popup
         show_correct = "correct" in html_params and pl.get_boolean_attrib(
@@ -417,22 +424,24 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         a_sub = np.float64(a_sub)
         a_tru = np.float64(a_tru)
 
+    # TODO refactor this using pl.grade_answer_parameterized
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-
+    comparison = pl.get_enum_attrib(
+        element, "comparison", ComparisonType, COMPARISON_DEFAULT
+    )
     # Compare submitted answer with true answer
-    if comparison == "relabs":
+    if comparison is ComparisonType.RELABS:
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
         correct = pl.is_correct_scalar_ra(a_sub, a_tru, rtol, atol)
-    elif comparison == "sigfig":
+    elif comparison is ComparisonType.SIGFIG:
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_scalar_sf(a_sub, a_tru, digits)
-    elif comparison == "decdig":
+    elif comparison is ComparisonType.DECDIG:
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_scalar_dd(a_sub, a_tru, digits)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        assert_never(comparison)
 
     if correct:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -459,15 +468,18 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "incorrect":
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         # Get method of comparison, with relabs as default
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-        if comparison == "relabs":
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonType, COMPARISON_DEFAULT
+        )
+
+        if comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
             eps = np.absolute(a_tru) * rtol + atol
             eps += random.uniform(1, 10)
             answer = a_tru + eps * random.choice([-1, 1])
-        elif comparison == "sigfig":
+        elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             # Get max error according to pl.is_correct_scalar_sf()
             if a_tru == 0:
@@ -477,14 +489,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             eps = 0.51 * (10**-n)
             eps += random.uniform(1, 10)
             answer = a_tru + eps * random.choice([-1, 1])
-        elif comparison == "decdig":
+        elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             # Get max error according to pl.is_correct_scalar_dd()
             eps = 0.51 * (10**-digits)
             eps += random.uniform(1, 10)
             answer = a_tru + eps * random.choice([-1, 1])
         else:
-            raise ValueError('method of comparison "%s" is not valid' % comparison)
+            assert_never(comparison)
+
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
         # FIXME: add more invalid expressions, make text of format_errors
