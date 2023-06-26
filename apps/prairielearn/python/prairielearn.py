@@ -30,7 +30,6 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
-from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
@@ -1600,13 +1599,13 @@ def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
 
 
 def is_correct_scalar_ra(
-    a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
+    a_sub: np.number, a_tru: np.number, rtol: float = 1e-5, atol: float = 1e-8
 ) -> bool:
     """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
     return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
 
-def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
+def is_correct_scalar_dd(a_sub: np.number, a_tru: np.number, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many digits after the decimal place."""
 
     # If answers are complex, check real and imaginary parts separately
@@ -1624,7 +1623,7 @@ def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
     return bool((a_sub > lower_bound) & (a_sub < upper_bound))
 
 
-def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
+def is_correct_scalar_sf(a_sub: np.number, a_tru: np.number, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many significant figures."""
 
     # If answers are complex, check real and imaginary parts separately
