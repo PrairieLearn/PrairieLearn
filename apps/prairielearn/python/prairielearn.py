@@ -30,6 +30,7 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
+from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
@@ -1598,19 +1599,21 @@ def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
-def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
+def is_correct_scalar_ra(
+    a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
+) -> bool:
     """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
-    return np.allclose(a_sub, a_tru, rtol, atol)
+    return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
 
-def is_correct_scalar_dd(a_sub, a_tru, digits=2):
+def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many digits after the decimal place."""
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        return is_correct_scalar_dd(
-            a_sub.real, a_tru.real, digits=digits
-        ) and is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)
+        real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
+        imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        return real_comp and imag_comp
 
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
@@ -1618,17 +1621,17 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2):
     upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
-    return (a_sub > lower_bound) & (a_sub < upper_bound)
+    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
 
 
-def is_correct_scalar_sf(a_sub, a_tru, digits=2):
+def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many significant figures."""
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        return is_correct_scalar_sf(
-            a_sub.real, a_tru.real, digits=digits
-        ) and is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)
+        real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
+        imag_comp = is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        return real_comp and imag_comp
 
     # Get bounds on submitted answer
     if a_tru == 0:
@@ -1640,7 +1643,7 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
-    return (a_sub > lower_bound) & (a_sub < upper_bound)
+    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
 
 
 def get_uuid() -> str:
