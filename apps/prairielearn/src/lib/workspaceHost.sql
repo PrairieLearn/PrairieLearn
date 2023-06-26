@@ -239,8 +239,7 @@ WITH
       updated_workspace_hosts AS wh
   )
 SELECT
-  id,
-  instance_id
+  *
 FROM
   terminable_hosts;
 
@@ -295,6 +294,4 @@ SELECT
 FROM
   terminated_workspaces AS tw
 RETURNING
-  workspace_id,
-  state,
-  message;
+  *;

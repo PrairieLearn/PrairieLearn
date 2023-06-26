@@ -6,21 +6,14 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import {
+  WorkspaceHostSchema,
+  WorkspaceLogSchema,
+  type WorkspaceHost,
+  type WorkspaceLog,
+} from './db-types';
 
 const sql = loadSqlEquiv(__filename);
-
-const WorkspaceHostSchema = z.object({
-  id: z.string(),
-  instance_id: z.string(),
-});
-type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
-
-const WorkspaceLogSchema = z.object({
-  workspace_id: z.string(),
-  state: z.string(),
-  message: z.string(),
-});
-type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
 
 /**
  * Marks the given workspace host as unhealthy.
