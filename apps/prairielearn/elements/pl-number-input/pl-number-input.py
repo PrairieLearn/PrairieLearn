@@ -1,5 +1,5 @@
-import math
 import random
+from enum import Enum
 from html import escape
 from typing import Optional
 
@@ -8,12 +8,18 @@ import lxml.html
 import numpy as np
 import prairielearn as pl
 
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 SIZE_DEFAULT = 35
 DIGITS_DEFAULT = 2
 WEIGHT_DEFAULT = 1
-DISPLAY_DEFAULT = "inline"
+DISPLAY_DEFAULT = DisplayType.INLINE
 COMPARISON_DEFAULT = "relabs"
 ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
@@ -70,7 +76,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise Exception("invalid custom format: %s" % custom_format) from None
 
 
-def format_true_ans(element, data: pl.QuestionData, name: str) -> str:
+def format_true_ans(
+    element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
+) -> str:
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
     if a_tru is not None:
         # Get format and comparison parameters
@@ -100,7 +108,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", None)
     suffix = pl.get_string_attrib(element, "suffix", None)
-    display = pl.get_string_attrib(element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(
         element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
     )
@@ -128,6 +136,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_score": show_score,
             "accessibility_description": accessibility_description,
             "parse_error": parse_error is not None,
+            display.value: True,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
@@ -242,15 +251,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["show_info"] = True
         html_params["display_append_span"] = "show_info" in html_params or suffix
 
-        if display == "inline":
-            html_params["inline"] = True
-        elif display == "block":
-            html_params["block"] = True
-        else:
-            raise ValueError(
-                'method of display "%s" is not valid (must be "inline" or "block")'
-                % display
-            )
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
         with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
@@ -440,7 +440,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html: str, data) -> None:
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
