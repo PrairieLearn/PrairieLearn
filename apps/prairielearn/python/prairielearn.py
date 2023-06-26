@@ -1610,8 +1610,8 @@ def is_correct_scalar_dd(a_sub: np.number, a_tru: np.number, digits: int = 2) ->
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
-        imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)
+        imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)
         return real_comp and imag_comp
 
     # Get bounds on submitted answer
@@ -1628,8 +1628,8 @@ def is_correct_scalar_sf(a_sub: np.number, a_tru: np.number, digits: int = 2) ->
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
-        imag_comp = is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)
+        imag_comp = is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)
         return real_comp and imag_comp
 
     # Get bounds on submitted answer
