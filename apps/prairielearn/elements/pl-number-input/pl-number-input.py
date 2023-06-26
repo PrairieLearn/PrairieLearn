@@ -390,12 +390,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    # Get submitted answer (if it does not exist, score is zero)
-    # a_sub = data["submitted_answers"].get(name, None)
-    # if a_sub is None:
-    #    data["partial_scores"][name] = {"score": 0, "weight": weight}
-    #    return
-
     # Get method of comparison, with relabs as default
     comparison = pl.get_enum_attrib(
         element, "comparison", ComparisonType, COMPARISON_DEFAULT
@@ -456,10 +450,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert_never(comparison)
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
-    # if correct:
-    #    data["partial_scores"][name] = {"score": 1, "weight": weight}
-    # else:
-    #    data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
