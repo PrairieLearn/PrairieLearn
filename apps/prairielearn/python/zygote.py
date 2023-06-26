@@ -37,15 +37,23 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 # the `$HOME` environment variable still points to `/root`, which is not
 # writable by the `executor` user.
 #
-# To work around this, we create a directory on `/tmp` and set `$XDG_CONFIG_HOME`
-# to point to it. matplotlib and fontconfig will respect this; other tools
-# should as well. If they don't, special cases can be added below.
+# To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
+# directories created in `/tmp` that are world-writable. matplotlib and
+# fontconfig should respect these environment variables; other tools should as
+# well. If they don't, special cases can be added below.
 if drop_privileges:
     config_home_path = "/tmp/xdg_config"
+    cache_home_path = "/tmp/xdg_cache"
+
     oldmask = os.umask(000)
+
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+
     os.umask(oldmask)
+
     os.environ["XDG_CONFIG_HOME"] = config_home_path
+    os.environ["XDG_CACHE_HOME"] = cache_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
