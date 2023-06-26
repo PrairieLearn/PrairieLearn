@@ -2888,7 +2888,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
-    "@aws-sdk/client-ec2": ^3.342.0
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.16.16
     node-fetch: ^2.6.11

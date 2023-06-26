@@ -1,0 +1,29 @@
+<pl-question-panel>
+
+    <p>
+        <pl-drawing width="440" height="260"  grid-size="0" answers-name="answer">
+            <pl-drawing-initial>
+                <pl-battery x1="{{params.pA.0}}" y1="{{params.pA.1}}" x2="{{params.pB.0}}" y2="{{params.pB.1}}" label="{{params.V}} V"></pl-battery>
+                <pl-resistor x1="{{params.pB.0}}" y1="{{params.pB.1}}" x2="{{params.pC.0}}" y2="{{params.pC.1}}" label="{{params.R1}}\\Omega"></pl-resistor>
+                <pl-resistor x1="{{params.pL.0}}" y1="{{params.pL.1}}" x2="{{params.pH.0}}" y2="{{params.pH.1}}" label="{{params.R2}}\\Omega"></pl-resistor>
+                <pl-capacitor x1="{{params.pK.0}}" y1="{{params.pK.1}}" x2="{{params.pI.0}}" y2="{{params.pI.1}}" label="{{params.C}} \\mu F" ></pl-capacitor>
+                <pl-switch x1="{{params.pA.0}}" y1="{{params.pA.1}}" x2="{{params.pF.0}}" y2="{{params.pF.1}}" label="A" switch-angle="0"></pl-switch>
+                <pl-switch x1="{{params.pL.0}}" y1="{{params.pL.1}}" x2="{{params.pJ.0}}" y2="{{params.pJ.1}}" label="B" offsetx="-10" offsety="-5"></pl-switch>
+                <pl-line x1="{{params.pC.0}}" y1="{{params.pC.1}}" x2="{{params.pD.0}}" y2="{{params.pD.1}}"></pl-line>
+                <pl-line x1="{{params.pE.0}}" y1="{{params.pE.1}}" x2="{{params.pD.0}}" y2="{{params.pD.1}}"></pl-line>
+                <pl-line x1="{{params.pF.0}}" y1="{{params.pF.1}}" x2="{{params.pG.0}}" y2="{{params.pG.1}}"></pl-line>
+                <pl-line x1="{{params.pH.0}}" y1="{{params.pH.1}}" x2="{{params.pI.0}}" y2="{{params.pI.1}}"></pl-line>
+                <pl-line x1="{{params.pJ.0}}" y1="{{params.pJ.1}}" x2="{{params.pK.0}}" y2="{{params.pK.1}}"></pl-line>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </p>
+
+    <p> 
+        Switch $B$ is open and switch $A$ has been closed for a long time. What is the charge on the capacitor?
+    </p>
+    
+</pl-question-panel>
+
+<p>
+    <pl-number-input answers-name="charge" suffix="$\mu C$"></pl-number-input>
+</p>
