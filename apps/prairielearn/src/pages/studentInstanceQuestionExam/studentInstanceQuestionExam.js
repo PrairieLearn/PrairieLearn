@@ -10,6 +10,7 @@ const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
+const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.assessment_instance.open) {
@@ -230,6 +231,7 @@ router.get('/', function (req, res, next) {
     logPageView(req, res, (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
+      setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
   });
