@@ -2,6 +2,7 @@ const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
 
 const error = require('@prairielearn/error');
@@ -9,6 +10,7 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
+const groupAssessmentHelper = require('../../lib/groups');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active) {
@@ -187,16 +189,27 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
   );
 });
 
-router.get('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Homework') return next();
-  question.getAndRenderVariant(req.query.variant_id, null, res.locals, function (err) {
-    if (ERR(err, next)) return;
-    logPageView(req, res, (err) => {
-      if (ERR(err, next)) return;
-      question.setRendererHeader(res);
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-  });
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    if (res.locals.assessment.group_work) {
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id
+      );
+      const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+      if (groupConfig.has_roles) {
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.rolesInfo = groupInfo.rolesInfo;
+      }
+    }
+
+    await util.promisify(question.getAndRenderVariant)(req.query.variant_id, null, res.locals);
+    await util.promisify(logPageView)(req, res);
+    question.setRendererHeader(res);
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
 
 module.exports = router;
