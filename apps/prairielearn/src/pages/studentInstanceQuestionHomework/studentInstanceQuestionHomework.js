@@ -209,6 +209,7 @@ router.get(
     await util.promisify(question.getAndRenderVariant)(req.query.variant_id, null, res.locals);
     await util.promisify(logPageView)(req, res);
     question.setRendererHeader(res);
+    setQuestionCopyTargets(res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
