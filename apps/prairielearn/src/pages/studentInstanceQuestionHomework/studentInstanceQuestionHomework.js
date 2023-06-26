@@ -10,6 +10,7 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
+const { setQuestionCopyTargets } = require('../../lib/copy-question');
 const groupAssessmentHelper = require('../../lib/groups');
 
 function processSubmission(req, res, callback) {

@@ -13,7 +13,7 @@ module.exports = function (req, res, next) {
     course_instance_id: res.locals.course_instance.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
-    user_id: res.locals.user.user_id
+    user_id: res.locals.user.user_id,
   };
   sqldb.query(sql.select_and_auth, params, function (err, result) {
     if (ERR(err, next)) return;

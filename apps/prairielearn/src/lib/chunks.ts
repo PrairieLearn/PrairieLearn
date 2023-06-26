@@ -629,6 +629,12 @@ export async function createAndUploadChunks(
 ) {
   const generatedChunks: (ChunkMetadata & { uuid: string })[] = [];
 
+  // Share a single S3 client across all uploads. If we created one client per
+  // upload, we'd face a denial of service if someone changed a sufficient number
+  // of chunks in a single commit because we'd be rapidly hammering the EC2 IMDS
+  // with requests for credentials and would likely get rate limited.
+  const s3 = new S3(aws.makeS3ClientConfig());
+
   await async.eachLimit(chunksToGenerate, config.chunksMaxParallelUpload, async (chunk) => {
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
 
@@ -647,7 +653,6 @@ export async function createAndUploadChunks(
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
-    const s3 = new S3(aws.makeS3ClientConfig());
     await new Upload({
       client: s3,
       params: {
