@@ -120,11 +120,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
   let assessmentCanView = _.has(assessment, 'canView') ? assessment?.canView : [];
+  let assessmentCanSubmit = _.has(assessment, 'canSubmit') ? assessment?.canSubmit : [];
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     let zoneCanView = _.has(zone, 'canView') ? zone?.canView : assessmentCanView;
+    let zoneCanSubmit = _.has(zone, 'canSubmit') ? zone?.canSubmit : assessmentCanSubmit;
     return zone.questions.map((question) => {
       /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
       let alternatives = [];
@@ -132,6 +134,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
       let questionCanView = _.has(question, 'canView') ? question.canView : zoneCanView;
+      let questionCanSubmit = _.has(question, 'canSubmit') ? question.canSubmit : zoneCanSubmit;
       if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
@@ -156,7 +159,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: _.has(alternative, 'canView') ? alternative?.canView : questionCanView,
-            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
+            canSubmit: _.has(alternative, 'canSubmit') ? alternative?.canSubmit : questionCanSubmit,
           };
         });
       } else if (question.id) {
@@ -173,7 +176,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
-            canSubmit: question.canSubmit,
+            canSubmit: questionCanSubmit,
           },
         ];
       }
