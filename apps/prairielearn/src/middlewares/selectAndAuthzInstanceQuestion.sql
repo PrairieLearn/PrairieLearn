@@ -18,13 +18,26 @@ WITH
       bool_or(aqrp.can_view) AS can_user_view,
       bool_or(aqrp.can_submit) AS can_user_submit
     FROM
-      assessment_question_role_permissions AS aqrp
-      JOIN assessment_questions AS aq ON (aq.id = aqrp.assessment_question_id)
-      JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+      assessment_instances AS ai
+      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+      JOIN assessment_question_role_permissions AS aqrp ON (aqrp.assessment_question_id = aq.id)
     WHERE
-      iq.id = $instance_question_id
-      AND aqrp.group_role_id IN (SELECT * FROM group_role_ids)
-    GROUP BY 
+      ai.id IN (
+        SELECT
+          assessment_instance_id
+        FROM
+          instance_questions
+        WHERE
+          id = $instance_question_id
+      )
+      AND aqrp.group_role_id IN (
+        SELECT
+          *
+        FROM
+          group_role_ids
+      )
+    GROUP BY
       iq.id
   ),
   instance_questions_info AS (
@@ -58,6 +71,10 @@ WITH
           instance_questions
         WHERE
           id = $instance_question_id
+      )
+      AND (
+        vi.can_user_view IS NULL
+        OR vi.can_user_view = true
       )
     WINDOW
       w AS (
