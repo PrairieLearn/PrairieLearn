@@ -126,6 +126,7 @@ def prepare(element_html, data):
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 

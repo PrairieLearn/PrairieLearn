@@ -506,3 +506,16 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
     });
   });
 };
+
+/**
+ * Delete all groups for the given assessment.
+ *
+ * @param {string} assessmentId
+ * @param {string} authnUserId
+ */
+module.exports.deleteAllGroups = async function (assessmentId, authnUserId) {
+  await sqldb.queryAsync(sql.delete_all_groups, {
+    assessment_id: assessmentId,
+    authn_user_id: authnUserId,
+  });
+};
