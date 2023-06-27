@@ -2082,65 +2082,6 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ## Conditional Elements
 
-### `pl-question-panel` element
-
-Displays the contents of question directions.
-
-#### Sample element
-
-```html
-<pl-question-panel> This is question-panel text. </pl-question-panel>
-```
-
-#### Details
-
-Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information
-between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside the answer.
-
-#### Example implementations
-
-- [demo/calculation]
-
-#### See also
-
-- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
-- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
-- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
-
----
-
-### `pl-submission-panel` element
-
-Customizes how information entered by a user is displayed before grading.
-
-#### Sample element
-
-```html
-<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
-```
-
-#### Details
-
-Contents are only shown after the student has submitted an answer. This answer
-may be correct, incorrect, or invalid.
-
-#### Example implementations
-
-- [demo/custom/gradeFunction]
-- [demo/autograder/codeUpload]
-- [demo/autograder/codeEditor]
-
-#### See also
-
-- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
-- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
-- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
-- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
-
----
-
 ### `pl-answer-panel` element
 
 Provide information regarding the question answer after the student is unable to
@@ -2173,6 +2114,35 @@ Common reasons that trigger the display of this element are:
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 ---
+
+
+### `pl-external-grader-results` element
+
+Displays results from externally-graded questions.
+
+#### Sample element
+
+```html
+<pl-external-grader-results></pl-external-grader-results>
+```
+
+#### Details
+
+It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
+
+#### Example Implementations
+
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [External Grading Reference Schema](externalGrading.md#grading-result)
+
+---
+
+
+
 
 ### `pl-hide-in-panel` element
 
@@ -2246,60 +2216,8 @@ This element is typically used to abbreviate the question description and allow 
 
 ---
 
-### `pl-manual-grading-only` element
 
-Hide the contents so that it is **only** displayed to graders in the manual grading page.
 
-#### Sample element
-
-```html
-<pl-manual-grading-only>
-  This text will be shown to graders, but not to students.
-</pl-manual-grading-only>
-```
-
-#### Details
-
-This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](#pl-hide-in-manual-grading-element), which explicitly hides content during grading.
-
-#### Example implementations
-
-- [demo/manualGrade/codeUpload]
-
-#### See also
-
-- [`pl-hide-in-manual-grading` to hide content during manual grading.](#pl-hide-in-manual-grading-element)
-- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
-- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
-- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
-- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
-
----
-
-### `pl-external-grader-results` element
-
-Displays results from externally-graded questions.
-
-#### Sample element
-
-```html
-<pl-external-grader-results></pl-external-grader-results>
-```
-
-#### Details
-
-It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
-
-#### Example Implementations
-
-- [demo/autograder/codeUpload]
-- [demo/autograder/codeEditor]
-
-#### See also
-
-- [External Grading Reference Schema](externalGrading.md#grading-result)
-
----
 
 ### `pl-hidden-hints` element
 
@@ -2354,6 +2272,102 @@ question HTML.
 - [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
+
+
+### `pl-manual-grading-only` element
+
+Hide the contents so that it is **only** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-manual-grading-only>
+  This text will be shown to graders, but not to students.
+</pl-manual-grading-only>
+```
+
+#### Details
+
+This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](#pl-hide-in-manual-grading-element), which explicitly hides content during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-hide-in-manual-grading` to hide content during manual grading.](#pl-hide-in-manual-grading-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+
+
+
+### `pl-question-panel` element
+
+Displays the contents of question directions.
+
+#### Sample element
+
+```html
+<pl-question-panel> This is question-panel text. </pl-question-panel>
+```
+
+#### Details
+
+Contents are only shown during question input portion. When a student
+either makes a submission or receives the correct answer, the information
+between these tags is hidden. If content exists outside of a question panel,
+then it will be displayed alongside the answer.
+
+#### Example implementations
+
+- [demo/calculation]
+
+#### See also
+
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+### `pl-submission-panel` element
+
+Customizes how information entered by a user is displayed before grading.
+
+#### Sample element
+
+```html
+<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
+```
+
+#### Details
+
+Contents are only shown after the student has submitted an answer. This answer
+may be correct, incorrect, or invalid.
+
+#### Example implementations
+
+- [demo/custom/gradeFunction]
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+---
+
+
+
 
 ## Deprecated Elements
 
