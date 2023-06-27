@@ -2115,7 +2115,6 @@ Common reasons that trigger the display of this element are:
 
 ---
 
-
 ### `pl-external-grader-results` element
 
 Displays results from externally-graded questions.
@@ -2140,9 +2139,6 @@ It expects results to follow [the reference schema for external grading results]
 - [External Grading Reference Schema](externalGrading.md#grading-result)
 
 ---
-
-
-
 
 ### `pl-hide-in-panel` element
 
@@ -2216,9 +2212,6 @@ This element is typically used to abbreviate the question description and allow 
 
 ---
 
-
-
-
 ### `pl-hidden-hints` element
 
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
@@ -2273,7 +2266,6 @@ question HTML.
 
 ---
 
-
 ### `pl-manual-grading-only` element
 
 Hide the contents so that it is **only** displayed to graders in the manual grading page.
@@ -2303,9 +2295,6 @@ This element is typically used to provide graders with additional information th
 - [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
-
-
-
 
 ### `pl-question-panel` element
 
@@ -2365,9 +2354,6 @@ may be correct, incorrect, or invalid.
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 ---
-
-
-
 
 ## Deprecated Elements
 
@@ -2490,7 +2476,6 @@ The provided `script-name` corresponds to a file located within the director for
 
 <!-- Misc application questions -->
 
-
 ### `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
@@ -2511,4 +2496,3 @@ new questions.
 | `answers-name` | string | —       | Variable name to display score for. |
 
 ---
-
