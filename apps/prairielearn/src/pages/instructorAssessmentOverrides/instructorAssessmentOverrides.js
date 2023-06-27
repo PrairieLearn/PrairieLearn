@@ -1,40 +1,35 @@
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
-const { loadSqlEquiv } = require('@prairielearn/postgres');
-
+const {loadSqlEquiv} = require('@prairielearn/postgres');
 const sqldb = require('@prairielearn/postgres');
-const { config } = require('../../lib/config');
-
-
 const sql = loadSqlEquiv(__filename);
 
-router.get('/', async (req, res, next) => {
-  // console.log(res.locals);
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const params = {
       assessment_id: res.locals.assessment.id,
-      current_user_id: res.locals.user.user_id, 
-      link_exam_id: config.syncExamIdAccessRules,
+      current_user_id: res.locals.user.user_id,
     };
 
-    const result = await sqldb.queryAsync(sql.assessment_access_policies, params);
-    
-    res.render(__filename.replace(/\.js$/, '.ejs'), { 
+    const result = await sqldb.queryAsync(sql.selectQuery, params);
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), {
       policies: result.rows,
       assessment_id: params.assessment_id,
-      current_user_id: params.current_user_id, 
+      current_user_id: params.current_user_id,
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  })
+);
 
-router.post('/', async (req, res, next) => {
-  try {
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
     const params = {
       assessment_id: req.body.assessment_id,
       created_at: new Date(req.body.created_at),
-      created_by: req.body.created_by,
+      created_by: req.body.current_user_id,
       credit: req.body.credit,
       end_date: new Date(req.body.end_date),
       group_id: req.body.group_id || null,
@@ -44,19 +39,13 @@ router.post('/', async (req, res, next) => {
       user_id: req.body.user_id,
     };
 
-    const insertQuery = `
-      INSERT INTO assessment_access_policies
-      (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date, extension_type, user_id)
-      VALUES
-      ($assessment_id, $created_at, $created_by, $credit, $end_date, $group_id, $note, $start_date, $type, $user_id)
-    `;
+    const insertQuery = sql.insertQuery;
 
     await sqldb.queryAsync(insertQuery, params);
-    
-    res.json({ status: 'success' });
-  } catch (error) {
-    next(error);
-  }
-});
+
+
+    res.redirect(req.originalUrl);
+  })
+);
 
 module.exports = router;

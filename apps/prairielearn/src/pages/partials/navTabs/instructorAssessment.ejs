@@ -4,10 +4,10 @@
     iconClasses:    'far fa-calendar-alt',
     tabLabel:       'Access'}) %>
 <%- include('navTab', {
-        activeSubPage:  'access_overrides',
-        urlSuffix:      '/assessment/'+assessment.id+'/access_overrides',
-        iconClasses:    'fa fa-undo',
-        tabLabel:       'Access Overrides'}) %>
+    activeSubPage:  'access_overrides',
+    urlSuffix:      '/assessment/'+assessment.id+'/access_overrides',
+    iconClasses:    'fa fa-undo',
+    tabLabel:       'Access Overrides'}) %>
 <% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'downloads',
