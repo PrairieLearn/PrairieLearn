@@ -24,13 +24,13 @@ from typing import (
     overload,
 )
 
-from colors import Color
 import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
 import sympy
 import to_precision
+from colors import Color
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never

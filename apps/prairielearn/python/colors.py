@@ -4,14 +4,16 @@ Custom colors for the PrarieLearn project based on Coloraide.
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
 import re
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from coloraide import Color
 from coloraide import algebra as alg
 from coloraide.css import serialize
 from coloraide.spaces.srgb.css import sRGB
 
-RE_PL_COLORS = re.compile(r"(?i)\b([a-z][a-z_]{2,})\b")
+# Match the pattern of a PL color name;
+# only accepts numbers, lowercase letters, and a single underscore
+RE_PL_COLORS = re.compile(r"(?i)\b([0-9a-z][0-9a-z_]{2,})\b")
 
 # Colors used in /public/stylesheets/colors.css
 # includes additional aliases (e.g, "red3" also known as "incorrect_red")
@@ -137,3 +139,16 @@ class PrarieLearnColor(sRGB):
 
 
 Color.register(PrarieLearnColor(), overwrite=True)
+
+
+def get_css_color(name: str) -> Optional[str]:
+    """
+    Tries to look up a hex code value from a named css color, otherwise will
+    return None if not a valid color.
+    """
+    name = name.lower()
+
+    if Color.match(name):
+        return Color(name).to_string(hex=True)
+
+    return None
