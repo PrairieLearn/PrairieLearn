@@ -171,6 +171,10 @@ class Editor {
                   cwd: this.course.path,
                   env: gitEnv,
                 });
+
+                // We'll look for this flag on the `editError` page to know if
+                // we need to display instructions
+                job.data.pushed = true;
               } finally {
                 // Regardless of whether we error, we'll do a clean and reset:
                 //
@@ -182,6 +186,10 @@ class Editor {
               }
 
               await syncCourseFromDisk(this.course, startGitHash, job);
+
+              // As with `job.data.pushed` above, we'll check this flag on the
+              // `editError` page to know if syncing failed.
+              job.data.synced = true;
             });
           });
         },

@@ -15,43 +15,59 @@ router.get('/:job_sequence_id', function (req, res, next) {
   serverJobs.getJobSequenceWithFormattedOutput(job_sequence_id, course_id, (err, job_sequence) => {
     if (ERR(err, next)) return;
 
-    // All edits wait for the corresponding job sequence to finish before
-    // proceeding, so something bad must have happened to get to this page
-    // with a sequence that is still running
     if (job_sequence.status === 'Running') {
+      // All edits wait for the corresponding job sequence to finish before
+      // proceeding, so something bad must have happened to get to this page
+      // with a sequence that is still running.
       return next(new Error('Edit is still in progress (job sequence is still running)'));
+    } else if (job_sequence.status !== 'Error') {
+      return next(new Error('Edit did not fail'));
     }
 
     res.locals.failedPush = false;
     res.locals.failedSync = false;
 
     let job_errors = [];
-    let didWrite = false;
 
-    // Loop through jobs in sequential order (we rely on this).
-    job_sequence.jobs.forEach((item) => {
-      if (item.type === 'unlock' && didWrite && job_errors.length === 0) {
-        // We know that one of the jobs resulted in an error. If we reach
-        // 'unlock' without having found the error yet, then we know that
-        // the edit was written and was not rolled back, and that all we
-        // failed to do was sync.
+    if (!job_sequence.legacy) {
+      // New case: single job for the entire operation. We'll check the flags
+      // we set during the operation to know what went wrong.
+      const job = job_sequence.jobs[0];
+      if (!job.data.pushed) {
+        res.locals.failedPush = true;
+      } else if (!job.data.synced) {
         res.locals.failedSync = true;
       }
+    } else {
+      // Legacy case: one job per step. We'll loop through them in sequential
+      // order to reconstruct what went wrong.
+      //
+      // TODO: delete this branch once we've been running the new code for a while.
+      let didWrite = false;
+      job_sequence.jobs.forEach((item) => {
+        if (item.type === 'unlock' && didWrite && job_errors.length === 0) {
+          // We know that one of the jobs resulted in an error. If we reach
+          // 'unlock' without having found the error yet, then we know that
+          // the edit was written and was not rolled back, and that all we
+          // failed to do was sync.
+          res.locals.failedSync = true;
+        }
 
-      if (item.status === 'Error') {
-        job_errors.push({
-          description: item.description,
-          error_message: item.error_message,
-        });
+        if (item.status === 'Error') {
+          job_errors.push({
+            description: item.description,
+            error_message: item.error_message,
+          });
 
-        if (item.type === 'git_push') res.locals.failedPush = true;
-      } else if (item.type === 'write') {
-        didWrite = true;
+          if (item.type === 'git_push') res.locals.failedPush = true;
+        } else if (item.type === 'write') {
+          didWrite = true;
+        }
+      });
+
+      if (job_errors.length === 0) {
+        return next(new Error('Could not find a job that caused the edit failure'));
       }
-    });
-
-    if (job_errors.length === 0) {
-      return next(new Error('Could not find a job that caused the edit failure'));
     }
 
     res.locals.job_sequence = job_sequence;
