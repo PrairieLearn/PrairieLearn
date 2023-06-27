@@ -29,7 +29,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('./server-jobs').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await courseUtil.updateCourseCommitHashAsync(course);
+  const endGitHash = await courseUtil.getCommitHashAsync(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
@@ -43,6 +43,8 @@ async function syncCourseFromDisk(course, startGitHash, job) {
     });
     chunks.logChunkChangesToJob(chunkChanges, job);
   }
+
+  await courseUtil.updateCourseCommitHashAsync(course);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
