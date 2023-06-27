@@ -167,6 +167,10 @@ class Editor {
               }
 
               try {
+                // Remember that we attempted a push. If the push fails, we'll retain
+                // the `false` value.
+                job.data.pushed = false;
+
                 await job.exec('git', ['push'], {
                   cwd: this.course.path,
                   env: gitEnv,
@@ -184,6 +188,10 @@ class Editor {
                 // If pushing errored, the reset will get us back to a known good state.
                 await cleanAndResetRepository(this.course, gitEnv, job);
               }
+
+              // This will indicate that a sync was attempted. If it fails,
+              // we'll retain the `false` value.
+              job.data.synced = false;
 
               await syncCourseFromDisk(this.course, startGitHash, job);
 

@@ -33,9 +33,12 @@ router.get('/:job_sequence_id', function (req, res, next) {
       // New case: single job for the entire operation. We'll check the flags
       // we set during the operation to know what went wrong.
       const job = job_sequence.jobs[0];
-      if (!job.data.pushed) {
+
+      // The presence of a key determines if we attempted that particular
+      // operation; the value indicates if it succeeded.
+      if ('pushed' in job.data && !job.data.pushed) {
         res.locals.failedPush = true;
-      } else if (!job.data.synced) {
+      } else if ('synced' in job.data && !job.data.synced) {
         res.locals.failedSync = true;
       }
     } else {
