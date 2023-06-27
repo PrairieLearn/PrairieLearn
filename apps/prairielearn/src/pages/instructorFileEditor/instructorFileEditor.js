@@ -149,7 +149,11 @@ router.get('/*', (req, res, next) => {
         // succeeded or not.
         if (!fileEdit.jobSequence.legacy) {
           const job = fileEdit.jobSequence.jobs[0];
-          if (!job.data.pushed) {
+
+          // We check for presence of the `pushed` key to determine if we
+          // attempted a push, and we check for the value to know if the push
+          // succeeded or not.
+          if ('pushed' in job.data && !job.data.pushed) {
             fileEdit.failedPush = true;
           }
         } else {
@@ -536,6 +540,10 @@ async function saveAndSync(fileEdit, locals) {
         }
 
         try {
+          // Remember that we attempted a push. If the push fails, we'll retain
+          // the `false` value.
+          job.data.pushed = false;
+
           await job.exec('git', ['push'], {
             cwd: locals.course.path,
             env: gitEnv,
