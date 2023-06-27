@@ -24,7 +24,7 @@ from typing import (
     overload,
 )
 
-import colors
+from colors import Color
 import lxml.html
 import networkx as nx
 import numpy as np
@@ -727,9 +727,8 @@ def get_color_attrib(element, name, *args):
         if val is None:
             return val
 
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if Color.match(val) is not None:
+            return Color(val).to_string(hex=True)
         else:
             return val
 
@@ -737,9 +736,8 @@ def get_color_attrib(element, name, *args):
     if match:
         return val
     else:
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if Color.match(val) is not None:
+            return Color(val).to_string(hex=True)
         else:
             raise Exception(
                 'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(

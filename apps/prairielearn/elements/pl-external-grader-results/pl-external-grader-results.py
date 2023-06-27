@@ -5,7 +5,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from ansi2html import Ansi2HTMLConverter
-from colors import get_css_color
+from colors import Color
 
 # No built-in support for custom schemes, so we'll monkey-patch our own colors
 # into the module. Colors borrowed from the "Dark Background" color preset in
@@ -85,9 +85,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["score"] = round_value(results.get("score", 0) * 100)
                 html_params["achieved_max_points"] = results.get("score", 0) >= 1.0
                 html_params["results_color"] = (
-                    get_css_color("green3")
+                    Color("correct_green")
                     if (results.get("score", 0) >= 1.0)
-                    else get_css_color("red3")
+                    else Color("incorrect_red")
                 )
                 html_params["has_message"] = bool(results.get("message", False))
                 html_params["message"] = ansi_to_html(results.get("message", None))
@@ -147,16 +147,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                             )
 
                             if test["max_points"] != test["points"]:
-                                test["results_color"] = get_css_color("red3")
+                                test["results_color"] = Color("incorrect_red")
                                 test["results_icon"] = "fa-times"
                             # Don't consider points for test cases that are 0/0
                             # to be correct. We compare with a string because
                             # `round_value()` returns a string.
                             elif test["max_points"] == "0":
-                                test["results_color"] = get_css_color("gray3")
+                                test["results_color"] = Color("gray3")
                                 test["results_icon"] = "fa-circle-info"
                             else:
-                                test["results_color"] = get_css_color("green3")
+                                test["results_color"] = Color("correct_green")
                                 test["results_icon"] = "fa-check"
 
                         test["images"] = results_test.get("images", [])

@@ -1,7 +1,7 @@
 import chevron
 import lxml.html
 import prairielearn as pl
-from colors import get_css_color
+from colors import Color
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -24,7 +24,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "submission_files_url": data["options"]["submission_files_url"],
-        "check_icon_color": get_css_color("green3"),
+        "check_icon_color": Color("correct_green"),
         # Pass through format errors from the file input elements
         "errors": data["format_errors"].get("_files", []),
         "has_files": len(submitted_files) > 0,
