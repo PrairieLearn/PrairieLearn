@@ -2375,27 +2375,6 @@ Note: The following PrairieLearn Elements have been
 **deprecated**. These elements are still supported for backwards
 compatibility, but they should not be used in new questions.
 
-### `pl-variable-score` element
-
-Display the partial score for a specific answer variable.
-
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
-
-#### Sample element
-
-```html
-<pl-variable-score answers-name="v_avg"></pl-variable-score>
-```
-
-#### Customizations
-
-| Attribute      | Type   | Default | Description                         |
-| -------------- | ------ | ------- | ----------------------------------- |
-| `answers-name` | string | —       | Variable name to display score for. |
-
----
-
 ### `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
@@ -2510,3 +2489,26 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/custom/gradefunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
 
 <!-- Misc application questions -->
+
+
+### `pl-variable-score` element
+
+Display the partial score for a specific answer variable.
+
+**WARNING**: This element is **deprecated** and should not be used in
+new questions.
+
+#### Sample element
+
+```html
+<pl-variable-score answers-name="v_avg"></pl-variable-score>
+```
+
+#### Customizations
+
+| Attribute      | Type   | Default | Description                         |
+| -------------- | ------ | ------- | ----------------------------------- |
+| `answers-name` | string | —       | Variable name to display score for. |
+
+---
+
