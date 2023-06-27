@@ -108,10 +108,11 @@ class PrarieLearnColor(sRGB):
 
         if names:
             # Get alpha and coordinates resolving undefined values as required
-            alpha = serialize.get_alpha(parent, alpha, False, False)
-            if alpha is None:
-                alpha = 1
-            coords = serialize.get_coords(parent, fit, False, False) + [alpha]
+            alpha_float = serialize.get_alpha(parent, alpha, False, False)
+            if alpha_float is None:
+                alpha_float = 1.0
+
+            coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
 
             # See if the color value is a match, if so, return the string
             result = PL_COLORS_VALUE_MAP.get(

@@ -99,3 +99,6 @@ include = [
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.9"
+
+[tool.pytest.ini_options]
+addopts = "--ignore=./pl_ag_jobs"
