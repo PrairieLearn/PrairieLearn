@@ -144,11 +144,12 @@ router.get('/*', (req, res, next) => {
       }
 
       if ('jobSequence' in fileEdit) {
-        // New case: single job for entire operation. We inspect the job's
-        // output to determine if pushing failed.
+        // New case: single job for the entire operation. We check the flag
+        // we would have set when the job executed to determine if the push
+        // succeeded or not.
         if (!fileEdit.jobSequence.legacy) {
           const job = fileEdit.jobSequence.jobs[0];
-          if (job.output_raw.indexOf('error: failed to push some refs') >= 0) {
+          if (!job.data.pushed) {
             fileEdit.failedPush = true;
           }
         } else {
@@ -539,6 +540,11 @@ async function saveAndSync(fileEdit, locals) {
             cwd: locals.course.path,
             env: gitEnv,
           });
+
+          // Remember that we successfully pushed. When a user views the file
+          // editing page again, we'll check for this flag to know if we need
+          // to display instructions for a failed push.
+          job.data.pushed = true;
         } catch (err) {
           await job.exec('git', ['reset', '--hard', 'HEAD~1'], {
             cwd: locals.course.path,
