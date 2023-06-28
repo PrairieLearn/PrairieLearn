@@ -59,6 +59,7 @@ export function setupCountdown(options: {
   let serverTimeLimitMS: number;
   let clientStart: number;
   let updateServerIfExpired = true;
+  let nextCountdownDisplay = null as number;
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
@@ -83,8 +84,6 @@ export function setupCountdown(options: {
       options.onTimerOut?.();
       updateServerIfExpired = false;
     } else {
-      // TODO Cancel any existing timeouts for this function
-      // to avoid duplication
       displayCountdown();
     }
   }
@@ -114,8 +113,10 @@ export function setupCountdown(options: {
     countdownDisplay.innerText = remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
 
     if (remainingMS > 0) {
+      // cancel any existing scheduled call to displayCountdown
+      if (nextCountdownDisplay != null) clearTimeout(nextCountdownDisplay);
       // reschedule for the next half-second time
-      window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
+      nextCountdownDisplay = setTimeout(displayCountdown, (remainingMS - 500) % 1000);
     } else if (options.serverUpdateURL && updateServerIfExpired) {
       // If the timer runs out, trigger a new server update to confirm before closing
       updateServerRemainingMS();
