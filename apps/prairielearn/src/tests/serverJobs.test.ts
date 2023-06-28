@@ -50,14 +50,37 @@ describe('server-jobs', () => {
     assert.deepEqual(job.data.foo, 'bar');
   });
 
-  it('runs a job with an error', async () => {
+  it('runs a failing job with execute', async () => {
+    const serverJob = await createServerJob({
+      type: 'test',
+      description: 'test job sequence',
+    });
+
+    await assert.isFulfilled(
+      serverJob.execute(async (job) => {
+        job.info('testing info');
+        throw new Error('failing job');
+      })
+    );
+
+    const finishedJobSequence = await serverJobs.getJobSequenceAsync(serverJob.jobSequenceId, null);
+
+    assert.equal(finishedJobSequence.status, 'Error');
+    assert.lengthOf(finishedJobSequence.jobs, 1);
+
+    const job = finishedJobSequence.jobs[0];
+    assert.equal(job.status, 'Error');
+    assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
+  });
+
+  it('runs a failing job with executeUnsafe', async () => {
     const serverJob = await createServerJob({
       type: 'test',
       description: 'test job sequence',
     });
 
     await assert.isRejected(
-      serverJob.execute(async (job) => {
+      serverJob.executeUnsafe(async (job) => {
         job.info('testing info');
         throw new Error('failing job');
       }),

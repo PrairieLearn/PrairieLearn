@@ -39,6 +39,7 @@ export interface ServerJob {
 export interface ServerJobExecutor {
   jobSequenceId: string;
   execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
@@ -98,10 +99,19 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
+   * sequence has completed, even if an error is encountered.
+   */
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+    this.checkAndMarkStarted();
+    await this.executeInternal(fn, false);
+  }
+
+  /**
+   * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
   }
