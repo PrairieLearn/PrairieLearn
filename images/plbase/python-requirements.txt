@@ -30,7 +30,7 @@ pytest-repeat==0.9.1
 pytest==7.3.1
 recommonmark==0.7.1
 regex==2023.5.5
-rpy2==3.5.12
+rpy2==3.5.13
 scikit-learn==1.2.2
 scipy==1.10.1
 sphinx-markdown-builder==0.5.5
