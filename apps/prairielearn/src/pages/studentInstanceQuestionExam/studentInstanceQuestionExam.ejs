@@ -3,6 +3,15 @@
   <head>
     <%- include('../partials/head'); %>
     <%- compiled_script_tag('question.ts') %>
+    <%- compiled_script_tag('examTimeLimitCountdown.ts') %>
+    <%- encoded_data({
+          serverRemainingMS: assessment_instance_remaining_ms,
+          serverTimeLimitMS: assessment_instance_time_limit_ms,
+          serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                           assessment_instance.id + '/time_remaining',
+          canTriggerFinish: authz_result.authorized_edit,
+          csrfToken: __csrf_token,
+        }, 'time-limit-data') %>
     <script defer src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -47,14 +56,6 @@
                 <p class="mb-0">
                   Time remaining: <span id="countdownDisplay"></span>
                 </p>
-                <%- include('../partials/examTimeLimitCountdown', {
-                    serverTimeLimitMS: assessment_instance_time_limit_ms,
-                    serverRemainingMS: assessment_instance_remaining_ms,
-                    serverUpdateURL: urlPrefix + '/assessment_instance/' +
-                                     assessment_instance.id + '/time_remaining',
-                    progressSelector: '#countdownProgress',
-                    displaySelector: '#countdownDisplay',
-                    }) %>
               </div>
               <% } %>
             </div>
@@ -72,7 +73,5 @@
         </div>
       </div>
     </main>
-    <!-- Needs to be located below element scripts -->
-    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>

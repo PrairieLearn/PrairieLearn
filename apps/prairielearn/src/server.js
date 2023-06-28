@@ -59,6 +59,7 @@ const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('@prairielearn/named-locks');
+const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
@@ -125,6 +126,7 @@ module.exports.initExpress = function () {
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     res.locals.compiled_script_path = assets.compiledScriptPath;
     res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
+    res.locals.encoded_data = EncodedData;
     next();
   });
   app.use(function (req, res, next) {

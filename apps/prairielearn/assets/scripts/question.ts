@@ -1,17 +1,23 @@
 import { io } from 'socket.io-client';
+import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+
 import { mathjaxTypeset } from './mathjax';
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { setupCountdown } from './lib/countdown';
+import { confirmOnUnload } from './lib/confirmOnUnload';
 
 onDocumentReady(() => {
-  const { gradingMethod } = (document.querySelector('.question-container') as HTMLElement).dataset;
+  const { gradingMethod } = document.querySelector<HTMLElement>('.question-container').dataset;
   if (gradingMethod === 'External') {
     externalGradingLiveUpdate();
   }
+  setupDynamicObjects();
+  confirmOnUnload(document.querySelector('form.question-form'));
+  disableOnSubmit();
 });
 
 function externalGradingLiveUpdate() {
-  const { variantId, variantToken } = (document.querySelector('.question-container') as HTMLElement)
-    .dataset;
+  const { variantId, variantToken } =
+    document.querySelector<HTMLElement>('.question-container').dataset;
 
   // Render initial grading states into the DOM
   let gradingPending = false;
@@ -76,7 +82,7 @@ function fetchResults(socket, submissionId) {
     questionContext,
     csrfToken,
     authorizedEdit,
-  } = (document.querySelector('.question-container') as HTMLElement).dataset;
+  } = document.querySelector<HTMLElement>('.question-container').dataset;
 
   const modal = $('#submissionInfoModal-' + submissionId);
   const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
@@ -127,6 +133,7 @@ function fetchResults(socket, submissionId) {
       if (msg.questionNavNextButton) {
         document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
       }
+      setupDynamicObjects();
     }
   );
 }
@@ -154,4 +161,59 @@ function updateStatus(submission) {
       break;
   }
   display.innerHTML = label;
+}
+
+function setupDynamicObjects() {
+  // Install on page load and reinstall on websocket re-render
+  document.querySelectorAll('a.disable-on-click').forEach((link) => {
+    link.addEventListener('click', () => {
+      link.classList.add('disabled');
+    });
+  });
+  // Enable popover
+  $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
+
+  if (document.getElementById('submission-suspended-data')) {
+    const countdownData = decodeData<{
+      serverTimeLimitMS: number;
+      serverRemainingMS: number;
+    }>('submission-suspended-data');
+    setupCountdown({
+      displaySelector: '#submission-suspended-display',
+      progressSelector: '#submission-suspended-progress',
+      initialServerRemainingMS: countdownData.serverRemainingMS,
+      initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
+      onTimerOut: () => {
+        document.querySelector<HTMLButtonElement>('.question-grade').disabled = false;
+        document
+          .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
+          .forEach((elem) => {
+            elem.style.display = 'none';
+          });
+      },
+    });
+  }
+}
+
+function disableOnSubmit() {
+  const form = document.querySelector<HTMLFormElement>('form.question-form');
+  form.addEventListener('submit', () => {
+    if (!form.dataset.submitted) {
+      form.dataset.submitted = 'true';
+
+      // Since `.disabled` buttons don't POST, clone and hide as workaround
+      form.querySelectorAll('.disable-on-submit').forEach((element: HTMLButtonElement) => {
+        // Create disabled clone of button
+        const clonedElement = element.cloneNode(true) as HTMLButtonElement;
+        clonedElement.id = '';
+        clonedElement.disabled = true;
+
+        // Add it to the same position
+        element.parentNode.insertBefore(clonedElement, element);
+
+        // Hide actual submit button
+        element.style.display = 'none';
+      });
+    }
+  });
 }
