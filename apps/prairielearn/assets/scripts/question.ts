@@ -191,7 +191,7 @@ function setupDynamicObjects() {
       progressSelector: '#submission-suspended-progress',
       initialServerRemainingMS: countdownData.serverRemainingMS,
       initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
-      timerOutFn: () => {
+      onTimerOut: () => {
         document.querySelector<HTMLButtonElement>('.question-grade').disabled = false;
         document
           .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')

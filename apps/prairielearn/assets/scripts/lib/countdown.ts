@@ -46,9 +46,9 @@ export function setupCountdown(options: {
   initialServerRemainingMS: number;
   initialServerTimeLimitMS: number;
   serverUpdateURL?: string;
-  timerOutFn?: () => void;
-  serverUpdateFailFn?: () => void;
-  backgroundColorFn?: (number) => string;
+  onTimerOut?: () => void;
+  onServerUpdateFail?: () => void;
+  getBackgroundColor?: (number) => string;
 }) {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
   const countdownProgress = document.querySelector<HTMLElement>(options.progressSelector);
@@ -80,7 +80,7 @@ export function setupCountdown(options: {
 
     console.log('Time remaining: ' + serverRemainingMS + ' ms');
     if (serverRemainingMS <= 0) {
-      options.timerOutFn?.();
+      options.onTimerOut?.();
       updateServerIfExpired = false;
     } else {
       // TODO Cancel any existing timeouts for this function
@@ -97,7 +97,7 @@ export function setupCountdown(options: {
         })
         .catch((err) => {
           console.log('Error retrieving remaining time', err);
-          options.serverUpdateFailFn?.();
+          options.onServerUpdateFail?.();
         });
     }
   }
@@ -107,7 +107,7 @@ export function setupCountdown(options: {
     const remainingSec = Math.floor(remainingMS / 1000);
     const remainingMin = Math.floor(remainingSec / 60);
     const perc = 100 - Math.max(0, Math.min(100, (remainingMS / serverTimeLimitMS) * 100));
-    const backgroundColor = options.backgroundColorFn?.(remainingSec) || 'bg-info';
+    const backgroundColor = options.getBackgroundColor?.(remainingSec) || 'bg-info';
 
     countdownProgressBar.style.width = perc + '%';
     countdownProgressBar.className = 'progress-bar ' + backgroundColor;
@@ -120,7 +120,7 @@ export function setupCountdown(options: {
       // If the timer runs out, trigger a new server update to confirm before closing
       updateServerRemainingMS();
     } else {
-      options.timerOutFn?.();
+      options.onTimerOut?.();
     }
   }
 }

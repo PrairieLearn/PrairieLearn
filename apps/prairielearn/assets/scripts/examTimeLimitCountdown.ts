@@ -17,7 +17,7 @@ onDocumentReady(() => {
     initialServerRemainingMS: timeLimitData.serverRemainingMS,
     initialServerTimeLimitMS: timeLimitData.serverTimeLimitMS,
     serverUpdateURL: timeLimitData.serverUpdateURL,
-    timerOutFn: () => {
+    onTimerOut: () => {
       // if viewing exam as a different effective user, do not trigger time limit finish
       if (timeLimitData.canTriggerFinish) {
         // do not trigger unsaved warning dialog
@@ -33,11 +33,11 @@ onDocumentReady(() => {
         form.submit();
       }
     },
-    serverUpdateFailFn: () => {
+    onServerUpdateFail: () => {
       // On time limit fail, reload the page
       window.location.reload();
     },
-    backgroundColorFn: (remainingSec) => {
+    getBackgroundColor: (remainingSec) => {
       if (remainingSec >= 180) {
         return 'bg-primary';
       } else if (remainingSec >= 60) {
