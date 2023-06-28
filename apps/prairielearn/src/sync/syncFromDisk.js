@@ -120,6 +120,8 @@ module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, 
   })(callback);
 };
 
+module.exports.syncDiskToSqlWithLock = syncDiskToSqlWithLock;
+
 /**
  * @param {string} courseDir
  * @param {string} course_id

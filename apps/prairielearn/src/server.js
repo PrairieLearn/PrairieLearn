@@ -761,7 +761,10 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin').default);
+    app.use(
+      '/pl/institution/:institution_id/admin',
+      require('./ee/routers/institutionAdmin').default
+    );
   }
 
   //////////////////////////////////////////////////////////////////////
@@ -938,6 +941,21 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionText/legacyQuestionText'),
     ]
   );
 
@@ -1576,6 +1594,18 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course/:course_id/jobSequence',
     require('./pages/instructorJobSequence/instructorJobSequence')
+  );
+
+  // This route is used to initiate a transfer of a question from a template course.
+  // It is not actually a page; it's just used to initiate the transfer. The reason
+  // that this is a route on the target course and not handled by the source question
+  // pages is that the source question pages are served by chunk servers, but the
+  // question transfer machinery relies on access to course repositories on disk,
+  // which don't exist on chunk servers
+  app.use(
+    '/pl/course/:course_id/copy_template_course_question',
+    require('./pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion')
+      .default
   );
 
   // clientFiles

@@ -3,9 +3,9 @@ import { z } from 'zod';
 import asyncHandler = require('express-async-handler');
 import error = require('@prairielearn/error');
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
-import { getInstitution } from '../utils';
+import { getInstitution } from '../../lib/institution';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { InstitutionAdminCourseInstance } from './courseInstance.html';
+import { InstitutionAdminCourseInstance } from './institutionAdminCourseInstance.html';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
