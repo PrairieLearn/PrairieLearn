@@ -248,8 +248,8 @@ describe('Test group role functionality within assessments', function () {
             await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentInstanceURL, '00000001', 4);
             locals.roleUpdates = [
                 { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-                { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].user_id },
                 { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+                { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
                 { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
             ];
             await updateGroupRoles(
@@ -282,22 +282,41 @@ describe('Test group role functionality within assessments', function () {
 
             // Check that button UI is correct
             const button = locals.$('.question-grade');
-            console.log(button);
             assert.isTrue(button.is(':disabled'));
-
-            // const popover = locals.$('.btn[aria-label="Locked"]');
-            // const popoverContent = popover.data('content');
-
-            // assert.isTrue(popover.length === 1, 'The popover should be present');
-            // assert.strictEqual(popoverContent, "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is corrected.", 'The popover should have the correct content');
+            const popover = locals.$('.btn[aria-label="Locked"]');
+            assert.lengthOf(popover, 1);
+            const popoverContent = popover.data('content');
+            assert.strictEqual(popoverContent, "You are not assigned a role that can submit this question.");
         });
 
         step('no error message should be shown when role config is valid', async function () {
+            // Reset group roles to be valid again
+            let res = await fetch(locals.assessmentInstanceURL);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+            locals.roleUpdates = [
+                { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+                { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+                { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+            ];
+            await updateGroupRoles(
+                locals.roleUpdates,
+                locals.groupRoles,
+                locals.studentUsers,
+                locals.assessmentInstanceURL
+            );
 
+            // Refresh page
+            res = await fetch(locals.assessmentInstanceURL);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            elemList = locals.$('.alert:contains(This is an invalid role configuration)');
+            assert.lengthOf(elemList, 0);
         });
     });
 
-    describe('test functionality when role configuration is invalid', async function () {
+    describe('test question viewing restriction', async function () {
         step('error message should be shown when role config is invalid', async function () {
 
         });
