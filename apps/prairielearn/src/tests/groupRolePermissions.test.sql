@@ -41,3 +41,20 @@ FROM
   JOIN group_configs AS gc ON gc.id = gr.group_config_id
 WHERE
   gc.assessment_id = $assessment_id;
+
+-- BLOCK select_all_assessment_instance
+SELECT
+  ai.*
+FROM
+  assessment_instances AS ai;
+
+-- BLOCK select_instance_questions
+SELECT
+  iq.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
+  JOIN questions AS q ON (aq.question_id = q.id)
+WHERE
+  assessment_instance_id = $assessment_instance_id
+  AND q.qid = $question_id;

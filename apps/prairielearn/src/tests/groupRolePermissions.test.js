@@ -101,7 +101,6 @@ const updateGroupRoles = async (roleUpdates, groupRoles, studentUsers, assessmen
         locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
     });
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    // console.log(elemList);
     assert.lengthOf(elemList, roleUpdates.length);
 
     // Grab IDs of checkboxes to construct update request
@@ -147,13 +146,13 @@ describe('Test group role functionality within assessments', function () {
         Object.assign(config, storedConfig);
     });
 
-    describe('set up group assessment', async function() {
+    describe('set up group assessment', async function () {
         step('can insert/get 3 users into/from the DB', async function () {
             const result = await sqldb.queryAsync(sql.generate_and_enroll_3_users, []);
             assert.lengthOf(result.rows, 3);
             locals.studentUsers = result.rows;
         });
-    
+
         step('contains the 4 group roles for the assessment', async function () {
             const params = {
                 assessment_id: locals.assessmentId,
@@ -161,16 +160,16 @@ describe('Test group role functionality within assessments', function () {
             const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
             assert.lengthOf(result.rows, 4);
             locals.groupRoles = result.rows;
-    
+
             locals.manager = result.rows.find((row) => row.role_name === 'Manager');;
             locals.recorder = result.rows.find((row) => row.role_name === 'Recorder');;
             locals.reflector = result.rows.find((row) => row.role_name === 'Reflector');;
             locals.contributor = result.rows.find((row) => row.role_name === 'Contributor');;
         });
-    
+
         step('can create a group as first user', async function () {
             await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
-    
+
             locals.group_name = 'groupBB';
             const form = {
                 __action: 'create_group',
@@ -185,14 +184,14 @@ describe('Test group role functionality within assessments', function () {
             locals.$ = cheerio.load(await res.text());
             locals.joinCode = locals.$('#join-code').text();
         });
-    
+
         step('can join group as second and third users', async function () {
             await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
             await joinGroup(locals.assessmentUrl, locals.joinCode);
             await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 2);
             await joinGroup(locals.assessmentUrl, locals.joinCode);
         });
-    
+
         step('can assign group roles as first user', async function () {
             await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
             locals.roleUpdates = [
@@ -207,7 +206,7 @@ describe('Test group role functionality within assessments', function () {
                 locals.assessmentUrl
             );
         });
-    
+
         step('can start asssesment', async function () {
             var form = {
                 __action: 'new_instance',
@@ -220,46 +219,95 @@ describe('Test group role functionality within assessments', function () {
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
         });
+
+        step('should have 1 assessment instance in db', async function () {
+            const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
+            assert.lengthOf(result.rows, 1);
+            locals.assessment_instance_id = result.rows[0].id;
+            locals.assessmentInstanceURL =
+                locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
+            assert.equal(result.rows[0].group_id, 1);
+        });
     });
 
-    describe('test visibility of role select table', async function() {
+    describe('test visibility of role select table', async function () {
         step('can view role select table with correct permission', async function () {
             elemList = locals.$('#role-select-form');
-            assert.isOk(elemList);
+            assert.lengthOf(elemList, 1);
         });
 
         step('cannot view role select table without correct permission', async function () {
-            await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 3);
+            await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentInstanceURL, '00000002', 3);
             elemList = locals.$('#role-select-form');
             assert.lengthOf(elemList, 0);
         });
     });
 
-    describe('test functionality when role configuration is invalid', async function() {
+    describe('test functionality when role configuration is invalid', async function () {
         step('error message should be shown when role config is invalid', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentInstanceURL, '00000001', 4);
+            locals.roleUpdates = [
+                { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+                { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].user_id },
+                { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+                { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+            ];
+            await updateGroupRoles(
+                locals.roleUpdates,
+                locals.groupRoles,
+                locals.studentUsers,
+                locals.assessmentInstanceURL
+            );
 
+            const res = await fetch(locals.assessmentInstanceURL);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            elemList = locals.$('.alert:contains(This is an invalid role configuration)');
+            assert.lengthOf(elemList, 1);
         });
 
         step('submit button should be disabled when role config is invalid', async function () {
-            
+            // Open the first question
+            const params = {
+                assessment_instance_id: locals.assessment_instance_id,
+                question_id: "demo/demoNewton-page1"
+            };
+            const result = await sqldb.queryAsync(sql.select_instance_questions, params);
+            assert.lengthOf(result.rows, 1);
+            const questionUrl = locals.courseInstanceUrl + "/instance_question/" + result.rows[0].id;
+            const res = await fetch(questionUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            // Check that button UI is correct
+            const button = locals.$('.question-grade');
+            console.log(button);
+            assert.isTrue(button.is(':disabled'));
+
+            // const popover = locals.$('.btn[aria-label="Locked"]');
+            // const popoverContent = popover.data('content');
+
+            // assert.isTrue(popover.length === 1, 'The popover should be present');
+            // assert.strictEqual(popoverContent, "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is corrected.", 'The popover should have the correct content');
         });
 
         step('no error message should be shown when role config is valid', async function () {
-            
+
         });
     });
 
-    describe('test functionality when role configuration is invalid', async function() {
+    describe('test functionality when role configuration is invalid', async function () {
         step('error message should be shown when role config is invalid', async function () {
 
         });
 
         step('submit button should be disabled when role config is invalid', async function () {
-            
+
         });
 
         step('no error message should be shown when role config is valid', async function () {
-            
+
         });
     });
 });
