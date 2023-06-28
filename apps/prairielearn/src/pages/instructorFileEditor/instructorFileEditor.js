@@ -303,12 +303,7 @@ router.post('/*', (req, res, next) => {
 
           debug('Write edit to disk (also push and sync if necessary)');
           fileEdit.needToSync = path.extname(fileEdit.fileName) === '.json';
-          try {
-            await saveAndSync(fileEdit, res.locals);
-          } catch (err) {
-            // If there is an error, log it and carry on.
-            logger.error('Error saving and syncing instructor file edit', err);
-          }
+          await saveAndSync(fileEdit, res.locals);
         },
       ],
       (err) => {
