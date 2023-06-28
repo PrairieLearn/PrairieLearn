@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
@@ -87,7 +86,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
@@ -101,18 +100,14 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'auto_assessment_groups') {
-      groupUpdate.autoGroups(
+      const job_sequence_id = await groupUpdate.autoGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
         req.body.max_group_size,
-        req.body.min_group_size,
-        req.body.optradio,
-        function (err, job_sequence_id) {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        req.body.min_group_size
       );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'copy_assessment_groups') {
       await sqldb.callAsync('assessment_groups_copy', [
         res.locals.assessment.id,
