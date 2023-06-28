@@ -29,9 +29,10 @@ describe('server-jobs', () => {
       description: 'test server job',
     });
 
-    await serverJob.execute(async (context) => {
-      context.info('testing info');
-      context.error('testing error');
+    await serverJob.execute(async (job) => {
+      job.info('testing info');
+      job.error('testing error');
+      job.data.foo = 'bar';
     });
 
     const finishedJobSequence = await serverJobs.getJobSequenceAsync(serverJob.jobSequenceId, null);
@@ -46,6 +47,7 @@ describe('server-jobs', () => {
     assert.equal(job.description, 'test server job');
     assert.equal(job.status, 'Success');
     assert.equal(stripAnsi(job.output), 'testing info\ntesting error\n');
+    assert.deepEqual(job.data.foo, 'bar');
   });
 
   it('runs a job with an error', async () => {
@@ -55,8 +57,8 @@ describe('server-jobs', () => {
     });
 
     await assert.isRejected(
-      serverJob.execute(async (context) => {
-        context.info('testing info');
+      serverJob.execute(async (job) => {
+        job.info('testing info');
         throw new Error('failing job');
       }),
       'failing job'
