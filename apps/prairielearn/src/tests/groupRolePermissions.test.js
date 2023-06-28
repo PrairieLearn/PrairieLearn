@@ -147,76 +147,119 @@ describe('Test group role functionality within assessments', function () {
         Object.assign(config, storedConfig);
     });
 
-    step('can insert/get 3 users into/from the DB', async function () {
-        const result = await sqldb.queryAsync(sql.generate_and_enroll_3_users, []);
-        assert.lengthOf(result.rows, 3);
-        locals.studentUsers = result.rows;
-    });
-
-    step('contains the 4 group roles for the assessment', async function () {
-        const params = {
-            assessment_id: locals.assessmentId,
-        };
-        const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
-        assert.lengthOf(result.rows, 4);
-        locals.groupRoles = result.rows;
-
-        locals.manager = result.rows.find((row) => row.role_name === 'Manager');;
-        locals.recorder = result.rows.find((row) => row.role_name === 'Recorder');;
-        locals.reflector = result.rows.find((row) => row.role_name === 'Reflector');;
-        locals.contributor = result.rows.find((row) => row.role_name === 'Contributor');;
-    });
-
-    step('can create a group as first user', async function () {
-        await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
-
-        locals.group_name = 'groupBB';
-        const form = {
-            __action: 'create_group',
-            __csrf_token: locals.__csrf_token,
-            groupName: locals.group_name,
-        };
-        const res = await fetch(locals.assessmentUrl, {
-            method: 'POST',
-            body: new URLSearchParams(form),
+    describe('set up group assessment', async function() {
+        step('can insert/get 3 users into/from the DB', async function () {
+            const result = await sqldb.queryAsync(sql.generate_and_enroll_3_users, []);
+            assert.lengthOf(result.rows, 3);
+            locals.studentUsers = result.rows;
         });
-        assert.isOk(res.ok);
-        locals.$ = cheerio.load(await res.text());
-        locals.joinCode = locals.$('#join-code').text();
-    });
-
-    step('can join group as second and third users', async function () {
-        await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
-        await joinGroup(locals.assessmentUrl, locals.joinCode);
-        await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 2);
-        await joinGroup(locals.assessmentUrl, locals.joinCode);
-    });
-
-    step('can assign group roles as first user', async function () {
-        await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
-        locals.roleUpdates = [
-            { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-            { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-            { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-        ];
-        await updateGroupRoles(
-            locals.roleUpdates,
-            locals.groupRoles,
-            locals.studentUsers,
-            locals.assessmentUrl
-        );
-    });
-
-    step('can start asssesment', async function () {
-        var form = {
-            __action: 'new_instance',
-            __csrf_token: locals.__csrf_token,
-        };
-        const res = await fetch(locals.assessmentUrl, {
-            method: 'POST',
-            body: new URLSearchParams(form),
+    
+        step('contains the 4 group roles for the assessment', async function () {
+            const params = {
+                assessment_id: locals.assessmentId,
+            };
+            const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
+            assert.lengthOf(result.rows, 4);
+            locals.groupRoles = result.rows;
+    
+            locals.manager = result.rows.find((row) => row.role_name === 'Manager');;
+            locals.recorder = result.rows.find((row) => row.role_name === 'Recorder');;
+            locals.reflector = result.rows.find((row) => row.role_name === 'Reflector');;
+            locals.contributor = result.rows.find((row) => row.role_name === 'Contributor');;
         });
-        assert.isOk(res.ok);
-        locals.$ = cheerio.load(await res.text());
+    
+        step('can create a group as first user', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
+    
+            locals.group_name = 'groupBB';
+            const form = {
+                __action: 'create_group',
+                __csrf_token: locals.__csrf_token,
+                groupName: locals.group_name,
+            };
+            const res = await fetch(locals.assessmentUrl, {
+                method: 'POST',
+                body: new URLSearchParams(form),
+            });
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+            locals.joinCode = locals.$('#join-code').text();
+        });
+    
+        step('can join group as second and third users', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
+            await joinGroup(locals.assessmentUrl, locals.joinCode);
+            await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 2);
+            await joinGroup(locals.assessmentUrl, locals.joinCode);
+        });
+    
+        step('can assign group roles as first user', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
+            locals.roleUpdates = [
+                { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+                { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+                { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+            ];
+            await updateGroupRoles(
+                locals.roleUpdates,
+                locals.groupRoles,
+                locals.studentUsers,
+                locals.assessmentUrl
+            );
+        });
+    
+        step('can start asssesment', async function () {
+            var form = {
+                __action: 'new_instance',
+                __csrf_token: locals.__csrf_token,
+            };
+            const res = await fetch(locals.assessmentUrl, {
+                method: 'POST',
+                body: new URLSearchParams(form),
+            });
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+        });
+    });
+
+    describe('test visibility of role select table', async function() {
+        step('can view role select table with correct permission', async function () {
+            elemList = locals.$('#role-select-form');
+            assert.isOk(elemList);
+        });
+
+        step('cannot view role select table without correct permission', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 3);
+            elemList = locals.$('#role-select-form');
+            assert.lengthOf(elemList, 0);
+        });
+    });
+
+    describe('test functionality when role configuration is invalid', async function() {
+        step('error message should be shown when role config is invalid', async function () {
+
+        });
+
+        step('submit button should be disabled when role config is invalid', async function () {
+            
+        });
+
+        step('no error message should be shown when role config is valid', async function () {
+            
+        });
+    });
+
+    describe('test functionality when role configuration is invalid', async function() {
+        step('error message should be shown when role config is invalid', async function () {
+
+        });
+
+        step('submit button should be disabled when role config is invalid', async function () {
+            
+        });
+
+        step('no error message should be shown when role config is valid', async function () {
+            
+        });
     });
 });
