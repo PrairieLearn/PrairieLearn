@@ -317,8 +317,16 @@ describe('Test group role functionality within assessments', function () {
     });
 
     describe('test question viewing restriction', async function () {
-        step('error message should be shown when role config is invalid', async function () {
+        step('the second and third questions should not be viewable', async function () {
+            const lockedRows = locals.$('tr.pl-sequence-locked');
+            assert.lengthOf(lockedRows, 2);
 
+            lockedRows.each((_, element) => {
+                const rowLabelText = locals.$(element).find('span.text-muted, a').text();
+                assert.match(rowLabelText, /HW5\.[23]\./);
+                const popoverText = locals.$(element).find('[data-toggle="popover"]').attr('data-content');
+                assert.strictEqual(popoverText, "Your current group role doesn't have permission to view this question.");
+            });
         });
 
         step('submit button should be disabled when role config is invalid', async function () {
