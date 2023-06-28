@@ -32,6 +32,7 @@ export interface ServerJob {
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
+  fail(msg: string): never;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
   data: Record<string, unknown>;
 }
@@ -43,6 +44,13 @@ export interface ServerJobExecutor {
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+
+class ServerJobAbortError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerJobAbortError';
+  }
+}
 
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
@@ -71,6 +79,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   verbose(msg: string) {
     this.addToOutput(chalkDim(msg) + '\n');
+  }
+
+  fail(msg: string): never {
+    this.error(msg);
+    throw new ServerJobAbortError(msg);
   }
 
   async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
@@ -161,7 +174,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     if (this.finished) return;
     this.finished = true;
 
-    if (err) {
+    // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
+    // any details about the error object itself, as `fail` will have already
+    // printed the message. This error is just used as a form of control flow.
+    if (err && !(err instanceof ServerJobAbortError)) {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {

@@ -93,16 +93,13 @@ router.post(
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
-      groupUpdate.uploadInstanceGroups(
+      const job_sequence_id = await groupUpdate.uploadInstanceGroups(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        function (err, job_sequence_id) {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        res.locals.authn_user.user_id
       );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'auto_assessment_groups') {
       groupUpdate.autoGroups(
         res.locals.assessment.id,

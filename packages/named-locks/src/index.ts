@@ -23,7 +23,7 @@ interface LockOptions {
    * Whether or not this lock should automatically renew itself periodically.
    * By default, locks will not renew themselves.
    *
-   * This is mostly useful for locks that may be help for longer than the idle
+   * This is mostly useful for locks that may be held for longer than the idle
    * session timeout that's configured for the Postgres database. The lock is
    * "renewed" by making a no-op query.
    */
