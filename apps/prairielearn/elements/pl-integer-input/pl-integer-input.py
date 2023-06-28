@@ -38,6 +38,8 @@ def prepare(element_html, data):
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
+
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
 
     if base != 0 and (base < 2 or base > 36):

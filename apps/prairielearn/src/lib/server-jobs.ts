@@ -33,6 +33,7 @@ export interface ServerJob {
   info(msg: string): void;
   verbose(msg: string): void;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
@@ -46,6 +47,7 @@ export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
+  public data: Record<string, unknown> = {};
   private started = false;
   private finished = false;
   public output = '';
@@ -96,12 +98,12 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
-   * sequence has completed. The returned promise will not reject if the job
+   * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
   async execute(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
-    await this.executeInternal(fn);
+    await this.executeInternal(fn, true);
   }
 
   /**
@@ -112,7 +114,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    */
   executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn);
+    this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {
@@ -122,7 +124,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.started = true;
   }
 
-  private async executeInternal(fn: ServerJobExecutionFunction): Promise<void> {
+  private async executeInternal(
+    fn: ServerJobExecutionFunction,
+    shouldThrow: boolean
+  ): Promise<void> {
     try {
       await fn(this);
       await this.finish();
@@ -132,6 +137,12 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       } catch (err) {
         logger.error(`Error failing job ${this.jobId}`, err);
         Sentry.captureException(err);
+        if (shouldThrow) {
+          throw err;
+        }
+      }
+      if (shouldThrow) {
+        throw err;
       }
     }
   }
@@ -170,6 +181,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
+      data: this.data,
       status: err ? 'Error' : 'Success',
     });
 

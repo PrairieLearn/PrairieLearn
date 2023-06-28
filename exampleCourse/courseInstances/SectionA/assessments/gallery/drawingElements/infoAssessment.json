@@ -21,6 +21,7 @@
                 {"id": "demo/drawing/buttons",                    "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/customizedButtons",          "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/resistorCapacitorCircuit",   "points": 2, "maxPoints": 6},
                 {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6}
             ]
         }

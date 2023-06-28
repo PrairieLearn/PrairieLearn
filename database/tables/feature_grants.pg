@@ -5,15 +5,14 @@ columns
     id: bigint not null default nextval('feature_grants_id_seq'::regclass)
     institution_id: bigint
     name: text not null
-    type: feature_grant_type not null
     user_id: bigint
 
 indexes
     feature_grants_pkey: PRIMARY KEY (id) USING btree (id)
-    feature_grants_by_name_idx: UNIQUE (name, institution_id, course_id, course_instance_id, user_id, type) USING btree (name, institution_id, course_id, course_instance_id, user_id, type)
-    feature_grants_by_entity_idx: USING btree (institution_id, course_id, course_instance_id, user_id, name, type)
-    feature_grants_name_user_id_type_idx: USING btree (name, user_id, type)
-    feature_grants_user_id_name_type_idx: USING btree (user_id, name, type)
+    feature_grants_by_name_idx: UNIQUE NULLS NOT DISTINCT (name, institution_id, course_id, course_instance_id, user_id) USING btree (name, institution_id, course_id, course_instance_id, user_id) NULLS NOT DISTINCT
+    feature_grants_by_entity_idx: USING btree (institution_id, course_id, course_instance_id, user_id, name)
+    feature_grants_name_user_id_idx: USING btree (name, user_id)
+    feature_grants_user_id_name_idx: USING btree (user_id, name)
 
 foreign-key constraints
     feature_grants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

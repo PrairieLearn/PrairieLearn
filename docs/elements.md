@@ -121,21 +121,21 @@ incorrect answers and displays them in a random order as radio buttons.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                 |
-| ----------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`                | string  | —       | Variable name to store data in.                                                                                                                             |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                        |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                     |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                         |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                  |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                          |
-| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                       |
-| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                      |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.  |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student. |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.            |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                  |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                |
+| Attribute                     | Type    | Default | Description                                                                                                                                                          |
+| ----------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                              |
+| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                  |
+| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                           |
+| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                   |
+| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                |
+| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                               |
+| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.           |
+| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.          |
+| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                     |
+| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                           |
+| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                         |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -189,7 +189,7 @@ as checkboxes.
 
 | Attribute               | Type    | Default | Description                                                                                                                                                                                                                          |
 | ----------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`          | string  | —       | Variable name to store data in.                                                                                                                                                                                                      |
+| `answers-name`          | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                 |
 | `weight`                | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                                                                                 |
 | `inline`                | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                                                                                              |
 | `number-answers`        | integer | special | The total number of answer choices to display. Defaults to displaying all answers.                                                                                                                                                   |
@@ -316,7 +316,7 @@ def generate(data):
 
 | Attribute             | Type                            | Default  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------------------- | ------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`        | string                          | —        | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `answers-name`        | string                          | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                                                                                                    |
 | `weight`              | integer                         | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `correct-answer`      | float                           | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `label`               | text                            | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -398,12 +398,12 @@ def generate(data):
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                       |
-| -------------- | ------- | ------- | --------------------------------------------------------------------------------- |
-| `answers-name` | string  | -       | The key of the correct answer.                                                    |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.              |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers. |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.        |
+| Attribute      | Type    | Default | Description                                                                                                                                                          |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
 
 #### Example implementation
 
@@ -436,9 +436,10 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 | Attribute             | Type                                   | Default                        | Description                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------------- | -------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`        | string                                 | —                              | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                          |
+| `answers-name`        | string                                 | —                              | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                     |
 | `weight`              | integer                                | 1                              | Weight to use when computing a weighted average score over all elements in a question.                                                                                                                                                                                                                                                                                                                   |
 | `grading-method`      | string                                 | "ordered"                      | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.                                                                                                                                                                                                                                                                                                      |
+| `allow-blank`         | boolean                                | false                          | Whether or not an empty solution area is allowed. By default, an empty solution area with no dropped blocks will not be graded (invalid format).                                                                                                                                                                                                                                                         |
 | `file-name`           | string                                 | `user_code.py`                 | Name of the file where the information from the blocks will be saved, to be used by the external grader.                                                                                                                                                                                                                                                                                                 |
 | `source-blocks-order` | "random", "ordered", or "alphabetized" | "random"                       | The order of the blocks in the source area. See more details below.                                                                                                                                                                                                                                                                                                                                      |
 | `indentation`         | boolean                                | false                          | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).                                                                                                                                                                                                                                           |
@@ -448,19 +449,20 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `solution-header`     | string                                 | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                 |
 | `solution-placement`  | "right" or "bottom"                    | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
 | `partial-credit`      | "none" or "lcs"                        | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
-| `feedback`            | "none" or "first-wrong"                | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
+| `feedback`            | "none" or "first-wrong"                | "none"                         | The level of feedback the student will receive upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
 | `format`              | "code" or "default"                    | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
 | `code-language`       | string                                 | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
-| Attribute | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                               |
-| --------- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct` | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                        |
-| `ranking` | positive integer   | —       | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
-| `indent`  | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                                  |
-| `depends` | string             | ""      | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                              |
-| `tag`     | string             | ""      | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.                                                                                                                                                                                                                                                |
+| Attribute        | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `correct`        | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                        |
+| `ranking`        | positive integer   | —       | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
+| `indent`         | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                                  |
+| `depends`        | string             | ""      | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                              |
+| `tag`            | string             | ""      | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                                 |
+| `distractor-for` | string             | ""      | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                           |
 
 #### Details
 
@@ -518,19 +520,19 @@ def generate(data):
 
 #### Customizations
 
-| Attribute        | Type                | Default  | Description                                                                                                                                                  |
-| ---------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`   | string              | —        | Variable name to store data in.                                                                                                                              |
-| `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                         |
-| `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base. |
-| `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                             |
-| `blank-value`    | float               | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                             |
-| `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                            |
-| `suffix`         | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                            |
-| `base`           | integer             | 10       | The base used to parse and represent the answer, or the special value 0 (see below).                                                                         |
-| `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                              |
-| `size`           | integer             | 35       | Size of the input box.                                                                                                                                       |
-| `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                         |
+| Attribute        | Type                | Default  | Description                                                                                                                                                          |
+| ---------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`   | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
+| `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
+| `blank-value`    | float               | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
+| `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
+| `suffix`         | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
+| `base`           | integer             | 10       | The base used to parse and represent the answer, or the special value 0 (see below).                                                                                 |
+| `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                      |
+| `size`           | integer             | 35       | Size of the input box.                                                                                                                                               |
+| `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 
 #### Specifying a non-trivial base
 
@@ -592,29 +594,33 @@ def generate(data):
 
 #### Customizations
 
-| Attribute                    | Type                | Default               | Description                                                                                                                                                                                                       |
-| ---------------------------- | ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —                     | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
-| `weight`                     | integer             | 1                     | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
-| `correct-answer`             | float               | special               | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
-| `label`                      | text                | —                     | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
-| `display`                    | "block" or "inline" | "inline"              | How to display the input field.                                                                                                                                                                                   |
-| `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
-| `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
-| `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
-| `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
-| `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
-| `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
-| `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
-| `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
+| Attribute                    | Type                | Default               | Description                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`               | string              | —                     | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
+| `weight`                     | integer             | 1                     | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                            |
+| `correct-answer`             | float               | special               | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                                |
+| `label`                      | text                | —                     | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                               |
+| `display`                    | "block" or "inline" | "inline"              | How to display the input field.                                                                                                                                                                                                                                                                                                 |
+| `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                                                                                                                                  |
+| `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                                                                                                                                        |
+| `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.                                                                                                               |
+| `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                               |
+| `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                                    |
+| `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                                                                                                                                          |
+| `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                            |
+| `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                                                                                                                                      |
+| `custom-functions`           | string              | -                     | A comma-delimited list of custom functions that can be used in the symbolic expression.                                                                                                                                                                                                                                         |
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json`. It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
-It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+Variables with the same name as greek letters (e.g., `alpha`, `beta`, etc.) will be automatically converted to their LaTeX equivalents for display on the correct answer and submission panels.
 
-Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
+
+Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
+See example question for details.
 
 #### Example implementations
 
@@ -641,17 +647,17 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Customizations
 
-| Attribute        | Type                                                  | Default                 | Description                                                                          |
-| ---------------- | ----------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
-| `answers-name`   | string                                                | —                       | Variable name to store data in.                                                      |
-| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"                 | Type of asymptotic answer required.                                                  |
-| `weight`         | integer                                               | 1                       | Weight to use when computing a weighted average score over elements.                 |
-| `correct-answer` | string                                                | -                       | Correct answer for grading.                                                          |
-| `display`        | "block" or "inline"                                   | "inline"                | How to display the input field.                                                      |
-| `variable`       | string                                                | —                       | A symbol for use in the symbolic expression. Only one variable supported.            |
-| `size`           | integer                                               | 35                      | Size of the input box.                                                               |
-| `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters. |
-| `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.           |
+| Attribute        | Type                                                  | Default                 | Description                                                                                                                                                          |
+| ---------------- | ----------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`   | string                                                | —                       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"                 | Type of asymptotic answer required.                                                                                                                                  |
+| `weight`         | integer                                               | 1                       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `correct-answer` | string                                                | -                       | Correct answer for grading.                                                                                                                                          |
+| `display`        | "block" or "inline"                                   | "inline"                | How to display the input field.                                                                                                                                      |
+| `variable`       | string                                                | —                       | A symbol for use in the symbolic expression. Only one variable supported.                                                                                            |
+| `size`           | integer                                               | 35                      | Size of the input box.                                                                                                                                               |
+| `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
+| `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                           |
 
 #### Details
 
@@ -698,7 +704,7 @@ def generate(data):
 
 | Attribute                 | Type                | Default  | Description                                                                                                                                                               |
 | ------------------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`            | string              | —        | Variable name to store data in.                                                                                                                                           |
+| `answers-name`            | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.      |
 | `weight`                  | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                      |
 | `correct-answer`          | string              | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                          |
 | `label`                   | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                         |
@@ -741,7 +747,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 
 | Attribute                  | Type                                         | Default      | Description                                                                                                                                                                                                                                                                                                                   |
 | -------------------------- | -------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`             | string                                       | -            | Variable name to store data in.                                                                                                                                                                                                                                                                                               |
+| `answers-name`             | string                                       | -            | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                          |
 | `weight`                   | integer                                      | 1            | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                          |
 | `correct-answer`           | string                                       | special      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                              |
 | `label`                    | text                                         | -            | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                             |
@@ -795,7 +801,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 
 | Attribute             | Type                                                       | Default       | Description                                                                                                                                                                                                            |
 | --------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`        | string                                                     | —             | Variable name to store data in.                                                                                                                                                                                        |
+| `answers-name`        | string                                                     | —             | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                   |
 | `weight`              | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
 | `fixed-order`         | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
 | `fixed-options-order` | boolean                                                    | False         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
@@ -872,7 +878,7 @@ def generate(data):
 
 | Attribute              | Type                            | Default                | Description                                                                                                                                                                                                                    |
 | ---------------------- | ------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`         | string                          | —                      | Variable name to store data in.                                                                                                                                                                                                |
+| `answers-name`         | string                          | —                      | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                           |
 | `weight`               | integer                         | 1                      | Weight to use when computing a weighted average score over elements.                                                                                                                                                           |
 | `label`                | text                            | —                      | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                              |
 | `comparison`           | "relabs", "sigfig", or "decdig" | "relabs"               | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.                                                                              |
@@ -895,9 +901,9 @@ The question will only be graded when all matrix components are entered, unless 
 
 #### See also
 
-- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -935,7 +941,7 @@ def generate(data):
 
 | Attribute        | Type                            | Default  | Description                                                                                                                                                                                                    |
 | ---------------- | ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string                          | —        | Variable name to store data in.                                                                                                                                                                                |
+| `answers-name`   | string                          | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                           |
 | `weight`         | integer                         | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                           |
 | `label`          | text                            | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                              |
 | `comparison`     | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.                                                              |
@@ -974,9 +980,9 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### See also
 
-- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -1135,7 +1141,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 
 | Attribute                       | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------------------- | ------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answer-name`                   | string  | —         | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `answer-name`                   | string  | —         | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `body-position`                 | list    | [0, 0, 0] | Initial position of body as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `body-orientation`              | list    | special   | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body-pose-format`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `camera-position`               | list    | [5, 2, 2] | Initial position of camera as `[x, y, z]`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -1477,8 +1483,9 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 ```html
 <pl-variable-output digits="3">
-  <variable params-name="matrixC">C</variable>
-  <variable params-name="matrixD">D</variable>
+  <!-- Example comment inside of this element. -->
+  <pl-variable params-name="matrixC">C</pl-variable>
+  <pl-variable params-name="matrixD">D</pl-variable>
 </pl-variable-output>
 ```
 
@@ -1505,16 +1512,17 @@ def generate(data):
 
 Attributes for `<pl-variable-output>`:
 
-| Attribute          | Type    | Default  | Description                                    |
-| ------------------ | ------- | -------- | ---------------------------------------------- |
-| `digits`           | integer | —        | Number of digits to display after the decimal. |
-| `default-tab`      | string  | 'matlab' | Select the active tab.                         |
-| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab.         |
-| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.    |
-| `show-python`      | boolean | true     | Toggles the display of the Python tab.         |
-| `show-r`           | boolean | true     | Toggles the display of the R tab.              |
+| Attribute          | Type    | Default  | Description                                                         |
+| ------------------ | ------- | -------- | ------------------------------------------------------------------- |
+| `digits`           | integer | —        | Number of digits to display after the decimal.                      |
+| `default-tab`      | string  | `matlab` | Select the active tab.                                              |
+| `show-matlab`      | boolean | true     | Toggles the display of the Matlab tab. Also compatible with Octave. |
+| `show-mathematica` | boolean | true     | Toggles the display of the Mathematica tab.                         |
+| `show-python`      | boolean | true     | Toggles the display of the Python tab.                              |
+| `show-r`           | boolean | true     | Toggles the display of the R tab.                                   |
+| `show-sympy`       | boolean | true     | Toggles the display of the SymPy tab.                               |
 
-Attributes for `<variable>` (one of these for each variable to display):
+Attributes for `<pl-variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
@@ -1524,27 +1532,27 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into
+This element displays a list of variables inside `<pl-code>` tags that are formatted for import into
 either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
-text that appears between the `<variable>` and `</variable>` tags, followed by `=`. Below
+text that appears between the `<pl-variable>` and `</pl-variable>` tags, followed by `=`. Below
 are samples of the format displayed under each language tab.
 
 **MATLAB format:**
 
-```
+```matlab
 A = [1.23; 4.56]; % matrix
 ```
 
 **Mathematica format:**
 
-```
+```mathematica
 A = [1.23; 4.56]; (* matrix *)
 ```
 
 **Python format:**
 
-```
+```python
 import numpy as np
 
 A = np.array([[1.23], [4.56]]) # matrix
@@ -1552,7 +1560,7 @@ A = np.array([[1.23], [4.56]]) # matrix
 
 **R format:**
 
-```
+```r
 A = c(1.23, 4.56) # vector
 A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
@@ -1570,6 +1578,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 - [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](#pl-matrix-latex-element)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 

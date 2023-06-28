@@ -28,7 +28,7 @@ module.exports = {
     let params = { assessment_id };
     sqldb.queryOneRow(sql.select_assessment_info, params, function (err, result) {
       if (ERR(err, callback)) return;
-      const assessmentLabel = result.rows[0].assessmentLabel;
+      const assessmentLabel = result.rows[0].assessment_label;
       const course_instance_id = result.rows[0].course_instance_id;
       const course_id = result.rows[0].course_id;
       const options = {
@@ -187,7 +187,7 @@ module.exports = {
     let params = { assessment_id };
     sqldb.queryOneRow(sql.select_assessment_info, params, function (err, result) {
       if (ERR(err, callback)) return;
-      const assessmentLabel = result.rows[0].assessmentLabel;
+      const assessmentLabel = result.rows[0].assessment_label;
       const course_instance_id = result.rows[0].course_instance_id;
       const course_id = result.rows[0].course_id;
 

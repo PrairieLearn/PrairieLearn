@@ -66,6 +66,8 @@ const lifecycleHooks = require('./lib/lifecycle-hooks');
 const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
+const { flashMiddleware, flash } = require('@prairielearn/flash');
+const { featuresMiddleware } = require('./lib/features');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -82,7 +84,6 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
-    --exit                              Run all the initialization and exit
 `;
 
   console.log(msg);
@@ -435,6 +436,14 @@ module.exports.initExpress = function () {
   });
 
   // More middlewares
+  app.use(flashMiddleware());
+  app.use((req, res, next) => {
+    // This is so that the `navbar` partial can access the flash messages. If
+    // you want to add a flash message, you should import and use `flash`
+    // directly from `@prairielearn/flash`.
+    res.locals.flash = flash;
+    next();
+  });
   app.use(require('./middlewares/logResponse')); // defers to end of response
   app.use(require('./middlewares/cors'));
   app.use(require('./middlewares/date'));
@@ -461,6 +470,13 @@ module.exports.initExpress = function () {
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  // Must come after the authentication middleware, as we need to read the
+  // `authn_is_administrator` property from the response locals.
+  //
+  // This means that feature flag overrides will not be available for
+  // unauthenticated routes.
+  app.use(featuresMiddleware((req, res) => res.locals.authn_is_administrator));
 
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest').default);
@@ -745,7 +761,10 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin').default);
+    app.use(
+      '/pl/institution/:institution_id/admin',
+      require('./ee/routers/institutionAdmin').default
+    );
   }
 
   //////////////////////////////////////////////////////////////////////
@@ -922,6 +941,21 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/legacyQuestionText/legacyQuestionText'),
     ]
   );
 
@@ -1562,6 +1596,18 @@ module.exports.initExpress = function () {
     require('./pages/instructorJobSequence/instructorJobSequence')
   );
 
+  // This route is used to initiate a transfer of a question from a template course.
+  // It is not actually a page; it's just used to initiate the transfer. The reason
+  // that this is a route on the target course and not handled by the source question
+  // pages is that the source question pages are served by chunk servers, but the
+  // question transfer machinery relies on access to course repositories on disk,
+  // which don't exist on chunk servers
+  app.use(
+    '/pl/course/:course_id/copy_template_course_question',
+    require('./pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion')
+      .default
+  );
+
   // clientFiles
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
@@ -2125,12 +2171,7 @@ if (require.main === module && config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        cache.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await cache.init(),
       async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
@@ -2176,10 +2217,6 @@ if (require.main === module && config.startServer) {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
           logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-        }
-        if ('exit' in argv) {
-          logger.info('exit option passed, quitting...');
-          process.exit(0);
         }
 
         // SIGTERM can be used to gracefully shut down the process. This signal

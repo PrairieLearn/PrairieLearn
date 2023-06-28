@@ -4,7 +4,11 @@ import path from 'path';
 import tmp from 'tmp-promise';
 import fs from 'fs-extra';
 
-import { readAndValidateMigrationsFromDirectory, sortMigrationFiles } from './load-migrations';
+import {
+  parseAnnotations,
+  readAndValidateMigrationsFromDirectory,
+  sortMigrationFiles,
+} from './load-migrations';
 
 chai.use(chaiAsPromised);
 
@@ -82,6 +86,19 @@ describe('load-migrations', () => {
           },
         ]
       );
+    });
+  });
+
+  describe('parseAnnotations', () => {
+    it('parses a NO TRANSACTION annotation', () => {
+      const annotations = parseAnnotations('-- prairielearn:migrations NO TRANSACTION');
+      assert.deepEqual(annotations, new Set(['NO TRANSACTION']));
+    });
+
+    it('throws an error for an invalid annotation', () => {
+      assert.throws(() => {
+        parseAnnotations('-- prairielearn:migrations INVALID');
+      });
     });
   });
 });
