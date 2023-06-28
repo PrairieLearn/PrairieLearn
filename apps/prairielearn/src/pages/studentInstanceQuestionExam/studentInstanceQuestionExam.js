@@ -2,6 +2,7 @@ const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
 
 const error = require('@prairielearn/error');
@@ -11,6 +12,7 @@ const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
 const { setQuestionCopyTargets } = require('../../lib/copy-question');
+const groupAssessmentHelper = require('../../lib/groups');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.assessment_instance.open) {
@@ -236,5 +238,30 @@ router.get('/', function (req, res, next) {
     });
   });
 });
+
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    if (res.locals.assessment.type !== 'Exam') return next();
+    if (res.locals.assessment.group_work) {
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id
+      );
+      const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+      if (groupConfig.has_roles) {
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.rolesInfo = groupInfo.rolesInfo;
+      }
+    }
+
+    const variant_id = null;
+    await util.promisify(question.getAndRenderVariant)(variant_id, null, res.locals);
+    await util.promisify(logPageView)(req, res);
+    question.setRendererHeader(res);
+    setQuestionCopyTargets(res);
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
 
 module.exports = router;
