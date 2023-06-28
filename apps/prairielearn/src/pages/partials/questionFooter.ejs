@@ -21,7 +21,13 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton || rolesInfo.validationErrors?.length > 0 || !rolesInfo.rolesAreBalanced ? "disabled" : "" %> name="__action" value="grade">Save & Grade
+            <%
+            let invalidRoleConfig = false;
+            if (locals.assessment.group_work && typeof groupConfig !== 'undefined' && groupConfig.has_roles) {
+              invalidRoleConfig = rolesInfo?.validationErrors?.length > 0 || !rolesInfo?.rolesAreBalanced;
+            }
+            %>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton || invalidRoleConfig ? "disabled" : "" %> name="__action" value="grade">Save & Grade
             <% if (variantAttemptsTotal > 0) { %>
                <% if (variantAttemptsLeft > 1) { %>
                <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
@@ -33,10 +39,10 @@
             <% } else if (question_context != 'instructor') { %>
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
-            <% if (disableGradeButton || rolesInfo.validationErrors?.length > 0 || !rolesInfo.rolesAreBalanced) { %>
+            <% if (disableGradeButton || invalidRoleConfig) { %>
               <%
               var lockedPopoverText;
-              if (rolesInfo.validationErrors?.length > 0 || !rolesInfo.rolesAreBalanced) {
+              if (invalidRoleConfig) {
                 lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is corrected."
               } else {
                 lockedPopoverText = "You are not assigned a role that can submit this question."
