@@ -286,12 +286,10 @@ describe('Test group role functionality within assessments', function () {
         });
 
         step('submit button should be disabled when role config is invalid', async function () {
-            // Open the first question
             const res = await fetch(questionOneUrl);
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
 
-            // Check that button UI is correct
             const button = locals.$('.question-grade');
             assert.isTrue(button.is(':disabled'));
             const popover = locals.$('.btn[aria-label="Locked"]');
@@ -301,7 +299,6 @@ describe('Test group role functionality within assessments', function () {
         });
 
         step('no error message should be shown when role config is valid', async function () {
-            // Reset group roles to be valid again
             let res = await fetch(locals.assessmentInstanceURL);
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
@@ -317,7 +314,6 @@ describe('Test group role functionality within assessments', function () {
                 locals.assessmentInstanceURL
             );
 
-            // Refresh page
             res = await fetch(locals.assessmentInstanceURL);
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
@@ -369,6 +365,44 @@ describe('Test group role functionality within assessments', function () {
 
             const prevQuestionLink = locals.$('#question-nav-prev').attr('href');
             assert.strictEqual(locals.siteUrl + prevQuestionLink, questionOneUrl + "/");
+        });
+    });
+
+    describe('test question submitting restriction', async function () {
+        step('save and grade button is not disabled with correct permission', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 3);
+            const res = await fetch(questionOneUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            const button = locals.$('.question-grade');
+            assert.isFalse(button.is(':disabled'));
+        });
+
+        step('save and grade button is disabled without correct permission', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 4);
+            const res = await fetch(questionOneUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            const button = locals.$('.question-grade');
+            assert.isTrue(button.is(':disabled'));
+            const popover = locals.$('.btn[aria-label="Locked"]');
+            assert.lengthOf(popover, 1);
+            const popoverContent = popover.data('content');
+            assert.strictEqual(popoverContent, "You are not assigned a role that can submit this question.");
+        });
+
+        step('submitting by POST request with invalid permission produces an error', async function () {
+            const form = {
+                __action: 'grade',
+                __csrf_token: locals.__csrf_token,
+            };
+            const res = await fetch(questionOneUrl, {
+                method: 'POST',
+                body: new URLSearchParams(form),
+            });
+            assert.isNotOk(res.ok);
         });
     });
 });
