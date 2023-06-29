@@ -1,16 +1,12 @@
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
-const fs = require('fs-extra');
-const path = require('path');
 const { step } = require('mocha-steps');
-const tmp = require('tmp-promise');
 const util = require('util');
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
-const { syncCourseData } = require('./sync/util');
 
 const helperServer = require('./helperServer');
 const { URLSearchParams } = require('url');
@@ -26,6 +22,8 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 locals.courseDir = TEST_COURSE_PATH;
 
 const storedConfig = {};
+
+let questionOneUrl, questionTwoUrl, questionThreeUrl;
 
 /**
  * Switches `config` to new user, loads assessment page, and changes local CSRF token
@@ -228,6 +226,26 @@ describe('Test group role functionality within assessments', function () {
                 locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
             assert.equal(result.rows[0].group_id, 1);
         });
+
+        step('should have three questions', async function () {
+            const params = {
+                assessment_instance_id: locals.assessment_instance_id,
+                question_id: "demo/demoNewton-page1"
+            };
+            let result = await sqldb.queryAsync(sql.select_instance_questions, params);
+            assert.lengthOf(result.rows, 1);
+            questionOneUrl = locals.courseInstanceUrl + "/instance_question/" + result.rows[0].id;
+
+            params.question_id = "demo/demoNewton-page2";
+            result = await sqldb.queryAsync(sql.select_instance_questions, params);
+            assert.lengthOf(result.rows, 1);
+            questionTwoUrl = locals.courseInstanceUrl + "/instance_question/" + result.rows[0].id;
+
+            params.question_id = "addNumbers";
+            result = await sqldb.queryAsync(sql.select_instance_questions, params);
+            assert.lengthOf(result.rows, 1);
+            questionThreeUrl = locals.courseInstanceUrl + "/instance_question/" + result.rows[0].id;
+        });
     });
 
     describe('test visibility of role select table', async function () {
@@ -269,14 +287,7 @@ describe('Test group role functionality within assessments', function () {
 
         step('submit button should be disabled when role config is invalid', async function () {
             // Open the first question
-            const params = {
-                assessment_instance_id: locals.assessment_instance_id,
-                question_id: "demo/demoNewton-page1"
-            };
-            const result = await sqldb.queryAsync(sql.select_instance_questions, params);
-            assert.lengthOf(result.rows, 1);
-            const questionUrl = locals.courseInstanceUrl + "/instance_question/" + result.rows[0].id;
-            const res = await fetch(questionUrl);
+            const res = await fetch(questionOneUrl);
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
 
@@ -286,7 +297,7 @@ describe('Test group role functionality within assessments', function () {
             const popover = locals.$('.btn[aria-label="Locked"]');
             assert.lengthOf(popover, 1);
             const popoverContent = popover.data('content');
-            assert.strictEqual(popoverContent, "You are not assigned a role that can submit this question.");
+            assert.strictEqual(popoverContent, "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is corrected.");
         });
 
         step('no error message should be shown when role config is valid', async function () {
@@ -329,12 +340,35 @@ describe('Test group role functionality within assessments', function () {
             });
         });
 
-        step('submit button should be disabled when role config is invalid', async function () {
-
+        step('the first question should be fully viewable with no errors', async function () {
+            const res = await fetch(questionOneUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
         });
 
-        step('no error message should be shown when role config is valid', async function () {
+        step('the second question should not be viewable', async function () {
+            const res = await fetch(questionTwoUrl);
+            assert.isNotOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+        });
 
+        step('the "next question" button skips unviewable questions', async function () {
+            await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 3);
+            const res = await fetch(questionOneUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            const nextQuestionLink = locals.$('#question-nav-next').attr('href');
+            assert.strictEqual(locals.siteUrl + nextQuestionLink, questionThreeUrl + "/");
+        });
+
+        step('the "previous question" button skips unviewable questions', async function () {
+            const res = await fetch(questionThreeUrl);
+            assert.isOk(res.ok);
+            locals.$ = cheerio.load(await res.text());
+
+            const prevQuestionLink = locals.$('#question-nav-prev').attr('href');
+            assert.strictEqual(locals.siteUrl + prevQuestionLink, questionOneUrl + "/");
         });
     });
 });
