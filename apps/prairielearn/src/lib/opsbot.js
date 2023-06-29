@@ -5,6 +5,7 @@ const util = require('util');
 const detectMocha = require('detect-mocha');
 const _ = require('lodash');
 
+const Sentry = require('@prairielearn/sentry');
 const error = require('@prairielearn/error');
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
@@ -85,18 +86,17 @@ module.exports.sendSlackMessage = (msg, channel, options, callback) => {
 };
 
 /**
- * Send a message to the secret course requests channel on Slack.
- * @param msg String message to send.
- * @param callback Function that is called after the message is sent.
- * Called with callback(err, response, body)
+ * Send a message to the course requests channel on Slack. This function will
+ * never return errors to the caller; instead, it will log the error and send
+ * it to Sentry.
+ *
+ * @param {string} msg The message to send.
  */
-module.exports.sendCourseRequestMessage = (msg, callback) => {
-  module.exports.sendSlackMessage(msg, config.secretSlackCourseRequestChannel, {}, (err, res) => {
-    if (ERR(err, callback)) return;
-    callback(null, res);
-  });
+module.exports.sendCourseRequestMessage = (msg) => {
+  util
+    .promisify(module.exports.sendSlackMessage)(msg, config.secretSlackCourseRequestChannel, {})
+    .catch((err) => {
+      logger.error('Error sending course request message to Slack', err);
+      Sentry.captureException(err);
+    });
 };
-
-module.exports.sendCourseRequestMessageAsync = util.promisify(
-  module.exports.sendCourseRequestMessage
-);

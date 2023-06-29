@@ -5,9 +5,7 @@ const path = require('path');
 const util = require('node:util');
 
 const { flash } = require('@prairielearn/flash');
-const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
 
 const opsbot = require('../../lib/opsbot');
 const github = require('../../lib/github');
@@ -147,38 +145,28 @@ router.post(
       res.redirect(req.originalUrl);
 
       // Do this in the background once we've redirected the response.
-      try {
-        await opsbot.sendCourseRequestMessageAsync(
-          `*Automatically creating course*\n` +
-            `Course repo: ${repo_short_name}\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
+      opsbot.sendCourseRequestMessage(
+        `*Automatically creating course*\n` +
+          `Course repo: ${repo_short_name}\n` +
+          `Course rubric: ${short_name}\n` +
+          `Course title: ${title}\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+          `GitHub username: ${github_user || 'not provided'}`
+      );
     } else {
       // Not automatically created.
       res.redirect(req.originalUrl);
 
       // Do this in the background once we've redirected the response.
-      try {
-        await opsbot.sendCourseRequestMessageAsync(
-          `*Incoming course request*\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
+      opsbot.sendCourseRequestMessage(
+        `*Incoming course request*\n` +
+          `Course rubric: ${short_name}\n` +
+          `Course title: ${title}\n` +
+          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+          `GitHub username: ${github_user || 'not provided'}`
+      );
     }
   })
 );

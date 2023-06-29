@@ -5,9 +5,7 @@ const express = require('express');
 const util = require('node:util');
 
 const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
 
 const { config } = require('../../lib/config');
 const github = require('../../lib/github');
@@ -115,17 +113,12 @@ router.post(
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
 
       // Do this in the background once we've redirected the response.
-      try {
-        await opsbot.sendCourseRequestMessageAsync(
-          `*Creating course*\n` +
-            `Course rubric: ${repo_options.short_name}\n` +
-            `Course title: ${repo_options.title}\n` +
-            `Approved by: ${res.locals.authn_user.name}`
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
+      opsbot.sendCourseRequestMessage(
+        `*Creating course*\n` +
+          `Course rubric: ${repo_options.short_name}\n` +
+          `Course title: ${repo_options.title}\n` +
+          `Approved by: ${res.locals.authn_user.name}`
+      );
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,
