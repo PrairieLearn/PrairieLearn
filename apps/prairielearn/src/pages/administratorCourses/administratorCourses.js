@@ -1,115 +1,101 @@
-const ERR = require('async-stacktrace');
+// @ts-check
+const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');
-const router = express.Router();
+const util = require('node:util');
 
 const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
+const Sentry = require('@prairielearn/sentry');
 
 const { config } = require('../../lib/config');
 const github = require('../../lib/github');
 const opsbot = require('../../lib/opsbot');
-const { logger } = require('@prairielearn/logger');
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', (req, res, next) => {
-  res.locals.coursesRoot = config.coursesRoot;
-  sqldb.queryOneRow(sql.select, [], (err, result) => {
-    if (ERR(err, next)) return;
-
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    res.locals.coursesRoot = config.coursesRoot;
+    const result = await sqldb.queryOneRowAsync(sql.select, []);
     _.assign(res.locals, result.rows[0]);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+  })
+);
 
-router.post('/', (req, res, next) => {
-  if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
-  if (req.body.__action === 'courses_insert') {
-    let params = [
-      req.body.institution_id,
-      req.body.short_name,
-      req.body.title,
-      req.body.display_timezone,
-      req.body.path,
-      req.body.repository,
-      req.body.branch,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('courses_insert', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'courses_update_column') {
-    let params = [
-      req.body.course_id,
-      req.body.column_name,
-      req.body.value,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('courses_update_column', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'courses_delete') {
-    let params = {
-      course_id: req.body.course_id,
-    };
-    sqldb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
-      if (ERR(err, next)) return;
-      if (result.rowCount !== 1) return next(new Error('course not found'));
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.is_administrator) throw error.make(403, 'Insufficient permissions');
 
-      var short_name = result.rows[0].short_name;
+    if (req.body.__action === 'courses_insert') {
+      await sqldb.callAsync('courses_insert', [
+        req.body.institution_id,
+        req.body.short_name,
+        req.body.title,
+        req.body.display_timezone,
+        req.body.path,
+        req.body.repository,
+        req.body.branch,
+        res.locals.authn_user.user_id,
+      ]);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'courses_update_column') {
+      await sqldb.callAsync('courses_update_column', [
+        req.body.course_id,
+        req.body.column_name,
+        req.body.value,
+        res.locals.authn_user.user_id,
+      ]);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'courses_delete') {
+      const result = await sqldb.queryZeroOrOneRowAsync(sql.select_course, {
+        course_id: req.body.course_id,
+      });
+      if (result.rowCount !== 1) throw new Error('course not found');
+
+      const short_name = result.rows[0].short_name;
       if (req.body.confirm_short_name !== short_name) {
-        return next(
-          new Error(
-            'deletion aborted: confirmation string "' +
-              req.body.confirm_short_name +
-              '" did not match expected value of "' +
-              short_name +
-              '"'
-          )
+        throw new Error(
+          'deletion aborted: confirmation string "' +
+            req.body.confirm_short_name +
+            '" did not match expected value of "' +
+            short_name +
+            '"'
         );
       }
 
-      var params = [req.body.course_id, res.locals.authn_user.user_id];
-      sqldb.call('courses_delete', params, (err, _result) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
-    });
-  } else if (req.body.__action === 'approve_deny_course_request') {
-    const id = req.body.request_id;
-    const user_id = res.locals.authn_user.user_id;
-    let action = req.body.approve_deny_action;
-
-    if (action === 'deny') {
-      action = 'denied';
-    } else {
-      return next(new Error(`Unknown course request action "${action}"`));
-    }
-    const params = {
-      id,
-      user_id,
-      action,
-    };
-    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
-      if (ERR(err, next)) return;
+      await sqldb.callAsync('courses_delete', [req.body.course_id, res.locals.authn_user.user_id]);
       res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'create_course_from_request') {
-    const id = req.body.request_id;
-    const user_id = res.locals.authn_user.user_id;
-    const params = {
-      id,
-      user_id,
-      action: 'creating',
-    };
-    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
-      if (ERR(err, next)) return;
+    } else if (req.body.__action === 'approve_deny_course_request') {
+      const id = req.body.request_id;
+      const user_id = res.locals.authn_user.user_id;
+      let action = req.body.approve_deny_action;
+
+      if (action === 'deny') {
+        action = 'denied';
+      } else {
+        throw new Error(`Unknown course request action "${action}"`);
+      }
+      await sqldb.queryOneRowAsync(sql.update_course_request, {
+        id,
+        user_id,
+        action,
+      });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'create_course_from_request') {
+      const id = req.body.request_id;
+      const user_id = res.locals.authn_user.user_id;
+      await sqldb.queryOneRowAsync(sql.update_course_request, {
+        id,
+        user_id,
+        action: 'creating',
+      });
 
       // Create the course in the background
-      if (ERR(err, next)) return;
       const repo_options = {
         short_name: req.body.short_name,
         title: req.body.title,
@@ -121,31 +107,32 @@ router.post('/', (req, res, next) => {
         course_request_id: id,
       };
 
-      github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {
-        if (ERR(err, next)) return;
+      const jobSequenceId = await util.promisify(github.createCourseRepoJob)(
+        repo_options,
+        res.locals.authn_user
+      );
 
-        res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
-        opsbot.sendCourseRequestMessage(
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
+
+      // Do this in the background once we've redirected the response.
+      try {
+        opsbot.sendCourseRequestMessageAsync(
           `*Creating course*\n` +
             `Course rubric: ${repo_options.short_name}\n` +
             `Course title: ${repo_options.title}\n` +
-            `Approved by: ${res.locals.authn_user.name}`,
-          (err) => {
-            ERR(err, () => {
-              logger.error(err);
-            });
-          }
+            `Approved by: ${res.locals.authn_user.name}`
         );
-      });
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
+      } catch (err) {
+        logger.error('Error sending course request message to Slack', err);
+        Sentry.captureException(err);
+      }
+    } else {
+      throw error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
-    );
-  }
-});
+      });
+    }
+  })
+);
 
 module.exports = router;

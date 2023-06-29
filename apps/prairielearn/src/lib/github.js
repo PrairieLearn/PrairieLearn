@@ -236,7 +236,7 @@ module.exports = {
 
   /**
    * Starts a new server job to create a course GitHub repo, add it to the database, and then sync it locally.
-   * @params options Options for creating the course, should contain the following keys:
+   * @param options Options for creating the course, should contain the following keys:
    * - short_name
    * - title
    * - institution_id
@@ -245,8 +245,8 @@ module.exports = {
    * - repo_short_name
    * - github_user
    * - course_request_id
-   * @params authn_user Authenticated user that is creating the course.
-   * @params callback Callback to run once the job sequence is created.  Will contain the sequence id as an argument.
+   * @param authn_user Authenticated user that is creating the course.
+   * @param callback Callback to run once the job sequence is created.  Will contain the sequence id as an argument.
    */
   createCourseRepoJob: function (options, authn_user, callback) {
     const worker_function = async (job_sequence_id) => {

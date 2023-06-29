@@ -96,3 +96,7 @@ module.exports.sendCourseRequestMessage = (msg, callback) => {
     callback(null, res);
   });
 };
+
+module.exports.sendCourseRequestMessageAsync = util.promisify(
+  module.exports.sendCourseRequestMessage
+);
