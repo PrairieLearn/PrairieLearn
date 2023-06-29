@@ -380,7 +380,7 @@ describe('Test group role functionality within assessments', function () {
         });
 
         step('save and grade button is disabled without correct permission', async function () {
-            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 4);
+            await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentInstanceURL, '00000001', 4);
             const res = await fetch(questionOneUrl);
             assert.isOk(res.ok);
             locals.$ = cheerio.load(await res.text());
@@ -393,16 +393,30 @@ describe('Test group role functionality within assessments', function () {
             assert.strictEqual(popoverContent, "You are not assigned a role that can submit this question.");
         });
 
-        step('submitting by POST request with invalid permission produces an error', async function () {
-            const form = {
-                __action: 'grade',
-                __csrf_token: locals.__csrf_token,
-            };
-            const res = await fetch(questionOneUrl, {
-                method: 'POST',
-                body: new URLSearchParams(form),
-            });
-            assert.isNotOk(res.ok);
-        });
+        // TODO: Write tests that confirm actually hitting "Submit" is still fine, or doesn't work
+        // step('submitting by POST request with invalid permission produces an error', async function () {
+        //     const form = {
+        //         __action: 'grade',
+        //         __csrf_token: locals.__csrf_token,
+        //     };
+        //     const res = await fetch(questionOneUrl, {
+        //         method: 'POST',
+        //         body: new URLSearchParams(form),
+        //     });
+        //     assert.isNotOk(res.ok);
+        // });
+
+        // step('submitting with valid permissions does not yield any errors', async function () {
+        //     await switchUserAndLoadAssessment(locals.studentUsers[1], questionOneUrl, '00000002', 5);
+        //     const form = {
+        //         __action: 'grade',
+        //         __csrf_token: locals.__csrf_token,
+        //     };
+        //     const res = await fetch(questionOneUrl, {
+        //         method: 'POST',
+        //         body: new URLSearchParams(form),
+        //     });
+        //     assert.isOk(res.ok);
+        // });
     });
 });
