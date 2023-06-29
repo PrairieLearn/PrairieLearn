@@ -12,7 +12,7 @@
     <script src="<%= asset_path('javascripts/lodash.min.js') %>"></script>
     <script src="<%= asset_path('javascripts/require.js') %>"></script>
     <script src="<%= asset_path('localscripts/question.js') %>"></script>
-    <script src="<%= asset_path('localscripts/question${effectiveQuestionType}.js') %>"></script>
+    <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
     <%- compiled_script_tag('instructorAssessmentManualGradingInstanceQuestion.js') %>
@@ -98,7 +98,5 @@
       </div>
 
     </main>
-    <!-- Needs to be located below element scripts -->
-    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>
