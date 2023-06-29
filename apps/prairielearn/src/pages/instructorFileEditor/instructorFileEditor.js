@@ -9,7 +9,6 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { promisify } = require('util');
-const { logger } = require('@prairielearn/logger');
 const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs');
