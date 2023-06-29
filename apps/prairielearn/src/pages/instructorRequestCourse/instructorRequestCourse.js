@@ -2,7 +2,6 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const path = require('path');
-const util = require('node:util');
 
 const { flash } = require('@prairielearn/flash');
 const sqldb = require('@prairielearn/postgres');
@@ -139,7 +138,7 @@ router.post(
         github_user,
         course_request_id: creq_id,
       };
-      await util.promisify(github.createCourseRepoJob)(repo_options, res.locals.authn_user);
+      await github.createCourseRepoJob(repo_options, res.locals.authn_user);
 
       // Redirect on success so that refreshing doesn't create another request
       res.redirect(req.originalUrl);

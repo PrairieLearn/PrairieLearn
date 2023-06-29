@@ -2,7 +2,6 @@
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');
-const util = require('node:util');
 const error = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
@@ -71,10 +70,7 @@ router.post(
         institution: req.body.institution,
       };
 
-      const jobSequenceId = await util.promisify(github.createCourseRepoJob)(
-        repo_options,
-        res.locals.authn_user
-      );
+      const jobSequenceId = await github.createCourseRepoJob(repo_options, res.locals.authn_user);
 
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
 
