@@ -1,3 +1,4 @@
+// @ts-check
 const { Octokit } = require('@octokit/rest');
 const { v4: uuidv4 } = require('uuid');
 const _ = require('lodash');
@@ -10,6 +11,7 @@ const courseUtil = require('./courseUtil');
 const syncFromDisk = require('../sync/syncFromDisk');
 const opsbot = require('./opsbot');
 const chunks = require('./chunks');
+const Sentry = require('@prairielearn/sentry');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -520,17 +522,18 @@ module.exports = {
             status: 'failed',
             course_request_id: options.course_request_id,
           });
-          opsbot.sendCourseRequestMessage(
-            `*Failed to create course "${options.short_name}"*\n\n` +
-              '```\n' +
-              `${err.message.trim()}\n` +
-              '```',
-            (err) => {
-              ERR(err, () => {
-                logger.error(err);
-              });
-            }
-          );
+
+          try {
+            await opsbot.sendCourseRequestMessageAsync(
+              `*Failed to create course "${options.short_name}"*\n\n` +
+                '```\n' +
+                `${err.message.trim()}\n` +
+                '```'
+            );
+          } catch (err) {
+            logger.error('Error sending course request message to Slack', err);
+            Sentry.captureException(err);
+          }
         }
       }
     );

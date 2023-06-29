@@ -167,7 +167,7 @@ router.post(
 
       // Do this in the background once we've redirected the response.
       try {
-        opsbot.sendCourseRequestMessageAsync(
+        await opsbot.sendCourseRequestMessageAsync(
           `*Incoming course request*\n` +
             `Course rubric: ${short_name}\n` +
             `Course title: ${title}\n` +
