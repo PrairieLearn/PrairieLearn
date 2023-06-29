@@ -202,6 +202,7 @@ router.get(
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       if (groupConfig.has_roles) {
         const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.groupConfig = groupConfig;
         res.locals.rolesInfo = groupInfo.rolesInfo;
       }
     }

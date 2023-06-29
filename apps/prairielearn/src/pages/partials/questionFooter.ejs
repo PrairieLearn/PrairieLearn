@@ -23,8 +23,8 @@
           <% if (showGradeButton) { %>
             <%
             let invalidRoleConfig = false;
-            if (locals.assessment.group_work && typeof groupConfig !== 'undefined' && groupConfig.has_roles) {
-              invalidRoleConfig = rolesInfo?.validationErrors?.length > 0 || !rolesInfo?.rolesAreBalanced;
+            if (typeof groupConfig !== 'undefined' && groupConfig.has_roles && typeof rolesInfo !== 'undefined') {
+              invalidRoleConfig = rolesInfo.validationErrors.length > 0 || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0;
             }
             %>
             <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton || invalidRoleConfig ? "disabled" : "" %> name="__action" value="grade">Save & Grade

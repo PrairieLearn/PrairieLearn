@@ -225,20 +225,6 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
   );
 });
 
-router.get('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
-  const variant_id = null;
-  question.getAndRenderVariant(variant_id, null, res.locals, function (err) {
-    if (ERR(err, next)) return;
-    logPageView(req, res, (err) => {
-      if (ERR(err, next)) return;
-      question.setRendererHeader(res);
-      setQuestionCopyTargets(res);
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-  });
-});
-
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
@@ -251,6 +237,7 @@ router.get(
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       if (groupConfig.has_roles) {
         const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.groupConfig = groupConfig;
         res.locals.rolesInfo = groupInfo.rolesInfo;
       }
     }
