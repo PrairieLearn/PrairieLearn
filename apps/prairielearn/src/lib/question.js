@@ -1554,7 +1554,7 @@ module.exports = {
       locals.showTrueAnswer = false;
     }
 
-    if (instance_question.can_user_submit !== null && !instance_question.can_user_submit) {
+    if (instance_question?.can_user_submit !== null && !instance_question?.can_user_submit) {
       locals.disableGradeButton = true;
     }
 
