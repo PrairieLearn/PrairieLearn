@@ -605,8 +605,12 @@ def parse(element_html, data):
                 ),
                 None,
             )
-            answer["ranking"] = matching_block["ranking"] if matching_block is not None else None
-            answer["tag"] = matching_block["tag"] if matching_block is not None else None
+            answer["ranking"] = (
+                matching_block["ranking"] if matching_block is not None else None
+            )
+            answer["tag"] = (
+                matching_block["tag"] if matching_block is not None else None
+            )
             if matching_block is None:
                 matching_block = next(
                     (
@@ -617,7 +621,9 @@ def parse(element_html, data):
                     None,
                 )
                 answer["distractor_feedback"] = (
-                    matching_block["distractor_feedback"] if matching_block is not None else None
+                    matching_block["distractor_feedback"]
+                    if matching_block is not None
+                    else None
                 )
     elif grading_mode == "dag":
         for answer in student_answer:
@@ -629,9 +635,13 @@ def parse(element_html, data):
                 ),
                 None,
             )
-            answer["tag"] = matching_block["tag"] if matching_block is not None else None
+            answer["tag"] = (
+                matching_block["tag"] if matching_block is not None else None
+            )
             answer["distractor_feedback"] = (
-                matching_block["distractor_feedback"] if matching_block is not None else None
+                matching_block["distractor_feedback"]
+                if matching_block is not None
+                else None
             )
             if matching_block is None:
                 matching_block = next(
@@ -643,7 +653,9 @@ def parse(element_html, data):
                     None,
                 )
                 answer["distractor_feedback"] = (
-                    matching_block["distractor_feedback"] if matching_block is not None else None
+                    matching_block["distractor_feedback"]
+                    if matching_block is not None
+                    else None
                 )
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
