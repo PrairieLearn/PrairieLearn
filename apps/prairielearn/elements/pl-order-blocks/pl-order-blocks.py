@@ -804,11 +804,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                         feedback += FIRST_WRONG_FEEDBACK["block-group"]
                     feedback += "</ul>"
 
-    data["partial_scores"][answer_name] = {  # type: ignore
+    data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
         "feedback": feedback,
-        "weight": answer_weight,
-        "first_wrong": first_wrong,
+        "weight": answer_weight
     }
 
 
@@ -839,11 +838,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             data["correct_answers"][answer_name], ["inner_html", "indent", "uuid"]
         )
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
-        data["partial_scores"][answer_name] = {  # type: ignore
+        data["partial_scores"][answer_name] = {
             "score": 1,
             "weight": weight,
-            "feedback": "",
-            "first_wrong": -1,
+            "feedback": ""
         }
 
     # TODO: The only wrong answer being tested is the correct answer with the first
@@ -886,11 +884,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             feedback = ""
 
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
-        data["partial_scores"][answer_name] = {  # type: ignore
+        data["partial_scores"][answer_name] = {
             "score": score,
             "weight": weight,
-            "feedback": feedback,
-            "first_wrong": first_wrong,
+            "feedback": feedback
         }
 
     else:
