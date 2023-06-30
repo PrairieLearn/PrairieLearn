@@ -191,7 +191,9 @@ def get_enum_attrib(
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
+        raise ValueError(
+            f"{enum_val} is not a valid type, must be one of: {', '.join(str(member.value) for member in enum_type)}."
+        )
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
