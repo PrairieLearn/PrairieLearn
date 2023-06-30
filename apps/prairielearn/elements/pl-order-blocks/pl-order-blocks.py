@@ -489,6 +489,9 @@ def render(element_html, data):
             "student_submission": student_submission,
             "feedback": feedback,
             "block_formatting": block_formatting,
+            "allow_feedback_badges": not all(
+                block["badge_type"] == "" for block in student_submission
+            ),
         }
 
         if score is not None:
