@@ -1,14 +1,12 @@
-from typing import Mapping, Optional, Iterable
 import itertools
 from collections import Counter
 from copy import deepcopy
+from typing import Iterable, Mapping, Optional
 
 import networkx as nx
 
 
-def validate_grouping(
-    graph: Mapping[str, list[str]], group_belonging: Mapping[str, str]
-):
+def validate_grouping(graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]):
     for node in graph:
         group_tag = group_belonging.get(node)
         if group_tag is None:
@@ -30,7 +28,7 @@ def validate_grouping(
 
 
 def solve_dag(
-    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, str]
+    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[str]]
 ):
     """Solve the given problem
     :param depends_graph: The dependency graph between blocks specified in the question
@@ -70,7 +68,7 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
 
 
 def check_grouping(
-    submission: list[str], group_belonging: Mapping[str, Optional[int]]
+    submission: list[str], group_belonging: Mapping[str, Optional[str]]
 ) -> int:
     """
     :param submission: candidate solution
@@ -100,7 +98,7 @@ def check_grouping(
 
 
 def dag_to_nx(
-    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, str]
+    depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[str]]
 ) -> nx.DiGraph:
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
@@ -120,7 +118,9 @@ def dag_to_nx(
     return graph
 
 
-def add_edges_for_groups(graph: nx.DiGraph, group_belonging: Mapping[str, str]):
+def add_edges_for_groups(
+    graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]
+):
     groups = {
         group: [tag for tag in group_belonging if group_belonging[tag] == group]
         for group in set(group_belonging.values())
@@ -150,8 +150,8 @@ def add_edges_for_groups(graph: nx.DiGraph, group_belonging: Mapping[str, str]):
 def grade_dag(
     submission: list[str],
     depends_graph: Mapping[str, list[str]],
-    group_belonging: Mapping[str, Optional[int]],
-) -> int:
+    group_belonging: Mapping[str, Optional[str]],
+) -> tuple[int, int]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -202,7 +202,7 @@ def lcs_partial_credit(
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    trans_clos = nx.algorithms.dag.transitive_closure(graph)
+    trans_clos = nx.algorithms.dag.transitive_closure(graph)  # type: ignore
     submission_no_distractors = [node for node in submission if node in depends_graph]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
