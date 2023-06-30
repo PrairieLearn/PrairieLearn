@@ -5,6 +5,7 @@ import generalRouter from '../pages/institutionAdminGeneral/institutionAdminGene
 import coursesRouter from '../pages/institutionAdminCourses/institutionAdminCourses';
 import courseRouter from '../pages/institutionAdminCourse/institutionAdminCourse';
 import courseInstanceRouter from '../pages/institutionAdminCourseInstance/institutionAdminCourseInstance';
+import permissionsRouter from '../pages/institutionAdminPermissions/institutionAdminPermissions';
 import ssoRouter from '../pages/institutionAdminSso/institutionAdminSso';
 import samlRouter from '../pages/institutionAdminSaml/institutionAdminSaml';
 
@@ -25,6 +26,7 @@ router.use('/', generalRouter);
 router.use('/courses', coursesRouter);
 router.use('/course/:course_id', courseRouter);
 router.use('/course_instance/:course_instance_id', courseInstanceRouter);
+router.use('/permissions', permissionsRouter);
 router.use('/sso', ssoRouter);
 router.use('/saml', samlRouter);
 
