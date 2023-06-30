@@ -33,6 +33,7 @@ export interface ServerJob {
   info(msg: string): void;
   verbose(msg: string): void;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
@@ -46,6 +47,7 @@ export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
+  public data: Record<string, unknown> = {};
   private started = false;
   private finished = false;
   public output = '';
@@ -179,6 +181,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
+      data: this.data,
       status: err ? 'Error' : 'Success',
     });
 

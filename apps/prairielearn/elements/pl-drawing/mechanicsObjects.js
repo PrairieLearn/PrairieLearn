@@ -106,6 +106,81 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
   },
 });
 
+mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
+  type: 'coil',
+  initialize: function (options) {
+    options = options || {};
+    this.callSuper('initialize', options);
+    this.left = this.x1;
+    this.top = this.y1;
+    this.originY = 'center';
+    this.originX = 'left';
+    this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
+    this.h = this.height / 2;
+    this.width = this.length;
+    this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
+    this.angle = (180 / Math.PI) * this.angleRad;
+    this.objectCaching = false;
+
+    this.on('scaling', function () {
+      this.length = this.width * this.scaleX;
+      this.h = this.h * this.scaleY;
+      this.x1 = this.left;
+      this.y1 = this.top;
+      this.angleRad = (Math.PI / 180) * this.angle;
+      this.x2 = this.x1 + Math.cos(this.angleRad) * this.length;
+      this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
+      this.dirty = true;
+    });
+  },
+  _render: function (ctx) {
+    let len = this.length;
+    let R2 = this.h;
+    let R = 0.5 * R2;
+    let offsetAngle = (50 * Math.PI) / 180;
+    let n = Math.floor(
+      (len - 3 * R - 2 * R * Math.cos(offsetAngle)) / (2 * R * Math.cos(offsetAngle))
+    );
+    let l2 = len / 2;
+
+    // Undo fabric's scale tranformations
+    ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
+
+    ctx.beginPath();
+    ctx.moveTo(-l2, 0);
+    var dx = (len - ((n + 1) * 2 * R * Math.cos(offsetAngle) + 2 * R)) / 2;
+    var start = -l2 + dx;
+    var xpos = start + R;
+    // Add the first ellipse
+    ctx.lineTo(start, 0);
+    ctx.ellipse(xpos, 0, R, R2, 0, Math.PI, 2 * Math.PI + offsetAngle);
+    // Add additional ellipses, depending on the size of the coil
+    for (var i = 0; i < n; i++) {
+      xpos += 2 * R * Math.cos(offsetAngle);
+      ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI + offsetAngle);
+    }
+    xpos += 2 * R * Math.cos(offsetAngle);
+    // Add last ellipse
+    ctx.ellipse(xpos, 0, R, R2, 0, Math.PI - offsetAngle, 2 * Math.PI);
+    ctx.lineTo(l2, 0);
+    ctx.strokeStyle = this.stroke;
+    this._renderStroke(ctx);
+    // Add "pins" at the end of the coil
+    if (this.drawPin) {
+      this.fill = this.stroke;
+      ctx.beginPath();
+      ctx.arc(-l2, 0, 4, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(l2, 0, 4, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.fill();
+    }
+  },
+});
+
 mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
   type: 'rod',
   initialize: function (options) {
@@ -2131,6 +2206,33 @@ mechanicsObjects.byType['pl-spring'] = class extends PLDrawingBaseElement {
   }
 };
 
+mechanicsObjects.byType['pl-coil'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options, submittedAnswer) {
+    let obj = new mechanicsObjects.Coil(options);
+    if (!('id' in obj)) {
+      obj.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(obj);
+
+    if (options.selectable) {
+      let modify = function (subObj) {
+        subObj.x1 = obj.x1;
+        subObj.y1 = obj.y1;
+        subObj.x2 = obj.x2;
+        subObj.y2 = obj.y2;
+        subObj.height = obj.h;
+      };
+      submittedAnswer.registerAnswerObject(options, obj, modify);
+    }
+
+    return obj;
+  }
+
+  static get_button_tooltip() {
+    return 'Add coil';
+  }
+};
+
 mechanicsObjects.byType['pl-triangle'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     let obj = new fabric.Polygon([options.p1, options.p2, options.p3], options);
@@ -3593,6 +3695,467 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
 
   static get_button_tooltip() {
     return 'Add curved controlled line';
+  }
+};
+
+mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+
+    // Start and end positons for the capacitor supporting lines
+    // which removes the distance between capacitor plates (gap)
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: options.selectable,
+      evented: options.evented,
+      originX: options.originX,
+      originY: options.originY,
+    });
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
+    }
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: options.selectable,
+      evented: options.evented,
+      originX: options.originX,
+      originY: options.originY,
+    });
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
+    }
+
+    // Start and end positions for the lines that will define the capacitor plates
+    var cline = options.height; // height of capacitor plate
+    var c1x1 = xm1 - cline * Math.sin(theta);
+    var c1y1 = ym1 + cline * Math.cos(theta);
+    var c1x2 = xm1 + cline * Math.sin(theta);
+    var c1y2 = ym1 - cline * Math.cos(theta);
+    var c2x1 = xm2 - cline * Math.sin(theta);
+    var c2y1 = ym2 + cline * Math.cos(theta);
+    var c2x2 = xm2 + cline * Math.sin(theta);
+    var c2y2 = ym2 - cline * Math.cos(theta);
+
+    let capacitorPlate1 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: options.selectable,
+      evented: options.evented,
+      originX: options.originX,
+      originY: options.originY,
+    });
+    if (!('id' in capacitorPlate1)) {
+      capacitorPlate1.id = window.PLDrawingApi.generateID();
+    }
+    let capacitorPlate2 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: options.selectable,
+      evented: options.evented,
+      originX: options.originX,
+      originY: options.originY,
+    });
+    if (!('id' in capacitorPlate2)) {
+      capacitorPlate2.id = window.PLDrawingApi.generateID();
+    }
+
+    canvas.add(supportingLine1, supportingLine2, capacitorPlate1, capacitorPlate2);
+
+    if (options.polarized) {
+      var xm3 = xm2 + 4 * Math.cos(theta);
+      var ym3 = ym2 + 4 * Math.sin(theta);
+      let textObj = new fabric.Text('+', {
+        left: xm3,
+        top: ym3,
+        textAlign: 'left',
+        fontSize: 16,
+        angle: (theta * 180) / Math.PI,
+      });
+      canvas.add(textObj);
+    }
+
+    let textObj = null;
+    if (options.label) {
+      textObj = new mechanicsObjects.LatexText(options.label, {
+        left: c1x2 + options.offsetx,
+        top: c1y2 + options.offsety - 10,
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+  }
+
+  static get_button_tooltip() {
+    return 'Add capacitor';
+  }
+};
+
+mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+
+    // Start and end positons for the battery supporting lines
+    // which removes the distance between battery plates (gap)
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
+    }
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
+    }
+
+    // Start and end positions for the lines that will define the battery plates
+    var cline1 = options.height / 2; // height of smaller battery plate
+    var cline2 = options.height; // height of bigger battery plate
+
+    var c1x1 = xm1 - cline1 * Math.sin(theta);
+    var c1y1 = ym1 + cline1 * Math.cos(theta);
+    var c1x2 = xm1 + cline1 * Math.sin(theta);
+    var c1y2 = ym1 - cline1 * Math.cos(theta);
+    var c2x1 = xm2 - cline2 * Math.sin(theta);
+    var c2y1 = ym2 + cline2 * Math.cos(theta);
+    var c2x2 = xm2 + cline2 * Math.sin(theta);
+    var c2y2 = ym2 - cline2 * Math.cos(theta);
+
+    let batteryPlate1 = new fabric.Line([c1x1, c1y1, c1x2, c1y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in batteryPlate1)) {
+      batteryPlate1.id = window.PLDrawingApi.generateID();
+    }
+    let batteryPlate2 = new fabric.Line([c2x1, c2y1, c2x2, c2y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in batteryPlate2)) {
+      batteryPlate2.id = window.PLDrawingApi.generateID();
+    }
+
+    canvas.add(supportingLine1, supportingLine2, batteryPlate1, batteryPlate2);
+
+    if (options.label) {
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: c2x1 + options.offsetx,
+        top: c2y1 + options.offsety + 10,
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+  }
+
+  static get_button_tooltip() {
+    return 'Add battery';
+  }
+};
+
+mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+    var gap = options.interval;
+
+    // Start and end positons for the resistor supporting lines
+    // which removes the region (gap) that will be filled with a Spring
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
+    }
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(supportingLine1, supportingLine2);
+
+    // Add Spring between supporting lines
+    // In theory, x1, y1, x2, y2 should be the same positions used when creating the
+    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using
+    // these parameters, supportingLine 1 does not connect with the start of the spring.
+    // Hack solution: to increase the spring region by increasing the value of the "gap"
+    // when defining the start and end positions
+    var springOptions = _.defaults(
+      {
+        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
+        dx: gap / 10,
+      },
+      options
+    );
+    let resistorSpring = new mechanicsObjects.Spring(springOptions);
+    if (!('id' in resistorSpring)) {
+      resistorSpring.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(resistorSpring);
+
+    if (options.label) {
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: xm2 - options.height * Math.sin(theta) + options.offsetx,
+        top: ym2 + options.height * Math.cos(theta) + options.offsety - 30,
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+  }
+
+  static get_button_tooltip() {
+    return 'Add resistor';
+  }
+};
+
+mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+    var gap = options.interval;
+
+    // Start and end positons for the inductor supporting lines
+    // which removes the region (gap) that will be filled with a Coil
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
+    }
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(supportingLine1, supportingLine2);
+
+    // Add Coil between supporting lines
+    // In theory, x1, y1, x2, y2 should be the same positions used when creating the
+    // supporting lines, namely xm1, ym1, xm2, ym2 respectively. However, when using
+    // these parameters, supportingLine 1 does not connect with the start of the coil.
+    // Hack solution: to increase the coil region by increasing the value of the "gap"
+    // when defining the start and end positions
+    var coilOptions = _.defaults(
+      {
+        x1: options.x1 + ((d - 1.06 * gap) / 2) * Math.cos(theta),
+        y1: options.y1 + ((d - 1.06 * gap) / 2) * Math.sin(theta),
+        x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
+        y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
+      },
+      options
+    );
+    let inductorCoil = new mechanicsObjects.Coil(coilOptions);
+    if (!('id' in inductorCoil)) {
+      inductorCoil.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(inductorCoil);
+
+    if (options.label) {
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: coilOptions.x1 + (options.height / 2) * Math.sin(theta) + options.offsetx,
+        top: coilOptions.y1 - options.height * Math.cos(theta) - 10 + options.offsety,
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+      });
+      canvas.add(textObj);
+    }
+  }
+
+  static get_button_tooltip() {
+    return 'Add resistor';
+  }
+};
+
+mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
+  static generate(canvas, options) {
+    var gap = options.interval;
+    var theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
+    var d = Math.sqrt(Math.pow(options.y2 - options.y1, 2) + Math.pow(options.x2 - options.x1, 2));
+
+    // Start and end positons for the switch supporting lines
+    // which removes the region (gap) that will be filled with the switch
+    var xm1 = options.x1 + ((d - gap) / 2) * Math.cos(theta);
+    var ym1 = options.y1 + ((d - gap) / 2) * Math.sin(theta);
+    var xm2 = options.x1 + ((d + gap) / 2) * Math.cos(theta);
+    var ym2 = options.y1 + ((d + gap) / 2) * Math.sin(theta);
+
+    let supportingLine1 = new fabric.Line([options.x1, options.y1, xm1, ym1], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine1)) {
+      supportingLine1.id = window.PLDrawingApi.generateID();
+    }
+    let supportingLine2 = new fabric.Line([xm2, ym2, options.x2, options.y2], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in supportingLine2)) {
+      supportingLine2.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(supportingLine1, supportingLine2);
+
+    // Add pins (small filled circles) denoting the start and end of switch region
+    if (options.drawPin) {
+      var circleOptions = _.defaults(
+        {
+          radius: 2,
+          originX: 'center',
+          originY: 'center',
+          fill: options.stroke,
+          left: xm1,
+          top: ym1,
+        },
+        options
+      );
+      let objPin1 = new fabric.Circle(circleOptions);
+      if (!('id' in objPin1)) {
+        objPin1.id = window.PLDrawingApi.generateID();
+      }
+      var circleOptions2 = _.defaults(
+        {
+          left: xm2,
+          top: ym2,
+        },
+        circleOptions
+      );
+      let objPin2 = new fabric.Circle(circleOptions2);
+      if (!('id' in objPin2)) {
+        objPin2.id = window.PLDrawingApi.generateID();
+      }
+      canvas.add(objPin1, objPin2);
+    }
+
+    // Add Switch between supporting lines
+    // Uses the angle of the switch to find the end position of the switch
+    // in the case it is open
+    var theta2 = (options.switchAngle * Math.PI) / 180;
+    var l = options.interval / Math.cos(theta2);
+    var cx = xm1 + l * Math.cos(theta2 + theta);
+    var cy = ym1 + l * Math.sin(theta2 + theta);
+
+    let objSwitch = new fabric.Line([xm1, ym1, cx, cy], {
+      stroke: options.stroke,
+      strokeWidth: options.strokeWidth,
+      selectable: false,
+      evented: false,
+      originX: 'center',
+      originY: 'center',
+    });
+    if (!('id' in objSwitch)) {
+      objSwitch.id = window.PLDrawingApi.generateID();
+    }
+    canvas.add(objSwitch);
+
+    // Add Label
+    if (options.label) {
+      var offsetlabel = 10;
+      let textObj = new mechanicsObjects.LatexText(options.label, {
+        left: xm1 + (l / 2) * Math.cos(theta2 + theta) - offsetlabel * Math.sin(theta2 + theta),
+        top: ym1 + (l / 2) * Math.sin(theta2 + theta) + offsetlabel * Math.cos(theta2 + theta),
+        textAlign: 'left',
+        fontSize: options.fontSize,
+        selectable: false,
+        originX: 'center',
+        originY: 'center',
+      });
+      canvas.add(textObj);
+    }
+  }
+
+  static get_button_tooltip() {
+    return 'Add switch';
   }
 };
 

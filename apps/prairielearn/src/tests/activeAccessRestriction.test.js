@@ -157,11 +157,7 @@ describe('Exam and homework assessment with active access restriction', function
     const examQuestionUrl = response.$('a:contains("Question 1")').attr('href');
     context.examQuestionUrl = `${context.siteUrl}${examQuestionUrl}`;
 
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name="time-limit-finish-form"]'
-    );
+    context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
   step('simulate a time limit expiration', async () => {
