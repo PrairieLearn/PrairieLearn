@@ -56,6 +56,11 @@ class FeedbackType(Enum):
     FIRST_WRONG = "first-wrong"
 
 
+class PartialCreditType(Enum):
+    NONE = "none"
+    LCS = "lcs"
+
+
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -163,19 +168,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if (
-        grading_method is GradingMethodType.DAG
-        or grading_method is GradingMethodType.RANKING
+        grading_method is not GradingMethodType.DAG
+        and grading_method is not GradingMethodType.RANKING
+        and pl.get_enum_attrib(element, "partial-credit", PartialCreditType, None)
+        is not None
     ):
-        partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
-        if partial_credit_type not in ["none", "lcs"]:
-            raise Exception(
-                'partial credit type "'
-                + partial_credit_type
-                + '" is not available with the "'
-                + str(grading_method)
-                + '" grading-method.'
-            )
-    elif pl.get_string_attrib(element, "partial-credit", None) is not None:
         raise Exception(
             "You may only specify partial credit options in the DAG and ranking grading modes."
         )
@@ -183,18 +180,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if (
         grading_method is not GradingMethodType.DAG
         and grading_method is not GradingMethodType.RANKING
-        and feedback_type != "none"
-    ) or (
-        grading_method is GradingMethodType.DAG
-        or grading_method is GradingMethodType.RANKING
-        and feedback_type not in ["none", "first-wrong"]
+        and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            'feedback type "'
-            + str(feedback_type)
-            + '" is not available with the "'
-            + str(grading_method)
-            + '" grading-method.'
+            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_string_attrib(element, "format", "default")
@@ -703,7 +692,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
+    partial_credit_type = pl.get_enum_attrib(
+        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+    )
 
     true_answer_list = data["correct_answers"][answer_name]
 
@@ -772,12 +763,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             -1 if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        if partial_credit_type == "none":
+        if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
             elif num_initial_correct < true_answer_length:
                 final_score = 0
-        elif partial_credit_type == "lcs":
+        elif partial_credit_type is PartialCreditType.LCS:
             edit_distance = lcs_partial_credit(
                 submission, depends_graph, group_belonging
             )
@@ -807,7 +798,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
         "feedback": feedback,
-        "weight": answer_weight
+        "weight": answer_weight,
     }
 
 
@@ -822,7 +813,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
-    partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
+    partial_credit_type = pl.get_enum_attrib(
+        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+    )
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -841,7 +834,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][answer_name] = {
             "score": 1,
             "weight": weight,
-            "feedback": ""
+            "feedback": "",
         }
 
     # TODO: The only wrong answer being tested is the correct answer with the first
@@ -855,7 +848,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         if grading_method == "unordered" or (
             grading_method is GradingMethodType.DAG
             or grading_method is GradingMethodType.RANKING
-            and partial_credit_type == "lcs"
+            and partial_credit_type == PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = (
@@ -887,7 +880,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][answer_name] = {
             "score": score,
             "weight": weight,
-            "feedback": feedback
+            "feedback": feedback,
         }
 
     else:
