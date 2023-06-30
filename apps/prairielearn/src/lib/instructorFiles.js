@@ -1,5 +1,6 @@
 const path = require('path');
 const { contains } = require('@prairielearn/path-utils');
+const { html } = require('@prairielearn/html');
 const { encodePath, decodePath } = require('./uri-util');
 
 /**
@@ -103,12 +104,17 @@ function getPaths(req, res, callback) {
 
   if (!contains(paths.rootPath, paths.workingPath)) {
     let err = new Error('Invalid working directory');
-    err.info =
-      `<p>The working directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
-      `<p>must be inside the root directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre></div>` +
-      `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
+    err.info = html`
+      <p>The working directory</p>
+      <div class="container">
+        <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+      </div>
+      <p>must be inside the root directory</p>
+      <div class="container">
+        <pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre>
+      </div>
+      <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+    `.toString();
     return callback(err);
   }
 
@@ -117,12 +123,15 @@ function getPaths(req, res, callback) {
   );
   if (found) {
     let err = new Error('Invalid working directory');
-    err.info =
-      `<p>The working directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
-      `<p>must <em>not</em> be inside the directory</p>` +
-      `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>` +
-      `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
+    err.info = html`
+      <p>The working directory</p>
+      <div class="container">
+        <pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre>
+      </div>
+      <p>must <em>not</em> be inside the directory</p>
+      <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+      <p>when looking at <code>${res.locals.navPage}</code> files.</p>
+    `.toString();
     return callback(err);
   }
 

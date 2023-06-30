@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 
+const { html } = require('@prairielearn/html');
 const { logger } = require('@prairielearn/logger');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
@@ -126,55 +127,76 @@ router.post('/', (req, res, next) => {
           debug(`given_cp_and_cip: ${given_cp_and_cip}`);
           if (given_cp_and_cip.length > 0) {
             if (course_instance) {
-              err.info +=
-                '<hr>' +
-                '<p>The following users were added to the course staff, ' +
-                `were given course content access <strong>${req.body.course_role}</strong>, ` +
-                `and were given student data access <strong>${course_instance.short_name} (Viewer)</strong>:</p>` +
-                '<div class="container"><pre class="bg-dark text-white rounded p-2">' +
-                given_cp_and_cip.join(',\n') +
-                '</pre></div>';
+              err.info += html`
+                <hr />
+                <p>
+                  The following users were added to the course staff, were given course content
+                  access <strong>${req.body.course_role}</strong>, and were given student data
+                  access <strong>${course_instance.short_name} (Viewer)</strong>:
+                </p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">${given_cp_and_cip.join(',\n')}</pre>
+                </div>
+              `.toString();
             } else {
-              err.info +=
-                '<hr>' +
-                '<p>The following users were added to the course staff ' +
-                `and were given course content access <strong>${req.body.course_role}</strong>:</p>` +
-                '<div class="container"><pre class="bg-dark text-white rounded p-2">' +
-                given_cp_and_cip.join(',\n') +
-                '</pre></div>';
+              err.info += html`
+                <hr />
+                <p>
+                  The following users were added to the course staff and were given course content
+                  access <strong>${req.body.course_role}</strong>:
+                </p>
+                <div class="container">
+                  <pre class="bg-dark text-white rounded p-2">
+${given_cp_and_cip.join(',\n')}
+                </pre
+                  >
+                </div>
+              `.toString();
             }
           }
           if (course_instance && result.not_given_cip.length > 0) {
-            err.info +=
-              '<hr>' +
-              '<p>The following users were added to the course staff and were given course ' +
-              `content access <strong>${req.body.course_role}</strong>, but were <strong>not</strong> ` +
-              `given student data access <strong>${course_instance.short_name} (Viewer)</strong>:</p>` +
-              '<div class="container"><pre class="bg-dark text-white rounded p-2">' +
-              result.not_given_cip.join(',\n') +
-              '</pre></div>' +
-              `<p>If you return to the <a href="${req.originalUrl}">access page</a>, you will find these ` +
-              `users in the list of course staff and can add student data access to each of them.</p>`;
+            err.info += html`
+              <hr />
+              <p>
+                The following users were added to the course staff and were given course content
+                access <strong>${req.body.course_role}</strong>, but were <strong>not</strong> given
+                student data access <strong>${course_instance.short_name} (Viewer)</strong>:
+              </p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">
+${result.not_given_cip.join(',\n')}</pre
+                >
+              </div>
+              <p>
+                If you return to the <a href="${req.originalUrl}">access page</a>, you will find
+                these users in the list of course staff and can add student data access to each of
+                them.
+              </p>
+            `.toString();
           }
           if (result.not_given_cp.length > 0) {
-            err.info +=
-              '<hr>' +
-              '<p>The following users were <strong>not</strong> added to the course staff:</p>' +
-              '<div class="container"><pre class="bg-dark text-white rounded p-2">' +
-              result.not_given_cp.join(',\n') +
-              '</pre></div>' +
-              `<p>If you return to the <a href="${req.originalUrl}">access page</a>, you can try ` +
-              `to add them again. However, you should first check the reason for each failure to ` +
-              `grant access (see below). For example, it may be that a user you tried to add ` +
-              `was already a member of the course staff, in which case you will find them in the ` +
-              `list and can update their course content access as appropriate.</p>`;
+            err.info += html`
+              <hr />
+              <p>The following users were <strong>not</strong> added to the course staff:</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${result.not_given_cp.join(',\n')}</pre>
+              </div>
+              <p>
+                If you return to the <a href="${req.originalUrl}">access page</a>, you can try to
+                add them again. However, you should first check the reason for each failure to grant
+                access (see below). For example, it may be that a user you tried to add was already
+                a member of the course staff, in which case you will find them in the list and can
+                update their course content access as appropriate.
+              </p>
+            `.toString();
           }
-          err.info +=
-            '<hr>' +
-            '<p>Here is the reason for each failure to grant access:</p>' +
-            '<div class="container"><pre class="bg-dark text-white rounded p-2">' +
-            result.errors.join('\n\n') +
-            '</pre></div>';
+          err.info += html`
+            <hr />
+            <p>Here is the reason for each failure to grant access:</p>
+            <div class="container">
+              <pre class="bg-dark text-white rounded p-2">${result.errors.join('\n\n')}</pre>
+            </div>
+          `.toString();
           return next(err);
         }
         res.redirect(req.originalUrl);
