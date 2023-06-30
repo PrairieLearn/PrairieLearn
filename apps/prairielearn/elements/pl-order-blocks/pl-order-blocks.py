@@ -593,11 +593,11 @@ def parse(element_html, data):
         element, "grading-method", GRADING_METHOD_DEFAULT
     )
     correct_answers = data["correct_answers"][answer_name]
-    mcq_options = data["params"][answer_name]
+    blocks = data["params"][answer_name]
 
     if grading_mode == "ranking":
         for answer in student_answer:
-            search = next(
+            matching_block = next(
                 (
                     item
                     for item in correct_answers
@@ -605,23 +605,23 @@ def parse(element_html, data):
                 ),
                 None,
             )
-            answer["ranking"] = search["ranking"] if search is not None else None
-            answer["tag"] = search["tag"] if search is not None else None
-            if search is None:
-                search = next(
+            answer["ranking"] = matching_block["ranking"] if matching_block is not None else None
+            answer["tag"] = matching_block["tag"] if matching_block is not None else None
+            if matching_block is None:
+                matching_block = next(
                     (
                         item
-                        for item in mcq_options
+                        for item in blocks
                         if item["inner_html"] == answer["inner_html"]
                     ),
                     None,
                 )
                 answer["distractor_feedback"] = (
-                    search["distractor_feedback"] if search is not None else None
+                    matching_block["distractor_feedback"] if matching_block is not None else None
                 )
     elif grading_mode == "dag":
         for answer in student_answer:
-            search = next(
+            matching_block = next(
                 (
                     item
                     for item in correct_answers
@@ -629,21 +629,21 @@ def parse(element_html, data):
                 ),
                 None,
             )
-            answer["tag"] = search["tag"] if search is not None else None
+            answer["tag"] = matching_block["tag"] if matching_block is not None else None
             answer["distractor_feedback"] = (
-                search["distractor_feedback"] if search is not None else None
+                matching_block["distractor_feedback"] if matching_block is not None else None
             )
-            if search is None:
-                search = next(
+            if matching_block is None:
+                matching_block = next(
                     (
                         item
-                        for item in mcq_options
+                        for item in blocks
                         if item["inner_html"] == answer["inner_html"]
                     ),
                     None,
                 )
                 answer["distractor_feedback"] = (
-                    search["distractor_feedback"] if search is not None else None
+                    matching_block["distractor_feedback"] if matching_block is not None else None
                 )
 
     if pl.get_string_attrib(element, "grading-method", "ordered") == "external":

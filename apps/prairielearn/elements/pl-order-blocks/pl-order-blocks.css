@@ -61,10 +61,13 @@ li.ui-state-highlight {
 }
 
 .pl-order-blocks-answer-container .pl-order-block {
-  margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
+}
+
+.pl-order-blocks-answer-container > .list-group > .pl-order-block {
+  margin-bottom: 5px;
 }
 
 .pl-order-blocks-answer-container > ul {
@@ -75,6 +78,7 @@ div.pl-order-blocks-answer-container {
   display: inline-block;
   border: 1px solid #9e9e9e;
   border-radius: 4px;
+  margin-bottom: 5px;
 }
 
 div.pl-order-blocks-container {
@@ -92,7 +96,6 @@ div.pl-order-blocks-container {
 }
 
 .pl-order-blocks-feedback-icon {
-  color: #6c757d;
   margin-right: 10px;
 }
 
@@ -101,9 +104,9 @@ div.pl-order-blocks-container {
   align-items: center;
 }
 .pl-order-blocks-correctness-badge {
-  margin:4px;
-  width: 20px;
-  height: 20px;
+  margin: 4px;
+  width: 19px;
+  height: 19px;
 }
 
 .pl-order-blocks-pairing-indicator {
