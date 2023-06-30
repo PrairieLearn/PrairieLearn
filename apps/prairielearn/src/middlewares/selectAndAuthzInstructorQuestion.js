@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
 var sqldb = require('@prairielearn/postgres');
+const { idsEqual } = require('../lib/id');
 const error = require('@prairielearn/error');
 
 var sql = sqldb.loadSqlEquiv(__filename);
@@ -17,8 +18,9 @@ module.exports = function (req, res, next) {
       params,
       function (err, result) {
         if (ERR(err, next)) return;
+        if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
         let row = result.rows[0];
-        if (row.question.course_id !== Number(row.course_id) && !row.shared_with_course) {
+        if (!idsEqual(row.question.course_id, row.course_id) && !row.shared_with_course) {
           return next(error.make(403, 'Access denied'));
         }
         _.assign(res.locals, result.rows[0]);

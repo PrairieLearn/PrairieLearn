@@ -11,7 +11,7 @@ columns
     path: text
     question_sharing_enabled: boolean default false
     repository: text
-    sharing_id: text
+    sharing_token: text
     sharing_name: text
     short_name: text
     sync_errors: text

@@ -1,7 +1,7 @@
 -- BLOCK get_course_sharing_info
 SELECT
   sharing_name,
-  sharing_id
+  sharing_token
 FROM
   pl_courses
 WHERE
@@ -27,10 +27,10 @@ GROUP BY
 ORDER BY
   ss.name;
 
--- BLOCK update_sharing_id
+-- BLOCK update_sharing_token
 UPDATE pl_courses
 SET
-  sharing_id = $sharing_id
+  sharing_token = $sharing_token
 WHERE
   id = $course_id;
 
@@ -49,7 +49,7 @@ SELECT
 FROM
   pl_courses
 WHERE
-  sharing_id = $course_sharing_id;
+  sharing_token = $course_sharing_token;
 
 -- BLOCK choose_sharing_name
 UPDATE pl_courses

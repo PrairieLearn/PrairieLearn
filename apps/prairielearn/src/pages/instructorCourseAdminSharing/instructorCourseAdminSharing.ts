@@ -13,8 +13,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 async function generateSharingId(req, res) {
   const newSharingId = uuidv4();
-  return await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_id, {
-    sharing_id: newSharingId,
+  return await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
+    sharing_token: newSharingId,
     course_id: res.locals.course.id,
   });
 }
@@ -29,9 +29,9 @@ router.get(
     });
 
     const sharing_name = result.rows[0].sharing_name;
-    const sharing_id = result.rows[0].sharing_id;
+    const sharing_token = result.rows[0].sharing_token;
 
-    if (!sharing_id) {
+    if (!sharing_token) {
       await generateSharingId(req, res);
       res.redirect(req.originalUrl);
       return;
@@ -41,7 +41,7 @@ router.get(
     res.send(
       InstructorSharing({
         sharing_name: sharing_name,
-        sharing_id: sharing_id,
+        sharing_token: sharing_token,
         sharing_sets: result.rows,
         resLocals: res.locals,
       })
@@ -56,7 +56,7 @@ router.post(
       throw error.make(403, 'Access denied (must be course owner)');
     }
 
-    if (req.body.__action === 'sharing_id_regenerate') {
+    if (req.body.__action === 'sharing_token_regenerate') {
       await generateSharingId(req, res);
       res.redirect(req.originalUrl);
       return;
@@ -68,7 +68,7 @@ router.post(
     } else if (req.body.__action === 'unsafe_course_sharing_set_add') {
       await sqldb.queryZeroOrOneRowAsync(sql.course_sharing_set_add, {
         sharing_set_id: req.body.sharing_set_id,
-        course_sharing_id: req.body.course_sharing_id,
+        course_sharing_token: req.body.course_sharing_token,
       });
     } else if (req.body.__action === 'unsafe_choose_sharing_name') {
       if (

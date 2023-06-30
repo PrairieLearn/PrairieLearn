@@ -131,7 +131,7 @@ describe('Question Sharing', function () {
         method: 'POST',
         headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          __action: 'sharing_id_regenerate',
+          __action: 'sharing_token_regenerate',
           __csrf_token: token,
         }).toString(),
       });
@@ -179,7 +179,7 @@ describe('Question Sharing', function () {
           __action: 'unsafe_course_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
-          course_sharing_id: exampleCourseSharingId,
+          course_sharing_token: exampleCourseSharingId,
         }).toString(),
       });
 

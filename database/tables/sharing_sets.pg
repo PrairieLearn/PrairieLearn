@@ -1,7 +1,7 @@
 columns
     course_id: bigint not null
     id: bigint not null default nextval('sharing_sets_id_seq'::regclass)
-    name: text
+    name: text not null
 
 indexes
     sharing_sets_pkey: PRIMARY KEY (id) USING btree (id)

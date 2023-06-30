@@ -57,8 +57,7 @@ const chooseSharingNameButton = (resLocals) => {
       type="button"
       class="btn btn-xs btn-secondary mx-2"
       id="chooseSharingName"
-      tabindex="0"
-      data-toggle="popover"
+      data-toggle=f"popover"
       data-container="body"
       data-html="true"
       data-placement="auto"
@@ -73,7 +72,7 @@ const chooseSharingNameButton = (resLocals) => {
   `;
 };
 
-export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }) => {
+export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, resLocals }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -103,16 +102,16 @@ export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resL
                 <tr>
                   <th>Sharing ID</th>
                   <td>
-                    ${sharing_id}
+                    ${sharing_token}
                     <button
                       class="btn btn-xs btn-secondary mx-2"
-                      onclick="navigator.clipboard.writeText('${sharing_id}');"
+                      onclick="navigator.clipboard.writeText('${sharing_token}');"
                     >
                       <i class="fa fa-copy"></i>
                       <span>Copy</span>
                     </button>
                     <form name="sharing-id-regenerate" method="POST" class="d-inline">
-                      <input type="hidden" name="__action" value="sharing_id_regenerate" />
+                      <input type="hidden" name="__action" value="sharing_token_regenerate" />
                       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                       <button role="button" type="submit" class="btn btn-xs btn-secondary">
                         <i class="fa fa-rotate"></i>
@@ -136,7 +135,6 @@ export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resL
                     type="button"
                     class="btn btn-light btn-sm ml-auto"
                     id="courseSharingSetAdd"
-                    tabindex="0"
                     data-toggle="popover"
                     data-container="body"
                     data-html="true"
@@ -213,7 +211,7 @@ export const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resL
                                 <input
                                   class="form-control form-control-sm"
                                   type="text"
-                                  name="course_sharing_id"
+                                  name="course_sharing_token"
                                   required
                                 />
                                 <button class="btn-sm btn-primary" type="Submit">Add Course</button>
