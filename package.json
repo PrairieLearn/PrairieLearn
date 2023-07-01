@@ -27,7 +27,7 @@
     "htmlhint": "^1.1.4",
     "jsdoc": "^4.0.2",
     "prettier": "2.8.8",
-    "pyright": "^1.1.311",
+    "pyright": "^1.1.316",
     "s3rver": "^3.7.1",
     "turbo": "^1.10.1",
     "typescript": "^5.1.3"
