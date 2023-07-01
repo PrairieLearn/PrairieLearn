@@ -5,7 +5,7 @@ import os
 import random
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict, TypedDict
+from typing import Any, TypedDict
 
 import chevron
 import lxml.html
@@ -89,8 +89,8 @@ class OrderBlocksAnswerData(TypedDict):
 
 
 def filter_multiple_from_array(
-    data: list[Dict[str, Any]], keys: list[str]
-) -> list[Dict[str, Any]]:
+    data: list[dict[str, Any]], keys: list[str]
+) -> list[dict[str, Any]]:
     return [{key: item[key] for key in keys} for item in data]
 
 
@@ -103,7 +103,7 @@ def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
 
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[Dict[str, list[str]], Dict[str, str]]:
+) -> tuple[dict[str, list[str]], dict[str, str]]:
     depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
@@ -175,8 +175,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if (
         grading_method is not GradingMethodType.DAG
         and grading_method is not GradingMethodType.RANKING
-        and pl.get_enum_attrib(element, "partial-credit", PartialCreditType, None)
-        is not None
+        and pl.get_enum_attrib(element, "partial-credit", PartialCreditType) is not None
     ):
         raise Exception(
             "You may only specify partial credit options in the DAG and ranking grading modes."
@@ -193,7 +192,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
-    if format is not FormatType.DEFAULT and code_language is not None:
+    if format is FormatType.DEFAULT and code_language is not None:
         raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers = []
@@ -366,6 +365,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["index"])
     elif source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
+    else:
+        assert_never(source_blocks_order)
 
     for option in all_blocks:
         option["uuid"] = pl.get_uuid()
@@ -418,7 +419,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
-    format = pl.get_string_attrib(element, "format", "default")
+    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
 
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
@@ -649,12 +650,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             answer["tag"] = search["tag"] if search is not None else None
 
-    if (
-        pl.get_enum_attrib(
-            element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-        )
-        == GradingMethodType.EXTERNAL
-    ):
+    if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
             if html_tags.tag == "pl-answer":
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])

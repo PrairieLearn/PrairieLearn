@@ -1,7 +1,7 @@
 import itertools
 from collections import Counter
 from copy import deepcopy
-from typing import Iterable, Mapping, Optional
+from typing import Any, Iterable, Mapping, Optional
 
 import networkx as nx
 
@@ -169,7 +169,7 @@ def grade_dag(
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
-def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable):
+def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
     https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
     """
@@ -202,7 +202,7 @@ def lcs_partial_credit(
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    trans_clos = nx.algorithms.dag.transitive_closure(graph)  # type: ignore
+    trans_clos = nx.transitive_closure(graph)
     submission_no_distractors = [node for node in submission if node in depends_graph]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before

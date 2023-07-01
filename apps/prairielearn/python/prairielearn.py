@@ -172,11 +172,7 @@ def get_enum_attrib(
     provided, must be a member of the given enum.
     """
 
-    enum_val, is_default = (
-        _get_attrib(element, name)
-        if default is None
-        else _get_attrib(element, name, default)
-    )
+    enum_val, is_default = _get_attrib(element, name, default)
 
     # Default doesn't need to be converted, already a value of the enum
     if is_default:
