@@ -37,7 +37,6 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
-CUSTOM_PLACEHOLDER_DEFAULT = None
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
@@ -190,9 +189,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
             ).strip()
 
-        custom_placeholder = pl.get_string_attrib(
-            element, "placeholder", CUSTOM_PLACEHOLDER_DEFAULT
-        )
+        custom_placeholder = pl.get_string_attrib(element, "placeholder", None)
         if custom_placeholder is not None:
             placeholder_text = custom_placeholder
         elif grading_mode is GradingMode.ONLY_UNITS:
