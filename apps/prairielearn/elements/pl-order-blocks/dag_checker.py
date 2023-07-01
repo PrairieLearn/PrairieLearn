@@ -6,7 +6,9 @@ from typing import Iterable, Mapping, Optional
 import networkx as nx
 
 
-def validate_grouping(graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]):
+def validate_grouping(
+    graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]
+) -> bool:
     for node in graph:
         group_tag = group_belonging.get(node)
         if group_tag is None:
@@ -120,7 +122,7 @@ def dag_to_nx(
 
 def add_edges_for_groups(
     graph: nx.DiGraph, group_belonging: Mapping[str, Optional[str]]
-):
+) -> None:
     groups = {
         group: [tag for tag in group_belonging if group_belonging[tag] == group]
         for group in set(group_belonging.values())
@@ -180,7 +182,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
 def lcs_partial_credit(
     submission: list[str],
     depends_graph: Mapping[str, list[str]],
-    group_belonging: Mapping[str, str],
+    group_belonging: Mapping[str, Optional[str]],
 ) -> int:
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
