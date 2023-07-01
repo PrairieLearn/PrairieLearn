@@ -31,7 +31,7 @@ def validate_grouping(
 
 def solve_dag(
     depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[str]]
-):
+) -> list[str]:
     """Solve the given problem
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
