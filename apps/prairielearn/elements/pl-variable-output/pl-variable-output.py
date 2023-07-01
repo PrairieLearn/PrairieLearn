@@ -117,24 +117,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             var_data = pl.from_json(var_data)
 
             # Get comment, if it exists
-            var_matlab_comment = ""
-            var_mathematica_comment = ""
-            var_python_comment = ""
-            var_r_comment = ""
-            var_sympy_comment = ""
-            if pl.has_attrib(child, "comment"):
-                var_comment = pl.get_string_attrib(child, "comment")
+            var_comment = pl.get_string_attrib(child, "comment", None)
+
+            if var_comment is None:
+                var_matlab_comment = ""
+                var_mathematica_comment = ""
+                var_python_comment = ""
+                var_r_comment = ""
+                var_sympy_comment = ""
+            else:
                 var_matlab_comment = f" % {var_comment}"
                 var_mathematica_comment = f" (* {var_comment} *)"
                 var_python_comment = f" # {var_comment}"
                 var_r_comment = f" # {var_comment}"
                 var_sympy_comment = f" # {var_comment}"
 
-            # Get digit for child, if it exists
-            if not pl.has_attrib(child, "digits"):
-                var_digits = digits
-            else:
-                var_digits = pl.get_integer_attrib(child, "digits")
+            # Get digit for child, if it exists (outer digits is default)
+            var_digits = pl.get_integer_attrib(child, "digits", digits)
 
             # Assembling Python array formatting
             if np.isscalar(var_data):

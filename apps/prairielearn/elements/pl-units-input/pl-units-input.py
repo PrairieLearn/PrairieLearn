@@ -37,6 +37,7 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
+CUSTOM_PLACEHOLDER_DEFAULT = None
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
@@ -46,8 +47,9 @@ def get_with_units_atol(
 ) -> str:
     """Returns the atol string for use in the "with-units" grading mode."""
 
-    if pl.has_attrib(element, "atol"):
-        return pl.get_string_attrib(element, "atol")
+    atol = pl.get_string_attrib(element, "correct-answer", None)
+    if atol is not None:
+        return atol
 
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer = data["correct_answers"].get(name)
@@ -188,8 +190,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
             ).strip()
 
-        if pl.has_attrib(element, "placeholder"):
-            placeholder_text = pl.get_string_attrib(element, "placeholder")
+        custom_placeholder = pl.get_string_attrib(
+            element, "placeholder", CUSTOM_PLACEHOLDER_DEFAULT
+        )
+        if custom_placeholder is not None:
+            placeholder_text = custom_placeholder
         elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
         elif grading_mode is GradingMode.WITH_UNITS:

@@ -68,11 +68,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len(variables) > 1:
         raise ValueError(f"Only one variable is supported for question {name}")
 
-    if pl.has_attrib(element, "correct-answer"):
+    a_true = pl.get_string_attrib(element, "correct-answer", None)
+    if a_true is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
 
-        a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
         try:
             phs.convert_string_to_sympy(
