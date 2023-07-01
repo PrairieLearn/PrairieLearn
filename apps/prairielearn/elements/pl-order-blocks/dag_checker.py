@@ -1,7 +1,7 @@
 import itertools
 from collections import Counter
 from copy import deepcopy
-from typing import Any, Iterable, Mapping, Optional
+from typing import Iterable, Mapping, Optional
 
 import networkx as nx
 
