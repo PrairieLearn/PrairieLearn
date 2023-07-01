@@ -16,7 +16,7 @@
     "@changesets/cli": "^2.26.1",
     "@prairielearn/prettier-plugin-sql": "workspace:^",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
-    "@typescript-eslint/parser": "^5.59.8",
+    "@typescript-eslint/parser": "^5.60.1",
     "eslint": "^8.41.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-import-resolver-typescript": "^3.5.5",
