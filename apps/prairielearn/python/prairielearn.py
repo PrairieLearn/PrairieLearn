@@ -183,7 +183,7 @@ def get_enum_attrib(
 
     if enum_val != enum_val.lower():
         raise ValueError(
-            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
+            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
         )
 
     upper_enum_str = enum_val.upper()
