@@ -14,28 +14,6 @@ from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml import etree
 from typing_extensions import NotRequired, assert_never
 
-PL_ANSWER_CORRECT_DEFAULT = True
-PL_ANSWER_INDENT_DEFAULT = -1
-ALLOW_BLANK_DEFAULT = False
-INDENTION_DEFAULT = False
-MAX_INDENTION_DEFAULT = 4
-SOURCE_HEADER_DEFAULT = "Drag from here:"
-SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
-FILE_NAME_DEFAULT = "user_code.py"
-SOLUTION_PLACEMENT_DEFAULT = "right"
-WEIGHT_DEFAULT = 1
-TAB_SIZE_PX = 50
-
-FIRST_WRONG_FEEDBACK = {
-    "incomplete": "Your answer is correct so far, but it is incomplete.",
-    "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
-        The problem is most likely one of the following:
-        <ul><li> This block is not a part of the correct solution </li>
-        <li>This block needs to come after a block that did not appear before it </li>""",
-    "indentation": r"""<li>This line is indented incorrectly </li>""",
-    "block-group": r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>""",
-}
-
 
 class GradingMethodType(Enum):
     UNORDERED = "unordered"
@@ -66,11 +44,6 @@ class FormatType(Enum):
     CODE = "code"
 
 
-GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
-SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
-FEEDBACK_DEFAULT = FeedbackType.NONE
-
-
 class GroupInfo(TypedDict):
     tag: Optional[str]
     depends: Optional[list[str]]
@@ -87,6 +60,31 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     uuid: str
+
+
+GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
+SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
+FEEDBACK_DEFAULT = FeedbackType.NONE
+PL_ANSWER_CORRECT_DEFAULT = True
+PL_ANSWER_INDENT_DEFAULT = -1
+ALLOW_BLANK_DEFAULT = False
+INDENTION_DEFAULT = False
+MAX_INDENTION_DEFAULT = 4
+SOURCE_HEADER_DEFAULT = "Drag from here:"
+SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
+FILE_NAME_DEFAULT = "user_code.py"
+SOLUTION_PLACEMENT_DEFAULT = "right"
+WEIGHT_DEFAULT = 1
+TAB_SIZE_PX = 50
+FIRST_WRONG_FEEDBACK = {
+    "incomplete": "Your answer is correct so far, but it is incomplete.",
+    "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
+        The problem is most likely one of the following:
+        <ul><li> This block is not a part of the correct solution </li>
+        <li>This block needs to come after a block that did not appear before it </li>""",
+    "indentation": r"""<li>This line is indented incorrectly </li>""",
+    "block-group": r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>""",
+}
 
 
 def filter_multiple_from_array(
@@ -198,7 +196,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers: list[OrderBlocksAnswerData] = []
-    incorrect_answers = []
+    incorrect_answers: list[OrderBlocksAnswerData] = []
     used_tags = set()
 
     def prepare_tag(
