@@ -26,7 +26,7 @@
     "@opentelemetry/instrumentation-express": "^0.32.3",
     "@opentelemetry/instrumentation-http": "^0.39.1",
     "@opentelemetry/instrumentation-pg": "^0.35.2",
-    "@opentelemetry/instrumentation-redis": "^0.34.6",
+    "@opentelemetry/instrumentation-redis": "^0.34.7",
     "@opentelemetry/resource-detector-aws": "^1.2.4",
     "@opentelemetry/resources": "^1.13.0",
     "@opentelemetry/sdk-metrics": "^1.13.0",
