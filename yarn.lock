@@ -3274,7 +3274,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.6
-    "@sa11y/format": ^5.0.1
+    "@sa11y/format": ^5.2.0
     "@sentry/profiling-node": ^0.3.0
     "@sentry/tracing": ^7.54.0
     "@socket.io/redis-adapter": ^8.2.1
@@ -3698,32 +3698,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sa11y/common@npm:5.0.1":
-  version: 5.0.1
-  resolution: "@sa11y/common@npm:5.0.1"
+"@sa11y/common@npm:5.2.0":
+  version: 5.2.0
+  resolution: "@sa11y/common@npm:5.2.0"
   dependencies:
     axe-core: 4.7.0
-  checksum: 944e23a0fc524f7ba3f51a32fda604d3bc6682550cb4387ba9ac7d16662d432ff5cbcbe682b30e23318fae629bcb850f4290c4d82ad49d6b816eb23e66ec434c
+  checksum: d3d30628776bc0cbadcfcc7c9d5d2e6b7234d9337aa6e70418518695c05650d99b587a7ad3853ba5869a4703a875636bf79605116c907ad8d251fc519f77e7da
   languageName: node
   linkType: hard
 
-"@sa11y/format@npm:^5.0.1":
-  version: 5.0.1
-  resolution: "@sa11y/format@npm:5.0.1"
+"@sa11y/format@npm:^5.2.0":
+  version: 5.2.0
+  resolution: "@sa11y/format@npm:5.2.0"
   dependencies:
-    "@sa11y/common": 5.0.1
-    "@sa11y/preset-rules": 5.0.1
+    "@sa11y/common": 5.2.0
+    "@sa11y/preset-rules": 5.2.0
     axe-core: 4.7.0
-  checksum: 7bcfd410cb9053bb0e0b68c3003a36018b5b9fc0bee392ce52d3a7357f5e62512d2921ceacca4e6efb33de8c7f298afb2470312742a7c303597ffe6b22bc054f
+  checksum: db8eef5706ff62bedf25b2aa2bfed7f3a718af4f42d282a50b49db40c0ba16c61ebc7b4c12cb34d84888a56c9487e7fb2742f30e5ba0c2e52adb1e8baca19abf
   languageName: node
   linkType: hard
 
-"@sa11y/preset-rules@npm:5.0.1":
-  version: 5.0.1
-  resolution: "@sa11y/preset-rules@npm:5.0.1"
+"@sa11y/preset-rules@npm:5.2.0":
+  version: 5.2.0
+  resolution: "@sa11y/preset-rules@npm:5.2.0"
   dependencies:
-    "@sa11y/common": 5.0.1
-  checksum: 22db7d7b90c77aace6205d707bd9738e6ef94b703db876d2f4e7a951ef9a76ba83ba95281147167bffae189989ce35f5cac40dbc388501693e8dd98e0f47f68e
+    "@sa11y/common": 5.2.0
+  checksum: 49dab48fdd139f31822e3e5b8e81bc0507754726cae8b6fcd0e0fcb92572654ebbed40bdbbd120abf963bef70f1cffe18a643a6348586b198dd87fdc24248773
   languageName: node
   linkType: hard
 
