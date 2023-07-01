@@ -29,7 +29,7 @@ pytest-lazy-fixture==0.6.3
 pytest-repeat==0.9.1
 pytest==7.3.1
 recommonmark==0.7.1
-regex==2023.5.5
+regex==2023.6.3
 rpy2==3.5.12
 scikit-learn==1.2.2
 scipy==1.10.1
