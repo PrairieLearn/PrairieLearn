@@ -144,7 +144,7 @@
     "serve-favicon": "^2.5.0",
     "showdown": "^2.1.0",
     "socket.io": "^4.6.2",
-    "socket.io-client": "^4.6.2",
+    "socket.io-client": "^4.7.1",
     "streamifier": "^0.1.1",
     "strip-ansi": "^6.0.1",
     "tablesorter": "^2.31.3",
