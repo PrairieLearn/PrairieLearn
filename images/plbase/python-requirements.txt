@@ -33,7 +33,7 @@ regex==2023.5.5
 rpy2==3.5.12
 scikit-learn==1.2.2
 scipy==1.10.1
-sphinx-markdown-builder==0.5.5
+sphinx-markdown-builder==0.6.0
 sphinx==7.0.1
 statsmodels==0.14.0
 sympy==1.12
