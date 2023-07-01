@@ -123,7 +123,7 @@
     "passport": "^0.6.0",
     "passport-azure-ad": "^4.3.5",
     "passport-saml": "^3.2.4",
-    "pem": "^1.14.7",
+    "pem": "^1.14.8",
     "pg": "^8.11.0",
     "plist": "^3.0.6",
     "popper.js": "^1.16.1",
