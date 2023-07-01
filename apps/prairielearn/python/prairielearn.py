@@ -177,13 +177,14 @@ def get_enum_attrib(
         if default is None
         else _get_attrib(element, name, default)
     )
+
     # Default doesn't need to be converted, already a value of the enum
     if is_default:
         return enum_val
 
     if enum_val != enum_val.lower():
         raise ValueError(
-            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
+            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
         )
 
     upper_enum_str = enum_val.upper()
@@ -191,7 +192,7 @@ def get_enum_attrib(
 
     if upper_enum_str not in accepted_names:
         raise ValueError(
-            f"{enum_val} is not a valid type, must be one of: {', '.join(str(member.value) for member in enum_type)}."
+            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
         )
 
     return enum_type[upper_enum_str.replace("-", "_")]
