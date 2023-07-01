@@ -1,6 +1,6 @@
 automata-lib==7.1.0
 beautifulsoup4==4.12.2
-bokeh==3.1.1
+bokeh==3.2.0
 colormath==3.0.0
 defusedxml==0.7.1
 folium==0.14.0
