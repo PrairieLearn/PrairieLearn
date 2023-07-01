@@ -160,7 +160,7 @@ def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
     enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
+    *args,
 ) -> EnumT:
     """
     Returns the named attribute for the element parsed as an enum,
@@ -172,7 +172,7 @@ def get_enum_attrib(
     provided, must be a member of the given enum.
     """
 
-    enum_val, is_default = _get_attrib(element, name, default)
+    enum_val, is_default = _get_attrib(element, name, *args)
 
     # Default doesn't need to be converted, already a value of the enum
     if is_default:
