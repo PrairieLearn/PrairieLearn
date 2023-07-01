@@ -113,7 +113,7 @@
     "multer": "^1.4.5-lts.1",
     "mustache": "^4.2.0",
     "ncp": "^2.0.0",
-    "node-fetch": "^2.6.11",
+    "node-fetch": "^2.6.12",
     "nodemon": "^2.0.22",
     "numeric": "^1.2.6",
     "oauth-signature": "^1.5.0",
