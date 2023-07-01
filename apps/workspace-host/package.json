@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.342.0",
-    "@aws-sdk/lib-storage": "^3.342.0",
+    "@aws-sdk/lib-storage": "^3.363.0",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/logger": "workspace:^",
