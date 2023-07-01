@@ -3310,7 +3310,7 @@ __metadata:
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.1
     ace-builds: ^1.22.0
-    ace-code: ^1.22.0
+    ace-code: ^1.23.1
     ajv: ^8.12.0
     ansi_up: ^5.2.1
     archiver: ^5.3.1
@@ -4870,10 +4870,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-code@npm:^1.22.0":
-  version: 1.22.0
-  resolution: "ace-code@npm:1.22.0"
-  checksum: 54467ff853c64dc2fa2ab0836614a730a53ed0430397069ebce995ff265655b2fb819cca6547f54c5fb042262a745679e56b17372f9fbbbf40ffc38e41aab032
+"ace-code@npm:^1.23.1":
+  version: 1.23.1
+  resolution: "ace-code@npm:1.23.1"
+  checksum: abf6abfb922f17e6695ee46b54b1126247a4550098dbeb8b8f268429c2e1f303ae09cad9bd467a77d86f19814592b35ab0f5125afa08e50dacaf3a611c7fae28
   languageName: node
   linkType: hard
 
