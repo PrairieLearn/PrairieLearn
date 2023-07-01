@@ -60,6 +60,10 @@ class PartialCreditType(Enum):
     NONE = "none"
     LCS = "lcs"
 
+class FormatType(Enum):
+    DEFAULT = "default"
+    CODE = "code"
+
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
@@ -186,9 +190,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
-    format = pl.get_string_attrib(element, "format", "default")
+    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
-    if format != "code" and code_language is not None:
+    if format is not FormatType.DEFAULT and code_language is not None:
         raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers = []
@@ -206,7 +210,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 Any html tags nested inside <pl-block-group> must be <pl-answer>"
             )
 
-        if grading_method == "external":
+        if grading_method is GradingMethodType.EXTERNAL:
             pl.check_attribs(
                 html_tags, required_attribs=[], optional_attribs=["correct"]
             )
@@ -214,7 +218,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             pl.check_attribs(
                 html_tags, required_attribs=[], optional_attribs=["correct", "indent"]
             )
-        elif grading_method == GradingMethodType.RANKING:
+        elif grading_method is GradingMethodType.RANKING:
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
@@ -226,7 +230,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "distractor-for",
                 ],
             )
-        elif grading_method == GradingMethodType.DAG:
+        elif grading_method is GradingMethodType.DAG:
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
@@ -266,7 +270,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 "<pl-answer> should not specify indentation if indentation is disabled."
             )
 
-        if format == "code":
+        if format is FormatType.CODE:
             inner_html = (
                 "<pl-code"
                 + (' language="' + code_language + '"' if code_language else "")
@@ -295,7 +299,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == "pl-block-group":
-            if grading_method != GradingMethodType.DAG:
+            if grading_method is not GradingMethodType.DAG:
                 raise Exception(
                     'Block groups only supported in the "dag" grading mode.'
                 )
@@ -320,7 +324,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             prepare_tag(html_tags, index)
             index += 1
 
-    if grading_method != "external" and len(correct_answers) == 0:
+    if grading_method is not GradingMethodType.EXTERNAL and len(correct_answers) == 0:
         raise Exception("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
@@ -415,7 +419,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_string_attrib(element, "format", "default")
 
-    block_formatting = "pl-order-blocks-code" if format == "code" else "list-group-item"
+    block_formatting = "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
     grading_method = pl.get_enum_attrib(
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
@@ -456,9 +460,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
         )
 
-        if grading_method == "unordered":
+        if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
-        elif grading_method != "external":
+        elif grading_method is not GradingMethodType.EXTERNAL:
             help_text += "<br>The ordering of your answer matters and is graded."
         else:
             help_text += "<br>Your answer will be autograded; be sure to indent and order your answer properly."
@@ -490,7 +494,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return html
 
     elif data["panel"] == "submission":
-        if grading_method == "external":
+        if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
         student_submission = ""
@@ -547,7 +551,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             except FileNotFoundError:
                 return "The reference solution is not provided for this question."
 
-        if grading_method == "unordered":
+        if grading_method is GradingMethodType.UNORDERED:
             ordering_message = "in any order"
         elif (
             grading_method == GradingMethodType.DAG
@@ -618,7 +622,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
     correct_answers = data["correct_answers"][answer_name]
 
-    if grading_method == GradingMethodType.RANKING:
+    if grading_method is GradingMethodType.RANKING:
         for answer in student_answer:
             search = next(
                 (
@@ -630,7 +634,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             answer["ranking"] = search["ranking"] if search is not None else None
             answer["tag"] = search["tag"] if search is not None else None
-    elif grading_method == GradingMethodType.DAG:
+    elif grading_method is GradingMethodType.DAG:
         for answer in student_answer:
             search = next(
                 (
@@ -712,7 +716,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 else:
                     ans["inner_html"] = None
 
-    if grading_method == "unordered":
+    if grading_method is GradingMethodType.UNORDERED:
         true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
         student_answer_uuids = set(ans["uuid"] for ans in student_answer)
         correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
@@ -723,7 +727,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method == GradingMethodType.ORDERED:
+    elif grading_method is GradingMethodType.ORDERED:
         student_answer = [ans["inner_html"] for ans in student_answer]
         true_answer = [ans["inner_html"] for ans in true_answer_list]
         final_score = 1 if student_answer == true_answer else 0
@@ -733,7 +737,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method == GradingMethodType.RANKING:
+        if grading_method is GradingMethodType.RANKING:
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
@@ -753,7 +757,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 depends_graph[tag] = cur_rank_depends
                 prev_rank = ranking
 
-        elif grading_method == GradingMethodType.DAG:
+        elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
 
         num_initial_correct, true_answer_length = grade_dag(
@@ -845,18 +849,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         )
         answer.pop(0)
         score = 0
-        if grading_method == "unordered" or (
-            grading_method is GradingMethodType.DAG
-            or grading_method is GradingMethodType.RANKING
-            and partial_credit_type == PartialCreditType.LCS
+        if grading_method is GradingMethodType.UNORDERED or (
+            (grading_method is GradingMethodType.DAG
+            or grading_method is GradingMethodType.RANKING)
+            and partial_credit_type is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
-        first_wrong = (
-            0
-            if grading_method is GradingMethodType.DAG
-            or grading_method is GradingMethodType.RANKING
-            else -1
-        )
 
         if (
             grading_method == GradingMethodType.DAG
