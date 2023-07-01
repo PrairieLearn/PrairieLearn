@@ -60,6 +60,7 @@ class PartialCreditType(Enum):
     NONE = "none"
     LCS = "lcs"
 
+
 class FormatType(Enum):
     DEFAULT = "default"
     CODE = "code"
@@ -419,7 +420,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_string_attrib(element, "format", "default")
 
-    block_formatting = "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
+    block_formatting = (
+        "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
+    )
     grading_method = pl.get_enum_attrib(
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
@@ -850,8 +853,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
-            (grading_method is GradingMethodType.DAG
-            or grading_method is GradingMethodType.RANKING)
+            (
+                grading_method is GradingMethodType.DAG
+                or grading_method is GradingMethodType.RANKING
+            )
             and partial_credit_type is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
