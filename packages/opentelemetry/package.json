@@ -22,7 +22,7 @@
     "@opentelemetry/instrumentation": "^0.39.1",
     "@opentelemetry/instrumentation-aws-sdk": "^0.34.2",
     "@opentelemetry/instrumentation-connect": "^0.31.3",
-    "@opentelemetry/instrumentation-dns": "^0.31.4",
+    "@opentelemetry/instrumentation-dns": "^0.31.5",
     "@opentelemetry/instrumentation-express": "^0.32.3",
     "@opentelemetry/instrumentation-http": "^0.39.1",
     "@opentelemetry/instrumentation-pg": "^0.35.2",
