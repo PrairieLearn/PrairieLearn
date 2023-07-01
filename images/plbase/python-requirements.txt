@@ -22,7 +22,7 @@ PuLP==2.7.0
 pycryptodome==3.18.0
 Pygments==2.15.1
 pygments-ansi-color==0.3.0
-pygraphviz==1.6
+pygraphviz==1.11
 pyquaternion==0.9.9
 pytest-cov==4.1.0
 pytest-lazy-fixture==0.6.3
