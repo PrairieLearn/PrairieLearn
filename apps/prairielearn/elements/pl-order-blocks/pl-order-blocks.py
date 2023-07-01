@@ -175,8 +175,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if (
         grading_method is not GradingMethodType.DAG
         and grading_method is not GradingMethodType.RANKING
-        and pl.get_enum_attrib(element, "partial-credit", PartialCreditType, None)
-        is not None
+        and pl.has_attrib(element, "partial-credit")
     ):
         raise Exception(
             "You may only specify partial credit options in the DAG and ranking grading modes."
