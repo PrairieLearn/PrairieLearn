@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "@types/prettier": "^2.7.3",
-    "sql-formatter": "^12.2.1"
+    "sql-formatter": "^12.2.3"
   }
 }
