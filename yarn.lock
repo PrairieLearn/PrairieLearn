@@ -3231,7 +3231,7 @@ __metadata:
     mocha: ^10.2.0
     multipipe: ^4.0.0
     pg: ^8.11.0
-    pg-cursor: ^2.10.0
+    pg-cursor: ^2.10.1
     pg-pool: ^3.6.0
     ts-node: ^10.9.1
     typescript: ^5.1.3
@@ -13215,12 +13215,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-cursor@npm:^2.10.0":
-  version: 2.10.0
-  resolution: "pg-cursor@npm:2.10.0"
+"pg-cursor@npm:^2.10.1":
+  version: 2.10.1
+  resolution: "pg-cursor@npm:2.10.1"
   peerDependencies:
     pg: ^8
-  checksum: c2dc43da70bca6873d3b23fbbc70b42e27ebd4205afbf6ea29ab0a9293d42943f635a8ea7892ecf77fec8d75df3aaa3ca33d59d3fc4db826f9b7553ae0383824
+  checksum: 2cd6d4a905da930548eed4cd79a1f9e69242149fb53d9885b5edd7530a524729b661e11d5f181dc87d7c01797db8d518de1a8702d44c15c0c113c1e7c16d4da8
   languageName: node
   linkType: hard
 
