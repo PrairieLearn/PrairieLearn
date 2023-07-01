@@ -37,7 +37,7 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
-    "@types/node": "^18.16.16",
+    "@types/node": "^18.16.19",
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
     "nodemon": "^2.0.22",
