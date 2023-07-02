@@ -165,7 +165,6 @@ window.PLOrderBlocks = function (uuid, options) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
-      $(dropzoneElementId)[0].style.background = null;
 
       setAnswer();
       correctPairing(ui);
