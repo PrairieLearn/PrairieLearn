@@ -120,7 +120,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function drawIndentLocationLines(dropzoneElementId) {
-    $(dropzoneElementId)[0].style.background = 'linear-gradient(#000, #000) no-repeat, '
+    $(dropzoneElementId)[0].style.background = 'linear-gradient(#4F4F4F, #4F4F4F) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
     $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
