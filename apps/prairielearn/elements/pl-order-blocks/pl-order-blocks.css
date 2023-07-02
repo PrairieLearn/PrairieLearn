@@ -51,11 +51,6 @@ li.ui-state-highlight {
   margin-bottom: 0px;
 }
 
-div.pl-order-blocks-container {
-  display: flex;
-  flex-direction: column;
-}
-
 .pl-order-blocks-container .pl-order-block,
 .pl-order-blocks-pairing-indicator .pl-order-block,
 .pl-order-blocks-answer-container li {
@@ -81,6 +76,8 @@ div.pl-order-blocks-container {
   border-radius: 4px;
   background-color: #eeeeee;
   border: 1px solid #9e9e9e;
+  display: flex;
+  flex-direction: column;
 }
 
 div.pl-order-blocks-header {
