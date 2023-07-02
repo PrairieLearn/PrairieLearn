@@ -2,7 +2,7 @@ div.pl-order-blocks-right {
   /* This style applies to the DIV that holds each dropzone column */
   /* This particular style renders the dropzones in a single row horizontally */
   width: calc(50% - 16px);
-  margin: 8px
+  margin: 8px;
 }
 
 div.pl-order-blocks-bottom {
@@ -23,8 +23,7 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-
-ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag){
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
