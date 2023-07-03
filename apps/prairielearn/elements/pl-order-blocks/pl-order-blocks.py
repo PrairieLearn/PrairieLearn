@@ -513,31 +513,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             FeedbackType.FIRST_WRONG,
             FeedbackType.FIRST_WRONG_VERBOSE,
         ]
-        student_submission = ""
-        score = None
-        feedback = None
+        student_submission = [
+            {
+                "inner_html": attempt["inner_html"],
+                "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
+                "badge_type": attempt["badge_type"] if show_first_wrong else "",
+                "icon": attempt["icon"] if show_first_wrong else "",
+                "first_wrong": show_first_wrong,
+                "distractor_feedback": attempt.get("distractor_feedback"),
+                "show_distractor_feedback": (
+                    attempt.get("distractor_feedback") is not None
+                )
+                and (attempt["badge_type"] == "badge-danger")
+                and (feedback_type is FeedbackType.FIRST_WRONG_VERBOSE),
+            }
+            for i, attempt in enumerate(data["submitted_answers"][answer_name])
+        ]
 
-        if answer_name in data["submitted_answers"]:
-            student_submission = [
-                {
-                    "inner_html": attempt["inner_html"],
-                    "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
-                    "badge_type": attempt["badge_type"] if show_first_wrong else "",
-                    "icon": attempt["icon"] if show_first_wrong else "",
-                    "first_wrong": show_first_wrong,
-                    "distractor_feedback": attempt.get("distractor_feedback"),
-                    "show_distractor_feedback": (
-                        attempt.get("distractor_feedback") is not None
-                    )
-                    and (i <= data["partial_scores"][answer_name]["first_wrong"])
-                    and (feedback_type is FeedbackType.FIRST_WRONG_VERBOSE),
-                }
-                for i, attempt in enumerate(data["submitted_answers"][answer_name])
-            ]
-
-        if answer_name in data["partial_scores"]:
-            score = data["partial_scores"][answer_name]["score"]
-            feedback = data["partial_scores"][answer_name].get("feedback", "")
+        score = data["partial_scores"][answer_name]["score"]
+        feedback = data["partial_scores"][answer_name].get("feedback", "")
 
         html_params = {
             "submission": True,
