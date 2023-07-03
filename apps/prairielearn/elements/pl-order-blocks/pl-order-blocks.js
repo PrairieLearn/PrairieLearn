@@ -126,7 +126,7 @@ window.PLOrderBlocks = function (uuid, options) {
     $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
     $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
       { length: maxIndent + 1 },
-      (value, index) => {
+      (_, index) => {
         return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
       }
     ).join(', ');
