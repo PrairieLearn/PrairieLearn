@@ -5,7 +5,7 @@ import os
 import random
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Optional, TypedDict
+from typing import Optional, TypedDict
 
 import chevron
 import lxml.html
@@ -521,11 +521,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "icon": attempt["icon"] if show_first_wrong else "",
                 "first_wrong": show_first_wrong,
                 "distractor_feedback": attempt.get("distractor_feedback"),
-                "show_distractor_feedback": (
-                    attempt.get("distractor_feedback") is not None
-                )
-                and (attempt["badge_type"] == "badge-danger")
-                and (feedback_type is FeedbackType.FIRST_WRONG_VERBOSE),
+                "show_distractor_feedback": "distractor_feedback" in attempt
+                and attempt["badge_type"] == "badge-danger"
+                and feedback_type is FeedbackType.FIRST_WRONG_VERBOSE,
             }
             for i, attempt in enumerate(data["submitted_answers"][answer_name])
         ]
@@ -837,9 +835,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             FeedbackType.FIRST_WRONG,
             FeedbackType.FIRST_WRONG_VERBOSE,
         ]:
-            for i, block in enumerate(student_answer):
-                if i >= num_initial_correct:
-                    break
+            for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "badge-success"
                 block["icon"] = "fa-check"
 
