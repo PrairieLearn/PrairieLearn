@@ -522,7 +522,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "first_wrong": show_first_wrong,
                 "distractor_feedback": attempt.get("distractor_feedback"),
                 "show_distractor_feedback": "distractor_feedback" in attempt
-                and attempt["badge_type"] == "badge-danger"
+                and attempt.get("badge_type") == "badge-danger"
                 and feedback_type is FeedbackType.FIRST_WRONG_VERBOSE,
             }
             for i, attempt in enumerate(data["submitted_answers"].get(answer_name, []))
@@ -671,7 +671,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     if block["inner_html"] == answer["inner_html"]
                 )
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
-
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
@@ -922,7 +921,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             else -1
         )
 
-        if grading_method is GradingMethodType.DAG and feedback_type in [
+        if grading_method in [
+            GradingMethodType.DAG,
+            GradingMethodType.RANKING,
+        ] and feedback_type in [
             FeedbackType.FIRST_WRONG,
             FeedbackType.FIRST_WRONG_VERBOSE,
         ]:
