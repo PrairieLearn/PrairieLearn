@@ -33,7 +33,7 @@ class FeedbackType(Enum):
     NONE = "none"
     FIRST_WRONG = "first-wrong"
     FIRST_WRONG_VERBOSE = "first-wrong-verbose"
-
+FIRST_WRONG_TYPES = [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
 
 class PartialCreditType(Enum):
     NONE = "none"
@@ -509,10 +509,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         feedback_type = pl.get_enum_attrib(
             element, "feedback", FeedbackType, FEEDBACK_DEFAULT
         )
-        show_first_wrong = feedback_type in [
-            FeedbackType.FIRST_WRONG,
-            FeedbackType.FIRST_WRONG_VERBOSE,
-        ]
+        show_first_wrong = feedback_type in FIRST_WRONG_TYPES
         student_submission = [
             {
                 "inner_html": attempt["inner_html"],
@@ -794,10 +791,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        if feedback_type in [
-            FeedbackType.FIRST_WRONG,
-            FeedbackType.FIRST_WRONG_VERBOSE,
-        ]:
+        if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "badge-success"
                 block["icon"] = "fa-check"
@@ -829,10 +823,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if final_score < 1:
             if feedback_type is FeedbackType.NONE:
                 feedback = ""
-            elif feedback_type in [
-                FeedbackType.FIRST_WRONG,
-                FeedbackType.FIRST_WRONG_VERBOSE,
-            ]:
+            elif feedback_type in FIRST_WRONG_TYPES:
                 if first_wrong is None:
                     feedback = FIRST_WRONG_FEEDBACK["incomplete"]
                 elif (
@@ -924,10 +915,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         if grading_method in [
             GradingMethodType.DAG,
             GradingMethodType.RANKING,
-        ] and feedback_type in [
-            FeedbackType.FIRST_WRONG,
-            FeedbackType.FIRST_WRONG_VERBOSE,
-        ]:
+        ] and feedback_type in FIRST_WRONG_TYPES:
             if (
                 feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
                 and answer[first_wrong]["inner_html"] in distractor_feedback
