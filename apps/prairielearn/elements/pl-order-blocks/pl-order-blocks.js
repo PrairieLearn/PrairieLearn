@@ -143,10 +143,6 @@ window.PLOrderBlocks = function (uuid, options) {
     create: function () {
       placePairingIndicators();
       setAnswer();
-    },
-    start: function () {
-      // the start event is only called once when user starts dragging
-      // this is suitable for drawing the indent grid lines, which is static
       if (enableIndentation) {
         drawIndentLocationLines(dropzoneElementId);
       }
@@ -162,8 +158,8 @@ window.PLOrderBlocks = function (uuid, options) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
-
       setAnswer();
+
       correctPairing(ui);
     },
   });
