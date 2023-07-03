@@ -4,28 +4,78 @@ import math
 import os
 import random
 from copy import deepcopy
+from enum import Enum
+from typing import Any, Optional, TypedDict
 
 import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml import etree
+from typing_extensions import NotRequired, assert_never
 
+
+class GradingMethodType(Enum):
+    UNORDERED = "unordered"
+    ORDERED = "ordered"
+    RANKING = "ranking"
+    DAG = "dag"
+    EXTERNAL = "external"
+
+
+class SourceBlocksOrderType(Enum):
+    RANDOM = "random"
+    ALPHABETIZED = "alphabetized"
+    ORDERED = "ordered"
+
+
+class FeedbackType(Enum):
+    NONE = "none"
+    FIRST_WRONG = "first-wrong"
+
+
+class PartialCreditType(Enum):
+    NONE = "none"
+    LCS = "lcs"
+
+
+class FormatType(Enum):
+    DEFAULT = "default"
+    CODE = "code"
+
+
+class GroupInfo(TypedDict):
+    tag: Optional[str]
+    depends: Optional[list[str]]
+
+
+class OrderBlocksAnswerData(TypedDict):
+    inner_html: str
+    indent: Optional[int]
+    ranking: int
+    index: int
+    tag: str
+    distractor_for: Optional[str]
+    depends: list[str]  # only used with DAG grader
+    group_info: GroupInfo  # only used with DAG grader
+    distractor_bin: NotRequired[str]
+    uuid: str
+
+
+GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
+SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
+FEEDBACK_DEFAULT = FeedbackType.NONE
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
-SOURCE_BLOCKS_ORDER_DEFAULT = "random"
-GRADING_METHOD_DEFAULT = "ordered"
-FEEDBACK_DEFAULT = "none"
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
 SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
-
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -37,41 +87,54 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
-def filter_multiple_from_array(data, keys):
+def filter_multiple_from_array(
+    data: list[dict[str, Any]], keys: list[str]
+) -> list[dict[str, Any]]:
     return [{key: item[key] for key in keys} for item in data]
 
 
-def get_graph_info(html_tags):
+def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
     tag = pl.get_string_attrib(html_tags, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tags, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
     return tag, depends
 
 
-def extract_dag(answers_list):
+def extract_dag(
+    answers_list: list[OrderBlocksAnswerData],
+) -> tuple[dict[str, list[str]], dict[str, Optional[str]]]:
     depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
         ans["group_info"]["tag"]: ans["group_info"]["depends"]
         for ans in answers_list
         if ans["group_info"]["depends"] is not None
+        and ans["group_info"]["tag"] is not None
     }
     depends_graph.update(group_depends)
     return depends_graph, group_belonging
 
 
-def solve_problem(answers_list, grading_method):
-    if grading_method in ["external", "unordered", "ordered"]:
+def solve_problem(
+    answers_list: list[OrderBlocksAnswerData], grading_method: GradingMethodType
+) -> list[OrderBlocksAnswerData]:
+    if (
+        grading_method is GradingMethodType.EXTERNAL
+        or grading_method is GradingMethodType.UNORDERED
+        or grading_method is GradingMethodType.ORDERED
+    ):
         return answers_list
-    elif grading_method == "ranking":
+    elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
-    elif grading_method == "dag":
+    elif grading_method is GradingMethodType.DAG:
         depends_graph, group_belonging = extract_dag(answers_list)
         solution = solve_dag(depends_graph, group_belonging)
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
+    else:
+        assert_never(grading_method)
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ["answers-name"]
@@ -102,70 +165,60 @@ def prepare(element_html, data):
     pl.check_answers_names(data, answer_name)
 
     check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
-    grading_method = pl.get_string_attrib(
-        element, "grading-method", GRADING_METHOD_DEFAULT
+    grading_method = pl.get_enum_attrib(
+        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
-    feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
+    feedback_type = pl.get_enum_attrib(
+        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+    )
 
-    if grading_method in ["dag", "ranking"]:
-        partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
-        if partial_credit_type not in ["none", "lcs"]:
-            raise Exception(
-                'partial credit type "'
-                + partial_credit_type
-                + '" is not available with the "'
-                + grading_method
-                + '" grading-method.'
-            )
-    elif pl.get_string_attrib(element, "partial-credit", None) is not None:
+    if (
+        grading_method is not GradingMethodType.DAG
+        and grading_method is not GradingMethodType.RANKING
+        and pl.has_attrib(element, "partial-credit")
+    ):
         raise Exception(
             "You may only specify partial credit options in the DAG and ranking grading modes."
         )
 
-    accepted_grading_method = ["ordered", "unordered", "ranking", "dag", "external"]
-    if grading_method not in accepted_grading_method:
-        raise Exception(
-            "The grading-method attribute must be one of the following: "
-            + ", ".join(accepted_grading_method)
-        )
-
-    if (grading_method not in ["dag", "ranking"] and feedback_type != "none") or (
-        grading_method in ["dag", "ranking"]
-        and feedback_type not in ["none", "first-wrong"]
+    if (
+        grading_method is not GradingMethodType.DAG
+        and grading_method is not GradingMethodType.RANKING
+        and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            'feedback type "'
-            + feedback_type
-            + '" is not available with the "'
-            + grading_method
-            + '" grading-method.'
+            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
-    format = pl.get_string_attrib(element, "format", "default")
+    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
-    if format != "code" and code_language is not None:
+    if format is FormatType.DEFAULT and code_language is not None:
         raise Exception('code-language attribute may only be used with format="code"')
 
-    correct_answers = []
-    incorrect_answers = []
+    correct_answers: list[OrderBlocksAnswerData] = []
+    incorrect_answers: list[OrderBlocksAnswerData] = []
     used_tags = set()
 
-    def prepare_tag(html_tags, index, group_info={"tag": None, "depends": None}):
+    def prepare_tag(
+        html_tags: lxml.html.HtmlElement,
+        index: int,
+        group_info: GroupInfo,
+    ):
         if html_tags.tag != "pl-answer":
             raise Exception(
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>"
             )
 
-        if grading_method == "external":
+        if grading_method is GradingMethodType.EXTERNAL:
             pl.check_attribs(
                 html_tags, required_attribs=[], optional_attribs=["correct"]
             )
-        elif grading_method in ["unordered", "ordered"]:
+        elif grading_method in [GradingMethodType.UNORDERED, GradingMethodType.ORDERED]:
             pl.check_attribs(
                 html_tags, required_attribs=[], optional_attribs=["correct", "indent"]
             )
-        elif grading_method == "ranking":
+        elif grading_method is GradingMethodType.RANKING:
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
@@ -177,7 +230,7 @@ def prepare(element_html, data):
                     "distractor-for",
                 ],
             )
-        elif grading_method == "dag":
+        elif grading_method is GradingMethodType.DAG:
             pl.check_attribs(
                 html_tags,
                 required_attribs=[],
@@ -217,7 +270,7 @@ def prepare(element_html, data):
                 "<pl-answer> should not specify indentation if indentation is disabled."
             )
 
-        if format == "code":
+        if format is FormatType.CODE:
             inner_html = (
                 "<pl-code"
                 + (' language="' + code_language + '"' if code_language else "")
@@ -226,7 +279,7 @@ def prepare(element_html, data):
                 + "</pl-code>"
             )
 
-        answer_data_dict = {
+        answer_data_dict: OrderBlocksAnswerData = {
             "inner_html": inner_html,
             "indent": answer_indent,
             "ranking": ranking,
@@ -235,6 +288,7 @@ def prepare(element_html, data):
             "distractor_for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
+            "uuid": pl.get_uuid(),
         }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -246,7 +300,7 @@ def prepare(element_html, data):
         if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == "pl-block-group":
-            if grading_method != "dag":
+            if grading_method is not GradingMethodType.DAG:
                 raise Exception(
                     'Block groups only supported in the "dag" grading mode.'
                 )
@@ -268,10 +322,10 @@ def prepare(element_html, data):
                     )
                     index += 1
         else:
-            prepare_tag(html_tags, index)
+            prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1
 
-    if grading_method != "external" and len(correct_answers) == 0:
+    if grading_method is not GradingMethodType.EXTERNAL and len(correct_answers) == 0:
         raise Exception("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
@@ -300,22 +354,20 @@ def prepare(element_html, data):
 
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
-    source_blocks_order = pl.get_string_attrib(
-        element, "source-blocks-order", SOURCE_BLOCKS_ORDER_DEFAULT
+    source_blocks_order = pl.get_enum_attrib(
+        element,
+        "source-blocks-order",
+        SourceBlocksOrderType,
+        SOURCE_BLOCKS_ORDER_DEFAULT,
     )
-    if source_blocks_order == "random":
+    if source_blocks_order == SourceBlocksOrderType.RANDOM:
         random.shuffle(all_blocks)
-    elif source_blocks_order == "ordered":
+    elif source_blocks_order == SourceBlocksOrderType.ORDERED:
         all_blocks.sort(key=lambda a: a["index"])
-    elif source_blocks_order == "alphabetized":
+    elif source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
-        raise Exception(
-            'The specified option for the "source-blocks-order" attribute is invalid.'
-        )
-
-    for option in all_blocks:
-        option["uuid"] = pl.get_uuid()
+        assert_never(source_blocks_order)
 
     # prep for visual pairing
     correct_tags = set(block["tag"] for block in all_blocks if block["tag"] is not None)
@@ -362,14 +414,16 @@ def prepare(element_html, data):
         )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
-    format = pl.get_string_attrib(element, "format", "default")
+    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
 
-    block_formatting = "pl-order-blocks-code" if format == "code" else "list-group-item"
-    grading_method = pl.get_string_attrib(
-        element, "grading-method", GRADING_METHOD_DEFAULT
+    block_formatting = (
+        "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
+    )
+    grading_method = pl.get_enum_attrib(
+        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
 
     if data["panel"] == "question":
@@ -408,9 +462,9 @@ def render(element_html, data):
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
         )
 
-        if grading_method == "unordered":
+        if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
-        elif grading_method != "external":
+        elif grading_method is not GradingMethodType.EXTERNAL:
             help_text += "<br>The ordering of your answer matters and is graded."
         else:
             help_text += "<br>Your answer will be autograded; be sure to indent and order your answer properly."
@@ -442,7 +496,7 @@ def render(element_html, data):
         return html
 
     elif data["panel"] == "submission":
-        if grading_method == "external":
+        if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
         student_submission = ""
@@ -459,7 +513,7 @@ def render(element_html, data):
 
         if answer_name in data["partial_scores"]:
             score = data["partial_scores"][answer_name]["score"]
-            feedback = data["partial_scores"][answer_name]["feedback"]
+            feedback = data["partial_scores"][answer_name].get("feedback", "")
 
         html_params = {
             "submission": True,
@@ -480,7 +534,7 @@ def render(element_html, data):
                     html_params["incorrect"] = True
             except Exception:
                 raise ValueError(
-                    "invalid score: " + data["partial_scores"][answer_name]["score"]
+                    f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
                 )
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
@@ -488,7 +542,7 @@ def render(element_html, data):
         return html
 
     elif data["panel"] == "answer":
-        if grading_method == "external":
+        if grading_method is GradingMethodType.EXTERNAL:
             try:
                 base_path = data["options"]["question_path"]
                 file_lead_path = os.path.join(base_path, "tests/ans.py")
@@ -498,9 +552,9 @@ def render(element_html, data):
             except FileNotFoundError:
                 return "The reference solution is not provided for this question."
 
-        if grading_method == "unordered":
+        if grading_method is GradingMethodType.UNORDERED:
             ordering_message = "in any order"
-        elif grading_method == "dag" or grading_method == "ranking":
+        elif grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]:
             ordering_message = "there may be other correct orders"
         else:
             ordering_message = "in the specified order"
@@ -538,10 +592,10 @@ def render(element_html, data):
         return html
 
     else:
-        raise Exception("Invalid panel type")
+        assert_never(data["panel"])
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     allow_blank_submission = pl.get_boolean_attrib(
@@ -561,12 +615,12 @@ def parse(element_html, data):
         ] = "Your submitted answer was blank; you did not drag any answer blocks into the answer area."
         return
 
-    grading_mode = pl.get_string_attrib(
-        element, "grading-method", GRADING_METHOD_DEFAULT
+    grading_method = pl.get_enum_attrib(
+        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
     correct_answers = data["correct_answers"][answer_name]
 
-    if grading_mode == "ranking":
+    if grading_method is GradingMethodType.RANKING:
         for answer in student_answer:
             search = next(
                 (
@@ -578,7 +632,7 @@ def parse(element_html, data):
             )
             answer["ranking"] = search["ranking"] if search is not None else None
             answer["tag"] = search["tag"] if search is not None else None
-    elif grading_mode == "dag":
+    elif grading_method is GradingMethodType.DAG:
         for answer in student_answer:
             search = next(
                 (
@@ -590,7 +644,7 @@ def parse(element_html, data):
             )
             answer["tag"] = search["tag"] if search is not None else None
 
-    if pl.get_string_attrib(element, "grading-method", "ordered") == "external":
+    if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
             if html_tags.tag == "pl-answer":
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])
@@ -601,7 +655,7 @@ def parse(element_html, data):
             indent = int(answer["indent"] or 0)
             answer_code += (
                 ("    " * indent)
-                + lxml.html.fromstring(answer["inner_html"]).text_content()
+                + lxml.html.fromstring(answer["inner_html"]).text_content()  # type: ignore
                 + "\n"
             )
 
@@ -622,24 +676,28 @@ def parse(element_html, data):
         del data["submitted_answers"][answer_raw_name]
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
 
     student_answer = data["submitted_answers"][answer_name]
-    grading_mode = pl.get_string_attrib(
-        element, "grading-method", GRADING_METHOD_DEFAULT
+    grading_method = pl.get_enum_attrib(
+        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
     check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
-    feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
+    feedback_type = pl.get_enum_attrib(
+        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+    )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
+    partial_credit_type = pl.get_enum_attrib(
+        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+    )
 
     true_answer_list = data["correct_answers"][answer_name]
 
     final_score = 0
     feedback = ""
-    first_wrong = -1
+    first_wrong = None
 
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
@@ -651,7 +709,7 @@ def grade(element_html, data):
                 else:
                     ans["inner_html"] = None
 
-    if grading_mode == "unordered":
+    if grading_method is GradingMethodType.UNORDERED:
         true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
         student_answer_uuids = set(ans["uuid"] for ans in student_answer)
         correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
@@ -662,17 +720,17 @@ def grade(element_html, data):
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_mode == "ordered":
+    elif grading_method is GradingMethodType.ORDERED:
         student_answer = [ans["inner_html"] for ans in student_answer]
         true_answer = [ans["inner_html"] for ans in true_answer_list]
         final_score = 1 if student_answer == true_answer else 0
 
-    elif grading_mode in ["ranking", "dag"]:
+    elif grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
-        if grading_mode == "ranking":
+        if grading_method is GradingMethodType.RANKING:
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
@@ -692,22 +750,22 @@ def grade(element_html, data):
                 depends_graph[tag] = cur_rank_depends
                 prev_rank = ranking
 
-        elif grading_mode == "dag":
+        elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
 
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
         first_wrong = (
-            -1 if num_initial_correct == len(submission) else num_initial_correct
+            None if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        if partial_credit_type == "none":
+        if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
             elif num_initial_correct < true_answer_length:
                 final_score = 0
-        elif partial_credit_type == "lcs":
+        elif partial_credit_type is PartialCreditType.LCS:
             edit_distance = lcs_partial_credit(
                 submission, depends_graph, group_belonging
             )
@@ -716,10 +774,10 @@ def grade(element_html, data):
             )
 
         if final_score < 1:
-            if feedback_type == "none":
+            if feedback_type is FeedbackType.NONE:
                 feedback = ""
-            elif feedback_type == "first-wrong":
-                if first_wrong == -1:
+            elif feedback_type is FeedbackType.FIRST_WRONG:
+                if first_wrong is None:
                     feedback = FIRST_WRONG_FEEDBACK["incomplete"]
                 else:
                     feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
@@ -738,18 +796,23 @@ def grade(element_html, data):
         "score": round(final_score, 2),
         "feedback": feedback,
         "weight": answer_weight,
-        "first_wrong": first_wrong,
     }
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    grading_mode = pl.get_string_attrib(element, "grading-method", "ordered")
+    grading_method = pl.get_enum_attrib(
+        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
+    )
     answer_name = pl.get_string_attrib(element, "answers-name")
     answer_name_field = answer_name + "-input"
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    feedback_type = pl.get_string_attrib(element, "feedback", FEEDBACK_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, "partial-credit", "lcs")
+    feedback_type = pl.get_enum_attrib(
+        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+    )
+    partial_credit_type = pl.get_enum_attrib(
+        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+    )
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -769,7 +832,6 @@ def test(element_html, data):
             "score": 1,
             "weight": weight,
             "feedback": "",
-            "first_wrong": -1,
         }
 
     # TODO: The only wrong answer being tested is the correct answer with the first
@@ -780,13 +842,19 @@ def test(element_html, data):
         )
         answer.pop(0)
         score = 0
-        if grading_mode == "unordered" or (
-            grading_mode in ["dag", "ranking"] and partial_credit_type == "lcs"
+        if grading_method is GradingMethodType.UNORDERED or (
+            (
+                grading_method is GradingMethodType.DAG
+                or grading_method is GradingMethodType.RANKING
+            )
+            and partial_credit_type is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
-        first_wrong = 0 if grading_mode in ["dag", "ranking"] else -1
 
-        if grading_mode == "dag" and feedback_type == "first-wrong":
+        if (
+            grading_method is GradingMethodType.DAG
+            and feedback_type is FeedbackType.FIRST_WRONG
+        ):
             feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]
@@ -806,7 +874,6 @@ def test(element_html, data):
             "score": score,
             "weight": weight,
             "feedback": feedback,
-            "first_wrong": first_wrong,
         }
 
     else:
