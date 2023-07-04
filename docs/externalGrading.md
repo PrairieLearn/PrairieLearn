@@ -167,13 +167,11 @@ The following is an example of a well-structured course layout:
 
 Your grading process must write its results to `/grade/results/results.json`. If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating point number in the range [0.0, 1.0]. If the submission is not gradable (see below) then the `score` field is unneeded.
 
-As long as this field is present you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on.
+As long as this field is present you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1MB, so you must ensure any extensive use of data takes this limit into account.
 
 The boolean `gradable` can be added to the results object and set to `false` to indicate that the input was invalid or formatted incorrectly, for example if it has a syntax error that prevented compilation. If `"gradable": false` is set then the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question. The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
 
 If `gradable` is set to false, error messages related to the formatting of the answer can be added to the grading results by setting the `format_errors` key. This can be either a string or an array of strings, depending on the number of error messages.
-
-The optional boolean `gradable` can be added to the results object and indicates that the input was invalid or formatted incorrectly. For example, `gradable` can be set to false if the student code has a syntax error, in which case the code will not be graded and the student will not be penalised an attempt. The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
 
 The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
@@ -190,7 +188,8 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
     },
     {
       "label": "Second Image",
-      "url": "data:image/jpeg;base64,..."
+      "url": "data:image/jpeg;base64,...",
+      "style": "max-width: 200px"
     }
   ],
   "tests": [
@@ -216,7 +215,8 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
         },
         {
           "label": "First Image",
-          "url": "data:image/png;base64,..."
+          "url": "data:image/png;base64,...",
+          "style": "transform: rotate(90deg)"
         }
       ]
     }
@@ -224,7 +224,13 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
 }
 ```
 
-Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array. These values should be formatted as standard HTML base64 images like `"data:[mimetype];base64,[contents]"`.
+Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1MB listed above. Each element of the array is expected to be either an object containing the following keys:
+
+- `url`: The source of the image, typically formatted as standard HTML base64 image like `"data:[mimetype];base64,[contents]"`;
+- `label`: An optional label for the image (defaults to "Figure");
+- `style`: An optional CSS-based style to be applied to the image (e.g., `max-width: 200px`).
+
+For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
 
 A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`, and relevant documentation [here](python-grader/index.md).
 
