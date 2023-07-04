@@ -67,7 +67,7 @@ $(function() {
         </div>
         <ul class="card-body list-group">
             {{#student_submission}}
-                {{#show_distractor_feedback}}
+                {{#distractor_feedback}}
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
                     <ul style="padding:0px;">
                         <li class="" style="list-style-type: none; ">
@@ -84,8 +84,8 @@ $(function() {
                         {{distractor_feedback}}
                     </div>
                 </li>
-                {{/show_distractor_feedback}}
-                {{^show_distractor_feedback}}
+                {{/distractor_feedback}}
+                {{^distractor_feedback}}
                 <li class="" style="list-style-type: none; ">
                     <div class="pl-order-blocks-correctness-badge-container">
                         {{#allow_feedback_badges}}
@@ -94,7 +94,7 @@ $(function() {
                         <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                     </div>
                 </li>
-                {{/show_distractor_feedback}}
+                {{/distractor_feedback}}
             {{/student_submission}}
         </ul>
     </div>
