@@ -917,7 +917,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
                 and answer[0]["inner_html"] in distractor_feedback
             ):
-                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(1))
+                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(1)
             else:
                 feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
             group_belonging = {
