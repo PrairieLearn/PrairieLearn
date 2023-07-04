@@ -913,13 +913,18 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             ]
             and feedback_type in FIRST_WRONG_TYPES
         ):
+            first_wrong = 0
             if (
                 feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
-                and answer[0]["inner_html"] in distractor_feedback
+                and answer[first_wrong]["inner_html"] in distractor_feedback
             ):
-                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(1)
+                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
+                    first_wrong + 1
+                )
             else:
-                feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
+                feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
+                    first_wrong + 1
+                )
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]
                 for ans in data["correct_answers"][answer_name]
