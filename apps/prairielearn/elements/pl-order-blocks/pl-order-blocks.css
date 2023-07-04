@@ -66,6 +66,10 @@ li.ui-state-highlight {
   line-height: 1.2em;
 }
 
+.pl-order-blocks-answer-container > .list-group > .pl-order-block {
+  margin-bottom: 5px;
+}
+
 .pl-order-blocks-answer-container > ul {
   padding: 14px;
 }
