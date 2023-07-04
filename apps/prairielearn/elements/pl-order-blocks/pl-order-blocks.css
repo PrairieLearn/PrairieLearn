@@ -103,7 +103,9 @@ div.pl-order-blocks-header {
 .pl-order-blocks-correctness-badge-container {
   display: flex;
   align-items: center;
+  margin-bottom: 5px;
 }
+
 .pl-order-blocks-correctness-badge {
   margin: 4px;
   width: 19px;
