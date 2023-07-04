@@ -514,7 +514,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
-                "distractor_feedback": attempt.get("distractor_feedback"),
+                "distractor_feedback": attempt.get("distractor_feedback", ""),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
