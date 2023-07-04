@@ -519,8 +519,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
 
-        score = data["partial_scores"].get(answer_name, {}).get("score")
-        feedback = data["partial_scores"].get(answer_name, {}).get("feedback", "")
+        score = None
+        feedback = None
+        if answer_name in data["partial_scores"]:
+            score = data["partial_scores"][answer_name]["score"]
+            feedback = data["partial_scores"][answer_name].get("feedback", "")
 
         html_params = {
             "submission": True,
@@ -890,7 +893,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif data["test_type"] == "incorrect":
         answer = deepcopy(data["correct_answers"][answer_name])
         distractor_feedback = {
-            item["inner_html"]: item["distractor_feedback"]
+            item["uuid"]: item["distractor_feedback"]
             for item in data["params"][answer_name]
             if not item["is_correct"]
         }
@@ -916,7 +919,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             first_wrong = 0
             if (
                 feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
-                and answer[first_wrong]["inner_html"] in distractor_feedback
+                and answer[first_wrong]["uuid"] in distractor_feedback
             ):
                 feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
                     first_wrong + 1
