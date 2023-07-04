@@ -1,6 +1,6 @@
 import pytest
 from coloraide import Color as Base
-from colors import Color, get_css_color
+from colors import PLColor, get_css_color
 
 
 @pytest.mark.parametrize(
@@ -16,7 +16,7 @@ def test_get_css_color(color: str, expected: str) -> None:
     """
     Assert the get_css_color method returns hex strings if given valid input.
 
-    Note that the new color constructor `Color(...)` is preferred.
+    Note that the new color constructor `PLColor(...)` is preferred.
     """
     assert get_css_color(color) == expected
 
@@ -27,18 +27,18 @@ def test_get_css_color(color: str, expected: str) -> None:
 )
 def test_color_constructor(color: str, expected: str) -> None:
     """Assert the color constructor returns a color object if given valid input."""
-    assert Color(color) == expected
+    assert PLColor(color) == expected
 
 
 def test_color_constructor_custom() -> None:
     """Assert the color constructor can handle custom colors."""
-    assert Color("correct_green") == Color("green3")
+    assert PLColor("correct_green") == PLColor("green3")
 
 
 def test_color_constructor_error() -> None:
     """Assert the color constructor raises a ValueError if given invalid input."""
     with pytest.raises(ValueError):
-        Color("none")
+        PLColor("none")
 
 
 @pytest.mark.parametrize(
@@ -55,6 +55,6 @@ def test_color_match(color: str) -> None:
     Assert the custom color match method returns a color object (or None).
     """
     if color == "none":
-        assert Color.match(color) is None
+        assert PLColor.match(color) is None
     else:
-        assert Color.match(color) is not None
+        assert PLColor.match(color) is not None

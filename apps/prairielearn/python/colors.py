@@ -4,12 +4,13 @@ Custom colors for the PrarieLearn project based on Coloraide.
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict
 
-from coloraide import Color
+from coloraide import Color as PLColor
 from coloraide import algebra as alg
 from coloraide.css import serialize
 from coloraide.spaces.srgb.css import sRGB
+from coloraide.types import Vector
 
 # Match the pattern of a PL color name;
 # only accepts numbers, lowercase letters, and a single underscore
@@ -17,7 +18,7 @@ RE_PL_COLORS = re.compile(r"(?i)\b([0-9a-z][0-9a-z_]{2,})\b")
 
 # Colors used in /public/stylesheets/colors.css
 # includes additional aliases (e.g, "red3" also known as "incorrect_red")
-PL_COLORS_NAME_MAP: Dict[str, Tuple[Any, ...]] = {
+PL_COLORS_NAME_MAP: Dict[str, tuple[float, float, float, float]] = {
     "blue1": (57, 213, 255, 255),
     "blue2": (18, 151, 224, 255),
     "blue3": (0, 87, 160, 255),
@@ -54,13 +55,15 @@ PL_COLORS_NAME_MAP: Dict[str, Tuple[Any, ...]] = {
     "yellow3": (216, 116, 0, 255),
 }
 
-PL_COLORS_VALUE_MAP = dict([(v, k) for k, v in PL_COLORS_NAME_MAP.items()])
+PL_COLORS_VALUE_MAP = {v: k for k, v in PL_COLORS_NAME_MAP.items()}
 
 
 class PrarieLearnColor(sRGB):
     """Custom sRGB class to handle custom PrarieLearn colors, via Coloraide."""
 
-    def match(self, string, start=0, fullmatch=True):
+    def match(
+        self, string: str, start: int = 0, fullmatch: bool = True
+    ) -> tuple[tuple[Vector, float], int] | None:
         """
         Match a color string, first trying PrarieLearn.
         If no match is found, defaults to sRGB class' implementation.
@@ -79,29 +82,29 @@ class PrarieLearnColor(sRGB):
 
             if values is not None:
                 # Normalize back to 0 - 1
-                values = [c / 255 for c in values]
+                values_norm = [c / 255 for c in values]
                 # Return the coordinates and transparency separate,
-                # also include the match end position.
-                return (values[:-1], values[-1]), match.end(1)
+                # also include the match end position
+                return (values_norm[:-1], values_norm[-1]), match.end(1)
 
-        # Couldn't find custom colors, so use the default color matching.
+        # Couldn't find custom colors, so use the default color matching
         return super().match(string, start, fullmatch)
 
     def to_string(
         self,
-        parent,
+        parent: PLColor,
         *,
-        alpha=None,
-        precision=None,
-        fit=True,
-        none=False,
-        color=False,
-        hex=False,  # pylint: disable=redefined-builtin
-        names=False,
-        comma=False,
-        upper=False,
-        percent=False,
-        compress=False,
+        alpha: bool | None = None,
+        precision: int | None = None,
+        fit: str | bool = True,
+        none: bool = False,
+        color: bool = False,
+        hex: bool = False,  # pylint: disable=redefined-builtin
+        names: bool = False,
+        comma: bool = False,
+        upper: bool = False,
+        percent: bool = False,
+        compress: bool = False,
         **kwargs,
     ) -> str:
         """Convert to string."""
@@ -115,9 +118,9 @@ class PrarieLearnColor(sRGB):
             coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
 
             # See if the color value is a match, if so, return the string
-            result = PL_COLORS_VALUE_MAP.get(
-                tuple([alg.round_half_up(c * 255) for c in coords]), None
-            )
+            value = tuple(alg.round_half_up(c * 255) for c in coords)
+
+            result = PL_COLORS_VALUE_MAP.get(value)  # type: ignore
             if result is not None:
                 return result
 
@@ -139,17 +142,17 @@ class PrarieLearnColor(sRGB):
         )
 
 
-Color.register(PrarieLearnColor(), overwrite=True)
+PLColor.register(PrarieLearnColor(), overwrite=True)
 
 
-def get_css_color(name: str) -> Optional[str]:
+def get_css_color(name: str) -> str | None:
     """
     Tries to look up a hex code value from a named css color, otherwise will
     return None if not a valid color.
     """
     name = name.lower()
 
-    if Color.match(name):
-        return Color(name).to_string(hex=True)
+    if PLColor.match(name):
+        return PLColor(name).to_string(hex=True)
 
     return None

@@ -87,6 +87,7 @@ include = [
     "./apps/prairielearn/elements/pl-xss-safe",
     "./apps/prairielearn/python/check_data_test.py",
     "./apps/prairielearn/python/check_data.py",
+    "./apps/prairielearn/python/colors_test.py",
     "./apps/prairielearn/python/colors.py",
     "./apps/prairielearn/python/conftest.py",
     "./apps/prairielearn/python/prairielearn_test.py",
@@ -98,7 +99,4 @@ include = [
     "./apps/prairielearn/python/traverse.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
-pythonVersion = "3.9"
-
-[tool.pytest.ini_options]
-addopts = "--ignore=./pl_ag_jobs"
+pythonVersion = "3.10"

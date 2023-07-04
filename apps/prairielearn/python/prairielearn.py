@@ -11,18 +11,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    List,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -30,7 +19,7 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
-from colors import Color
+from colors import PLColor
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
@@ -38,7 +27,7 @@ from typing_extensions import NotRequired, assert_never
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
-    score: Optional[float]
+    score: float | None
     weight: NotRequired[int]
     feedback: NotRequired[str]
 
@@ -94,7 +83,7 @@ def get_unit_registry() -> UnitRegistry:
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
 ) -> None:
     """
@@ -138,7 +127,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], bool | float]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
@@ -161,7 +150,7 @@ def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
     enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
+    default: EnumT | None = None,
 ) -> EnumT:
     """
     Returns the named attribute for the element parsed as an enum,
@@ -487,7 +476,7 @@ def compat_get(object, attrib, default):
     return old_attrib in object
 
 
-def compat_array(arr: List[str]) -> List[str]:
+def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
         new_arr.append(i)
@@ -497,8 +486,8 @@ def compat_array(arr: List[str]) -> List[str]:
 
 def check_attribs(
     element: lxml.html.HtmlElement,
-    required_attribs: List[str],
-    optional_attribs: List[str],
+    required_attribs: list[str],
+    optional_attribs: list[str],
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
@@ -570,7 +559,7 @@ def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> 
 @overload
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -599,7 +588,7 @@ def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -
 @overload
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[bool]:
+) -> bool | None:
     ...
 
 
@@ -652,7 +641,7 @@ def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) ->
 @overload
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[int]:
+) -> int | None:
     ...
 
 
@@ -708,7 +697,7 @@ def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> s
 @overload
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -727,8 +716,8 @@ def get_color_attrib(element, name, *args):
         if val is None:
             return val
 
-        if Color.match(val) is not None:
-            return Color(val).to_string(hex=True)
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             return val
 
@@ -736,8 +725,8 @@ def get_color_attrib(element, name, *args):
     if match:
         return val
     else:
-        if Color.match(val) is not None:
-            return Color(val).to_string(hex=True)
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             raise Exception(
                 'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(
@@ -1509,7 +1498,7 @@ def string_to_2darray(s, allow_complex=True):
 
 
 def latex_from_2darray(
-    A: Union[numbers.Number, np.ndarray],
+    A: numbers.Number | np.ndarray,
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
