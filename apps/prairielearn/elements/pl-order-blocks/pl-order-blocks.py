@@ -904,11 +904,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             )
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
-        first_wrong = (
-            0
-            if grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]
-            else -1
-        )
 
         if (
             grading_method
@@ -920,10 +915,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         ):
             if (
                 feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
-                and answer[first_wrong]["inner_html"] in distractor_feedback
+                and answer[0]["inner_html"] in distractor_feedback
             ):
                 feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
-                    str(first_wrong + 1)
+                    str(1)
                 )
             else:
                 feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
