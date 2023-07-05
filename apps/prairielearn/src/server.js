@@ -416,6 +416,7 @@ module.exports.initExpress = function () {
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
     res.locals.response_id = uuidv4();
+    req.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
