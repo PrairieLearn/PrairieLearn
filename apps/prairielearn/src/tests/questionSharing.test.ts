@@ -35,7 +35,6 @@ async function setSharingName(courseId, name) {
   const token = response.$('#test_csrf_token').text();
   return await fetch(sharingUrl, {
     method: 'POST',
-    headers: { 'Content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       __action: 'unsafe_choose_sharing_name',
       __csrf_token: token,
@@ -123,7 +122,6 @@ describe('Question Sharing', function () {
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           __action: 'sharing_token_regenerate',
           __csrf_token: token,
@@ -142,7 +140,6 @@ describe('Question Sharing', function () {
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           __action: 'unsafe_sharing_set_create',
           __csrf_token: token,
@@ -168,7 +165,6 @@ describe('Question Sharing', function () {
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           __action: 'unsafe_course_sharing_set_add',
           __csrf_token: token,
@@ -206,7 +202,6 @@ describe('Question Sharing', function () {
       const token = response.$('#test_csrf_token').text();
       response = await fetch(questionSettingsUrl, {
         method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           __action: 'unsafe_sharing_set_add',
           __csrf_token: token,
