@@ -41,7 +41,7 @@ async function setSharingName(courseId, name) {
       __action: 'unsafe_choose_sharing_name',
       __csrf_token: token,
       course_sharing_name: name,
-    }).toString(),
+    }),
   });
 }
 
@@ -71,18 +71,13 @@ describe('Question Sharing', function () {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
 
-    step('Sync coures with sharing enabled', (callback) => {
-      syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
-        if (ERR(err, callback)) return;
-        // TODO: technically this would have an error because there is no permissions on the
-        // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
-        if (result?.hadJsonErrorsOrWarnings) {
-          return callback(
-            new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`)
-          );
-        }
-        callback(null);
-      });
+    step('Sync coures with sharing enabled', async () => {
+      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+      // TODO: technically this would have an error because there is no permissions on the
+      // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
+      if (result?.hadJsonErrorsOrWarnings) {
+        throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
+      }
     });
 
     step(
@@ -133,7 +128,7 @@ describe('Question Sharing', function () {
         body: new URLSearchParams({
           __action: 'sharing_token_regenerate',
           __csrf_token: token,
-        }).toString(),
+        }),
       });
 
       response = await helperClient.fetchCheerio(sharingUrl);
@@ -153,7 +148,7 @@ describe('Question Sharing', function () {
           __action: 'unsafe_sharing_set_create',
           __csrf_token: token,
           sharing_set_name: sharingSetName,
-        }).toString(),
+        }),
       });
 
       const sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
@@ -180,7 +175,7 @@ describe('Question Sharing', function () {
           __csrf_token: token,
           sharing_set_id: '1',
           course_sharing_token: exampleCourseSharingId,
-        }).toString(),
+        }),
       });
 
       const sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
@@ -217,27 +212,19 @@ describe('Question Sharing', function () {
           __action: 'unsafe_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
-        }).toString(),
+        }),
       });
 
       const settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
       assert.equal(settingsPageResponse.text().includes('share-set-example'), true);
     });
 
-    step(
-      'Re-sync example course so that the shared question gets added in properly',
-      (callback) => {
-        syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result === undefined || result.hadJsonErrorsOrWarnings) {
-            return callback(
-              new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`)
-            );
-          }
-          callback(null);
-        });
+    step('Re-sync example course so that the shared question gets added in properly', async () => {
+      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+      if (result === undefined || result.hadJsonErrorsOrWarnings) {
+        throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
       }
-    );
+    });
 
     step('Successfully access shared question', async () => {
       let res = await accessSharedQuestionAssessment();
@@ -246,7 +233,5 @@ describe('Question Sharing', function () {
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
       assert(res.ok);
     });
-
-    // after('shut down testing server', helperServer.after);
   });
 });
