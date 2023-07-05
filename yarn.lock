@@ -13520,7 +13520,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:2.8.8, prettier@npm:^2.7.1":
+"prettier@npm:3.0.0":
+  version: 3.0.0
+  resolution: "prettier@npm:3.0.0"
+  bin:
+    prettier: bin/prettier.cjs
+  checksum: 6a832876a1552dc58330d2467874e5a0b46b9ccbfc5d3531eb69d15684743e7f83dc9fbd202db6270446deba9c82b79d24383d09924c462b457136a759425e33
+  languageName: node
+  linkType: hard
+
+"prettier@npm:^2.7.1":
   version: 2.8.8
   resolution: "prettier@npm:2.8.8"
   bin:
@@ -14356,7 +14365,7 @@ __metadata:
     eslint-plugin-no-only-tests: ^3.1.0
     htmlhint: ^1.1.4
     jsdoc: ^4.0.2
-    prettier: 2.8.8
+    prettier: 3.0.0
     pyright: ^1.1.311
     s3rver: ^3.7.1
     turbo: ^1.10.1
