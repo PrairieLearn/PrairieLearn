@@ -73,4 +73,6 @@ describe('server-jobs', () => {
     assert.equal(job.status, 'Error');
     assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
   });
+
+  it('fails the job when fail() is called', async () => {});
 });
