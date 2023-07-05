@@ -1,14 +1,11 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import path = require('path');
-import debugModule from 'debug';
 import error = require('@prairielearn/error');
 import { v4 as uuidv4 } from 'uuid';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import sqldb = require('@prairielearn/postgres');
 
 const router = Router();
-const debug = debugModule('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
 
 async function generateSharingId(req, res) {
@@ -22,8 +19,6 @@ async function generateSharingId(req, res) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    debug('GET /');
-
     let result = await sqldb.queryOneRowAsync(sql.get_course_sharing_info, {
       course_id: res.locals.course.id,
     });

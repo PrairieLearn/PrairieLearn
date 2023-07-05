@@ -51,27 +51,6 @@ const chooseSharingNamePopover = (resLocals) => {
   `.toString();
 };
 
-const chooseSharingNameButton = (resLocals) => {
-  return html`
-    <button
-      type="button"
-      class="btn btn-xs btn-secondary mx-2"
-      id="chooseSharingName"
-      data-toggle=f"popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Choose Sharing Name"
-      data-content="${chooseSharingNamePopover(resLocals)}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
-    >
-      <i class="fas fa-share-nodes" aria-hidden="true"></i>
-      <span class="d-none d-sm-inline">Choose Sharing Name</span>
-    </button>
-  `;
-};
-
 export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, resLocals }) => {
   return html`
     <!DOCTYPE html>
@@ -96,7 +75,26 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                 <tr>
                   <th>Sharing Name</th>
                   <td>
-                    ${sharing_name === null ? chooseSharingNameButton(resLocals) : sharing_name}
+                    ${sharing_name !== null
+                      ? sharing_name
+                      : html`
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary mx-2"
+                            id="chooseSharingName"
+                            data-toggle="popover"
+                            data-container="body"
+                            data-html="true"
+                            data-placement="auto"
+                            title="Choose Sharing Name"
+                            data-content="${chooseSharingNamePopover(resLocals)}"
+                            data-trigger="manual"
+                            onclick="$(this).popover('show')"
+                          >
+                            <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Choose Sharing Name</span>
+                          </button>
+                        `}
                   </td>
                 </tr>
                 <tr>

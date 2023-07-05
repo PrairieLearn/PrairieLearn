@@ -1,4 +1,3 @@
-import ERR = require('async-stacktrace');
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { config } from '../lib/config';
