@@ -69,7 +69,7 @@ $(function() {
             {{#student_submission}}
                 {{#distractor_feedback}}
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
-                    <ul class="p-0>
+                    <ul class="p-0">
                         <li class="list-unstyled">
                             <div class="pl-order-blocks-correctness-badge-container">
                                 {{#allow_feedback_badges}}
@@ -128,7 +128,7 @@ $(function() {
         {{#distractors}}
             {{#distractor_feedback}}
             <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
-                <ul style="padding:0px;">
+                <ul class="p-0">
                     <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
                 </ul>
                 <div>
