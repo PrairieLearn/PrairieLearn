@@ -65,12 +65,12 @@ $(function() {
             <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         </div>
-        <ul class="card-body list-group">
+        <ul class="card-body list-group list-unstyled">
             {{#student_submission}}
                 {{#distractor_feedback}}
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
-                    <ul class="p-0">
-                        <li class="list-unstyled">
+                    <ul class="list-unstyled">
+                        <li>
                             <div class="pl-order-blocks-correctness-badge-container">
                                 {{#allow_feedback_badges}}
                                 <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
@@ -86,7 +86,7 @@ $(function() {
                 </li>
                 {{/distractor_feedback}}
                 {{^distractor_feedback}}
-                <li class="list-unstyled">
+                <li>
                     <div class="pl-order-blocks-correctness-badge-container">
                         {{#allow_feedback_badges}}
                         <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
