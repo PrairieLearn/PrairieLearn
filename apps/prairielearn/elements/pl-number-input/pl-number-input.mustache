@@ -124,8 +124,22 @@
   {{/a_tru}}
 </span>
 {{/correct}}
-{{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#partial}}
+{{#feedback}}
+ <div class="d-inline-flex pl-number-input-feedback">
+  {{feedback}}
+  </div>
+{{/feedback}}
+<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+{{/partial}}
+{{#incorrect}}
+{{#feedback}}
+<div class="d-inline-flex pl-number-input-feedback">
+  {{feedback}}
+  </div>
+{{/feedback}}
+<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+{{/incorrect}}
 
 {{/error}}
 {{#inline}}</span>{{/inline}}
@@ -136,6 +150,7 @@
 <samp>{{a_tru}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
+
 
 {{#format}}
 {{#show_info}}

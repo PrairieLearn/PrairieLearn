@@ -1,4 +1,5 @@
 import random
+import math
 from enum import Enum
 from html import escape
 from typing import Any, Optional, Union
@@ -37,6 +38,9 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 CUSTOM_FORMAT_DEFAULT = ".12g"
 SHOW_SCORE_DEFAULT = True
+ANSWER_INSUFFICIENT_PRECISION_WARNING = (
+    "Your answer does not have precision within the specified relative tolerance."
+)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -108,6 +112,13 @@ def format_true_ans(
         else:
             assert_never(comparison)
     return a_tru
+
+
+def get_string_precision(number_string: str) -> float:
+    if "." in number_string:
+        return 10 ** -len(number_string.partition(".")[2])
+    else:
+        return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -289,7 +300,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
                 )
-
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
         if pl.get_boolean_attrib(
@@ -309,6 +319,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
+
+        feedback = partial_score.get("feedback", None)
+        if feedback is not None:
+            html_params["feedback"] = feedback
 
         with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -430,9 +444,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
+
+            a_sub_precision = get_string_precision(str(a_sub))
+            if not math.isclose(a_sub_precision, rtol, rel_tol=rtol):
+                feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
+
             return (
                 pl.is_correct_scalar_ra(a_sub_converted, a_tru_converted, rtol, atol),
-                None,
+                feedback,
             )
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
