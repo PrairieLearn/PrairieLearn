@@ -61,11 +61,12 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: Optional[str]
-    is_correct: bool
     uuid: str
 
 
-FIRST_WRONG_TYPES = [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
+FIRST_WRONG_TYPES = frozenset(
+    [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
+)
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -296,7 +297,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
-            "is_correct": is_correct,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -421,6 +421,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         data["correct_answers"][answer_name] = solve_problem(
             correct_answers, grading_method
         )
+
+
+def get_distractors(
+    all_blocks: list[OrderBlocksAnswerData], correct_blocks: list[OrderBlocksAnswerData]
+) -> list[OrderBlocksAnswerData]:
+    return [
+        block
+        for block in all_blocks
+        if block["uuid"] not in set(block2["uuid"] for block2 in correct_blocks)
+    ]
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -585,9 +595,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        distractors = [
-            item for item in data["params"][answer_name] if not item["is_correct"]
-        ]
+        distractors = get_distractors(
+            data["params"][answer_name], data["correct_answers"][answer_name]
+        )
 
         question_solution = [
             {
@@ -698,6 +708,35 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         del data["submitted_answers"][answer_raw_name]
 
 
+def construct_feedback(
+    feedback_type: FeedbackType,
+    first_wrong: Optional[int],
+    group_belonging: dict[str, Optional[str]],
+    check_indentation: bool,
+    first_wrong_is_distractor: bool,
+) -> str:
+    if feedback_type is FeedbackType.NONE:
+        return ""
+
+    if first_wrong is None:
+        return FIRST_WRONG_FEEDBACK["incomplete"]
+    elif (
+        feedback_type is FeedbackType.FIRST_WRONG_VERBOSE and first_wrong_is_distractor
+    ):
+        return FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
+    else:
+        feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
+        has_block_groups = group_belonging != {} and set(group_belonging.values()) != {
+            None
+        }
+        if check_indentation:
+            feedback += FIRST_WRONG_FEEDBACK["indentation"]
+        if has_block_groups:
+            feedback += FIRST_WRONG_FEEDBACK["block-group"]
+        feedback += "</ul>"
+        return feedback
+
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
@@ -716,12 +755,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
 
     true_answer_list = data["correct_answers"][answer_name]
-
-    distractor_feedback = {
-        item["inner_html"]: item["distractor_feedback"]
-        for item in data["params"][answer_name]
-        if not item["is_correct"]
-    }
 
     final_score = 0
     feedback = ""
@@ -822,30 +855,21 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if final_score < 1:
-            if feedback_type is FeedbackType.NONE:
-                feedback = ""
-            elif feedback_type in FIRST_WRONG_TYPES:
-                if first_wrong is None:
-                    feedback = FIRST_WRONG_FEEDBACK["incomplete"]
-                elif (
-                    feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
-                    and student_answer[first_wrong]["inner_html"] in distractor_feedback
-                ):
-                    feedback += FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
-                        str(first_wrong + 1)
-                    )
-                else:
-                    feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
-                        str(first_wrong + 1)
-                    )
-                    has_block_groups = group_belonging != {} and set(
-                        group_belonging.values()
-                    ) != {None}
-                    if check_indentation:
-                        feedback += FIRST_WRONG_FEEDBACK["indentation"]
-                    if has_block_groups:
-                        feedback += FIRST_WRONG_FEEDBACK["block-group"]
-                    feedback += "</ul>"
+            first_wrong_is_distractor = first_wrong is not None and student_answer[
+                first_wrong
+            ]["uuid"] in set(
+                block["uuid"]
+                for block in get_distractors(
+                    data["params"][answer_name], data["correct_answers"][answer_name]
+                )
+            )
+            feedback = construct_feedback(
+                feedback_type,
+                first_wrong,
+                group_belonging,
+                check_indentation,
+                first_wrong_is_distractor,
+            )
 
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
@@ -892,12 +916,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
         answer = deepcopy(data["correct_answers"][answer_name])
-        distractor_feedback = {
-            item["uuid"]: item["distractor_feedback"]
-            for item in data["params"][answer_name]
-            if not item["is_correct"]
-        }
-
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
@@ -908,38 +926,28 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
-        if (
-            grading_method
-            in [
-                GradingMethodType.DAG,
-                GradingMethodType.RANKING,
-            ]
-            and feedback_type in FIRST_WRONG_TYPES
-        ):
+        if grading_method in [
+            GradingMethodType.DAG,
+            GradingMethodType.RANKING,
+        ]:
             first_wrong = 0
-            if (
-                feedback_type is FeedbackType.FIRST_WRONG_VERBOSE
-                and answer[first_wrong]["uuid"] in distractor_feedback
-            ):
-                feedback = FIRST_WRONG_FEEDBACK["distractor-feedback"].format(
-                    first_wrong + 1
-                )
-            else:
-                feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
-                    first_wrong + 1
-                )
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]
                 for ans in data["correct_answers"][answer_name]
             }
-            has_block_groups = group_belonging != {} and set(
-                group_belonging.values()
-            ) != {None}
-            if has_block_groups:
-                feedback += FIRST_WRONG_FEEDBACK["block-group"]
-            if check_indentation:
-                feedback += FIRST_WRONG_FEEDBACK["indentation"]
-            feedback += "</ul>"
+            first_wrong_is_distractor = answer[first_wrong]["uuid"] in set(
+                block["uuid"]
+                for block in get_distractors(
+                    data["params"][answer_name], data["correct_answers"][answer_name]
+                )
+            )
+            feedback = construct_feedback(
+                feedback_type,
+                first_wrong,
+                group_belonging,
+                check_indentation,
+                first_wrong_is_distractor,
+            )
         else:
             feedback = ""
 
