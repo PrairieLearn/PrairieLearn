@@ -69,8 +69,8 @@ $(function() {
             {{#student_submission}}
                 {{#distractor_feedback}}
                 <li class="pl-order-blocks-pairing-indicator list-group-item-warning">
-                    <ul style="padding:0px;">
-                        <li class="" style="list-style-type: none; ">
+                    <ul class="p-0>
+                        <li class="list-unstyled">
                             <div class="pl-order-blocks-correctness-badge-container">
                                 {{#allow_feedback_badges}}
                                 <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
@@ -86,7 +86,7 @@ $(function() {
                 </li>
                 {{/distractor_feedback}}
                 {{^distractor_feedback}}
-                <li class="" style="list-style-type: none; ">
+                <li class="list-unstyled">
                     <div class="pl-order-blocks-correctness-badge-container">
                         {{#allow_feedback_badges}}
                         <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
@@ -124,7 +124,7 @@ $(function() {
     <br><br>
     <div class="pl-order-blocks-answer-container">
         <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
-        <ul class="card-body list-group" style="list-style-type:none;">
+        <ul class="card-body list-group list-unstyled">
         {{#distractors}}
             {{#distractor_feedback}}
             <li class="pl-order-blocks-pairing-indicator list-group-item-warning">

@@ -726,9 +726,7 @@ def construct_feedback(
         return FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
     else:
         feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
-        has_block_groups = group_belonging != {} and set(group_belonging.values()) != {
-            None
-        }
+        has_block_groups = group_belonging and set(group_belonging.values()) != {None}
         if check_indentation:
             feedback += FIRST_WRONG_FEEDBACK["indentation"]
         if has_block_groups:
