@@ -1,6 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const async = require('async');
 const { SQSClient, GetQueueUrlCommand } = require('@aws-sdk/client-sqs');
 const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 const { z } = require('zod');
@@ -17,7 +15,6 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
-  useDatabase: z.boolean().default(false),
   useEc2MetadataService: z.boolean().default(true),
   useCloudWatchLogging: z.boolean().default(false),
   useConsoleLoggingForJobs: z.boolean().default(true),
@@ -56,7 +53,6 @@ function makeProductionConfigSource() {
     async load() {
       if (!isProduction) return {};
       return {
-        useDatabase: true,
         useEc2MetadataService: true,
         useCloudWatchLogging: true,
         useConsoleLoggingForJobs: false,
@@ -91,35 +87,25 @@ function makeAutoScalingGroupConfigSource() {
 const loader = new ConfigLoader(ConfigSchema);
 module.exports.config = loader.config;
 
-module.exports.loadConfig = function (callback) {
-  async.series(
-    [
-      async () => {
-        await loader.loadAndValidate([
-          makeProductionConfigSource(),
-          makeImdsConfigSource(),
-          makeSecretsManagerConfigSource('ConfSecret'),
-          makeAutoScalingGroupConfigSource(),
-        ]);
+module.exports.loadConfig = async function () {
+  await loader.loadAndValidate([
+    makeProductionConfigSource(),
+    makeImdsConfigSource(),
+    makeSecretsManagerConfigSource('ConfSecret'),
+    makeAutoScalingGroupConfigSource(),
+  ]);
 
-        // Initialize CloudWatch logging if it's enabled
-        if (module.exports.config.useCloudWatchLogging) {
-          const groupName = module.exports.config.globalLogGroup;
-          const streamName = module.exports.config.instanceId;
-          // @ts-expect-error -- Need to type this better in the future.
-          logger.initCloudWatchLogging(groupName, streamName);
-          logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
-        }
+  // Initialize CloudWatch logging if it's enabled
+  if (module.exports.config.useCloudWatchLogging) {
+    const groupName = module.exports.config.globalLogGroup;
+    const streamName = module.exports.config.instanceId;
+    // @ts-expect-error -- Need to type this better in the future.
+    logger.initCloudWatchLogging(groupName, streamName);
+    logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
+  }
 
-        await getQueueUrl('jobs');
-        await getQueueUrl('results');
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    }
-  );
+  await getQueueUrl('jobs');
+  await getQueueUrl('results');
 };
 
 /**
