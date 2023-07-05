@@ -380,11 +380,11 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {
       importedQidAssessmentMap.get(qid)?.forEach((tid) => {
-        // TODO: give a different error message if the reason the question isn't found
-        // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
         infofile.addError(
           assessments[tid],
-          `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
+          `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
+            ...missingQids,
+          ].join(', ')}`
         );
       });
     });

@@ -18,6 +18,8 @@ const setFilenames = function (locals) {
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
+    // TODO: Support question statistics for shared questions. For now, forbid
+    // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
       return next(error.make(403, 'Access denied'));
     }
@@ -34,6 +36,8 @@ router.get(
 router.get(
   '/:filename',
   asyncHandler(async (req, res, next) => {
+    // TODO: Support question statistics for shared questions. For now, forbid
+    // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
       return next(error.make(403, 'Access denied'));
     }

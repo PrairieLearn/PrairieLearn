@@ -193,7 +193,7 @@ router.post('/', function (req, res, next) {
         question_id: res.locals.question.id,
         sharing_set_id: req.body.sharing_set_id,
       },
-      (err, _result) => {
+      (err) => {
         if (ERR(err, next)) return;
 
         res.redirect(req.originalUrl);
