@@ -121,6 +121,16 @@ def get_string_precision(number_string: str) -> float:
         return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
+def get_string_significant_digits(number_string: str) -> int:
+    if "." in number_string:
+        number_string = number_string.partition["."]
+        integer_part = len(number_string[0])
+        decimal_part = len(number_string[2].lstrip("0"))
+        return integer_part + decimal_part
+    else:
+        return len(number_string) - len(number_string.rstrip("0"))
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
