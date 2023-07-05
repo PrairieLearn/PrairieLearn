@@ -21,12 +21,12 @@ $(function () {
   const heartbeatIntervalSec = getNumericalAttribute(
     document.body,
     'data-heartbeat-interval-sec',
-    60
+    60,
   );
   const visibilityTimeoutSec = getNumericalAttribute(
     document.body,
     'data-visibility-timeout-sec',
-    30 * 60
+    30 * 60,
   );
 
   const socket = io('/workspace');

@@ -126,7 +126,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private async executeInternal(
     fn: ServerJobExecutionFunction,
-    shouldThrow: boolean
+    shouldThrow: boolean,
   ): Promise<void> {
     try {
       await fn(this);
@@ -210,7 +210,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     z.object({
       job_sequence_id: z.string(),
       job_id: z.string(),
-    })
+    }),
   );
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);

@@ -15,7 +15,7 @@ const setFilenames = function (locals) {
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
-    locals.course
+    locals.course,
   );
   locals.scoreStatsCsvFilename = prefix + 'score_stats.csv';
   locals.durationStatsCsvFilename = prefix + 'duration_stats.csv';
@@ -57,7 +57,7 @@ router.get(
     res.locals.user_scores = userScoresResult.rows;
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -204,7 +204,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 module.exports = router;

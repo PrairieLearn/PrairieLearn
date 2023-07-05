@@ -579,7 +579,7 @@ module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKey
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
-    'snapshots contained different keys'
+    'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -602,7 +602,7 @@ module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKey
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
-    'snapshots contained different keys'
+    'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -611,7 +611,7 @@ module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKey
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(
       [...setA].every((entry) => setB.has(entry)),
-      `Snapshot of ${key} is not a subset`
+      `Snapshot of ${key} is not a subset`,
     );
   }
 };

@@ -222,12 +222,12 @@ describe('course database', () => {
         assert.equal(Object.keys(result).length, 3);
         assert.match(
           infofile.stringifyWarnings(result['question1']),
-          /UUID.*is used in other questions/
+          /UUID.*is used in other questions/,
         );
         assert.isFalse(infofile.hasErrors(result['question1']));
         assert.match(
           infofile.stringifyWarnings(result['question2']),
-          /UUID.*is used in other questions/
+          /UUID.*is used in other questions/,
         );
         assert.isFalse(infofile.hasErrors(result['question2']));
         assert.isFalse(infofile.hasErrors(result['question3']));

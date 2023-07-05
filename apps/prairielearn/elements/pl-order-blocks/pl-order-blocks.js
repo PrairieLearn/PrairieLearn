@@ -80,7 +80,7 @@ window.PLOrderBlocks = function (uuid, options) {
   function placePairingIndicators() {
     let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
     let allAns = answerObjs.concat(
-      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block'))
+      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
     let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
@@ -113,7 +113,7 @@ window.PLOrderBlocks = function (uuid, options) {
       containingIndicator.insertAdjacentElement('afterend', block);
     } else if (binUuid !== containingIndicatorUuid) {
       let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
-        'inner-list'
+        'inner-list',
       )[0];
       properIndicatorList.insertAdjacentElement('beforeend', block);
     }
@@ -128,7 +128,7 @@ window.PLOrderBlocks = function (uuid, options) {
       { length: maxIndent + 1 },
       (_, index) => {
         return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
-      }
+      },
     ).join(', ');
   }
 

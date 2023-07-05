@@ -84,13 +84,13 @@ let renewIntervalMs = 60_000;
 export async function init(
   pgConfig: PoolConfig,
   idleErrorHandler: (error: Error, client: PoolClient) => void,
-  namedLocksConfig: NamedLocksConfig = {}
+  namedLocksConfig: NamedLocksConfig = {},
 ) {
   renewIntervalMs = namedLocksConfig.renewIntervalMs ?? renewIntervalMs;
   await pool.initAsync(pgConfig, idleErrorHandler);
   await pool.queryAsync(
     'CREATE TABLE IF NOT EXISTS named_locks (id bigserial PRIMARY KEY, name text NOT NULL UNIQUE);',
-    {}
+    {},
   );
 }
 
@@ -111,7 +111,7 @@ export async function close() {
  */
 export async function tryLockAsync(
   name: string,
-  options: TryLockOptions = {}
+  options: TryLockOptions = {},
 ): Promise<Lock | null> {
   return getLock(name, { timeout: 0, ...options });
 }
@@ -152,7 +152,7 @@ export const releaseLock = util.callbackify(releaseLockAsync);
 export async function doWithLock<T>(
   name: string,
   options: LockOptions,
-  func: () => Promise<T>
+  func: () => Promise<T>,
 ): Promise<T> {
   const lock = await waitLockAsync(name, options);
   try {
@@ -170,7 +170,7 @@ export async function doWithLock<T>(
 export async function tryWithLock<T>(
   name: string,
   options: TryLockOptions,
-  func: () => Promise<T>
+  func: () => Promise<T>,
 ): Promise<T | null> {
   const lock = await tryLockAsync(name, options);
   if (lock == null) return null;
@@ -192,7 +192,7 @@ export async function tryWithLock<T>(
 async function getLock(name: string, options: LockOptions) {
   await pool.queryAsync(
     'INSERT INTO named_locks (name) VALUES ($name) ON CONFLICT (name) DO NOTHING;',
-    { name }
+    { name },
   );
 
   const client = await pool.beginTransactionAsync();
@@ -206,7 +206,7 @@ async function getLock(name: string, options: LockOptions) {
       await pool.queryWithClientAsync(
         client,
         `SET LOCAL lock_timeout = ${client.escapeLiteral(options.timeout.toString())}`,
-        {}
+        {},
       );
     }
 

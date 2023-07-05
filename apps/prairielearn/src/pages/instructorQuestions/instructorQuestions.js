@@ -42,7 +42,7 @@ router.get('/', function (req, res, next) {
               row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
             }
             row.assessments = _.filter(row.assessments, (assessment) =>
-              ci_ids.includes(assessment.course_instance_id)
+              ci_ids.includes(assessment.course_instance_id),
             );
             return row;
           });
@@ -54,7 +54,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -78,9 +78,9 @@ router.post('/', (req, res, next) => {
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(
-                res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
+                res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings',
               );
-            }
+            },
           );
         }
       });
@@ -90,7 +90,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

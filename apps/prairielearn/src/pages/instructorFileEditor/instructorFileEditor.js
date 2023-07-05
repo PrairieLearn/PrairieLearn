@@ -64,7 +64,7 @@ router.get('/*', (req, res, next) => {
       error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -72,14 +72,14 @@ router.get('/*', (req, res, next) => {
   const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -107,13 +107,13 @@ router.get('/*', (req, res, next) => {
           debug('Read job sequence');
           fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
             fileEdit.jobSequenceId,
-            res.locals.course.id
+            res.locals.course.id,
           );
         }
 
         const data = await editorUtil.getErrorsAndWarningsForFilePath(
           res.locals.course.id,
-          relPath
+          relPath,
         );
         const ansiUp = new AnsiUp();
         fileEdit.sync_errors = data.errors;
@@ -161,7 +161,7 @@ router.get('/*', (req, res, next) => {
         res.locals.fileEdit.paths = paths;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
-    }
+    },
   );
 });
 
@@ -200,7 +200,7 @@ router.post('/*', (req, res, next) => {
       error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -208,14 +208,14 @@ router.post('/*', (req, res, next) => {
   const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -234,8 +234,8 @@ router.post('/*', (req, res, next) => {
           {
             locals: res.locals,
             body: req.body,
-          }
-        )
+          },
+        ),
       );
     }
 
@@ -249,11 +249,11 @@ router.post('/*', (req, res, next) => {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
-        res.locals.course_instance.short_name
+        res.locals.course_instance.short_name,
       );
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else if (res.locals.navPage === 'assessment') {
       const rootPath = path.join(
@@ -261,17 +261,17 @@ router.post('/*', (req, res, next) => {
         'courseInstances',
         res.locals.course_instance.short_name,
         'assessments',
-        res.locals.assessment.tid
+        res.locals.assessment.tid,
       );
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else if (res.locals.navPage === 'question') {
       const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else {
       const rootPath = res.locals.course.path;
@@ -300,14 +300,14 @@ router.post('/*', (req, res, next) => {
       (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
-      }
+      },
     );
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
@@ -326,7 +326,7 @@ async function readEdit(fileEdit) {
   });
   if (draftResult.rows.length > 0) {
     debug(
-      `Found ${draftResult.rows.length} saved drafts, the first of which has id ${draftResult.rows[0].id}`
+      `Found ${draftResult.rows.length} saved drafts, the first of which has id ${draftResult.rows[0].id}`,
     );
     if (draftResult.rows[0].age < 24) {
       fileEdit.editID = draftResult.rows[0].id;
@@ -386,7 +386,7 @@ function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
       callback(null);
-    }
+    },
   );
 }
 
@@ -400,7 +400,7 @@ function updateDidSave(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
       callback(null);
-    }
+    },
   );
 }
 
@@ -414,7 +414,7 @@ function updateDidSync(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
       callback(null);
-    }
+    },
   );
 }
 
@@ -445,7 +445,7 @@ async function createEdit(fileEdit) {
     file_id: fileEdit.fileID,
   };
   debug(
-    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`
+    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
   );
   const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
   fileEdit.editID = result.rows[0].id;
@@ -460,7 +460,7 @@ async function writeEdit(fileEdit) {
     null,
     null,
     fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-    fileEdit.userID //       although I don't think there's any need to do so
+    fileEdit.userID, //       although I don't think there's any need to do so
   );
   debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
   return fileID;
@@ -549,8 +549,8 @@ function saveAndSync(fileEdit, locals, callback) {
             job.verbose(`Did not acquire lock ${lockName}`);
             job.fail(
               new Error(
-                `Another user is already syncing or modifying the course: ${options.courseDir}`
-              )
+                `Another user is already syncing or modifying the course: ${options.courseDir}`,
+              ),
             );
           } else {
             courseLock = lock;
@@ -926,7 +926,7 @@ function saveAndSync(fileEdit, locals, callback) {
                   chunks.logChunkChangesToJob(chunkChanges, job);
                   updateCourseCommitHash();
                 }
-              }
+              },
             );
           } else {
             updateCourseCommitHash();

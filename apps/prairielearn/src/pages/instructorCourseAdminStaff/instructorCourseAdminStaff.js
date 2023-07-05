@@ -36,7 +36,7 @@ router.post('/', (req, res, next) => {
       req.body.uid
         .split(/[\s,;]+/)
         .map((uid) => uid.trim())
-        .filter((uid) => uid)
+        .filter((uid) => uid),
     );
 
     // Verify there is at least one UID
@@ -53,7 +53,7 @@ router.post('/', (req, res, next) => {
     let course_instance = null;
     if (req.body.course_instance_id) {
       course_instance = res.locals.authz_data.course_instances.find((ci) =>
-        idsEqual(ci.id, req.body.course_instance_id)
+        idsEqual(ci.id, req.body.course_instance_id),
       );
       if (!course_instance) return next(error.make(400, `Invalid requested course instance role`));
     }
@@ -64,7 +64,7 @@ router.post('/', (req, res, next) => {
       !['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)
     ) {
       return next(
-        error.make(400, `Invalid requested course instance role: ${req.body.course_instance_role}`)
+        error.make(400, `Invalid requested course instance role: ${req.body.course_instance_role}`),
       );
     }
     // Iterate through UIDs
@@ -101,7 +101,7 @@ router.post('/', (req, res, next) => {
           sqldb.call('course_instance_permissions_insert', ci_params, (err, _result) => {
             if (
               ERR(err, (e) =>
-                logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, e)
+                logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, e),
               )
             ) {
               memo.not_given_cip.push(uid);
@@ -119,7 +119,7 @@ router.post('/', (req, res, next) => {
           err = error.make(409, 'Failed to grant access to some users');
           err.info = '';
           const given_cp_and_cip = result.given_cp.filter(
-            (uid) => !result.not_given_cip.includes(uid)
+            (uid) => !result.not_given_cip.includes(uid),
           );
           debug(`given_cp: ${result.given_cp}`);
           debug(`not_given_cip: ${result.not_given_cip}`);
@@ -178,7 +178,7 @@ router.post('/', (req, res, next) => {
           return next(err);
         }
         res.redirect(req.originalUrl);
-      }
+      },
     );
   } else if (req.body.__action === 'course_permissions_update_role') {
     if (
@@ -195,8 +195,8 @@ router.post('/', (req, res, next) => {
       return next(
         error.make(
           403,
-          'Owners cannot change their own course content access even if they are emulating another user'
-        )
+          'Owners cannot change their own course content access even if they are emulating another user',
+        ),
       );
     }
 
@@ -236,8 +236,8 @@ router.post('/', (req, res, next) => {
       return next(
         error.make(
           403,
-          'Owners cannot remove themselves from the course staff even if they are emulating another user'
-        )
+          'Owners cannot remove themselves from the course staff even if they are emulating another user',
+        ),
       );
     }
 
@@ -259,7 +259,7 @@ router.post('/', (req, res, next) => {
     if (req.body.course_instance_id) {
       if (
         !res.locals.authz_data.course_instances.find((ci) =>
-          idsEqual(ci.id, req.body.course_instance_id)
+          idsEqual(ci.id, req.body.course_instance_id),
         )
       ) {
         return next(error.make(400, `Invalid requested course instance role`));
@@ -302,7 +302,7 @@ router.post('/', (req, res, next) => {
     if (req.body.course_instance_id) {
       if (
         !res.locals.authz_data.course_instances.find((ci) =>
-          idsEqual(ci.id, req.body.course_instance_id)
+          idsEqual(ci.id, req.body.course_instance_id),
         )
       ) {
         return next(error.make(400, `Invalid requested course instance role`));
@@ -348,7 +348,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
