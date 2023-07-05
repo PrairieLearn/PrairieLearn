@@ -74,5 +74,29 @@ describe('server-jobs', () => {
     assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
   });
 
-  it('fails the job when fail() is called', async () => {});
+  it('fails the job when fail() is called', async () => {
+    const serverJob = await createServerJob({
+      type: 'test',
+      description: 'test job sequence',
+    });
+
+    await assert.isRejected(
+      serverJob.execute(async (job) => {
+        job.fail('failing job');
+      }),
+      'failing job'
+    );
+
+    const finishedJobSequence = await serverJobs.getJobSequenceAsync(serverJob.jobSequenceId, null);
+
+    assert.equal(finishedJobSequence.status, 'Error');
+    assert.lengthOf(finishedJobSequence.jobs, 1);
+
+    // The difference between this test and the previous one is that we assert
+    // that the output is exactly equal to the string passed to `fail()`. We
+    // don't expect there to be a stack trace.
+    const job = finishedJobSequence.jobs[0];
+    assert.equal(job.status, 'Error');
+    assert.equal(stripAnsi(job.output), 'failing job\n');
+  });
 });
