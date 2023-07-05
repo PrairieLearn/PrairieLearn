@@ -30,8 +30,6 @@ interface LockOptions {
   autoRenew?: boolean;
 }
 
-type TryLockOptions = Omit<LockOptions, 'timeout'>;
-
 /*
  * The functions here all identify locks by "name", which is a plain
  * string. The locks use the named_locks DB table. Each lock name
@@ -109,10 +107,7 @@ export async function close() {
  *
  * @param name The name of the lock to acquire.
  */
-export async function tryLockAsync(
-  name: string,
-  options: TryLockOptions = {}
-): Promise<Lock | null> {
+export async function tryLockAsync(name: string, options: LockOptions = {}): Promise<Lock | null> {
   return getLock(name, { timeout: 0, ...options });
 }
 
@@ -169,7 +164,7 @@ export async function doWithLock<T>(
  */
 export async function tryWithLock<T>(
   name: string,
-  options: TryLockOptions,
+  options: LockOptions,
   func: () => Promise<T>
 ): Promise<T | null> {
   const lock = await tryLockAsync(name, options);
