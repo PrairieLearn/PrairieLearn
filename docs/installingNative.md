@@ -10,79 +10,87 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/)
   - [PostgreSQL 15](https://www.postgresql.org)
   - [Python 3.10](https://www.python.org)
+  - [Graphviz](https://graphviz.org/download)
   - command-line git or [GitHub Desktop](https://desktop.github.com)
 
   On macOS these can be installed with [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distribution.
 
 - Clone the latest code:
 
-```sh
-git clone https://github.com/PrairieLearn/PrairieLearn.git
-cd PrairieLearn
-```
+  ```sh
+  git clone https://github.com/PrairieLearn/PrairieLearn.git
+  cd PrairieLearn
+  ```
 
 - Install all dependencies and transpile local packages:
 
-```sh
-# This one command will do everything!
-make deps
+  ```sh
+  # This one command will do everything!
+  make deps
 
-# Alternatively, you can run each step individually:
-yarn
-make build
-make python-deps
-```
+  # Alternatively, you can run each step individually:
+  yarn
+  make build
+  make python-deps
+  ```
+
+  On macOS, you may need to first set the following environment variables so that `pygraphviz` can find the necessary headers headers:
+
+  ```sh
+  export CFLAGS="-I$(brew --prefix graphviz)/include"
+  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
+  ```
 
 - Create the database (one time only):
 
-```sh
-initdb -D ~/defaultdb
-```
+  ```sh
+  initdb -D ~/defaultdb
+  ```
 
 - Run the database:
 
-```sh
-pg_ctl -D ~/defaultdb -l ~/logfile start
-```
+  ```sh
+  pg_ctl -D ~/defaultdb -l ~/logfile start
+  ```
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
-```sh
-psql -c "CREATE USER postgres;"
-psql -c "ALTER USER postgres WITH SUPERUSER;"
-```
+  ```sh
+  psql -c "CREATE USER postgres;"
+  psql -c "ALTER USER postgres WITH SUPERUSER;"
+  ```
 
 - Run the test suite:
 
-```sh
-cd PrairieLearn
-make test
-```
+  ```sh
+  cd PrairieLearn
+  make test
+  ```
 
 - Run the linters:
 
-```sh
-cd PrairieLearn
-make lint # or lint-js for Javascript only, or lint-python for Python only
-```
+  ```sh
+  cd PrairieLearn
+  make lint # or lint-js for Javascript only, or lint-python for Python only
+  ```
 
 - Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):
 
-```json
-{
-  "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
-  "filesRoot": "../filesRoot"
-}
-```
+  ```json
+  {
+    "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
+    "filesRoot": "../filesRoot"
+  }
+  ```
 
 - Run the server:
 
-```sh
-cd PrairieLearn
-make build
-make start
-```
+  ```sh
+  cd PrairieLearn
+  make build
+  make start
+  ```
 
-This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
+  This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
 
 - In a web-browser go to [http://localhost:3000](http://localhost:3000).
