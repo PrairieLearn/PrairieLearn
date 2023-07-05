@@ -31,7 +31,7 @@ module.exports.sync = async function (courseId, courseData) {
     // support that for implicit topics as well.
     //
     // TODO: consider requiring that all topics have a non-empty name.
-    if (!infofile.hasErrors(q) && typeof q.data?.topic === "string") {
+    if (!infofile.hasErrors(q) && typeof q.data?.topic === 'string') {
       knownQuestionTopicNames.add(q.data.topic);
     }
   });
