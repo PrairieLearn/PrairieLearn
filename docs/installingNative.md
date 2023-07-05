@@ -34,7 +34,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   make python-deps
   ```
 
-  On macOS, you may need to first set the following environment variables so that `pygraphviz` can find the necessary headers headers:
+  On macOS, you may need to first set the following environment variables so that `pygraphviz` can find the necessary headers:
 
   ```sh
   export CFLAGS="-I$(brew --prefix graphviz)/include"
