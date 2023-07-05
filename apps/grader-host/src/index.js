@@ -26,6 +26,8 @@ const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
 const load = require('./lib/load');
 
+const sql = sqldb.loadSqlEquiv(__filename);
+
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
 process.on('SIGTERM', () => {
@@ -39,15 +41,11 @@ process.on('SIGTERM', () => {
 
 async.series(
   [
-    (callback) => {
-      loadConfig((err) => {
-        if (ERR(err, callback)) return;
-        globalLogger.info('Config loaded:');
-        globalLogger.info(JSON.stringify(config, null, 2));
-        callback(null);
-      });
-    },
     async () => {
+      await loadConfig();
+      globalLogger.info('Config loaded:');
+      globalLogger.info(JSON.stringify(config, null, 2));
+
       if (config.sentryDsn) {
         await Sentry.init({
           dsn: config.sentryDsn,
@@ -56,9 +54,8 @@ async.series(
       }
       await lifecycle.init();
     },
-    (callback) => {
-      if (!config.useDatabase) return callback(null);
-      var pgConfig = {
+    async () => {
+      const pgConfig = {
         host: config.postgresqlHost,
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
@@ -66,22 +63,29 @@ async.series(
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
+      function idleErrorHandler(err) {
+        globalLogger.error('idle client error', err);
+        Sentry.captureException(err, {
+          level: 'fatal',
+          tags: {
+            // This may have been set by `sql-db.js`. We include this in the
+            // Sentry tags to more easily debug idle client errors.
+            last_query: err?.data?.lastQuery ?? undefined,
+          },
+        });
+        Sentry.close().finally(() => process.exit(1));
+      }
+
       globalLogger.info(
         'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
       );
-      var idleErrorHandler = function (err) {
-        globalLogger.error('idle client error', err);
-      };
-      sqldb.init(pgConfig, idleErrorHandler, function (err) {
-        if (ERR(err, callback)) return;
-        globalLogger.info('Successfully connected to database');
-        callback(null);
-      });
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
+      globalLogger.info('Successfully connected to database');
     },
-    (callback) => {
-      if (!config.useDatabase || !config.reportLoad) return callback(null);
-      load.init(config.maxConcurrentJobs);
-      callback(null);
+    async () => {
+      if (config.reportLoad) {
+        load.init(config.maxConcurrentJobs);
+      }
     },
     (callback) => {
       if (!config.useHealthCheck) return callback(null);
@@ -91,7 +95,7 @@ async.series(
       });
     },
     (callback) => {
-      if (!config.useDatabase || !config.useImagePreloading) return callback(null);
+      if (!config.useImagePreloading) return callback(null);
       pullImages((err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -111,11 +115,23 @@ async.series(
             config.jobsQueueUrl,
             (job, fail, success) => {
               globalLogger.info(`received ${job.jobId} from queue`);
-              handleJob(job, (err) => {
-                globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+
+              // Ensure that this job wasn't canceled in the time since job submission.
+              isJobCanceled(job, (err, canceled) => {
                 if (ERR(err, fail)) return;
-                globalLogger.info(`handleJob(${job.jobId}) succeeded`);
-                success();
+
+                if (canceled) {
+                  globalLogger.info(`Job ${job.jobId} was canceled; skipping job`);
+                  success();
+                  return;
+                }
+
+                handleJob(job, (err) => {
+                  globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
+                  if (ERR(err, fail)) return;
+                  globalLogger.info(`handleJob(${job.jobId}) succeeded`);
+                  success();
+                });
               });
             },
             (err) => {
@@ -143,6 +159,19 @@ async.series(
   }
 );
 
+function isJobCanceled(job, callback) {
+  sqldb.queryOneRow(
+    sql.check_job_cancellation,
+    {
+      grading_job_id: job.jobId,
+    },
+    (err, result) => {
+      if (ERR(err, callback)) return;
+      callback(null, result.rows[0].canceled);
+    }
+  );
+}
+
 function handleJob(job, done) {
   load.startJob();
 
@@ -166,7 +195,7 @@ function handleJob(job, done) {
 
   async.auto(
     {
-      context: (callback) => context(info, callback),
+      context: async () => await context(info),
       reportReceived: ['context', reportReceived],
       initDocker: ['context', initDocker],
       initFiles: ['context', initFiles],
@@ -195,19 +224,16 @@ function handleJob(job, done) {
   );
 }
 
-function context(info, callback) {
+async function context(info) {
   const {
     job: { jobId },
   } = info;
 
-  timeReporter.reportReceivedTime(jobId, (err, time) => {
-    if (ERR(err, callback)) return;
-    const context = {
-      ...info,
-      receivedTime: time,
-    };
-    callback(null, context);
-  });
+  const receivedTime = await timeReporter.reportReceivedTime(jobId);
+  return {
+    ...info,
+    receivedTime,
+  };
 }
 
 async function reportReceived(info) {
@@ -468,12 +494,9 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      (container, callback) => {
-        timeReporter.reportStartTime(jobId, (err, time) => {
-          if (ERR(err, callback)) return;
-          results.start_time = time;
-          callback(null, container);
-        });
+      async (container) => {
+        results.start_time = await timeReporter.reportStartTime(jobId);
+        return container;
       },
       async (container) => {
         const timeoutId = setTimeout(() => {
@@ -492,12 +515,9 @@ function runJob(info, callback) {
 
         return container;
       },
-      (container, callback) => {
-        timeReporter.reportEndTime(jobId, (err, time) => {
-          if (ERR(err, callback)) return;
-          results.end_time = time;
-          callback(null, container);
-        });
+      async (container) => {
+        results.end_time = await timeReporter.reportEndTime(jobId);
+        return container;
       },
       (container, callback) => {
         container.inspect((err, data) => {

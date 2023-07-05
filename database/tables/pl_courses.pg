@@ -4,7 +4,6 @@ columns
     deleted_at: timestamp with time zone
     display_timezone: text not null
     example_course: boolean not null default false
-    grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
     options: jsonb not null default '{}'::jsonb
@@ -17,6 +16,7 @@ columns
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
+    template_course: boolean not null default false
     title: text
 
 indexes
