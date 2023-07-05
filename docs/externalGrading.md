@@ -227,8 +227,7 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
 Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1MB listed above. Each element of the array is expected to be either an object containing the following keys:
 
 - `url`: The source of the image, typically formatted as standard HTML base64 image like `"data:[mimetype];base64,[contents]"`;
-- `label`: An optional label for the image (defaults to "Figure");
-- `style`: An optional CSS-based style to be applied to the image (e.g., `max-width: 200px`).
+- `label`: An optional label for the image (defaults to "Figure").
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
 
