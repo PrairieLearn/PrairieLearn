@@ -4,7 +4,6 @@ Custom colors for the PrarieLearn project based on Coloraide.
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
 import re
-from typing import Dict
 
 from coloraide import Color as PLColor
 from coloraide import algebra as alg
@@ -18,7 +17,7 @@ RE_PL_COLORS = re.compile(r"(?i)\b([0-9a-z][0-9a-z_]{2,})\b")
 
 # Colors used in /public/stylesheets/colors.css
 # includes additional aliases (e.g, "red3" also known as "incorrect_red")
-PL_COLORS_NAME_MAP: Dict[str, tuple[float, float, float, float]] = {
+PL_COLORS_NAME_MAP: dict[str, tuple[float, float, float, float]] = {
     "blue1": (57, 213, 255, 255),
     "blue2": (18, 151, 224, 255),
     "blue3": (0, 87, 160, 255),

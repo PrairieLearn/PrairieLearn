@@ -44,10 +44,10 @@ def test_color_constructor_error() -> None:
 @pytest.mark.parametrize(
     "color",
     [
-        ("red"),
-        ("RED"),
-        ("correct_green"),
-        ("none"),
+        "red",
+        "RED",
+        "correct_green",
+        "none",
     ],
 )
 def test_color_match(color: str) -> None:
