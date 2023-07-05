@@ -2874,7 +2874,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.6
     "@sa11y/format": ^5.2.0
-    "@sentry/profiling-node": ^0.3.0
+    "@sentry/profiling-node": ^1.0.8
     "@sentry/tracing": ^7.57.0
     "@socket.io/redis-adapter": ^8.2.1
     "@swc/core": ^1.3.68
@@ -3338,18 +3338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/core@npm:7.46.0"
-  dependencies:
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
-    tslib: ^1.9.3
-  checksum: af9733781f1ca9091d42363bf67b23999eebe8a2ea15178d93d942788e2adc2c0ed0709d7553cd03b94e19d6b0376066f4e1c367b4a6855c65114ddc864f26f3
-  languageName: node
-  linkType: hard
-
-"@sentry/core@npm:7.57.0":
+"@sentry/core@npm:7.57.0, @sentry/core@npm:^7.53.0":
   version: 7.57.0
   resolution: "@sentry/core@npm:7.57.0"
   dependencies:
@@ -3360,19 +3349,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/hub@npm:^7.44.1":
-  version: 7.46.0
-  resolution: "@sentry/hub@npm:7.46.0"
+"@sentry/hub@npm:^7.53.0":
+  version: 7.57.0
+  resolution: "@sentry/hub@npm:7.57.0"
   dependencies:
-    "@sentry/core": 7.46.0
-    "@sentry/types": 7.46.0
-    "@sentry/utils": 7.46.0
-    tslib: ^1.9.3
-  checksum: 2cb351b904466370e6f3064f75bdbdefd87814359f264869d164fa609bd5105811af77152ecb2821fdc2a39708ef7726ecd231b4997af1d7302b5cd62bb2aac8
+    "@sentry/core": 7.57.0
+    "@sentry/types": 7.57.0
+    "@sentry/utils": 7.57.0
+    tslib: ^2.4.1 || ^1.9.3
+  checksum: b667ebaa25aa8bd8c4a1aa3baee77eda9bd0c1127bb15851fa67aadae24ca7effad92c139d5af6291f2f171cc7cc2951b1503e86b49436b62c97862c68fbb4ad
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:^7.44.1, @sentry/node@npm:^7.57.0":
+"@sentry/node@npm:^7.53.0, @sentry/node@npm:^7.57.0":
   version: 7.57.0
   resolution: "@sentry/node@npm:7.57.0"
   dependencies:
@@ -3388,24 +3377,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/profiling-node@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "@sentry/profiling-node@npm:0.3.0"
+"@sentry/profiling-node@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "@sentry/profiling-node@npm:1.0.8"
   dependencies:
-    "@sentry/hub": ^7.44.1
-    "@sentry/node": ^7.44.1
-    "@sentry/tracing": ^7.44.1
-    "@sentry/types": ^7.44.1
-    "@sentry/utils": ^7.44.1
+    "@sentry/core": ^7.53.0
+    "@sentry/hub": ^7.53.0
+    "@sentry/node": ^7.53.0
+    "@sentry/types": ^7.53.0
+    "@sentry/utils": ^7.53.0
     detect-libc: ^2.0.1
-    nan: ^2.17.0
     node-abi: ^3.28.0
     node-gyp: ^9.3.0
-  checksum: 780cd6bbc14beb4ed88209708902b40989983b78fc3acf34d87b0ebf78d3bd1b348aaf26212a3ef76e0733f8035c8c6c252a46ad61c13451afa3ce4c184dad05
+  bin:
+    sentry-prune-profiler-binaries: scripts/prune-profiler-binaries.mjs
+  checksum: 0d3a11b125736239ac663d3d69811961639df00f93f1975eecde5a56e81c770c8e42184d638c61212d34c62145d0b49335cb8aeb685192eac4eb0321f64c9bfe
   languageName: node
   linkType: hard
 
-"@sentry/tracing@npm:^7.44.1, @sentry/tracing@npm:^7.57.0":
+"@sentry/tracing@npm:^7.57.0":
   version: 7.57.0
   resolution: "@sentry/tracing@npm:7.57.0"
   dependencies:
@@ -3414,31 +3404,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/types@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/types@npm:7.46.0"
-  checksum: a61a525e425db76fce792c83677b0be6a9b6311cefe6590cc146cfde17870f02918785cef6af3a345c5b2e8631ef1c76785b5b270d4428d612b1cfe30d07a946
-  languageName: node
-  linkType: hard
-
-"@sentry/types@npm:7.57.0, @sentry/types@npm:^7.44.1":
+"@sentry/types@npm:7.57.0, @sentry/types@npm:^7.53.0":
   version: 7.57.0
   resolution: "@sentry/types@npm:7.57.0"
   checksum: 2836f35af0579fd1666d5871809143f3e138af63b102a3137ec0a72be5c24b7e59747e48e160cbdf0700f067a36d70915dbf14617ebf4c9a3990e9d37ceb74ae
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:7.46.0":
-  version: 7.46.0
-  resolution: "@sentry/utils@npm:7.46.0"
-  dependencies:
-    "@sentry/types": 7.46.0
-    tslib: ^1.9.3
-  checksum: cc550dac9105e68e28b770879426e12b52953468f3f34df7ff0f5352cdcc4b8a8af2144fe1a20f0a23d3f0afdbba14661951765e3d9f81335acafc35ffd632f1
-  languageName: node
-  linkType: hard
-
-"@sentry/utils@npm:7.57.0, @sentry/utils@npm:^7.44.1":
+"@sentry/utils@npm:7.57.0, @sentry/utils@npm:^7.53.0":
   version: 7.57.0
   resolution: "@sentry/utils@npm:7.57.0"
   dependencies:
@@ -16037,7 +16010,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.11.1, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
+"tslib@npm:^1.11.1, tslib@npm:^1.8.1":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
