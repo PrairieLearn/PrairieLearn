@@ -48,7 +48,7 @@ router.get(
       .map((row) => row.id);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -75,7 +75,7 @@ router.get(
     res.locals.row = result.rows[0];
 
     res.render(`${__dirname}/assessmentStats.ejs`, res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -155,7 +155,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 router.post('/', (req, res, next) => {
@@ -172,7 +172,7 @@ router.post('/', (req, res, next) => {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`
+            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
@@ -183,9 +183,9 @@ router.post('/', (req, res, next) => {
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(
-                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings'
+                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
               );
-            }
+            },
           );
         }
       });
@@ -195,7 +195,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

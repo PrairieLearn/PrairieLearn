@@ -110,7 +110,7 @@ module.exports = {
       {
         min: numWorkers,
         max: numWorkers,
-      }
+      },
     );
 
     pool.on('factoryCreateError', (err) => {

@@ -45,13 +45,13 @@ export function run(callback: (err?: Error | null) => void): void {
               logger.error('Error finishing exam', error.addData(err, { examItem }));
             }
             callback(null);
-          }
+          },
         );
       },
       function (err) {
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   });
 }

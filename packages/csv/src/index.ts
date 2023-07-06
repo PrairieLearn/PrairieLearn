@@ -14,7 +14,7 @@ export interface StringifyNonblockingOptions extends StringifierOptions {
  */
 export function stringifyNonblocking(
   data: any[],
-  options: StringifyNonblockingOptions = {}
+  options: StringifyNonblockingOptions = {},
 ): Stringifier {
   const { batchSize = 100, ...stringifierOptions } = options;
   const stringifier = new Stringifier(stringifierOptions);
@@ -54,7 +54,7 @@ interface StringifyOptions<T = any, U = any>
  * `node:stream/promises`, which will help ensure that errors are handled properly.
  */
 export function stringifyStream<T = any, U = any>(
-  options: StringifyOptions<T, U> = {}
+  options: StringifyOptions<T, U> = {},
 ): NodeJS.ReadWriteStream {
   const { transform: _transform, ...stringifierOptions } = options;
   const stringifier = new Stringifier(stringifierOptions);
