@@ -99,7 +99,7 @@ module.exports = {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/',
         );
       });
     });
@@ -158,7 +158,7 @@ module.exports = {
             res = response;
             page = body;
             callback(null);
-          }
+          },
         );
       });
       it('should parse', function () {
@@ -187,8 +187,8 @@ module.exports = {
           if (result.rowCount !== questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
-              )
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+              ),
             );
           }
           locals.instance_questions = result.rows;

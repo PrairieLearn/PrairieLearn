@@ -5,7 +5,7 @@ import os
 import random
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Optional, TypedDict
+from typing import Optional, TypedDict
 
 import chevron
 import lxml.html
@@ -32,6 +32,7 @@ class SourceBlocksOrderType(Enum):
 class FeedbackType(Enum):
     NONE = "none"
     FIRST_WRONG = "first-wrong"
+    FIRST_WRONG_VERBOSE = "first-wrong-verbose"
 
 
 class PartialCreditType(Enum):
@@ -59,9 +60,13 @@ class OrderBlocksAnswerData(TypedDict):
     depends: list[str]  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
+    distractor_feedback: Optional[str]
     uuid: str
 
 
+FIRST_WRONG_TYPES = frozenset(
+    [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
+)
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -84,13 +89,8 @@ FIRST_WRONG_FEEDBACK = {
         <li>This block needs to come after a block that did not appear before it </li>""",
     "indentation": r"""<li>This line is indented incorrectly </li>""",
     "block-group": r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>""",
+    "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
 }
-
-
-def filter_multiple_from_array(
-    data: list[dict[str, Any]], keys: list[str]
-) -> list[dict[str, Any]]:
-    return [{key: item[key] for key in keys} for item in data]
 
 
 def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
@@ -216,7 +216,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
         elif grading_method in [GradingMethodType.UNORDERED, GradingMethodType.ORDERED]:
             pl.check_attribs(
-                html_tags, required_attribs=[], optional_attribs=["correct", "indent"]
+                html_tags,
+                required_attribs=[],
+                optional_attribs=["correct", "indent", "distractor-feedback"],
             )
         elif grading_method is GradingMethodType.RANKING:
             pl.check_attribs(
@@ -227,6 +229,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "tag",
                     "ranking",
                     "indent",
+                    "distractor-feedback",
                     "distractor-for",
                 ],
             )
@@ -240,6 +243,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "depends",
                     "comment",
                     "indent",
+                    "distractor-feedback",
                     "distractor-for",
                 ],
             )
@@ -250,6 +254,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
+        distractor_feedback = pl.get_string_attrib(
+            html_tags, "distractor-feedback", None
+        )
+
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
             raise Exception(
@@ -288,6 +296,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "distractor_for": distractor_for,
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
+            "distractor_feedback": distractor_feedback,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -414,6 +423,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
 
+def get_distractors(
+    all_blocks: list[OrderBlocksAnswerData], correct_blocks: list[OrderBlocksAnswerData]
+) -> list[OrderBlocksAnswerData]:
+    return [
+        block
+        for block in all_blocks
+        if block["uuid"] not in set(block2["uuid"] for block2 in correct_blocks)
+    ]
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
@@ -499,18 +518,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
-        student_submission = ""
+        student_submission = [
+            {
+                "inner_html": attempt["inner_html"],
+                "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
+                "badge_type": attempt.get("badge_type", ""),
+                "icon": attempt.get("icon", ""),
+                "distractor_feedback": attempt.get("distractor_feedback", ""),
+            }
+            for attempt in data["submitted_answers"].get(answer_name, [])
+        ]
+
         score = None
         feedback = None
-        if answer_name in data["submitted_answers"]:
-            student_submission = [
-                {
-                    "inner_html": attempt["inner_html"],
-                    "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
-                }
-                for attempt in data["submitted_answers"][answer_name]
-            ]
-
         if answer_name in data["partial_scores"]:
             score = data["partial_scores"][answer_name]["score"]
             feedback = data["partial_scores"][answer_name].get("feedback", "")
@@ -521,6 +541,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "student_submission": student_submission,
             "feedback": feedback,
             "block_formatting": block_formatting,
+            "allow_feedback_badges": not all(
+                block.get("badge_type", "") == "" for block in student_submission
+            ),
         }
 
         if score is not None:
@@ -572,6 +595,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
+        distractors = get_distractors(
+            data["params"][answer_name], data["correct_answers"][answer_name]
+        )
+
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
@@ -586,6 +613,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "ordering_message": ordering_message,
             "indentation_message": indentation_message,
             "block_formatting": block_formatting,
+            "distractors": distractors,
+            "show_distractors": (len(distractors) > 0),
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -619,30 +648,33 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
     )
     correct_answers = data["correct_answers"][answer_name]
+    blocks = data["params"][answer_name]
 
-    if grading_method is GradingMethodType.RANKING:
+    if grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
         for answer in student_answer:
-            search = next(
+            matching_block = next(
                 (
-                    item
-                    for item in correct_answers
-                    if item["inner_html"] == answer["inner_html"]
+                    block
+                    for block in correct_answers
+                    if block["inner_html"] == answer["inner_html"]
                 ),
                 None,
             )
-            answer["ranking"] = search["ranking"] if search is not None else None
-            answer["tag"] = search["tag"] if search is not None else None
-    elif grading_method is GradingMethodType.DAG:
-        for answer in student_answer:
-            search = next(
-                (
-                    item
-                    for item in correct_answers
-                    if item["inner_html"] == answer["inner_html"]
-                ),
-                None,
+            answer["tag"] = (
+                matching_block["tag"] if matching_block is not None else None
             )
-            answer["tag"] = search["tag"] if search is not None else None
+            if grading_method is GradingMethodType.RANKING:
+                answer["ranking"] = (
+                    matching_block["ranking"] if matching_block is not None else None
+                )
+
+            if matching_block is None:
+                matching_block = next(
+                    block
+                    for block in blocks
+                    if block["inner_html"] == answer["inner_html"]
+                )
+            answer["distractor_feedback"] = matching_block["distractor_feedback"]
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
@@ -674,6 +706,33 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     data["submitted_answers"][answer_name] = student_answer
     if answer_raw_name in data["submitted_answers"]:
         del data["submitted_answers"][answer_raw_name]
+
+
+def construct_feedback(
+    feedback_type: FeedbackType,
+    first_wrong: Optional[int],
+    group_belonging: dict[str, Optional[str]],
+    check_indentation: bool,
+    first_wrong_is_distractor: bool,
+) -> str:
+    if feedback_type is FeedbackType.NONE:
+        return ""
+
+    if first_wrong is None:
+        return FIRST_WRONG_FEEDBACK["incomplete"]
+    elif (
+        feedback_type is FeedbackType.FIRST_WRONG_VERBOSE and first_wrong_is_distractor
+    ):
+        return FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
+    else:
+        feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
+        has_block_groups = group_belonging and set(group_belonging.values()) != {None}
+        if check_indentation:
+            feedback += FIRST_WRONG_FEEDBACK["indentation"]
+        if has_block_groups:
+            feedback += FIRST_WRONG_FEEDBACK["block-group"]
+        feedback += "</ul>"
+        return feedback
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -760,6 +819,26 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
+        if feedback_type in FIRST_WRONG_TYPES:
+            for block in student_answer[:num_initial_correct]:
+                block["badge_type"] = "badge-success"
+                block["icon"] = "fa-check"
+                block["distractor_feedback"] = ""
+
+            if first_wrong is not None:
+                student_answer[first_wrong]["badge_type"] = "badge-danger"
+                student_answer[first_wrong]["icon"] = "fa-xmark"
+                if feedback_type is not FeedbackType.FIRST_WRONG_VERBOSE:
+                    student_answer[first_wrong]["distractor_feedback"] = ""
+
+                for block in student_answer[first_wrong + 1 :]:
+                    block["badge_type"] = ""
+                    block["icon"] = ""
+                    block["distractor_feedback"] = ""
+
+        num_initial_correct, true_answer_length = grade_dag(
+            submission, depends_graph, group_belonging
+        )
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -774,23 +853,21 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if final_score < 1:
-            if feedback_type is FeedbackType.NONE:
-                feedback = ""
-            elif feedback_type is FeedbackType.FIRST_WRONG:
-                if first_wrong is None:
-                    feedback = FIRST_WRONG_FEEDBACK["incomplete"]
-                else:
-                    feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(
-                        str(first_wrong + 1)
-                    )
-                    has_block_groups = group_belonging != {} and set(
-                        group_belonging.values()
-                    ) != {None}
-                    if check_indentation:
-                        feedback += FIRST_WRONG_FEEDBACK["indentation"]
-                    if has_block_groups:
-                        feedback += FIRST_WRONG_FEEDBACK["block-group"]
-                    feedback += "</ul>"
+            first_wrong_is_distractor = first_wrong is not None and student_answer[
+                first_wrong
+            ]["uuid"] in set(
+                block["uuid"]
+                for block in get_distractors(
+                    data["params"][answer_name], data["correct_answers"][answer_name]
+                )
+            )
+            feedback = construct_feedback(
+                feedback_type,
+                first_wrong,
+                group_belonging,
+                check_indentation,
+                first_wrong_is_distractor,
+            )
 
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
@@ -807,6 +884,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     answer_name = pl.get_string_attrib(element, "answers-name")
     answer_name_field = answer_name + "-input"
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
@@ -824,9 +902,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
-        answer = filter_multiple_from_array(
-            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid"]
-        )
+        answer = data["correct_answers"][answer_name]
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": 1,
@@ -837,35 +913,39 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = filter_multiple_from_array(
-            data["correct_answers"][answer_name], ["inner_html", "indent", "uuid"]
-        )
+        answer = deepcopy(data["correct_answers"][answer_name])
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             (
-                grading_method is GradingMethodType.DAG
-                or grading_method is GradingMethodType.RANKING
+                grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]
+                and partial_credit_type is PartialCreditType.LCS
             )
-            and partial_credit_type is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
-        if (
-            grading_method is GradingMethodType.DAG
-            and feedback_type is FeedbackType.FIRST_WRONG
-        ):
-            feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(1)
+        if grading_method in [
+            GradingMethodType.DAG,
+            GradingMethodType.RANKING,
+        ]:
+            first_wrong = 0
             group_belonging = {
                 ans["tag"]: ans["group_info"]["tag"]
                 for ans in data["correct_answers"][answer_name]
             }
-            has_block_groups = group_belonging != {} and set(
-                group_belonging.values()
-            ) != {None}
-            if has_block_groups:
-                feedback += FIRST_WRONG_FEEDBACK["block-group"]
-            feedback += "</ul>"
+            first_wrong_is_distractor = answer[first_wrong]["uuid"] in set(
+                block["uuid"]
+                for block in get_distractors(
+                    data["params"][answer_name], data["correct_answers"][answer_name]
+                )
+            )
+            feedback = construct_feedback(
+                feedback_type,
+                first_wrong,
+                group_belonging,
+                check_indentation,
+                first_wrong_is_distractor,
+            )
         else:
             feedback = ""
 

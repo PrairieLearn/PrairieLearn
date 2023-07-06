@@ -33,7 +33,7 @@ describe('Assessment modules syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
-      (am) => am.name === newAssessmentModule.name
+      (am) => am.name === newAssessmentModule.name,
     );
     checkAssessmentModule(syncedAssessmentModule, newAssessmentModule);
   });
@@ -50,7 +50,7 @@ describe('Assessment modules syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
-      (am) => am.name === newAssessmentModule.name
+      (am) => am.name === newAssessmentModule.name,
     );
     assert.isUndefined(syncedAssessmentModule);
   });
@@ -70,7 +70,7 @@ describe('Assessment modules syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
-      (as) => as.name === newAssessmentModule2.name
+      (as) => as.name === newAssessmentModule2.name,
     );
     checkAssessmentModule(syncedAssessmentModule, newAssessmentModule2);
     const syncedCourses = await util.dumpTable('pl_courses');

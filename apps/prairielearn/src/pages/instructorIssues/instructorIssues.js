@@ -130,7 +130,7 @@ router.get('/', function (req, res, next) {
           acc.add(ci.id);
           return acc;
         },
-        new Set()
+        new Set(),
       );
 
       res.locals.issueCount = result.rowCount ? result.rows[0].issue_count : 0;
@@ -148,8 +148,8 @@ router.get('/', function (req, res, next) {
           if (!row.course_instance_id) {
             return next(
               new Error(
-                `Issue id ${row.issue_id} is associated with an assessment but not a course instance`
-              )
+                `Issue id ${row.issue_id} is associated with an assessment but not a course instance`,
+              ),
             );
           }
 
@@ -161,7 +161,7 @@ router.get('/', function (req, res, next) {
           //
           // Add a flag to each row saying if the effective user has this access.
           row.assessment.hide_link = !linkable_course_instance_ids.has(
-            parseInt(row.course_instance_id)
+            parseInt(row.course_instance_id),
           );
 
           // If necessary, construct the URL prefix to the appropriate course instance
@@ -204,7 +204,7 @@ router.get('/', function (req, res, next) {
             _.some(
               res.locals.authz_data.course_instances,
               (ci) =>
-                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view
+                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view,
             ));
       });
 
@@ -264,7 +264,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

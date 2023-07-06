@@ -86,7 +86,7 @@ describe('Assessment that forces students to complete questions in-order', funct
         context.instanceQuestions.map((e) => {
           return e.locked;
         }),
-        initialExpectedLocks
+        initialExpectedLocks,
       );
     });
 
@@ -103,7 +103,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     it('Question 3 should require 60% on Question 2 to unlock', () => {
       assert.include(
         response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
-        '60% on Question 2'
+        '60% on Question 2',
       );
     });
   });
