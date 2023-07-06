@@ -120,10 +120,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # we'll disable detailed scores for all questions
             tests_missing_points = any(
                 [
-                    "points" not in test
-                    or test["points"] is None
-                    or "max_points" not in test
-                    or test["max_points"] is None
+                    test.get("points") is None or test.get("max_points") is None
                     for test in results_tests
                 ]
             )

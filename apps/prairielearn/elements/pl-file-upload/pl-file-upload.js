@@ -94,9 +94,9 @@
           if (!this.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
             this.addWarningMessage(
               '<strong>' +
-              file.name +
-              '</strong>' +
-              ' did not match any accepted file for this question.',
+                file.name +
+                '</strong>' +
+                ' did not match any accepted file for this question.',
             );
             return;
           }
@@ -209,10 +209,10 @@
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $(
           '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
-          uuid +
-          '-' +
-          index +
-          '"></div>',
+            uuid +
+            '-' +
+            index +
+            '"></div>',
         );
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
@@ -233,7 +233,7 @@
           );
         } else if (fileData) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fa fa-check-circle" style="color: ${this.checkIconColor}" aria-hidden="true"></i>',
+            `<i class="file-status-icon fa fa-check-circle" style="color: ${this.checkIconColor}" aria-hidden="true"></i>`,
           );
         } else {
           $fileStatusContainerLeft.append(
@@ -264,10 +264,10 @@
 
           var $preview = $(
             '<div class="file-preview collapse" id="file-preview-' +
-            uuid +
-            '-' +
-            index +
-            '"></div>',
+              uuid +
+              '-' +
+              index +
+              '"></div>',
           );
 
           var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
@@ -307,8 +307,8 @@
           $file.append($preview);
           $fileStatusContainer.append(
             '<div class="align-self-center">' +
-            download +
-            '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+              download +
+              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
           );
         }
 
