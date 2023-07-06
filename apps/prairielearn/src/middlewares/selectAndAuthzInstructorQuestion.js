@@ -20,7 +20,7 @@ module.exports = function (req, res, next) {
         if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
         _.assign(res.locals, result.rows[0]);
         next();
-      }
+      },
     );
   } else {
     const params = {

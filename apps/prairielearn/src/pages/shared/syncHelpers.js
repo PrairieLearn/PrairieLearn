@@ -49,7 +49,7 @@ module.exports.pullAndUpdate = async function (locals) {
             // Executed in the root directory, but this shouldn't really matter.
             cwd: '/',
             env: gitEnv,
-          }
+          },
         );
       } else {
         // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
@@ -86,7 +86,7 @@ module.exports.pullAndUpdate = async function (locals) {
       const syncResult = await syncFromDisk.syncDiskToSqlAsync(
         locals.course.path,
         locals.course.id,
-        job
+        job,
       );
 
       if (config.chunksGenerator) {
@@ -143,7 +143,7 @@ module.exports.gitStatus = async function (locals) {
       ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
       {
         cwd: locals.course.path,
-      }
+      },
     );
   });
 
@@ -299,9 +299,9 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
                     },
                     (output) => {
                       logProgressOutput(output, job, printedInfos, 'Push progress: ');
-                    }
+                    },
                   );
-                }
+                },
               );
             });
           });
@@ -309,7 +309,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
       },
       (output) => {
         logProgressOutput(output, job, printedInfos, 'Pull progress: ');
-      }
+      },
     );
   });
 }

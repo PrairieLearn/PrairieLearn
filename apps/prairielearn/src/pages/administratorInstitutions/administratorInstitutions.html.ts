@@ -18,7 +18,7 @@ export function AdministratorInstitutions({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
@@ -71,7 +71,7 @@ export function AdministratorInstitutions({
                         <td><code>${institution.uid_regexp}</code></td>
                         <td>${authn_providers.join(', ')}</td>
                       </tr>
-                    `
+                    `,
                   )}
                 </tbody>
               </table>

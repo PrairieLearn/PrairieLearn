@@ -118,7 +118,7 @@ module.exports = {
           debug('before(): completed');
           if (ERR(err, callback)) return;
           callback(null);
-        }
+        },
       );
     };
   },
@@ -175,7 +175,7 @@ module.exports = {
         debug('after(): complete');
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   },
 };
@@ -218,5 +218,5 @@ module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(
-  module.exports.waitForJobSequenceSuccessAsync
+  module.exports.waitForJobSequenceSuccessAsync,
 );

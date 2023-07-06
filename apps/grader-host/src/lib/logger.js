@@ -30,7 +30,7 @@ logger.initCloudWatchLogging = function (groupName, streamName) {
       awsConfig: {
         region: config.awsRegion,
       },
-    })
+    }),
   );
 };
 

@@ -30,7 +30,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 function AdministratorBatchedMigrations({ batchedMigrations, resLocals }) {
   const hasBatchedMigrations = batchedMigrations.length > 0;
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -81,7 +81,7 @@ function AdministratorBatchedMigration({
   resLocals,
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -217,7 +217,7 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
                           <pre class="mt-3 p-3 rounded bg-dark text-white"><code>${JSON.stringify(
                             job.data,
                             null,
-                            2
+                            2,
                           )}</code></pre>
                         </details>
                       `

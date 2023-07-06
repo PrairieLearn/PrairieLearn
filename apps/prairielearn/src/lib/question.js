@@ -70,7 +70,7 @@ module.exports = {
       (err) => {
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   },
 
@@ -113,7 +113,7 @@ module.exports = {
             variant.params['_required_file_names'] = [];
           }
           variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-            variant.params['_workspace_required_file_names']
+            variant.params['_workspace_required_file_names'],
           );
         }
         if (variant.broken) {
@@ -164,7 +164,7 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             return callback(null, fileData);
-          }
+          },
         );
       });
     });
@@ -196,7 +196,7 @@ module.exports = {
           if (ERR(err, callback)) return;
           const question = result.rows[0];
           callback(null, question);
-        }
+        },
       );
     }
   },
@@ -226,7 +226,7 @@ module.exports = {
     question_course,
     options,
     require_open,
-    callback
+    callback,
   ) {
     module.exports._selectQuestion(question_id, instance_question_id, (err, question) => {
       if (ERR(err, callback)) return;
@@ -267,10 +267,10 @@ module.exports = {
               (err) => {
                 if (ERR(err, callback)) return;
                 return callback(null, variant);
-              }
+              },
             );
           });
-        }
+        },
       );
     });
   },
@@ -301,7 +301,7 @@ module.exports = {
     question_course,
     options,
     require_open,
-    callback
+    callback,
   ) {
     if (instance_question_id != null) {
       // see if we have a useable existing variant, otherwise
@@ -329,10 +329,10 @@ module.exports = {
             if (ERR(err, callback)) return;
             debug(
               'instance_questions_select_variant was null, run through _makeAndInsertVariant',
-              variant
+              variant,
             );
             callback(null, variant);
-          }
+          },
         );
       });
     } else {
@@ -351,7 +351,7 @@ module.exports = {
         (err, variant) => {
           if (ERR(err, callback)) return;
           callback(null, variant);
-        }
+        },
       );
     }
   },
@@ -443,7 +443,7 @@ module.exports = {
 
               debug('saveSubmission()', 'completed parse()');
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -459,7 +459,7 @@ module.exports = {
               if (ERR(err, callback)) return;
               debug('saveSubmission()', `wrote courseIssues: ${courseIssues.length}`);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -492,7 +492,7 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug('saveSubmission()', 'returning', 'submission_id:', submission_id);
         callback(null, submission_id);
-      }
+      },
     );
   },
 
@@ -531,7 +531,7 @@ module.exports = {
     variant_course,
     authn_user_id,
     overrideGradeRateCheck,
-    callback
+    callback,
   ) {
     debug('_gradeVariant()');
     let questionModule, question_course, courseIssues, data, submission, grading_job;
@@ -551,7 +551,7 @@ module.exports = {
               submission = result.rows[0];
               debug('_gradeVariant()', 'selected submission', 'submission.id:', submission.id);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -563,7 +563,7 @@ module.exports = {
               '_gradeVariant()',
               'checked grade rate',
               'allow_grade_left_ms:',
-              result.rows[0].allow_grade_left_ms
+              result.rows[0].allow_grade_left_ms,
             );
             if (result.rows[0].allow_grade_left_ms > 0) return callback(new NoSubmissionError());
             callback(null);
@@ -605,7 +605,7 @@ module.exports = {
                 data.broken = hasFatalIssue;
                 debug('_gradeVariant()', 'completed grade()', 'hasFatalIssue:', hasFatalIssue);
                 callback(null);
-              }
+              },
             );
           } else {
             // for External grading we don't do anything
@@ -627,7 +627,7 @@ module.exports = {
               if (ERR(err, callback)) return;
               debug('_gradeVariant()', `wrote courseIssues: ${courseIssues.length}`);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -680,7 +680,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 callback(null);
               });
-            }
+            },
           );
         },
       ],
@@ -702,7 +702,7 @@ module.exports = {
         } else {
           callback(null);
         }
-      }
+      },
     );
   },
 
@@ -733,7 +733,7 @@ module.exports = {
               submission_id = ret_submission_id;
               debug('saveAndGradeSubmission()', 'submission_id:', submission_id);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -749,7 +749,7 @@ module.exports = {
               grading_job_id = ret_grading_job_id;
               debug('saveAndGradeSubmission()', 'graded');
               callback(null);
-            }
+            },
           );
         },
       ],
@@ -767,7 +767,7 @@ module.exports = {
           // We're done!
           callback(null, submission_id);
         }
-      }
+      },
     );
   },
 
@@ -810,7 +810,7 @@ module.exports = {
               data.broken = hasFatalIssue;
               debug('_createTestSubmission()', 'completed test()');
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -826,7 +826,7 @@ module.exports = {
               if (ERR(err, callback)) return;
               debug('_createTestSubmission()', `wrote courseIssues: ${courseIssues.length}`);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -895,7 +895,7 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug('_createTestSubmission()', 'returning', 'submission_id:', submission_id);
         callback(null, submission_id);
-      }
+      },
     );
   },
 
@@ -930,7 +930,7 @@ module.exports = {
     checkEqual(
       'format_errors keys',
       Object.keys(expected_submission.format_errors),
-      Object.keys(test_submission.format_errors)
+      Object.keys(test_submission.format_errors),
     );
     if (!test_submission.gradable || !expected_submission.gradable) {
       return callback(null, courseIssues);
@@ -938,7 +938,7 @@ module.exports = {
     checkEqual(
       'partial_scores',
       expected_submission.partial_scores,
-      test_submission.partial_scores
+      test_submission.partial_scores,
     );
     checkEqual('score', expected_submission.score, test_submission.score);
     callback(null, courseIssues);
@@ -973,7 +973,7 @@ module.exports = {
               expected_submission_id = ret_submission_id;
               debug('_testVariant()', 'expected_submission_id:', expected_submission_id);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -1000,7 +1000,7 @@ module.exports = {
               test_submission_id = ret_submission_id;
               debug('_testVariant()', 'test_submission_id:', test_submission_id);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -1015,7 +1015,7 @@ module.exports = {
               if (ERR(err, callback)) return;
               debug('testVariant()', 'graded');
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -1049,9 +1049,9 @@ module.exports = {
                 (err) => {
                   if (ERR(err, callback)) return;
                   callback(null);
-                }
+                },
               );
-            }
+            },
           );
         },
       ],
@@ -1059,7 +1059,7 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug('_testVariant()', 'returning');
         callback(null, expected_submission, test_submission);
-      }
+      },
     );
   },
 
@@ -1080,7 +1080,7 @@ module.exports = {
     variant_course,
     test_type,
     authn_user_id,
-    callback
+    callback,
   ) {
     debug('_testQuestion()');
 
@@ -1114,7 +1114,7 @@ module.exports = {
               variant = ret_variant;
               debug('_testQuestion()', 'created variant_id: :', variant.id);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -1135,10 +1135,10 @@ module.exports = {
                 'expected_submission_id:',
                 expected_submission ? expected_submission.id : null,
                 'test_submission_id:',
-                test_submission ? test_submission.id : null
+                test_submission ? test_submission.id : null,
               );
               callback(null);
-            }
+            },
           );
         },
       ],
@@ -1146,7 +1146,7 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug('_testQuestion()', 'returning');
         callback(null, variant, expected_submission, test_submission);
-      }
+      },
     );
   },
 
@@ -1173,7 +1173,7 @@ module.exports = {
     course,
     test_type,
     authn_user_id,
-    callback
+    callback,
   ) {
     let variant,
       expected_submission,
@@ -1196,7 +1196,7 @@ module.exports = {
               expected_submission = ret_expected_submission;
               test_submission = ret_test_submission;
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -1216,18 +1216,18 @@ module.exports = {
             'true_answer',
           ];
           logger.verbose(
-            'variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    ')
+            'variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '),
           );
           if (_.isObject(expected_submission)) {
             logger.verbose(
               'expected_submission:\n' +
-                jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    ')
+                jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
             );
           }
           if (_.isObject(test_submission)) {
             logger.verbose(
               'test_submission:\n' +
-                jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    ')
+                jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
             );
           }
           callback(null);
@@ -1248,7 +1248,7 @@ module.exports = {
       (err) => {
         if (ERR(err, callback)) return;
         callback(null, success);
-      }
+      },
     );
   },
 
@@ -1271,7 +1271,7 @@ module.exports = {
     group_work,
     course_instance,
     course,
-    authn_user_id
+    authn_user_id,
   ) {
     let success = true;
     const test_types = ['correct', 'incorrect', 'invalid'];
@@ -1301,7 +1301,7 @@ module.exports = {
             if (ERR(err, callback)) return;
             success = success && ret_success;
             callback(null);
-          }
+          },
         );
       });
 
@@ -1336,7 +1336,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback
+    callback,
   ) {
     questionServers.getModule(question.type, (err, questionModule) => {
       if (ERR(err, callback)) return;
@@ -1365,9 +1365,9 @@ module.exports = {
             (err) => {
               if (ERR(err, callback)) return;
               return callback(null, htmls);
-            }
+            },
           );
-        }
+        },
       );
     });
   },
@@ -1441,7 +1441,7 @@ module.exports = {
     assessment,
     assessment_instance,
     assessment_question,
-    authz_result
+    authz_result,
   ) {
     const locals = {};
 
@@ -1519,7 +1519,7 @@ module.exports = {
     // ID is coerced to a string so that it matches what we get back from the client
     locals.variantToken = generateSignedToken(
       { variantId: variant.id.toString() },
-      config.secretKey
+      config.secretKey,
     );
 
     if (variant.broken) {
@@ -1571,7 +1571,7 @@ module.exports = {
         async () => {
           locals.question_course = await module.exports._getQuestionCourse(
             locals.question,
-            locals.course
+            locals.course,
           );
         },
         (callback) => {
@@ -1611,7 +1611,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 locals.variant = variant;
                 callback(null);
-              }
+              },
             );
           }
         },
@@ -1623,7 +1623,7 @@ module.exports = {
             variant,
             question,
             instance_question,
-            assessment
+            assessment,
           );
           _.assign(locals, urls);
           callback(null);
@@ -1651,7 +1651,7 @@ module.exports = {
             assessment,
             assessment_instance,
             assessment_question,
-            authz_result
+            authz_result,
           );
           _.assign(locals, newLocals);
           if (locals.manualGradingInterface && question?.show_correct_answer) {
@@ -1684,7 +1684,7 @@ module.exports = {
               sql.select_detailed_submissions,
               {
                 submission_ids: submissionsToRender.map((s) => s.id),
-              }
+              },
             );
 
             locals.submissions = result.rows.map((s, idx) => ({
@@ -1737,7 +1737,7 @@ module.exports = {
               locals.submissionHtmls = htmls.submissionHtmls;
               locals.answerHtml = htmls.answerHtml;
               callback(null);
-            }
+            },
           );
         },
         async () => {
@@ -1790,7 +1790,7 @@ module.exports = {
       (err) => {
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   },
 
@@ -1799,7 +1799,7 @@ module.exports = {
       const phases = [];
       const totalDuration = differenceInMilliseconds(
         parseISO(job.graded_at),
-        parseISO(job.grading_requested_at)
+        parseISO(job.grading_requested_at),
       );
       const formatDiff = (start, end, addToPhases = true) => {
         const duration = differenceInMilliseconds(parseISO(end), parseISO(start));
@@ -1850,7 +1850,7 @@ module.exports = {
     csrfToken,
     authorizedEdit,
     renderScorePanels,
-    callback
+    callback,
   ) {
     const params = {
       submission_id,
@@ -1901,8 +1901,8 @@ module.exports = {
           variant,
           question,
           instance_question,
-          assessment
-        )
+          assessment,
+        ),
       );
       _.assign(
         locals,
@@ -1912,8 +1912,8 @@ module.exports = {
           instance_question,
           assessment,
           assessment_instance,
-          assessment_question
-        )
+          assessment_question,
+        ),
       );
 
       // Using util.promisify on renderFile instead of {async: true} from EJS, because the
@@ -1935,7 +1935,7 @@ module.exports = {
               submissions,
               question_course,
               course_instance,
-              locals
+              locals,
             );
             submission.grading_job_id = grading_job_id;
             submission.grading_job_status = grading_job_status;
@@ -1983,7 +1983,7 @@ module.exports = {
               '..',
               'pages',
               'partials',
-              'questionScorePanel.ejs'
+              'questionScorePanel.ejs',
             );
             panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
           },
@@ -2006,7 +2006,7 @@ module.exports = {
               '..',
               'pages',
               'partials',
-              'assessmentScorePanel.ejs'
+              'assessmentScorePanel.ejs',
             );
             panels.assessmentScorePanel = await renderFileAsync(templatePath, renderParams);
           },
@@ -2030,7 +2030,7 @@ module.exports = {
               '..',
               'pages',
               'partials',
-              'questionFooter.ejs'
+              'questionFooter.ejs',
             );
             panels.questionPanelFooter = await renderFileAsync(templatePath, renderParams);
           },
@@ -2059,7 +2059,7 @@ module.exports = {
               '..',
               'pages',
               'partials',
-              'questionNavSideButton.ejs'
+              'questionNavSideButton.ejs',
             );
             panels.questionNavNextButton = await renderFileAsync(templatePath, renderParams);
           },
@@ -2067,7 +2067,7 @@ module.exports = {
         (err) => {
           if (ERR(err, callback)) return;
           callback(null, panels);
-        }
+        },
       );
     });
   },
