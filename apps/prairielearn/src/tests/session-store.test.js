@@ -56,7 +56,7 @@ describe('session-store', function () {
       "destroy('sid1') succeeds again, no error on destroying not present sessions",
       async () => {
         await promisify(store.destroy)('sid1');
-      }
+      },
     );
 
     step("get('sid1') returns null when called on not present session", async () => {
@@ -88,7 +88,7 @@ describe('session-store', function () {
       await sqldb.queryAsync(
         `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00'
                 WHERE sid='expire1'`,
-        {}
+        {},
       );
       let result = await promisify(store.get)('expire1');
       assert.isNull(result);
@@ -109,7 +109,7 @@ describe('session-store', function () {
 
       await sqldb.queryAsync(
         `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00' WHERE sid ~ 'expire';`,
-        {}
+        {},
       );
     });
 

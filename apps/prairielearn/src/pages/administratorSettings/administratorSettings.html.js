@@ -3,7 +3,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 
 function AdministratorSettings({ resLocals }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}

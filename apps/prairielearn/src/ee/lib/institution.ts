@@ -17,22 +17,22 @@ export async function getInstitution(institution_id: string): Promise<Institutio
 }
 
 export async function getInstitutionSamlProvider(
-  institution_id: string
+  institution_id: string,
 ): Promise<SamlProvider | null> {
   return await queryOptionalRow(
     sql.select_institution_saml_provider,
     { institution_id },
-    SamlProviderSchema
+    SamlProviderSchema,
   );
 }
 
 export async function getInstitutionAuthenticationProviders(
-  institution_id: string
+  institution_id: string,
 ): Promise<AuthnProvider[]> {
   return await queryRows(
     sql.select_institution_authn_providers,
     { institution_id },
-    AuthnProviderSchema
+    AuthnProviderSchema,
   );
 }
 

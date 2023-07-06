@@ -18,7 +18,7 @@ export const InstitutionAdminSso = ({
   const hasSamlProvider = !!institutionSamlProvider;
   // TODO: only show authentication providers that were enabled in `config.json`.
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
@@ -42,7 +42,7 @@ export const InstitutionAdminSso = ({
               <h2 class="h4">Enabled single sign-on providers</h2>
               ${supportedAuthenticationProviders.map((provider) => {
                 const isEnabled = institutionAuthenticationProviders.some(
-                  (p) => p.id === provider.id
+                  (p) => p.id === provider.id,
                 );
                 return html`
                   <div class="form-check">

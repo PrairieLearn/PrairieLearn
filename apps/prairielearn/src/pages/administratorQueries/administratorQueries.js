@@ -20,10 +20,10 @@ router.get(
         contents.sqlFilename = f.replace(/\.json$/, '.sql');
         contents.link = f.replace(/\.json$/, '');
         return contents;
-      })
+      }),
     );
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 module.exports = router;

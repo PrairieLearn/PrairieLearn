@@ -53,7 +53,7 @@ module.exports.run = (callback) => {
       if (res.statusCode !== 200) {
         logger.error(
           `Error posting external grading stats to slack [status code ${res.statusCode}]`,
-          body
+          body,
         );
       }
       callback(null);

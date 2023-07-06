@@ -10,7 +10,7 @@ describe('renderEjs', () => {
   it('renders EJS template with data', () => {
     assert.equal(
       renderEjs(__filename, '<p>Hello <%= name %></p>', { name: 'Divya' }).toString(),
-      '<p>Hello Divya</p>'
+      '<p>Hello Divya</p>',
     );
   });
 });
