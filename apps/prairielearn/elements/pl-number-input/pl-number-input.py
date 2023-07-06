@@ -459,11 +459,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             is_correct = pl.is_correct_scalar_ra(
                 a_sub_converted, a_tru_converted, rtol, atol
             )
-            feedback = ''
+            feedback = ""
             if (not is_correct) and (a_sub_precision > rtol):
                 feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
             elif is_correct:
-                feedback += f'The correct answer used for grading was {a_tru_converted}'
+                feedback += f"The correct answer used for grading was {a_tru_converted}"
 
             return (
                 is_correct,
