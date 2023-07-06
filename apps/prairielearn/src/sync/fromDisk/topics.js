@@ -12,7 +12,7 @@ module.exports.sync = async function (courseId, courseData) {
   // question `info.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
   const areAllInfoQuestionsValid = Object.values(courseData.questions).every(
-    (q) => !infofile.hasErrors(q)
+    (q) => !infofile.hasErrors(q),
   );
   const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
 
@@ -20,7 +20,7 @@ module.exports.sync = async function (courseId, courseData) {
   let courseTopics = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseTopics = (courseData.course.data?.topics ?? []).map((t) =>
-      JSON.stringify([t.name, t.description, t.color])
+      JSON.stringify([t.name, t.description, t.color]),
     );
   }
 

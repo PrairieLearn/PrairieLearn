@@ -13,7 +13,7 @@ router.get('/*', function (req, res, next) {
       error.make(400, 'No filename provided within clientFilesCourse directory', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
   const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);

@@ -42,7 +42,7 @@ module.exports = function (req, res, next) {
 
         if (params.course_id == null && params.course_instance_id == null) {
           callback(
-            error.make(403, 'Access denied (both course_id and course_instance_id are null)')
+            error.make(403, 'Access denied (both course_id and course_instance_id are null)'),
           );
         }
 
@@ -78,7 +78,7 @@ module.exports = function (req, res, next) {
             courses: authn_courses,
             course_instances: authn_course_instances,
             editable_courses: authn_courses.filter(
-              (course) => course.permissions_course.has_course_permission_edit
+              (course) => course.permissions_course.has_course_permission_edit,
             ),
           };
           res.locals.user = res.locals.authz_data.user;
@@ -288,7 +288,7 @@ module.exports = function (req, res, next) {
               user_with_requested_uid_has_instructor_access_to_course_instance =
                 result.rows[0].is_instructor;
               debug(
-                `requested uid has instructor access: ${user_with_requested_uid_has_instructor_access_to_course_instance}`
+                `requested uid has instructor access: ${user_with_requested_uid_has_instructor_access_to_course_instance}`,
               );
 
               // FIXME: also override institution?
@@ -546,14 +546,14 @@ module.exports = function (req, res, next) {
               //
               // We then update editable_courses as usual.
               res.locals.authz_data.courses = (result.rows[0].courses || []).filter((course) =>
-                idsEqual(course.id, result.rows[0].course.id)
+                idsEqual(course.id, result.rows[0].course.id),
               );
               res.locals.authz_data.courses.forEach(
                 (course) =>
-                  (course.permissions_course = _.cloneDeep(result.rows[0].permissions_course))
+                  (course.permissions_course = _.cloneDeep(result.rows[0].permissions_course)),
               );
               res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(
-                (course) => course.permissions_course.has_course_permission_edit
+                (course) => course.permissions_course.has_course_permission_edit,
               );
 
               // Use the course_instances for the effective user, but keeping only
@@ -562,8 +562,8 @@ module.exports = function (req, res, next) {
               res.locals.authz_data.course_instances =
                 res.locals.authz_data.course_instances.filter((ci) =>
                   res.locals.authz_data.authn_course_instances.some((authn_ci) =>
-                    idsEqual(authn_ci.id, ci.id)
-                  )
+                    idsEqual(authn_ci.id, ci.id),
+                  ),
                 );
 
               if (isCourseInstance) {
@@ -599,8 +599,8 @@ module.exports = function (req, res, next) {
         (err) => {
           if (ERR(err, next)) return;
           next();
-        }
+        },
       );
-    }
+    },
   );
 };

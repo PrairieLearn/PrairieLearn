@@ -65,7 +65,7 @@ router.post(
         user_id: res.locals.authn_user.user_id,
         short_name,
         title,
-      }
+      },
     );
 
     if (existingCourseRequestsResult.rows[0].has_existing_request) {
@@ -75,7 +75,7 @@ router.post(
 
     const conflictingCourseOwnersResult = await sqldb.queryAsync(
       sql.get_conflicting_course_owners,
-      { short_name: short_name.trim().toLowerCase() }
+      { short_name: short_name.trim().toLowerCase() },
     );
 
     const courseOwners = conflictingCourseOwnersResult.rows;
@@ -127,7 +127,7 @@ router.post(
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await sqldb.queryOneRowAsync(
         sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.user_id }
+        { user_id: res.locals.authn_user.user_id },
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {
@@ -163,7 +163,7 @@ router.post(
             ERR(err, () => {
               logger.error(err);
             });
-          }
+          },
         );
 
         // Redirect on success so that refreshing doesn't create another request
@@ -182,11 +182,11 @@ router.post(
           ERR(err, () => {
             logger.error(err);
           });
-        }
+        },
       );
       res.redirect(req.originalUrl);
     }
-  })
+  }),
 );
 
 router.post('/', get);

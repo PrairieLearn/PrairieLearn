@@ -44,14 +44,14 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course) {
     return next(
-      error.make(403, 'Access denied (must be course editor and must not be example course)')
+      error.make(403, 'Access denied (must be course editor and must not be example course)'),
     );
   }
 
@@ -76,7 +76,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

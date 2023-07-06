@@ -59,14 +59,14 @@ router.get('/', function (req, res, next) {
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,
-      }
+      },
     );
     res.locals.req_date_for_display = format(
       utcToZonedTime(res.locals.req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
         timeZone: displayTimezone,
-      }
+      },
     );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -131,7 +131,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown action: ' + res.locals.__action, {
         __action: req.body.__action,
         body: req.body,
-      })
+      }),
     );
   }
 });

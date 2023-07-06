@@ -36,7 +36,7 @@ window.MathJax = {
       window.MathJax.Hub = {
         Queue: function () {
           console.warn(
-            'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typeset() or MathJax.typesetPromise()'
+            'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typeset() or MathJax.typesetPromise()',
           );
           window.MathJax.typesetPromise();
         },

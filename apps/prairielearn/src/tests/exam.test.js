@@ -1462,9 +1462,9 @@ describe('Exam assessment', function () {
       helperExam.startExam(locals);
 
       partialCreditTest.forEach(function (questionTest, iQuestionTest) {
-        describe(`${
-          questionTest.action
-        } answer number #${iQuestionTest + 1} for question ${questionTest.qid} with score ${questionTest.score}`, function () {
+        describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
+          questionTest.qid
+        } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
               if (questionTest.action === 'check-closed') {
