@@ -29,7 +29,7 @@ router.get(
       redirect: true,
       pl_authn_cookie: true,
     });
-  })
+  }),
 );
 
 module.exports = router;

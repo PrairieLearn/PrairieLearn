@@ -61,7 +61,7 @@ describe('server-jobs', () => {
         job.info('testing info');
         throw new Error('failing job');
       }),
-      'failing job'
+      'failing job',
     );
 
     const finishedJobSequence = await serverJobs.getJobSequenceAsync(serverJob.jobSequenceId, null);

@@ -142,7 +142,7 @@ function fetchResults(socket, submissionId) {
         document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
       }
       setupDynamicObjects();
-    }
+    },
   );
 }
 

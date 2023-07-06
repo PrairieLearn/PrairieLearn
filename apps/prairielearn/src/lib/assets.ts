@@ -87,7 +87,7 @@ function getPackageVersion(packageName: string): string {
     const pkgJsonPath = path.resolve(
       pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
       packageName,
-      'package.json'
+      'package.json',
     );
 
     const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
@@ -163,7 +163,7 @@ export function applyMiddleware(app: express.Application) {
       // is running, so we'll enable long-term caching.
       maxAge: '1y',
       immutable: true,
-    })
+    }),
   );
   router.use(
     '/public/:cachebuster',
@@ -172,7 +172,7 @@ export function applyMiddleware(app: express.Application) {
       // so we'll prevent them from being cached.
       maxAge: config.devMode ? 0 : '1y',
       immutable: !config.devMode,
-    })
+    }),
   );
   router.use('/elements/:cachebuster', elementFiles);
 
@@ -221,7 +221,7 @@ export function coreElementAssetPath(assetPath: string): string {
 export function courseElementAssetPath(
   courseHash: string,
   urlPrefix: string,
-  assetPath: string
+  assetPath: string,
 ): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
@@ -241,7 +241,7 @@ export function courseElementAssetPath(
 export function courseElementExtensionAssetPath(
   courseHash: string,
   urlPrefix: string,
-  assetPath: string
+  assetPath: string,
 ): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
