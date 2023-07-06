@@ -19,9 +19,9 @@ router.get(
       AdministratorFeatures({
         features: features.allFeatures().sort(),
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.get(
@@ -32,7 +32,7 @@ router.get(
     const featureGrants = await queryValidatedRows(
       sql.select_feature_grants,
       { name: feature },
-      FeatureGrantRowSchema
+      FeatureGrantRowSchema,
     );
 
     res.send(
@@ -40,9 +40,9 @@ router.get(
         feature: req.params.feature,
         featureGrants,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

@@ -23,7 +23,7 @@ router.get(
     } else {
       res.status(200).send(data[0]);
     }
-  })
+  }),
 );
 
 module.exports = router;

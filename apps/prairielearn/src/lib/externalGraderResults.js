@@ -52,7 +52,7 @@ module.exports.init = async function () {
               MaxNumberOfMessages: 10,
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
-            })
+            }),
           );
           messages = data.Messages;
         } catch (err) {
@@ -78,13 +78,13 @@ module.exports.init = async function () {
               new DeleteMessageCommand({
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
-              })
+              }),
             );
           } catch (err) {
             logger.error('Error processing external grader results', err);
             Sentry.captureException(err);
           }
-        })
+        }),
       );
     }
   })().then(() => {
@@ -112,17 +112,17 @@ module.exports.stop = async function () {
  */
 async function loadQueueUrl(sqs) {
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`
+    `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
   );
   const data = await sqs.send(
-    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName })
+    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName }),
   );
   const queueUrl = data.QueueUrl;
   if (!queueUrl) {
     throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);
   }
   logger.verbose(
-    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`
+    `External grading results queue ${config.externalGradingResultsQueueName}: got URL ${queueUrl}`,
   );
   return queueUrl;
 }

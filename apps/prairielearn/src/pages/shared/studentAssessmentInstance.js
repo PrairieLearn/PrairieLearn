@@ -15,7 +15,7 @@ module.exports.processFileUpload = async (req, res) => {
     res.locals.assessment_instance.id,
     null,
     res.locals.user.user_id,
-    res.locals.authn_user.user_id
+    res.locals.authn_user.user_id,
   );
 };
 
@@ -31,7 +31,7 @@ module.exports.processTextUpload = async (req, res) => {
     res.locals.assessment_instance.id,
     null,
     res.locals.user.user_id,
-    res.locals.authn_user.user_id
+    res.locals.authn_user.user_id,
   );
 };
 

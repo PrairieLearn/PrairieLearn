@@ -16,7 +16,7 @@ await init(
   },
   (err) => {
     throw err;
-  }
+  },
 );
 ```
 
@@ -42,7 +42,7 @@ await doWithLock(
   },
   async () => {
     console.log('Doing some work');
-  }
+  },
 );
 ```
 

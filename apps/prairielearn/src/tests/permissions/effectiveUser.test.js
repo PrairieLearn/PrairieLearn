@@ -191,7 +191,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -202,7 +202,7 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -215,7 +215,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step('cannot request invalid date', async () => {
@@ -400,7 +400,7 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -414,7 +414,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -426,6 +426,6 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.isTrue(response.ok);
-    }
+    },
   );
 });
