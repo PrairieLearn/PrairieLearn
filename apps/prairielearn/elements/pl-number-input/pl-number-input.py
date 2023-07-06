@@ -456,11 +456,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
 
             a_sub_precision = get_string_precision(str(a_sub))
-            if not math.isclose(a_sub_precision, rtol, rel_tol=rtol):
+            is_correct = pl.is_correct_scalar_ra(
+                a_sub_converted, a_tru_converted, rtol, atol
+            )
+            feedback = None
+
+            if not is_correct and not math.isclose(a_sub_precision, rtol, rel_tol=rtol):
                 feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
 
             return (
-                pl.is_correct_scalar_ra(a_sub_converted, a_tru_converted, rtol, atol),
+                is_correct,
                 feedback,
             )
         elif comparison is ComparisonType.SIGFIG:
