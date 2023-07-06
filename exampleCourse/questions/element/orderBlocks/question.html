@@ -74,15 +74,16 @@ This question illustrates different use cases for the
   max-indent="2"
   format="code"
   code-language="python"
+  feedback="first-wrong-verbose"
 >
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1" tag="addfirst">sum += first</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1" tag="addsecond">sum += second</pl-answer>
   <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
-  <pl-answer correct="false" distractor-for="addfirst">sum + first</pl-answer>
-  <pl-answer correct="false" distractor-for="addfirst">sum = first</pl-answer>
-  <pl-answer correct="false" distractor-for="addsecond">sum + second</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst" distractor-feedback="You need to store the result of the sum in a variable!">sum + first</pl-answer>
+  <pl-answer correct="false" distractor-for="addfirst">sum &= first</pl-answer>
+  <pl-answer correct="false" distractor-for="addsecond" distractor-feedback="You need to store the result of the sum in a variable!">sum + second</pl-answer>
 </pl-order-blocks>
 
 <hr>
@@ -101,7 +102,12 @@ The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+<pl-order-blocks
+  answers-name="conjunction-implies-conjunction"
+  grading-method="dag"
+  solution-placement="bottom"
+  feedback="first-wrong"
+>
   <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
