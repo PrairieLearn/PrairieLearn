@@ -206,9 +206,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ec2@npm:^3.363.0":
-  version: 3.363.0
-  resolution: "@aws-sdk/client-ec2@npm:3.363.0"
+"@aws-sdk/client-ec2@npm:^3.367.0":
+  version: 3.367.0
+  resolution: "@aws-sdk/client-ec2@npm:3.367.0"
   dependencies:
     "@aws-crypto/sha256-browser": 3.0.0
     "@aws-crypto/sha256-js": 3.0.0
@@ -250,7 +250,7 @@ __metadata:
     fast-xml-parser: 4.2.5
     tslib: ^2.5.0
     uuid: ^8.3.2
-  checksum: 7c05efcfbd2e56dd61969be107eb4dba774f809f09a498ad0bf8aa1901670106a4ded594b4b92a8f3d1e6e755763bd502ed1a1bdaeb9782e507aa476c57ff332
+  checksum: db6d0a41a641a267b75cfebd9aaab79d57133595ed5a3d94447bb394cf89c85f3fb2eaac5f3f4c126a9149918475b21d64976fa0013a1634259c5acba0ab91de
   languageName: node
   linkType: hard
 
@@ -2548,7 +2548,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/config@workspace:packages/config"
   dependencies:
-    "@aws-sdk/client-ec2": ^3.363.0
+    "@aws-sdk/client-ec2": ^3.367.0
     "@aws-sdk/client-secrets-manager": ^3.363.0
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "*"
@@ -2844,7 +2844,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.363.0
     "@aws-sdk/client-cloudwatch": ^3.363.0
-    "@aws-sdk/client-ec2": ^3.363.0
+    "@aws-sdk/client-ec2": ^3.367.0
     "@aws-sdk/client-s3": ^3.363.0
     "@aws-sdk/client-sqs": ^3.363.0
     "@aws-sdk/lib-storage": ^3.363.0

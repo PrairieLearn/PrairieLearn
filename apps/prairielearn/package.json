@@ -13,7 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.363.0",
     "@aws-sdk/client-cloudwatch": "^3.363.0",
-    "@aws-sdk/client-ec2": "^3.363.0",
+    "@aws-sdk/client-ec2": "^3.367.0",
     "@aws-sdk/client-s3": "^3.363.0",
     "@aws-sdk/client-sqs": "^3.363.0",
     "@aws-sdk/lib-storage": "^3.363.0",
