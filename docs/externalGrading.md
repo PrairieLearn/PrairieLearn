@@ -188,8 +188,7 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
     },
     {
       "label": "Second Image",
-      "url": "data:image/jpeg;base64,...",
-      "style": "max-width: 200px"
+      "url": "data:image/jpeg;base64,..."
     }
   ],
   "tests": [
@@ -215,8 +214,7 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
         },
         {
           "label": "First Image",
-          "url": "data:image/png;base64,...",
-          "style": "transform: rotate(90deg)"
+          "url": "data:image/png;base64,..."
         }
       ]
     }
