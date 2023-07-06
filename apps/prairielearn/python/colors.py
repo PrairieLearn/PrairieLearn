@@ -11,13 +11,15 @@ from coloraide.css import serialize
 from coloraide.spaces.srgb.css import sRGB
 from coloraide.types import Vector
 
+ColorTuple = tuple[float, float, float, float]
+
 # Match the pattern of a PL color name;
 # only accepts numbers, lowercase letters, and a single underscore
 RE_PL_COLORS = re.compile(r"(?i)\b([0-9a-z][0-9a-z_]{2,})\b")
 
 # Colors used in /public/stylesheets/colors.css
 # includes additional aliases (e.g, "red3" also known as "incorrect_red")
-PL_COLORS_NAME_MAP: dict[str, tuple[float, float, float, float]] = {
+PL_COLORS_NAME_MAP: dict[str, ColorTuple] = {
     "blue1": (57, 213, 255, 255),
     "blue2": (18, 151, 224, 255),
     "blue3": (0, 87, 160, 255),
@@ -54,7 +56,9 @@ PL_COLORS_NAME_MAP: dict[str, tuple[float, float, float, float]] = {
     "yellow3": (216, 116, 0, 255),
 }
 
-PL_COLORS_VALUE_MAP = {v: k for k, v in PL_COLORS_NAME_MAP.items()}
+PL_COLORS_VALUE_MAP: dict[ColorTuple, str] = {
+    v: k for k, v in PL_COLORS_NAME_MAP.items()
+}
 
 
 class PrarieLearnColor(sRGB):
@@ -94,16 +98,8 @@ class PrarieLearnColor(sRGB):
         parent: PLColor,
         *,
         alpha: bool | None = None,
-        precision: int | None = None,
         fit: str | bool = True,
-        none: bool = False,
-        color: bool = False,
-        hex: bool = False,  # pylint: disable=redefined-builtin
         names: bool = False,
-        comma: bool = False,
-        upper: bool = False,
-        percent: bool = False,
-        compress: bool = False,
         **kwargs,
     ) -> str:
         """Convert to string."""
@@ -119,7 +115,7 @@ class PrarieLearnColor(sRGB):
             # See if the color value is a match, if so, return the string
             value = tuple(alg.round_half_up(c * 255) for c in coords)
 
-            result = PL_COLORS_VALUE_MAP.get(value)  # type: ignore
+            result = PL_COLORS_VALUE_MAP.get(value)
             if result is not None:
                 return result
 
@@ -127,16 +123,8 @@ class PrarieLearnColor(sRGB):
         return super().to_string(
             parent,
             alpha=alpha,
-            precision=precision,
             fit=fit,
-            none=none,
-            color=color,
-            hex=hex,
             names=names,
-            comma=comma,
-            upper=upper,
-            percent=percent,
-            compress=compress,
             **kwargs,
         )
 
