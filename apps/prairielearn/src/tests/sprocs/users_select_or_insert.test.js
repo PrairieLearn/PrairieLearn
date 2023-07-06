@@ -1,13 +1,9 @@
 // @ts-check
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+const { assert } = require('chai');
 const { step } = require('mocha-steps');
 
 const sqldb = require('@prairielearn/postgres');
 const helperDb = require('../helperDb');
-
-chai.use(chaiAsPromised);
-const { assert } = chai;
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -182,7 +178,7 @@ describe('sproc users_select_or_insert tests', () => {
         // The user should still have the same UIN.
         uin: '444444444',
       },
-      fromdb
+      fromdb,
     );
   });
 
@@ -196,7 +192,7 @@ describe('sproc users_select_or_insert tests', () => {
 
     await assert.isRejected(
       usersSelectOrInsert(user, 'Azure'),
-      /authentication provider is not allowed for institution/
+      /authentication provider is not allowed for institution/,
     );
   });
 
@@ -251,7 +247,7 @@ describe('sproc users_select_or_insert tests', () => {
         // The user should still have the same UIN.
         uin: '555566665',
       },
-      fromdb
+      fromdb,
     );
   });
 

@@ -63,9 +63,9 @@ const loader = new ConfigLoader(ConfigSchema);
 
 module.exports.config = loader.config;
 
-module.exports.loadConfig = async function (path) {
+module.exports.loadConfig = async function (paths) {
   await loader.loadAndValidate([
-    makeFileConfigSource(path),
+    ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);

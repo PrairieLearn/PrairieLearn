@@ -96,3 +96,10 @@ __pycache__/
 apps/*/dist
 apps/prairielearn/public/build
 packages/*/dist
+
+## TypeScript cache
+*.tsbuildinfo
+
+## Question HTML snapshots
+/new-renderer/
+/old-renderer/

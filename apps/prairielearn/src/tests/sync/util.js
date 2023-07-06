@@ -166,6 +166,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} [studentGroupCreate]
  * @property {boolean} [studentGroupJoin]
  * @property {boolean} [studentGroupLeave]
+ * @property {boolean} [hasRoles]
  */
 
 /**
@@ -348,7 +349,6 @@ const questions = {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
     topic: 'Test',
-    secondaryTopics: [],
     tags: ['test'],
     type: 'v3',
   },
@@ -356,7 +356,6 @@ const questions = {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
     topic: 'Test',
-    secondaryTopics: [],
     tags: ['test'],
     type: 'v3',
   },
@@ -364,7 +363,6 @@ const questions = {
     uuid: '697a6188-8215-4806-92a1-592987342b9e',
     title: 'Another test question',
     topic: 'Test',
-    secondaryTopics: [],
     tags: ['test'],
     type: 'Calculation',
   },
@@ -373,7 +371,6 @@ const questions = {
     title: 'Test question',
     topic: 'Test',
     gradingMethod: 'Manual',
-    secondaryTopics: [],
     tags: ['test'],
     type: 'v3',
   },
@@ -381,7 +378,6 @@ const questions = {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
     topic: 'Workspace',
-    secondaryTopics: [],
     tags: ['workspace'],
     type: 'v3',
     workspaceOptions: {
@@ -578,7 +574,7 @@ module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKey
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
-    'snapshots contained different keys'
+    'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -601,7 +597,7 @@ module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKey
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
-    'snapshots contained different keys'
+    'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -610,7 +606,7 @@ module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKey
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(
       [...setA].every((entry) => setB.has(entry)),
-      `Snapshot of ${key} is not a subset`
+      `Snapshot of ${key} is not a subset`,
     );
   }
 };

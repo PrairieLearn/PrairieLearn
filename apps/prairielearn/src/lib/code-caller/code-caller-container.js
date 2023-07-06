@@ -78,7 +78,9 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const dockerAuth = await setupDockerAuthAsync(config.cacheImageRegistry);
+      const dockerAuth = config.cacheImageRegistry
+        ? await setupDockerAuthAsync(config.awsRegion)
+        : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {
         docker.modem.followProgress(
@@ -95,7 +97,7 @@ async function ensureImage() {
           },
           (output) => {
             logger.info('Docker output', output);
-          }
+          },
         );
       });
     } else {
@@ -478,8 +480,8 @@ class CodeCallerContainer {
     if (this.state === WAITING) {
       this._logError(
         `CodeCallerContainer container exited while in state = WAITING, code = ${JSON.stringify(
-          code
-        )}, err = ${err}`
+          code,
+        )}, err = ${err}`,
       );
       this.container = null;
       this.state = EXITED;
@@ -490,9 +492,9 @@ class CodeCallerContainer {
       this._callCallback(
         new Error(
           `CodeCallerContainer container exited unexpectedly, code = ${JSON.stringify(
-            code
-          )}, err = ${err}`
-        )
+            code,
+          )}, err = ${err}`,
+        ),
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -622,14 +624,14 @@ class CodeCallerContainer {
   _checkReadyForCall(fcn) {
     if (!this.container) {
       return this._logError(
-        `Not ready for call, container is not created (state: ${String(this.state)})`
+        `Not ready for call, container is not created (state: ${String(this.state)})`,
       );
     }
     if (fcn !== 'ping' && fcn !== 'restart') {
       // 'ping' and 'restart' are fake functions that don't need a course path
       if (!this.coursePath) {
         return this._logError(
-          `Not ready for call, course was not set (state: ${String(this.state)})`
+          `Not ready for call, course was not set (state: ${String(this.state)})`,
         );
       }
     }
@@ -646,8 +648,8 @@ class CodeCallerContainer {
       const allowedStatesList = allowedStates.map(String).join(', ');
       return this._logError(
         `Expected CodeCallerContainer to be in states [${allowedStatesList}] but actually have state ${String(
-          this.state
-        )}`
+          this.state,
+        )}`,
       );
     }
 
@@ -679,36 +681,36 @@ class CodeCallerContainer {
     if (containerNull != null) {
       if (containerNull && this.container != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should be null`
+          `CodeCallerContainer state ${String(this.state)}: container should be null`,
         );
       }
       if (!containerNull && this.container == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should not be null`
+          `CodeCallerContainer state ${String(this.state)}: container should not be null`,
         );
       }
     }
     if (callbackNull != null) {
       if (callbackNull && this.callback != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should be null`
+          `CodeCallerContainer state ${String(this.state)}: callback should be null`,
         );
       }
       if (!callbackNull && this.callback == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should not be null`
+          `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
         );
       }
     }
     if (timeoutIDNull != null) {
       if (timeoutIDNull && this.timeoutID != null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`
+          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
         );
       }
       if (!timeoutIDNull && this.timeoutID == null) {
         return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`
+          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
         );
       }
     }
@@ -753,7 +755,7 @@ async function cleanupMountDirectories() {
           logger.error(`Failed to remove temporary directory ${absolutePath}`);
           logger.error(e);
         }
-      })
+      }),
     );
   } catch (e) {
     logger.error(e);

@@ -1,6 +1,6 @@
 # Running in Docker with local source
 
-This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows.
+This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows. When using Windows, you are strongly encouraged to perform the steps below inside a WSL 2 container.
 
 - First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
 
@@ -32,7 +32,7 @@ make start
 # To exit the container, press Ctrl-C and then Ctrl-D.
 ```
 
-The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows cmd), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
+The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows command prompt outside WSL), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
 
 ## Auto-restarting the node server
 
@@ -67,7 +67,8 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # following commands are inside the container:
 make start-support
-yarn mocha tests/testGetHomepage.js
+cd apps/prairielearn
+yarn mocha src/tests/getHomepage.test.js
 ```
 
 ## Working on packages

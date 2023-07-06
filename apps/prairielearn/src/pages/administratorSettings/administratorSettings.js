@@ -1,7 +1,6 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 const express = require('express');
-const util = require('util');
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
@@ -14,7 +13,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.send(AdministratorSettings({ resLocals: res.locals }));
-  })
+  }),
 );
 
 router.post(
@@ -23,7 +22,7 @@ router.post(
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'invalidate_question_cache') {
-      await util.promisify(cache.reset)();
+      await cache.reset();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string = req.body.course_ids || '';
@@ -35,7 +34,7 @@ router.post(
       } catch (err) {
         throw error.make(
           400,
-          `could not split course_ids into an array of integers: ${course_ids_string}`
+          `could not split course_ids into an array of integers: ${course_ids_string}`,
         );
       }
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
@@ -43,7 +42,7 @@ router.post(
     } else {
       throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
     }
-  })
+  }),
 );
 
 module.exports = router;

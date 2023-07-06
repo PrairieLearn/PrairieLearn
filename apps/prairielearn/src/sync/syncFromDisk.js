@@ -27,6 +27,7 @@ const { promisify } = require('util');
 /**
  * @typedef {Object} SyncResults
  * @property {boolean} hadJsonErrors
+ * @property {boolean} hadJsonErrorsOrWarnings
  * @property {string} courseId
  * @property {import('./course-db').CourseData} courseData
  */
@@ -43,21 +44,21 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir)
+    courseDB.loadFullCourse(courseDir),
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
-    syncCourseInstances.sync(courseId, courseData)
+    syncCourseInstances.sync(courseId, courseData),
   );
   await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
   const questionIds = await perf.timedAsync('syncQuestions', () =>
-    syncQuestions.sync(courseId, courseData)
+    syncQuestions.sync(courseId, courseData),
   );
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timedAsync('syncAssessmentModules', () =>
-    syncAssessmentModules.sync(courseId, courseData)
+    syncAssessmentModules.sync(courseId, courseData),
   );
   perf.start('syncAssessments');
   await Promise.all(
@@ -68,10 +69,10 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
           courseId,
           courseInstanceId,
           courseInstanceData.assessments,
-          questionIds
-        )
+          questionIds,
+        ),
       );
-    })
+    }),
   );
   perf.end('syncAssessments');
   if (config.devMode) {
@@ -84,7 +85,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
   } else if (courseDataHasErrorsOrWarnings) {
     logger.info(
-      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced')
+      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced'),
     );
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
@@ -95,7 +96,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   // sync process. For instance, we don't actually validate exam UUIDs until
   // the database sync step.
   courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
+    logger.info(line || ''),
   );
 
   perf.end('sync');
@@ -118,6 +119,8 @@ module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, 
     return await syncDiskToSqlWithLock(courseDir, course_id, logger);
   })(callback);
 };
+
+module.exports.syncDiskToSqlWithLock = syncDiskToSqlWithLock;
 
 /**
  * @param {string} courseDir
@@ -146,7 +149,19 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
     }
   });
 };
-module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
+
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @returns {Promise<SyncResults>}
+ */
+function syncDiskToSqlAsync(courseDir, course_id, logger) {
+  // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
+  // that it'll always result in a non-undefined value if it doesn't error.
+  return promisify(module.exports.syncDiskToSql)(courseDir, course_id, logger);
+}
+module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
 /**
  * @param {string} courseDir
@@ -163,3 +178,4 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
     });
   });
 };
+module.exports.syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);

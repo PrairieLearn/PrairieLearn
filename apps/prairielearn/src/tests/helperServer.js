@@ -8,13 +8,12 @@ const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
-const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
-const serverJobs = require('../lib/server-jobs');
-const syncFromDisk = require('../sync/syncFromDisk');
+const serverJobs = require('../lib/server-jobs-legacy');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
@@ -31,8 +30,8 @@ config.startServer = false;
 config.serverPort = 3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10);
 const server = require('../server');
 
-const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
+const helperCourse = require('./helperCourse');
 
 module.exports = {
   before: (courseDir) => {
@@ -45,7 +44,6 @@ module.exports = {
         [
           // We (currently) don't ever want tracing to run during tests.
           async () => opentelemetry.init({ openTelemetryEnabled: false }),
-          async () => aws.init(),
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
@@ -67,20 +65,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async () => {
             debug('before(): sync from disk');
-            syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-              if (ERR(err, callback)) return;
-              if (result.hadJsonErrorsOrWarnings) {
-                console.log(logger.getOutput());
-                return callback(
-                  new Error(
-                    `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-                  )
-                );
-              }
-              callback(null);
-            });
+            await helperCourse.syncCourse(courseDir);
           },
           function (callback) {
             debug('before(): set up load estimators');
@@ -93,6 +80,7 @@ module.exports = {
             debug('before(): initialize code callers');
             await codeCaller.init();
           },
+          async () => assets.init(),
           async () => {
             debug('before(): start server');
             httpServer = await server.startServer();
@@ -101,12 +89,9 @@ module.exports = {
             debug('before(): initialize socket server');
             socketServer.init(httpServer);
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize cache');
-            cache.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await cache.init();
           },
           async () => {
             debug('before(): initialize server jobs');
@@ -133,7 +118,7 @@ module.exports = {
           debug('before(): completed');
           if (ERR(err, callback)) return;
           callback(null);
-        }
+        },
       );
     };
   },
@@ -144,14 +129,10 @@ module.exports = {
     // start() functions above
     async.series(
       [
+        async () => assets.close(),
         async function () {
           debug('after(): finish workers');
           await codeCaller.finish();
-        },
-        function (callback) {
-          debug('after(): close load estimators');
-          load.close();
-          callback(null);
         },
         function (callback) {
           debug('after(): stop server');
@@ -159,6 +140,10 @@ module.exports = {
             if (ERR(err, callback)) return;
             callback(null);
           });
+        },
+        async () => {
+          debug('after(): close load estimators');
+          load.close();
         },
         async () => {
           debug('after(): stop cron');
@@ -172,12 +157,9 @@ module.exports = {
           debug('after(): close server jobs');
           await serverJobs.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close cache');
-          cache.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await cache.close();
         },
         function (callback) {
           debug('after(): close local cache');
@@ -193,7 +175,7 @@ module.exports = {
         debug('after(): complete');
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   },
 };
@@ -236,5 +218,5 @@ module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(
-  module.exports.waitForJobSequenceSuccessAsync
+  module.exports.waitForJobSequenceSuccessAsync,
 );

@@ -1,8 +1,10 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
+const util = require('node:util');
 const debug = require('debug')('prairielearn:authCallbackLti');
 
 const sqldb = require('@prairielearn/postgres');
@@ -55,7 +57,7 @@ router.post('/', function (req, res, next) {
         parameters,
         ltiresult.secret,
         null,
-        { encodeSignature: false }
+        { encodeSignature: false },
       );
       if (genSignature !== signature) {
         return next(error.make(500, 'Invalid signature'));
@@ -71,7 +73,7 @@ router.post('/', function (req, res, next) {
       // https://oauth.net/core/1.0/#nonce
       var nonceReused = false;
       var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
-      cache.get(nonceKey, (err, val) => {
+      util.callbackify(cache.get)(nonceKey, (err, val) => {
         if (ERR(err, next)) return;
         if (val) {
           nonceReused = true;
@@ -90,7 +92,7 @@ router.post('/', function (req, res, next) {
 
       if (!parameters.user_id) {
         return next(
-          error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.')
+          error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.'),
         );
       }
 
@@ -161,7 +163,7 @@ router.post('/', function (req, res, next) {
             }
 
             res.redirect(
-              `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`
+              `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`,
             );
           } else {
             // No linked assessment
@@ -171,7 +173,7 @@ router.post('/', function (req, res, next) {
               if (ERR(err, next)) return;
               if (result.rowCount === 0) {
                 return next(
-                  error.make(403, 'Access denied (could not determine if user is instructor)')
+                  error.make(403, 'Access denied (could not determine if user is instructor)'),
                 );
               }
               if (!result.rows[0].is_instructor) {
@@ -179,13 +181,13 @@ router.post('/', function (req, res, next) {
                 return next(error.make(400, 'Assignment not available yet'));
               }
               res.redirect(
-                `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`
+                `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`,
               );
             });
           }
         });
       });
-    }
+    },
   );
 });
 

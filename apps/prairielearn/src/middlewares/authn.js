@@ -1,9 +1,9 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
+const sqldb = require('@prairielearn/postgres');
+const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
-const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
-const sqldb = require('@prairielearn/postgres');
 const authnLib = require('../lib/authn');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -109,8 +109,12 @@ module.exports = asyncHandler(async (req, res, next) => {
     // if the cookie unpacking failed then authnData will be null
   }
   if (authnData == null) {
-    // we failed to authenticate
-    if (/^(\/?)$|^(\/pl\/?)$/.test(req.path)) {
+    // We failed to authenticate.
+    //
+    // Check if we're requesting the homepage. We avoid the usage of `req.path`
+    // since this middleware might be mounted on a subpath.
+    const requestPath = req.baseUrl + req.path;
+    if (/^(\/?)$|^(\/pl\/?)$/.test(requestPath)) {
       // the requested path is the homepage, so allow this request to proceed without an authenticated user
       next();
       return;

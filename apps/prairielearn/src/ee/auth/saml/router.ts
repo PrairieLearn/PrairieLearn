@@ -1,13 +1,14 @@
 import ERR from 'async-stacktrace';
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import * as passport from 'passport';
+import passport = require('passport');
+import error = require('@prairielearn/error');
 
 import * as authnLib from '../../../lib/authn';
 
 import { strategy } from './index';
 import { SamlTest } from './router.html';
-import { getInstitutionSamlProvider } from '../../institution/utils';
+import { getInstitutionSamlProvider } from '../../lib/institution';
 
 const router = Router({ mergeParams: true });
 
@@ -19,7 +20,7 @@ router.get('/login', (req, res, next) => {
     additionalParams: req.query.RelayState
       ? {
           // This is used be the SAML configuration page to test SAML. It includes
-          // `?RelayState=test` in the login request. When the callback page recieves
+          // `?RelayState=test` in the login request. When the callback page receives
           // that value, it displays the received attributes instead of creating a
           // new session for the user.
           RelayState: req.query.RelayState,
@@ -44,7 +45,7 @@ function authenticate(req, res): Promise<any> {
         } else {
           resolve(user);
         }
-      }
+      },
     )(req, res);
   });
 }
@@ -57,14 +58,18 @@ router.post(
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
     const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
+    if (!institutionSamlProvider) {
+      throw error.make(404, 'Institution does not support SAML authentication');
+    }
+
     const uidAttribute = institutionSamlProvider.uid_attribute;
     const uinAttribute = institutionSamlProvider.uin_attribute;
     const nameAttribute = institutionSamlProvider.name_attribute;
 
     // Read the appropriate attributes.
-    const authnUid = user.attributes[uidAttribute];
-    const authnUin = user.attributes[uinAttribute];
-    const authnName = user.attributes[nameAttribute];
+    const authnUid = uidAttribute ? user.attributes[uidAttribute] : null;
+    const authnUin = uinAttribute ? user.attributes[uinAttribute] : null;
+    const authnName = nameAttribute ? user.attributes[nameAttribute] : null;
 
     if (req.body.RelayState === 'test') {
       res.send(
@@ -77,7 +82,7 @@ router.post(
           nameAttribute,
           attributes: user.attributes,
           resLocals: res.locals,
-        })
+        }),
       );
       return;
     }
@@ -101,13 +106,17 @@ router.post(
       pl_authn_cookie: true,
       redirect: true,
     });
-  })
+  }),
 );
 
 router.get(
   '/metadata',
   asyncHandler(async (req, res, next) => {
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
+    if (!samlProvider) {
+      throw error.make(404, 'Institution does not support SAML authentication');
+    }
+
     strategy.generateServiceProviderMetadata(
       req,
       samlProvider.public_key,
@@ -116,9 +125,9 @@ router.get(
         if (ERR(err, next)) return;
         res.type('application/xml');
         res.send(metadata);
-      }
+      },
     );
-  })
+  }),
 );
 
 export default router;

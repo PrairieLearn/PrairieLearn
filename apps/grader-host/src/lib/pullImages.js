@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
 const sqldb = require('@prairielearn/postgres');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
 const logger = require('./logger');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -21,16 +21,10 @@ module.exports = function (callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-            if (ERR(err, callback)) return;
-            dockerAuth = auth;
-            callback(null);
-          });
-        } else {
-          callback(null);
+          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
         }
       },
       (callback) => {
@@ -52,7 +46,7 @@ module.exports = function (callback) {
               logger.info(
                 `Pulling latest version of "${image}" image from ${
                   config.cacheImageRegistry || 'default registry'
-                }`
+                }`,
               );
               var repository = new DockerName(image);
               if (config.cacheImageRegistry) {
@@ -75,7 +69,7 @@ module.exports = function (callback) {
                   },
                   (output) => {
                     logger.info('docker output:', output);
-                  }
+                  },
                 );
               });
             })((err) => {
@@ -87,13 +81,13 @@ module.exports = function (callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 };

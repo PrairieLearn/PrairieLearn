@@ -5,7 +5,7 @@ const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const courseUtil = require('./courseUtil');
 const syncFromDisk = require('../sync/syncFromDisk');
 const opsbot = require('./opsbot');
@@ -173,7 +173,7 @@ module.exports = {
    * @param {any} options
    * @param {string} job_sequence_id
    * @param {string} user_id
-   * @param {(job: import('./server-jobs').Job) => Promise<void>} func
+   * @param {(job: import('./server-jobs-legacy').Job) => Promise<void>} func
    * @returns
    */
   _runJobAsync: function (options, job_sequence_id, user_id, func) {
@@ -186,7 +186,7 @@ module.exports = {
           on_success: resolve,
           on_error: reject,
         },
-        options
+        options,
       );
 
       serverJobs.createJob(options, function (err, job) {
@@ -220,7 +220,7 @@ module.exports = {
           job_sequence_id,
           on_success: resolve,
         },
-        options
+        options,
       );
 
       serverJobs.spawnJob(options, (err, job) => {
@@ -263,7 +263,7 @@ module.exports = {
           authn_user.user_id,
           async () => {
             return;
-          }
+          },
         );
         return;
       }
@@ -277,7 +277,7 @@ module.exports = {
         async (job) => {
           job.info(`Creating course ${options.short_name}`);
           job.info(JSON.stringify(options, null, 4));
-        }
+        },
       );
 
       // Create base github repo from template
@@ -292,7 +292,7 @@ module.exports = {
           await module.exports.createRepoFromTemplateAsync(
             client,
             options.repo_short_name,
-            config.githubCourseTemplate
+            config.githubCourseTemplate,
           );
           job.info(`Created repository ${options.repo_short_name}`);
 
@@ -310,7 +310,7 @@ module.exports = {
           }
           options.branch = branches[0].name || config.githubMainBranch;
           job.info(`Main branch for new repository: "${options.branch}"`);
-        }
+        },
       );
 
       // Update the infoCourse.json file by grabbing the original and JSON editing it.
@@ -322,7 +322,7 @@ module.exports = {
           let { sha: sha, contents } = await module.exports.getFileFromRepoAsync(
             client,
             options.repo_short_name,
-            'infoCourse.json'
+            'infoCourse.json',
           );
           job.info(`Loaded infoCourse.json file (SHA ${sha})`);
 
@@ -330,6 +330,7 @@ module.exports = {
           courseInfo.uuid = uuidv4();
           courseInfo.name = options.short_name;
           courseInfo.title = options.title;
+          courseInfo.timezone = options.display_timezone;
 
           const newContents = JSON.stringify(courseInfo, null, 4);
           job.verbose('New infoCourse.json file:');
@@ -340,10 +341,10 @@ module.exports = {
             options.repo_short_name,
             'infoCourse.json',
             newContents,
-            sha
+            sha,
           );
           job.info('Uploaded new infoCourse.json file');
-        }
+        },
       );
 
       // Add machine and instructor to the repo
@@ -356,12 +357,12 @@ module.exports = {
             client,
             options.repo_short_name,
             config.githubMachineTeam,
-            'admin'
+            'admin',
           );
           job.info(
-            `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`
+            `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
           );
-        }
+        },
       );
       if (options.github_user) {
         await module.exports._runJobAsync(
@@ -377,15 +378,15 @@ module.exports = {
                 client,
                 options.repo_short_name,
                 options.github_user,
-                'admin'
+                'admin',
               );
               job.info(
-                `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`
+                `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
               );
             } catch (err) {
               job.error(`Could not add user "${options.github_user}": ${err}`);
             }
-          }
+          },
         );
       }
 
@@ -409,7 +410,7 @@ module.exports = {
           inserted_course = (await sqldb.callAsync('courses_insert', sql_params)).rows[0];
           job.verbose('Inserted course into database:');
           job.verbose(JSON.stringify(inserted_course, null, 4));
-        }
+        },
       );
 
       // Give the owner required permissions
@@ -423,7 +424,7 @@ module.exports = {
             course_request_id: options.course_request_id,
           };
           await sqldb.queryOneRowAsync(sql.set_course_owner_permission, sql_params);
-        }
+        },
       );
 
       // Automatically sync the new course. This part is shamelessly stolen
@@ -441,7 +442,7 @@ module.exports = {
           env: git_env,
         },
         job_sequence_id,
-        authn_user.user_id
+        authn_user.user_id,
       );
       let sync_result;
       await module.exports._runJobAsync(
@@ -456,9 +457,9 @@ module.exports = {
           sync_result = await syncFromDisk.syncDiskToSqlAsync(
             inserted_course.path,
             inserted_course.id,
-            job
+            job,
           );
-        }
+        },
       );
 
       // If we have chunks enabled, then create associated chunks for the new course
@@ -478,7 +479,7 @@ module.exports = {
               courseData: sync_result.courseData,
             });
             chunks.logChunkChangesToJob(chunkChanges, job);
-          }
+          },
         );
       }
 
@@ -491,7 +492,7 @@ module.exports = {
         authn_user.user_id,
         async () => {
           await courseUtil.updateCourseCommitHashAsync(inserted_course);
-        }
+        },
       );
     };
 
@@ -528,10 +529,10 @@ module.exports = {
               ERR(err, () => {
                 logger.error(err);
               });
-            }
+            },
           );
         }
-      }
+      },
     );
   },
 };

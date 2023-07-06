@@ -89,7 +89,6 @@ module.exports.init = function (callback) {
       'instance_questions_lock.sql',
       'instance_questions_ensure_open.sql',
       'instance_questions_select_variant.sql',
-      'instance_questions_update_score.sql',
       'instance_questions_next_allowed_grade.sql',
       'submissions_lock.sql',
       'submissions_select.sql',
@@ -145,7 +144,6 @@ module.exports.init = function (callback) {
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'assessment_groups_update.sql',
-      'assessment_groups_delete_all.sql',
       'assessment_groups_copy.sql',
       'assessment_groups_add_member.sql',
       'assessment_groups_delete_member.sql',
@@ -175,6 +173,6 @@ module.exports.init = function (callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully completed DB stored procedure initialization');
       callback(null);
-    }
+    },
   );
 };

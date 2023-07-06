@@ -8,6 +8,7 @@ import * as error from '@prairielearn/error';
 
 import {
   MigrationFile,
+  parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
 } from '../load-migrations';
@@ -33,14 +34,14 @@ export async function init(directories: string | string[], project: string) {
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
       await initWithLock(migrationDirectories, project);
-    }
+    },
   );
   logger.verbose(`Released lock ${lockName}`);
 }
 
 export function getMigrationsToExecute(
   migrationFiles: MigrationFile[],
-  executedMigrations: { timestamp: string | null }[]
+  executedMigrations: { timestamp: string | null }[],
 ): MigrationFile[] {
   // If no migrations have ever been run, run them all.
   if (executedMigrations.length === 0) {
@@ -100,7 +101,7 @@ export async function initWithLock(directories: string[], project: string) {
         // This revision was the most recent commit to `master` before the
         // code handling indexes was removed.
         'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-      ].join('\n')
+      ].join('\n'),
     );
   }
 
@@ -124,8 +125,15 @@ export async function initWithLock(directories: string[], project: string) {
     const migrationPath = path.join(directory, filename);
     if (filename.endsWith('.sql')) {
       const migrationSql = await fs.readFile(migrationPath, 'utf8');
+      const annotations = parseAnnotations(migrationSql);
       try {
-        await sqldb.queryAsync(migrationSql, {});
+        if (annotations.has('NO TRANSACTION')) {
+          await sqldb.queryAsync(migrationSql, {});
+        } else {
+          await sqldb.runInTransactionAsync(async () => {
+            await sqldb.queryAsync(migrationSql, {});
+          });
+        }
       } catch (err) {
         error.addData(err, { sqlFile: filename });
         throw err;

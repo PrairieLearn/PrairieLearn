@@ -77,6 +77,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
+    has_roles: !!assessment.groupRoles,
   };
 
   // It used to be the case that assessment access rules could be associated with a
@@ -244,7 +245,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               assessment.advanceScorePerc ??
               0,
           };
-        }
+        },
       );
 
       return alternativeGroupParams;
@@ -308,7 +309,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
         uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
-            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
+            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`,
           );
         });
       }

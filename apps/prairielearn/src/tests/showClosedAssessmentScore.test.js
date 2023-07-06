@@ -79,11 +79,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     const questionUrl = response.$('a:contains("Question 1")').attr('href');
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
 
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name="time-limit-finish-form"]'
-    );
+    context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
   step('simulate a time limit expiration', async () => {

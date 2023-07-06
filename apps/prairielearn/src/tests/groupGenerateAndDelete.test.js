@@ -1,100 +1,72 @@
-var ERR = require('async-stacktrace');
-var assert = require('chai').assert;
+// @ts-check
+const assert = require('chai').assert;
+const util = require('node:util');
+const sqldb = require('@prairielearn/postgres');
+const { step } = require('mocha-steps');
 
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-var helperServer = require('./helperServer');
-var groupUpdate = require('../lib/group-update');
-var { TEST_COURSE_PATH } = require('../lib/paths');
-var locals = {};
+const helperServer = require('./helperServer');
+const { deleteAllGroups } = require('../lib/groups');
+const groupUpdate = require('../lib/group-update');
+const { TEST_COURSE_PATH } = require('../lib/paths');
+
+const sql = sqldb.loadSqlEquiv(__filename);
+const locals = {};
 
 describe('test auto group and delete groups', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
 
-  it('get group-based homework assessment', (callback) => {
-    sqldb.query(sql.select_group_work_assessment, [], function (err, result) {
-      if (ERR(err, callback)) return;
-      assert.notEqual(result.rows.length, 0);
-      assert.notEqual(result.rows[0].id, undefined);
-      locals.assessment_id = result.rows[0].id;
-      callback(null);
-    });
+  step('get group-based homework assessment', async () => {
+    const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
+    assert.notEqual(result.rows.length, 0);
+    assert.notEqual(result.rows[0].id, undefined);
+    locals.assessment_id = result.rows[0].id;
   });
 
-  it('create 500 users', (callback) => {
-    sqldb.query(sql.generate_500, [], function (err, result) {
-      if (ERR(err, callback)) return;
-      assert.equal(result.rows.length, 500);
-      callback(null);
-    });
+  step('create 500 users', async () => {
+    const result = await sqldb.queryAsync(sql.generate_500, []);
+    assert.equal(result.rows.length, 500);
   });
 
-  it('auto assign groups', (callback) => {
+  step('auto assign groups', async () => {
     const user_id = 1;
     const authn_user_id = 1;
     const max_group_size = 10;
     const min_group_size = 10;
     const option = 1;
-    groupUpdate.autoGroups(
+    const job_sequence_id = await util.promisify(groupUpdate.autoGroups)(
       locals.assessment_id,
       user_id,
       authn_user_id,
       max_group_size,
       min_group_size,
       option,
-      function (err, job_sequence_id) {
-        if (ERR(err, callback)) return;
-        locals.job_sequence_id = job_sequence_id;
-        var checkComplete = function () {
-          var params = { job_sequence_id: locals.job_sequence_id };
-          sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-            if (ERR(err, callback)) return;
-            locals.job_sequence_status = result.rows[0].status;
-            if (locals.job_sequence_status === 'Running') {
-              setTimeout(checkComplete, 10);
-            } else {
-              callback(null);
-            }
-          });
-        };
-        setTimeout(checkComplete, 10);
-      }
     );
+    await helperServer.waitForJobSequenceAsync(job_sequence_id);
   });
 
-  it('check groups and users', (callback) => {
-    sqldb.query(
+  step('check groups and users', async () => {
+    const groupUserCounts = await sqldb.queryAsync(
       'SELECT count(group_id) FROM group_users GROUP BY group_id',
       [],
-      function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.equal(result.rows.length, 50);
-
-        sqldb.query('SELECT DISTINCT(user_id) FROM group_users', [], function (err, result) {
-          if (ERR(err, callback)) return;
-          assert.equal(result.rows.length, 500);
-          callback(null);
-        });
-      }
     );
+    assert.equal(groupUserCounts.rows.length, 50);
+
+    const groupUsers = await sqldb.queryAsync('SELECT DISTINCT(user_id) FROM group_users', []);
+    assert.equal(groupUsers.rows.length, 500);
   });
 
-  it('delete groups', (callback) => {
-    const params = [locals.assessment_id, 0];
-    sqldb.call('assessment_groups_delete_all', params, function (err) {
-      if (ERR(err, callback)) return;
+  step('delete groups', async () => {
+    await deleteAllGroups(locals.assessment_id, '1');
 
-      sqldb.query(
-        'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
-        [],
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          assert.equal(result.rows.length, 0);
-          callback(null);
-        }
-      );
-    });
+    const groups = await sqldb.queryAsync(
+      'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
+      [],
+    );
+    assert.equal(groups.rows.length, 0);
+
+    const groupUsers = await sqldb.queryAsync('SELECT * FROM group_users', {});
+    assert.equal(groupUsers.rows.length, 0);
   });
 });

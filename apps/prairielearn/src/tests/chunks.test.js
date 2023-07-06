@@ -11,7 +11,7 @@ const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const { config } = require('../lib/config');
 const { TEST_COURSE_PATH } = require('../lib/paths');
-const logger = require('./dummyLogger');
+const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
@@ -57,7 +57,7 @@ function getAllChunksForCourse(course_id) {
       course_instance_id: z.string().nullable(),
       assessment_id: z.string().nullable(),
       question_id: z.string().nullable(),
-    })
+    }),
   );
 }
 
@@ -66,7 +66,7 @@ describe('chunks', () => {
     it('should identify change in element', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['elements/my-special-element/impl.py'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.elements);
     });
@@ -74,7 +74,7 @@ describe('chunks', () => {
     it('should identify change in clientFilesCourse', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['clientFilesCourse/path/to/file.js'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.clientFilesCourse);
     });
@@ -82,7 +82,7 @@ describe('chunks', () => {
     it('should identify change in serverFilesCourse', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['serverFilesCourse/path/to/file.js'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.serverFilesCourse);
     });
@@ -90,7 +90,7 @@ describe('chunks', () => {
     it('should identify simple question', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['questions/simple-question/tests/test.py'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.questions.has('simple-question'));
     });
@@ -98,7 +98,7 @@ describe('chunks', () => {
     it('should identify complex question', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['questions/complex/question/tests/test.py'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.questions.has('complex/question'));
     });
@@ -108,10 +108,10 @@ describe('chunks', () => {
         [
           'courseInstances/simple-course-instance/assessments/simple-assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE
+        COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment')
+        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment'),
       );
     });
 
@@ -120,10 +120,10 @@ describe('chunks', () => {
         [
           'courseInstances/simple-course-instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE
+        COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment')
+        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment'),
       );
     });
 
@@ -132,10 +132,10 @@ describe('chunks', () => {
         [
           'courseInstances/complex/course/instance/assessments/simple-assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE
+        COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment')
+        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment'),
       );
     });
 
@@ -144,17 +144,17 @@ describe('chunks', () => {
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE
+        COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment')
+        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment'),
       );
     });
 
     it('should identify clientFilesCourseInstance in simple course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.courseInstances['simple-course-instance'].clientFilesCourseInstance);
     });
@@ -162,7 +162,7 @@ describe('chunks', () => {
     it('should identify clientFilesCourseInstance in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt'],
-        COURSE
+        COURSE,
       );
       assert.isOk(chunks.courseInstances['complex/course/instance'].clientFilesCourseInstance);
     });
@@ -172,28 +172,28 @@ describe('chunks', () => {
     it('works for elements chunk', () => {
       assert.equal(
         chunksLib.coursePathForChunk('/course/', { type: 'elements' }),
-        '/course/elements'
+        '/course/elements',
       );
     });
 
     it('works for elementExtensions chunk', () => {
       assert.equal(
         chunksLib.coursePathForChunk('/course/', { type: 'elementExtensions' }),
-        '/course/elementExtensions'
+        '/course/elementExtensions',
       );
     });
 
     it('works for clientFilesCourse chunk', () => {
       assert.equal(
         chunksLib.coursePathForChunk('/course/', { type: 'clientFilesCourse' }),
-        '/course/clientFilesCourse'
+        '/course/clientFilesCourse',
       );
     });
 
     it('works for serverFilesCourse chunk', () => {
       assert.equal(
         chunksLib.coursePathForChunk('/course/', { type: 'serverFilesCourse' }),
-        '/course/serverFilesCourse'
+        '/course/serverFilesCourse',
       );
     });
 
@@ -203,7 +203,7 @@ describe('chunks', () => {
           type: 'clientFilesCourseInstance',
           courseInstanceName: 'foo',
         }),
-        '/course/courseInstances/foo/clientFilesCourseInstance'
+        '/course/courseInstances/foo/clientFilesCourseInstance',
       );
     });
 
@@ -213,7 +213,7 @@ describe('chunks', () => {
           type: 'clientFilesCourseInstance',
           courseInstanceName: 'foo/bar',
         }),
-        '/course/courseInstances/foo/bar/clientFilesCourseInstance'
+        '/course/courseInstances/foo/bar/clientFilesCourseInstance',
       );
     });
 
@@ -224,7 +224,7 @@ describe('chunks', () => {
           courseInstanceName: 'foo',
           assessmentName: 'bar',
         }),
-        '/course/courseInstances/foo/assessments/bar/clientFilesAssessment'
+        '/course/courseInstances/foo/assessments/bar/clientFilesAssessment',
       );
     });
 
@@ -235,7 +235,7 @@ describe('chunks', () => {
           courseInstanceName: 'foo/bar',
           assessmentName: 'bar/baz',
         }),
-        '/course/courseInstances/foo/bar/assessments/bar/baz/clientFilesAssessment'
+        '/course/courseInstances/foo/bar/assessments/bar/baz/clientFilesAssessment',
       );
     });
 
@@ -245,7 +245,7 @@ describe('chunks', () => {
           type: 'question',
           questionName: 'foo',
         }),
-        '/course/questions/foo'
+        '/course/questions/foo',
       );
     });
 
@@ -255,7 +255,7 @@ describe('chunks', () => {
           type: 'question',
           questionName: 'foo/bar',
         }),
-        '/course/questions/foo/bar'
+        '/course/questions/foo/bar',
       );
     });
   });
@@ -370,6 +370,7 @@ describe('chunks', () => {
       await fs.move(tempPath, newPath);
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks.
@@ -385,8 +386,8 @@ describe('chunks', () => {
       // Check that the chunk was written to the correct location.
       assert.isOk(
         await fs.pathExists(
-          path.join(courseRuntimeDir, 'questions', 'addNumbers', 'addNumbersNested', 'info.json')
-        )
+          path.join(courseRuntimeDir, 'questions', 'addNumbers', 'addNumbersNested', 'info.json'),
+        ),
       );
     });
 
@@ -443,8 +444,8 @@ describe('chunks', () => {
       assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
       assert.isOk(
         await fs.pathExists(
-          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
-        )
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance'),
+        ),
       );
       assert.isOk(
         await fs.pathExists(
@@ -454,12 +455,14 @@ describe('chunks', () => {
             'Sp15',
             'assessments',
             'exam1-automaticTestSuite',
-            'clientFilesAssessment'
-          )
-        )
+            'clientFilesAssessment',
+          ),
+        ),
       );
       assert.isOk(
-        await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'))
+        await fs.pathExists(
+          path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'),
+        ),
       );
 
       // Remove subset of directories from the course
@@ -467,6 +470,7 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'elementExtensions'));
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks
@@ -493,8 +497,8 @@ describe('chunks', () => {
       assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
       assert.isOk(
         await fs.pathExists(
-          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
-        )
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance'),
+        ),
       );
       assert.isOk(
         await fs.pathExists(
@@ -504,9 +508,9 @@ describe('chunks', () => {
             'Sp15',
             'assessments',
             'exam1-automaticTestSuite',
-            'clientFilesAssessment'
-          )
-        )
+            'clientFilesAssessment',
+          ),
+        ),
       );
       assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers')));
 
@@ -517,13 +521,13 @@ describe('chunks', () => {
         databaseChunks.find(
           (chunk) =>
             chunk.type === 'clientFilesCourseInstance' &&
-            chunk.course_instance_id === courseInstanceId
-        )
+            chunk.course_instance_id === courseInstanceId,
+        ),
       );
       assert.isOk(
         databaseChunks.find(
-          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId
-        )
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
+        ),
       );
       assert.isOk(databaseChunks.find((chunk) => chunk.type === 'question' && chunk.question_id));
 
@@ -538,8 +542,8 @@ describe('chunks', () => {
           'Sp15',
           'assessments',
           'exam1-automaticTestSuite',
-          'clientFilesAssessment'
-        )
+          'clientFilesAssessment',
+        ),
       );
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
@@ -561,8 +565,8 @@ describe('chunks', () => {
       assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
       assert.isNotOk(
         await fs.pathExists(
-          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
-        )
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance'),
+        ),
       );
       assert.isNotOk(
         await fs.pathExists(
@@ -572,12 +576,14 @@ describe('chunks', () => {
             'Sp15',
             'assessments',
             'exam1-automaticTestSuite',
-            'clientFilesAssessment'
-          )
-        )
+            'clientFilesAssessment',
+          ),
+        ),
       );
       assert.isNotOk(
-        await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'))
+        await fs.pathExists(
+          path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'),
+        ),
       );
 
       // Assert that the remaining chunks have been deleted from the database
@@ -588,18 +594,18 @@ describe('chunks', () => {
         databaseChunks.find(
           (chunk) =>
             chunk.type === 'clientFilesCourseInstance' &&
-            chunk.course_instance_id === courseInstanceId
-        )
+            chunk.course_instance_id === courseInstanceId,
+        ),
       );
       assert.isUndefined(
         databaseChunks.find(
-          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId
-        )
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
+        ),
       );
       assert.isUndefined(
         databaseChunks.find(
-          (chunk) => chunk.type === 'question' && chunk.question_id === questionId
-        )
+          (chunk) => chunk.type === 'question' && chunk.question_id === questionId,
+        ),
       );
     });
   });

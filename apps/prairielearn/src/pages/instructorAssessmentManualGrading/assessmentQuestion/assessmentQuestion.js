@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const util = require('util');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
-const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -17,7 +15,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -33,7 +31,7 @@ router.get(
 
     const result = await sqldb.queryAsync(sql.select_instance_questions_manual_grading, params);
     res.send({ instance_questions: result.rows.map((row, idx) => ({ index: idx + 1, ...row })) });
-  })
+  }),
 );
 
 router.get(
@@ -48,10 +46,10 @@ router.get(
         res.locals.assessment.id,
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id
-      )
+        req.query.prior_instance_question_id,
+      ),
     );
-  })
+  }),
 );
 
 router.post(
@@ -77,70 +75,50 @@ router.post(
       await sqldb.queryAsync(sql.update_instance_questions, params);
       res.send({});
     } else if (req.body.__action === 'edit_question_points') {
-      const params = [
+      const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        null, // submission_id
         req.body.instance_question_id,
-        null, // uid
-        null, // assessment_instance_number
-        null, // qid
+        null, // submission_id
         req.body.modified_at,
-        null, // score_perc
-        req.body.points,
-        null, // manual_score_perc
-        req.body.manual_points,
-        null, // auto_score_perc
-        req.body.auto_points,
-        null, // feedback
-        null, // partial_scores
+        {
+          points: req.body.points,
+          manual_points: req.body.manual_points,
+          auto_points: req.body.auto_points,
+        },
         res.locals.authn_user.user_id,
-      ];
-      const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];
+      );
       if (result.modified_at_conflict) {
         return res.send({
           conflict_grading_job_id: result.grading_job_id,
           conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
         });
       }
-      await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.send({});
     } else if (req.body.__action === 'edit_question_score_perc') {
-      const params = [
+      const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        null, // submission_id
         req.body.instance_question_id,
-        null, // uid
-        null, // assessment_instance_number
-        null, // qid
+        null, // submission_id
         req.body.modified_at,
-        req.body.score_perc,
-        null, // points
-        null, // manual_score_perc
-        null, // manual_points
-        null, // auto_score_perc
-        null, // auto_points
-        null, // feedback
-        null, // partial_scores
+        { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id,
-      ];
-      const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];
+      );
       if (result.modified_at_conflict) {
         return res.send({
           conflict_grading_job_id: result.grading_job_id,
           conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
         });
       }
-      await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.send({});
     } else {
       return next(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

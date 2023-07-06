@@ -1,49 +1,41 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
-const AWS = require('aws-sdk');
-
-const { config } = require('../lib/config');
+const {
+  SQSClient,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+} = require('@aws-sdk/client-sqs');
 const { logger } = require('@prairielearn/logger');
+
+const { makeAwsClientConfig } = require('../lib/aws');
+const { config } = require('../lib/config');
 const opsbot = require('../lib/opsbot');
 
 // After loading the queue url for the first time, we'll cache it here
 const QUEUE_URLS = {};
 
-module.exports = {};
-
 module.exports.run = (callback) => {
   if (!opsbot.canSendMessages()) return callback(null);
-  if (!config.externalGradingUseAws) return callback(null);
 
-  const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
+  const jobsDeadLetterQueueName = config.externalGradingJobsDeadLetterQueueName;
+  const resultsDeadLetterQueueName = config.externalGradingResultsDeadLetterQueueName;
+  if (!config.externalGradingUseAws || !jobsDeadLetterQueueName || !resultsDeadLetterQueueName) {
+    return callback(null);
+  }
+
+  const sqs = new SQSClient(makeAwsClientConfig());
+
   let msg;
   async.series(
     [
-      (callback) => {
-        loadQueueUrl(sqs, config.externalGradingJobsDeadLetterQueueName, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        loadQueueUrl(sqs, config.externalGradingResultsDeadLetterQueueName, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        getDeadLetterMsg(sqs, config.externalGradingJobsDeadLetterQueueName, (err, msgDL) => {
-          if (ERR(err, callback)) return;
-          msg = msgDL;
-          callback(null);
-        });
-      },
-      (callback) => {
-        getDeadLetterMsg(sqs, config.externalGradingResultsDeadLetterQueueName, (err, msgDL) => {
-          if (ERR(err, callback)) return;
-          msg += msgDL;
-          callback(null);
-        });
+      async () => {
+        await loadQueueUrl(sqs, jobsDeadLetterQueueName);
+        await loadQueueUrl(sqs, resultsDeadLetterQueueName);
+        const jobsMessages = await getDeadLetterMsg(sqs, jobsDeadLetterQueueName);
+        const resultsMessages = await getDeadLetterMsg(sqs, resultsDeadLetterQueueName);
+        msg = jobsMessages + resultsMessages;
       },
       (callback) => {
         opsbot.sendMessage(msg, (err, res, body) => {
@@ -51,7 +43,7 @@ module.exports.run = (callback) => {
           if (res.statusCode !== 200) {
             logger.error(
               `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
-              body
+              body,
             );
           }
           callback(null);
@@ -61,91 +53,77 @@ module.exports.run = (callback) => {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 };
 
-function loadQueueUrl(sqs, queueName, callback) {
-  if (QUEUE_URLS[queueName] != null) {
-    callback(null);
-  } else {
-    logger.verbose(`Dead letter queue ${queueName}: getting URL...`);
-    const params = {
-      QueueName: queueName,
-    };
-    sqs.getQueueUrl(params, (err, data) => {
-      if (ERR(err, callback)) return;
-      QUEUE_URLS[queueName] = data.QueueUrl;
-      logger.verbose(`Dead letter queue ${queueName}: got URL ${QUEUE_URLS[queueName]}`);
-      callback(null);
-    });
+/**
+ * @param {SQSClient} sqs
+ * @param {string} queueName
+ */
+async function loadQueueUrl(sqs, queueName) {
+  if (QUEUE_URLS[queueName] != null) return;
+
+  logger.verbose(`Dead letter queue ${queueName}: getting URL...`);
+  const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+  QUEUE_URLS[queueName] = data.QueueUrl;
+  logger.verbose(`Dead letter queue ${queueName}: got URL ${QUEUE_URLS[queueName]}`);
+}
+
+/**
+ * @param {SQSClient} sqs
+ * @param {string} queueName
+ */
+async function getDeadLetterMsg(sqs, queueName) {
+  const messages = await drainQueue(sqs, queueName);
+  let msgDL = `_Dead letter queue, past 24 hours:_ *${queueName}:* count: ${messages.length}\n`;
+  for (let message of messages) {
+    msgDL += JSON.stringify(message) + '\n';
   }
-}
-
-function getDeadLetterMsg(sqs, queueName, callback) {
-  drainQueue(sqs, queueName, (err, messages) => {
-    if (ERR(err, callback)) return;
-    let msgDL = `_Dead letter queue, past 24 hours:_ *${queueName}:* count: ${messages.length}\n`;
-    for (let message of messages) {
-      msgDL += JSON.stringify(message) + '\n';
-    }
-    logger.verbose('cron:sendExternalGraderDeadLetters', {
-      queue: queueName,
-      count: messages.length,
-      messages,
-    });
-    callback(null, msgDL);
+  logger.verbose('cron:sendExternalGraderDeadLetters', {
+    queue: queueName,
+    count: messages.length,
+    messages,
   });
+  return msgDL;
 }
 
-function drainQueue(sqs, queueName, callback) {
+/**
+ * @param {SQSClient} sqs
+ * @param {string} queueName
+ */
+async function drainQueue(sqs, queueName) {
   const messages = [];
-  async.doWhilst(
-    (callback) => {
-      const params = {
-        MaxNumberOfMessages: 10,
-        QueueUrl: QUEUE_URLS[queueName],
-        WaitTimeSeconds: 20,
-      };
-      sqs.receiveMessage(params, (err, data) => {
-        if (ERR(err, callback)) return;
-        if (!data.Messages) {
-          return callback(null, false); // stop with message collection
-        }
-        async.each(
-          data.Messages,
-          (message, callback) => {
-            let parsedMessage;
-            let receiptHandle;
-            try {
-              parsedMessage = JSON.parse(message.Body);
-              receiptHandle = message.ReceiptHandle;
-            } catch (e) {
-              return callback(e);
-            }
-            messages.push(parsedMessage);
-            const deleteParams = {
-              QueueUrl: QUEUE_URLS[queueName],
-              ReceiptHandle: receiptHandle,
-            };
-            sqs.deleteMessage(deleteParams, (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, true); // keep getting messages if we got some this time
-          }
+  await async.doWhilst(
+    async () => {
+      const data = await sqs.send(
+        new ReceiveMessageCommand({
+          MaxNumberOfMessages: 10,
+          QueueUrl: QUEUE_URLS[queueName],
+          WaitTimeSeconds: 20,
+        }),
+      );
+      if (!data.Messages) {
+        // stop with message collection
+        return false;
+      }
+      await async.each(data.Messages, async (message) => {
+        if (!message.Body) return;
+        const parsedMessage = JSON.parse(message.Body);
+        const receiptHandle = message.ReceiptHandle;
+        messages.push(parsedMessage);
+        await sqs.send(
+          new DeleteMessageCommand({
+            QueueUrl: QUEUE_URLS[queueName],
+            ReceiptHandle: receiptHandle,
+          }),
         );
       });
+
+      // keep getting messages if we got some this time
+      return true;
     },
-    (keepGoing, callback) => {
-      callback(null, keepGoing);
-    },
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, messages);
-    }
+    async (keepGoing) => keepGoing,
   );
+  return messages;
 }

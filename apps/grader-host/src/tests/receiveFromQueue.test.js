@@ -1,6 +1,12 @@
 // @ts-check
 const { assert } = require('chai');
 const sinon = require('sinon');
+const {
+  ReceiveMessageCommand,
+  ChangeMessageVisibilityCommand,
+  DeleteMessageCommand,
+} = require('@aws-sdk/client-sqs');
+
 const { config } = require('../lib/config');
 const queueReceiver = require('../lib/receiveFromQueue');
 
@@ -28,28 +34,45 @@ function fakeSqs(options = {}) {
     };
   }
 
+  const receiveMessage = sinon.spy(() => {
+    if (callCount < timeoutCount) {
+      callCount++;
+      return {};
+    }
+
+    return {
+      Messages: [
+        {
+          Body: JSON.stringify(message),
+          ReceiptHandle: receiptHandle,
+        },
+      ],
+    };
+  });
+  const changeMessageVisibility = sinon.spy(() => null);
+  const deleteMessage = sinon.spy(() => null);
+
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
-  return {
-    receiveMessage: sinon.spy((params, callback) => {
-      if (callCount < timeoutCount) {
-        callCount++;
-        return callback(null, {});
+
+  return /** @type {any} */ ({
+    send: async (command) => {
+      if (command instanceof ReceiveMessageCommand) {
+        return receiveMessage(command);
+      } else if (command instanceof ChangeMessageVisibilityCommand) {
+        return changeMessageVisibility(command);
+      } else if (command instanceof DeleteMessageCommand) {
+        return deleteMessage(command);
+      } else {
+        throw new Error(`Unknown command type: ${command.constructor.name}`);
       }
-      callback(null, {
-        Messages: [
-          {
-            Body: JSON.stringify(message),
-            ReceiptHandle: receiptHandle,
-          },
-        ],
-      });
-    }),
-    deleteMessage: sinon.spy((params, callback) => callback(null)),
-    changeMessageVisibility: sinon.spy((params, callback) => callback(null)),
+    },
     message,
     receiptHandle,
-  };
+    changeMessageVisibility,
+    receiveMessage,
+    deleteMessage,
+  });
 }
 
 const TIMEOUT_OVERHEAD = 300;
@@ -70,9 +93,9 @@ describe('queueReceiver', () => {
       (message, errCb, successCb) => successCb(),
       (err) => {
         assert.isNull(err);
-        assert.equal(sqs.receiveMessage.args[0][0].QueueUrl, 'helloworld');
+        assert.equal(sqs.receiveMessage.args[0][0].input.QueueUrl, 'helloworld');
         done();
-      }
+      },
     );
   });
 
@@ -89,7 +112,7 @@ describe('queueReceiver', () => {
         assert.isNull(err);
         assert.equal(sqs.receiveMessage.callCount, 2);
         done();
-      }
+      },
     );
   });
 
@@ -106,7 +129,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -126,7 +149,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -144,10 +167,10 @@ describe('queueReceiver', () => {
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.changeMessageVisibility.callCount, 1);
-        const params = sqs.changeMessageVisibility.args[0][0];
+        const params = sqs.changeMessageVisibility.args[0][0].input;
         assert.equal(params.VisibilityTimeout, 10 + TIMEOUT_OVERHEAD);
         done();
-      }
+      },
     );
   });
 
@@ -162,7 +185,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -176,10 +199,10 @@ describe('queueReceiver', () => {
       (err) => {
         assert.isNull(err);
         assert.equal(sqs.deleteMessage.callCount, 1);
-        assert.equal(sqs.deleteMessage.args[0][0].QueueUrl, 'goodbyeworld');
-        assert.equal(sqs.deleteMessage.args[0][0].ReceiptHandle, sqs.receiptHandle);
+        assert.equal(sqs.deleteMessage.args[0][0].input.QueueUrl, 'goodbyeworld');
+        assert.equal(sqs.deleteMessage.args[0][0].input.ReceiptHandle, sqs.receiptHandle);
         done();
-      }
+      },
     );
   });
 });

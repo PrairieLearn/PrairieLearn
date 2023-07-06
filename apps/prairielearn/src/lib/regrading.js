@@ -4,7 +4,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { logger } = require('@prairielearn/logger');
-const serverJobs = require('../lib/server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const ltiOutcomes = require('./ltiOutcomes');
@@ -77,7 +77,7 @@ module.exports = {
                     Math.floor(regrade.new_score_perc) +
                     '% (was ' +
                     Math.floor(regrade.old_score_perc) +
-                    '%)'
+                    '%)',
                 );
               } else {
                 job.verbose('No changes made');
@@ -216,7 +216,7 @@ module.exports = {
                 } else {
                   job.succeed();
                 }
-              }
+              },
             );
           });
         });

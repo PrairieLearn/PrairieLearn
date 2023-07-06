@@ -16,6 +16,7 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
         var answerText = answerObjs[i].getAttribute('string');
         var answerUuid = answerObjs[i].getAttribute('uuid');
+        var answerDistractorBin = answerObjs[i].getAttribute('data-distractor-bin');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -26,6 +27,7 @@ window.PLOrderBlocks = function (uuid, options) {
           inner_html: answerText,
           indent: answerIndent,
           uuid: answerUuid,
+          distractor_bin: answerDistractorBin,
         };
         studentAnswers.push(answer);
       }
@@ -56,16 +58,94 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
+  function getOrCreateIndicator(uuid, createAt) {
+    let indicator = document.getElementById('indicator-' + uuid);
+    if (!indicator) {
+      indicator = document.createElement('li');
+      indicator.classList.add('pl-order-blocks-pairing-indicator');
+      indicator.classList.add('list-group-item-info');
+      indicator.setAttribute('data-distractor-bin', uuid);
+      indicator.id = 'indicator-' + uuid;
+      indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
+      indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
+      if (createAt) {
+        createAt.insertAdjacentElement('beforebegin', indicator);
+      } else {
+        $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
+      }
+    }
+    return indicator;
+  }
+
+  function placePairingIndicators() {
+    let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    let allAns = answerObjs.concat(
+      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
+    );
+
+    let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
+    let distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
+
+    for (let binUuid of distractorBins) {
+      let blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
+      let indicator = getOrCreateIndicator(binUuid, blocks[0]);
+      let innerList = indicator.getElementsByClassName('inner-list')[0];
+
+      for (let block of blocks) {
+        innerList.insertAdjacentElement('beforeend', block);
+      }
+    }
+  }
+
+  function correctPairing(ui) {
+    if (ui.item.parent()[0].classList.contains('dropzone')) {
+      // there aren't pairing indicators in the dropzone
+      return;
+    }
+    let block = ui.item[0];
+    let binUuid = block.getAttribute('data-distractor-bin');
+    let containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
+    let containingIndicatorUuid = containingIndicator
+      ? containingIndicator.getAttribute('data-distractor-bin')
+      : null;
+
+    if (!binUuid && containingIndicatorUuid) {
+      containingIndicator.insertAdjacentElement('afterend', block);
+    } else if (binUuid !== containingIndicatorUuid) {
+      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
+        'inner-list',
+      )[0];
+      properIndicatorList.insertAdjacentElement('beforeend', block);
+    }
+  }
+
+  function drawIndentLocationLines(dropzoneElementId) {
+    $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
+      .repeat(maxIndent + 1)
+      .slice(0, -2);
+    $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
+    $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
+      { length: maxIndent + 1 },
+      (_, index) => {
+        return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
+      },
+    ).join(', ');
+  }
+
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
-    items: 'li:not(.info-fixed)',
+    items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
     cancel: 'input,textarea,button,select,option,a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function () {
+      placePairingIndicators();
       setAnswer();
+      if (enableIndentation) {
+        drawIndentLocationLines(dropzoneElementId);
+      }
     },
     sort: function (event, ui) {
       // update the location of the placeholder as the item is dragged
@@ -79,6 +159,8 @@ window.PLOrderBlocks = function (uuid, options) {
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
+
+      correctPairing(ui);
     },
   });
 
