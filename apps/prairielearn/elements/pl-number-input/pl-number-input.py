@@ -1,5 +1,4 @@
 import random
-import math
 from enum import Enum
 from html import escape
 from typing import Any, Optional, Union
