@@ -27,7 +27,7 @@ function getPaths(req, res, callback) {
     paths.rootPath = path.join(
       res.locals.course.path,
       'courseInstances',
-      res.locals.course_instance.short_name
+      res.locals.course_instance.short_name,
     );
     paths.invalidRootPaths = [path.join(paths.rootPath, 'assessments')];
     paths.cannotMove = [path.join(paths.rootPath, 'infoCourseInstance.json')];
@@ -40,7 +40,7 @@ function getPaths(req, res, callback) {
       'courseInstances',
       res.locals.course_instance.short_name,
       'assessments',
-      res.locals.assessment.tid
+      res.locals.assessment.tid,
     );
     paths.invalidRootPaths = [];
     paths.cannotMove = [path.join(paths.rootPath, 'infoAssessment.json')];
@@ -77,7 +77,7 @@ function getPaths(req, res, callback) {
         label: 'Client',
         path: paths.clientDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.clientDir
+          paths.clientDir,
         )}</code> and will be accessible from the student's webbrowser.`,
       });
     }
@@ -86,7 +86,7 @@ function getPaths(req, res, callback) {
         label: 'Server',
         path: paths.serverDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.serverDir
+          paths.serverDir,
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
       });
     }
@@ -95,7 +95,7 @@ function getPaths(req, res, callback) {
         label: 'Test',
         path: paths.testsDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.testsDir
+          paths.testsDir,
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
       });
     }
@@ -113,7 +113,7 @@ function getPaths(req, res, callback) {
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
-    contains(invalidRootPath, paths.workingPath)
+    contains(invalidRootPath, paths.workingPath),
   );
   if (found) {
     let err = new Error('Invalid working directory');

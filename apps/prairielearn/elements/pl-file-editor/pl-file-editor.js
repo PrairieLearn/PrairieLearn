@@ -150,7 +150,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: theme,
             text: caption,
             selected: localStorage.getItem('pl-file-editor-theme') === theme,
-          })
+          }),
         );
       }
 
@@ -163,7 +163,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: fontSizeList[entries],
             text: fontSizeList[entries],
             selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
-          })
+          }),
         );
       }
 
@@ -178,7 +178,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
             value: keyboardHandler,
             text: keyboardHandlerList[index],
             selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
-          })
+          }),
         );
       }
     });
@@ -188,7 +188,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
-        localStorage.getItem('pl-file-editor-keyboardHandler')
+        localStorage.getItem('pl-file-editor-keyboardHandler'),
       );
     }
 
@@ -230,7 +230,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
     this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
     );
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
@@ -278,7 +278,7 @@ window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
       .map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join('')
+      .join(''),
   );
 };
 
@@ -289,6 +289,6 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   return btoa(
     encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
       return String.fromCharCode('0x' + p1);
-    })
+    }),
   );
 };

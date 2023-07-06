@@ -3,7 +3,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
   _,
   Backbone,
   rivets,
-  PrairieTemplate
+  PrairieTemplate,
 ) {
   rivets.configure({
     templateDelimiters: ['{{', '}}'],
@@ -127,14 +127,14 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel
+        this.appModel,
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel
+          this.appModel,
         );
       }
       this.$el.html(templatedHTML);
@@ -154,12 +154,12 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
               _.filter(this.rivetsView.bindings, function (binding) {
                 return binding.key === 'submittedAnswer' && binding.type === 'checkedoptional';
               }),
-              'keypath'
-            )
+              'keypath',
+            ),
           ),
           function (kp) {
             if (!that.submittedAnswer.has(kp)) that.submittedAnswer.set(kp, false);
-          }
+          },
         );
         _.each(
           _.uniq(
@@ -167,10 +167,10 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
               _.filter(this.rivetsView.bindings, function (binding) {
                 return binding.key === 'submittedAnswer';
               }),
-              'keypath'
-            )
+              'keypath',
+            ),
           ),
-          this.addAnswer.bind(this)
+          this.addAnswer.bind(this),
         );
       }
       this.checkSubmittable();
@@ -224,7 +224,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
       for (i = 0; i < this.answerAttributes.length; i++) {
         if (this.submittedAnswer.has(this.answerAttributes[i].name)) {
           answerData[this.answerAttributes[i].name] = this.submittedAnswer.get(
-            this.answerAttributes[i].name
+            this.answerAttributes[i].name,
           );
         }
       }
@@ -260,14 +260,14 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel
+        this.appModel,
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel
+          this.appModel,
         );
       }
       this.$el.html(templatedHTML);
@@ -315,14 +315,14 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel
+        this.appModel,
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel
+          this.appModel,
         );
       }
       this.$el.html(templatedHTML);
@@ -372,7 +372,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
     questionDivID,
     changeCallback,
     questionDataModel,
-    appModel
+    appModel,
   ) {
     var that = this;
     //this.listenTo(this.model, "answerChanged", changeCallback);
@@ -422,7 +422,7 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
     appModel,
     submittedAnswer,
     feedback,
-    submissionIndex
+    submissionIndex,
   ) {
     var that = this;
     feedback = feedback || {};

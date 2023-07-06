@@ -40,7 +40,7 @@ const mathjaxPromise = new Promise((resolve, _reject) => {
         window.MathJax.Hub = {
           Queue: function () {
             console.warn(
-              'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typesetPromise()'
+              'MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typesetPromise()',
             );
             window.MathJax.typesetPromise();
           },

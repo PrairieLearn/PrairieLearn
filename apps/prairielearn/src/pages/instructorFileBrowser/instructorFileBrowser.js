@@ -49,7 +49,7 @@ function browseDirectory(file_browser, callback) {
               const relative_path = path.relative(file_browser.paths.coursePath, filepath);
               const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
                 file_browser.paths.courseId,
-                relative_path
+                relative_path,
               );
               return {
                 id: file.index,
@@ -74,7 +74,7 @@ function browseDirectory(file_browser, callback) {
                   file_browser.has_course_permission_edit &&
                   !file_browser.example_course,
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                  contains(invalidRootPath, filepath)
+                  contains(invalidRootPath, filepath),
                 ),
                 sync_errors: sync_data.errors,
                 sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors),
@@ -90,13 +90,13 @@ function browseDirectory(file_browser, callback) {
                 path: path.relative(file_browser.paths.coursePath, filepath),
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                  contains(invalidRootPath, filepath)
+                  contains(invalidRootPath, filepath),
                 ),
               };
             } else {
               return null;
             }
-          }
+          },
         );
         file_browser.files = all_files.filter((f) => f?.isFile);
         file_browser.dirs = all_files.filter((f) => f?.isDirectory);
@@ -105,7 +105,7 @@ function browseDirectory(file_browser, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -187,11 +187,11 @@ function browseFile(file_browser, callback) {
         canDelete:
           movable && file_browser.has_course_permission_edit && !file_browser.example_course,
         canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-          contains(invalidRootPath, filepath)
+          contains(invalidRootPath, filepath),
         ),
       };
       callback(null);
-    }
+    },
   );
 }
 
@@ -245,8 +245,8 @@ router.get('/*', function (req, res, next) {
         } else {
           callback(
             new Error(
-              `Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`
-            )
+              `Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`,
+            ),
           );
         }
       },
@@ -262,7 +262,7 @@ router.get('/*', function (req, res, next) {
       }
       res.locals.file_browser = file_browser;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -312,7 +312,7 @@ router.post('/*', function (req, res, next) {
         oldPath = path.join(req.body.working_path, req.body.old_file_name);
       } catch (err) {
         return next(
-          new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`)
+          new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`),
         );
       }
       if (!req.body.new_file_name) {
@@ -320,13 +320,13 @@ router.post('/*', function (req, res, next) {
       }
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
-          req.body.new_file_name
+          req.body.new_file_name,
         )
       ) {
         return next(
           new Error(
-            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`
-          )
+            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
+          ),
         );
       }
       let newPath;
@@ -334,7 +334,7 @@ router.post('/*', function (req, res, next) {
         newPath = path.join(req.body.working_path, req.body.new_file_name);
       } catch (err) {
         return next(
-          new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`)
+          new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`),
         );
       }
       if (oldPath === newPath) {
@@ -356,8 +356,8 @@ router.post('/*', function (req, res, next) {
               if (req.body.was_viewing_file) {
                 res.redirect(
                   `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-                    path.relative(res.locals.course.path, newPath)
-                  )}`
+                    path.relative(res.locals.course.path, newPath),
+                  )}`,
                 );
               } else {
                 res.redirect(req.originalUrl);
@@ -382,7 +382,7 @@ router.post('/*', function (req, res, next) {
           filePath = path.join(req.body.working_path, req.file.originalname);
         } catch (err) {
           return next(
-            new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`)
+            new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`),
           );
         }
       }

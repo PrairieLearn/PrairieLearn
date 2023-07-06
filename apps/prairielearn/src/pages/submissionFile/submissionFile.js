@@ -59,7 +59,7 @@ router.get(
     res.setHeader('Content-Type', mimeType);
 
     res.status(200).send(buffer);
-  })
+  }),
 );
 
 module.exports = router;

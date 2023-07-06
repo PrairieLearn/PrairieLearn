@@ -25,7 +25,7 @@ export function generateSignedToken(data: any, secretKey: string) {
       dateString,
       checkString,
       encodedSignature,
-    })}`
+    })}`,
   );
   const token = encodedSignature + sep + checkString;
   debug(`generateSignedToken(): token = ${token}`);
@@ -35,7 +35,7 @@ export function generateSignedToken(data: any, secretKey: string) {
 export function getCheckedSignedTokenData(
   token: string,
   secretKey: string,
-  options: CheckOptions = {}
+  options: CheckOptions = {},
 ) {
   debug(`getCheckedSignedTokenData(): token = ${token}`);
   debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
@@ -61,7 +61,7 @@ export function getCheckedSignedTokenData(
   const encodedCheckSignature = base64url.encode(checkSignature);
   if (encodedCheckSignature !== tokenSignature) {
     debug(
-      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`
+      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`,
     );
     return null;
   }
@@ -79,7 +79,7 @@ export function getCheckedSignedTokenData(
     const elapsedTime = currentTime - tokenDate.getTime();
     if (elapsedTime > options.maxAge) {
       debug(
-        `getCheckedSignedTokenData(): FAIL - too old: elapsedTime=${elapsedTime} > maxAge=${options.maxAge}`
+        `getCheckedSignedTokenData(): FAIL - too old: elapsedTime=${elapsedTime} > maxAge=${options.maxAge}`,
       );
       return null;
     }
@@ -107,7 +107,7 @@ export function checkSignedToken(
   token: string,
   data: any,
   secretKey: string,
-  options: CheckOptions = {}
+  options: CheckOptions = {},
 ) {
   debug(`checkSignedToken(): token = ${token}`);
   debug(`checkSignedToken(): data = ${JSON.stringify(data)}`);

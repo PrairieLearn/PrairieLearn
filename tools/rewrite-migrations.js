@@ -5,7 +5,7 @@ const prefixZero = (value) => ('0' + value).slice(-2);
 
 function formatDate(date) {
   return `${date.getFullYear()}${prefixZero(date.getMonth() + 1)}${prefixZero(
-    date.getDate()
+    date.getDate(),
   )}${prefixZero(date.getHours())}${prefixZero(date.getMinutes())}${prefixZero(date.getSeconds())}`;
 }
 
