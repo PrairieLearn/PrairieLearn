@@ -27,7 +27,12 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type Set<string> */
   const knownQuestionTopicNames = new Set();
   Object.values(courseData.questions).forEach((q) => {
-    if (!infofile.hasErrors(q) && q.data?.topic) {
+    // We technically allow courses to define an "empty string" topic, so we'll
+    // support that for implicit topics as well by checking if the topic is
+    // nullish, rather than falsy (which wouldn't handle empty strings).
+    //
+    // TODO: consider requiring that all topics have a non-empty name.
+    if (!infofile.hasErrors(q) && q.data?.topic != null) {
       knownQuestionTopicNames.add(q.data.topic);
     }
   });
