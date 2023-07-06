@@ -201,14 +201,14 @@ const testActiveBadge = async (date, generalIndex, exceptionIndex) => {
   $accessPage = cheerio.load(await response.text());
 
   const generalAccessBadge = $accessPage(
-    '[data-testid="table-interpreted-general"] [data-testid="active-rule-badge"]'
+    '[data-testid="table-interpreted-general"] [data-testid="active-rule-badge"]',
   );
   assert.equal(generalAccessBadge.length, 1);
   const generalRow = generalAccessBadge.parents('tr').eq(0);
   assert.equal(generalRow.parent().find('tr:has(td)').index(generalRow), generalIndex);
 
   const exceptionAccessBadge = $accessPage(
-    '[data-testid="table-interpreted-exception"] [data-testid="active-rule-badge"]'
+    '[data-testid="table-interpreted-exception"] [data-testid="active-rule-badge"]',
   );
   assert.equal(exceptionAccessBadge.length, 1);
   const exceptionRow = exceptionAccessBadge.parents('tr').eq(0);
@@ -257,16 +257,16 @@ describe('Access page', function () {
       assert.equal(cells.eq(headers['End date']).text().trim(), rule.endDate || '—');
       assert.equal(
         cells.eq(headers['Active']).text().trim(),
-        rule.active ?? true ? 'Active' : 'Not Active'
+        rule.active ?? true ? 'Active' : 'Not Active',
       );
       assert.equal(cells.eq(headers['Password']).text().trim(), rule.password || '—');
       assert.equal(
         cells.eq(headers['Credit']).text().trim(),
-        rule.credit ? `${rule.credit}%` : '—'
+        rule.credit ? `${rule.credit}%` : '—',
       );
       assert.equal(
         cells.eq(headers['Time limit']).text().trim(),
-        rule.timeLimit ? `${rule.timeLimit} min` : '—'
+        rule.timeLimit ? `${rule.timeLimit} min` : '—',
       );
       assert.equal(!!cells.eq(0).text().includes('Not used'), !!rule.no_effect);
     });
@@ -291,13 +291,13 @@ describe('Access page', function () {
       assert.equal(cells.eq(headers['When']).text().trim(), rule.dates);
       assert.equal(
         cells.eq(3).text().trim(),
-        rule.active ?? true ? 'Can start the assessment' : 'Cannot start assessment'
+        rule.active ?? true ? 'Can start the assessment' : 'Cannot start assessment',
       );
       if (rule.active ?? true) {
         assert.equal(cells.eq(headers['Password']).text().trim(), rule.password || '—');
         assert.equal(
           cells.eq(headers['Credit']).text().trim(),
-          rule.credit ? `${rule.credit}%` : '—'
+          rule.credit ? `${rule.credit}%` : '—',
         );
       }
       assert.equal(cells.eq(-1).text().trim(), rule.after ?? 'Can see score and answers');
@@ -326,13 +326,13 @@ describe('Access page', function () {
       assert.equal(cells.eq(headers['When']).text().trim(), rule.dates);
       assert.equal(
         cells.eq(3).text().trim(),
-        rule.active ?? true ? 'Can start the assessment' : 'Cannot start assessment'
+        rule.active ?? true ? 'Can start the assessment' : 'Cannot start assessment',
       );
       if (rule.active ?? true) {
         assert.equal(cells.eq(headers['Password']).text().trim(), rule.password || '—');
         assert.equal(
           cells.eq(headers['Credit']).text().trim(),
-          rule.credit ? `${rule.credit}%` : '—'
+          rule.credit ? `${rule.credit}%` : '—',
         );
       }
       assert.equal(cells.eq(-1).text().trim(), rule.after ?? 'Can see score and answers');

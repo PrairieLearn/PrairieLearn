@@ -28,12 +28,12 @@ let updateAccessRuleRange = function (rule) {
   } else if (isSameDay(rule.start_date_raw, rule.end_date_raw)) {
     rule.date_range = `On ${format(rule.start_date_raw, date_format)}, from ${format(
       rule.start_date_raw,
-      time_format
+      time_format,
     )} to ${format(rule.end_date_raw, time_format)}`;
   } else {
     rule.date_range = `From ${format(rule.start_date_raw, date_time_format)} to ${format(
       rule.end_date_raw,
-      date_time_format
+      date_time_format,
     )}`;
   }
 };
@@ -195,13 +195,13 @@ router.get(
       db_rule.has_application =
         general_rules.some((applied) => applied.id === db_rule.id) ||
         res.locals.exception_sets.some((set) =>
-          set.rules.some((applied) => applied.id === db_rule.id)
+          set.rules.some((applied) => applied.id === db_rule.id),
         );
     });
 
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 module.exports = router;
