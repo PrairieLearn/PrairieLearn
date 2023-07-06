@@ -46,9 +46,7 @@ class TestGrader(cgrader.CGrader):
                     url = "data:image/png;base64, " + base64.encodebytes(
                         buf.getvalue()
                     ).decode("ascii")
-                    test["images"] = [
-                        {"label": "Result", "url": url, "style": "max-width: 50%"}
-                    ]
+                    test["images"] = [{"label": "Result", "url": url}]
             except Exception:
                 pass
 
