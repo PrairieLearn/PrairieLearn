@@ -41,7 +41,7 @@
             <% } %>
             <% if (disableGradeButton || invalidRoleConfig) { %>
               <%
-              var lockedPopoverText;
+              let lockedPopoverText;
               if (invalidRoleConfig) {
                 lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is correct."
               } else {
