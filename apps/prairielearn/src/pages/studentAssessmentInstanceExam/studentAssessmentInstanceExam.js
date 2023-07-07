@@ -81,7 +81,7 @@ router.post(
         req.body,
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
@@ -173,7 +173,7 @@ router.get(
         if (groupConfig.has_roles) {
           const result = await groupAssessmentHelper.getAssessmentPermissions(
             res.locals.assessment.id,
-            res.locals.user.user_id
+            res.locals.user.user_id,
           );
           res.locals.canViewRoleTable = result.can_assign_roles_at_start;
         }

@@ -141,7 +141,7 @@ router.post(
         req.body,
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {

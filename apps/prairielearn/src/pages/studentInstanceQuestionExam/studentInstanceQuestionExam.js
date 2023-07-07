@@ -232,7 +232,7 @@ router.get(
     if (res.locals.assessment.group_work) {
       const groupId = await groupAssessmentHelper.getGroupId(
         res.locals.assessment.id,
-        res.locals.user.user_id
+        res.locals.user.user_id,
       );
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       if (groupConfig.has_roles) {
@@ -248,7 +248,7 @@ router.get(
     question.setRendererHeader(res);
     setQuestionCopyTargets(res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 module.exports = router;
