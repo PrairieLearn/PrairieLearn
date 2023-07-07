@@ -120,7 +120,7 @@ def get_string_precision(number_string: str) -> float:
         return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
-def get_string_significant_digits(number_string: str) -> int:
+def get_string_significant_digits(number_string):
     if "." in number_string:
         number_string_partition = number_string.partition["."]
         integer_part = len(number_string_partition[0])
