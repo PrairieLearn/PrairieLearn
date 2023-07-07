@@ -251,7 +251,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               assessment.advanceScorePerc ??
               0,
           };
-        }
+        },
       );
 
       return alternativeGroupParams;
@@ -315,7 +315,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
         uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
-            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
+            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`,
           );
         });
       }

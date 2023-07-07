@@ -52,7 +52,7 @@ module.exports.sync = async function (courseId, courseData) {
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
       ]);
-    }
+    },
   );
 
   const params = [courseInstanceParams, courseId];

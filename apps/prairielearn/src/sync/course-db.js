@@ -439,7 +439,7 @@ module.exports.loadFullCourse = async function (courseDir) {
     const assessments = await module.exports.loadAssessments(
       courseDir,
       courseInstanceId,
-      questions
+      questions,
     );
     const courseInstance = {
       courseInstance: courseInstanceInfos[courseInstanceId],
@@ -491,7 +491,7 @@ module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseD
     courseId,
     'infoCourse.json',
     courseData.course,
-    writeLine
+    writeLine,
   );
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     const questionPath = path.posix.join('questions', qid, 'info.json');
@@ -503,7 +503,7 @@ module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseD
       courseId,
       courseInstancePath,
       courseInstanceData.courseInstance,
-      writeLine
+      writeLine,
     );
     Object.entries(courseInstanceData.assessments).forEach(([aid, assessment]) => {
       const assessmentPath = path.posix.join(
@@ -511,7 +511,7 @@ module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseD
         ciid,
         'assessments',
         aid,
-        'infoAssessment.json'
+        'infoAssessment.json',
       );
       writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
     });
@@ -759,7 +759,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    DEFAULT_ASSESSMENT_SETS
+    DEFAULT_ASSESSMENT_SETS,
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
@@ -892,7 +892,7 @@ async function loadInfoForDirectory({
           const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.isEmpty(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`
+              `Missing JSON file: ${infoFilePath}`,
             );
           }
           _.assign(infoFiles, subInfoFiles);
@@ -902,7 +902,7 @@ async function loadInfoForDirectory({
           } else if (e.code === 'ENOENT') {
             // Missing directory; record it
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`
+              `Missing JSON file: ${infoFilePath}`,
             );
           } else {
             // Some other error, permissions perhaps. Throw to abort sync.
@@ -972,7 +972,7 @@ function checkAllowAccessRoles(rule) {
   if ('role' in rule) {
     if (rule.role !== 'Student') {
       warnings.push(
-        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`
+        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
       );
     }
   }
@@ -1003,7 +1003,7 @@ function checkAllowAccessDates(rule) {
   }
   if (startDate && endDate && isAfter(startDate, endDate)) {
     errors.push(
-      `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`
+      `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
     );
   }
   let dateInFuture = false;
@@ -1103,7 +1103,7 @@ async function validateAssessment(assessment, questions) {
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
+          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`,
         );
       }
       // We'll normalize either single questions or alternative groups
@@ -1119,7 +1119,7 @@ async function validateAssessment(assessment, questions) {
           const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
+              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`,
             );
           }
           return {
@@ -1160,13 +1160,13 @@ async function validateAssessment(assessment, questions) {
             alternative.maxAutoPoints !== undefined)
         ) {
           errors.push(
-            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
           );
         }
         if (assessment.type === 'Exam') {
           if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
             errors.push(
-              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment',
             );
           }
 
@@ -1177,7 +1177,7 @@ async function validateAssessment(assessment, questions) {
           const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
           const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const isNonIncreasing = pointsList.every(
-            (points, index) => index === 0 || points <= pointsList[index - 1]
+            (points, index) => index === 0 || points <= pointsList[index - 1],
           );
           if (!isNonIncreasing) {
             errors.push('Points for a question must be non-increasing');
@@ -1191,12 +1191,12 @@ async function validateAssessment(assessment, questions) {
               alternative.maxAutoPoints !== undefined)
           ) {
             errors.push(
-              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
-              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
           }
         }
@@ -1206,13 +1206,13 @@ async function validateAssessment(assessment, questions) {
 
   if (duplicateQids.size > 0) {
     errors.push(
-      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`
+      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`,
     );
   }
 
   if (missingQids.size > 0) {
     errors.push(
-      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
+      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
     );
   }
 
@@ -1232,12 +1232,12 @@ async function validateAssessment(assessment, questions) {
 
     if (!foundCanAssignRolesAtStart) {
       errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".'
+        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".',
       );
     }
     if (!foundCanAssignRolesDuringAssessment) {
       errors.push(
-        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".'
+        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".',
       );
     }
 
@@ -1245,22 +1245,22 @@ async function validateAssessment(assessment, questions) {
     assessment.groupRoles.forEach((role) => {
       if (role.minimum > assessment.groupMinSize) {
         warnings.push(
-          `Group role "${role.name}" has a minimum greater than the group's minimum size.`
+          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
       if (role.minimum && role.minimum > assessment.groupMaxSize) {
         errors.push(
-          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`
+          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
       if (role.maximum && role.maximum > assessment.groupMaxSize) {
         errors.push(
-          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`
+          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
       if (role.minimum > role.maximum) {
         errors.push(
-          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`
+          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
       }
     });
@@ -1321,7 +1321,7 @@ async function validateCourseInstance(courseInstance) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
       errors.push(
-        '"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.'
+        '"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.',
       );
     }
   }
@@ -1345,7 +1345,7 @@ async function validateCourseInstance(courseInstance) {
 
     if (_(courseInstance).has('userRoles')) {
       warnings.push(
-        'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.'
+        'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
     }
   }
@@ -1378,7 +1378,7 @@ module.exports.loadQuestions = async function (coursePath) {
   }
   checkDuplicateUUIDs(
     questions,
-    (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`
+    (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
   );
   return questions;
 };
@@ -1401,7 +1401,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
   });
   checkDuplicateUUIDs(
     courseInstances,
-    (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`
+    (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`,
   );
   return courseInstances;
 };
@@ -1430,7 +1430,7 @@ module.exports.loadAssessments = async function (coursePath, courseInstance, que
   checkDuplicateUUIDs(
     assessments,
     (uuid, ids) =>
-      `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`
+      `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
 };

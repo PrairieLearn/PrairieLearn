@@ -19,10 +19,10 @@ const logCsvFilename = (locals) => {
       locals.assessment,
       locals.assessment_set,
       locals.course_instance,
-      locals.course
+      locals.course,
     ) +
     sanitizeName.sanitizeString(
-      locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown'
+      locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown',
     ) +
     '_' +
     locals.assessment_instance.number +
@@ -57,11 +57,11 @@ router.get(
 
     res.locals.log = await assessment.selectAssessmentInstanceLog(
       res.locals.assessment_instance.id,
-      false
+      false,
     );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -70,7 +70,7 @@ router.get(
     if (req.params.filename === logCsvFilename(res.locals)) {
       const cursor = await assessment.selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
-        false
+        false,
       );
 
       const stringifier = stringifyStream({
@@ -99,7 +99,7 @@ router.get(
     } else {
       next(error.make(404, 'Unknown filename: ' + req.params.filename));
     }
-  })
+  }),
 );
 
 router.post(
@@ -137,11 +137,11 @@ router.post(
             manual_points: req.body.manual_points,
             auto_points: req.body.auto_points,
           },
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         );
       if (modified_at_conflict) {
         return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,
         );
       }
       res.redirect(req.originalUrl);
@@ -153,11 +153,11 @@ router.post(
           null, // submission_id
           req.body.modified_at,
           { score_perc: req.body.score_perc },
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         );
       if (modified_at_conflict) {
         return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,
         );
       }
       res.redirect(req.originalUrl);
@@ -166,10 +166,10 @@ router.post(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

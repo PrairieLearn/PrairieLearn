@@ -57,7 +57,7 @@ async function getBatchedMigration(migrationId: string) {
   return queryValidatedOneRow(
     'SELECT * FROM batched_migrations WHERE id = $id;',
     { id: migrationId },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
@@ -65,7 +65,7 @@ async function getBatchedMigrationJobs(migrationId: string) {
   return queryValidatedRows(
     'SELECT * FROM batched_migration_jobs WHERE batched_migration_id = $batched_migration_id ORDER BY id ASC;',
     { batched_migration_id: migrationId },
-    BatchedMigrationJobRowSchema
+    BatchedMigrationJobRowSchema,
   );
 }
 
@@ -74,7 +74,7 @@ async function resetFailedBatchedMigrationJobs(migrationId: string) {
     "UPDATE batched_migration_jobs SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE batched_migration_id = $batched_migration_id AND status = 'failed'",
     {
       batched_migration_id: migrationId,
-    }
+    },
   );
 }
 

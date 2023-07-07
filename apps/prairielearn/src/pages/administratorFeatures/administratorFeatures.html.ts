@@ -28,7 +28,7 @@ export function AdministratorFeatures({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -75,7 +75,7 @@ export function AdministratorFeature({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}

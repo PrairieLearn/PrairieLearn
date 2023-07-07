@@ -33,7 +33,7 @@ function processSubmission(req, res, callback) {
         error.make(400, 'JSON parse failed on body.postData', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
     variant_id = postData.variant ? postData.variant.id : null;
@@ -63,7 +63,7 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          }
+          },
         );
       } else if (req.body.__action === 'save') {
         question.saveSubmission(
@@ -74,17 +74,17 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          }
+          },
         );
       } else {
         callback(
           error.make(400, 'unknown __action', {
             locals: res.locals,
             body: req.body,
-          })
+          }),
         );
       }
-    }
+    },
   );
 }
 
@@ -103,7 +103,7 @@ router.post('/', function (req, res, next) {
           '/instance_question/' +
           res.locals.instance_question.id +
           '/?variant_id=' +
-          variant_id
+          variant_id,
       );
     });
   } else if (req.body.__action === 'attach_file') {
@@ -117,9 +117,9 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id
+            variant_id,
         );
-      }
+      },
     );
   } else if (req.body.__action === 'attach_text') {
     util.callbackify(studentInstanceQuestion.processTextUpload)(
@@ -132,9 +132,9 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id
+            variant_id,
         );
-      }
+      },
     );
   } else if (req.body.__action === 'delete_file') {
     util.callbackify(studentInstanceQuestion.processDeleteFile)(
@@ -147,9 +147,9 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id
+            variant_id,
         );
-      }
+      },
     );
   } else if (req.body.__action === 'report_issue') {
     util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
@@ -159,7 +159,7 @@ router.post('/', function (req, res, next) {
           '/instance_question/' +
           res.locals.instance_question.id +
           '/?variant_id=' +
-          variant_id
+          variant_id,
       );
     });
   } else {
@@ -167,7 +167,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
@@ -186,7 +186,7 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
     (err, results) => {
       if (ERR(err, next)) return;
       res.send({ submissionPanel: results.submissionPanel });
-    }
+    },
   );
 });
 

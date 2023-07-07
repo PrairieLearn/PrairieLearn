@@ -139,7 +139,7 @@ describe('Enroll page (enterprise)', function () {
     await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
     await queryAsync(
       'UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1',
-      {}
+      {},
     );
   });
 
@@ -169,7 +169,7 @@ describe('Enroll page (enterprise)', function () {
     await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
     await queryAsync(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
-      {}
+      {},
     );
   });
 

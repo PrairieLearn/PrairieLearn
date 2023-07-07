@@ -34,7 +34,7 @@ router.get(
     oauth2Client = new OAuth2Client(
       config.googleClientId,
       config.googleClientSecret,
-      config.googleRedirectUrl
+      config.googleRedirectUrl,
     );
 
     logger.verbose('Got Google auth with code: ' + code);
@@ -77,7 +77,7 @@ router.get(
       pl_authn_cookie: true,
       redirect: true,
     });
-  })
+  }),
 );
 
 module.exports = router;

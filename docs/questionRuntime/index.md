@@ -45,11 +45,17 @@ First, browse to the file `images/plbase/python-requirements.txt` in the [PL Git
 
 ![](edit_btn.png)
 
-Clicking the edit button will automatically create a new branch or fork that you can propose changes on. At the end of the file, input your library and version on a new line in the format `library==version`.
+Click the edit button to open a file editor. Add the new library and version on a new line in the format `library==version`, taking care to maintain alphabetical order in the file:
 
-![](scipy_propose.png)
+```diff
+...
+scikit-learn==1.3.0
++scipy==1.11.1
+sphinx-markdown-builder==0.6.0
+...
+```
 
-At the bottom of the page you can give a descriptive title to your changes. Something like `Add <library>:<version> to PrairieLearn` is acceptable. When you are happy with your edits, you can click "Propose changes" to finalize the pull request.
+When you're satisfied with your edits, click the "Commit changes..." button, enter a descriptive commit message, and click "Propose changes" to create the pull request.
 
 ### Wait for review
 

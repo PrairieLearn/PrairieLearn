@@ -172,18 +172,3 @@
 <% } %>
   </div>
 <% } %>
-<script>
-  // Install on page load and reinstall on websocket re-render
-  $('a.disable-on-click').on('click', function() {
-    $(this).addClass('disabled');
-  });
-  // Enable popover
-  $(document).ready(function(){
-    $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
-  });
-  window.nextSubmissionReady = function() {
-    $('.question-grade').prop('disabled', false);
-    $('.submission-suspended-msg').hide();
-    $('.grade-rate-limit-popover').hide();
-  };
-</script>

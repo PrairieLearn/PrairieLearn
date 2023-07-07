@@ -50,7 +50,7 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
       is_administrator: z.boolean(),
       is_instructor: z.boolean(),
       news_item_notification_count: z.number(),
-    })
+    }),
   );
 
   if (!selectedUser) {

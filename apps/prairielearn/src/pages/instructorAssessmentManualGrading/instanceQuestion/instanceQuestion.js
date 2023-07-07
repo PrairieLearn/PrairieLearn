@@ -30,13 +30,13 @@ async function prepareLocalsForRender(req, res) {
     await util.promisify(question.getAndRenderVariant)(
       variant_with_submission.variant_id,
       null,
-      res.locals
+      res.locals,
     );
   }
 
   res.locals.rubric_settings_visible = await features.enabledFromLocals(
     'manual-grading-rubrics',
-    res.locals
+    res.locals,
   );
 
   // If student never loaded question or never submitted anything (submission is null)
@@ -71,7 +71,7 @@ router.get(
 
     await prepareLocalsForRender(req, res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -86,10 +86,10 @@ router.get(
       null, // questionContext
       null, // csrfToken
       null, // authorizedEdit
-      false // renderScorePanels
+      false, // renderScorePanels
     );
     res.send({ submissionPanel: results.submissionPanel });
-  })
+  }),
 );
 
 router.get(
@@ -101,17 +101,17 @@ router.get(
       // latter would require all includes in EJS to be translated to await recursively.
       const gradingPanel = await util.promisify(ejs.renderFile)(
         path.join(__dirname, 'gradingPanel.ejs'),
-        { context: 'main', ...res.locals }
+        { context: 'main', ...res.locals },
       );
       const rubricSettings = await util.promisify(ejs.renderFile)(
         path.join(__dirname, 'rubricSettingsModal.ejs'),
-        res.locals
+        res.locals,
       );
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
       res.send({ err: String(err) });
     }
-  })
+  }),
 );
 
 router.post(
@@ -147,12 +147,12 @@ router.post(
           feedback: { manual: req.body.submission_note },
           manual_rubric_data,
         },
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
 
       if (update_result.modified_at_conflict) {
         return res.redirect(
-          req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`
+          req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`,
         );
       }
       res.redirect(
@@ -161,8 +161,8 @@ router.post(
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
-          res.locals.instance_question.id
-        )
+          res.locals.instance_question.id,
+        ),
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
       // Parse using qs, which allows deep objects to be created based on parameter names
@@ -178,7 +178,7 @@ router.post(
           req.body.max_extra_points,
           rubric_items,
           !!req.body.tag_for_manual_grading,
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         )
         .then(() => {
           res.redirect(req.baseUrl + '/grading_rubric_panels');
@@ -203,17 +203,17 @@ router.post(
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
-          res.locals.instance_question.id
-        )
+          res.locals.instance_question.id,
+        ),
       );
     } else {
       return next(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 module.exports = router;
