@@ -39,6 +39,7 @@
             <% } else if (question_context != 'instructor') { %>
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
+            </button>
             <% if (disableGradeButton || invalidRoleConfig) { %>
               <%
               let lockedPopoverText;
@@ -48,7 +49,7 @@
                 lockedPopoverText = "You are not assigned a role that can submit this question."
               }
               %>
-              <div tabindex="0" class="btn btn-xs border ml-1"
+              <a tabindex="0" class="btn btn-xs border mr-1 order-1"
                 data-toggle="popover" data-trigger="focus" data-container="body"
                 data-html="true"
                 data-placement="bottom"
@@ -56,9 +57,8 @@
                 aria-label="Locked"
               >
                 <i class="fas fa-lock" aria-hidden="true"></i>
-              </div>
-              <% } %>
-            </button>
+              </a>
+            <% } %>
           <% } %>
         </span>
         <span class="d-flex">
