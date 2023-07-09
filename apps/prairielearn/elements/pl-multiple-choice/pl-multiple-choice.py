@@ -2,12 +2,12 @@ import json
 import math
 import pathlib
 import random
+from collections import Counter
+from itertools import chain
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from collections import Counter
-from itertools import chain
 
 SCORE_INCORRECT_DEFAULT = 0.0
 SCORE_CORRECT_DEFAULT = 1.0
@@ -145,7 +145,9 @@ def prepare(element_html, data):
     duplicates = [item for item, count in choices_dict.items() if count > 1]
 
     if duplicates:
-        raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
+        raise ValueError(
+            f"pl-multiple-choice element has duplicate choices: {duplicates}"
+        )
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -457,13 +459,13 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     submitted_key = data["submitted_answers"].get(name, None)
     all_keys = [a["key"] for a in data["params"][name]]
 
     if not allow_blank:
         if submitted_key is None:
-            data['format_errors'][name] = 'No answer was submitted.'
+            data["format_errors"][name] = "No answer was submitted."
             return
 
         if submitted_key not in all_keys:
