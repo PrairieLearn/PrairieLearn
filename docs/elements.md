@@ -677,6 +677,9 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
+Duplicate answer choices (string equivalents) are not permitted in the
+`pl-multiple-choice` element, and an exception will be raised upon question
+generation if two (or more) choices are identical.
 
 #### Sample element
 
@@ -707,6 +710,8 @@ incorrect answers and displays them in a random order as radio buttons.
 | `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                     |
 | `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                           |
 | `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                         |
+| `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, no response will be marked as incorrect instead of invalid.                        |
+
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
