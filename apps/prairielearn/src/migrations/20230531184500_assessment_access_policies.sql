@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
     end_date TIMESTAMP WITH TIME ZONE NOT NULL,
     credit INTEGER NOT NULL,
     note TEXT,
-    created_by BIGINT REFERENCES users(user_id) NOT NULL,
+    created_by TEXT REFERENCES users(uid) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     extension_type enum_assessment_access_policy_type NOT NULL,
     -- Constraint to check that either user_id or group_id (or both) is not null, but not both

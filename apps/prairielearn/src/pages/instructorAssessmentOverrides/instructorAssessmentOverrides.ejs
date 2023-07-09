@@ -1,163 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <%- include('../partials/head'); %>
+		<%- include('../partials/head'); %>
 <body>
-    <script>
-        $(function () {
-            $('[data-toggle="popover"]').popover({sanitize: false})
-            $('#add_new_override').on('submit', function (event) {
-                var startDate = new Date($('#start_date').val());
-                var endDate = new Date($('#end_date').val());
+		<script>
+				$(function () {
+						$('[data-toggle="popover"]').popover({sanitize: false})
+						$('#add_new_override').on('submit', function (event) {
+								var startDate = new Date($('#start_date').val());
+								var endDate = new Date($('#end_date').val());
+								if (startDate >= endDate) {
+										event.preventDefault();
+										$('#end_date').addClass('is-invalid');
+										$('#end_date_error').text('End date should be greater than the start date.').show();
+								}
+								// Check if either user_id or group_id is not empty
+								if (userId === '' && groupId === '') {
+										event.preventDefault();
+										$('#group_id').addClass('is-invalid');
+										$('#group_id_error').text('Either user ID or group ID should be filled.').show();
+								}
+						});
+											
+					// Set the current timestamp for created_at field
+					function convertToChicagoTime(utcDate) {
+							const chicagoOffset = -5; // UTC offset for Chicago (in hours)
+							const chicagoTime = new Date(utcDate);
+							chicagoTime.setHours(chicagoTime.getHours() + chicagoOffset);
+							return chicagoTime.toISOString().slice(0, 16);
+						}
+					var currentDate = convertToChicagoTime(new Date());;
+					var createdAtField = $('#created_at');
+					createdAtField.val(currentDate);
 
-                if (startDate >= endDate) {
-                    event.preventDefault();
-                    $('#end_date').addClass('is-invalid');
-                    $('#end_date_error').text('End date should be greater than the start date.').show();
-                }
-                // Check if either user_id or group_id is not empty
-                if (userId === '' && groupId === '') {
-                    event.preventDefault();
-                    $('#group_id').addClass('is-invalid');
-                    $('#group_id_error').text('Either user ID or group ID should be filled.').show();
-                }
-            });
-                      
-          // Set the current timestamp for created_at field
-          function convertToChicagoTime(utcDate) {
-              const chicagoOffset = -5; // UTC offset for Chicago (in hours)
-              const chicagoTime = new Date(utcDate);
-              chicagoTime.setHours(chicagoTime.getHours() + chicagoOffset);
-              return chicagoTime.toISOString().slice(0, 16);
-            }
-          var currentDate = convertToChicagoTime(new Date());;
-          var createdAtField = $('#created_at');
-          createdAtField.val(currentDate);
-          createdAtField.prop('readonly', true);
-        });
-        
-    </script>
-    <%- include('../partials/navbar'); %>
-    <main id="content" class="container-fluid">
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-                Access Overrides
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal">
-                    Add <i class="fas fa-plus"></i>
-                </button>
-            </div>
+					$('#edit-override-button').on('click', function (event) {
+					event.preventDefault();
+					var currentDate = convertToChicagoTime(new Date());;
+					var created_at_field = $('#edit-created_at');
+					created_at_field.val(currentDate);
+					var button = $(this);
+					var editOverrideForm = $('#edit-override-form');
+					editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
+					console.log(button.data('assessment-id'))
+					editOverrideForm.find('#edit-user_id').val(button.data('user-id'));
+					editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
+					editOverrideForm.find('#edit-credit').val(button.data('credit'));
+					var policy_start_date = new Date(button.data('start-date'))
+					var policy_start_date_string = policy_start_date.toISOString().slice(0, 16);
+					editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
+					var policy_end_date = new Date(button.data('end-date'))
+					var policy_end_date_string = policy_end_date.toISOString().slice(0, 16);
+					editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
+					editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
+					editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
+					editOverrideForm.find('#edit-note').val(button.data('note'));
+					editOverrideForm.find('#edit-type').val(button.data('type'));
 
-            
-            <div class="modal fade" id="addPolicyModal" tabindex="-1" role="dialog" aria-labelledby="addPolicyModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="addPolicyModalLabel">Add New Override</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="add_new_override"  method="POST">
-                              <input type="hidden" name="__action" value="add_new_override">
-                              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                <div class="form-group">
-                                    <!-- <label for="assessment_id">Assessment ID</label> -->
-                                    <input type="hidden" class="form-control" id="assessment_id" name="assessment_id" value="<%= assessment_id %>" required readonly>
-                                </div>
-                                <div class="form-group">
-                                  <label for="user_id">User ID</label>
-                                  <input type="number" class="form-control" id="user_id" name="user_id">
-                                </div>
-                                <div class="form-group">
-                                  <label for="group_id">Group ID</label>
-                                  <input type="number" class="form-control" id="group_id" name="group_id">
-                                  <div id="group_id_error" class="invalid-feedback" style="display: none; color: red;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="created_at">Created At</label>
-                                    <input type="datetime-local" class="form-control" id="created_at" name="created_at" required readonly>
-                                </div>
-                                <div class="form-group">
-                                  <label for="start_date">Start Date</label>
-                                  <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
-                                </div>
-                                <div class="form-group">
-                                  <label for="end_date">End Date</label>
-                                  <input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
-                                  <div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
-                                </div>
-                                <div class="form-group">
-                                  <label for="created_by">Created By</label>
-                                  <input type="number" class="form-control" id="current_user_id" name="current_user_id" value="<%=current_user_id%>" required readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label for="credit">Credit</label>
-                                    <input type="number" class="form-control" id="credit" name="credit">
-                                </div>
-                                
-                                
-                                <div class="form-group">
-                                    <label for="note">Note</label>
-                                    <textarea class="form-control" id="note" name="note"></textarea>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="type">Type</label>
-                                    <select class="form-control" id="type" name="type" required>
-                                        <option value="">Select a type</option>
-                                        <option value="manual">Manual</option>
-                                        <option value="extension_token">Extension Token</option>
-                                    </select>
-                                </div>
-                                
-                            
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Submit</button>
-                        </div>
-                      </form>
-                    </div>
-                </div>
-            </div>
-         <div class="table-responsive">
-           <table class="table table-sm table-hover">
-             <thead>
-               <tr>
-                 <th>Assessment ID</th>
-                 <th>User ID</th>
-                 <th>Group ID</th>
-                 <th>Created At</th>
-                 <th>Start Date</th>
-                 <th>End Date</th>
-                 <th>Created By</th>
-                 <th>Credit</th>
-                 <th>Note</th>
-                 <th>Extension Type</th>      
-               </tr>
-             </thead>
-             <tbody>
-               <% policies.forEach(function(policy) { %>
-               <tr>
-                 <td><%= policy.assessment_id %></td>
-                 <td><%= policy.user_id %></td>
-                 <td><%= policy.group_id %></td>
-                 <td><%= policy.created_at %></td>
-                 <td><%= policy.start_date %></td>
-                 <td><%= policy.end_date %></td>
-                 <td><%= policy.created_by %></td>
-                 <td><%= policy.credit %></td>
-                 <td><%= policy.note %></td>
-                 <td><%= policy.type %></td>
-               </tr>
-               <% }); %>
-             </tbody>
-           </table>
-         </div>
-         <div class="card-footer">
-      </div>
-    </div>
-  </main>
+			// Show the modal form
+			$('#editPolicyModal').modal('show');
+								
+						});  
+				});
+				
+		</script>
+		<%- include('../partials/navbar'); %>
+		<main id="content" class="container-fluid">
+				<div class="card mb-4">
+						<div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+								Access Overrides - <%= current_assessment_title %>
+								<button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal">
+										Add <i class="fas fa-plus"></i>
+								</button>
+						</div>
+
+						
+						<div class="modal fade" id="addPolicyModal" tabindex="-1" role="dialog" aria-labelledby="addPolicyModalLabel" aria-hidden="true">
+								<div class="modal-dialog" role="document">
+										<div class="modal-content">
+												<div class="modal-header">
+														<h5 class="modal-title" id="addPolicyModalLabel">Add New Override</h5>
+														<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+																<span aria-hidden="true">&times;</span>
+														</button>
+												</div>
+												<div class="modal-body">
+														<form id="add-new-override"  method="POST">
+															<input type="hidden" name="__action" value="add_new_override">
+															<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+																<div class="form-group">
+																		<!-- <label for="assessment_id">Assessment ID</label> -->
+																		<input type="hidden" class="form-control" id="assessment_id" name="assessment_id" value="<%= assessment_id %>" required readonly>
+																</div>
+																<div class="form-group">
+																	<label for="user_id">User ID</label>
+																	<input type="number" class="form-control" id="user_id" name="user_id">
+																</div>
+																<div class="form-group">
+																	<label for="group_id">Group ID</label>
+																	<input type="number" class="form-control" id="group_id" name="group_id">
+																	<div id="group_id_error" class="invalid-feedback" style="display: none; color: red;"></div>
+																</div>
+																<div class="form-group">
+																		<label for="created_at">Created At</label>
+																		<input type="datetime-local" class="form-control" id="created_at" name="created_at" required readonly>
+																</div>
+																<div class="form-group">
+																	<label for="start_date">Start Date</label>
+																	<input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+																</div>
+																<div class="form-group">
+																	<label for="end_date">End Date</label>
+																	<input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+																	<div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
+																</div>
+																<div class="form-group">
+																	<!-- <label for="created_by">Created By</label> -->
+																	<input type="hidden" class="form-control" id="current_user_id" name="current_user_id" value="<%=current_user_id%>" required readonly>
+																</div>
+																<div class="form-group">
+																		<label for="credit">Credit</label>
+																		<input type="number" class="form-control" id="credit" name="credit">
+																</div>
+																
+																
+																<div class="form-group">
+																		<label for="note">Note</label>
+																		<textarea class="form-control" id="note" name="note"></textarea>
+																</div>
+																
+																<div class="form-group">
+																		<label for="type">Type</label>
+																		<select class="form-control" id="type" name="type" required>
+																				<option value="">Select a type</option>
+																				<option value="manual">Manual</option>
+																				<option value="extension_token">Extension Token</option>
+																		</select>
+																</div>
+												</div>
+												<div class="modal-footer">
+														<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+														<button type="submit" class="btn btn-primary">Submit</button>
+												</div>
+											</form>
+										</div>
+								</div>
+						</div>
+						<div class="modal fade" id="editPolicyModal" tabindex="-1" role="dialog" aria-labelledby="editPolicyModalLabel" aria-hidden="true">
+							<div class="modal-dialog" role="document">
+									<div class="modal-content">
+											<div class="modal-header">
+													<h5 class="modal-title" id="editPolicyModalLabel">Edit Override</h5>
+													<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+															<span aria-hidden="true">&times;</span>
+													</button>
+											</div>
+											<div class="modal-body">
+													<form id="edit-override-form" method="POST">
+															<input type="hidden" name="__action" value="edit_override">
+															<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+															<input type="hidden" id="edit-assessment_id" name="assessment_id">
+															<div class="form-group">
+																<label for="user_id">User ID</label>
+																<input type="number" class="form-control" id="edit-user_id" name="user_id">
+															</div>
+															<div class="form-group">
+																<label for="group_id">Group ID</label>
+																<input type="number" class="form-control" id="edit-group_id" name="group_id">
+																<div id="group_id_error" class="invalid-feedback" style="display: none; color: red;"></div>
+															</div>
+															<div class="form-group">
+																	<label for="edit-credit">Credit</label>
+																	<input type="number" class="form-control" id="edit-credit" name="credit">
+															</div>
+															<div class="form-group">
+																	<label for="created_at">Created At</label>
+																	<input type="datetime-local" class="form-control" id="edit-created_at" name="created_at" required readonly>
+															</div>
+															<div class="form-group">
+																	<label for="edit-start_date">Start Date</label>
+																	<input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
+															</div>
+
+															<div class="form-group">
+																	<label for="edit-end_date">End Date</label>
+																	<input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
+															</div>
+
+															<div class="form-group">
+																	<label for="edit-note">Note</label>
+																	<textarea class="form-control" id="edit-note" name="note"></textarea>
+															</div>
+
+															<div class="form-group">
+																	<label for="edit-type">Type</label>
+																	<select class="form-control" id="edit-type" name="type" required>
+																			<option value="">Select a type</option>
+																			<option value="manual">Manual</option>
+																			<option value="extension_token">Extension Token</option>
+																	</select>
+															</div>
+													</form>
+											</div>
+											<div class="modal-footer">
+													<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+													<button type="submit" class="btn btn-primary" form="edit-override-form">Save Changes</button>
+											</div>
+									</div>
+							</div>
+					</div>
+				 <div class="table-responsive">
+					 <table class="table table-sm table-hover">
+						 <thead>
+							 <tr>
+								 <!-- <th>Assessment ID</th> -->
+								 <th>User ID</th>
+								 <th>Group ID</th>
+								 <th>Created At</th>
+								 <th>Start Date</th>
+								 <th>End Date</th>
+								 <th>Created By</th>
+								 <th>Credit</th>
+								 <th>Note</th>
+								 <th>Extension Type</th> 
+								 <th>Action</th>     
+							 </tr>
+						 </thead>
+						 <tbody>
+							 <% policies.forEach(function(policy) { %>
+							 <tr>
+								 <!-- <td><%= policy.assessment_id %></td> -->
+								 <td><%= policy.user_id %></td>
+								 <td><%= policy.group_id %></td>
+								 <td><%= policy.created_at %></td>
+								 <td><%= policy.start_date %></td>
+								 <td><%= policy.end_date %></td>
+								 <td><%= policy.created_by %></td>
+								 <td><%= policy.credit %></td>
+								 <td><%= policy.note %></td>
+								 <td><%= policy.type %></td>
+								 <td>
+									<div class="dropdown">
+											<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+													Action
+											</button>
+											<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
+													<form name="edit-override-form" data-user-id="<%= policy.user_id %>" data-group-id="<%= policy.group_id %>" method="POST">
+														<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+														<button type="button" class="btn edit-override-button" 
+															id ="edit-override-button"
+															data-assessment-id="<%= policy.assessment_id %>"
+															data-user-id="<%= policy.user_id %>"
+															data-group-id="<%= policy.group_id %>"
+															data-credit="<%= policy.credit %>"
+															data-start-date="<%= policy.start_date %>"
+															data-end-date="<%= policy.end_date %>"
+															data-created-by="<%= policy.created_by %>"
+															data-note="<%= policy.note %>"
+															data-type="<%= policy.type %>"> <i class="fas fa-edit"> </i> Edit</button>
+													</form>
+													<form name="delete-override-form"  method="POST">
+														<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+														<input type="hidden" name="__action" value="delete_override">
+														<button type="submit" class="btn delete-button"> <i class="fas fa-remove"> </i> Delete</button>
+													</form>
+											</div>
+									</div>
+									</td>
+							</tr>
+							 <% }); %>
+						 </tbody>
+					 </table>
+				 </div>
+				<div class="card-footer">
+			</div>
+		</div>
+	</main>
 </body>
 </html>
