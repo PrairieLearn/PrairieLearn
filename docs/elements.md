@@ -672,7 +672,6 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
-
 ### `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
@@ -711,7 +710,6 @@ generation if two (or more) choices are identical.
 | `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                           |
 | `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                         |
 | `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, no response will be marked as incorrect instead of invalid.                        |
-
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
