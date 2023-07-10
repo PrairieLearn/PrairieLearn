@@ -154,7 +154,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
   id: IdSchema,
-  instance_id: z.string().nullable(),
+  instance_id: z.string(),
   launched_at: z.date().nullable(),
   load_count: z.number().nullable(),
   ready_at: z.date().nullable(),
