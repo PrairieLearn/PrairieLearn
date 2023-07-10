@@ -396,22 +396,22 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        hide_letter_keys = pl.get_boolean_attrib(
+            element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+        )
+
+        html_params = {
+            "submission": True,
+            "parse_error": parse_error,
+            "uuid": pl.get_uuid(),
+            "hide_letter_keys": hide_letter_keys or submitted_key is None,
+        }
 
         if parse_error is None:
             submitted_answer = next(
                 filter(lambda a: a["key"] == submitted_key, answers),
                 SUBMITTED_ANSWER_BLANK,
             )
-            hide_letter_keys = pl.get_boolean_attrib(
-                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-            )
-
-            html_params = {
-                "submission": True,
-                "parse_error": parse_error,
-                "uuid": pl.get_uuid(),
-                "hide_letter_keys": hide_letter_keys or submitted_key is None,
-            }
 
             html_params["key"] = submitted_key
             html_params["answer"] = submitted_answer
@@ -465,19 +465,18 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, "answers-name")
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    submitted_key = data["submitted_answers"].get(name, None)
+    submitted_key = data["submitted_answers"].get(name)
     all_keys = [a["key"] for a in data["params"][name]]
 
-    if not allow_blank:
-        if submitted_key is None:
-            data["format_errors"][name] = "No answer was submitted."
-            return
+    if not allow_blank and submitted_key is None:
+        data["format_errors"][name] = "No answer was submitted."
+        return
 
-        if submitted_key not in all_keys:
-            data["format_errors"][
-                name
-            ] = f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
-            return
+    if submitted_key not in all_keys and submitted_key is not None:
+        data["format_errors"][
+            name
+        ] = f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
+        return
 
 
 def grade(element_html, data):
