@@ -15,7 +15,7 @@ type CompressedSizes = Record<string, Record<string, number>>;
 
 async function writeCompressedAssets(
   destination: string,
-  manifest: Record<string, string>
+  manifest: Record<string, string>,
 ): Promise<CompressedSizes> {
   const compressedSizes: CompressedSizes = {};
   await Promise.all(
@@ -31,7 +31,7 @@ async function writeCompressedAssets(
         gzip: gzipCompressed.length,
         brotli: brotliCompressed.length,
       };
-    })
+    }),
   );
   return compressedSizes;
 }

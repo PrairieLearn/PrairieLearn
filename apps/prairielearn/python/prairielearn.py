@@ -191,7 +191,9 @@ def get_enum_attrib(
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
+        raise ValueError(
+            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
+        )
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
@@ -1062,7 +1064,7 @@ def string_partition_outer_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s, base=10):
+def string_to_integer(s: str, base: int = 10) -> Optional[int]:
     """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
@@ -1659,7 +1661,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string):
+def escape_unicode_string(string: str) -> str:
     """
     escape_unicode_string(string)
 
@@ -1815,3 +1817,7 @@ def index2key(i):
         key = chr(ord("a") + i)
 
     return key
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1

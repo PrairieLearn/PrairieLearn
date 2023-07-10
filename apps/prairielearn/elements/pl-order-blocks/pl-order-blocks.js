@@ -80,7 +80,7 @@ window.PLOrderBlocks = function (uuid, options) {
   function placePairingIndicators() {
     let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
     let allAns = answerObjs.concat(
-      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block'))
+      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
     let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
@@ -113,10 +113,23 @@ window.PLOrderBlocks = function (uuid, options) {
       containingIndicator.insertAdjacentElement('afterend', block);
     } else if (binUuid !== containingIndicatorUuid) {
       let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
-        'inner-list'
+        'inner-list',
       )[0];
       properIndicatorList.insertAdjacentElement('beforeend', block);
     }
+  }
+
+  function drawIndentLocationLines(dropzoneElementId) {
+    $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
+      .repeat(maxIndent + 1)
+      .slice(0, -2);
+    $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
+    $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
+      { length: maxIndent + 1 },
+      (_, index) => {
+        return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
+      },
+    ).join(', ');
   }
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
@@ -130,6 +143,9 @@ window.PLOrderBlocks = function (uuid, options) {
     create: function () {
       placePairingIndicators();
       setAnswer();
+      if (enableIndentation) {
+        drawIndentLocationLines(dropzoneElementId);
+      }
     },
     sort: function (event, ui) {
       // update the location of the placeholder as the item is dragged

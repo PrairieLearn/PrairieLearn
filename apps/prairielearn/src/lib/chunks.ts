@@ -225,7 +225,7 @@ export function pathForChunk(chunkMetadata: ChunkMetadata): string {
       return path.join(
         'courseInstances',
         chunkMetadata.courseInstanceName,
-        'clientFilesCourseInstance'
+        'clientFilesCourseInstance',
       );
     case 'clientFilesAssessment':
       return path.join(
@@ -233,7 +233,7 @@ export function pathForChunk(chunkMetadata: ChunkMetadata): string {
         chunkMetadata.courseInstanceName,
         'assessments',
         chunkMetadata.assessmentName,
-        'clientFilesAssessment'
+        'clientFilesAssessment',
       );
   }
 }
@@ -257,7 +257,7 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
 export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
-  newHash: string
+  newHash: string,
 ): Promise<string[]> {
   // In some specific scenarios, the course directory and the root of the course
   // repository might be different. For example, the example course is usually
@@ -270,13 +270,13 @@ export async function identifyChangedFiles(
   // construct an absolute path for each file, and then trim off the course path.
   const { stdout: topLevelStdout } = await util.promisify(child_process.exec)(
     `git rev-parse --show-toplevel`,
-    { cwd: coursePath }
+    { cwd: coursePath },
   );
   const topLevel = topLevelStdout.trim();
 
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
-    { cwd: coursePath }
+    { cwd: coursePath },
   );
   const changedFiles = diffStdout.trim().split('\n');
 
@@ -285,12 +285,12 @@ export async function identifyChangedFiles(
 
   // Exclude any changed files that aren't in the course directory.
   const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(coursePath, absoluteChangedFile)
+    contains(coursePath, absoluteChangedFile),
   );
 
   // Convert all absolute paths back into relative paths.
   return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(coursePath, absoluteChangedFile)
+    path.relative(coursePath, absoluteChangedFile),
   );
 }
 
@@ -304,7 +304,7 @@ export async function identifyChangedFiles(
  */
 export function identifyChunksFromChangedFiles(
   changedFiles: string[],
-  courseData: CourseData
+  courseData: CourseData,
 ): CourseChunks {
   const courseChunks: CourseChunks = {
     elements: false,
@@ -362,7 +362,7 @@ export function identifyChunksFromChangedFiles(
         // Let's validate that the preceeding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
-          ...pathComponents.slice(0, clientFilesCourseInstanceIndex)
+          ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
         );
         if (courseData.courseInstances[courseInstanceId]) {
           if (!courseChunks.courseInstances[courseInstanceId]) {
@@ -389,7 +389,7 @@ export function identifyChunksFromChangedFiles(
         // to course instance IDs and assessment IDs.
         const courseInstanceId = path.join(...pathComponents.slice(0, assessmentsIndex));
         const assessmentId = path.join(
-          ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex)
+          ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex),
         );
 
         if (
@@ -541,7 +541,7 @@ export async function diffChunks({
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
       const hasClientFilesCourseInstanceDirectory = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance')
+        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (
         hasClientFilesCourseInstanceDirectory &&
@@ -562,8 +562,8 @@ export async function diffChunks({
             ciid,
             'assessments',
             tid,
-            'clientFilesAssessment'
-          )
+            'clientFilesAssessment',
+          ),
         );
         if (
           hasClientFilesAssessmentDirectory &&
@@ -577,7 +577,7 @@ export async function diffChunks({
           });
         }
       });
-    }
+    },
   );
 
   // Check for any deleted course instances or their assessments.
@@ -585,7 +585,7 @@ export async function diffChunks({
     Object.entries(existingCourseChunks.courseInstances).map(async ([ciid, courseInstanceInfo]) => {
       const courseInstanceExists = !!courseData.courseInstances[ciid];
       const clientFilesCourseInstanceExists = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance')
+        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
         deletedChunks.push({
@@ -604,8 +604,8 @@ export async function diffChunks({
               ciid,
               'assessments',
               tid,
-              'clientFilesAssessment'
-            )
+              'clientFilesAssessment',
+            ),
           );
           if (!courseInstanceExists || !assessmentExists || !clientFilesAssessmentExists) {
             deletedChunks.push({
@@ -614,9 +614,9 @@ export async function diffChunks({
               assessmentName: tid,
             });
           }
-        })
+        }),
       );
-    })
+    }),
   );
 
   return { updatedChunks, deletedChunks };
@@ -625,7 +625,7 @@ export async function diffChunks({
 export async function createAndUploadChunks(
   coursePath: string,
   courseId: string,
-  chunksToGenerate: ChunkMetadata[]
+  chunksToGenerate: ChunkMetadata[],
 ) {
   const generatedChunks: (ChunkMetadata & { uuid: string })[] = [];
 
@@ -647,7 +647,7 @@ export async function createAndUploadChunks(
         gzip: true,
         cwd: chunkDirectory,
       },
-      ['.']
+      ['.'],
     );
 
     const passthrough = new PassThroughStream();
@@ -860,7 +860,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
-        'clientFilesCourseInstance'
+        'clientFilesCourseInstance',
       );
       break;
     case 'clientFilesAssessment':
@@ -875,7 +875,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
         chunk.course_instance_name,
         'assessments',
         chunk.assessment_name,
-        'clientFilesAssessment'
+        'clientFilesAssessment',
       );
       break;
     case 'question':
@@ -1040,7 +1040,7 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
       // will silently no-op.
       const chunkMetadata = chunkMetadataFromDatabaseChunk(chunk);
       await fs.remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
-    })
+    }),
   );
 }
 export const ensureChunksForCourse = util.callbackify(ensureChunksForCourseAsync);
@@ -1057,7 +1057,7 @@ interface QuestionWithTemplateDirectory {
  * @returns Array of question IDs that are (recursive) templates for the given question (may be an empty array).
  */
 export async function getTemplateQuestionIdsAsync(
-  question: QuestionWithTemplateDirectory
+  question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
   const result = await sqldb.queryAsync(sql.select_template_question_ids, {
@@ -1073,7 +1073,7 @@ export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsy
  */
 export function logChunkChangesToJob(
   { updatedChunks, deletedChunks }: ChunksDiff,
-  job: Pick<ServerJob, 'verbose'>
+  job: Pick<ServerJob, 'verbose'>,
 ) {
   if (updatedChunks.length === 0 && deletedChunks.length === 0) {
     job.verbose('No chunks changed.');
