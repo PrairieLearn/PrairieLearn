@@ -175,6 +175,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if (
         grading_method is not GradingMethodType.DAG
         and grading_method is not GradingMethodType.RANKING
+        and grading_method is not GradingMethodType.ORDERED
         and pl.has_attrib(element, "partial-credit")
     ):
         raise Exception(
@@ -752,8 +753,17 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+
+    # For backward compatibility, we need to override the default partial credit type
+    # when grading_method = ORDERED
+    default_partial_credit = (
+        PartialCreditType.NONE
+        if grading_method is GradingMethodType.ORDERED
+        else PartialCreditType.LCS
+    )
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element, "partial-credit", PartialCreditType, default_partial_credit
     )
 
     true_answer_list = data["correct_answers"][answer_name]
@@ -771,6 +781,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     ans["tag"] = None
                 else:
                     ans["inner_html"] = None
+
+    # if grading_method is GradingMethodType.ORDERED:
+    #     if partial_credit_type is PartialCreditType.NONE:
+    #         student_answer = [ans["inner_html"] for ans in student_answer]
+    #         true_answer = [ans["inner_html"] for ans in true_answer_list]
+    #         final_score = 1 if student_answer == true_answer else 0
 
     if grading_method is GradingMethodType.UNORDERED:
         true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
@@ -846,7 +862,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
-        if partial_credit_type is PartialCreditType.NONE:
+        if (
+            partial_credit_type is PartialCreditType.NONE
+            and grading_method is GradingMethodType.ORDERED
+        ):
+            student_answer = [ans["inner_html"] for ans in student_answer]
+            true_answer = [ans["inner_html"] for ans in true_answer_list]
+            final_score = 1 if student_answer == true_answer else 0
+        elif partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
             elif num_initial_correct < true_answer_length:
