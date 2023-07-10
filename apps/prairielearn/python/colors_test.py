@@ -12,7 +12,7 @@ from colors import PLColor, get_css_color
         ("none", None),
     ],
 )
-def test_get_css_color(color: str, expected: str) -> None:
+def test_get_css_color(color: str, expected: str | None) -> None:
     """
     Assert the get_css_color method returns hex strings if given valid input.
 
