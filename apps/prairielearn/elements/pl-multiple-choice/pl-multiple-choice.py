@@ -147,7 +147,7 @@ def prepare(element_html, data):
 
     if duplicates:
         raise ValueError(
-            f'pl-multiple-choice element "{name}" has duplicate choices: {duplicates}'
+            f'pl-multiple-choice element "{name}" has duplicate choices: {"; ".join(duplicates)}'
         )
 
     len_correct = len(correct_answers)
