@@ -59,7 +59,7 @@ docker-compose.override.yml
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
 
-## Yarn 
+## Yarn
 node_modules
 yarn-error.log
 .pnp.*
@@ -76,6 +76,7 @@ yarn-error.log
 __pycache__/
 *.py[cod]
 *$py.class
+.coverage
 
 ### R
 .Rproj.user

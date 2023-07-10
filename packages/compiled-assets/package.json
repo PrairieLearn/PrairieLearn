@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": {
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "commander": "^10.0.1",
+    "commander": "^11.0.0",
     "esbuild": "^0.18.11",
     "express": "^4.18.2",
     "express-static-gzip": "^2.1.7",

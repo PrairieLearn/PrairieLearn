@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/config",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -8,7 +8,7 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.363.0",
+    "@aws-sdk/client-ec2": "^3.367.0",
     "@aws-sdk/client-secrets-manager": "^3.363.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.1.1",

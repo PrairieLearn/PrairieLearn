@@ -51,6 +51,9 @@ def prepare(element_html, data):
         element, required_attribs=required_attribs, optional_attribs=optional_attribs
     )
 
+    answer_name = pl.get_string_attrib(element, "answer-name")
+    pl.check_answers_names(data, answer_name)
+
 
 def get_objects(element, data):
     obj_list = []
@@ -160,7 +163,6 @@ def get_objects(element, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answer-name")
-    pl.check_answers_names(data, answer_name)
 
     uuid = pl.get_uuid()
 
