@@ -672,6 +672,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
+
 ### `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
