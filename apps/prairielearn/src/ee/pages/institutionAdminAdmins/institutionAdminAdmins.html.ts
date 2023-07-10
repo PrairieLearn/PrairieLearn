@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { Institution } from '../../../lib/db-types';
 
-export function InstitutionAdminPermissions({
+export function InstitutionAdminAdmins({
   institution,
   resLocals,
 }: {
@@ -11,13 +11,13 @@ export function InstitutionAdminPermissions({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
           ...resLocals,
           navPage: 'institution_admin',
-          pageTitle: 'Permissions',
+          pageTitle: 'Admins',
         })}
         <style>
           .card-grid {
@@ -39,7 +39,7 @@ export function InstitutionAdminPermissions({
           institution,
           navbarType: 'institution',
           navPage: 'institution_admin',
-          navSubPage: 'permissions',
+          navSubPage: 'admins',
         })}
         <main class="container mb-4">
           <p>Hello, world!</p>
