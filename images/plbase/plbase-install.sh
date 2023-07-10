@@ -53,12 +53,13 @@ cd /
 arch=`uname -m`
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
-conda install -c conda-forge mamba
+#TODO this would speed things up
+#conda install -c conda-forge mamba
 
 # If R package installation is specifically disabled, we'll avoid installing anything R-related.
 if [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
-    mamba install --channel r r-base=3.5 r-essentials
+    conda install --channel r r-base=3.5 r-essentials
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
