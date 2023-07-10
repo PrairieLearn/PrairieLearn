@@ -150,3 +150,10 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
+
+export const InstitutionAdministratorSchema = z.object({
+  id: IdSchema,
+  institution_id: IdSchema,
+  user_id: IdSchema,
+});
+export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;
