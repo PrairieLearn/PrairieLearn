@@ -140,6 +140,15 @@
             <% } %>
             <% if (assessment.group_work) { %>
               <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers}); %>
+              <% if (canViewRoleTable) { %>
+                <div class="col-lg-12">
+                  <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+                </div>
+              <% } else { %>
+                <div class="col-lg-12">
+                  <%- include('../shared/groupRoleErrors.ejs', {rolesInfo: rolesInfo}); %>
+                </div>
+              <% } %>
             <% } %>
           </div>
 
@@ -297,10 +306,6 @@
           <% } %>
         </div>
       </div>
-
-      <% if (canViewRoleTable) { %>
-      <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
-      <% } %>
 
       <%- include('../partials/attachFilePanel') %>
       <%- include('../partials/instructorInfoPanel') %>

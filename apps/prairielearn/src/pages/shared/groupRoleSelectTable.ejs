@@ -1,10 +1,16 @@
-<div class="card my-4" id="group-role-select-table">
+<div class="card mb-0 mx-0" id="group-role-select-table">
   <div class="card-header bg-body" id="tableHeader">
-    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#tableCollapse" aria-expanded="true" aria-controls="tableCollapse">
+    <%
+    let validRoleConfig = true;
+    if (typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) {
+      validRoleConfig = false;
+    }
+    %>
+    <button class="btn <%= validRoleConfig ? 'btn-info' : 'btn-danger' %>" type="button" data-toggle="collapse" data-target="#tableCollapse" aria-expanded="true" aria-controls="tableCollapse">
       Assign group roles <i class="far fa-caret-square-down"></i>
     </button>
   </div>
-  <div id="tableCollapse" class="collapse show">
+  <div id="tableCollapse" class="collapse">
     <div class="p-4">
       <p>
         This assessment contains group roles. Use this table to view the role assignments of the current group members and reassign roles as needed. If the current group role configuration is invalid, errors will be shown.

@@ -54,6 +54,11 @@
           </div>
           <% if (assessment.group_work) { %>
             <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers}); %>
+            <% if (canViewRoleTable) { %>
+              <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+            <% } else { %>
+              <%- include('../shared/groupRoleErrors.ejs', {rolesInfo: rolesInfo}); %>
+            <% } %>
           <% } %>
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">
@@ -141,10 +146,6 @@
           </tbody>
         </table>
       </div>
-
-      <% if (canViewRoleTable) { %>
-        <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
-      <% } %>
 
       <%- include('../partials/attachFilePanel') %>
       <%- include('../partials/instructorInfoPanel') %>
