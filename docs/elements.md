@@ -695,21 +695,21 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                          |
-| ----------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                              |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                  |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                           |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                   |
-| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                |
-| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                               |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.           |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.          |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                     |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                           |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                         |
+| Attribute                     | Type    | Default | Description                                                                                                                                                                    |
+| ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
+| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                           |
+| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                                        |
+| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
+| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                                     |
+| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
+| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                          |
+| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                                         |
+| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
+| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
+| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                               |
+| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                                     |
+| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                                   |
 | `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
