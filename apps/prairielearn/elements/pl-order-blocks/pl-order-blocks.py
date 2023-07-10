@@ -650,7 +650,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
-    if grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    if grading_method in [
+        GradingMethodType.RANKING,
+        GradingMethodType.DAG,
+        GradingMethodType.ORDERED,
+    ]:
         for answer in student_answer:
             matching_block = next(
                 (
@@ -779,17 +783,20 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method is GradingMethodType.ORDERED:
-        student_answer = [ans["inner_html"] for ans in student_answer]
-        true_answer = [ans["inner_html"] for ans in true_answer_list]
-        final_score = 1 if student_answer == true_answer else 0
-
-    elif grading_method in [GradingMethodType.RANKING, GradingMethodType.DAG]:
+    elif grading_method in [
+        GradingMethodType.RANKING,
+        GradingMethodType.DAG,
+        GradingMethodType.ORDERED,
+    ]:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method is GradingMethodType.RANKING:
+        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
+            if grading_method is GradingMethodType.ORDERED:
+                for index, answer in enumerate(true_answer_list):
+                    answer["ranking"] = index
+
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
             true_answer = [answer["tag"] for answer in true_answer_list]
             tag_to_rank = {
