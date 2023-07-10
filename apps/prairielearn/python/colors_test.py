@@ -42,19 +42,21 @@ def test_color_constructor_error() -> None:
 
 
 @pytest.mark.parametrize(
-    "color",
+    "color, should_match",
     [
-        "red",
-        "RED",
-        "correct_green",
-        "none",
+        ("red", True),
+        ("RED", True),
+        ("correct_green", True),
+        ("none", False),
+        ("another_random_color", False),
     ],
 )
-def test_color_match(color: str) -> None:
+def test_color_match(color: str, should_match: bool) -> None:
     """
-    Assert the custom color match method returns a color object (or None).
+    Assert the custom color match method returns a color object or None
+    depending on should_match.
     """
-    if color == "none":
-        assert PLColor.match(color) is None
-    else:
+    if should_match:
         assert PLColor.match(color) is not None
+    else:
+        assert PLColor.match(color) is None
