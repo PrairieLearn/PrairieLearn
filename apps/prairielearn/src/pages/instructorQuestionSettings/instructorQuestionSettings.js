@@ -44,7 +44,7 @@ router.post(
         assessmentGroupWork,
         res.locals.course_instance,
         res.locals.course,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
@@ -64,7 +64,7 @@ router.post(
           assessmentGroupWork,
           res.locals.course_instance,
           res.locals.course,
-          res.locals.authn_user.user_id
+          res.locals.authn_user.user_id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
@@ -76,7 +76,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
 router.post('/', function (req, res, next) {
@@ -86,8 +86,8 @@ router.post('/', function (req, res, next) {
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
-          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
-        )
+          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+        ),
       );
     }
     let qid_new;
@@ -129,7 +129,7 @@ router.post('/', function (req, res, next) {
             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
           } else {
             debug(
-              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
+              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
             );
             sqldb.queryOneRow(
               sql.select_question_id_from_uuid,
@@ -138,12 +138,12 @@ router.post('/', function (req, res, next) {
                 if (ERR(err, next)) return;
                 flash(
                   'success',
-                  'Question copied successfully. You are now viewing your copy of the question.'
+                  'Question copied successfully. You are now viewing your copy of the question.',
                 );
                 res.redirect(
-                  res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
+                  res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings',
                 );
-              }
+              },
             );
           }
         });
@@ -160,7 +160,7 @@ router.post('/', function (req, res, next) {
           if (ERR(err, next)) return;
           // `copyQuestionBetweenCourses` performs the redirect automatically,
           // so if there wasn't an error, there's nothing to do here.
-        }
+        },
       );
     }
   } else if (req.body.__action === 'delete_question') {
@@ -183,7 +183,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
@@ -202,7 +202,7 @@ router.get('/', function (req, res, next) {
   // here because this form will actually post to a different route, not `req.originalUrl`.
   const questionTestCsrfToken = generateSignedToken(
     { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-    config.secretKey
+    config.secretKey,
   );
 
   res.locals.questionTestPath = questionTestPath;
@@ -214,7 +214,7 @@ router.get('/', function (req, res, next) {
         res.locals.questionGHLink = null;
         if (res.locals.course.repository) {
           const GHfound = res.locals.course.repository.match(
-            /^git@github.com:\/?(.+?)(\.git)?\/?$/
+            /^git@github.com:\/?(.+?)(\.git)?\/?$/,
           );
           if (GHfound) {
             res.locals.questionGHLink =
@@ -243,17 +243,17 @@ router.get('/', function (req, res, next) {
             if (ERR(err, callback)) return;
             res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
             callback(null);
-          }
+          },
         );
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
       res.locals.infoPath = encodePath(
-        path.join('questions', res.locals.question.qid, 'info.json')
+        path.join('questions', res.locals.question.qid, 'info.json'),
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 

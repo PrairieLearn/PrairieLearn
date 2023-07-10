@@ -77,7 +77,7 @@ async.series(
       }
 
       globalLogger.info(
-        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
+        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database,
       );
       await sqldb.initAsync(pgConfig, idleErrorHandler);
       globalLogger.info('Successfully connected to database');
@@ -138,7 +138,7 @@ async.series(
               if (ERR(err, (err) => globalLogger.error('receive error:', err)));
               globalLogger.info('Completed full request cycle');
               next();
-            }
+            },
           );
         });
       }
@@ -156,7 +156,7 @@ async.series(
         process.exit(1);
       }, 1000);
     });
-  }
+  },
 );
 
 function isJobCanceled(job, callback) {
@@ -168,7 +168,7 @@ function isJobCanceled(job, callback) {
     (err, result) => {
       if (ERR(err, callback)) return;
       callback(null, result.rows[0].canceled);
-    }
+    },
   );
 }
 
@@ -220,7 +220,7 @@ function handleJob(job, done) {
       if (ERR(err, done)) return;
       logger.info('Successfully completed handleJob()');
       done(null);
-    }
+    },
   );
 }
 
@@ -255,7 +255,7 @@ async function reportReceived(info) {
       new SendMessageCommand({
         QueueUrl: config.resultsQueueUrl,
         MessageBody: JSON.stringify(messageBody),
-      })
+      }),
     );
   } catch (err) {
     // We don't want to fail the job if this notification fails
@@ -317,7 +317,7 @@ function initDocker(info, callback) {
             },
             (output) => {
               logger.info('docker output:', output);
-            }
+            },
           );
         });
       },
@@ -325,7 +325,7 @@ function initDocker(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -364,7 +364,7 @@ function initFiles(info, callback) {
             files.tempDir = dir;
             files.tempDirCleanup = cleanup;
             callback(null);
-          }
+          },
         );
       },
       async () => {
@@ -397,7 +397,7 @@ function initFiles(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, files);
-    }
+    },
   );
 }
 
@@ -467,7 +467,7 @@ function runJob(info, callback) {
           (err, container) => {
             if (ERR(err, callback)) return;
             callback(null, container);
-          }
+          },
         );
       },
       (container, callback) => {
@@ -484,7 +484,7 @@ function runJob(info, callback) {
               logger.info(`container> ${line.toString('utf8')}`);
             });
             callback(null, container);
-          }
+          },
         );
       },
       (container, callback) => {
@@ -540,7 +540,7 @@ function runJob(info, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -615,7 +615,7 @@ function runJob(info, callback) {
       } else {
         return callback(null, results);
       }
-    }
+    },
   );
 }
 
@@ -664,14 +664,14 @@ function uploadResults(info, callback) {
           new SendMessageCommand({
             QueueUrl: config.resultsQueueUrl,
             MessageBody: JSON.stringify(messageBody),
-          })
+          }),
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -721,6 +721,6 @@ function uploadArchive(results, callback) {
       if (ERR(err, callback)) return;
       tempArchiveCleanup && tempArchiveCleanup();
       callback(null);
-    }
+    },
   );
 }

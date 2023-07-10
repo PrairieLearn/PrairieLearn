@@ -70,7 +70,7 @@ async function testProject(options: CompiledAssetsOptions) {
     },
     {
       unsafeCleanup: true,
-    }
+    },
   );
 }
 

@@ -34,7 +34,7 @@ router.get('/', (_req, res, _next) => {
       heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
       visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
       resLocals: res.locals,
-    })
+    }),
   );
 });
 
@@ -55,14 +55,14 @@ router.post(
       await workspaceUtils.updateWorkspaceState(
         workspace_id,
         'uninitialized',
-        'Resetting container'
+        'Resetting container',
       );
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
       return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
-  })
+  }),
 );
 
 module.exports = router;
