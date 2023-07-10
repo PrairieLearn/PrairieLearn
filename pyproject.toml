@@ -73,6 +73,8 @@ include = [
     "./apps/prairielearn/elements/pl-hidden-hints",
     "./apps/prairielearn/elements/pl-hide-in-manual-grading",
     "./apps/prairielearn/elements/pl-hide-in-panel",
+    "./apps/prairielearn/elements/pl-integer-input",
+    "./apps/prairielearn/elements/pl-matrix-latex",
     "./apps/prairielearn/elements/pl-manual-grading-only",
     "./apps/prairielearn/elements/pl-matrix-latex",
     "./apps/prairielearn/elements/pl-overlay",
@@ -98,6 +100,8 @@ include = [
     "./apps/prairielearn/python/question_phases.py",
     "./apps/prairielearn/python/traverse_test.py",
     "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/zygote_utils.py",
+    "./apps/prairielearn/python/zygote_utils_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
