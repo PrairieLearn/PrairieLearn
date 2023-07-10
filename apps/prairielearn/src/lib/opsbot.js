@@ -37,7 +37,7 @@ module.exports.sendMessage = (msg, callback) => {
 };
 
 module.exports.sendMessageAsync = util.promisify((msg, callback) =>
-  module.exports.sendMessage(msg, (err, res, body) => callback(err, { res, body }))
+  module.exports.sendMessage(msg, (err, res, body) => callback(err, { res, body })),
 );
 
 /**
@@ -76,7 +76,7 @@ module.exports.sendSlackMessage = (msg, channel, options, callback) => {
     if (ERR(err, callback)) return;
     if (!body.ok) {
       callback(
-        error.makeWithData(`Error sending message to ${default_options.json.channel}`, { body })
+        error.makeWithData(`Error sending message to ${default_options.json.channel}`, { body }),
       );
       return;
     }

@@ -27,6 +27,7 @@ dnf -y install \
     tar \
     texlive \
     texlive-dvipng \
+    texlive-type1cm \
     tmux
 
 echo "installing node via nvm"

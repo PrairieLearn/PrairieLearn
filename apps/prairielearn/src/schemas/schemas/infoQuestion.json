@@ -40,14 +40,6 @@
             "description": "The category of question (e.g., 'Vectors', 'Energy').",
             "type": "string"
         },
-        "secondaryTopics": {
-            "description": "DEPRECATED, DO NOT USE. Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
-            "type": "array",
-            "items": {
-                "description": "A single topic covered by the question.",
-                "type": "string"
-            }
-        },
         "tags": {
             "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
             "type": "array",

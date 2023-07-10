@@ -15,10 +15,10 @@ router.get(
     const courses = await queryRows(
       sql.select_courses,
       { institution_id: req.params.institution_id },
-      CourseSchema
+      CourseSchema,
     );
     res.send(InstitutionAdminCourses({ institution, courses, resLocals: res.locals }));
-  })
+  }),
 );
 
 export default router;

@@ -45,7 +45,7 @@ function authenticate(req, res): Promise<any> {
         } else {
           resolve(user);
         }
-      }
+      },
     )(req, res);
   });
 }
@@ -82,7 +82,7 @@ router.post(
           nameAttribute,
           attributes: user.attributes,
           resLocals: res.locals,
-        })
+        }),
       );
       return;
     }
@@ -106,7 +106,7 @@ router.post(
       pl_authn_cookie: true,
       redirect: true,
     });
-  })
+  }),
 );
 
 router.get(
@@ -125,9 +125,9 @@ router.get(
         if (ERR(err, next)) return;
         res.type('application/xml');
         res.send(metadata);
-      }
+      },
     );
-  })
+  }),
 );
 
 export default router;

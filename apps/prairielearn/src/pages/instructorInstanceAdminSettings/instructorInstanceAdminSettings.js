@@ -38,7 +38,7 @@ router.get('/', function (req, res, next) {
       const host = config.serverCanonicalHost || `${req.protocol}://${req.headers.host}`;
       res.locals.studentLink = new URL(
         res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id,
-        host
+        host,
       ).href;
       res.locals.studentLinkQRCode = new QR({
         content: res.locals.studentLink,
@@ -49,11 +49,11 @@ router.get('/', function (req, res, next) {
         path.join(
           'courseInstances',
           res.locals.course_instance.short_name,
-          'infoCourseInstance.json'
-        )
+          'infoCourseInstance.json',
+        ),
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -71,7 +71,7 @@ router.post('/', function (req, res, next) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
+            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
           );
           sqldb.queryOneRow(
             sql.select_course_instance_id_from_uuid,
@@ -82,9 +82,9 @@ router.post('/', function (req, res, next) {
                 res.locals.plainUrlPrefix +
                   '/course_instance/' +
                   result.rows[0].course_instance_id +
-                  '/instructor/instance_admin/settings'
+                  '/instructor/instance_admin/settings',
               );
-            }
+            },
           );
         }
       });
@@ -110,8 +110,8 @@ router.post('/', function (req, res, next) {
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
-          `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
-        )
+          `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+        ),
       );
     }
     let ciid_new;
@@ -144,7 +144,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

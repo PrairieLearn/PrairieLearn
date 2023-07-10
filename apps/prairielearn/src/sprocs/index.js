@@ -169,6 +169,6 @@ module.exports.init = function (callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully completed DB stored procedure initialization');
       callback(null);
-    }
+    },
   );
 };

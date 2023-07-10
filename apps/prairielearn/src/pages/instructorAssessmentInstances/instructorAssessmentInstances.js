@@ -69,7 +69,7 @@ router.post('/', function (req, res, next) {
         function (err) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify({}));
-        }
+        },
       );
     });
   } else if (req.body.__action === 'delete') {
@@ -97,7 +97,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
+      },
     );
   } else if (req.body.__action === 'delete_all') {
     const params = [res.locals.assessment.id, res.locals.authn_user.user_id];
@@ -118,7 +118,7 @@ router.post('/', function (req, res, next) {
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        },
       );
     });
   } else if (req.body.__action === 'set_time_limit') {
@@ -178,7 +178,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

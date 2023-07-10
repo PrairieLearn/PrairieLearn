@@ -66,7 +66,7 @@ CalculationClient.prototype.initialize = function (questionData, callback) {
       that.questionDataModel.set('questionFilePath', questionData.questionFilePath);
       that.questionDataModel.set(
         'questionGeneratedFilePath',
-        questionData.questionGeneratedFilePath
+        questionData.questionGeneratedFilePath,
       );
       that.appModel = new Backbone.Model();
       that.qClient = qc;
@@ -96,7 +96,7 @@ CalculationClient.prototype.renderSubmission = function (container, questionData
     this.appModel,
     questionData.submissions[submissionIndex].submitted_answer,
     questionData.submissions[submissionIndex].feedback,
-    submissionIndex
+    submissionIndex,
   );
 };
 

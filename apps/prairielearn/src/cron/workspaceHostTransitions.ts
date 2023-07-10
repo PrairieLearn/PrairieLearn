@@ -60,7 +60,7 @@ async function checkDBConsistency() {
   }
 
   const nonTerminatedHosts = new Set(
-    await queryRows(sql.select_nonterminated_workspace_hosts, z.string())
+    await queryRows(sql.select_nonterminated_workspace_hosts, z.string()),
   );
 
   // Kill off any host that is running but not in the db
@@ -78,7 +78,7 @@ async function checkDBConsistency() {
   if (hostsNotInEc2.size > 0) {
     logger.info('Terminating hosts that are not running in EC2', Array.from(hostsNotInEc2));
     const stoppedWorkspaces = await workspaceHostUtils.terminateWorkspaceHostsIfNotLaunching(
-      Array.from(hostsNotInEc2)
+      Array.from(hostsNotInEc2),
     );
     stoppedWorkspaces.forEach((workspace) => {
       workspaceHelper.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
@@ -94,7 +94,7 @@ async function terminateHosts() {
   const ec2 = new EC2(makeAwsClientConfig());
   const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(
     config.workspaceHostUnhealthyTimeoutSec,
-    config.workspaceHostLaunchTimeoutSec
+    config.workspaceHostLaunchTimeoutSec,
   );
   if (hosts.length > 0) {
     logger.info('Found terminable hosts', hosts);
@@ -109,7 +109,7 @@ async function checkHealth() {
       id: z.string(),
       instance_id: z.string().nullable(),
       hostname: z.string().nullable(),
-    })
+    }),
   );
 
   await async.each(hosts, async (host) => {

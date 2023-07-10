@@ -79,7 +79,7 @@ async function handleInput(line, codeCaller) {
       request.directory,
       request.file,
       request.fcn,
-      request.args
+      request.args,
     ));
   } catch (err) {
     callErr = err;

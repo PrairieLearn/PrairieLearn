@@ -9,6 +9,7 @@ const { parseISO, isValid } = require('date-fns');
 const { config } = require('../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
+const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -42,7 +43,7 @@ module.exports = function (req, res, next) {
 
         if (params.course_id == null && params.course_instance_id == null) {
           callback(
-            error.make(403, 'Access denied (both course_id and course_instance_id are null)')
+            error.make(403, 'Access denied (both course_id and course_instance_id are null)'),
           );
         }
 
@@ -78,7 +79,7 @@ module.exports = function (req, res, next) {
             courses: authn_courses,
             course_instances: authn_course_instances,
             editable_courses: authn_courses.filter(
-              (course) => course.permissions_course.has_course_permission_edit
+              (course) => course.permissions_course.has_course_permission_edit,
             ),
           };
           res.locals.user = res.locals.authz_data.user;
@@ -186,9 +187,12 @@ module.exports = function (req, res, next) {
         });
 
         let err = error.make(403, 'Access denied');
-        err.info =
-          `<p>You must be a member of the course staff in order to change the effective user. ` +
-          `All requested changes to the effective user have been removed.</p>`;
+        err.info = html`
+          <p>
+            You must be a member of the course staff in order to change the effective user. All
+            requested changes to the effective user have been removed.
+          </p>
+        `.toString();
         return next(err);
       }
 
@@ -245,24 +249,39 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one with uid ` +
-                  `<code>${req.cookies.pl_requested_uid}</code>, when no such user exists. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one with uid
+                    <code>${req.cookies.pl_requested_uid}</code>, when no such user exists. All
+                    requested changes to the effective user have been removed.
+                  </p>
+                `.toString();
 
                 if (config.devMode && is_administrator) {
-                  err.info +=
-                    `<div class="alert alert-warning" role="alert"><p>In Development Mode, ` +
-                    `<a href="/pl/administrator/query/select_or_insert_user">go here to add the user</a> ` +
-                    ` first and then try the emulation again.</p>`;
+                  err.info += html`
+                    <div class="alert alert-warning" role="alert">
+                      <p>
+                        In Development Mode,
+                        <a href="/pl/administrator/query/select_or_insert_user"
+                          >go here to add the user</a
+                        >
+                        first and then try the emulation again.
+                      </p>
+                    </div>
+                  `.toString();
                   if (isCourseInstance) {
-                    err.info +=
-                      `<p>To auto-generate many users for testing, see ` +
-                      `<a href="/pl/administrator/query/generate_and_enroll_users">Generate random users ` +
-                      `and enroll them in a course instance<a> <br>` +
-                      `(Hint your course_instance_id is <strong>${res.locals.course_instance.id}</strong>)</p>`;
+                    err.info += html`
+                      <p>
+                        To auto-generate many users for testing, see
+                        <a href="/pl/administrator/query/generate_and_enroll_users"
+                          >Generate random users and enroll them in a course instance</a
+                        >
+                        <br />
+                        (Hint your course_instance_id is
+                        <strong>${res.locals.course_instance.id}</strong>)
+                      </p>
+                    `.toString();
                   }
-                  err.info += `</div>`;
                 }
                 return callback(err);
               }
@@ -276,10 +295,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one who is an ` +
-                  `administrator, when you are not an administrator. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one who is an administrator, when
+                    you are not an administrator. All requested changes to the effective user have
+                    been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -288,7 +310,7 @@ module.exports = function (req, res, next) {
               user_with_requested_uid_has_instructor_access_to_course_instance =
                 result.rows[0].is_instructor;
               debug(
-                `requested uid has instructor access: ${user_with_requested_uid_has_instructor_access_to_course_instance}`
+                `requested uid has instructor access: ${user_with_requested_uid_has_instructor_access_to_course_instance}`,
               );
 
               // FIXME: also override institution?
@@ -307,9 +329,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have requested an invalid effective date: <code>${req.cookies.pl_requested_date}</code>. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have requested an invalid effective date:
+                    <code>${req.cookies.pl_requested_date}</code>. All requested changes to the
+                    effective user have been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -390,10 +416,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one who is a ` +
-                  `course previewer, when you are not a course previewer. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one who is a course previewer,
+                    when you are not a course previewer. All requested changes to the effective user
+                    have been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -409,10 +438,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one who is a ` +
-                  `course viewer, when you are not a course viewer. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one who is a course viewer, when
+                    you are not a course viewer. All requested changes to the effective user have
+                    been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -428,10 +460,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one who is a ` +
-                  `course editor, when you are not a course editor. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one who is a course editor, when
+                    you are not a course editor. All requested changes to the effective user have
+                    been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -447,10 +482,13 @@ module.exports = function (req, res, next) {
                 });
 
                 let err = error.make(403, 'Access denied');
-                err.info =
-                  `<p>You have tried to change the effective user to one who is a ` +
-                  `course owner, when you are not a course owner. ` +
-                  `All requested changes to the effective user have been removed.</p>`;
+                err.info = html`
+                  <p>
+                    You have tried to change the effective user to one who is a course owner, when
+                    you are not a course owner. All requested changes to the effective user have
+                    been removed.
+                  </p>
+                `.toString();
                 return callback(err);
               }
 
@@ -467,11 +505,14 @@ module.exports = function (req, res, next) {
                   });
 
                   let err = error.make(403, 'Access denied');
-                  err.info =
-                    `<p>You have tried to change the effective user to one who can view ` +
-                    `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
-                    `you do not have permission to view these student data. ` +
-                    `All requested changes to the effective user have been removed.</p>`;
+                  err.info = html`
+                    <p>
+                      You have tried to change the effective user to one who can view student data
+                      in the course instance <code>${res.locals.course_instance.short_name}</code>,
+                      when you do not have permission to view these student data. All requested
+                      changes to the effective user have been removed.
+                    </p>
+                  `.toString();
                   return callback(err);
                 }
 
@@ -487,11 +528,14 @@ module.exports = function (req, res, next) {
                   });
 
                   let err = error.make(403, 'Access denied');
-                  err.info =
-                    `<p>You have tried to change the effective user to one who can edit ` +
-                    `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
-                    `you do not have permission to edit these student data. ` +
-                    `All requested changes to the effective user have been removed.</p>`;
+                  err.info = html`
+                    <p>
+                      You have tried to change the effective user to one who can edit student data
+                      in the course instance <code>${res.locals.course_instance.short_name}</code>,
+                      when you do not have permission to edit these student data. All requested
+                      changes to the effective user have been removed.
+                    </p>
+                  `.toString();
                   return callback(err);
                 }
 
@@ -513,11 +557,14 @@ module.exports = function (req, res, next) {
                   });
 
                   let err = error.make(403, 'Access denied');
-                  err.info =
-                    `<p>You have tried to change the effective user to one who is a student in the ` +
-                    `course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
-                    `you do not have permission to edit student data in this course instance. ` +
-                    `All requested changes to the effective user have been removed.</p>`;
+                  err.info = html`
+                    <p>
+                      You have tried to change the effective user to one who is a student in the
+                      course instance <code>${res.locals.course_instance.short_name}</code>, when
+                      you do not have permission to edit student data in this course instance. All
+                      requested changes to the effective user have been removed.
+                    </p>
+                  `.toString();
                   return callback(err);
                 }
               }
@@ -546,14 +593,14 @@ module.exports = function (req, res, next) {
               //
               // We then update editable_courses as usual.
               res.locals.authz_data.courses = (result.rows[0].courses || []).filter((course) =>
-                idsEqual(course.id, result.rows[0].course.id)
+                idsEqual(course.id, result.rows[0].course.id),
               );
               res.locals.authz_data.courses.forEach(
                 (course) =>
-                  (course.permissions_course = _.cloneDeep(result.rows[0].permissions_course))
+                  (course.permissions_course = _.cloneDeep(result.rows[0].permissions_course)),
               );
               res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(
-                (course) => course.permissions_course.has_course_permission_edit
+                (course) => course.permissions_course.has_course_permission_edit,
               );
 
               // Use the course_instances for the effective user, but keeping only
@@ -562,8 +609,8 @@ module.exports = function (req, res, next) {
               res.locals.authz_data.course_instances =
                 res.locals.authz_data.course_instances.filter((ci) =>
                   res.locals.authz_data.authn_course_instances.some((authn_ci) =>
-                    idsEqual(authn_ci.id, ci.id)
-                  )
+                    idsEqual(authn_ci.id, ci.id),
+                  ),
                 );
 
               if (isCourseInstance) {
@@ -599,8 +646,8 @@ module.exports = function (req, res, next) {
         (err) => {
           if (ERR(err, next)) return;
           next();
-        }
+        },
       );
-    }
+    },
   );
 };

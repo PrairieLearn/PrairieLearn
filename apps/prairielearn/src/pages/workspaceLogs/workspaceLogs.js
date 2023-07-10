@@ -128,7 +128,7 @@ router.get(
         res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
     });
     res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
-  })
+  }),
 );
 
 // All state transitions for a single workspace version, as well as the container
@@ -149,7 +149,7 @@ router.get(
     if (containerLogsEnabled && !containerLogsExpired) {
       containerLogs = await loadLogsForWorkspaceVersion(
         res.locals.workspace_id,
-        req.params.version
+        req.params.version,
       );
     }
 
@@ -160,9 +160,9 @@ router.get(
         containerLogsEnabled,
         containerLogsExpired,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 module.exports = router;

@@ -105,7 +105,7 @@ export class FeatureManager<FeatureName extends string> {
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.boolean()
+      z.boolean(),
     );
     if (featureIsEnabled) return true;
 
@@ -128,7 +128,7 @@ export class FeatureManager<FeatureName extends string> {
       course?: { id: string };
       course_instance?: { id: string };
       user?: { user_id: string };
-    }
+    },
   ): Promise<boolean> {
     const user_context = locals.user && { user_id: locals.user.user_id };
     if (!locals.institution) {
