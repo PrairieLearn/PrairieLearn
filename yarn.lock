@@ -2935,7 +2935,6 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@pyroscope/nodejs": ^0.2.6
     "@sa11y/format": ^5.2.0
     "@sentry/profiling-node": ^1.0.8
     "@sentry/tracing": ^7.57.0
@@ -3287,20 +3286,6 @@ __metadata:
   version: 1.1.0
   resolution: "@protobufjs/utf8@npm:1.1.0"
   checksum: f9bf3163d13aaa3b6f5e6fbf37a116e094ea021c0e1f2a7ccd0e12a29e2ce08dafba4e8b36e13f8ed7397e1591610ce880ed1289af4d66cf4ace8a36a9557278
-  languageName: node
-  linkType: hard
-
-"@pyroscope/nodejs@npm:^0.2.6":
-  version: 0.2.6
-  resolution: "@pyroscope/nodejs@npm:0.2.6"
-  dependencies:
-    axios: ^0.26.1
-    debug: ^4.3.3
-    form-data: ^4.0.0
-    pprof: ^3.2.0
-    regenerator-runtime: ^0.13.11
-    source-map: ^0.7.3
-  checksum: 0b2c70c8474d94dece3ced0b50ee6acf951e250bb7666425a847145ff41ae8b154c769a35187ada6ee535daa102668aab8cf0fb2879bfc227f07a20cb29358f1
   languageName: node
   linkType: hard
 
@@ -5500,15 +5485,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^0.26.1":
-  version: 0.26.1
-  resolution: "axios@npm:0.26.1"
-  dependencies:
-    follow-redirects: ^1.14.8
-  checksum: d9eb58ff4bc0b36a04783fc9ff760e9245c829a5a1052ee7ca6013410d427036b1d10d04e7380c02f3508c5eaf3485b1ae67bd2adbfec3683704745c8d7a6e1a
-  languageName: node
-  linkType: hard
-
 "backbone@npm:^1.4.1":
   version: 1.4.1
   resolution: "backbone@npm:1.4.1"
@@ -5639,7 +5615,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bindings@npm:^1.2.1, bindings@npm:^1.5.0":
+"bindings@npm:^1.5.0":
   version: 1.5.0
   resolution: "bindings@npm:1.5.0"
   dependencies:
@@ -7493,13 +7469,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"delay@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "delay@npm:5.0.0"
-  checksum: 62f151151ecfde0d9afbb8a6be37a6d103c4cb24f35a20ef3fe56f920b0d0d0bb02bc9c0a3084d0179ef669ca332b91155f2ee4d9854622cd2cdba5fc95285f9
-  languageName: node
-  linkType: hard
-
 "delayed-stream@npm:~1.0.0":
   version: 1.0.0
   resolution: "delayed-stream@npm:1.0.0"
@@ -8892,13 +8861,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"findit2@npm:^2.2.3":
-  version: 2.2.3
-  resolution: "findit2@npm:2.2.3"
-  checksum: 70738b5610b44a101baa9b55b0b023851641357ca673e0dd6f3bb3e836369aed7eda9ee93953ce633dacbdd8fde5a1ec3341556de5beaf7853f1cb5649a93918
-  languageName: node
-  linkType: hard
-
 "findup-sync@npm:^2.0.0":
   version: 2.0.0
   resolution: "findup-sync@npm:2.0.0"
@@ -8956,7 +8918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.14.8":
+"follow-redirects@npm:^1.0.0":
   version: 1.15.2
   resolution: "follow-redirects@npm:1.15.2"
   peerDependenciesMeta:
@@ -13127,7 +13089,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-limit@npm:^3.0.0, p-limit@npm:^3.0.2":
+"p-limit@npm:^3.0.2":
   version: 3.1.0
   resolution: "p-limit@npm:3.1.0"
   dependencies:
@@ -13579,13 +13541,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pify@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "pify@npm:5.0.0"
-  checksum: 443e3e198ad6bfa8c0c533764cf75c9d5bc976387a163792fb553ffe6ce923887cf14eebf5aea9b7caa8eab930da8c33612990ae85bd8c2bc18bedb9eae94ecb
-  languageName: node
-  linkType: hard
-
 "pirates@npm:^4.0.1":
   version: 4.0.5
   resolution: "pirates@npm:4.0.5"
@@ -13719,25 +13674,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pprof@npm:^3.2.0":
-  version: 3.2.0
-  resolution: "pprof@npm:3.2.0"
-  dependencies:
-    "@mapbox/node-pre-gyp": ^1.0.0
-    bindings: ^1.2.1
-    delay: ^5.0.0
-    findit2: ^2.2.3
-    nan: ^2.14.0
-    node-gyp: latest
-    p-limit: ^3.0.0
-    pify: ^5.0.0
-    protobufjs: ~6.11.0
-    source-map: ^0.7.3
-    split: ^1.0.1
-  checksum: 91c3304c94f0ebabf9bedda0d397f5cbc4068302b73bc00c59f304ab368a16a79abd77179f8f8d4ffd7b39f128e9c46f0a269bcbe73b0f6044d0f4b6d0189bc3
-  languageName: node
-  linkType: hard
-
 "preferred-pm@npm:^3.0.0":
   version: 3.0.3
   resolution: "preferred-pm@npm:3.0.3"
@@ -13853,30 +13789,6 @@ __metadata:
     "@types/node": ">=13.7.0"
     long: ^5.0.0
   checksum: a952cdf2a5e5250c16ae651b570849b6f5b20a5475c3eef63ffb290ad239aa2916adfc1cc676f7fc93c69f48113df268761c0c246f7f023118c85bdd1a170044
-  languageName: node
-  linkType: hard
-
-"protobufjs@npm:~6.11.0":
-  version: 6.11.3
-  resolution: "protobufjs@npm:6.11.3"
-  dependencies:
-    "@protobufjs/aspromise": ^1.1.2
-    "@protobufjs/base64": ^1.1.2
-    "@protobufjs/codegen": ^2.0.4
-    "@protobufjs/eventemitter": ^1.1.0
-    "@protobufjs/fetch": ^1.1.0
-    "@protobufjs/float": ^1.0.2
-    "@protobufjs/inquire": ^1.1.0
-    "@protobufjs/path": ^1.1.2
-    "@protobufjs/pool": ^1.1.0
-    "@protobufjs/utf8": ^1.1.0
-    "@types/long": ^4.0.1
-    "@types/node": ">=13.7.0"
-    long: ^4.0.0
-  bin:
-    pbjs: bin/pbjs
-    pbts: bin/pbts
-  checksum: 4a6ce1964167e4c45c53fd8a312d7646415c777dd31b4ba346719947b88e61654912326101f927da387d6b6473ab52a7ea4f54d6f15d63b31130ce28e2e15070
   languageName: node
   linkType: hard
 
@@ -15216,13 +15128,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map@npm:^0.7.3":
-  version: 0.7.4
-  resolution: "source-map@npm:0.7.4"
-  checksum: 01cc5a74b1f0e1d626a58d36ad6898ea820567e87f18dfc9d24a9843a351aaa2ec09b87422589906d6ff1deed29693e176194dc88bcae7c9a852dc74b311dbf5
-  languageName: node
-  linkType: hard
-
 "source-map@npm:~0.6.1":
   version: 0.6.1
   resolution: "source-map@npm:0.6.1"
@@ -15301,15 +15206,6 @@ __metadata:
   version: 4.1.0
   resolution: "split2@npm:4.1.0"
   checksum: ec581597cb74c13cdfb5e2047543dd40cb1e8e9803c7b1e0c29ede05f2b4f049b2d6e7f2788a225d544549375719658b8f38e9366364dec35dc7a12edfda5ee5
-  languageName: node
-  linkType: hard
-
-"split@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "split@npm:1.0.1"
-  dependencies:
-    through: 2
-  checksum: 12f4554a5792c7e98bb3e22b53c63bfa5ef89aa704353e1db608a55b51f5b12afaad6e4a8ecf7843c15f273f43cdadd67b3705cc43d48a75c2cf4641d51f7e7a
   languageName: node
   linkType: hard
 
@@ -15830,13 +15726,6 @@ __metadata:
   bin:
     thrift2json: ./thrift2json.js
   checksum: fc03374131a713f5c5eca712a4092abf48282d985d23542f3ef7c92d222af52716e7037c446d5734708cc514d8fad42674f82dd6a9c59b8807beba0a1169b539
-  languageName: node
-  linkType: hard
-
-"through@npm:2":
-  version: 2.3.8
-  resolution: "through@npm:2.3.8"
-  checksum: a38c3e059853c494af95d50c072b83f8b676a9ba2818dcc5b108ef252230735c54e0185437618596c790bbba8fcdaef5b290405981ffa09dce67b1f1bf190cbd
   languageName: node
   linkType: hard
 
