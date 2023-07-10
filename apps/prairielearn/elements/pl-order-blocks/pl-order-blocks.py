@@ -67,6 +67,9 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset(
     [FeedbackType.FIRST_WRONG, FeedbackType.FIRST_WRONG_VERBOSE]
 )
+RANKING_DAG_ORDERED_GRADING_TYPE = frozenset(
+    [GradingMethodType.RANKING, GradingMethodType.DAG, GradingMethodType.ORDERED]
+)
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -651,11 +654,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
-    if grading_method in [
-        GradingMethodType.RANKING,
-        GradingMethodType.DAG,
-        GradingMethodType.ORDERED,
-    ]:
+    if grading_method in RANKING_DAG_ORDERED_GRADING_TYPE:
         for answer in student_answer:
             matching_block = next(
                 (
@@ -799,11 +798,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
-    elif grading_method in [
-        GradingMethodType.RANKING,
-        GradingMethodType.DAG,
-        GradingMethodType.ORDERED,
-    ]:
+    elif grading_method in RANKING_DAG_ORDERED_GRADING_TYPE:
         submission = [ans["tag"] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
