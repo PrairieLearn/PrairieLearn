@@ -18,9 +18,8 @@
         {{/label}}
         <input
             name="{{name}}"
-            type={{#use_numeric}}"number"{{/use_numeric}}{{^use_numeric}}"text"{{/use_numeric}}
+            type="text"
             inputmode={{#use_numeric}}"numeric"{{/use_numeric}}{{^use_numeric}}"text"{{/use_numeric}}
-            {{#pattern}}pattern="{{.}}"{{/pattern}}
             autocomplete="off"
             class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}"
             size="{{size}}"

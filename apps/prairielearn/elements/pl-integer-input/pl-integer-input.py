@@ -127,8 +127,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "display_append_span": show_info or suffix or parse_error,
             "parse_error": parse_error,
-            "use_numeric": True if 1 <= base <= 9 else False,
-            "pattern": get_pattern(base),
+            "use_numeric": True if 1 <= base <= 10 else False,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
@@ -346,16 +345,3 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["format_errors"][name] = "invalid"
     else:
         assert_never(result)
-
-
-def get_pattern(base: int) -> Optional[str]:
-    if base == 0:
-        return None
-
-    allowed_chrs = list(string.digits[: min(base, 10)])
-
-    if base > 10:
-        allowed_chrs.extend(string.ascii_lowercase[: base - 10])
-        allowed_chrs.extend(string.ascii_uppercase[: base - 10])
-
-    return "[" + "".join(allowed_chrs) + "]+"
