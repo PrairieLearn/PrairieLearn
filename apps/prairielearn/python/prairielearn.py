@@ -1064,7 +1064,7 @@ def string_partition_outer_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s, base=10):
+def string_to_integer(s: str, base: int = 10) -> Optional[int]:
     """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
@@ -1661,7 +1661,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string):
+def escape_unicode_string(string: str) -> str:
     """
     escape_unicode_string(string)
 
@@ -1817,3 +1817,7 @@ def index2key(i):
         key = chr(ord("a") + i)
 
     return key
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1
