@@ -160,7 +160,7 @@ class Editor {
                   {
                     cwd: this.course.path,
                     env: gitEnv,
-                  }
+                  },
                 );
               } catch (err) {
                 await cleanAndResetRepository(this.course, gitEnv, job);
@@ -189,7 +189,7 @@ class Editor {
       ],
       (err) => {
         callback(err, jobSequenceId);
-      }
+      },
     );
   }
 
@@ -380,7 +380,7 @@ class AssessmentCopyEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
 
     debug('Get all existing long names');
@@ -397,7 +397,7 @@ class AssessmentCopyEditor extends Editor {
       this.assessment.tid,
       oldNamesShort,
       this.assessment.title,
-      oldNamesLong
+      oldNamesLong,
     );
     const tid = names.shortName;
     const assessmentTitle = names.longName;
@@ -435,7 +435,7 @@ class AssessmentDeleteEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
     await fs.remove(path.join(deletePath, this.assessment.tid));
     await this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid);
@@ -464,7 +464,7 @@ class AssessmentRenameEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
     const oldPath = path.join(basePath, this.assessment.tid);
     const newPath = path.join(basePath, this.tid_new);
@@ -488,7 +488,7 @@ class AssessmentAddEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
 
     debug('Get all existing long names');
@@ -551,7 +551,7 @@ class CourseInstanceCopyEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
-      'infoCourseInstance.json'
+      'infoCourseInstance.json',
     );
 
     debug(`Generate short_name and long_name`);
@@ -559,7 +559,7 @@ class CourseInstanceCopyEditor extends Editor {
       this.course_instance.short_name,
       oldNamesShort,
       this.course_instance.long_name,
-      oldNamesLong
+      oldNamesLong,
     );
     this.short_name = names.shortName;
     this.long_name = names.longName;
@@ -574,7 +574,7 @@ class CourseInstanceCopyEditor extends Editor {
 
     debug(`Read infoCourseInstance.json`);
     const infoJson = await fs.readJson(
-      path.join(this.courseInstancePath, 'infoCourseInstance.json')
+      path.join(this.courseInstancePath, 'infoCourseInstance.json'),
     );
 
     debug(`Write infoCourseInstance.json with new longName and uuid`);
@@ -625,7 +625,7 @@ class CourseInstanceRenameEditor extends Editor {
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
-      this.course_instance.short_name
+      this.course_instance.short_name,
     );
 
     this.pathsToAdd = [oldPath, newPath];
@@ -652,7 +652,7 @@ class CourseInstanceAddEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
-      'infoCourseInstance.json'
+      'infoCourseInstance.json',
     );
 
     debug(`Generate short_name and long_name`);
@@ -737,7 +737,7 @@ class QuestionDeleteEditor extends Editor {
     await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'questions'),
-      this.question.qid
+      this.question.qid,
     );
     this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
     this.commitMessage = `delete question ${this.question.qid}`;
@@ -777,7 +777,7 @@ class QuestionRenameEditor extends Editor {
     const assessments = result.rows;
 
     debug(
-      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
+      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
       let infoPath = path.join(
@@ -786,7 +786,7 @@ class QuestionRenameEditor extends Editor {
         assessment.course_instance_directory,
         'assessments',
         assessment.assessment_directory,
-        'infoAssessment.json'
+        'infoAssessment.json',
       );
       this.pathsToAdd.push(infoPath);
 
@@ -843,7 +843,7 @@ class QuestionCopyEditor extends Editor {
       this.question.qid,
       oldNamesShort,
       this.question.title,
-      oldNamesLong
+      oldNamesLong,
     );
     this.qid = names.shortName;
     this.questionTitle = names.longName;
@@ -934,7 +934,7 @@ class FileDeleteEditor extends Editor {
     }
     this.description = `${this.prefix}delete ${path.relative(
       this.container.rootPath,
-      this.deletePath
+      this.deletePath,
     )}`;
   }
 
@@ -946,13 +946,13 @@ class FileDeleteEditor extends Editor {
         `<p>The path of the file to delete</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.deletePath)
+      contains(invalidRootPath, this.deletePath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -960,7 +960,7 @@ class FileDeleteEditor extends Editor {
         `<p>The path of the file to delete</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
@@ -993,7 +993,7 @@ class FileRenameEditor extends Editor {
     }
     this.description = `${this.prefix}rename ${path.relative(
       this.container.rootPath,
-      this.oldPath
+      this.oldPath,
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
   }
 
@@ -1005,7 +1005,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's old path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
@@ -1016,7 +1016,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's new path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
@@ -1024,7 +1024,7 @@ class FileRenameEditor extends Editor {
     let found;
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.oldPath)
+      contains(invalidRootPath, this.oldPath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1032,13 +1032,13 @@ class FileRenameEditor extends Editor {
         `<p>The file's old path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.newPath)
+      contains(invalidRootPath, this.newPath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1046,7 +1046,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's new path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
@@ -1083,7 +1083,7 @@ class FileUploadEditor extends Editor {
     }
     this.description = `${this.prefix}upload ${path.relative(
       this.container.rootPath,
-      this.filePath
+      this.filePath,
     )}`;
   }
 
@@ -1125,13 +1125,13 @@ class FileUploadEditor extends Editor {
         `<p>The file path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.filePath)
+      contains(invalidRootPath, this.filePath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1139,7 +1139,7 @@ class FileUploadEditor extends Editor {
         `<p>The file path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }

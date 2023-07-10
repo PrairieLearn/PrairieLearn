@@ -244,11 +244,11 @@ module.exports.connection = function (socket) {
       !checkSignedToken(
         msg.token,
         { jobSequenceId: msg.job_sequence_id.toString() },
-        config.secretKey
+        config.secretKey,
       )
     ) {
       logger.error(
-        `joinJobSequence called with invalid token for job_sequence_id ${msg.job_sequence_id}`
+        `joinJobSequence called with invalid token for job_sequence_id ${msg.job_sequence_id}`,
       );
       return;
     }
@@ -261,7 +261,7 @@ module.exports.connection = function (socket) {
       if (err) {
         return logger.error(
           'socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id,
-          err
+          err,
         );
       }
       var job_count = result.rows[0].job_count;
@@ -296,7 +296,7 @@ module.exports.createJob = function (options, callback) {
       on_error: undefined,
       on_success: undefined,
     },
-    options
+    options,
   );
 
   var params = {
@@ -423,7 +423,7 @@ module.exports.createJobSequence = function (options, callback) {
       type: null,
       description: null,
     },
-    options
+    options,
   );
 
   var params = {
@@ -530,7 +530,7 @@ module.exports.getJobSequenceWithFormattedOutput = function (job_sequence_id, co
   });
 };
 module.exports.getJobSequenceWithFormattedOutputAsync = util.promisify(
-  module.exports.getJobSequenceWithFormattedOutput
+  module.exports.getJobSequenceWithFormattedOutput,
 );
 
 // Exported so others can use it as a type.

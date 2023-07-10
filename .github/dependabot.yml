@@ -8,6 +8,13 @@ updates:
     timezone: America/Chicago
   open-pull-requests-limit: 99
   rebase-strategy: disabled
+  groups:
+    aws:
+      patterns:
+        - "@aws-sdk/*"
+    opentelemetry:
+      patterns:
+        - "@opentelemetry/*"
 - package-ecosystem: github-actions
   directory: "/"
   schedule:

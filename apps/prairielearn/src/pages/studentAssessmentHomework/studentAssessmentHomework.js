@@ -23,7 +23,7 @@ router.get(
       return next(
         error.makeWithData('"Homework" assessments do not support multiple instances', {
           assessment: res.locals.assessment,
-        })
+        }),
       );
     }
 
@@ -56,7 +56,7 @@ router.get(
         // Check whether the user is currently in a group in the current assessment by trying to get a group_id
         const groupId = await groupAssessmentHelper.getGroupId(
           res.locals.assessment.id,
-          res.locals.user.user_id
+          res.locals.user.user_id,
         );
 
         if (groupId === null) {
@@ -74,7 +74,7 @@ router.get(
           if (groupConfig.has_roles) {
             const result = await groupAssessmentHelper.getAssessmentPermissions(
               res.locals.assessment.id,
-              res.locals.user.user_id
+              res.locals.user.user_id,
             );
             res.locals.canViewRoleTable = result.can_assign_roles_at_start;
           }
@@ -101,14 +101,14 @@ router.get(
             if (ERR(err, next)) return;
             debug('redirecting');
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-          }
+          },
         );
       }
     } else {
       debug('redirecting');
       res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
     }
-  })
+  }),
 );
 
 router.post(
@@ -142,7 +142,7 @@ router.post(
               if (ERR(err, next)) return;
               debug('redirecting');
               res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-            }
+            },
           );
         } else {
           debug('redirecting');
@@ -166,7 +166,7 @@ router.post(
             res.locals.notInGroup = true;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
-        }
+        },
       );
     } else if (req.body.__action === 'create_group') {
       groupAssessmentHelper.createGroup(
@@ -189,21 +189,21 @@ router.post(
             res.locals.groupSize = 0;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
-        }
+        },
       );
     } else if (req.body.__action === 'update_group_roles') {
       await groupAssessmentHelper.updateGroupRoles(
         req.body,
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else {
@@ -211,10 +211,10 @@ router.post(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

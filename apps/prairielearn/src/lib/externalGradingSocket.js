@@ -76,7 +76,7 @@ module.exports.connection = function (socket) {
           questionPanelFooter: panels.questionPanelFooter,
           questionNavNextButton: panels.questionNavNextButton,
         });
-      }
+      },
     );
   });
 };
@@ -114,7 +114,7 @@ module.exports.renderPanelsForSubmission = function (
   questionContext,
   csrfToken,
   authorizedEdit,
-  callback
+  callback,
 ) {
   question.renderPanelsForSubmission(
     submission_id,
@@ -129,7 +129,7 @@ module.exports.renderPanelsForSubmission = function (
     (err, results) => {
       if (ERR(err, callback)) return;
       callback(null, results);
-    }
+    },
   );
 };
 

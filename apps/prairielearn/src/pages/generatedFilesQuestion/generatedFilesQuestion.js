@@ -32,7 +32,7 @@ router.get('/variant/:variant_id/*', function (req, res, next) {
         if (ERR(err, next)) return;
         res.attachment(filename);
         res.send(fileData);
-      }
+      },
     );
   });
 });

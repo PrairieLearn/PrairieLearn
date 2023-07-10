@@ -24,7 +24,7 @@ router.get(
       z.object({
         course: CourseSchema,
         course_instance: CourseInstanceSchema,
-      })
+      }),
     );
     res.send(
       InstitutionAdminCourseInstance({
@@ -32,9 +32,9 @@ router.get(
         course,
         course_instance,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.post(
@@ -50,7 +50,7 @@ router.post(
     } else {
       throw error.make(400, 'Unknown action');
     }
-  })
+  }),
 );
 
 export default router;

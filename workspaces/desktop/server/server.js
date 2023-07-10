@@ -107,7 +107,7 @@ const spawn_gui = async (width, height) => {
       env: {
         X11VNC_FINDDISPLAY_ALWAYS_FAILS: '1',
       },
-    }
+    },
   );
   attach_listeners(x11vnc_proc);
 
