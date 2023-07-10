@@ -69,7 +69,23 @@ export function InstitutionAdminAdmins({
                       <tr>
                         <td>${row.user.uid}</td>
                         <td>${row.user.name}</td>
-                        <td>TODO ACTIONS</td>
+                        <td>
+                          <span class="dropdown">
+                            <button
+                              type="button"
+                              class="btn btn-light dropdown-toggle btn-xs"
+                              title="Actions for ${row.user.uid}"
+                              aria-expanded="false"
+                              data-toggle="dropdown"
+                            ></button>
+                            <div class="dropdown-menu">
+                              <button class="dropdown-item" type="button">
+                                <i class="bi-x-lg"></i>
+                                Remove admin
+                              </button>
+                            </div>
+                          </span>
+                        </td>
                       </tr>
                     `,
                   )}

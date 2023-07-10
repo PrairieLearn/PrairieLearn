@@ -1,14 +1,20 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
+import { flash } from '@prairielearn/flash';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryValidatedRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   InstitutionAdminAdmins,
   InstitutionAdminAdminsRowSchema,
 } from './institutionAdminAdmins.html';
 import { getInstitution } from '../../lib/institution';
-import { parseUidsString } from '../../../lib/user';
+import { parseUidsString, selectUserByUid } from '../../../lib/user';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(__filename);
@@ -36,7 +42,36 @@ router.post(
     if (req.body.__action === 'addAdmins') {
       console.log(req.body);
       const uids = parseUidsString(req.body.uids);
-      console.log(uids);
+      const validUids: string[] = [];
+      const invalidUids: string[] = [];
+      await runInTransactionAsync(async () => {
+        for (const uid of uids) {
+          const user = await selectUserByUid(uid);
+
+          if (!user) {
+            // TODO: should we use an invitation system here instead?
+            invalidUids.push(uid);
+            continue;
+          }
+
+          // TODO: record audit event for this action.
+          console.log(req.params.institution_id, user.user_id);
+          await queryAsync(sql.insert_institution_admin, {
+            institution_id: req.params.institution_id,
+            user_id: user.user_id,
+          });
+          validUids.push(uid);
+        }
+      });
+
+      if (validUids.length > 0) {
+        flash('success', `Successfully added institution admins: ${validUids.join(', ')}`);
+      }
+
+      if (invalidUids.length > 0) {
+        flash('error', `Could not add the following unknown users: ${invalidUids.join(', ')}`);
+      }
+
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);

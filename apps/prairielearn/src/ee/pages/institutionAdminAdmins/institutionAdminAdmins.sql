@@ -7,3 +7,11 @@ FROM
   JOIN users AS u ON (ia.user_id = u.user_id)
 WHERE
   ia.institution_id = $institution_id;
+
+-- BLOCK insert_institution_admin
+INSERT INTO
+  institution_administrators (institution_id, user_id)
+VALUES
+  ($institution_id, $user_id)
+RETURNING
+  *;
