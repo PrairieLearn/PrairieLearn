@@ -3060,7 +3060,7 @@ __metadata:
     passport-saml: ^3.2.4
     pem: ^1.14.8
     pg: ^8.11.1
-    plist: ^3.0.6
+    plist: ^3.1.0
     popper.js: ^1.16.1
     qrcode-svg: ^1.1.0
     qs: ^6.11.2
@@ -3086,7 +3086,7 @@ __metadata:
     strip-ansi: ^6.0.1
     tablesorter: ^2.31.3
     tar: ^6.1.15
-    three: ^0.153.0
+    three: ^0.154.0
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
@@ -4926,6 +4926,13 @@ __metadata:
   version: 0.7.9
   resolution: "@xmldom/xmldom@npm:0.7.9"
   checksum: 66e37b7800132f891b885b2eceeeebc53f60b69789da10276f1584256b963d79a28c7ae2071bc53a9cd842d9b03554c761b2701fe8036d6052f26bcd0ae8f2bb
+  languageName: node
+  linkType: hard
+
+"@xmldom/xmldom@npm:^0.8.8":
+  version: 0.8.8
+  resolution: "@xmldom/xmldom@npm:0.8.8"
+  checksum: 5f5fc0482fcc599f62e3009516932a265e00f1bb2093fe2c76f3f8d9bfebdd13246f48d4132c9b301c7a573f0fa8712e56aa747dce75b179c2b73f1dde7b5f42
   languageName: node
   linkType: hard
 
@@ -13595,13 +13602,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"plist@npm:^3.0.6":
-  version: 3.0.6
-  resolution: "plist@npm:3.0.6"
+"plist@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "plist@npm:3.1.0"
   dependencies:
+    "@xmldom/xmldom": ^0.8.8
     base64-js: ^1.5.1
     xmlbuilder: ^15.1.1
-  checksum: e21390fab8a3c388f8f51b76c0aa187242a40537119ce865d8637630e7d7df79b21f841ec6a4668e7c68d409a6f584d696619099a6125d28011561639c0823b8
+  checksum: c8ea013da8646d4c50dff82f9be39488054621cc229957621bb00add42b5d4ce3657cf58d4b10c50f7dea1a81118f825838f838baeb4e6f17fab453ecf91d424
   languageName: node
   linkType: hard
 
@@ -15805,10 +15813,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"three@npm:^0.153.0":
-  version: 0.153.0
-  resolution: "three@npm:0.153.0"
-  checksum: 68899ca90e048967a83866a1d54a9d28bba3532d228ede9e4c2a3b9bec347c31d8bb633eeaf7828397d2419cded8f57cf32f2a9c037a3587d45122e793ddc0c4
+"three@npm:^0.154.0":
+  version: 0.154.0
+  resolution: "three@npm:0.154.0"
+  checksum: 90ad3cafef8b866641366977ab7189d56f7352c6cdc014cbab946544e42782ec4ea7e56b959b43590433a0fcdc4bd8f8029b18a75074ba10005182c5a73bcc88
   languageName: node
   linkType: hard
 

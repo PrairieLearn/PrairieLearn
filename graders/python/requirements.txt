@@ -5,7 +5,7 @@ colormath==3.0.0
 defusedxml==0.7.1
 folium==0.14.0
 ipython==8.14.0
-matplotlib==3.7.1
+matplotlib==3.7.2
 nbconvert==7.6.0
 nbformat==5.9.0
 networkx==3.1
@@ -13,7 +13,7 @@ nltk==3.8.1
 numpy==1.25.0
 openpyxl==3.1.2
 pandas==2.0.3
-Pillow==9.5.0
+Pillow==10.0.0
 PuLP==2.7.0
 Pygments==2.15.1
 pygraphviz==1.6
