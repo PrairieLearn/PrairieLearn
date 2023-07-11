@@ -314,10 +314,7 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before(
-      'set up testing server',
-      helperServer.before(EXAMPLE_COURSE_PATH, { allowSyncFailure: true }),
-    );
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
 
     after('shut down testing server', helperServer.after);
 

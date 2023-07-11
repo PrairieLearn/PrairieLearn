@@ -68,10 +68,7 @@ const qidsExampleCourse = [
 describe('Auto-test questions in exampleCourse', function () {
   this.timeout(60000);
 
-  before(
-    'set up testing server',
-    helperServer.before(EXAMPLE_COURSE_PATH, { allowSyncFailure: true }),
-  );
+  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
   after('shut down testing server', helperServer.after);
 
   qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));

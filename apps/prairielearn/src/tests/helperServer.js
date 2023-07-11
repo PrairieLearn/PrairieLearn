@@ -34,7 +34,7 @@ const helperDb = require('./helperDb');
 const helperCourse = require('./helperCourse');
 
 module.exports = {
-  before: (courseDir, options = { allowSyncFailure: false }) => {
+  before: (courseDir) => {
     courseDir ??= TEST_COURSE_PATH;
 
     return function (callback) {
@@ -67,7 +67,7 @@ module.exports = {
           },
           async () => {
             debug('before(): sync from disk');
-            await helperCourse.syncCourse(courseDir, options);
+            await helperCourse.syncCourse(courseDir);
           },
           function (callback) {
             debug('before(): set up load estimators');
