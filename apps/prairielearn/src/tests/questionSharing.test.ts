@@ -233,7 +233,7 @@ describe('Question Sharing', function () {
     });
 
     step('Re-sync example course, validating shared questions', async () => {
-      // config.checkSharingOnSync = true;
+      config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         // console.log(result?.courseData.courseInstances);

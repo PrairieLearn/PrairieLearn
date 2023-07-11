@@ -382,9 +382,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
-  console.log(importedQids);
-  console.log(importedQuestions.rows);
-  let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
+  let missingQids = Array.from(importedQids).filter((qid) => !(qid in questionIds));
   if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {
       importedQidAssessmentMap.get(qid)?.forEach((tid) => {
