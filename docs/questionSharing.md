@@ -36,6 +36,7 @@ To refer to a question from another course, use the question id (qid) prefixed b
 ```
 
 ## Steps to share a question for the first time
+
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
 3. Create a sharing set
