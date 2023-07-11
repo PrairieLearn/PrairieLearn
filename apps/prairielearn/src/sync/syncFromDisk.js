@@ -44,22 +44,22 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir)
+    courseDB.loadFullCourse(courseDir),
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
-    syncCourseInstances.sync(courseId, courseData)
+    syncCourseInstances.sync(courseId, courseData),
   );
   await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
   const questionIds = await perf.timedAsync('syncQuestions', () =>
-    syncQuestions.sync(courseId, courseData)
+    syncQuestions.sync(courseId, courseData),
   );
 
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timedAsync('syncAssessmentModules', () =>
-    syncAssessmentModules.sync(courseId, courseData)
+    syncAssessmentModules.sync(courseId, courseData),
   );
   perf.start('syncAssessments');
   await Promise.all(
@@ -70,10 +70,10 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
           courseId,
           courseInstanceId,
           courseInstanceData.assessments,
-          questionIds
-        )
+          questionIds,
+        ),
       );
-    })
+    }),
   );
   perf.end('syncAssessments');
   if (config.devMode) {
@@ -86,7 +86,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
   } else if (courseDataHasErrorsOrWarnings) {
     logger.info(
-      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced')
+      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced'),
     );
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
@@ -97,7 +97,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   // sync process. For instance, we don't actually validate exam UUIDs or qids of
   // questions imported from other courses until the database sync step.
   courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
+    logger.info(line || ''),
   );
 
   perf.end('sync');

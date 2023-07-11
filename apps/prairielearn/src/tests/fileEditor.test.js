@@ -43,50 +43,50 @@ const questionHtmlPath = path.join(questionPath, 'question.html');
 const questionPythonPath = path.join(questionPath, 'server.py');
 
 const infoCourseJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
 let infoCourseJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
 infoCourseJsonB.title = 'Test Course (Renamed)';
 let infoCourseJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
 infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
 
 const infoCourseInstanceJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
 let infoCourseInstanceJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
 infoCourseInstanceJsonB.longName = 'Fall 2019';
 let infoCourseInstanceJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
 infoCourseInstanceJsonC.longName = 'Spring 2020';
 
 const infoAssessmentJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
 let infoAssessmentJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
 infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
 let infoAssessmentJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
 infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Aagain)';
 
 const questionJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
 let questionJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
 questionJsonB.title = 'Test question (Renamed)';
 let questionJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
 questionJsonC.title = 'Test question (Renamed Yet Again)';
 
@@ -370,7 +370,7 @@ function badPost(action, fileEditContents, url) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           callback(null);
-        }
+        },
       );
     });
   });
@@ -455,7 +455,7 @@ function createCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -484,7 +484,7 @@ function deleteCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -494,7 +494,7 @@ function editPost(
   url,
   expectedToFindResults,
   expectedToFindChoice,
-  expectedDiskContents
+  expectedDiskContents,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', function (callback) {
@@ -521,7 +521,7 @@ function editPost(
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -532,7 +532,7 @@ function editPost(
         expectedToFindResults,
         expectedToFindChoice,
         fileEditContents,
-        expectedDiskContents
+        expectedDiskContents,
       );
     }
   });
@@ -575,7 +575,7 @@ function verifyEdit(
   expectedToFindResults,
   expectedToFindChoice,
   expectedDraftContents,
-  expectedDiskContents
+  expectedDiskContents,
 ) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
@@ -627,7 +627,7 @@ function verifyEdit(
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms
+              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms,
             );
             if (match != null) {
               locals.fileContents = b64Util.b64DecodeUnicode(match[1]);
@@ -658,7 +658,7 @@ function verifyEdit(
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms
+              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms,
             );
             if (match != null) {
               if (expectedToFindChoice) {
@@ -690,7 +690,7 @@ function editGet(
   expectedToFindResults,
   expectedToFindChoice,
   expectedDraftContents,
-  expectedDiskContents
+  expectedDiskContents,
 ) {
   describe(`GET to edit url`, function () {
     it('should load successfully', function (callback) {
@@ -714,7 +714,7 @@ function editGet(
       expectedToFindResults,
       expectedToFindChoice,
       expectedDraftContents,
-      expectedDiskContents
+      expectedDiskContents,
     );
   });
 }
@@ -1149,7 +1149,7 @@ function testUploadFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`
+        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`,
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1164,7 +1164,7 @@ function testUploadFile(params) {
         locals.working_path = undefined;
       } else {
         elemList = $(
-          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`
+          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`,
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1214,7 +1214,7 @@ function testRenameFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`,
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1222,14 +1222,14 @@ function testRenameFile(params) {
       assert.isString(locals.__csrf_token);
       // old_file_name
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`,
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.old_file_name = elemList[0].attribs.value;
       // working_path
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`,
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1268,7 +1268,7 @@ function testDeleteFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`
+        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`,
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');

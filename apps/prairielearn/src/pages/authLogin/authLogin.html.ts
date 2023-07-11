@@ -18,7 +18,7 @@ interface AuthLoginProps {
 
 export function AuthLogin({ institutionAuthnProviders, service, resLocals }: AuthLoginProps) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -48,7 +48,9 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
             }
             .login-container {
               border-radius: 5px;
-              box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+              box-shadow:
+                0 19px 38px rgba(0, 0, 0, 0.3),
+                0 15px 12px rgba(0, 0, 0, 0.22);
               height: auto;
               margin: 20px;
             }
@@ -171,7 +173,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                           <a href="${provider.url}" class="btn btn-outline-dark btn-block">
                             ${provider.name}
                           </a>
-                        `
+                        `,
                       )}
                     </div>
                   `

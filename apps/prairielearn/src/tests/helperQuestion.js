@@ -80,7 +80,7 @@ module.exports = {
       it('base64 data should parse to JSON if Calculation', function () {
         if (locals.question.type !== 'Calculation') return;
         locals.questionData = JSON.parse(
-          decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
+          decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
         );
       });
       it('should have a variant_id in the questionData if Calculation', function () {
@@ -255,7 +255,7 @@ module.exports = {
             }
             page = body;
             callback(null);
-          }
+          },
         );
       });
       it('should parse', function () {
@@ -336,12 +336,12 @@ module.exports = {
             }
             if (response.statusCode !== 400 && response.statusCode !== 500) {
               return callback(
-                new Error('bad status (expected 400 or 500): ' + response.statusCode)
+                new Error('bad status (expected 400 or 500): ' + response.statusCode),
               );
             }
             page = body;
             callback(null);
-          }
+          },
         );
       });
     });
@@ -382,7 +382,7 @@ module.exports = {
             if (ERR(err, callback)) return;
             locals.submission = result.rows[0];
             callback(null);
-          }
+          },
         );
       });
       it('should be graded with expected score', function () {
@@ -407,14 +407,14 @@ module.exports = {
         assert.approximately(
           locals.instance_question.points,
           locals.expectedResult.instance_question_points,
-          1e-6
+          1e-6,
         );
       });
       it('should have the correct instance_question score_perc', function () {
         assert.approximately(
           locals.instance_question.score_perc,
           locals.expectedResult.instance_question_score_perc,
-          1e-6
+          1e-6,
         );
       });
       it('should have the correct instance_question auto_points', function () {
@@ -422,7 +422,7 @@ module.exports = {
         assert.approximately(
           locals.instance_question.auto_points,
           locals.expectedResult.instance_question_auto_points,
-          1e-6
+          1e-6,
         );
       });
       it('should have the correct instance_question manual_points', function () {
@@ -430,7 +430,7 @@ module.exports = {
         assert.approximately(
           locals.instance_question.manual_points,
           locals.expectedResult.instance_question_manual_points,
-          1e-6
+          1e-6,
         );
       });
     });
@@ -452,14 +452,14 @@ module.exports = {
         assert.approximately(
           locals.assessment_instance.points,
           locals.expectedResult.assessment_instance_points,
-          1e-6
+          1e-6,
         );
       });
       it('should have the correct assessment_instance score_perc', function () {
         assert.approximately(
           locals.assessment_instance.score_perc,
           locals.expectedResult.assessment_instance_score_perc,
-          1e-6
+          1e-6,
         );
       });
     });
@@ -483,7 +483,7 @@ module.exports = {
         for (const p in locals.expectedFeedback.feedback) {
           assert.deepEqual(
             locals.question_feedback.feedback[p],
-            locals.expectedFeedback.feedback[p]
+            locals.expectedFeedback.feedback[p],
           );
         }
       });
@@ -540,7 +540,7 @@ module.exports = {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          }
+          },
         );
       });
     });
@@ -573,7 +573,7 @@ module.exports = {
       });
       it('should have a CSRF token', function () {
         elemList = locals.$(
-          'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]'
+          'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]',
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -610,7 +610,7 @@ module.exports = {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          }
+          },
         );
       });
     });
@@ -643,7 +643,7 @@ module.exports = {
       });
       it('should have a CSRF token', function () {
         elemList = locals.$(
-          'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]'
+          'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]',
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -680,7 +680,7 @@ module.exports = {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          }
+          },
         );
       });
     });
@@ -717,8 +717,8 @@ module.exports = {
               callback(
                 new Error(
                   `found ${result.rowCount} issues (expected zero issues):\n` +
-                    JSON.stringify(result.rows, null, '    ')
-                )
+                    JSON.stringify(result.rows, null, '    '),
+                ),
               );
               return;
             }
@@ -768,7 +768,7 @@ module.exports = {
                 return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
               }
               callback(null);
-            }
+            },
           );
         });
         it('should have an id', function (callback) {
@@ -824,8 +824,8 @@ module.exports.checkNoIssuesForLastVariant = (callback) => {
       callback(
         new Error(
           `found ${result.rowCount} issues (expected zero issues):\n` +
-            JSON.stringify(result.rows, null, '    ')
-        )
+            JSON.stringify(result.rows, null, '    '),
+        ),
       );
       return;
     }
@@ -833,5 +833,5 @@ module.exports.checkNoIssuesForLastVariant = (callback) => {
   });
 };
 module.exports.checkNoIssuesForLastVariantAsync = util.promisify(
-  module.exports.checkNoIssuesForLastVariant
+  module.exports.checkNoIssuesForLastVariant,
 );

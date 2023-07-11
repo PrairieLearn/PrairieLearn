@@ -25,7 +25,7 @@ module.exports = function (req, res, next) {
         }
         _.assign(res.locals, result.rows[0]);
         next();
-      }
+      },
     );
   } else {
     const params = {

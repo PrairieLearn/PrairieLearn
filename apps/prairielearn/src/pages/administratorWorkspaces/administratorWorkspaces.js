@@ -17,9 +17,9 @@ router.get(
         workspaces,
         workspaceLoadHostCapacity: config.workspaceLoadHostCapacity,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 module.exports = router;

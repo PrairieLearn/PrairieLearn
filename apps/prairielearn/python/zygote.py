@@ -26,6 +26,7 @@ import time
 from inspect import signature
 
 import question_phases
+import zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
@@ -90,6 +91,7 @@ prairielearn.get_unit_registry()
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
+        zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")

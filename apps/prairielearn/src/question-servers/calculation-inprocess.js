@@ -61,15 +61,15 @@ module.exports = {
               (err) => {
                 const e = error.makeWithData(
                   `Error loading server.js for QID ${question.qid}`,
-                  err
+                  err,
                 );
                 if (err.originalError != null) {
                   e.stack = err.originalError.stack + '\n\n' + err.stack;
                 }
                 return callback(e);
-              }
+              },
             );
-          }
+          },
         );
       });
     });
@@ -84,7 +84,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback
+    callback,
   ) {
     const htmls = {
       extraHeadersHtml: '',
@@ -186,7 +186,7 @@ module.exports = {
           trueAnswer,
           submittedAnswer,
           options,
-          questionDir
+          questionDir,
         );
       } catch (err) {
         const data = {

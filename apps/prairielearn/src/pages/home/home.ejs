@@ -5,7 +5,7 @@
     <link href="<%= asset_path('stylesheets/home.css') %>" rel="stylesheet">
   </head>
 
-  <body class="d-flex flex-column h-100" style="--flourish-image-url: url('<%= asset_path('images/grassy_landscape.svg') %>')">
+  <body class="d-flex flex-column h-100">
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>
@@ -13,7 +13,7 @@
     </header>
 
     <main class="flex-grow-1">
-      <div class="jumbotron bg-white rounded-0 my-0 <%= isAuthenticated ? 'py-0 mb-n4' : 'bg-flourish p-flourish' %>">
+      <div class="jumbotron bg-white rounded-0 my-0 <%= isAuthenticated ? 'py-0' : 'py-5' %>">
         <div class="container">
           <div class="row align-items-center">
             <div class="pb-4 <%= isAuthenticated ? 'd-none' : 'col-md-6 col-lg-7' %>">
@@ -487,19 +487,12 @@
       <% } %> <!-- isAuthenticated -->
     </main>
 
-    <footer class="footer font-weight-light text-light <%= isAuthenticated ? 'tiny text-center' : 'small text-right bg-dark py-3' %>">
-      <% if (isAuthenticated) { %>
-      <div class="bg-flourish h-flourish"></div>
-      <% } %>
-      <div class="<%= isAuthenticated ? 'bg-secondary p-1' : 'container' %>">
-        <% if (config.homepageFooterText) { %>
+    <% if (config.homepageFooterText && config.homepageFooterTextHref) { %>
+      <footer class="footer font-weight-light text-light <%= isAuthenticated ? 'tiny text-center' : 'small text-right bg-dark py-3' %>">
+        <div class="<%= isAuthenticated ? 'bg-secondary p-1' : 'container' %>">
           <a class="text-light" href="<%= config.homepageFooterTextHref %>"><%= config.homepageFooterText %></a>
-          &middot;
-        <% } %>
-        &copy; 2021 <a class="text-nowrap text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
-        &middot;
-        <a class="text-nowrap text-light" href="https://www.vecteezy.com/free-vector/nature">Nature Vectors by Vecteezy</a>
-      </div>
-    </footer>
+        </div>
+      </footer>
+    <% } %>
   </body>
 </html>

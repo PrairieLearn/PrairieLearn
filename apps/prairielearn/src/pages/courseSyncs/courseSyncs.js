@@ -103,7 +103,7 @@ router.get('/', function (req, res, next) {
 
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
-          }
+          },
         );
       } else {
         //  no config.cacheImageRegistry
@@ -142,7 +142,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
 module.exports = router;
