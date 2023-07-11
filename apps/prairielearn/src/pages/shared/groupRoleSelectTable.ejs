@@ -16,7 +16,7 @@
     <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#tableCollapse" aria-expanded="true" aria-controls="tableCollapse">
       View role info <%= canViewRoleTable ? 'and assign roles' : '' %>
       <% if (rolesInfo.validationErrors.length > 0 || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0) { %>
-        <span class="badge badge-pill badge-danger"><%= rolesInfo.validationErrors.length + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) %></span>
+        <span class="badge badge-pill badge-danger"><%= rolesInfo.validationErrors.length + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) + (rolesInfo.rolesAreBalanced ? 0 : 1) %></span>
       <% } %>
       <i class="far fa-caret-square-down"></i>
     </button>
@@ -24,7 +24,7 @@
   <div id="tableCollapse" class="collapse">
     <div class="p-4 bg-light">
       <p>
-        This assessment contains group roles, which will selectively allow students to view questions, submit answers, and change group role assignments.
+        This assessment contains group roles, which selectively allow students to view questions, submit answers, and change group role assignments.
       </p>
       <h6>Role info</h6>
       <table class="table table-bordered table-striped my-3 px-3">
