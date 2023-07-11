@@ -17,6 +17,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (req, res, next) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
+
   async.series(
     [
       (callback) => {
