@@ -53,11 +53,9 @@
             </div>
           </div>
           <% if (assessment.group_work) { %>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers}); %>
-            <% if (groupConfig.has_roles && canViewRoleTable) { %>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers, canViewRoleTable: canViewRoleTable}); %>
+            <% if (groupConfig.has_roles) { %>
               <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
-            <% } else if (groupConfig.has_roles) { %>
-              <%- include('../shared/groupRoleErrors.ejs', {rolesInfo: rolesInfo}); %>
             <% } %>
           <% } %>
           <% if (assessment_text_templated) { %>

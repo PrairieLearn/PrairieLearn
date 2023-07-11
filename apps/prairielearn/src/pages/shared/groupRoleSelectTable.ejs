@@ -6,57 +6,99 @@
       validRoleConfig = false;
     }
     %>
-    <button class="btn <%= validRoleConfig ? 'btn-info' : 'btn-danger' %>" type="button" data-toggle="collapse" data-target="#tableCollapse" aria-expanded="true" aria-controls="tableCollapse">
-      Assign group roles <i class="far fa-caret-square-down"></i>
+    <% if ((typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0) { %>
+      <div class="alert alert-danger my-2" role="alert">
+        <h6 class="alert-heading">Invalid role configuration</h6>
+        <p class="mb-0">Your group's role configuration is currently invalid. Please review the role requirements and assign a correct role configuration.</p>
+        <p class="mb-0"><strong>Question submissions are disabled until the role configuration is correct.</strong></p>
+      </div>
+    <% } %>
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#tableCollapse" aria-expanded="true" aria-controls="tableCollapse">
+      View role info <%= canViewRoleTable ? 'and assign roles' : '' %>
+      <% if (rolesInfo.validationErrors.length > 0 || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0) { %>
+        <span class="badge badge-pill badge-danger"><%= rolesInfo.validationErrors.length + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) %></span>
+      <% } %>
+      <i class="far fa-caret-square-down"></i>
     </button>
   </div>
   <div id="tableCollapse" class="collapse">
-    <div class="p-4">
+    <div class="p-4 bg-light">
       <p>
-        This assessment contains group roles. Use this table to view the role assignments of the current group members and reassign roles as needed. If the current group role configuration is invalid, errors will be shown.
+        This assessment contains group roles, which will selectively allow students to view questions, submit answers, and change group role assignments.
       </p>
-      <%- include('../shared/groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
-      <form id="role-select-form" name="role-select-form" method="POST">
-        <table class="table table-bordered table-striped my-3 px-3">
-          <thead>
+      <h6>Role info</h6>
+      <table class="table table-bordered table-striped my-3 px-3">
+        <thead>
+          <tr>
+            <th scope="col">Role</th>
+            <th scope="col">Minimum</th>
+            <th scope="col">Maximum</th>
+            <th scope="col">Can assign roles</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rolesInfo.groupRoles.forEach(function (groupRole) { %>
             <tr>
-              <th scope="col">User</th>
-              <th scope="col">Roles</th>
+            <td><%= groupRole.role_name ?? 'None' %></td>
+            <td><%= groupRole.minimum ?? 'None' %></td>
+            <td><%= groupRole.maximum ?? 'None' %></td>
+            <td><%= groupRole.can_assign_roles_at_start ? 'Yes' : 'No' %></td>
             </tr>
-          </thead>
-          <tbody>
-            <% groupMembers.forEach(function (user) { %>
-            <tr>
-              <td><%= user.uid %></td>
-              <td>
-                <% rolesInfo.groupRoles.forEach(function (role) { %>
-                  <input
-                    class="ml-2"
-                    type="checkbox"
-                    id="user_role_<%= role.id %>-<%= user.user_id %>"
-                    name="user_role_<%= role.id %>-<%= user.user_id %>"
-                    <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %>
-                      disabled
-                    <% } else if (rolesInfo.roleAssignments[user.uid] !== undefined && rolesInfo.roleAssignments[user.uid].find((a) => a.role_name === role.role_name) !== undefined) { %>
-                      checked
-                    <% }%>
-                    form="role-select-form"
-                  >
-                  <label for="user_role_<%= role.id %>-<%= user.user_id %>" <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %> class="text-muted" <% } %>>
-                    <%= role.role_name %>
-                  </label>
-                <% }) %>
-              </td>
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
-        <div class="my-4 d-flex justify-content-center">
-          <input type="hidden" name="__action" value="update_group_roles" />
-          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
-          <button type="submit" class="btn btn-primary">Update Roles</button>
-        </div>
-      </form>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <% if (canViewRoleTable) { %>
+        <h6>Assign group roles</h6>
+        <p>Use this table to view the role assignments of the current group members and reassign roles as needed. If the current group role configuration is invalid, errors will be shown.</p>
+        <%- include('../shared/groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+        <form id="role-select-form" name="role-select-form" method="POST">
+          <table class="table table-bordered table-striped my-3 px-3">
+            <thead>
+              <tr>
+                <th scope="col">User</th>
+                <th scope="col">Roles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% groupMembers.forEach(function (user) { %>
+              <tr>
+                <td><%= user.uid %></td>
+                <td>
+                  <% rolesInfo.groupRoles.forEach(function (role) { %>
+                    <input
+                      class="ml-2"
+                      type="checkbox"
+                      id="user_role_<%= role.id %>-<%= user.user_id %>"
+                      name="user_role_<%= role.id %>-<%= user.user_id %>"
+                      <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %>
+                        disabled
+                      <% } else if (rolesInfo.roleAssignments[user.uid] !== undefined && rolesInfo.roleAssignments[user.uid].find((a) => a.role_name === role.role_name) !== undefined) { %>
+                        checked
+                      <% }%>
+                      form="role-select-form"
+                    >
+                    <label for="user_role_<%= role.id %>-<%= user.user_id %>" <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %> class="text-muted" <% } %>>
+                      <%= role.role_name %>
+                    </label>
+                  <% }) %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <div class="my-4 d-flex justify-content-center">
+            <input type="hidden" name="__action" value="update_group_roles" />
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+            <button type="submit" class="btn btn-primary">Update Roles</button>
+          </div>
+        </form>
+      <% } else { %>
+        <% if (rolesInfo.validationErrors.length > 0 || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0) { %>
+          <p>Your role configuration is invalid and contains the following errors. Notify the student with the assigner role to correct your group's role configuration.</p>
+          <%- include('../shared/groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+        <% } %>
+      <% } %>
     </div>
   </div>
 </div>
