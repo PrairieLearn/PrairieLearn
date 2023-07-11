@@ -187,16 +187,11 @@ describe('Question Sharing', function () {
     // });
 
     step('Add question "addNumbers" to sharing set', async () => {
-      // TODO: should this block of code be factored out to helperClient as a
-      // helper function for getting to the page of a question with a given qid?
-      // or does this code already exist somewhere and I am duplicating effort here?
-      const questionsUrl = `${baseUrl}/course/${testCourseId}/course_admin/questions`;
-      const questionsPage = await helperClient.fetchCheerio(questionsUrl);
-      const questionData = questionsPage.$('#questionsTable').attr('data-data');
-      const questions = JSON.parse(questionData);
-      const addNumbersInfo = questions.find((questionInfo) => questionInfo.qid === 'addNumbers');
-
-      const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${addNumbersInfo.id}/settings`;
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: testCourseId,
+        qid: 'addNumbers',
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${result.rows[0].id}/settings`;
       let response = await helperClient.fetchCheerio(questionSettingsUrl);
       assert.equal(response.ok, true);
 
