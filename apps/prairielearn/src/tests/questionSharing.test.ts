@@ -61,7 +61,7 @@ describe('Question Sharing', function () {
   this.timeout(80000);
 
   describe('Create a sharing set and add a question to it', () => {
-    let exampleCourseSharingId;
+    let exampleCourseSharingToken;
 
     before('set up testing server', helperServer.before(TEST_COURSE_PATH));
     after('shut down testing server', helperServer.after);
@@ -133,7 +133,8 @@ describe('Question Sharing', function () {
     });
 
     step('Fail if trying to set sharing name again.', async () => {
-      // TODO throw an exception in SQL, catch it, return an error
+      const result = await setSharingName(testCourseId, testCourseSharingName);
+      assert.equal(result.status, 200);
     });
 
     step('Set example course sharing name', async () => {
@@ -158,8 +159,8 @@ describe('Question Sharing', function () {
 
       response = await helperClient.fetchCheerio(sharingUrl);
       const result = UUID_REGEXP.exec(response.text());
-      exampleCourseSharingId = result ? result[0] : null;
-      assert(exampleCourseSharingId != null);
+      exampleCourseSharingToken = result ? result[0] : null;
+      assert(exampleCourseSharingToken != null);
     });
 
     step('Create a sharing set', async () => {
@@ -181,13 +182,20 @@ describe('Question Sharing', function () {
       assert(sharingPageText.includes(exampleCourseSharingName));
     });
 
-    // step('Attempt to create another sharing set with the same name', async () => {
-    //   // TODO ensure that the sharing set name you created only appears once on the page
-    // });
-
-    // step('Attempt to create a sharing set with an invalid name', async () => {
-
-    // });
+    step('Attempt to create another sharing set with the same name', async () => {
+      const sharingUrl = sharingPageUrl(testCourseId);
+      const response = await helperClient.fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const result = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'unsafe_sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: sharingSetName,
+        }),
+      });
+      assert.equal(result.status, 500);
+    });
 
     step('Share sharing set with example course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
@@ -199,7 +207,7 @@ describe('Question Sharing', function () {
           __action: 'unsafe_course_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
-          course_sharing_token: exampleCourseSharingId,
+          course_sharing_token: exampleCourseSharingToken,
         }),
       });
 
@@ -209,13 +217,20 @@ describe('Question Sharing', function () {
       assert(sharingPageText.includes('XC 101'));
     });
 
-    // step('Attempt to share sharing set with invalid course ID', async () => {
-
-    // });
-
-    // step('Attempt to create another sharing set with the same name', async () => {
-
-    // });
+    step('Attempt to share sharing set with invalid course token', async () => {
+      const sharingUrl = sharingPageUrl(testCourseId);
+      const response = await helperClient.fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'unsafe_course_sharing_set_add',
+          __csrf_token: token,
+          sharing_set_id: '1',
+          course_sharing_token: 'invalid sharing token',
+        }),
+      });
+    });
 
     step('Add question "addNumbers" to sharing set', async () => {
       const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
@@ -244,10 +259,6 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
-        // console.log(result?.courseData.courseInstances);
-        // console.log(
-        //   result?.courseData.courseInstances.SectionA.assessments['gallery/questionSharing'].errors,
-        // );
         throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
       }
     });
