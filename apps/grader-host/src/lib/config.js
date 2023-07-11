@@ -16,7 +16,6 @@ const isProduction = process.env.NODE_ENV === 'production';
 const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
   useEc2MetadataService: z.boolean().default(true),
-  useCloudWatchLogging: z.boolean().default(false),
   useConsoleLoggingForJobs: z.boolean().default(true),
   useImagePreloading: z.boolean().default(false),
   useHealthCheck: z.boolean().default(true),
@@ -53,7 +52,6 @@ function makeProductionConfigSource() {
       if (!isProduction) return {};
       return {
         useEc2MetadataService: true,
-        useCloudWatchLogging: true,
         useConsoleLoggingForJobs: false,
         useImagePreloading: true,
         reportLoad: true,
