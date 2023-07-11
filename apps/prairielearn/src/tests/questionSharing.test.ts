@@ -66,8 +66,8 @@ describe('Question Sharing', function () {
     before('set up testing server', helperServer.before(TEST_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    before('ensure course has manual grading enabled', async () => {
-      await features.enable('manual-grading-rubrics');
+    before('ensure course has question sharing enabled', async () => {
+      await features.enable('question-sharing');
     });
 
     step('Sync coures with sharing enabled', async () => {
@@ -90,7 +90,7 @@ describe('Question Sharing', function () {
         // const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
         // let addNumbersPage = await helperClient.fetchCheerio(sharedQuestionUrl);
         // assert(!addNumbersPage.ok);
-      }
+      },
     );
 
     step('Fail if trying to set an invalid sharing name', async () => {

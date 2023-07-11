@@ -116,7 +116,7 @@ module.exports = function (req, res, next) {
       async () => {
         res.locals.question_sharing_enabled = await features.enabledFromLocals(
           'question-sharing',
-          res.locals
+          res.locals,
         );
       },
     ],

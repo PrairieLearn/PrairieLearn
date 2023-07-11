@@ -15,6 +15,8 @@ export const CourseSchema = z.object({
   options: z.any(),
   path: z.string().nullable(),
   repository: z.string().nullable(),
+  sharing_name: z.string().nullable(),
+  sharing_token: z.string().nullable(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),

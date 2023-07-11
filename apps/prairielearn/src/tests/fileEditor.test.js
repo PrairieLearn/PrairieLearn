@@ -316,7 +316,7 @@ describe('test file editor', function () {
   describe('the exampleCourse', function () {
     before(
       'set up testing server',
-      helperServer.before(EXAMPLE_COURSE_PATH, { allowSyncFailure: true })
+      helperServer.before(EXAMPLE_COURSE_PATH, { allowSyncFailure: true }),
     );
 
     after('shut down testing server', helperServer.after);

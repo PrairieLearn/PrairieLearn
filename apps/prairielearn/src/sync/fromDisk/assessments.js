@@ -368,7 +368,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
         importedQidAssessmentMap.get(qid)?.forEach((tid) => {
           infofile.addError(
             assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
+            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
           );
         });
       }
@@ -390,7 +390,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
           assessments[tid],
           `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
             ...missingQids,
-          ].join(', ')}`
+          ].join(', ')}`,
         );
       });
     });

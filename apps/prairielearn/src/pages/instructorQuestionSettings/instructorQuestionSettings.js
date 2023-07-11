@@ -22,6 +22,7 @@ const { generateSignedToken } = require('@prairielearn/signed-token');
 const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
 const { callbackify } = require('node:util');
 const { flash } = require('@prairielearn/flash');
+const { features } = require('../../lib/features/index');
 
 router.post(
   '/test',
@@ -186,6 +187,10 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'unsafe_sharing_set_add') {
     debug('Add question to sharing set');
+    const questionSharingEnabled = features.enabledFromLocals('question-sharing', res.locals);
+    if (!questionSharingEnabled) {
+      throw error.make(403, 'Access denied (feature not available)');
+    }
     sqldb.queryZeroOrOneRow(
       sql.sharing_set_add,
       {
@@ -197,7 +202,7 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
 
         res.redirect(req.originalUrl);
-      }
+      },
     );
   } else {
     next(
@@ -279,7 +284,7 @@ router.get('/', function (req, res, next) {
             res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
             res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
             callback(null);
-          }
+          },
         );
       },
     ],

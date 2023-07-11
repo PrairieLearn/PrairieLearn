@@ -1,7 +1,6 @@
 -- BLOCK get_course_sharing_info
 SELECT
-  sharing_name,
-  sharing_token
+  *
 FROM
   pl_courses
 WHERE

@@ -53,7 +53,7 @@ const chooseSharingNamePopover = (resLocals) => {
 
 export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, resLocals }) => {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
@@ -166,7 +166,7 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                                 <span class="badge color-gray1  ">
                                   ${course_shared_with.short_name}
                                 </span>
-                              `
+                              `,
                         )}
                         <form
                           name="sharing-set-access-add-${sharing_set.id}"
@@ -219,7 +219,7 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                         </form>
                       </td>
                     </tr>
-                  `
+                  `,
                 )}
               </tbody>
             </table>

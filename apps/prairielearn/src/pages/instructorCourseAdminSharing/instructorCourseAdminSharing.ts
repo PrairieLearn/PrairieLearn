@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import error = require('@prairielearn/error');
 import { v4 as uuidv4 } from 'uuid';
+import { CourseSchema } from '../../lib/db-types';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import sqldb = require('@prairielearn/postgres');
 
@@ -19,29 +20,36 @@ async function generateSharingId(req, res) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    let result = await sqldb.queryOneRowAsync(sql.get_course_sharing_info, {
-      course_id: res.locals.course.id,
-    });
+    if (!res.locals.question_sharing_enabled) {
+      throw error.make(403, 'Access denied (feature not available)');
+    }
 
-    const sharing_name = result.rows[0].sharing_name;
-    const sharing_token = result.rows[0].sharing_token;
+    const sharingInfo = await sqldb.queryRow(
+      sql.get_course_sharing_info,
+      {
+        course_id: res.locals.course.id,
+      },
+      CourseSchema,
+    );
 
-    if (!sharing_token) {
+    if (!sharingInfo.sharing_token) {
       await generateSharingId(req, res);
       res.redirect(req.originalUrl);
       return;
     }
 
-    result = await sqldb.queryAsync(sql.select_sharing_sets, { course_id: res.locals.course.id });
+    const sharingSets = await sqldb.queryAsync(sql.select_sharing_sets, {
+      course_id: res.locals.course.id,
+    });
     res.send(
       InstructorSharing({
-        sharing_name: sharing_name,
-        sharing_token: sharing_token,
-        sharing_sets: result.rows,
+        sharing_name: sharingInfo.sharing_name,
+        sharing_token: sharingInfo.sharing_token,
+        sharing_sets: sharingSets.rows,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.post(
@@ -49,6 +57,9 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_own) {
       throw error.make(403, 'Access denied (must be course owner)');
+    }
+    if (!res.locals.question_sharing_enabled) {
+      throw error.make(403, 'Access denied (feature not available)');
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
@@ -83,7 +94,7 @@ router.post(
       });
     }
     res.redirect(req.originalUrl);
-  })
+  }),
 );
 
 export = router;
