@@ -54,9 +54,9 @@
           </div>
           <% if (assessment.group_work) { %>
             <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers}); %>
-            <% if (canViewRoleTable) { %>
+            <% if (groupConfig.has_roles && canViewRoleTable) { %>
               <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
-            <% } else { %>
+            <% } else if (groupConfig.has_roles) { %>
               <%- include('../shared/groupRoleErrors.ejs', {rolesInfo: rolesInfo}); %>
             <% } %>
           <% } %>
