@@ -126,8 +126,10 @@ describe('Question Sharing', function () {
 
     step('Set test course sharing name', async () => {
       await setSharingName(testCourseId, testCourseSharingName);
-      const sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
-      assert(sharingPage.includes(testCourseSharingName));
+      const sharingPage = await fetch(sharingPageUrl(testCourseId));
+      assert(sharingPage.ok);
+      const sharingPageText = await sharingPage.text();
+      assert(sharingPageText.includes(testCourseSharingName));
     });
 
     step('Fail if trying to set sharing name again.', async () => {
@@ -136,8 +138,10 @@ describe('Question Sharing', function () {
 
     step('Set example course sharing name', async () => {
       await setSharingName(exampleCourseId, exampleCourseSharingName);
-      const sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
-      assert(sharingPage.includes(exampleCourseSharingName));
+      const sharingPage = await fetch(sharingPageUrl(exampleCourseId));
+      assert(sharingPage.ok);
+      const sharingPageText = await sharingPage.text();
+      assert(sharingPageText.includes(exampleCourseSharingName));
     });
 
     step('Generate sharing ID for example course', async () => {
@@ -171,8 +175,10 @@ describe('Question Sharing', function () {
         }),
       });
 
-      const sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
-      assert(sharingPage.includes(exampleCourseSharingName));
+      const sharingPage = await fetch(sharingPageUrl(exampleCourseId));
+      assert(sharingPage.ok);
+      const sharingPageText = await sharingPage.text();
+      assert(sharingPageText.includes(exampleCourseSharingName));
     });
 
     // step('Attempt to create another sharing set with the same name', async () => {
@@ -197,8 +203,10 @@ describe('Question Sharing', function () {
         }),
       });
 
-      const sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
-      assert(sharingPage.includes('XC 101'));
+      const sharingPage = await fetch(sharingPageUrl(testCourseId));
+      assert(sharingPage.ok);
+      const sharingPageText = await sharingPage.text();
+      assert(sharingPageText.includes('XC 101'));
     });
 
     // step('Attempt to share sharing set with invalid course ID', async () => {
