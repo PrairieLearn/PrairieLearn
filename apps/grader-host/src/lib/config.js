@@ -23,7 +23,6 @@ const ConfigSchema = z.object({
   cacheImageRegistry: z.string().nullable().default(null),
   parallelInitPulls: z.number().default(5),
   lifecycleHeartbeatIntervalMS: z.number().default(300000),
-  globalLogGroup: z.string().default('grading-instances-debug'),
   jobLogGroup: z.string().default('grading-jobs-debug'),
   reportLoad: z.boolean().default(false),
   reportIntervalSec: z.number().default(10),
@@ -94,15 +93,6 @@ module.exports.loadConfig = async function () {
     makeSecretsManagerConfigSource('ConfSecret'),
     makeAutoScalingGroupConfigSource(),
   ]);
-
-  // Initialize CloudWatch logging if it's enabled
-  if (module.exports.config.useCloudWatchLogging) {
-    const groupName = module.exports.config.globalLogGroup;
-    const streamName = module.exports.config.instanceId;
-    // @ts-expect-error -- Need to type this better in the future.
-    logger.initCloudWatchLogging(groupName, streamName);
-    logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
-  }
 
   await getQueueUrl('jobs');
   await getQueueUrl('results');
