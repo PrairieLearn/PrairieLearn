@@ -202,7 +202,7 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                               <div class="dropdown-header text-wrap">
                                 <p>
                                   To allow another course to access questions in the sharing set
-                                  "${sharing_set.name}", enter their course sharing id below.
+                                  "${sharing_set.name}", enter their course sharing token below.
                                 </p>
                               </div>
                               <div class="" style="padding:1em;">

@@ -36,5 +36,10 @@ To refer to a question from another course, use the question id (qid) prefixed b
 ```
 
 ## Steps to share a question for the first time
-
-TODO: fill in steps here
+1. On your course admin page, visit the 'sharing' tab
+2. Choose a sharing name for your course
+3. Create a sharing set
+4. Have the instructor or the course you would like to share your question with visit the 'sharing' tab on their course admin page and provide you with their course's sharing token
+5. Use the provided sharing token to add the other instructor's course as a consumer of the sharing set you created
+6. Visit the question settings page for the question you would like to share, and add it to the sharing set
+7. The course you have shared the question with may now use it by referencing it in their assessments
