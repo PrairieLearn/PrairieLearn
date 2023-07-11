@@ -493,7 +493,7 @@ async function saveAndSync(fileEdit, locals) {
       const contents = await fs.readFile(fullPath, 'utf8');
       fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
       if (fileEdit.origHash !== fileEdit.diskHash) {
-        throw new Error(`Another user made changes to the file you were editing.`);
+        job.fail(`Another user made changes to the file you were editing.`);
       }
 
       await fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8');
@@ -586,7 +586,7 @@ async function saveAndSync(fileEdit, locals) {
         await courseUtil.updateCourseCommitHashAsync(locals.course);
 
         if (result.hadJsonErrors) {
-          throw new Error('One or more JSON files contained errors and were unable to be synced');
+          job.fail('One or more JSON files contained errors and were unable to be synced');
         }
       }
 
