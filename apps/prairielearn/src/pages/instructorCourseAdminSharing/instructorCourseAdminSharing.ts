@@ -9,7 +9,7 @@ import sqldb = require('@prairielearn/postgres');
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function generateSharingId(req, res) {
+async function generateSharingId(res) {
   const newSharingId = uuidv4();
   return await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
     sharing_token: newSharingId,
@@ -33,7 +33,7 @@ router.get(
     );
 
     if (!sharingInfo.sharing_token) {
-      await generateSharingId(req, res);
+      await generateSharingId(res);
       res.redirect(req.originalUrl);
       return;
     }
@@ -63,7 +63,7 @@ router.post(
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
-      await generateSharingId(req, res);
+      await generateSharingId(res);
       res.redirect(req.originalUrl);
       return;
     } else if (req.body.__action === 'unsafe_sharing_set_create') {
