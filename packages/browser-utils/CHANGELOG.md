@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 1.1.0
+
+### Minor Changes
+
+- 0548e8401: Add `templateFromAttributes` function
+
 ## 1.0.3
 
 ### Patch Changes
