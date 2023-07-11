@@ -406,7 +406,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     ]);
   });
 
-  const params = [assessmentParams, courseId, courseInstanceId];
+  const params = [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync];
   perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');

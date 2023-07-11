@@ -3,6 +3,7 @@ CREATE FUNCTION
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
         IN syncing_course_instance_id bigint,
+        IN check_sharing_on_sync boolean,
         OUT name_to_id_map JSONB
     )
 AS $$
@@ -205,7 +206,7 @@ BEGIN
                 (valid_assessment.data->>'has_roles')::boolean
             ) ON CONFLICT (assessment_id)
             DO UPDATE
-            SET 
+            SET
                 maximum = EXCLUDED.maximum,
                 minimum = EXCLUDED.minimum,
                 student_authz_create = EXCLUDED.student_authz_create,
@@ -389,13 +390,17 @@ BEGIN
                         END IF;
                     END IF;
 
-                    IF (assessment_question->>'question_id')::bigint IS NULL THEN 
-                        -- TODO this should NEVER be hit in production, because it is inserting 
-                        -- fake questions into the question table to make syn succeed
+                    IF (assessment_question->>'question_id')::bigint IS NULL THEN
+                        -- During local dev, if a shared question is not present we can insert dummy values
+                        -- into the questions table to enable sync success. This code should never
+                        -- be reached in production.
+                        IF check_sharing_on_sync THEN
+                            RAISE EXCEPTION 'Question ID should not be null';
+                        END IF;
+
                         INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
                         VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
-
-                    ELSE 
+                    ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
 
@@ -456,7 +461,7 @@ BEGIN
                     IF (valid_assessment.data->>'group_work')::boolean THEN
                         -- Iterate over all group roles in assessment
                         FOR valid_group_role IN (
-                            SELECT gr.id, gr.role_name 
+                            SELECT gr.id, gr.role_name
                             FROM group_roles as gr
                             WHERE gr.assessment_id = new_assessment_id
                         ) LOOP
@@ -469,7 +474,7 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            ) ON CONFLICT (assessment_question_id, group_role_id)
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
@@ -485,7 +490,7 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            ) ON CONFLICT (assessment_question_id, group_role_id)
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
@@ -560,7 +565,7 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
-    
+
     -- Ensure all assessments have an assessment module, default number=0.
     UPDATE assessments AS a
     SET
