@@ -36,87 +36,90 @@ module.exports.pullAndUpdate = async function (locals) {
 
   serverJob.executeInBackground(async (job) => {
     const lockName = `coursedir:${locals.course.path}`;
-    const didSync = await namedLocks.tryWithLock(lockName, { timeout: 5000 }, async () => {
-      let startGitHash = null;
-      const coursePathExists = await fs.pathExists(locals.course.path);
-      if (!coursePathExists) {
-        // path does not exist, start with 'git clone'
-        job.info('Clone from remote git repository');
-        await job.exec(
-          'git',
-          ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
-          {
-            // Executed in the root directory, but this shouldn't really matter.
-            cwd: '/',
+    await namedLocks.tryWithLock(
+      lockName,
+      {
+        timeout: 5000,
+        onNotAcquired: () => {
+          job.fail('Another user is already syncing or modifying this course.');
+        },
+      },
+      async () => {
+        let startGitHash = null;
+        const coursePathExists = await fs.pathExists(locals.course.path);
+        if (!coursePathExists) {
+          // path does not exist, start with 'git clone'
+          job.info('Clone from remote git repository');
+          await job.exec(
+            'git',
+            ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
+            {
+              // Executed in the root directory, but this shouldn't really matter.
+              cwd: '/',
+              env: gitEnv,
+            },
+          );
+        } else {
+          // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
+
+          startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+
+          job.info('Updating to latest remote origin address');
+          await job.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
+            cwd: locals.course.path,
             env: gitEnv,
-          },
+          });
+
+          job.info('Fetch from remote git repository');
+          await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
+
+          job.info('Clean local files not in remote git repository');
+          await job.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
+
+          job.info('Reset state to remote git repository');
+          await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
+            cwd: locals.course.path,
+            env: gitEnv,
+          });
+        }
+
+        // After either cloning or fetching and resetting from Git, we'll load the
+        // current commit hash. Note that we don't commit this to the database until
+        // after we've synced the changes to the database and generated chunks. This
+        // ensures that if the sync fails, we'll sync from the same starting commit
+        // hash next time.
+        const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
+
+        job.info('Sync git repository to database');
+        const syncResult = await syncFromDisk.syncDiskToSqlAsync(
+          locals.course.path,
+          locals.course.id,
+          job,
         );
-      } else {
-        // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-        startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+        if (config.chunksGenerator) {
+          const chunkChanges = await chunks.updateChunksForCourse({
+            coursePath: locals.course.path,
+            courseId: locals.course.id,
+            courseData: syncResult.courseData,
+            oldHash: startGitHash,
+            newHash: endGitHash,
+          });
+          chunks.logChunkChangesToJob(chunkChanges, job);
+        }
 
-        job.info('Updating to latest remote origin address');
-        await job.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
-          cwd: locals.course.path,
-          env: gitEnv,
-        });
+        await courseUtil.updateCourseCommitHashAsync(locals.course);
 
-        job.info('Fetch from remote git repository');
-        await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
+        // Before erroring the job from sync errors, reload server.js files.
+        job.info('Reload question server.js files');
+        const coursePath = locals.course.path;
+        await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
 
-        job.info('Clean local files not in remote git repository');
-        await job.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
-
-        job.info('Reset state to remote git repository');
-        await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
-          cwd: locals.course.path,
-          env: gitEnv,
-        });
-      }
-
-      // After either cloning or fetching and resetting from Git, we'll load the
-      // current commit hash. Note that we don't commit this to the database until
-      // after we've synced the changes to the database and generated chunks. This
-      // ensures that if the sync fails, we'll sync from the same starting commit
-      // hash next time.
-      const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
-
-      job.info('Sync git repository to database');
-      const syncResult = await syncFromDisk.syncDiskToSqlAsync(
-        locals.course.path,
-        locals.course.id,
-        job,
-      );
-
-      if (config.chunksGenerator) {
-        const chunkChanges = await chunks.updateChunksForCourse({
-          coursePath: locals.course.path,
-          courseId: locals.course.id,
-          courseData: syncResult.courseData,
-          oldHash: startGitHash,
-          newHash: endGitHash,
-        });
-        chunks.logChunkChangesToJob(chunkChanges, job);
-      }
-
-      await courseUtil.updateCourseCommitHashAsync(locals.course);
-
-      // Before erroring the job from sync errors, reload server.js files.
-      job.info('Reload question server.js files');
-      const coursePath = locals.course.path;
-      await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
-
-      if (syncResult.hadJsonErrors) {
-        job.fail('One or more JSON files contained errors and were unable to be synced.');
-      }
-
-      return true;
-    });
-
-    if (!didSync) {
-      job.fail('Another user is already syncing or modifying this course.');
-    }
+        if (syncResult.hadJsonErrors) {
+          job.fail('One or more JSON files contained errors and were unable to be synced.');
+        }
+      },
+    );
   });
 
   return serverJob.jobSequenceId;
