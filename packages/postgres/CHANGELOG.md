@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 1.7.2
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
 ## 1.7.1
 
 ### Patch Changes

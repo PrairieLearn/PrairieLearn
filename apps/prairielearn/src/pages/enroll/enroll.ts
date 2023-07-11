@@ -41,17 +41,17 @@ router.get(
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
       },
-      CourseInstanceRowSchema
+      CourseInstanceRowSchema,
     );
     res.send(Enroll({ courseInstances, resLocals: res.locals }));
-  })
+  }),
 );
 
 router.get(
   '/limit_exceeded',
   asyncHandler((req, res) => {
     res.send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
-  })
+  }),
 );
 
 router.post(
@@ -79,7 +79,7 @@ router.post(
               course_instance: CourseInstanceSchema,
               institution_enrollment_count: z.number(),
               course_instance_enrollment_count: z.number(),
-            })
+            }),
           );
 
           const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
@@ -124,7 +124,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
 export default router;

@@ -24,11 +24,11 @@ export type BatchedMigrationJobRow = z.infer<typeof BatchedMigrationJobRowSchema
 export async function selectRecentJobsWithStatus(
   batchedMigrationId: string,
   status: BatchedMigrationJobStatus,
-  limit: number
+  limit: number,
 ): Promise<BatchedMigrationJobRow[]> {
   return queryValidatedRows(
     sql.select_recent_jobs_with_status,
     { batched_migration_id: batchedMigrationId, status, limit },
-    BatchedMigrationJobRowSchema
+    BatchedMigrationJobRowSchema,
   );
 }

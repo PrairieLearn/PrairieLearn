@@ -30,7 +30,7 @@ router.get(
     // and not as a webpage.
     res.attachment(displayFilename);
     stream.on('error', next).pipe(res);
-  })
+  }),
 );
 
 module.exports = router;

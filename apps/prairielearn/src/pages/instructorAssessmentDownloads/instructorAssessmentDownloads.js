@@ -21,7 +21,7 @@ const setFilenames = function (locals) {
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
-    locals.course
+    locals.course,
   );
   locals.scoresCsvFilename = prefix + 'scores.csv';
   locals.scoresAllCsvFilename = prefix + 'scores_all.csv';
@@ -139,7 +139,7 @@ router.get(
       usernameColumn.concat([
         ['Name', 'name'],
         ['Role', 'role'],
-      ])
+      ]),
     );
     if (res.locals.assessment.group_work) {
       identityColumn = groupNameColumn;
@@ -209,7 +209,7 @@ router.get(
 
       // Replace user-friendly column names with upload-friendly names
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
-        (pair) => [pair[1], pair[1]]
+        (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
         ['qid', 'qid'],
@@ -305,7 +305,7 @@ router.get(
       const archive = archiver('zip');
       const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
         ' ',
-        ''
+        '',
       );
       const prefix = `${dirname}/`;
       archive.append(null, { name: prefix });
@@ -341,7 +341,7 @@ router.get(
       const archive = archiver('zip');
       const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
         ' ',
-        ''
+        '',
       );
       const prefix = `${dirname}/`;
       archive.append(null, { name: prefix });
@@ -389,7 +389,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 module.exports = router;

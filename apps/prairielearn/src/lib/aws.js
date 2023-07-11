@@ -59,7 +59,7 @@ module.exports.uploadToS3Async = async function (
   s3Path,
   localPath,
   isDirectory = false,
-  buffer = null
+  buffer = null,
 ) {
   const s3 = new S3(module.exports.makeS3ClientConfig());
 
@@ -108,7 +108,7 @@ module.exports.uploadDirectoryToS3Async = async function (
   s3Bucket,
   s3Path,
   localPath,
-  ignoreList = []
+  ignoreList = [],
 ) {
   const s3 = new S3(module.exports.makeS3ClientConfig());
   const ignoreSet = new Set(ignoreList);
@@ -138,7 +138,7 @@ module.exports.uploadDirectoryToS3Async = async function (
           logger.verbose(`Uploaded file ${localFilePath} to s3://${s3Bucket}/${s3FilePath}`);
         } catch (err) {
           logger.verbose(
-            `Did not sync file ${localFilePath} to $s3://${s3Bucket}/${s3FilePath}: ${err}`
+            `Did not sync file ${localFilePath} to $s3://${s3Bucket}/${s3FilePath}: ${err}`,
           );
         }
       } else if (stat.isDirectory()) {
@@ -152,7 +152,7 @@ module.exports.uploadDirectoryToS3Async = async function (
           logger.verbose(`Uploaded directory ${localFilePath} to s3://${s3Bucket}/${s3DirPath}`);
         } catch (err) {
           logger.verbose(
-            `Did not sync directory ${localFilePath} to $s3://${s3Bucket}/${s3DirPath}: ${err}`
+            `Did not sync directory ${localFilePath} to $s3://${s3Bucket}/${s3DirPath}: ${err}`,
           );
         }
         await walkDirectory(relFilePath);

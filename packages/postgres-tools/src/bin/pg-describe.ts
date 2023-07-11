@@ -35,7 +35,7 @@ const args = yargs
   .example('$0 postgres', 'Describe the "postgres" database')
   .example(
     '$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2',
-    'Describe the "userdb" database; ignore specific tables and columns'
+    'Describe the "userdb" database; ignore specific tables and columns',
   )
   .strict();
 
@@ -74,7 +74,7 @@ describeDatabase(argv._[0].toString(), options).then(
   (err) => {
     console.error(err);
     process.exit(1);
-  }
+  },
 );
 
 function printDescription(description: DatabaseDescription) {
