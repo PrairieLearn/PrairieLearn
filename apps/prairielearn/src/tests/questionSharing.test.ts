@@ -6,6 +6,7 @@ import helperClient = require('./helperClient');
 import helperServer = require('./helperServer');
 import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
+import { features } from '../lib/features/index';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 
 import syncFromDisk = require('../sync/syncFromDisk');
@@ -62,11 +63,11 @@ describe('Question Sharing', function () {
   describe('Create a sharing set and add a question to it', () => {
     let exampleCourseSharingId;
 
-    step('set up testing server', helperServer.before(TEST_COURSE_PATH));
+    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    step('ensure course has question sharing enabled', async () => {
-      await sqldb.queryAsync(sql.enable_question_sharing, {});
+    before('ensure course has manual grading enabled', async () => {
+      await features.enable('manual-grading-rubrics');
     });
 
     step('Sync coures with sharing enabled', async () => {

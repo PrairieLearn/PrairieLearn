@@ -10,12 +10,12 @@ const { config } = require('../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');
+const { features } = require('../lib/features/index');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (req, res, next) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
-
   async.series(
     [
       (callback) => {
@@ -111,6 +111,12 @@ module.exports = function (req, res, next) {
 
           callback(null);
         });
+      },
+      async () => {
+        res.locals.question_sharing_enabled = await features.enabledFromLocals(
+          'question-sharing',
+          res.locals
+        );
       },
     ],
     (err) => {

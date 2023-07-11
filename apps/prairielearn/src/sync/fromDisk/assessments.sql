@@ -39,7 +39,7 @@ WHERE
 
 -- BLOCK get_course_info
 SELECT
-  question_sharing_enabled
+  institution_id
 FROM
   pl_courses
 WHERE

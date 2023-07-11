@@ -5,6 +5,7 @@ const sqldb = require('@prairielearn/postgres');
 const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
+const { features } = require('../../lib/features/index');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -357,7 +358,12 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   if (importedQids.size > 0) {
     let result = await sqldb.queryOneRowAsync(sql.get_course_info, { course_id: courseId });
-    if (!result.rows[0].question_sharing_enabled && config.checkSharingOnSync) {
+    let question_sharing_enabled = await features.enabled('question-sharing', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: result.rows[0].institution_id,
+    });
+    if (question_sharing_enabled && config.checkSharingOnSync) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid)?.forEach((tid) => {
           infofile.addError(

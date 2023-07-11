@@ -27,6 +27,3 @@ ADD COLUMN IF NOT EXISTS sharing_name text UNIQUE;
 
 ALTER TABLE pl_courses
 ADD COLUMN IF NOT EXISTS sharing_token text UNIQUE;
-
-ALTER TABLE pl_courses
-ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean default false;
