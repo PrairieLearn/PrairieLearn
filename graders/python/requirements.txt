@@ -7,7 +7,7 @@ folium==0.14.0
 ipython==8.14.0
 matplotlib==3.7.2
 nbconvert==7.6.0
-nbformat==5.9.0
+nbformat==5.9.1
 networkx==3.1
 nltk==3.8.1
 numpy==1.25.0
