@@ -358,12 +358,12 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   if (importedQids.size > 0) {
     let result = await sqldb.queryOneRowAsync(sql.get_course_info, { course_id: courseId });
-    let question_sharing_enabled = await features.enabled('question-sharing', {
+    let questionSharingEnabled = await features.enabled('question-sharing', {
       course_id: courseId,
       course_instance_id: courseInstanceId,
       institution_id: result.rows[0].institution_id,
     });
-    if (question_sharing_enabled && config.checkSharingOnSync) {
+    if (!questionSharingEnabled && config.checkSharingOnSync) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid)?.forEach((tid) => {
           infofile.addError(
@@ -382,6 +382,8 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
+  console.log(importedQids);
+  console.log(importedQuestions.rows);
   let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
   if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {

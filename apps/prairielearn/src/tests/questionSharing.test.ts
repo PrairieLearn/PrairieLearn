@@ -70,26 +70,49 @@ describe('Question Sharing', function () {
       await features.enable('question-sharing');
     });
 
-    step('Sync coures with sharing enabled', async () => {
+    step('Fail to sync course when validating shared question paths', async () => {
+      config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
-      // TODO: technically this would have an error because there is no permissions on the
-      // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
-      if (result?.hadJsonErrorsOrWarnings) {
-        throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
+      if (!result?.hadJsonErrorsOrWarnings) {
+        throw new Error(
+          `Sync of ${EXAMPLE_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
+        );
       }
     });
 
     step(
+      'Sync course with sharing enabled, disabling validation shared question paths',
+      async () => {
+        config.checkSharingOnSync = false;
+        const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+        if (result?.hadJsonErrorsOrWarnings) {
+          throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
+        }
+      },
+    );
+
+    step(
       'Fail to access shared question, because permission has not yet been granted',
       async () => {
+        // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment();
-        // TODO: Now that we add a dummy question to the DB,
-        // then the name of it will show up, but it should fail to load when you access the link
-        // this should be updated to actually attempt to go to the link, then hit access denied or something
         assert(!res.text().includes('addNumbers'));
-        // const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
-        // let addNumbersPage = await helperClient.fetchCheerio(sharedQuestionUrl);
-        // assert(!addNumbersPage.ok);
+
+        // Question can be accessed through the owning course
+        const questionId = (
+          await sqldb.queryOneRowAsync(sql.get_question_id, {
+            course_id: testCourseId,
+            qid: 'addNumbers',
+          })
+        ).rows[0].id;
+        const addNumbersUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${questionId}/settings`;
+        const addNumbersPage = await helperClient.fetchCheerio(addNumbersUrl);
+        assert(addNumbersPage.ok);
+
+        // Question cannot be accessed through the consuming course, sharing permissions not yet set
+        const addNumbersSharedUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}/settings`;
+        const addNumbersSharedPage = await helperClient.fetchCheerio(addNumbersSharedUrl);
+        assert(!addNumbersSharedPage.ok);
       },
     );
 
@@ -209,9 +232,14 @@ describe('Question Sharing', function () {
       assert.equal(settingsPageResponse.text().includes('share-set-example'), true);
     });
 
-    step('Re-sync example course so that the shared question gets added in properly', async () => {
+    step('Re-sync example course, validating shared questions', async () => {
+      // config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
+        // console.log(result?.courseData.courseInstances);
+        // console.log(
+        //   result?.courseData.courseInstances.SectionA.assessments['gallery/questionSharing'].errors,
+        // );
         throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
       }
     });
