@@ -460,7 +460,7 @@ module.exports = {
 
     const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
       workspace_id,
-      config.workspaceLoadHostCapacity
+      config.workspaceLoadHostCapacity,
     );
     debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspaceHostId}`);
     return workspaceHostId; // null means we didn't assign a host

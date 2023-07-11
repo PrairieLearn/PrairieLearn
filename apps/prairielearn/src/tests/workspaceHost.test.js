@@ -41,7 +41,7 @@ async function insertWorkspaceHost(id, state = 'launching') {
       instance_id: uuidv4(),
       state,
     },
-    WorkspaceHostSchema
+    WorkspaceHostSchema,
   );
 }
 
@@ -57,7 +57,7 @@ async function insertWorkspace(id, hostId = null) {
       state: 'launching',
       workspace_host_id: hostId,
     },
-    WorkspaceSchema
+    WorkspaceSchema,
   );
 }
 
@@ -65,7 +65,7 @@ async function selectWorkspaceHost(id) {
   return sqldb.queryValidatedOneRow(
     'SELECT * FROM workspace_hosts WHERE id = $id;',
     { id },
-    WorkspaceHostSchema
+    WorkspaceHostSchema,
   );
 }
 
@@ -73,7 +73,7 @@ async function selectWorkspace(id) {
   return sqldb.queryValidatedOneRow(
     'SELECT * FROM workspaces WHERE id = $id;',
     { id },
-    WorkspaceSchema
+    WorkspaceSchema,
   );
 }
 
@@ -86,7 +86,7 @@ async function getWorkspaceHostLogs(id) {
   return sqldb.queryValidatedRows(
     'SELECT * FROM workspace_host_logs WHERE workspace_host_id = $id;',
     { id },
-    WorkspaceHostLogsSchema
+    WorkspaceHostLogsSchema,
   );
 }
 
@@ -94,7 +94,7 @@ async function getWorkspaceLogs(id) {
   return sqldb.queryValidatedRows(
     'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
     { id },
-    WorkspaceLogsSchema
+    WorkspaceLogsSchema,
   );
 }
 
@@ -286,13 +286,13 @@ describe('workspaceHost utilities', function () {
       const host1 = await insertWorkspaceHost(1, 'unhealthy');
       await sqldb.queryAsync(
         "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
-        { id: host1.id }
+        { id: host1.id },
       );
 
       const host2 = await insertWorkspaceHost(2, 'unhealthy');
       await sqldb.queryAsync(
         "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
-        { id: host2.id }
+        { id: host2.id },
       );
 
       // Only the first host should be terminated; the second one hasn't
@@ -314,13 +314,13 @@ describe('workspaceHost utilities', function () {
       const host1 = await insertWorkspaceHost(1, 'launching');
       await sqldb.queryAsync(
         "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
-        { id: host1.id }
+        { id: host1.id },
       );
 
       const host2 = await insertWorkspaceHost(2, 'launching');
       await sqldb.queryAsync(
         "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
-        { id: host2.id }
+        { id: host2.id },
       );
 
       // Only the first host should be terminated; the second one hasn't
@@ -372,10 +372,10 @@ describe('workspaceHost utilities', function () {
       assert.lengthOf(workspaces, 2);
       assert.isUndefined(workspaces.find((w) => w.workspace_id === workspace1.id));
       assert.isDefined(
-        workspaces.find((w) => w.workspace_id === workspace2.id && w.state === 'stopped')
+        workspaces.find((w) => w.workspace_id === workspace2.id && w.state === 'stopped'),
       );
       assert.isDefined(
-        workspaces.find((w) => w.workspace_id === workspace3.id && w.state === 'stopped')
+        workspaces.find((w) => w.workspace_id === workspace3.id && w.state === 'stopped'),
       );
 
       const hostLogs1 = await getWorkspaceHostLogs(1);

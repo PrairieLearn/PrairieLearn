@@ -27,7 +27,7 @@ export async function markWorkspaceHostUnhealthy(workspace_host_id: string, reas
 
 export async function assignWorkspaceToHost(
   workspace_id: string,
-  capacity: number
+  capacity: number,
 ): Promise<string | null> {
   return await queryOptionalRow(
     sql.assign_workspace_to_host,
@@ -35,7 +35,7 @@ export async function assignWorkspaceToHost(
       workspace_id,
       capacity,
     },
-    z.string()
+    z.string(),
   );
 }
 
@@ -59,7 +59,7 @@ export async function drainExtraWorkspaceHosts(surplus: number) {
  */
 export async function findTerminableWorkspaceHosts(
   unhealthy_timeout_sec: number,
-  launch_timeout_sec: number
+  launch_timeout_sec: number,
 ): Promise<WorkspaceHost[]> {
   return queryRows(
     sql.find_terminable_hosts,
@@ -67,7 +67,7 @@ export async function findTerminableWorkspaceHosts(
       unhealthy_timeout_sec,
       launch_timeout_sec,
     },
-    WorkspaceHostSchema
+    WorkspaceHostSchema,
   );
 }
 
@@ -80,11 +80,11 @@ export async function findTerminableWorkspaceHosts(
  * @returns The workspaces on the terminated hosts
  */
 export async function terminateWorkspaceHostsIfNotLaunching(
-  instanceIds: string[]
+  instanceIds: string[],
 ): Promise<WorkspaceLog[]> {
   return queryRows(
     sql.terminate_hosts_if_not_launching,
     { instance_ids: instanceIds },
-    WorkspaceLogSchema
+    WorkspaceLogSchema,
   );
 }
