@@ -28,6 +28,7 @@ const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
+const { getLockNameForCoursePath } = require('../../lib/course');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -540,7 +541,7 @@ function saveAndSync(fileEdit, locals, callback) {
           return;
         }
 
-        const lockName = 'coursedir:' + options.courseDir;
+        const lockName = getLockNameForCoursePath(options.courseDir);
         job.verbose(`Trying lock ${lockName}`);
         namedLocks.waitLock(lockName, { timeout: 5000 }, (err, lock) => {
           if (err) {

@@ -19,6 +19,7 @@ import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
 import { contains } from '@prairielearn/path-utils';
+import { getLockNameForCoursePath } from './course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -814,7 +815,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   courseDir = path.resolve(process.cwd(), courseDir);
   job.info(chalkDim(`Resolved course directory: ${courseDir}`));
 
-  const lockName = `coursedir:${courseDir}`;
+  const lockName = getLockNameForCoursePath(courseDir);
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
 
   await namedLocks.doWithLock(lockName, {}, async () => {
