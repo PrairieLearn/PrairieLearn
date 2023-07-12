@@ -8,22 +8,6 @@
   font-size: 70%;
 }
 
-.bg-flourish {
-  background-image: var(--flourish-image-url);
-  background-size: auto 8rem;
-  background-repeat: repeat-x;
-  background-position: bottom left;
-}
-
-.p-flourish {
-  padding-top: 8rem;
-  padding-bottom: 8rem;
-}
-
-.h-flourish {
-  height: 6rem;
-}
-
 .bg-students {
   background-image: linear-gradient(to bottom right, var(--primary), mediumseagreen);
 }
