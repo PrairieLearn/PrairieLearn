@@ -24,7 +24,7 @@ onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances } = decodeData('questions-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
-    layout: 'fitColumns',
+    layout: 'fitDataFill',
     pagination: true,
     paginationSize: 50,
     paginationSizeSelector: [10, 20, 50, 100, 200, 500, true],
@@ -191,8 +191,23 @@ onDocumentReady(() => {
       input.checked = col.isVisible();
       input.addEventListener('change', () => {
         input.checked ? col.show() : col.hide();
+        table.redraw();
       });
     });
+  });
+
+  table.on('renderComplete', () => {
+    // Popovers must be reloaded when the table is rendered (e.g., after a page change or filter)
+    $('[data-toggle="popover"]')
+      .popover({
+        sanitize: false,
+        container: 'body',
+        html: true,
+        trigger: 'hover',
+      })
+      .on('show.bs.popover', function () {
+        $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+      });
   });
 
   document.querySelector('.js-clear-filters-btn').addEventListener('click', () => {
