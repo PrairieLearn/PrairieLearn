@@ -25,6 +25,7 @@ router.get(
       InstitutionAdminGeneral({
         institution,
         statistics,
+        canEditLimits: res.locals.is_administrator,
         resLocals: res.locals,
       }),
     );
@@ -35,6 +36,11 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'update_enrollment_limits') {
+      // Only global administrators can modify enrollment limits.
+      if (!res.locals.is_administrator) {
+        throw error.make(403, 'Access denied');
+      }
+
       await queryAsync(sql.update_enrollment_limits, {
         institution_id: req.params.institution_id,
         yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,

@@ -40,7 +40,6 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'addAdmins') {
-      console.log(req.body);
       const uids = parseUidsString(req.body.uids);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
@@ -72,6 +71,14 @@ router.post(
         flash('error', `Could not add the following unknown users: ${invalidUids.join(', ')}`);
       }
 
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'removeAdmin') {
+      // TODO: record audit event for this action.
+      await queryAsync(sql.delete_institution_admin, {
+        institution_id: req.params.institution_id,
+        institution_administrator_id: req.body.unsafe_institution_administrator_id,
+      });
+      flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
