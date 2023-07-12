@@ -31,37 +31,37 @@ type ChunkType =
   | 'clientFilesAssessment'
   | 'question';
 
-type ElementsChunkMetadata = {
+interface ElementsChunkMetadata {
   type: 'elements';
-};
+}
 
-type ElementExtensionsChunkMetadata = {
+interface ElementExtensionsChunkMetadata {
   type: 'elementExtensions';
-};
+}
 
-type ClientFilesCourseChunkMetadata = {
+interface ClientFilesCourseChunkMetadata {
   type: 'clientFilesCourse';
-};
+}
 
-type ServerFilesCourseChunkMetadata = {
+interface ServerFilesCourseChunkMetadata {
   type: 'serverFilesCourse';
-};
+}
 
-type ClientFilesCourseInstanceChunkMetadata = {
+interface ClientFilesCourseInstanceChunkMetadata {
   type: 'clientFilesCourseInstance';
   courseInstanceName: string;
-};
+}
 
-type ClientFilesAssessmentChunkMetadata = {
+interface ClientFilesAssessmentChunkMetadata {
   type: 'clientFilesAssessment';
   courseInstanceName: string;
   assessmentName: string;
-};
+}
 
-type QuestionChunkMetadata = {
+interface QuestionChunkMetadata {
   type: 'question';
   questionName: string;
-};
+}
 
 /**
  * {@link ChunkMetadata} objects are used to refer to chunks according to their
@@ -81,37 +81,37 @@ type ChunkMetadata =
   | ClientFilesAssessmentChunkMetadata
   | QuestionChunkMetadata;
 
-type ElementsChunk = {
+interface ElementsChunk {
   type: 'elements';
-};
+}
 
-type ElementExtensionsChunk = {
+interface ElementExtensionsChunk {
   type: 'elementExtensions';
-};
+}
 
-type ClientFilesCourseChunk = {
+interface ClientFilesCourseChunk {
   type: 'clientFilesCourse';
-};
+}
 
-type ServerFilesCourseChunk = {
+interface ServerFilesCourseChunk {
   type: 'serverFilesCourse';
-};
+}
 
-type ClientFilesCourseInstanceChunk = {
+interface ClientFilesCourseInstanceChunk {
   type: 'clientFilesCourseInstance';
   courseInstanceId: string | number;
-};
+}
 
-type ClientFilesAssessmentChunk = {
+interface ClientFilesAssessmentChunk {
   type: 'clientFilesAssessment';
   courseInstanceId: string | number;
   assessmentId: string | number;
-};
+}
 
-type QuestionChunk = {
+interface QuestionChunk {
   type: 'question';
   questionId: string | number;
-};
+}
 
 /**
  * {@link Chunk} objects are used to identify chunks by the IDs of their
@@ -136,7 +136,7 @@ export type Chunk =
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-type DatabaseChunk = {
+interface DatabaseChunk {
   id: string | number | null;
   type: ChunkType;
   uuid: string;
@@ -147,21 +147,21 @@ type DatabaseChunk = {
   assessment_name?: string;
   question_id?: string | number;
   question_name?: string;
-};
+}
 
-type CourseInstanceChunks = {
+interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;
   assessments: Set<string>;
-};
+}
 
-type CourseChunks = {
+interface CourseChunks {
   elements: boolean;
   elementExtensions: boolean;
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
   courseInstances: Record<string, CourseInstanceChunks>;
-};
+}
 
 /**
  * Constructs a {@link ChunkMetadata} object from the given {@link DatabaseChunk}

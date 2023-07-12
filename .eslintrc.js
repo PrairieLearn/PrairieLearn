@@ -79,7 +79,6 @@ module.exports = {
 
     // These were enabled when we upgraded to `@typescript-eslint/*` v6.
     // TODO: re-enable and fix over time.
-    '@typescript-eslint/consistent-type-definitions': 'off',
     '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
