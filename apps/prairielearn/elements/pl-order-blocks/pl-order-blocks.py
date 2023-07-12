@@ -781,12 +781,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 else:
                     ans["inner_html"] = None
 
-    # if grading_method is GradingMethodType.ORDERED:
-    #     if partial_credit_type is PartialCreditType.NONE:
-    #         student_answer = [ans["inner_html"] for ans in student_answer]
-    #         true_answer = [ans["inner_html"] for ans in true_answer_list]
-    #         final_score = 1 if student_answer == true_answer else 0
-
     if grading_method is GradingMethodType.UNORDERED:
         true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
         student_answer_uuids = set(ans["uuid"] for ans in student_answer)
