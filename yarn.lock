@@ -3084,6 +3084,7 @@ __metadata:
     streamifier: ^0.1.1
     strip-ansi: ^6.0.1
     tablesorter: ^2.31.3
+    tabulator-tables: ^5.5.0
     tar: ^6.1.15
     three: ^0.154.0
     tmp: ^0.2.1
@@ -15621,6 +15622,13 @@ __metadata:
   dependencies:
     jquery: ">=1.2.6"
   checksum: 6fad5f03a3a03f814bdd84bdeb1b939cfb1744fa17ddb3c9eb225457f75f34b7b133bc500b6d7ce481073c36cc52f297045274fe17a54db9a97caf74c29aa5e2
+  languageName: node
+  linkType: hard
+
+"tabulator-tables@npm:^5.5.0":
+  version: 5.5.0
+  resolution: "tabulator-tables@npm:5.5.0"
+  checksum: 87c1811a27b6720a5f2e0e67b29fd09c39b0763703408e12f23316a287aca185a0230982b242797adb192f96f8e7eadd002043b5bcab4292504716b44864b1f5
   languageName: node
   linkType: hard
 

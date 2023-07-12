@@ -147,6 +147,7 @@
     "streamifier": "^0.1.1",
     "strip-ansi": "^6.0.1",
     "tablesorter": "^2.31.3",
+    "tabulator-tables": "^5.5.0",
     "tar": "^6.1.15",
     "three": "^0.154.0",
     "tmp": "^0.2.1",
