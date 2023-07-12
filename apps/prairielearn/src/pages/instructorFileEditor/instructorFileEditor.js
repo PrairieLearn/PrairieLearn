@@ -472,130 +472,139 @@ async function saveAndSync(fileEdit, locals) {
     }
 
     const lockName = getLockNameForCoursePath(locals.course.path);
-    await namedLocks.tryWithLock(lockName, { timeout: 5000 }, async () => {
-      const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+    await namedLocks.tryWithLock(
+      lockName,
+      {
+        timeout: 5000,
+        onNotAcquired: () => {
+          job.fail(`Another user is already syncing or modifying this course.`);
+        },
+      },
+      async () => {
+        const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
 
-      if (fileEdit.doPull) {
-        await job.exec('git', ['fetch'], {
-          cwd: locals.course.path,
-          env: gitEnv,
-        });
-        await job.exec('git', ['clean', '-fdx'], {
-          cwd: locals.course.path,
-          env: gitEnv,
-        });
-        await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
-          cwd: locals.course.path,
-          env: gitEnv,
-        });
-      }
-
-      const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-      const contents = await fs.readFile(fullPath, 'utf8');
-      fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
-      if (fileEdit.origHash !== fileEdit.diskHash) {
-        job.fail(`Another user made changes to the file you were editing.`);
-      }
-
-      await fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8');
-      job.verbose(`Wrote changed to ${fullPath}`);
-
-      if (config.fileEditorUseGit) {
-        try {
-          await job.exec('git', ['reset'], {
+        if (fileEdit.doPull) {
+          await job.exec('git', ['fetch'], {
             cwd: locals.course.path,
             env: gitEnv,
           });
-          await job.exec('git', ['add', path.join(fileEdit.dirName, fileEdit.fileName)], {
+          await job.exec('git', ['clean', '-fdx'], {
             cwd: locals.course.path,
             env: gitEnv,
           });
-          await job.exec(
-            'git',
-            [
-              '-c',
-              `user.name="${fileEdit.user_name}"`,
-              '-c',
-              `user.email="${fileEdit.uid}"`,
-              'commit',
-              '-m',
-              fileEdit.commitMessage,
-            ],
-            {
+          await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
+            cwd: locals.course.path,
+            env: gitEnv,
+          });
+        }
+
+        const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+        const contents = await fs.readFile(fullPath, 'utf8');
+        fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
+        if (fileEdit.origHash !== fileEdit.diskHash) {
+          job.fail(`Another user made changes to the file you were editing.`);
+        }
+
+        await fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8');
+        job.verbose(`Wrote changed to ${fullPath}`);
+
+        if (config.fileEditorUseGit) {
+          try {
+            await job.exec('git', ['reset'], {
               cwd: locals.course.path,
               env: gitEnv,
-            },
+            });
+            await job.exec('git', ['add', path.join(fileEdit.dirName, fileEdit.fileName)], {
+              cwd: locals.course.path,
+              env: gitEnv,
+            });
+            await job.exec(
+              'git',
+              [
+                '-c',
+                `user.name="${fileEdit.user_name}"`,
+                '-c',
+                `user.email="${fileEdit.uid}"`,
+                'commit',
+                '-m',
+                fileEdit.commitMessage,
+              ],
+              {
+                cwd: locals.course.path,
+                env: gitEnv,
+              },
+            );
+          } catch (err) {
+            await job.exec('git', ['checkout', path.join(fileEdit.dirName, fileEdit.fileName)], {
+              cwd: locals.course.path,
+              env: gitEnv,
+            });
+            throw err;
+          }
+
+          try {
+            // Remember that we attempted a push. If the push fails, we'll retain
+            // the `false` value.
+            job.data.pushed = false;
+
+            await job.exec('git', ['push'], {
+              cwd: locals.course.path,
+              env: gitEnv,
+            });
+
+            // Remember that we successfully pushed. When a user views the file
+            // editing page again, we'll check for this flag to know if we need
+            // to display instructions for a failed push.
+            job.data.pushed = true;
+          } catch (err) {
+            await job.exec('git', ['reset', '--hard', 'HEAD~1'], {
+              cwd: locals.course.path,
+              env: gitEnv,
+            });
+            throw err;
+          }
+        }
+
+        await updateDidSave(fileEdit);
+        job.verbose('Marked edit as saved');
+
+        if (fileEdit.needToSync || config.chunksGenerator) {
+          // If we're using chunks, then always sync on edit. We need the sync
+          // data to force-generate new chunks.
+          const result = await syncFromDisk.syncDiskToSqlWithLock(
+            locals.course.path,
+            locals.course.id,
+            job,
           );
-        } catch (err) {
-          await job.exec('git', ['checkout', path.join(fileEdit.dirName, fileEdit.fileName)], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-          throw err;
+
+          if (config.chunksGenerator) {
+            const endGitHash = await courseUtil.getCommitHashAsync(locals.course);
+            const chunkChanges = await chunks.updateChunksForCourse({
+              coursePath: locals.course.path,
+              courseId: locals.course.id,
+              courseData: result.courseData,
+              oldHash: startGitHash,
+              newHash: endGitHash,
+            });
+            chunks.logChunkChangesToJob(chunkChanges, job);
+          }
+
+          // Note that we deliberately don't actually write the updated commit hash
+          // to the database until after chunks have been updated. This ensures
+          // that if the chunks update fails, we'll try again next time.
+          await courseUtil.updateCourseCommitHashAsync(locals.course);
+
+          if (result.hadJsonErrors) {
+            job.fail('One or more JSON files contained errors and were unable to be synced');
+          }
         }
 
-        try {
-          // Remember that we attempted a push. If the push fails, we'll retain
-          // the `false` value.
-          job.data.pushed = false;
+        await promisify(requireFrontend.undefQuestionServers)(locals.course.path, job);
 
-          await job.exec('git', ['push'], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-
-          // Remember that we successfully pushed. When a user views the file
-          // editing page again, we'll check for this flag to know if we need
-          // to display instructions for a failed push.
-          job.data.pushed = true;
-        } catch (err) {
-          await job.exec('git', ['reset', '--hard', 'HEAD~1'], {
-            cwd: locals.course.path,
-            env: gitEnv,
-          });
-          throw err;
-        }
-      }
-
-      await updateDidSave(fileEdit);
-      job.verbose('Marked edit as saved');
-
-      if (fileEdit.needToSync || config.chunksGenerator) {
-        // If we're using chunks, then always sync on edit. We need the sync
-        // data to force-generate new chunks.
-        const result = await syncFromDisk.syncDiskToSqlWithLock(
-          locals.course.path,
-          locals.course.id,
-          job,
-        );
-
-        if (config.chunksGenerator) {
-          const endGitHash = await courseUtil.getCommitHashAsync(locals.course);
-          const chunkChanges = await chunks.updateChunksForCourse({
-            coursePath: locals.course.path,
-            courseId: locals.course.id,
-            courseData: result.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
-          });
-          chunks.logChunkChangesToJob(chunkChanges, job);
-        }
-
-        // Note that we deliberately don't actually write the updated commit hash
-        // to the database until after chunks have been updated. This ensures
-        // that if the chunks update fails, we'll try again next time.
-        await courseUtil.updateCourseCommitHashAsync(locals.course);
-
-        if (result.hadJsonErrors) {
-          job.fail('One or more JSON files contained errors and were unable to be synced');
-        }
-      }
-
-      await promisify(requireFrontend.undefQuestionServers)(locals.course.path, job);
-
-      await updateDidSync(fileEdit);
-      job.verbose('Marked edit as synced');
-    });
+        await updateDidSync(fileEdit);
+        job.verbose('Marked edit as synced');
+      },
+    );
   });
 }
 
