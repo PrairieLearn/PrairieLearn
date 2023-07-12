@@ -57,40 +57,22 @@ export function InstitutionAdminAdmins({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
-                <thead>
-                  <th>UID</th>
-                  <th>Name</th>
-                  <th>Actions</th>
-                </thead>
-                <tbody>
-                  ${rows.map(
-                    (row) => html`
-                      <tr>
-                        <td>${row.user.uid}</td>
-                        <td>${row.user.name}</td>
-                        <td>
-                          <span class="dropdown">
-                            <button
-                              type="button"
-                              class="btn btn-light dropdown-toggle btn-xs"
-                              title="Actions for ${row.user.uid}"
-                              aria-expanded="false"
-                              data-toggle="dropdown"
-                            ></button>
-                            <div class="dropdown-menu">
-                              <button class="dropdown-item" type="button">
-                                <i class="bi-x-lg"></i>
-                                Remove admin
-                              </button>
-                            </div>
-                          </span>
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
+              <ul class="list-group list-group-flush">
+                ${rows.map(
+                  (row) => html`
+                    <li class="list-group-item d-flex flex-row align-items-center">
+                      <div class="d-flex flex-column">
+                        <span>${row.user.name}</span>
+                        <span class="text-muted">${row.user.uid}</span>
+                      </div>
+
+                      <button class="btn btn-sm btn-outline-danger ml-auto" type="button">
+                        Remove
+                      </button>
+                    </li>
+                  `,
+                )}
+              </ul>
             </div>
           </div>
         </main>
