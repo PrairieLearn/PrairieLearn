@@ -17,4 +17,5 @@ indexes
     workspace_hosts_state_terminated_at_key: USING btree (state, terminated_at)
 
 referenced by
+    workspace_host_logs: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
     workspaces: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -12,24 +12,23 @@ window.PLOrderBlocks = function (uuid, options) {
   function setAnswer() {
     var answerObjs = $(dropzoneElementId).children();
     var studentAnswers = [];
-    for (var i = 0; i < answerObjs.length; i++) {
-      if (!$(answerObjs[i]).hasClass('info-fixed')) {
-        var answerText = answerObjs[i].getAttribute('string');
-        var answerUuid = answerObjs[i].getAttribute('uuid');
-        var answerDistractorBin = answerObjs[i].getAttribute('data-distractor-bin');
+    for (const answerObj of answerObjs) {
+      if (!$(answerObj).hasClass('info-fixed')) {
+        var answerText = answerObj.getAttribute('string');
+        var answerUuid = answerObj.getAttribute('uuid');
+        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         var answerIndent = null;
         if (enableIndentation) {
-          answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
+          answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
-        var answer = {
+        studentAnswers.push({
           inner_html: answerText,
           indent: answerIndent,
           uuid: answerUuid,
           distractor_bin: answerDistractorBin,
-        };
-        studentAnswers.push(answer);
+        });
       }
     }
 
