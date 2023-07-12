@@ -1,0 +1,22 @@
+@import "tabulator-tables/dist/css/tabulator_bootstrap4.min.css";
+
+/* TODO Review what is still required from these */
+
+.sticky-column {
+    position: sticky;
+    left: 0;
+    background: white;
+    background-clip: padding-box;
+    box-shadow: inset -1px 0 #dee2e6;
+}
+.table-hover tbody tr:hover td.sticky-column {
+    color: #212529;
+    background-color: #efefef;
+}
+.fixed-table-toolbar {
+    padding: 0 1em 0 1em;
+}
+.fixed-table-toolbar div.pagination,
+.fixed-table-toolbar div.pagination-detail {
+    margin: 0 1em 0 0 !important;
+}

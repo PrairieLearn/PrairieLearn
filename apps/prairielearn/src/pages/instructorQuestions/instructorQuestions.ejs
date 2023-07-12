@@ -4,32 +4,20 @@
   <head>
     <%- include('../partials/head'); %>
     <%- compiled_script_tag('instructorQuestions.ts') %>
-    <%- encoded_data({ urlPrefix, plainUrlPrefix, questions, course_instances: authz_data.course_instances }, 'questions-data') %>
-    <link href="<%= node_modules_asset_path('tabulator-tables/dist/css/tabulator.min.css') %>" rel="stylesheet" />
-    <link href="<%= node_modules_asset_path('tabulator-tables/dist/css/tabulator_bootstrap4.min.css') %>" rel="stylesheet" />
+    <%- encoded_data({
+          urlPrefix,
+          plainUrlPrefix, 
+          questions, 
+          course_instances: authz_data.course_instances.map(ci => ({
+            id: ci.id, 
+            short_name: ci.short_name, 
+            current: locals.course_instance?.id == ci.id
+          })),
+        }, 'questions-data') %>
+    <%- compiled_stylesheet_tag('instructorQuestions.css') %>
   </head>
   
   <body>
-    <style>
-      .sticky-column {
-          position: sticky;
-          left: 0;
-          background: white;
-          background-clip: padding-box;
-          box-shadow: inset -1px 0 #dee2e6;
-      }
-      .table-hover tbody tr:hover td.sticky-column {
-          color: #212529;
-          background-color: #efefef;
-      }
-      .fixed-table-toolbar {
-          padding: 0 1em 0 1em;
-      }
-      .fixed-table-toolbar div.pagination,
-      .fixed-table-toolbar div.pagination-detail {
-          margin: 0 1em 0 0 !important;
-      }
-    </style>
     <%- include('../partials/navbar'); %>
     <form class="ml-1 btn-group" name="add-question-form" method="POST">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
