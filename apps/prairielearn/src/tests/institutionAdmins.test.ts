@@ -6,8 +6,12 @@ import { queryAsync, queryRow } from '@prairielearn/postgres';
 import { config } from '../lib/config';
 import helperServer = require('./helperServer');
 import { UserSchema } from '../lib/db-types';
+import { selectUserByUid } from '../lib/user';
 
 const SITE_URL = `http://localhost:${config.serverPort}`;
+const COURSE_URL = `${SITE_URL}/pl/course/1/course_admin/instances`;
+const COURSE_INSTANCE_URL = `${SITE_URL}/pl/course_instance/1/instructor/instance_admin/assessments`;
+const ASSESSMENT_INSTANCES_URL = `${SITE_URL}/pl/course_instance/1/instructor/assessment/1/instances`;
 
 interface AuthUser {
   name: string;
@@ -77,17 +81,65 @@ describe('institution administrators', () => {
   });
 
   step('global admin can access course', async () => {
-    const res = await withUser(ADMIN_USER, () => fetch(`${SITE_URL}/pl/course/1`));
+    const res = await withUser(ADMIN_USER, () => fetch(COURSE_URL));
+    console.log(res);
+    assert.isTrue(res.ok);
+  });
+
+  step('global admin can access course instance', async () => {
+    const res = await withUser(ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
     assert.isTrue(res.ok);
   });
 
   step('institution admin cannot access course', async () => {
-    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(`${SITE_URL}/pl/course/1`));
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_URL));
+    assert.isFalse(res.ok);
+  });
+
+  step('institution admin cannot access course instance', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
+    assert.isFalse(res.ok);
+  });
+
+  step('institution admin can access assessment instances', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(ASSESSMENT_INSTANCES_URL));
     assert.isFalse(res.ok);
   });
 
   step('instructor cannot access course', async () => {
-    const res = await withUser(INSTRUCTOR_USER, () => fetch(`${SITE_URL}/pl/course/1`));
+    const res = await withUser(INSTRUCTOR_USER, () => fetch(COURSE_URL));
     assert.isFalse(res.ok);
+  });
+
+  step('instructor cannot access course instance', async () => {
+    const res = await withUser(INSTRUCTOR_USER, () => fetch(COURSE_INSTANCE_URL));
+    assert.isFalse(res.ok);
+  });
+
+  step('add institution administrator', async () => {
+    const user = await selectUserByUid(INSTITUTION_ADMIN_USER.uid);
+    assert(user);
+    await queryAsync(
+      `INSERT INTO institution_administrators (institution_id, user_id) VALUES ($institution_id, $user_id);`,
+      {
+        institution_id: '1',
+        user_id: user.user_id,
+      },
+    );
+  });
+
+  step('institution admin can access course', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(`${SITE_URL}/pl/course/1`));
+    assert.isTrue(res.ok);
+  });
+
+  step('institution admin can access course instance', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
+    assert.isTrue(res.ok);
+  });
+
+  step('institution admin can access assessment instances', async () => {
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(ASSESSMENT_INSTANCES_URL));
+    assert.isTrue(res.ok);
   });
 });
