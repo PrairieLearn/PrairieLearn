@@ -77,8 +77,8 @@ module.exports = {
     // Look, sometimes we just want to use `any`.
     '@typescript-eslint/no-explicit-any': 'off',
 
-    // These were enabled when we upgraded to `@typescript-eslint/*` v6.
-    // TODO: re-enable and fix over time.
+    // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+    // TODO: fix the violations so we can enable this rule.
     '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
