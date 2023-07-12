@@ -1,4 +1,4 @@
-import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import {
   Tabulator,
   FormatModule,
@@ -97,7 +97,7 @@ onDocumentReady(() => {
       {
         field: 'grading_method',
         title: 'Grading Method',
-        visible: true, // TODO Make false by default
+        visible: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Methods)',
         headerFilterParams: {
@@ -110,7 +110,7 @@ onDocumentReady(() => {
       {
         field: 'external_grading_image',
         title: 'External Grading Image',
-        visible: true, // TODO Make false by default
+        visible: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Images)',
         headerFilterFunc: (headerValue, rowValue) =>
@@ -127,7 +127,7 @@ onDocumentReady(() => {
         title: `${ci.short_name} Assessments`,
         mutator: (_value, data) =>
           data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()),
-        visible: true, // TODO Make only current CI visible by default
+        visible: ci.current,
         headerSort: false,
         formatter: (cell) =>
           cell
@@ -172,6 +172,29 @@ onDocumentReady(() => {
       table.setHeaderFilterFocus('qid');
       event.preventDefault();
     }
+  });
+
+  table.on('tableBuilt', () => {
+    table.getColumns().forEach((col) => {
+      const dropdownItem = parseHTMLElement(
+        document,
+        html`<div class="dropdown-item form-check">
+          <label class="form-check-label">
+            <input class="form-check-input" type="checkbox" />${col.getDefinition().title}
+          </label>
+        </div>`,
+      );
+      document.querySelector('.js-column-visibility').appendChild(dropdownItem);
+      const input = dropdownItem.querySelector<HTMLInputElement>('input');
+      input.checked = col.isVisible();
+      input.addEventListener('change', () => {
+        input.checked ? col.show() : col.hide();
+      });
+    });
+  });
+
+  document.querySelector('.js-clear-filters-btn').addEventListener('click', () => {
+    table.clearFilter(true);
   });
 });
 

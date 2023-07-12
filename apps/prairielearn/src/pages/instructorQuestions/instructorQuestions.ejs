@@ -19,10 +19,6 @@
   
   <body>
     <%- include('../partials/navbar'); %>
-    <form class="ml-1 btn-group" name="add-question-form" method="POST">
-      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-      <input type="hidden" name="__action" value="add_question">
-    </form>
     <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
@@ -34,10 +30,33 @@
           </div>
         </div>
 
-        <!-- TODO Buttons for column visibility, clear filter, add question -->
         <!-- TODO Add placeholder for pagination on top and bottom -->
         <!-- TODO Sticky header -->
         <!-- TODO Sticky first column -->
+        <div class="m-2 row">
+          <div class="btn-group ml-auto">
+            <div class="btn-group dropdown">
+              <button class="btn btn-secondary dropdown-toggle"
+                      id="columns-select-dropdown-toggle"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-th-list"></i> Columns
+              </button>
+              <div class="dropdown-menu js-column-visibility" aria-labelledby="columns-select-dropdown-toggle"></div>
+            </div>
+            <button class="btn btn-secondary js-clear-filters-btn">
+              <i class="fas fa-times"></i> Clear filters
+            </button>
+            <% if (authz_data.has_course_permission_edit && !course.example_course && !locals.needToSync) { %>
+            <form class="btn-group" name="add-question-form" method="POST">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <input type="hidden" name="__action" value="add_question">
+              <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-plus"></i> Add Question
+              </button>
+            </form>
+            <% } %>
+          </div>
+        </div>
         <div id="questionsTable" class="table table-sm table-hover table-bordered">
           <div class="spinner-border" role="status">
             <span class="sr-only">Loading...</span>
