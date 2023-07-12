@@ -24,6 +24,7 @@ onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances } = decodeData('questions-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
+    layout: 'fitColumns',
     pagination: true,
     paginationSize: 50,
     paginationSizeSelector: [10, 20, 50, 100, 200, 500, true],
@@ -169,7 +170,8 @@ onDocumentReady(() => {
 
   document.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
-      table.setHeaderFilterFocus('qid');
+      // Set focus to filter of first visible column
+      table.setHeaderFilterFocus(table.getColumns().find((c) => c.isVisible()));
       event.preventDefault();
     }
   });
