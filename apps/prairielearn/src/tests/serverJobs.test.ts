@@ -60,7 +60,7 @@ describe('server-jobs', () => {
         description: 'test job sequence',
       });
 
-      await assert.isRejected(
+      await assert.isFulfilled(
         serverJob.execute(async (job) => {
           job.info('testing info');
           throw new Error('failing job');
@@ -87,7 +87,7 @@ describe('server-jobs', () => {
         description: 'test job sequence',
       });
 
-      await assert.isRejected(
+      await assert.isFulfilled(
         serverJob.execute(async (job) => {
           job.fail('failing job');
         }),
@@ -111,17 +111,19 @@ describe('server-jobs', () => {
     });
   });
 
-  describe('executeInBackground', () => {
-    it('does not propagate error to the caller', async () => {
+  describe('executeUnsafe', () => {
+    it('propagates error to the caller', async () => {
       const serverJob = await createServerJob({
         type: 'test',
         description: 'test job sequence',
       });
 
-      serverJob.executeInBackground(async (job) => {
-        job.info('testing info');
-        throw new Error('failing job');
-      });
+      await assert.isRejected(
+        serverJob.executeUnsafe(async (job) => {
+          job.info('testing info');
+          throw new Error('failing job');
+        }),
+      );
 
       await helperServer.waitForJobSequenceAsync(serverJob.jobSequenceId);
 

@@ -519,6 +519,7 @@ module.exports.getJobSequenceWithFormattedOutput = function (job_sequence_id, co
     if (ERR(err, callback)) return;
 
     (jobSequence.jobs ?? []).forEach((job) => {
+      job.output_raw = job.output;
       if (job.output) {
         const ansiup = new AnsiUp();
         job.output = ansiup.ansi_to_html(job.output);
