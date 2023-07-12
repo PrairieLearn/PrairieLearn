@@ -19,6 +19,7 @@ interface Lock {
 interface LockOptions {
   /** How many milliseconds to wait (anything other than a positive number means forever) */
   timeout?: number;
+
   /**
    * Whether or not this lock should automatically renew itself periodically.
    * By default, locks will not renew themselves.
@@ -28,6 +29,10 @@ interface LockOptions {
    * "renewed" by making a no-op query.
    */
   autoRenew?: boolean;
+}
+
+interface WithLockOptions<T> extends LockOptions {
+  onNotAcquired?: () => Promise<T> | T;
 }
 
 /*
@@ -143,13 +148,26 @@ export const releaseLock = util.callbackify(releaseLockAsync);
 /**
  * Acquires the given lock, executes the provided function with the lock held,
  * and releases the lock once the function has executed.
+ *
+ * If the lock cannot be acquired, the function is not executed. If an `onNotAcquired`
+ * function was provided, this function is called and its return value is returned.
+ * Otherwise, an error is thrown to indicate that the lock could not be acquired.
  */
-export async function doWithLock<T>(
+export async function doWithLock<T, U = never>(
   name: string,
-  options: LockOptions,
+  options: WithLockOptions<U>,
   func: () => Promise<T>,
-): Promise<T> {
-  const lock = await waitLockAsync(name, options);
+): Promise<T | U> {
+  const lock = await tryLockAsync(name, options);
+
+  if (!lock) {
+    if (options.onNotAcquired) {
+      return await options.onNotAcquired();
+    } else {
+      throw new Error(`failed to acquire lock: ${name}`);
+    }
+  }
+
   try {
     return await func();
   } finally {
@@ -159,21 +177,25 @@ export async function doWithLock<T>(
 
 /**
  * Tries to acquire the given lock, executes the provided function with the lock held,
- * and releases the lock once the function has executed. If the lock cannot be acquired,
- * the function is not executed and null is returned.
+ * and releases the lock once the function has executed.
+ *
+ * If the lock cannot be acquired, the function is not executed. If an `onNotAcquired`
+ * function was provided, this function is called and its return value is returned.
+ * Otherwise, `null` is returned.
  */
-export async function tryWithLock<T>(
+export async function tryWithLock<T, U = null>(
   name: string,
-  options: LockOptions,
+  options: WithLockOptions<U>,
   func: () => Promise<T>,
-): Promise<T | null> {
-  const lock = await tryLockAsync(name, options);
-  if (lock == null) return null;
-  try {
-    return await func();
-  } finally {
-    await releaseLockAsync(lock);
-  }
+): Promise<T | U> {
+  return await doWithLock<T, U>(
+    name,
+    {
+      onNotAcquired: () => null as U,
+      ...options,
+    },
+    func,
+  );
 }
 
 /**
