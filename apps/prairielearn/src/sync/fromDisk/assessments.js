@@ -269,16 +269,6 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   return assessmentParams;
 }
 
-// function extractInfo(qid) {
-//   const firstSlash = qid.indexOf('/');
-//   const sourceCourse = qid.substring(1, firstSlash);
-//   const questionDirectory = qid.substring(firstSlash + 1, qid.length);
-//   return {
-//     sourceCourse: sourceCourse,
-//     qid: questionDirectory
-//   }
-// }
-
 /**
  * @param {any} courseId
  * @param {any} courseInstanceId
