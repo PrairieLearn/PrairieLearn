@@ -17,6 +17,7 @@ const courseUtil = require('../../lib/courseUtil');
 const util = require('util');
 const chunks = require('../../lib/chunks');
 const debug = require('debug')('prairielearn:syncHelpers');
+const { getLockNameForCoursePath } = require('../../lib/course');
 
 const docker = new Docker();
 
@@ -35,7 +36,7 @@ module.exports.pullAndUpdate = async function (locals) {
   }
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = `coursedir:${locals.course.path}`;
+    const lockName = getLockNameForCoursePath(locals.course.path);
     await namedLocks.tryWithLock(
       lockName,
       {
