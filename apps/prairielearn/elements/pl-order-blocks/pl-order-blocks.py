@@ -175,14 +175,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
 
-    if (
-        grading_method is not GradingMethodType.DAG
-        and grading_method is not GradingMethodType.RANKING
-        and grading_method is not GradingMethodType.ORDERED
-        and pl.has_attrib(element, "partial-credit")
+    if grading_method not in RANKING_DAG_ORDERED_GRADING_TYPE and pl.has_attrib(
+        element, "partial-credit"
     ):
         raise Exception(
-            "You may only specify partial credit options in the DAG and ranking grading modes."
+            "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
         )
 
     if (
