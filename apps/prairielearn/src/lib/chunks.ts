@@ -160,9 +160,7 @@ type CourseChunks = {
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
-  courseInstances: {
-    [id: string]: CourseInstanceChunks;
-  };
+  courseInstances: Record<string, CourseInstanceChunks>;
 };
 
 /**

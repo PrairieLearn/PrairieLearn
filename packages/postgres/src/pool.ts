@@ -16,8 +16,8 @@ export interface CursorIterator<T> {
 }
 
 const debug = debugFactory('@prairielearn/postgres');
-const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
-const searchSchemaMap: WeakMap<pg.PoolClient, string> = new WeakMap();
+const lastQueryMap = new WeakMap<pg.PoolClient, string>();
+const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
@@ -149,7 +149,7 @@ export class PostgresPool {
    * the fact that we tried to acquire new clients inside of transactions, which
    * ultimately lead to a deadlock.
    */
-  private alsClient: AsyncLocalStorage<pg.PoolClient> = new AsyncLocalStorage();
+  private alsClient = new AsyncLocalStorage<pg.PoolClient>();
   private searchSchema: string | null = null;
   /** Tracks the total number of queries executed by this pool. */
   private _queryCount = 0;
