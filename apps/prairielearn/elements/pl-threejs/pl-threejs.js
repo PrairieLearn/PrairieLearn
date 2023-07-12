@@ -109,6 +109,7 @@ function PLThreeJS(options) {
 
   // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class FontLoader extends THREE.Loader {
+    // eslint-disable-next-line @typescript-eslint/no-useless-constructor
     constructor(manager) {
       super(manager);
     }
@@ -169,9 +170,7 @@ function PLThreeJS(options) {
     let offsetX = 0,
       offsetY = 0;
 
-    for (let i = 0; i < chars.length; i++) {
-      const char = chars[i];
-
+    for (const char of chars) {
       if (char === '\n') {
         offsetX = 0;
         offsetY -= line_height;
