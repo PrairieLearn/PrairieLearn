@@ -38,8 +38,11 @@
         <!-- TODO Add placeholder for pagination on top and bottom -->
         <!-- TODO Sticky header -->
         <!-- TODO Sticky first column -->
-        <!-- TODO Ctrl/Cmd-F calls table.setHeaderFilterFocus("qid"); -->
-        <div id="questionsTable" class="table table-sm table-hover table-bordered"></div>
+        <div id="questionsTable" class="table table-sm table-hover table-bordered">
+          <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
       </div>
     </main>
 </body>

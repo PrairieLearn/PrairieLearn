@@ -22,7 +22,7 @@ Tabulator.registerModule([
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances } = decodeData('questions-data');
-  new Tabulator('#questionsTable', {
+  const table = new Tabulator('#questionsTable', {
     data: questions,
     pagination: true,
     paginationSize: 50,
@@ -31,20 +31,18 @@ onDocumentReady(() => {
       {
         field: 'qid',
         title: 'QID',
-        cssClass: 'align-middle sticky-column',
+        cssClass: 'sticky-column',
         formatter: qidFormatter,
         headerFilter: 'input',
       },
       {
         field: 'title',
         title: 'Title',
-        cssClass: 'align-middle text-nowrap',
         headerFilter: 'input',
       },
       {
         field: 'topic',
         title: 'Topic',
-        cssClass: 'align-middle text-nowrap',
         formatter: (cell) =>
           html`<span class="badge color-${cell.getValue().color}"
             >${cell.getValue().name}</span
@@ -60,7 +58,6 @@ onDocumentReady(() => {
       {
         field: 'tags',
         title: 'Tags',
-        cssClass: 'align-middle text-nowrap',
         formatter: (cell) =>
           cell
             .getValue()
@@ -83,7 +80,6 @@ onDocumentReady(() => {
       {
         field: 'display_type',
         title: 'Version',
-        cssClass: 'align-middle text-nowrap',
         visible: questions.some((q) => q.display_type !== 'v3'),
         formatter: (cell) =>
           html`<span class="badge color-${cell.getValue() === 'v3' ? 'green1' : 'red1'}"
@@ -101,7 +97,6 @@ onDocumentReady(() => {
       {
         field: 'grading_method',
         title: 'Grading Method',
-        cssClass: 'align-middle text-nowrap',
         visible: true, // TODO Make false by default
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Methods)',
@@ -115,7 +110,6 @@ onDocumentReady(() => {
       {
         field: 'external_grading_image',
         title: 'External Grading Image',
-        cssClass: 'align-middle text-nowrap',
         visible: true, // TODO Make false by default
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Images)',
@@ -133,7 +127,6 @@ onDocumentReady(() => {
         title: `${ci.short_name} Assessments`,
         mutator: (_value, data) =>
           data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()),
-        cssClass: 'align-middle text-nowrap',
         visible: true, // TODO Make only current CI visible by default
         headerSort: false,
         formatter: (cell) =>
@@ -172,6 +165,13 @@ onDocumentReady(() => {
         },
       })),
     ],
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+      table.setHeaderFilterFocus('qid');
+      event.preventDefault();
+    }
   });
 });
 
