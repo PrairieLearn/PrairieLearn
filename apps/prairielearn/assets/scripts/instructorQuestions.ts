@@ -7,6 +7,7 @@ import {
   SortModule,
   PageModule,
   MutatorModule,
+  FrozenColumnsModule,
 } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
@@ -18,6 +19,7 @@ Tabulator.registerModule([
   SortModule,
   PageModule,
   MutatorModule,
+  FrozenColumnsModule,
 ]);
 
 onDocumentReady(() => {
@@ -35,6 +37,7 @@ onDocumentReady(() => {
         cssClass: 'sticky-column',
         formatter: qidFormatter,
         headerFilter: 'input',
+        frozen: true,
       },
       {
         field: 'title',
