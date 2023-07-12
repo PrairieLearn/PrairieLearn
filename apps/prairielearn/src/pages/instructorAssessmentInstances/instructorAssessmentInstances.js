@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const util = require('node:util');
 
 const error = require('@prairielearn/error');
 const regrading = require('../../lib/regrading');
@@ -68,7 +69,7 @@ router.post('/', function (req, res, next) {
         function (err) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify({}));
-        }
+        },
       );
     });
   } else if (req.body.__action === 'delete') {
@@ -87,7 +88,7 @@ router.post('/', function (req, res, next) {
     const assessment_id = res.locals.assessment.id;
     const close = req.body.__action === 'close_all';
     const overrideGradeRate = true;
-    assessment.gradeAllAssessmentInstances(
+    util.callbackify(assessment.gradeAllAssessmentInstances)(
       assessment_id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
@@ -96,7 +97,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
+      },
     );
   } else if (req.body.__action === 'delete_all') {
     const params = [res.locals.assessment.id, res.locals.authn_user.user_id];
@@ -117,7 +118,7 @@ router.post('/', function (req, res, next) {
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        },
       );
     });
   } else if (req.body.__action === 'set_time_limit') {
@@ -177,7 +178,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

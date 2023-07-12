@@ -54,6 +54,7 @@
  */
 
 class STLLoader extends THREE.Loader {
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
   constructor(manager) {
     super(manager);
   }
@@ -81,7 +82,7 @@ class STLLoader extends THREE.Loader {
         }
       },
       onProgress,
-      onError
+      onError,
     );
   }
 
@@ -271,7 +272,8 @@ class STLLoader extends THREE.Loader {
 
           if (normalCountPerFace !== 1) {
             console.error(
-              "THREE.STLLoader: Something isn't right with the normal of face number " + faceCounter
+              "THREE.STLLoader: Something isn't right with the normal of face number " +
+                faceCounter,
             );
           }
 
@@ -280,7 +282,7 @@ class STLLoader extends THREE.Loader {
           if (vertexCountPerFace !== 3) {
             console.error(
               "THREE.STLLoader: Something isn't right with the vertices of face number " +
-                faceCounter
+                faceCounter,
             );
           }
 

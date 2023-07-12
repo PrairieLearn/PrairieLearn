@@ -3,6 +3,7 @@
 /**
  * Base element class.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
@@ -211,7 +212,7 @@ window.PLDrawingApi = {
         canvas,
         canvas_width,
         canvas_height,
-        elem_options.grid_size
+        elem_options.grid_size,
       );
     }
 
@@ -292,7 +293,7 @@ class PLDrawingAnswerState {
         console.trace(
           `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${
             object.type
-          }`
+          }`,
         );
         console.warn('Existing', this._answerData[object.id]);
         console.warn('New', object);

@@ -108,7 +108,7 @@ module.exports.getGroupId = async function (assessmentId, userId) {
   return await sqldb.queryValidatedSingleColumnZeroOrOneRow(
     sql.get_group_id,
     params,
-    GroupIdSchema
+    GroupIdSchema,
   );
 };
 
@@ -159,7 +159,7 @@ async function getRolesInfo(groupId, groupMembers) {
   let result = await sqldb.queryValidatedRows(
     sql.get_role_assignments,
     params,
-    RoleAssignmentSchema
+    RoleAssignmentSchema,
   );
   let roleAssignments = {}; // {uid: [{role_name, group_role_id, user_id}]}
   result.forEach(({ uid, role_name, group_role_id, user_id }) => {
@@ -176,13 +176,13 @@ async function getRolesInfo(groupId, groupMembers) {
   rolesInfo.groupRoles = await sqldb.queryValidatedRows(
     sql.get_group_roles,
     params,
-    GroupRoleSchema
+    GroupRoleSchema,
   );
 
   // Identify errors for any roles where count is not between max and min (if they exist)
   rolesInfo.validationErrors = rolesInfo.groupRoles.filter(
     (role) =>
-      (role.minimum && role.count < role.minimum) || (role.maximum && role.count > role.maximum)
+      (role.minimum && role.count < role.minimum) || (role.maximum && role.count > role.maximum),
   );
 
   // Identify any disabled roles based on group size, role minimums
@@ -200,7 +200,7 @@ async function getRolesInfo(groupId, groupMembers) {
   // Check if any users have too many roles
   if (groupSize >= minimumRolesToFill) {
     rolesInfo.rolesAreBalanced = Object.values(roleAssignments).every(
-      (roles) => roles.length === 1
+      (roles) => roles.length === 1,
     );
   } else {
     rolesInfo.rolesAreBalanced = true;
@@ -208,7 +208,7 @@ async function getRolesInfo(groupId, groupMembers) {
 
   // Check if users have no roles
   rolesInfo.usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined
+    (member) => roleAssignments[member.uid] === undefined,
   );
 
   return rolesInfo;
@@ -320,7 +320,7 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
       (role) =>
         (role.minimum ?? 0) > 0 &&
         role.count <= (role.minimum ?? 0) &&
-        leavingUserRoleIds.includes(role.id)
+        leavingUserRoleIds.includes(role.id),
     )
     .map((role) => role.id);
 
@@ -334,7 +334,7 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         m.user_id !== leavingUserId.toString() &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => user_id === m.user_id) === undefined
+        groupRoleAssignmentUpdates.find(({ user_id }) => user_id === m.user_id) === undefined,
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -360,8 +360,8 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
       (m) =>
         m.user_id !== leavingUserId.toString() &&
         !groupRoleAssignmentUpdates.some(
-          (u) => u.group_role_id === roleId && u.user_id === m.user_id
-        )
+          (u) => u.group_role_id === roleId && u.user_id === m.user_id,
+        ),
     )?.user_id;
     if (assigneeUserId !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -385,7 +385,7 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
     const groupId = await module.exports.getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs"
+        "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
     const groupConfig = await module.exports.getGroupConfig(assessmentId);
@@ -398,7 +398,7 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = module.exports.getGroupRoleReassignmentsAfterLeave(
           groupInfo,
-          userId
+          userId,
         );
 
         await sqldb.queryAsync(sql.reassign_group_roles_after_leave, {
@@ -409,7 +409,7 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
 
         // Groups with low enough size should only use required roles
         const minRolesToFill = _.sum(
-          groupInfo.rolesInfo.groupRoles.map((role) => role.minimum ?? 0)
+          groupInfo.rolesInfo.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
           await sqldb.queryAsync(sql.delete_non_required_roles, {
@@ -439,7 +439,7 @@ module.exports.getAssessmentPermissions = async function (assessmentId, userId) 
   return await sqldb.queryValidatedOneRow(
     sql.get_assessment_level_permissions,
     params,
-    AssessmentLevelPermissionsSchema
+    AssessmentLevelPermissionsSchema,
   );
 };
 
@@ -456,7 +456,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
     const groupId = await module.exports.getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs"
+        "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
 
@@ -464,7 +464,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
     if (!permissions.can_assign_roles_at_start) {
       throw error.make(
         403,
-        'User does not have permission to assign roles at the start of this assessment'
+        'User does not have permission to assign roles at the start of this assessment',
       );
     }
 
@@ -488,7 +488,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       .filter((role) => role.can_assign_roles_at_start)
       .map((role) => role.id);
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
-      assignerRoleIds.includes(roleAssignment.group_role_id)
+      assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
       roleAssignments.push({
@@ -504,5 +504,18 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       user_id: userId,
       authn_user_id: authnUserId,
     });
+  });
+};
+
+/**
+ * Delete all groups for the given assessment.
+ *
+ * @param {string} assessmentId
+ * @param {string} authnUserId
+ */
+module.exports.deleteAllGroups = async function (assessmentId, authnUserId) {
+  await sqldb.queryAsync(sql.delete_all_groups, {
+    assessment_id: assessmentId,
+    authn_user_id: authnUserId,
   });
 };

@@ -140,35 +140,35 @@ function questionFunctionExperiment(name, control, candidate) {
 module.exports.generate = questionFunctionExperiment(
   'calculation-question-generate',
   calculationInprocess.generate,
-  calculationSubprocess.generate
+  calculationSubprocess.generate,
 );
 
 module.exports.prepare = questionFunctionExperiment(
   'calculation-question-prepare',
   calculationInprocess.prepare,
-  calculationSubprocess.prepare
+  calculationSubprocess.prepare,
 );
 
 module.exports.render = questionFunctionExperiment(
   'calculation-question-render',
   calculationInprocess.render,
-  calculationSubprocess.render
+  calculationSubprocess.render,
 );
 
 module.exports.getFile = questionFunctionExperiment(
   'calculation-question-getFile',
   calculationInprocess.getFile,
-  calculationSubprocess.getFile
+  calculationSubprocess.getFile,
 );
 
 module.exports.parse = questionFunctionExperiment(
   'calculation-question-parse',
   calculationInprocess.parse,
-  calculationSubprocess.parse
+  calculationSubprocess.parse,
 );
 
 module.exports.grade = questionFunctionExperiment(
   'calculation-question-grade',
   calculationInprocess.grade,
-  calculationSubprocess.grade
+  calculationSubprocess.grade,
 );

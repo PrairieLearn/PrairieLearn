@@ -17,6 +17,6 @@ console.log(
   html`
     <div>Hello, world!</div>
     <div>${renderEjs(__filename, "<%- include('./hello'); %>", { name: 'Anjali' })}</div>
-  `.toString()
+  `.toString(),
 );
 ```

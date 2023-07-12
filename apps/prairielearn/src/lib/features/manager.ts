@@ -1,5 +1,6 @@
 import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
 import { z } from 'zod';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { config } from '../config';
 
@@ -12,6 +13,8 @@ const DEFAULT_CONTEXT = {
   course_instance_id: null,
   user_id: null,
 };
+
+export type FeatureOverrides = Record<string, boolean>;
 
 type EmptyContext = Record<string, never>;
 
@@ -52,6 +55,7 @@ function validateContext(context: FeatureContext) {
 
 export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
+  als: AsyncLocalStorage<FeatureOverrides>;
 
   constructor(features: FeatureName[]) {
     features.forEach((feature) => {
@@ -60,6 +64,7 @@ export class FeatureManager<FeatureName extends string> {
       }
     });
     this.features = new Set(features);
+    this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
   private validateFeature(name: FeatureName, context: FeatureContext) {
@@ -83,6 +88,13 @@ export class FeatureManager<FeatureName extends string> {
   async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
+    // Allow features to be overridden by `runWithOverrides`.
+    const featureOverrides = this.als.getStore();
+    const featureOverride = featureOverrides?.[name];
+    if (featureOverride !== undefined) {
+      return featureOverride;
+    }
+
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
@@ -93,7 +105,7 @@ export class FeatureManager<FeatureName extends string> {
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.boolean()
+      z.boolean(),
     );
     if (featureIsEnabled) return true;
 
@@ -116,7 +128,7 @@ export class FeatureManager<FeatureName extends string> {
       course?: { id: string };
       course_instance?: { id: string };
       user?: { user_id: string };
-    }
+    },
   ): Promise<boolean> {
     const user_context = locals.user && { user_id: locals.user.user_id };
     if (!locals.institution) {
@@ -163,5 +175,9 @@ export class FeatureManager<FeatureName extends string> {
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+  }
+
+  runWithOverrides<T>(overrides: FeatureOverrides, fn: () => T): T {
+    return this.als.run(overrides, fn);
   }
 }

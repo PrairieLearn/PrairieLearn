@@ -24,6 +24,7 @@
       .join('/');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-extraneous-class
   class PLFilePreview {
     constructor(uuid) {
       const filePreview = document.querySelector('#file-preview-' + uuid);

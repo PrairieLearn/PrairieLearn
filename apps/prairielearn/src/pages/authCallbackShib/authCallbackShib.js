@@ -32,7 +32,7 @@ router.get(
       pl_authn_cookie: true,
       redirect: true,
     });
-  })
+  }),
 );
 
 module.exports = router;

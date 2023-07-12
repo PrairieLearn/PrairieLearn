@@ -59,7 +59,7 @@ docker-compose.override.yml
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
 
-## Yarn 
+## Yarn
 node_modules
 yarn-error.log
 .pnp.*
@@ -76,6 +76,7 @@ yarn-error.log
 __pycache__/
 *.py[cod]
 *$py.class
+.coverage
 
 ### R
 .Rproj.user
@@ -97,5 +98,9 @@ apps/*/dist
 apps/prairielearn/public/build
 packages/*/dist
 
-# TypeScript cache
+## TypeScript cache
 *.tsbuildinfo
+
+## Question HTML snapshots
+/new-renderer/
+/old-renderer/

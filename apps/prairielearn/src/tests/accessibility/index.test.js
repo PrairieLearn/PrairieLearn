@@ -237,6 +237,8 @@ const SKIP_ROUTES = [
   // TODO: create an assessment instance and create an instance question so we can test these pages.
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file/:filename',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
@@ -276,21 +278,21 @@ describe('accessibility', () => {
 
     const firstNewsItemResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {}
+      {},
     );
 
     const questionGalleryAssessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
       {
         tid: 'gallery/elements',
-      }
+      },
     );
 
     const codeElementQuestionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
         qid: 'element/code',
-      }
+      },
     );
 
     routeParams = {

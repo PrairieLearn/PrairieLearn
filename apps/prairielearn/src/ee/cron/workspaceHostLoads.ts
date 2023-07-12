@@ -1,10 +1,11 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
+import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
-import { loadSqlEquiv, queryAsync, callAsync, callOneRowAsync } from '@prairielearn/postgres';
+import workspaceHostUtils = require('../../lib/workspaceHost');
 
 const sql = loadSqlEquiv(__filename);
 
@@ -150,10 +151,8 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
     let needed = desired_hosts - (ready_hosts + launching_hosts);
     // First thing we can try is to "re-capture" draining hosts to be ready.
     // This is very cheap to do because we don't need to call out to AWS.
-    const recaptured_hosts =
-      (await callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts ||
-      0;
-    needed -= recaptured_hosts;
+    const recapturedHostCount = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(needed);
+    needed -= recapturedHostCount;
     if (needed > 0) {
       // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
       const ec2 = new EC2(makeAwsClientConfig());
@@ -169,6 +168,6 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;
-    await callAsync('workspace_hosts_drain_extra', [surplus]);
+    await workspaceHostUtils.drainExtraWorkspaceHosts(surplus);
   }
 }

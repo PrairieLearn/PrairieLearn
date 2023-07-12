@@ -22,21 +22,39 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from inspect import signature
+
+import question_phases
+import zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
 drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 
-# If we're configured to drop privileges, matplotlib won't be able to write to
-# its default config/cache dir. To keep it fast, we'll create a cache dir for
-# it and provide it with config via the `MPLCONFIGDIR` environment variable.
+# If we're configured to drop privileges (that is, if we're running in a
+# Docker container), various tools like matplotlib and fontconfig will be
+# unable to write to their default config/cache directories. This is because
+# the `$HOME` environment variable still points to `/root`, which is not
+# writable by the `executor` user.
+#
+# To work around this, we'll set `$XDG_CONFIG_HOME` and `$XDG_CACHE_HOME` to
+# directories created in `/tmp` that are world-writable. matplotlib and
+# fontconfig should respect these environment variables; other tools should as
+# well. If they don't, special cases can be added below.
 if drop_privileges:
-    config_dir_path = "/tmp/matplotlib"
+    config_home_path = "/tmp/xdg_config"
+    cache_home_path = "/tmp/xdg_cache"
+
     oldmask = os.umask(000)
-    os.makedirs(config_dir_path, mode=0o777, exist_ok=True)
+
+    os.makedirs(config_home_path, mode=0o777, exist_ok=True)
+    os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+
     os.umask(oldmask)
-    os.environ["MPLCONFIGDIR"] = config_dir_path
+
+    os.environ["XDG_CONFIG_HOME"] = config_home_path
+    os.environ["XDG_CACHE_HOME"] = cache_home_path
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -73,6 +91,7 @@ prairielearn.get_unit_registry()
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
+        zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")
@@ -184,6 +203,34 @@ def worker_loop():
 
             # change to the desired working directory
             os.chdir(cwd)
+
+            if file == "question.html":
+                # This is an experimental implementation of question processing
+                # that does all HTML parsing and rendering in Python. This should
+                # be much faster than the current implementation that does an IPC
+                # call for each element.
+
+                data = args[0]
+                context = args[1]
+
+                result, processed_elements = question_phases.process(fcn, data, context)
+                val = {
+                    "html": result if fcn == "render" else None,
+                    "file": result if fcn == "file" else None,
+                    "data": data,
+                    "processed_elements": list(processed_elements),
+                }
+
+                # make sure all output streams are flushed
+                sys.stderr.flush()
+                sys.stdout.flush()
+
+                # write the return value (JSON on a single line)
+                outf.write(try_dumps({"present": True, "val": val}))
+                outf.write("\n")
+                outf.flush()
+
+                continue
 
             mod = {}
             file_path = os.path.join(cwd, file + ".py")

@@ -21,7 +21,7 @@ module.exports.sync = async function (courseId, courseData) {
   let courseAssessmentModules = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseAssessmentModules = (courseData.course.data?.assessmentModules ?? []).map((u) =>
-      JSON.stringify([u.name, u.heading])
+      JSON.stringify([u.name, u.heading]),
     );
   }
 

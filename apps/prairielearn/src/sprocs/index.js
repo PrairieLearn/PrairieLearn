@@ -144,7 +144,6 @@ module.exports.init = function (callback) {
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'assessment_groups_update.sql',
-      'assessment_groups_delete_all.sql',
       'assessment_groups_copy.sql',
       'assessment_groups_add_member.sql',
       'assessment_groups_delete_member.sql',
@@ -152,10 +151,6 @@ module.exports.init = function (callback) {
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'workspace_hosts_assign_workspace.sql',
-      'workspace_hosts_recapture_draining.sql',
-      'workspace_hosts_drain_extra.sql',
-      'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
     ],
@@ -174,6 +169,6 @@ module.exports.init = function (callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully completed DB stored procedure initialization');
       callback(null);
-    }
+    },
   );
 };

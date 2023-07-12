@@ -28,6 +28,7 @@ const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
+const { getLockNameForCoursePath } = require('../../lib/course');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -64,7 +65,7 @@ router.get('/*', (req, res, next) => {
       error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -72,83 +73,54 @@ router.get('/*', (req, res, next) => {
   const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
   async.waterfall(
     [
-      (callback) => {
+      async () => {
         debug('Read from db');
-        readEdit(fileEdit, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
+        await readEdit(fileEdit);
+
         debug('Read from disk');
-        fs.readFile(fullPath, (err, contents) => {
-          if (ERR(err, callback)) return;
-          fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
-          fileEdit.diskHash = getHash(fileEdit.diskContents);
-          callback(null, contents);
-        });
-      },
-      (contents, callback) => {
-        isBinaryFile(contents).then(
-          (result) => {
-            debug(`isBinaryFile: ${result}`);
-            if (result) {
-              debug('found a binary file');
-              callback(new Error('Cannot edit binary file'));
-            } else {
-              debug('found a text file');
-              callback(null);
-            }
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null); // should never get here
-          }
-        );
-      },
-      (callback) => {
-        if (fileEdit.jobSequenceId == null) {
-          callback(null);
+        const contents = await fs.readFile(fullPath);
+        fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
+        fileEdit.diskHash = getHash(fileEdit.diskContents);
+
+        const binary = await isBinaryFile(contents);
+        debug(`isBinaryFile: ${binary}`);
+        if (binary) {
+          debug('found a binary file');
+          throw new Error('Cannot edit binary file');
         } else {
+          debug('found a text file');
+        }
+
+        if (fileEdit.jobSequenceId != null) {
           debug('Read job sequence');
-          serverJobs.getJobSequenceWithFormattedOutput(
+          fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
             fileEdit.jobSequenceId,
             res.locals.course.id,
-            (err, job_sequence) => {
-              if (ERR(err, callback)) return;
-              fileEdit.jobSequence = job_sequence;
-              callback(null);
-            }
           );
         }
-      },
-      (callback) => {
-        callbackify(editorUtil.getErrorsAndWarningsForFilePath)(
+
+        const data = await editorUtil.getErrorsAndWarningsForFilePath(
           res.locals.course.id,
           relPath,
-          (err, data) => {
-            if (ERR(err, callback)) return;
-            const ansiUp = new AnsiUp();
-            fileEdit.sync_errors = data.errors;
-            fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
-            fileEdit.sync_warnings = data.warnings;
-            fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
-            callback(null);
-          }
         );
+        const ansiUp = new AnsiUp();
+        fileEdit.sync_errors = data.errors;
+        fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
+        fileEdit.sync_warnings = data.warnings;
+        fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
       },
     ],
     (err) => {
@@ -190,7 +162,7 @@ router.get('/*', (req, res, next) => {
         res.locals.fileEdit.paths = paths;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
-    }
+    },
   );
 });
 
@@ -229,7 +201,7 @@ router.post('/*', (req, res, next) => {
       error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -237,14 +209,14 @@ router.post('/*', (req, res, next) => {
   const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
   );
   if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 
@@ -263,8 +235,8 @@ router.post('/*', (req, res, next) => {
           {
             locals: res.locals,
             body: req.body,
-          }
-        )
+          },
+        ),
       );
     }
 
@@ -278,11 +250,11 @@ router.post('/*', (req, res, next) => {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
-        res.locals.course_instance.short_name
+        res.locals.course_instance.short_name,
       );
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else if (res.locals.navPage === 'assessment') {
       const rootPath = path.join(
@@ -290,17 +262,17 @@ router.post('/*', (req, res, next) => {
         'courseInstances',
         res.locals.course_instance.short_name,
         'assessments',
-        res.locals.assessment.tid
+        res.locals.assessment.tid,
       );
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else if (res.locals.navPage === 'question') {
       const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-        fullPath
+        fullPath,
       )}`;
     } else {
       const rootPath = res.locals.course.path;
@@ -309,12 +281,9 @@ router.post('/*', (req, res, next) => {
 
     async.series(
       [
-        (callback) => {
+        async () => {
           debug('Write edit to db');
-          createEdit(fileEdit, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await createEdit(fileEdit);
         },
         (callback) => {
           debug('Write edit to disk (also push and sync if necessary)');
@@ -332,14 +301,14 @@ router.post('/*', (req, res, next) => {
       (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
-      }
+      },
     );
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
@@ -348,108 +317,63 @@ function getHash(contents) {
   return sha256(contents).toString();
 }
 
-function readEdit(fileEdit, callback) {
-  async.series(
-    [
-      (callback) => {
-        const params = {
-          user_id: fileEdit.userID,
-          course_id: fileEdit.courseID,
-          dir_name: fileEdit.dirName,
-          file_name: fileEdit.fileName,
-        };
-        debug(`Looking for previously saved drafts`);
-        sqldb.query(sql.select_file_edit, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          if (result.rows.length > 0) {
-            debug(
-              `Found ${result.rows.length} saved drafts, the first of which has id ${result.rows[0].id}`
-            );
-            if (result.rows[0].age < 24) {
-              fileEdit.editID = result.rows[0].id;
-              fileEdit.origHash = result.rows[0].orig_hash;
-              fileEdit.didSave = result.rows[0].did_save;
-              fileEdit.didSync = result.rows[0].did_sync;
-              fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
-              fileEdit.fileID = result.rows[0].file_id;
-              debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
-            } else {
-              debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
-            }
-          } else {
-            debug(`Found no saved drafts`);
-          }
-          callback(null);
-        });
-      },
-      (callback) => {
-        // We are choosing to soft-delete all drafts *before* reading the
-        // contents of whatever draft we found, because we don't want to get
-        // in a situation where the user is trapped with an unreadable draft.
-        // We accept the possibility that a draft will occasionally be lost.
-        const params = {
-          user_id: fileEdit.userID,
-          course_id: fileEdit.courseID,
-          dir_name: fileEdit.dirName,
-          file_name: fileEdit.fileName,
-        };
-        sqldb.query(sql.soft_delete_file_edit, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          debug(`Deleted ${result.rowCount} previously saved drafts`);
-          if (result.rowCount > 0) {
-            result.rows.forEach((row) => {
-              if (idsEqual(row.file_id, fileEdit.fileID)) {
-                debug(
-                  `Defer removal of file_id=${row.file_id} from file store until after reading contents`
-                );
-              } else {
-                debug(`Remove file_id=${row.file_id} from file store`);
-                deleteEditFromFileStore(row.file_id, fileEdit.userID, (err) => {
-                  if (ERR(err, callback)) return;
-                });
-              }
-            });
-          }
-          callback(null);
-        });
-      },
-      (callback) => {
-        if ('editID' in fileEdit) {
-          debug('Read contents of file edit');
-          readEditContents(fileEdit, (err, contents) => {
-            if (ERR(err, callback)) return;
-            fileEdit.editContents = contents;
-            fileEdit.editHash = getHash(fileEdit.editContents);
-            callback(null);
-          });
-        } else {
-          callback(null);
-        }
-      },
-      (callback) => {
-        if ('fileID' in fileEdit) {
-          debug(`Remove file_id=${fileEdit.fileID} from file store`);
-          deleteEditFromFileStore(fileEdit.fileID, fileEdit.userID, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
-        } else {
-          callback(null);
-        }
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
+async function readEdit(fileEdit) {
+  debug(`Looking for previously saved drafts`);
+  const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+  });
+  if (draftResult.rows.length > 0) {
+    debug(
+      `Found ${draftResult.rows.length} saved drafts, the first of which has id ${draftResult.rows[0].id}`,
+    );
+    if (draftResult.rows[0].age < 24) {
+      fileEdit.editID = draftResult.rows[0].id;
+      fileEdit.origHash = draftResult.rows[0].orig_hash;
+      fileEdit.didSave = draftResult.rows[0].did_save;
+      fileEdit.didSync = draftResult.rows[0].did_sync;
+      fileEdit.jobSequenceId = draftResult.rows[0].job_sequence_id;
+      fileEdit.fileID = draftResult.rows[0].file_id;
+      debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
+    } else {
+      debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
-  );
-}
+  } else {
+    debug(`Found no saved drafts`);
+  }
 
-function readEditContents(fileEdit, callback) {
-  callbackify(async () => {
+  // We are choosing to soft-delete all drafts *before* reading the
+  // contents of whatever draft we found, because we don't want to get
+  // in a situation where the user is trapped with an unreadable draft.
+  // We accept the possibility that a draft will occasionally be lost.
+  const result = await sqldb.queryAsync(sql.soft_delete_file_edit, {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+  });
+  debug(`Deleted ${result.rowCount} previously saved drafts`);
+  for (const row of result.rows) {
+    if (idsEqual(row.file_id, fileEdit.fileID)) {
+      debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
+    } else {
+      debug(`Remove file_id=${row.file_id} from file store`);
+      await fileStore.delete(row.file_id, fileEdit.userID);
+    }
+  }
+
+  if ('editID' in fileEdit) {
+    debug('Read contents of file edit');
     const result = await fileStore.get(fileEdit.fileID);
-    return b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
-  })(callback);
+    const contents = b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
+    fileEdit.editContents = contents;
+    fileEdit.editHash = getHash(fileEdit.editContents);
+
+    debug(`Remove file_id=${fileEdit.fileID} from file store`);
+    await fileStore.delete(fileEdit.fileID, fileEdit.userID);
+  }
 }
 
 function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
@@ -463,7 +387,7 @@ function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
       callback(null);
-    }
+    },
   );
 }
 
@@ -477,7 +401,7 @@ function updateDidSave(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
       callback(null);
-    }
+    },
   );
 }
 
@@ -491,90 +415,56 @@ function updateDidSync(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
       callback(null);
-    }
+    },
   );
 }
 
-function deleteEditFromFileStore(file_id, authn_user_id, callback) {
-  callbackify(async () => {
-    await fileStore.delete(file_id, authn_user_id);
-  })(callback);
-}
+async function createEdit(fileEdit) {
+  const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+  });
+  debug(`Deleted ${deletedFileEdits.rowCount} previously saved drafts`);
+  for (const row of deletedFileEdits.rows) {
+    debug(`Remove file_id=${row.file_id} from file store`);
+    await fileStore.delete(row.file_id, fileEdit.userID);
+  }
 
-function createEdit(fileEdit, callback) {
-  async.series(
-    [
-      (callback) => {
-        const params = {
-          user_id: fileEdit.userID,
-          course_id: fileEdit.courseID,
-          dir_name: fileEdit.dirName,
-          file_name: fileEdit.fileName,
-        };
-        sqldb.query(sql.soft_delete_file_edit, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          debug(`Deleted ${result.rowCount} previously saved drafts`);
-          if (result.rowCount > 0) {
-            result.rows.forEach((row) => {
-              debug(`Remove file_id=${row.file_id} from file store`);
-              deleteEditFromFileStore(row.file_id, fileEdit.userID, (err) => {
-                if (ERR(err, callback)) return;
-              });
-            });
-          }
-          callback(null);
-        });
-      },
-      (callback) => {
-        debug('Write contents to file edit');
-        writeEdit(fileEdit, (err, fileID) => {
-          if (ERR(err, callback)) return;
-          fileEdit.fileID = fileID;
-          fileEdit.didWriteEdit = true;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const params = {
-          user_id: fileEdit.userID,
-          course_id: fileEdit.courseID,
-          dir_name: fileEdit.dirName,
-          file_name: fileEdit.fileName,
-          orig_hash: fileEdit.origHash,
-          file_id: fileEdit.fileID,
-        };
-        debug(
-          `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`
-        );
-        sqldb.queryOneRow(sql.insert_file_edit, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          fileEdit.editID = result.rows[0].id;
-          debug(`Created file edit in database with id ${fileEdit.editID}`);
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    }
+  debug('Write contents to file edit');
+  const fileID = await writeEdit(fileEdit);
+  fileEdit.fileID = fileID;
+  fileEdit.didWriteEdit = true;
+
+  const params = {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+    orig_hash: fileEdit.origHash,
+    file_id: fileEdit.fileID,
+  };
+  debug(
+    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
   );
+  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
+  fileEdit.editID = result.rows[0].id;
+  debug(`Created file edit in database with id ${fileEdit.editID}`);
 }
 
-function writeEdit(fileEdit, callback) {
-  callbackify(async () => {
-    const fileID = await fileStore.upload(
-      fileEdit.fileName,
-      Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
-      'instructor_file_edit',
-      null,
-      null,
-      fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-      fileEdit.userID //       although I don't think there's any need to do so
-    );
-    debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
-    return fileID;
-  })(callback);
+async function writeEdit(fileEdit) {
+  const fileID = await fileStore.upload(
+    fileEdit.fileName,
+    Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+    'instructor_file_edit',
+    null,
+    null,
+    fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
+    fileEdit.userID, //       although I don't think there's any need to do so
+  );
+  debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
+  return fileID;
 }
 
 function saveAndSync(fileEdit, locals, callback) {
@@ -651,7 +541,7 @@ function saveAndSync(fileEdit, locals, callback) {
           return;
         }
 
-        const lockName = 'coursedir:' + options.courseDir;
+        const lockName = getLockNameForCoursePath(options.courseDir);
         job.verbose(`Trying lock ${lockName}`);
         namedLocks.waitLock(lockName, { timeout: 5000 }, (err, lock) => {
           if (err) {
@@ -660,8 +550,8 @@ function saveAndSync(fileEdit, locals, callback) {
             job.verbose(`Did not acquire lock ${lockName}`);
             job.fail(
               new Error(
-                `Another user is already syncing or modifying the course: ${options.courseDir}`
-              )
+                `Another user is already syncing or modifying the course: ${options.courseDir}`,
+              ),
             );
           } else {
             courseLock = lock;
@@ -1037,7 +927,7 @@ function saveAndSync(fileEdit, locals, callback) {
                   chunks.logChunkChangesToJob(chunkChanges, job);
                   updateCourseCommitHash();
                 }
-              }
+              },
             );
           } else {
             updateCourseCommitHash();
