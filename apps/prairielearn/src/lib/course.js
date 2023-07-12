@@ -42,4 +42,8 @@ module.exports = {
       name: row.name,
     }));
   },
+
+  getLockNameForCoursePath(coursePath) {
+    return `coursedir:${coursePath}`;
+  },
 };

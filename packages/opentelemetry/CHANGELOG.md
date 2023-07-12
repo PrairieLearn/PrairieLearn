@@ -1,5 +1,17 @@
 # @prairielearn/opentelemetry
 
+## 1.8.3
+
+### Patch Changes
+
+- e4809dce0: Upgrade to latest versions of instrumentation packages
+
+## 1.8.2
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
 ## 1.8.1
 
 ### Patch Changes

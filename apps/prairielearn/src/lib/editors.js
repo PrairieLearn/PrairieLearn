@@ -21,6 +21,8 @@ const chunks = require('./chunks');
 const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
+const { getLockNameForCoursePath } = require('./course');
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -117,7 +119,7 @@ class Editor {
               gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
             }
 
-            const lockName = `coursedir:${this.course.path}`;
+            const lockName = getLockNameForCoursePath(this.course.path);
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
               const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
 

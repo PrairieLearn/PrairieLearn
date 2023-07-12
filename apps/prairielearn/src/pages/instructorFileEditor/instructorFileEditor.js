@@ -28,6 +28,7 @@ const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
+const { getLockNameForCoursePath } = require('../../lib/course');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -470,7 +471,7 @@ async function saveAndSync(fileEdit, locals) {
       gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
     }
 
-    const lockName = `coursedir:${locals.course.path}`;
+    const lockName = getLockNameForCoursePath(locals.course.path);
     await namedLocks.tryWithLock(lockName, { timeout: 5000 }, async () => {
       const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
 

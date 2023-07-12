@@ -19,6 +19,7 @@ const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const chunks = require('./chunks');
+const workspaceHostUtils = require('./workspaceHost');
 
 const sqldb = require('@prairielearn/postgres');
 const ERR = require('async-stacktrace');
@@ -457,11 +458,12 @@ module.exports = {
   async assignHost(workspace_id) {
     if (!config.workspaceEnable) return;
 
-    const params = [workspace_id, config.workspaceLoadHostCapacity];
-    const result = await sqldb.callOneRowAsync('workspace_hosts_assign_workspace', params);
-    const workspace_host_id = result.rows[0].workspace_host_id;
-    debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspace_host_id}`);
-    return workspace_host_id; // null means we didn't assign a host
+    const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
+      workspace_id,
+      config.workspaceLoadHostCapacity,
+    );
+    debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspaceHostId}`);
+    return workspaceHostId; // null means we didn't assign a host
   },
 
   async getGradedFiles(workspace_id) {
