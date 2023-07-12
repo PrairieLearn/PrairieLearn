@@ -1,5 +1,11 @@
 # @prairielearn/named-locks
 
+## 1.5.0
+
+### Minor Changes
+
+- cdb0f2109: Add optional `onNotAcquired` function to `doWithLock` and `tryWithLock`
+
 ## 1.4.0
 
 ### Minor Changes
