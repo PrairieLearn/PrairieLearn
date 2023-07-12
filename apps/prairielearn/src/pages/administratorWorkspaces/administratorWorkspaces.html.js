@@ -25,7 +25,7 @@ const WorkspaceSchema = z.object({
   institution_name: z.string(),
 });
 
-/** @typedef {z.infer<WorkspaceSchema>} Workspace */
+/** @typedef {z.infer<typeof WorkspaceSchema>} Workspace */
 
 /**
  * @typedef {object} AdministratorWorkspacesProps
