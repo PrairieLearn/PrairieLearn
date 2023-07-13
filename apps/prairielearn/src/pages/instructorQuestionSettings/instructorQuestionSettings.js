@@ -187,23 +187,23 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'unsafe_sharing_set_add') {
     debug('Add question to sharing set');
-    const questionSharingEnabled = features.enabledFromLocals('question-sharing', res.locals);
-    if (!questionSharingEnabled) {
-      throw error.make(403, 'Access denied (feature not available)');
-    }
-    sqldb.queryZeroOrOneRow(
-      sql.sharing_set_add,
-      {
-        course_id: res.locals.course.id,
-        question_id: res.locals.question.id,
-        sharing_set_id: req.body.sharing_set_id,
-      },
-      (err) => {
-        if (ERR(err, next)) return;
-
-        res.redirect(req.originalUrl);
-      },
-    );
+    features.enabledFromLocals('question-sharing', res.locals).then((questionSharingEnabled) => {
+      if (!questionSharingEnabled) {
+        next(error.make(403, 'Access denied (feature not available)'));
+      }
+      sqldb.queryZeroOrOneRow(
+        sql.sharing_set_add,
+        {
+          course_id: res.locals.course.id,
+          question_id: res.locals.question.id,
+          sharing_set_id: req.body.sharing_set_id,
+        },
+        (err) => {
+          if (ERR(err, next)) return;
+          res.redirect(req.originalUrl);
+        },
+      );
+    });
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {

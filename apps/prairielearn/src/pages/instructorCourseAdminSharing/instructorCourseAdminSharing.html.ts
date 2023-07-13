@@ -51,16 +51,15 @@ const chooseSharingNamePopover = (resLocals) => {
   `.toString();
 };
 
-
 export const InstructorSharing = ({
-  sharing_name,
-  sharing_token,
-  sharing_sets,
+  sharingName,
+  sharingToken,
+  sharingSets,
   resLocals,
 }: {
-  sharing_name: string | null;
-  sharing_token: string;
-  sharing_sets: { name: string; id: string; shared_with: string[] }[];
+  sharingName: string | null;
+  sharingToken: string;
+  sharingSets: { name: string; id: string; shared_with: string[] }[];
   resLocals: Record<string, any>;
 }) => {
   return html`
@@ -86,8 +85,8 @@ export const InstructorSharing = ({
                 <tr>
                   <th>Sharing Name</th>
                   <td>
-                    ${sharing_name !== null
-                      ? sharing_name
+                    ${sharingName !== null
+                      ? sharingName
                       : html`
                           <button
                             type="button"
@@ -111,10 +110,10 @@ export const InstructorSharing = ({
                 <tr>
                   <th>Sharing ID</th>
                   <td>
-                    ${sharing_token}
+                    ${sharingToken}
                     <button
                       class="btn btn-xs btn-secondary mx-2"
-                      onclick="navigator.clipboard.writeText('${sharing_token}');"
+                      onclick="navigator.clipboard.writeText('${sharingToken}');"
                     >
                       <i class="fa fa-copy"></i>
                       <span>Copy</span>
@@ -165,7 +164,7 @@ export const InstructorSharing = ({
                 <th>Shared With</th>
               </thead>
               <tbody>
-                ${sharing_sets.map(
+                ${sharingSets.map(
                   (sharing_set) => html`
                     <tr>
                       <td class="align-middle">${sharing_set.name}</td>

@@ -6,6 +6,7 @@ const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
 const { features } = require('../../lib/features/index');
+const { z } = require('zod');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -362,11 +363,15 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   });
 
   if (importedQids.size > 0) {
-    let result = await sqldb.queryOneRowAsync(sql.get_course_info, { course_id: courseId });
+    let institutionId = await sqldb.queryRow(
+      sql.get_institution_id,
+      { course_id: courseId },
+      z.string(),
+    );
     let questionSharingEnabled = await features.enabled('question-sharing', {
       course_id: courseId,
       course_instance_id: courseInstanceId,
-      institution_id: result.rows[0].institution_id,
+      institution_id: institutionId,
     });
     if (!questionSharingEnabled && config.checkSharingOnSync) {
       for (let qid of importedQids) {

@@ -50,9 +50,9 @@ router.get(
     );
     res.send(
       InstructorSharing({
-        sharing_name: sharingInfo.sharing_name,
-        sharing_token: sharingInfo.sharing_token,
-        sharing_sets: sharingSets,
+        sharingName: sharingInfo.sharing_name,
+        sharingToken: sharingInfo.sharing_token,
+        sharingSets: sharingSets,
         resLocals: res.locals,
       }),
     );

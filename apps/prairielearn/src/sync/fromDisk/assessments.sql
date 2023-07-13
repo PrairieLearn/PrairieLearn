@@ -38,7 +38,7 @@ FROM
 WHERE
   ssc.course_id = $course_id;
 
--- BLOCK get_course_info
+-- BLOCK get_institution_id
 SELECT
   institution_id
 FROM
