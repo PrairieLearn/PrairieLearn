@@ -194,7 +194,7 @@ class Editor {
 
               await syncCourseFromDisk(this.course, startGitHash, job);
 
-              // As with `job.data.pushAttempted` above, we'll check this flag
+              // As with `job.data.pushSucceeded` above, we'll check this flag
               // on the `editError` page to know if syncing failed.
               job.data.syncSucceeded = true;
             });
