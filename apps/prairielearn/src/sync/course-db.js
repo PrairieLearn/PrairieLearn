@@ -1086,7 +1086,7 @@ async function validateAssessment(assessment, questions) {
   const checkAndRecordQid = (qid) => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
-      // sync time because we need to hit the database to verify if the question exists
+      // sync time because we need to query the database to verify that the question exists
       return;
     }
     if (!(qid in questions)) {

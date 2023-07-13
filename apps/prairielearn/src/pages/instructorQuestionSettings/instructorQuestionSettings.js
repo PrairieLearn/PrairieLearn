@@ -275,17 +275,13 @@ router.get('/', function (req, res, next) {
           },
         );
       },
-      (callback) => {
-        sqldb.query(
-          sql.select_sharing_sets,
-          { question_id: res.locals.question.id, course_id: res.locals.course.id },
-          (err, result) => {
-            if (ERR(err, callback)) return;
-            res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
-            res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
-            callback(null);
-          },
-        );
+      async () => {
+        let result = await sqldb.queryAsync(sql.select_sharing_sets, {
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        });
+        res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
+        res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
       },
     ],
     (err) => {

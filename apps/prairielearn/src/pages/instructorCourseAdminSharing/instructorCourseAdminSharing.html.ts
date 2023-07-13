@@ -205,14 +205,16 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                                   "${sharing_set.name}", enter their course sharing token below.
                                 </p>
                               </div>
-                              <div class="" style="padding:1em;">
+                              <div class="p-1">
                                 <input
                                   class="form-control form-control-sm"
                                   type="text"
                                   name="course_sharing_token"
                                   required
                                 />
-                                <button class="btn-sm btn-primary" type="Submit">Add Course</button>
+                                <button class="btn btn-sm btn-primary" type="Submit">
+                                  Add Course
+                                </button>
                               </div>
                             </div>
                           </div>
