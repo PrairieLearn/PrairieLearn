@@ -9,7 +9,7 @@
           plainUrlPrefix, 
           questions, 
           course_instances: authz_data.course_instances.map(ci => ({
-            id: ci.id, 
+            id: ci.id.toString(), 
             short_name: ci.short_name, 
             current: locals.course_instance?.id == ci.id
           })),

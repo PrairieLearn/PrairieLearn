@@ -2975,6 +2975,7 @@ __metadata:
     "@types/passport-azure-ad": ^4.3.1
     "@types/pem": ^1.14.0
     "@types/pg": ^8.10.2
+    "@types/tabulator-tables": ^5.4.8
     "@types/tar": ^6.1.5
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.2
@@ -4731,6 +4732,13 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: 4812694de5444802f7386da7882da9072a6d63b5b634eb59fdca39e8f7ad4964bcefe7844d375d594cb979a0804e24aea273098bdbb84e7e23a9d3b5698d3936
+  languageName: node
+  linkType: hard
+
+"@types/tabulator-tables@npm:^5.4.8":
+  version: 5.32.1
+  resolution: "@types/tabulator-tables@npm:5.32.1"
+  checksum: 0063ad0ac2b3a760eda6b7f961c73dcb213fc4660c5c438a26d01baa07699431273e60be94d60fae15cb1c414a86c23f4cfe522ed8df85bbc2bb20b1b8b6f595
   languageName: node
   linkType: hard
 

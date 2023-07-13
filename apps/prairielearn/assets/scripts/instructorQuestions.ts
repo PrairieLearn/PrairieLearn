@@ -8,9 +8,44 @@ import {
   PageModule,
   MutatorModule,
   FrozenColumnsModule,
+  CellComponent,
+  Editor,
 } from 'tabulator-tables';
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
+
+type Assessment = {
+  assessment_id: string;
+  course_instance_id: string;
+  label: string;
+  color: string;
+};
+type CourseInstance = { id: string; short_name: string; current: boolean };
+type Topic = { id: string; name: string; color: string };
+type Tag = { id: string; name: string; color: string };
+
+type Question = {
+  id: string;
+  qid: string;
+  display_type: string;
+  grading_method: string;
+  external_grading_image: string | null;
+  topic: Topic | null;
+  tags: Tag[] | null;
+  assessments: Assessment[] | null;
+  sync_errors: string | null;
+  sync_warnings: string | null;
+  sync_errors_ansified: string | null;
+  sync_warnings_ansified: string | null;
+  open_issue_count: number;
+};
+
+type QuestionsData = {
+  plainUrlPrefix: string;
+  urlPrefix: string;
+  questions: Question[];
+  course_instances: CourseInstance[];
+};
 
 Tabulator.registerModule([
   FormatModule,
@@ -23,7 +58,8 @@ Tabulator.registerModule([
 ]);
 
 onDocumentReady(() => {
-  const { plainUrlPrefix, questions, course_instances } = decodeData('questions-data');
+  const { plainUrlPrefix, questions, course_instances } =
+    decodeData<QuestionsData>('questions-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
     layout: 'fitDataFill',
@@ -48,13 +84,13 @@ onDocumentReady(() => {
         field: 'topic',
         title: 'Topic',
         formatter: (cell) =>
-          html`<span class="badge color-${cell.getValue().color}"
-            >${cell.getValue().name}</span
+          html`<span class="badge color-${(cell.getValue() as Topic).color}"
+            >${(cell.getValue() as Topic).name}</span
           >`.toString(),
-        sorter: (a, b) => a.name.localeCompare(b.name),
+        sorter: (a: Topic, b: Topic) => a.name.localeCompare(b.name),
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Topics)',
-        headerFilterFunc: (headerValue, rowValue) => headerValue === rowValue.name,
+        headerFilterFunc: (headerValue: string, rowValue: Topic) => headerValue === rowValue.name,
         headerFilterParams: {
           values: [{ label: '(All Topics)' }, ...uniq(questions.map((q) => q.topic.name)).sort()],
         },
@@ -63,8 +99,7 @@ onDocumentReady(() => {
         field: 'tags',
         title: 'Tags',
         formatter: (cell) =>
-          cell
-            .getValue()
+          (cell.getValue() as Tag[])
             ?.map((tag) =>
               html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
             )
@@ -72,7 +107,7 @@ onDocumentReady(() => {
         headerSort: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Tags)',
-        headerFilterFunc: (headerValue, rowValue) =>
+        headerFilterFunc: (headerValue: string, rowValue: Tag[]) =>
           rowValue?.some((tag) => headerValue === tag.name),
         headerFilterParams: {
           values: [
@@ -117,7 +152,7 @@ onDocumentReady(() => {
         visible: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Images)',
-        headerFilterFunc: (headerValue, rowValue) =>
+        headerFilterFunc: (headerValue: string, rowValue: string) =>
           headerValue === '(No Image)' ? !rowValue : headerValue === rowValue,
         headerFilterParams: {
           values: [
@@ -129,13 +164,12 @@ onDocumentReady(() => {
       ...course_instances.map((ci) => ({
         field: `assessments_${ci.id}`,
         title: `${ci.short_name} Assessments`,
-        mutator: (_value, data) =>
+        mutator: (_value, data: Question): Assessment[] =>
           data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()),
         visible: ci.current,
         headerSort: false,
-        formatter: (cell) =>
-          cell
-            .getValue()
+        formatter: (cell: CellComponent) =>
+          (cell.getValue() as Assessment[])
             ?.map((assessment) =>
               html`<a
                 href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${assessment.assessment_id}"
@@ -145,9 +179,9 @@ onDocumentReady(() => {
               >`.toString(),
             )
             .join(' '),
-        headerFilter: 'list',
+        headerFilter: 'list' as Editor,
         headerFilterPlaceholder: '(All Assessments)',
-        headerFilterFunc: (headerValue, rowValue) =>
+        headerFilterFunc: (headerValue: string, rowValue: Assessment[]) =>
           headerValue === '0'
             ? !rowValue.length
             : rowValue.some((row) => headerValue === row.label),
@@ -213,14 +247,16 @@ onDocumentReady(() => {
       });
   });
 
-  document.querySelector('.js-clear-filters-btn').addEventListener('click', () => {
-    table.clearFilter(true);
-  });
+  document
+    .querySelector<HTMLButtonElement>('.js-clear-filters-btn')
+    .addEventListener('click', () => {
+      table.clearFilter(true);
+    });
 });
 
-function qidFormatter(cell) {
-  const { urlPrefix } = decodeData('questions-data');
-  const question = cell.getRow().getData();
+function qidFormatter(cell: CellComponent): string {
+  const { urlPrefix } = decodeData<QuestionsData>('questions-data');
+  const question: Question = cell.getRow().getData();
   let text = '';
   if (question.sync_errors) {
     text += html`<button
