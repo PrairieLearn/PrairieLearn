@@ -31,6 +31,9 @@ const mathjaxPromise = new Promise((resolve, _reject) => {
     onReady: (cb) => {
       mathjaxPromise.then(cb);
     },
+    // Adds a custom function so that, regardless if Mathjax.typesetPromise() is accessed before or
+    // after the page is loaded, it will be resolved when the page is ready.
+    typesetPromise: mathjaxTypeset,
     startup: {
       // Adds a custom promise so that, regardless if Mathjax.startup.promise is accessed before or
       // after the page is loaded, it will be resolved when the page is ready.
