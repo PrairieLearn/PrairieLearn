@@ -3,6 +3,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
+const { decode } = require('js-base64');
 
 const { config } = require('../lib/config');
 var sqldb = require('@prairielearn/postgres');
@@ -44,6 +45,13 @@ const differentiatePolynomial = {
   type: 'Freeform',
   title: 'Differentiate a polynomial function of one variable',
 };
+
+function decodeBrowserData(element) {
+  const base64Data = element.text();
+  const jsonData = decode(base64Data);
+  const data = JSON.parse(jsonData);
+  return data;
+}
 
 describe('Instructor questions', function () {
   this.timeout(60000);
@@ -107,7 +115,7 @@ describe('Instructor questions', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = locals.$('#questionsTable').data('data');
+      questionData = decodeBrowserData(locals.$('#questions-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -156,7 +164,7 @@ describe('Instructor questions', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = locals.$('#questionsTable').data('data');
+      questionData = decodeBrowserData(locals.$('#questions-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
