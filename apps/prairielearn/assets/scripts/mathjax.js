@@ -4,7 +4,7 @@
 // some elements (e.g., pl-drawing) depend on an SVG output.
 const outputComponent = 'output/svg';
 
-const mathjaxPromise = new Promise((resolve, _reject) => {
+const mathjaxPromise = new Promise((resolve) => {
   window.MathJax = {
     tex: {
       inlineMath: [
