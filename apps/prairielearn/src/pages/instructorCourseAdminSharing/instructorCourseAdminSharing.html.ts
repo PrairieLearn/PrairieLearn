@@ -23,32 +23,59 @@ const addSharingSetPopover = (resLocals) => {
   `.toString();
 };
 
-const chooseSharingNamePopover = (resLocals) => {
+const chooseSharingNameModal = (resLocals) => {
   return html`
-    <form name="choose-sharing-name" method="POST">
-      <input type="hidden" name="__action" value="unsafe_choose_sharing_name">
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-
-      <div class="form-group mb-4">
-        <p class=form-text>
-          Enter the sharing name you would like for your course.
-        </p>
-        <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
-          because doing so would break the assessments of other courses that have imported your questions.
-          It is recommended that you choose something short but descriptive. For example, if you're teaching
-          a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
-          name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
-        </p>
+  <div
+    class="modal fade"
+    id="chooseSharingNameModal"
+    tabindex="-1"
+    role="dialog"
+    aria-hidden="true"
+  >
+    <div
+      class="modal-dialog modal-dialog-centered"
+      role="document"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            Choose Sharing Name
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class=form-text>
+            Enter the sharing name you would like for your course.
+          </p>
+          <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
+            because doing so would break the assessments of other courses that have imported your questions.
+            It is recommended that you choose something short but descriptive. For example, if you're teaching
+            a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
+            name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <form name="choose-sharing-name" method="POST">
+            <input type="hidden" name="__action" value="unsafe_choose_sharing_name">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+            <div class=form-group>
+              <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
+            <div>
+            <div class="text-right mt-4">
+              <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div class=form-group>
-        <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-      <div>
-      <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#chooseSharingName').popover('hide')">Cancel</button>
-        <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-      </div>
-    </form>
-  `.toString();
+    </div>
+  `;
 };
 
 export const InstructorSharing = ({
@@ -92,18 +119,17 @@ export const InstructorSharing = ({
                             type="button"
                             class="btn btn-xs btn-secondary mx-2"
                             id="chooseSharingName"
-                            data-toggle="popover"
+                            title="Choose Sharing Name"
+                            data-toggle="modal"
                             data-container="body"
                             data-html="true"
-                            data-placement="auto"
-                            title="Choose Sharing Name"
-                            data-content="${chooseSharingNamePopover(resLocals)}"
+                            data-target="#chooseSharingNameModal"
                             data-trigger="manual"
-                            onclick="$(this).popover('show')"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
+                          ${chooseSharingNameModal(resLocals)}
                         `}
                   </td>
                 </tr>
