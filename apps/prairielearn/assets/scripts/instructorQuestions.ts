@@ -14,17 +14,29 @@ import {
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
-type Assessment = {
+interface Assessment {
   assessment_id: string;
   course_instance_id: string;
   label: string;
   color: string;
-};
-type CourseInstance = { id: string; short_name: string; current: boolean };
-type Topic = { id: string; name: string; color: string };
-type Tag = { id: string; name: string; color: string };
+}
+interface CourseInstance {
+  id: string;
+  short_name: string;
+  current: boolean;
+}
+interface Topic {
+  id: string;
+  name: string;
+  color: string;
+}
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
 
-type Question = {
+interface Question {
   id: string;
   qid: string;
   display_type: string;
@@ -38,14 +50,14 @@ type Question = {
   sync_errors_ansified: string | null;
   sync_warnings_ansified: string | null;
   open_issue_count: number;
-};
+}
 
-type QuestionsData = {
+interface QuestionsData {
   plainUrlPrefix: string;
   urlPrefix: string;
   questions: Question[];
   course_instances: CourseInstance[];
-};
+}
 
 Tabulator.registerModule([
   FormatModule,
