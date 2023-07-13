@@ -10,8 +10,8 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.367.0",
-    "@aws-sdk/lib-storage": "^3.367.0",
+    "@aws-sdk/client-s3": "^3.369.0",
+    "@aws-sdk/lib-storage": "^3.369.0",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/logger": "workspace:^",
@@ -40,7 +40,7 @@
     "@types/node": "^18.16.19",
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.0.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
     "typescript-cp": "^0.1.8"
