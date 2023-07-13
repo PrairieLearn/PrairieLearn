@@ -192,12 +192,12 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       );
     }
 
-    this.modal.find('#modal-' + uuid + '-themes').change(function () {
-      var theme = $(this).val();
+    this.modal.find('#modal-' + uuid + '-themes').change((e) => {
+      var theme = $(e.currentTarget).val();
       this.editor.setTheme(theme);
     });
-    this.modal.find('#modal-' + uuid + '-fontsize').change(function () {
-      var fontSize = $(this).val();
+    this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
+      var fontSize = $(e.currentTarget).val();
       this.editor.setFontSize(fontSize);
     });
   });

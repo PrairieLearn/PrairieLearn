@@ -416,6 +416,7 @@ module.exports.initExpress = function () {
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
     res.locals.response_id = uuidv4();
+    res.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
@@ -1897,21 +1898,6 @@ if (require.main === module && config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
-
-        // Start capturing CPU and memory profiles as soon as possible.
-        if (config.pyroscopeEnabled) {
-          const Pyroscope = require('@pyroscope/nodejs');
-          Pyroscope.init({
-            appName: 'prairielearn',
-            serverAddress: config.pyroscopeServerAddress,
-            authToken: config.pyroscopeAuthToken,
-            tags: {
-              instanceId: config.instanceId,
-              ...(config.pyroscopeTags ?? {}),
-            },
-          });
-          Pyroscope.start();
-        }
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
