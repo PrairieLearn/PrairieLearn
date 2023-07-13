@@ -82,7 +82,6 @@ describe('institution administrators', () => {
 
   step('global admin can access course', async () => {
     const res = await withUser(ADMIN_USER, () => fetch(COURSE_URL));
-    console.log(res);
     assert.isTrue(res.ok);
   });
 
