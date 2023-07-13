@@ -109,10 +109,11 @@ class Editor {
           });
           jobSequenceId = serverJob.jobSequenceId;
 
-          // We deliberately use `execute` instead of `executeInBackground` here
-          // because we want edits to complete during the request during which
-          // they are made.
-          await serverJob.execute(async (job) => {
+          // We deliberately use `executeUnsafe` here because we want to wait
+          // for the edit to complete during the request during which it was
+          // made. We use `executeUnsafe` instead of `execute` because we want
+          // errors to be thrown and handled by the caller.
+          await serverJob.executeUnsafe(async (job) => {
             const gitEnv = process.env;
             if (config.gitSshCommand != null) {
               gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
