@@ -187,7 +187,7 @@ class Editor {
                 await cleanAndResetRepository(this.course, gitEnv, job);
               }
 
-              job.data.syncAttempted = false;
+              job.data.syncAttempted = true;
 
               await syncCourseFromDisk(this.course, startGitHash, job);
 
