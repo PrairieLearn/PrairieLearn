@@ -51,7 +51,17 @@ const chooseSharingNamePopover = (resLocals) => {
   `.toString();
 };
 
-export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, resLocals }) => {
+export const InstructorSharing = ({
+  sharing_name,
+  sharing_token,
+  sharing_sets,
+  resLocals,
+}: {
+  sharing_name: string | null;
+  sharing_token: string;
+  sharing_sets: { name: string; id: string; shared_with: string[] }[];
+  resLocals: Record<string, any>;
+}) => {
   return html`
     <!doctype html>
     <html lang="en">
@@ -159,14 +169,10 @@ export const InstructorSharing = ({ sharing_name, sharing_token, sharing_sets, r
                     <tr>
                       <td class="align-middle">${sharing_set.name}</td>
                       <td class="align-middle">
-                        ${sharing_set.shared_with.map((course_shared_with) =>
-                          course_shared_with.course_id === null
-                            ? ''
-                            : html`
-                                <span class="badge color-gray1  ">
-                                  ${course_shared_with.short_name}
-                                </span>
-                              `,
+                        ${sharing_set.shared_with.map(
+                          (course_shared_with) => html`
+                            <span class="badge color-gray1  "> ${course_shared_with} </span>
+                          `,
                         )}
                         <form
                           name="sharing-set-access-add-${sharing_set.id}"

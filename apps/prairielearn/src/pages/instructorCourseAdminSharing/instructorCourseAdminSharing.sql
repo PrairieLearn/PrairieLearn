@@ -10,10 +10,16 @@ WHERE
 SELECT
   ss.name,
   ss.id,
-  jsonb_agg(
-    jsonb_build_object('course_id', c.id, 'short_name', c.short_name)
-    ORDER BY
+  COALESCE(
+    jsonb_agg(
       c.short_name
+      ORDER BY
+        c.short_name
+    ) FILTER (
+      WHERE
+        c.short_name IS NOT NULL
+    ),
+    '[]'
   ) AS shared_with
 FROM
   sharing_sets AS ss
