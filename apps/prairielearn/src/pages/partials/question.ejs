@@ -194,7 +194,7 @@
             $.get(submissionContentUrl, 'json')
               .done((data) => {
                 $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
-                MathJax.startup.promise.then(() => MathJax.typesetPromise());
+                MathJax.typesetPromise();
               })
               .fail(() => {
                 $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
