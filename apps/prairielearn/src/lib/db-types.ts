@@ -150,3 +150,30 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
+
+export const WorkspaceHostSchema = z.object({
+  hostname: z.string().nullable(),
+  id: IdSchema,
+  instance_id: z.string(),
+  launched_at: z.date().nullable(),
+  load_count: z.number().nullable(),
+  ready_at: z.date().nullable(),
+  state: z
+    .enum(['launching', 'ready', 'draining', 'unhealthy', 'terminating', 'terminated'])
+    .nullable(),
+  state_changed_at: z.date().nullable(),
+  terminated_at: z.date().nullable(),
+  unhealthy_at: z.date().nullable(),
+  unhealthy_reason: z.string().nullable(),
+});
+export type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
+
+export const WorkspaceLogSchema = z.object({
+  date: z.date().nullable(),
+  id: IdSchema,
+  message: z.string().nullable(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']).nullable(),
+  version: z.string(),
+  workspace_id: IdSchema,
+});
+export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
