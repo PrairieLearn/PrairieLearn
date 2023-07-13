@@ -34,8 +34,7 @@ SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
   tags_for_question (q.id) AS tags,
-  issue_count.open_issue_count,
-  sharing_info.shared_with_course
+  issue_count.open_issue_count
 FROM
   questions as q
   JOIN topics as top ON (top.id = q.topic_id),
@@ -43,6 +42,10 @@ FROM
   sharing_info
 WHERE
   q.id = $question_id
+  AND (
+    q.course_id = $course_id
+    OR sharing_info.shared_with_course
+  )
   AND q.deleted_at IS NULL;
 
 -- BLOCK select_and_auth_with_course_instance
@@ -82,9 +85,7 @@ SELECT
   to_json(top) AS topic,
   tags_for_question (q.id) AS tags,
   assessments_format_for_question (q.id, ci.id) AS assessments,
-  issue_count.open_issue_count,
-  sharing_info.shared_with_course,
-  ci.course_id as course_id
+  issue_count.open_issue_count
 FROM
   questions as q
   JOIN topics as top ON (top.id = q.topic_id),
@@ -94,4 +95,8 @@ FROM
 WHERE
   q.id = $question_id
   AND ci.id = $course_instance_id
+  AND (
+    q.course_id = ci.course_id
+    OR sharing_info.shared_with_course
+  )
   AND q.deleted_at IS NULL;
