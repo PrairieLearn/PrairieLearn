@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import { mathjaxTypeset } from './mathjax';
+import { mathjaxTypeset } from './lib/mathjax';
 import { setupCountdown } from './lib/countdown';
 import { confirmOnUnload } from './lib/confirmOnUnload';
 

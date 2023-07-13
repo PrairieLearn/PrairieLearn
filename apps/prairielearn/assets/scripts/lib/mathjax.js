@@ -54,13 +54,12 @@ const mathjaxPromise = new Promise((resolve, _reject) => {
   };
 });
 
-module.exports = {
-  mathjaxTypeset: async () => {
-    await mathjaxPromise;
-    return window.MathJax.typesetPromise();
-  },
-  mathjaxConvert: async (value) => {
-    await mathjaxPromise;
-    return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
-  },
-};
+export async function mathjaxTypeset() {
+  await mathjaxPromise;
+  return window.MathJax.typesetPromise();
+}
+
+export async function mathjaxConvert(value) {
+  await mathjaxPromise;
+  return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
+}
