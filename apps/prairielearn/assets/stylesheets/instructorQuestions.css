@@ -11,3 +11,12 @@
     /* Must be higher than the z-index of the sticky column (currently 10) */
     z-index: 99;
 }
+
+/* Given that tabulator does not translate Bootstrap table-hover functionality, this is done manually */
+.tabulator-row-odd:hover {
+    background-color: #ebebeb;
+}
+
+.tabulator-row-even:hover {
+    background-color: #e6e6e6;
+}
