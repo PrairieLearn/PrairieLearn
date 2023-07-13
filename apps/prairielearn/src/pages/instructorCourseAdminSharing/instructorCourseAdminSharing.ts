@@ -4,6 +4,7 @@ import error = require('@prairielearn/error');
 import { v4 as uuidv4 } from 'uuid';
 import { CourseSchema } from '../../lib/db-types';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
+import { z } from 'zod';
 import sqldb = require('@prairielearn/postgres');
 
 const router = Router();
@@ -38,14 +39,20 @@ router.get(
       return;
     }
 
-    const sharingSets = await sqldb.queryAsync(sql.select_sharing_sets, {
-      course_id: res.locals.course.id,
-    });
+    const sharingSets = await sqldb.queryRows(
+      sql.select_sharing_sets,
+      { course_id: res.locals.course.id },
+      z.object({
+        name: z.string(),
+        id: z.string(),
+        shared_with: z.string().array(),
+      }),
+    );
     res.send(
       InstructorSharing({
         sharing_name: sharingInfo.sharing_name,
         sharing_token: sharingInfo.sharing_token,
-        sharing_sets: sharingSets.rows,
+        sharing_sets: sharingSets,
         resLocals: res.locals,
       }),
     );

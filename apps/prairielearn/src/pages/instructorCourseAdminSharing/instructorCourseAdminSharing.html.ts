@@ -51,6 +51,7 @@ const chooseSharingNamePopover = (resLocals) => {
   `.toString();
 };
 
+
 export const InstructorSharing = ({
   sharing_name,
   sharing_token,
