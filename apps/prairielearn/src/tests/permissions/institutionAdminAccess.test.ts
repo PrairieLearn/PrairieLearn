@@ -3,10 +3,10 @@ import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import { queryAsync, queryRow } from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import helperServer = require('./helperServer');
-import { UserSchema } from '../lib/db-types';
-import { selectUserByUid } from '../lib/user';
+import { config } from '../../lib/config';
+import helperServer = require('../helperServer');
+import { UserSchema } from '../../lib/db-types';
+import { selectUserByUid } from '../../lib/user';
 
 const SITE_URL = `http://localhost:${config.serverPort}`;
 const COURSE_URL = `${SITE_URL}/pl/course/1/course_admin/instances`;
