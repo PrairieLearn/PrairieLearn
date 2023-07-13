@@ -76,7 +76,15 @@ onDocumentReady(() => {
     data: questions,
     layout: 'fitDataFill',
     pagination: true,
-    paginationCounter: 'rows',
+    paginationCounter: (pageSize, currentRow, _currentPage, totalRows) =>
+      `Showing ${currentRow}-${currentRow + pageSize - 1} of ${totalRows} question${
+        totalRows === 1 ? '' : 's'
+      }` +
+      (totalRows === questions.length
+        ? ''
+        : ` (filtered from ${questions.length} total question${
+            questions.length === 1 ? '' : 's'
+          })`),
     paginationSize: 50,
     paginationSizeSelector: [10, 20, 50, 100, 200, 500, true],
     columns: [
