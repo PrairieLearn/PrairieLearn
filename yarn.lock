@@ -14198,13 +14198,13 @@ __metadata:
   linkType: hard
 
 "require-in-the-middle@npm:^7.1.1":
-  version: 7.1.1
-  resolution: "require-in-the-middle@npm:7.1.1"
+  version: 7.2.0
+  resolution: "require-in-the-middle@npm:7.2.0"
   dependencies:
     debug: ^4.1.1
     module-details-from-path: ^1.0.3
     resolve: ^1.22.1
-  checksum: 00c7e28c271cefc219962b18c1803f6124c761238c1edbf588c68a7143bfeb5779df455d2f0791c2c1f6e841580c50080d4435156e72841fa0bc50c3f383d032
+  checksum: 5ed219d12aec4d0f098029827f9e929d8e0ca4f2fe01f23a9b02169e57c5157cced9e7acaef6a871d3f56646f2cb807b08f2f23d66912ee53eca16cb88eff743
   languageName: node
   linkType: hard
 
