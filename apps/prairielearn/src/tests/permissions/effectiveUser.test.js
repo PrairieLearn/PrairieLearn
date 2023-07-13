@@ -1,11 +1,20 @@
+// @ts-check
 const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
-const { config } = require('../../lib/config');
+const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+
+const { config } = require('../../lib/config');
+const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../../lib/paths');
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+
+const sql = sqldb.loadSqlEquiv(__filename);
+
+const UserWithIdSchema = z.object({
+  user_id: z.string(),
+});
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -13,48 +22,76 @@ describe('effective user', function () {
   const context = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
-  context.pageUrlCourse = `${context.baseUrl}/course/1`;
-  context.pageUrlCourseInstance = `${context.baseUrl}/course_instance/1/instructor`;
+  context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
+  context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
+  context.pageUrlTestCourseInstance = `${context.baseUrl}/course_instance/1/instructor`;
+  context.pageUrlExampleCourseInstance = `${context.baseUrl}/course_instance/2/instructor`;
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
-  context.userId = 2;
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await util.promisify(
+      helperServer
+        .before([
+          // We need two courses for this test so that we can validate behavior of
+          // institution administrators.
+          TEST_COURSE_PATH,
+          EXAMPLE_COURSE_PATH,
+        ])
+        .bind(this),
+    )();
   });
 
+  let institutionAdminId;
+  let instructorId;
+  let staffId;
+  let studentId;
+
   before('insert users', async function () {
-    await sqldb.callAsync('users_select_or_insert', [
-      'instructor@illinois.edu',
-      'Instructor User',
-      '100000000',
-      'dev',
-    ]);
-    await sqldb.callAsync('users_select_or_insert', [
-      'staff03@illinois.edu',
-      'Staff Three',
-      null,
-      'dev',
-    ]);
-    await sqldb.callAsync('users_select_or_insert', [
-      'student@illinois.edu',
-      'Student User',
-      '000000001',
-      'dev',
-    ]);
+    const institutionAdmin = await sqldb.callValidatedOneRow(
+      'users_select_or_insert',
+      ['institution-admin@illinois.edu', 'Institution Admin', null, 'dev'],
+      UserWithIdSchema,
+    );
+    institutionAdminId = institutionAdmin.user_id;
+    await sqldb.queryAsync(sql.insert_institution_administrator, {
+      user_id: institutionAdminId,
+      institution_id: 1,
+    });
+
+    const instructor = await sqldb.callValidatedOneRow(
+      'users_select_or_insert',
+      ['instructor@illinois.edu', 'Instructor User', '100000000', 'dev'],
+      UserWithIdSchema,
+    );
+    instructorId = instructor.user_id;
     await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
       1,
       'instructor@illinois.edu',
       'Owner',
-      1,
+      instructorId,
     ]);
+
+    const staff = await sqldb.callValidatedOneRow(
+      'users_select_or_insert',
+      ['staff03@illinois.edu', 'Staff Three', null, 'dev'],
+      UserWithIdSchema,
+    );
+    staffId = staff.user_id;
     await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
       1,
       'staff03@illinois.edu',
       'Editor',
-      2,
+      staffId,
     ]);
+
+    const student = await sqldb.callValidatedOneRow(
+      'users_select_or_insert',
+      ['student@illinois.edu', 'Student User', '000000001', 'dev'],
+      UserWithIdSchema,
+    );
+    studentId = student.user_id;
     await sqldb.queryAsync(sql.insert_enrollment, {
-      user_id: 4,
+      user_id: studentId,
       course_instance_id: 1,
     });
   });
@@ -83,7 +120,9 @@ describe('effective user', function () {
     const headers = {
       cookie: 'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
@@ -91,7 +130,7 @@ describe('effective user', function () {
     const headers = {
       cookie: 'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourse, {
       headers,
     });
     assert.equal(response.status, 403);
@@ -99,7 +138,7 @@ describe('effective user', function () {
 
   step('instructor can override date (and becomes enrolled)', async () => {
     let result = await sqldb.queryAsync(sql.select_enrollment, {
-      user_id: 2,
+      user_id: instructorId,
       course_instance_id: 1,
     });
     assert.lengthOf(result.rows, 0);
@@ -111,7 +150,7 @@ describe('effective user', function () {
     });
     assert.isTrue(response.ok);
     result = await sqldb.queryAsync(sql.select_enrollment, {
-      user_id: 2,
+      user_id: instructorId,
       course_instance_id: 1,
     });
     assert.lengthOf(result.rows, 1);
@@ -138,7 +177,7 @@ describe('effective user', function () {
   step('instructor (student data viewer) cannot emulate student', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_insert', [
       1,
-      2,
+      instructorId,
       1,
       'Student Data Viewer',
       2,
@@ -155,7 +194,7 @@ describe('effective user', function () {
   step('instructor (student data editor) can emulate student', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
       1,
-      2,
+      instructorId,
       1,
       'Student Data Editor',
       2,
@@ -200,7 +239,9 @@ describe('effective user', function () {
       const headers = {
         cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
       };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+        headers,
+      });
       assert.equal(response.status, 403);
     },
   );
@@ -211,7 +252,7 @@ describe('effective user', function () {
       const headers = {
         cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
       };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourse, {
         headers,
       });
       assert.equal(response.status, 403);
@@ -249,7 +290,7 @@ describe('effective user', function () {
   });
 
   step('can request uid of administrator when administrator', async () => {
-    await sqldb.queryAsync(sql.insert_administrator, { user_id: 2 });
+    await sqldb.queryAsync(sql.insert_administrator, { user_id: instructorId });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=dev@illinois.edu',
     };
@@ -275,25 +316,29 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
   step('cannot request uid of course editor as course viewer', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await sqldb.callAsync('course_permissions_update_role', [1, instructorId, 'Viewer', 1]);
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
   step('can request uid of student data viewer as student data editor', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Owner', 1]);
+    await sqldb.callAsync('course_permissions_update_role', [1, instructorId, 'Owner', 1]);
     await sqldb.callOneRowAsync('course_instance_permissions_insert', [
       1,
-      3,
+      staffId,
       1,
       'Student Data Viewer',
       2,
@@ -302,21 +347,23 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
   step('cannot request uid of student data editor as student data viewer', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
       1,
-      2,
+      instructorId,
       1,
       'Student Data Viewer',
       2,
     ]);
     await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
       1,
-      3,
+      staffId,
       1,
       'Student Data Editor',
       2,
@@ -325,17 +372,21 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
   step('instructor can request lower course role', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    await sqldb.callAsync('course_permissions_update_role', [1, instructorId, 'Viewer', 1]);
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Previewer',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
@@ -344,14 +395,16 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Editor',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
   step('instructor can request lower course instance role', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
       1,
-      2,
+      instructorId,
       1,
       'Student Data Editor',
       2,
@@ -360,14 +413,16 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Viewer',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
   step('instructor cannot request higher course instance role', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
       1,
-      2,
+      instructorId,
       1,
       'Student Data Viewer',
       2,
@@ -376,7 +431,9 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Editor',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
@@ -398,7 +455,9 @@ describe('effective user', function () {
         cookie:
           'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None; pl_requested_course_instance_role=None',
       };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+        headers,
+      });
       assert.equal(response.status, 403);
     },
   );
@@ -410,7 +469,7 @@ describe('effective user', function () {
         cookie:
           'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None',
       };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourse, {
         headers,
       });
       assert.equal(response.status, 403);
@@ -424,8 +483,77 @@ describe('effective user', function () {
         cookie:
           'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None',
       };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+        headers,
+      });
       assert.isTrue(response.ok);
+    },
+  );
+
+  step('reset instructor course role to maximum permissions', async () => {
+    await sqldb.callAsync('course_permissions_update_role', [1, instructorId, 'Owner', 1]);
+    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
+      1,
+      instructorId,
+      1,
+      'Student Data Editor',
+      2,
+    ]);
+  });
+
+  step(
+    'instructor can access their own course when requesting access as institution administrator',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=institution-admin@illinois.edu',
+      };
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourse, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+    },
+  );
+
+  step(
+    'instructor can access their own course instance when requesting access as institution administrator',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=institution-admin@illinois.edu',
+      };
+      const response = await helperClient.fetchCheerio(context.pageUrlTestCourseInstance, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+    },
+  );
+
+  step(
+    'instructor cannot access other courses when requesting access as institution administrator',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=institution-admin@illinois.edu',
+      };
+      const response = await helperClient.fetchCheerio(context.pageUrlExampleCourse, {
+        headers,
+      });
+      assert.isFalse(response.ok);
+    },
+  );
+
+  step(
+    'instructor cannot access other course instances when requesting access as institution administrator',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=institution-admin@illinois.edu',
+      };
+      const response = await helperClient.fetchCheerio(context.pageUrlExampleCourseInstance, {
+        headers,
+      });
+      assert.isFalse(response.ok);
     },
   );
 });
