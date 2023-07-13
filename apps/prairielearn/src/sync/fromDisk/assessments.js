@@ -269,6 +269,21 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   return assessmentParams;
 }
 
+function parseSharedQuestionReference(qid) {
+  const firstSlash = qid.indexOf('/');
+  if (firstSlash === -1) {
+    return {
+      sharing_name: qid.substring(1, qid.length),
+      qid: '',
+    };
+  } else {
+    return {
+      sharing_name: qid.substring(1, firstSlash),
+      qid: qid.substring(firstSlash + 1, qid.length),
+    };
+  }
+}
+
 /**
  * @param {any} courseId
  * @param {any} courseInstanceId
@@ -367,7 +382,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
     course_id: courseId,
-    imported_qids: Array.from(importedQids),
+    imported_question_info: JSON.stringify(Array.from(importedQids, parseSharedQuestionReference)),
   });
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
