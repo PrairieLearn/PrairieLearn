@@ -13,7 +13,7 @@
       });
       code = renderer.makeHtml(code);
     }
-    code = filterXSS(code);
+    code = DOMPurify.sanitize(code);
     element.html(code);
   });
 </script>
