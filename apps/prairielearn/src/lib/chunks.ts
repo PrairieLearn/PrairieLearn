@@ -275,7 +275,15 @@ export async function identifyChangedFiles(
 
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
-    { cwd: coursePath },
+    {
+      cwd: coursePath,
+      // This defaults to 1MB of output, however, we've observed in the past that
+      // courses will go long periods of time without syncing, which in turn will
+      // result in a large number of changed files. The largest diff we've seen
+      // is 1.6MB of text; this new value was chosen to give us plenty of
+      // headroom.
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
   const changedFiles = diffStdout.trim().split('\n');
 
