@@ -89,5 +89,5 @@ FROM
   JOIN questions AS q ON q.course_id = ss.course_id
 WHERE
   ss.course_id = $course_id
-  AND ss.id = $sharing_set_id
+  AND ss.id = $unsafe_sharing_set_id
   AND q.id = $question_id;

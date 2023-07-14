@@ -4,7 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 const addSharingSetPopover = (resLocals) => {
   return html`
     <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="unsafe_sharing_set_create">
+      <input type="hidden" name="__action" value="sharing_set_create">
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
 
       <div class="form-group mb-4">
@@ -26,9 +26,9 @@ const addSharingSetPopover = (resLocals) => {
 const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
-      <input type="hidden" name="__action" value="unsafe_course_sharing_set_add" />
+      <input type="hidden" name="__action" value="course_sharing_set_add" />
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+      <input type="hidden" name="unsafe_sharing_set_id" value="${sharing_set.id}" />
       <div class="form-group mb-4">
         <div class="form-text text-wrap">
           <p>
@@ -41,7 +41,7 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
         <input
           class="form-control form-control-sm"
           type="text"
-          name="course_sharing_token"
+          name="unsafe_course_sharing_token"
           required
         />
       </div>
@@ -99,7 +99,7 @@ const chooseSharingNameModal = (resLocals) => {
         </div>
         <div class="modal-footer">
           <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="unsafe_choose_sharing_name">
+            <input type="hidden" name="__action" value="choose_sharing_name">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
             <div class=form-group>
               <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>

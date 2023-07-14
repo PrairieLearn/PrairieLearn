@@ -60,27 +60,37 @@ router.post(
       await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
         course_id: res.locals.course.id,
       });
-      res.redirect(req.originalUrl);
-      return;
-    } else if (req.body.__action === 'unsafe_sharing_set_create') {
+    } else if (req.body.__action === 'sharing_set_create') {
       await sqldb.queryZeroOrOneRowAsync(sql.sharing_set_create, {
-        sharing_set_name: req.body.sharing_set_name,
+        sharing_set_name: req.body.sharing_set_name.trim(),
         course_id: res.locals.course.id,
       });
-    } else if (req.body.__action === 'unsafe_course_sharing_set_add') {
-      await sqldb.queryZeroOrOneRowAsync(sql.course_sharing_set_add, {
-        sharing_set_id: req.body.sharing_set_id,
-        course_sharing_token: req.body.course_sharing_token,
-      });
-    } else if (req.body.__action === 'unsafe_choose_sharing_name') {
+    } else if (req.body.__action === 'course_sharing_set_add') {
+      const consuming_course_id = await sqldb.queryOptionalRow(
+        sql.course_sharing_set_add,
+        {
+          sharing_course_id: res.locals.course.id,
+          unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+          unsafe_course_sharing_token: req.body.unsafe_course_sharing_token,
+        },
+        z.string().nullable(),
+      );
+      if (consuming_course_id === null) {
+        throw error.make(400, 'Failed to Add Course to sharing set.');
+      }
+    } else if (req.body.__action === 'choose_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
-        req.body.course_sharing_name.includes('@')
+        req.body.course_sharing_name.includes('@') ||
+        req.body.course_sharing_name === ''
       ) {
-        throw error.make(400, 'Course Sharing Name is not allowed to contain "/" or "@".');
+        throw error.make(
+          400,
+          'Course Sharing Name must be non-empty and is not allowed to contain "/" or "@".',
+        );
       }
       await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
-        sharing_name: req.body.course_sharing_name,
+        sharing_name: req.body.course_sharing_name.trim(),
         course_id: res.locals.course.id,
       });
     } else {

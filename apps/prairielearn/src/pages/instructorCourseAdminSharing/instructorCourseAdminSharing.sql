@@ -50,12 +50,18 @@ VALUES
 INSERT INTO
   sharing_set_courses (course_id, sharing_set_id)
 SELECT
-  id,
-  $sharing_set_id
+  consuming_course.id,
+  ss.id
 FROM
-  pl_courses
+  pl_courses AS sharing_course
+  JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id
+  JOIN pl_courses AS consuming_course ON consuming_course.id <> sharing_course.id
 WHERE
-  sharing_token = $course_sharing_token;
+  consuming_course.sharing_token = $unsafe_course_sharing_token
+  AND ss.id = $unsafe_sharing_set_id
+  AND sharing_course.id = $sharing_course_id
+RETURNING
+  course_id;
 
 -- BLOCK choose_sharing_name
 UPDATE pl_courses
