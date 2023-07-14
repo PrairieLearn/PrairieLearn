@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from html import escape
-from typing import Union
+from typing import Any, Union
 
 import chevron
 import lxml.html
@@ -29,7 +29,18 @@ SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
+SHOW_SCORE_DEFAULT = True
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
+
+
+def prepare_parse_error_popup(info_params: dict[str, Any]) -> str:
+    # Use the existing format text in the invalid popup.
+    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        info = chevron.render(f, info_params).strip()
+
+    # Render invalid popup
+    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        return chevron.render(f, {"format_error": True, "format_string": info}).strip()
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -88,6 +99,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
 
     constants_class = phs._Constants()
 
@@ -98,17 +111,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants = list(constants_class.variables.keys())
 
+    info_params = {
+        "format": True,
+        "variables": variables,
+        "operators": operators,
+        "constants": constants,
+        "allow_complex": allow_complex,
+    }
+
+    parse_error = data["format_errors"].get(name)
+
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
-        info_params = {
-            "format": True,
-            "variables": variables,
-            "operators": operators,
-            "constants": constants,
-            "allow_complex": allow_complex,
-        }
         with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
@@ -120,16 +136,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "info": info,
             "placeholder": placeholder,
             "size": size,
-            "show_info": pl.get_boolean_attrib(
-                element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-            ),
+            "show_info": show_info,
+            "display_append_span": show_info or parse_error,
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
         }
 
+        if parse_error is not None:
+            html_params["parse_error"] = parse_error + prepare_parse_error_popup(
+                info_params
+            )
+
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -142,14 +162,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
-
         html_params = {
             "submission": True,
             "label": label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
+
         if parse_error is None:
             a_sub = data["submitted_answers"].get(name)
             if a_sub is not None:
@@ -170,29 +189,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["missing_input"] = True
                 html_params["parse_error"] = None
         else:
-            # Use the existing format text in the invalid popup.
-            info_params = {
-                "format": True,
-                "variables": variables,
-                "operators": operators,
-                "constants": constants,
-                "allow_complex": allow_complex,
-            }
-            with open(
-                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
-            ) as f:
-                info = chevron.render(f, info_params).strip()
+            html_params["parse_error"] = parse_error + prepare_parse_error_popup(
+                info_params
+            )
 
-            # Render invalid popup
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-            with open(
-                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
-            ) as f:
-                parse_error += chevron.render(
-                    f, {"format_error": True, "format_string": info}
-                ).strip()
-
-            html_params["parse_error"] = parse_error
+            raw_submitted_answer = data["raw_submitted_answers"].get(name)
             if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
@@ -200,7 +201,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
