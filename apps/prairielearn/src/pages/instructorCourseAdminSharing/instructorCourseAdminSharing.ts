@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import error = require('@prairielearn/error');
-import { v4 as uuidv4 } from 'uuid';
 import { CourseSchema } from '../../lib/db-types';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
@@ -9,14 +8,6 @@ import sqldb = require('@prairielearn/postgres');
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-async function generateSharingId(courseId) {
-  const newSharingId = uuidv4();
-  return await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
-    sharing_token: newSharingId,
-    course_id: courseId,
-  });
-}
 
 router.get(
   '/',
@@ -32,12 +23,6 @@ router.get(
       },
       CourseSchema,
     );
-
-    if (!sharingInfo.sharing_token) {
-      await generateSharingId(res.locals.course.id);
-      res.redirect(req.originalUrl);
-      return;
-    }
 
     const sharingSets = await sqldb.queryRows(
       sql.select_sharing_sets,
@@ -70,7 +55,9 @@ router.post(
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
-      await generateSharingId(res.locals.course.id);
+      await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
+        course_id: res.locals.course.id,
+      });
       res.redirect(req.originalUrl);
       return;
     } else if (req.body.__action === 'unsafe_sharing_set_create') {

@@ -35,7 +35,7 @@ ORDER BY
 -- BLOCK update_sharing_token
 UPDATE pl_courses
 SET
-  sharing_token = $sharing_token
+  sharing_token = gen_random_uuid()
 WHERE
   id = $course_id;
 

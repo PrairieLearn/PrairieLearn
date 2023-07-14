@@ -10,7 +10,7 @@ columns
     path: text
     repository: text
     sharing_name: text
-    sharing_token: text
+    sharing_token: text not null default gen_random_uuid()
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint
