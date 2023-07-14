@@ -928,7 +928,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             (
-                grading_method in [GradingMethodType.DAG, GradingMethodType.RANKING]
+                grading_method in RANKING_DAG_ORDERED_GRADING_TYPE
                 and partial_credit_type is PartialCreditType.LCS
             )
         ):
