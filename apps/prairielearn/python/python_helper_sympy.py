@@ -1,7 +1,5 @@
 import ast
-import builtins
 import copy
-import types
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
@@ -342,11 +340,12 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
+        str_item = str(item)
 
-        if isinstance(item, sympy.Symbol) and str(item) not in valid_symbols:
-            raise HasInvalidSymbolError(str(item))
+        if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
+            raise HasInvalidSymbolError(str_item)
         elif isinstance(item, sympy.Float):
-            raise HasFloatError(float(str(item)))
+            raise HasFloatError(float(str_item))
         elif not allow_complex and item == sympy.I:
             raise HasComplexError()
 
@@ -376,13 +375,11 @@ def evaluate_with_source(
     # Based on code here:
     # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
 
+    # Global dict is set up to be very permissive for parsing purposes
+    # (makes it cleaner to call this function with a custom locals dict).
+    # This line shouldn't be dangerous, as it's just loading the global dict.
     global_dict = {}
     exec("from sympy import *", global_dict)
-
-    builtins_dict = vars(builtins)
-    for name, obj in builtins_dict.items():
-        if isinstance(obj, types.BuiltinFunctionType):
-            global_dict[name] = obj
 
     transformations = standard_transformations + (implicit_multiplication_application,)
 
@@ -397,18 +394,14 @@ def evaluate_with_source(
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed
     parsed_locals_to_eval["functions"].update(
-        {
-            "Integer": sympy.Integer,
-            "Symbol": sympy.Symbol,
-            "Float": sympy.Float,
-        }
+        Integer=sympy.Integer,
+        Symbol=sympy.Symbol,
+        Float=sympy.Float,
     )
 
     parsed_locals_to_eval["variables"].update(
-        {
-            "I": sympy.I,
-            "oo": sympy.oo,
-        }
+        I=sympy.I,
+        oo=sympy.oo,
     )
 
     ast_check(code, parsed_locals_to_eval)
