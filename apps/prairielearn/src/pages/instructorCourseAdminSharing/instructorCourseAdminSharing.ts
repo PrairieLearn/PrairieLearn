@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import error = require('@prairielearn/error');
-import { CourseSchema } from '../../lib/db-types';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
 import sqldb = require('@prairielearn/postgres');
