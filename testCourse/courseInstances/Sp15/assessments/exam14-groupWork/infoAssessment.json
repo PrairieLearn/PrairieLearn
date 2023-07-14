@@ -5,33 +5,11 @@
   "set": "Exam",
   "number": "14",
   "groupWork": true,
-  "groupMaxSize": 5,
+  "groupMaxSize": 2,
   "groupMinSize": 2,
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true,
-  "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRolesAtStart": true,
-      "canAssignRolesDuringAssessment": true
-    },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
-    }
-  ],
   "allowAccess": [
     {
       "mode": "Public",
@@ -44,9 +22,7 @@
       "questions": [
         { "id": "addVectors", "points": [10, 5, 1] },
         { "id": "positionTimeGraph", "points": [10] }
-      ],
-        "canView": ["Manager", "Recorder", "Reflector", "Contributor"],
-        "canSubmit": ["Recorder"]
+      ]
     }
   ]
 }
