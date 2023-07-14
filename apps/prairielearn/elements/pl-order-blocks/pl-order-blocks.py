@@ -848,14 +848,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         num_initial_correct, true_answer_length = grade_dag(
             submission, depends_graph, group_belonging
         )
-        if (
-            partial_credit_type is PartialCreditType.NONE
-            and grading_method is GradingMethodType.ORDERED
-        ):
-            student_answer = [ans["inner_html"] for ans in student_answer]
-            true_answer = [ans["inner_html"] for ans in true_answer_list]
-            final_score = 1 if student_answer == true_answer else 0
-        elif partial_credit_type is PartialCreditType.NONE:
+
+        if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
             elif num_initial_correct < true_answer_length:
