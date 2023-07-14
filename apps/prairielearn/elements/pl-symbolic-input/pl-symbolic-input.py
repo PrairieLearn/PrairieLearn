@@ -128,6 +128,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
+        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
         html_params = {
             "question": True,
             "name": name,
@@ -137,7 +139,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "placeholder": placeholder,
             "size": size,
             "show_info": show_info,
-            "display_append_span": show_info or parse_error,
+            "display_append_span": show_info or parse_error or (score is not None),
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
         }
@@ -147,7 +149,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 info_params
             )
 
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
