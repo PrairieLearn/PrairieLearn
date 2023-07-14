@@ -211,3 +211,10 @@ export const AuditLogSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type AuditLog = z.infer<typeof AuditLogSchema>;
+
+export const CourseInstanceRequiredPlanSchema = z.object({
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+});
+export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPlanSchema>;

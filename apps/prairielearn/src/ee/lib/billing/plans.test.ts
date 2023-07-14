@@ -5,8 +5,8 @@ import {
   getPlanGrantsForCourseInstance,
   getPlanGrantsForInstitution,
   getRequiredPlansForCourseInstance,
-  updatePlanGrantsForCourseInstance,
-  updatePlanGrantsForInstitution,
+  reconcilePlanGrantsForCourseInstance,
+  reconcilePlanGrantsForInstitution,
   updateRequiredPlansForCourseInstance,
 } from './plans';
 
@@ -16,15 +16,15 @@ describe('plans', () => {
 
   describe('updatePlanGrantsForInstitution', () => {
     it('persists updates', async () => {
-      await updatePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
       let planGrants = await getPlanGrantsForInstitution('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'invoice'));
 
-      await updatePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'gift' }]);
+      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'gift' }]);
       planGrants = await getPlanGrantsForInstitution('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'gift'));
 
-      await updatePlanGrantsForInstitution('1', []);
+      await reconcilePlanGrantsForInstitution('1', []);
       planGrants = await getPlanGrantsForInstitution('1');
       assert.deepEqual(planGrants, []);
     });
@@ -32,15 +32,15 @@ describe('plans', () => {
 
   describe('updatePlanGrantsForCourseInstance', () => {
     it('persists updates', async () => {
-      await updatePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
       let planGrants = await getPlanGrantsForCourseInstance('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'invoice'));
 
-      await updatePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'gift' }]);
+      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'gift' }]);
       planGrants = await getPlanGrantsForCourseInstance('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'gift'));
 
-      await updatePlanGrantsForCourseInstance('1', []);
+      await reconcilePlanGrantsForCourseInstance('1', []);
       planGrants = await getPlanGrantsForCourseInstance('1');
       assert.deepEqual(planGrants, []);
     });

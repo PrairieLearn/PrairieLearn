@@ -6,8 +6,8 @@ import { queryAsync } from '@prairielearn/postgres';
 import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../../tests/ee-helpers';
 import helperServer = require('../../../tests/helperServer');
 import {
-  updatePlanGrantsForCourseInstance,
-  updatePlanGrantsForInstitution,
+  reconcilePlanGrantsForCourseInstance,
+  reconcilePlanGrantsForInstitution,
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
 import { config } from '../../../lib/config';
@@ -79,7 +79,7 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('forbids enabling compute if already granted to the institution', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-      await updatePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
 
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {
@@ -96,7 +96,7 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('forbids enabling compute if already granted to the course instance', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-      await updatePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
 
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {

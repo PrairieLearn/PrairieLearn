@@ -9,9 +9,9 @@ import {
 } from './institutionAdminGeneral.html';
 import { getInstitution } from '../../lib/institution';
 import {
-  PlanGrantUpdate,
+  DesiredPlan,
   getPlanGrantsForInstitution,
-  updatePlanGrantsForInstitution,
+  reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans';
 import { PlanName } from '../../lib/billing/plans-types';
 import { InstitutionSchema } from '../../../lib/db-types';
@@ -73,7 +73,7 @@ router.post(
       // We exclude `basic` from the list of allowed plans because it should
       // only ever be used for student billing for enrollments.
       const allowedPlans: PlanName[] = ['compute', 'everything'];
-      const updates: PlanGrantUpdate[] = [];
+      const updates: DesiredPlan[] = [];
       for (const plan of allowedPlans) {
         const planGranted = !!req.body[`plan_${plan}`];
         const planGrantType = req.body[`plan_${plan}_grant_type`];
@@ -86,7 +86,7 @@ router.post(
       }
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
-        await updatePlanGrantsForInstitution(req.params.institution_id, updates);
+        await reconcilePlanGrantsForInstitution(req.params.institution_id, updates);
       });
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);

@@ -1,11 +1,5 @@
 import { z } from 'zod';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import {
   EnumPlanGrantType,
   Institution,
@@ -15,10 +9,14 @@ import {
 } from '../../../lib/db-types';
 import { PLAN_NAMES, PlanName } from './plans-types';
 import { insertPlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
+import {
+  insertCourseInstanceRequiredPlan,
+  deleteCourseInstanceRequiredPlan,
+} from '../../models/course-instance-required-plans';
 
 const sql = loadSqlEquiv(__filename);
 
-export interface PlanGrantUpdate {
+export interface DesiredPlan {
   plan: PlanName;
   grantType: EnumPlanGrantType;
 }
@@ -64,29 +62,42 @@ export async function updateRequiredPlansForCourseInstance(
   course_instance_id: string,
   plans: PlanName[],
 ) {
-  await queryAsync(sql.update_required_plans_for_course_instance, { course_instance_id, plans });
+  await runInTransactionAsync(async () => {
+    // TODO: locking?
+    const existingRequiredPlans = await getRequiredPlansForCourseInstance(course_instance_id);
+    const plansToAdd = plans.filter((plan) => !existingRequiredPlans.includes(plan));
+    const plansToRemove = existingRequiredPlans.filter((plan) => !plans.includes(plan));
+
+    for (const plan of plansToAdd) {
+      await insertCourseInstanceRequiredPlan(course_instance_id, plan);
+    }
+
+    for (const plan of plansToRemove) {
+      await deleteCourseInstanceRequiredPlan(course_instance_id, plan);
+    }
+  });
 }
 
-export async function updatePlanGrantsForInstitution(
+export async function reconcilePlanGrantsForInstitution(
   institution_id: string,
-  plans: PlanGrantUpdate[],
+  plans: DesiredPlan[],
 ) {
   await runInTransactionAsync(async () => {
     // TODO: address race condition with locking?
     const existingPlanGrants = await getPlanGrantsForInstitution(institution_id);
-    await updatePlanGrants({ institution_id }, existingPlanGrants, plans);
+    await reconcilePlanGrants({ institution_id }, existingPlanGrants, plans);
   });
 }
 
-export async function updatePlanGrantsForCourseInstance(
+export async function reconcilePlanGrantsForCourseInstance(
   course_instance_id: string,
-  plans: PlanGrantUpdate[],
+  plans: DesiredPlan[],
 ) {
   await runInTransactionAsync(async () => {
     // TODO: address race condition with locking?
     const institution = await getInstitutionForCourseInstance(course_instance_id);
     const existingPlanGrants = await getPlanGrantsForCourseInstance(course_instance_id);
-    await updatePlanGrants(
+    await reconcilePlanGrants(
       {
         institution_id: institution.id,
         course_instance_id,
@@ -97,20 +108,20 @@ export async function updatePlanGrantsForCourseInstance(
   });
 }
 
-async function updatePlanGrants(
+async function reconcilePlanGrants(
   context: PlanGrantContext,
   existingPlanGrants: PlanGrant[],
-  plans: PlanGrantUpdate[],
+  desiredPlans: DesiredPlan[],
 ) {
-  const newPlans = plans.filter(
+  const newPlans = desiredPlans.filter(
     (plan) => !existingPlanGrants.find((p) => p.plan_name === plan.plan),
   );
   const updatedPlanGrants = existingPlanGrants.map((planGrant) => ({
     planGrant,
-    newType: plans.find((p) => p.plan === planGrant.plan_name)?.grantType,
+    newType: desiredPlans.find((p) => p.plan === planGrant.plan_name)?.grantType,
   }));
   const deletedPlanGrants = existingPlanGrants.filter(
-    (plan) => !plans.find((p) => p.plan === plan.plan_name),
+    (plan) => !desiredPlans.find((p) => p.plan === plan.plan_name),
   );
 
   for (const plan of newPlans) {

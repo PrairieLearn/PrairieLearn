@@ -28,24 +28,6 @@ FROM
 WHERE
   course_instance_id = $course_instance_id;
 
--- BLOCK update_required_plans_for_course_instance
-WITH
-  deleted_required_plans AS (
-    DELETE FROM course_instance_required_plans
-    WHERE
-      course_instance_id = $course_instance_id
-      AND plan_name NOT IN (
-        SELECT
-          UNNEST($plans::text[])
-      )
-  )
-INSERT INTO
-  course_instance_required_plans (course_instance_id, plan_name)
-SELECT
-  $course_instance_id,
-  UNNEST($plans::text[])
-ON CONFLICT DO NOTHING;
-
 -- BLOCK select_institution_for_course_instance
 SELECT
   i.*
