@@ -16,7 +16,7 @@ Access to shared questions is controlled through **sharing sets**. A sharing set
 
 For security reasons, establishing the connection for one course to share questions with another course requires coordinated action by owners of the course sharing the questions (which we will refer to hereafter as the 'sharing course') and the course that is using the questions that are being shared ('which we will refer to hereafter as the 'consuming course')
 
-In order to allow someone to share their questions with your course, you must provide them with the 'Sharing ID' listed on the 'Sharing' tab of your instructor settings page. Then the sharing course must use the sharing ID which you provide to them to add your course as a consumer of one of their sharing sets.
+In order to allow someone to share their questions with your course, you must provide them with the 'Sharing Token' listed on the 'Sharing' tab of your instructor settings page. Then the sharing course must use the sharing token which you provide to them to add your course as a consumer of one of their sharing sets.
 
 ## Using shared questions
 
