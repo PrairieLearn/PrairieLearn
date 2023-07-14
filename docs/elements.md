@@ -1061,7 +1061,7 @@ Correct answers are best created as `sympy` expressions and converted to json us
 
 Variables with the same name as greek letters (e.g., `alpha`, `beta`, etc.) will be automatically converted to their LaTeX equivalents for display on the correct answer and submission panels.
 
-Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`, and do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc). The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions`, and reserved names.
 
 Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
 See example question for details.

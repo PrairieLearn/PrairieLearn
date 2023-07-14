@@ -170,10 +170,16 @@ class Editor {
               }
 
               try {
+                job.data.pushAttempted = true;
+
                 await job.exec('git', ['push'], {
                   cwd: this.course.path,
                   env: gitEnv,
                 });
+
+                // We'll look for this flag on the `editError` page to know if
+                // we need to display instructions to recover from a failed push.
+                job.data.pushSucceeded = true;
               } finally {
                 // Regardless of whether we error, we'll do a clean and reset:
                 //
@@ -184,7 +190,14 @@ class Editor {
                 await cleanAndResetRepository(this.course, gitEnv, job);
               }
 
+              job.data.syncAttempted = true;
+
               await syncCourseFromDisk(this.course, startGitHash, job);
+
+              // As with `job.data.pushSucceeded` above, we'll check this flag
+              // on the `editError` page to know if syncing failed so we can
+              // display appropriate instructions.
+              job.data.syncSucceeded = true;
             });
           });
         },
