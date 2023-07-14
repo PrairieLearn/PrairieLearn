@@ -41,6 +41,8 @@ DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 PLACEHOLDER_DEFAULT = "asymptotic expression"
 SHOW_SCORE_DEFAULT = True
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = "1"
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 
 
@@ -57,6 +59,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "type",
         "placeholder",
         "show-score",
+        "allow-blank",
+        "blank-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -238,9 +242,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
+    # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
-    if a_sub is None:
+    if allow_blank and a_sub is not None and a_sub.strip() == "":
+        a_sub = blank_value
+    if not a_sub:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return

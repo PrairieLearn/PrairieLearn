@@ -230,18 +230,27 @@
 </div>
 
 <div class="card my-2">
-  <div class="card-header">An example with exponential complexity.</div>
+  <div class="card-header">
+    An example with exponential complexity. We set <code>allow-blank="true"</code> to allow blank
+    inputs.
+  </div>
   <div class="card-body">
     <pl-question-panel>
       <p>Submit $O(2^n)$.</p>
     </pl-question-panel>
-    <pl-big-o-input answers-name="q6" variable="n" correct-answer="2**n"></pl-big-o-input>
+    <pl-big-o-input
+      answers-name="q6"
+      variable="n"
+      correct-answer="2**n"
+      allow-blank="true"
+    ></pl-big-o-input>
     <br /><br />
     <pl-big-o-input
       answers-name="s6"
       variable="n"
       correct-answer="2**n"
       type="theta"
+      allow-blank="true"
     ></pl-big-o-input>
     <br /><br />
     <pl-big-o-input
@@ -249,6 +258,7 @@
       variable="n"
       correct-answer="2**n"
       type="omega"
+      allow-blank="true"
     ></pl-big-o-input>
     <br /><br />
     <pl-big-o-input
@@ -256,6 +266,7 @@
       variable="n"
       correct-answer="2**n"
       type="little-o"
+      allow-blank="true"
     ></pl-big-o-input>
     <br /><br />
     <pl-big-o-input
@@ -263,6 +274,7 @@
       variable="n"
       correct-answer="2**n"
       type="little-omega"
+      allow-blank="true"
     ></pl-big-o-input>
   </div>
 </div>
