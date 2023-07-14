@@ -799,8 +799,8 @@ mechanicsObjects.Arrow = fabric.util.createClass(fabric.Object, {
     this.setControlVisible('mr', false);
     this.setControlVisible('mtr', false);
     if ('trueHandles' in options) {
-      for (var i = 0; i < options.trueHandles.length; i++) {
-        this.setControlVisible(options.trueHandles[i], true);
+      for (const handle of options.trueHandles) {
+        this.setControlVisible(handle, true);
       }
     }
   },
@@ -880,8 +880,8 @@ mechanicsObjects.DoubleArrow = fabric.util.createClass(fabric.Object, {
     this.setControlVisible('mr', false);
     this.setControlVisible('mtr', false);
     if ('trueHandles' in options) {
-      for (var i = 0; i < options.trueHandles.length; i++) {
-        this.setControlVisible(options.trueHandles[i], true);
+      for (const handle of options.trueHandles) {
+        this.setControlVisible(handle, true);
       }
     }
   },
@@ -1309,8 +1309,8 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     this.setControlVisible('mr', false);
     this.setControlVisible('mtr', true);
     if ('trueHandles' in options) {
-      for (var i = 0; i < options.trueHandles.length; i++) {
-        this.setControlVisible(options.trueHandles[i], true);
+      for (const handle of options.trueHandles) {
+        this.setControlVisible(handle, true);
       }
     }
   },
@@ -2345,8 +2345,8 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
     obj.setControlVisible('mr', false);
     obj.setControlVisible('mtr', false);
     if ('trueHandles' in obj) {
-      for (let i = 0; i < obj.trueHandles.length; i++) {
-        obj.setControlVisible(obj.trueHandles[i], true);
+      for (const handle of obj.trueHandles) {
+        obj.setControlVisible(handle, false);
       }
     }
     obj.selectable = false;
@@ -2560,29 +2560,29 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
     canvas.add(textObj3);
 
     // Adding labels to plot axes
-    for (let i = 0; i < options.label_list.length; i++) {
+    for (const label of options.label_list) {
       var xL = options.left;
       var yL = options.top;
-      if (options.label_list[i]['axis'] === 'x') {
-        xL += options.label_list[i]['pos'];
+      if (label['axis'] === 'x') {
+        xL += label['pos'];
         yL += 10;
-        if ('offsetx' in options.label_list[i]) {
-          xL += options.label_list[i]['offsetx'];
+        if ('offsetx' in label) {
+          xL += label['offsetx'];
         }
-        if ('offsety' in options.label_list[i]) {
-          yL -= options.label_list[i]['offsety'];
+        if ('offsety' in label) {
+          yL -= label['offsety'];
         }
-      } else if (options.label_list[i]['axis'] === 'y') {
-        yL -= options.label_list[i]['pos'];
+      } else if (label['axis'] === 'y') {
+        yL -= label['pos'];
         xL -= 20;
-        if ('offsetx' in options.label_list[i]) {
-          xL += options.label_list[i]['offsetx'];
+        if ('offsetx' in label) {
+          xL += label['offsetx'];
         }
-        if ('offsety' in options.label_list[i]) {
-          yL -= options.label_list[i]['offsety'];
+        if ('offsety' in label) {
+          yL -= label['offsety'];
         }
       }
-      var textObj4 = new mechanicsObjects.LatexText(options.label_list[i]['lab'], {
+      var textObj4 = new mechanicsObjects.LatexText(label['lab'], {
         left: xL,
         top: yL,
         fontSize: 14,
@@ -2601,18 +2601,18 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
       originY: 'top',
       selectable: false,
     };
-    for (let i = 0; i < options.supporting_lines.length; i++) {
-      if ('x' in options.supporting_lines[i]) {
-        let x1 = options.left + options.supporting_lines[i]['x'];
+    for (const supporting_line of options.supporting_lines) {
+      if ('x' in supporting_line) {
+        let x1 = options.left + supporting_line['x'];
         let y1 = options.top + options.yneg;
         let y2 = options.top - options.ypos;
         let line1 = new fabric.Line([x1, y1, x1, y2], opt_line);
         canvas.add(line1);
       }
-      if ('y' in options.supporting_lines[i]) {
+      if ('y' in supporting_line) {
         let x1 = options.left - options.xneg;
         let x2 = options.left + options.xpos;
-        let y1 = options.top - options.supporting_lines[i]['y'];
+        let y1 = options.top - supporting_line['y'];
         let line1 = new fabric.Line([x1, y1, x2, y1], opt_line);
         canvas.add(line1);
       }
@@ -3023,12 +3023,12 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
       'selectable',
       'evented',
     ];
-    var options1 = {};
-    var options2 = {};
-    for (var i = 0; i < includedAttributes.length; i++) {
-      if (typeof options[includedAttributes[i]] != typeof options['abcnonsense']) {
-        options1[includedAttributes[i]] = options2[includedAttributes[i]] =
-          options[includedAttributes[i]];
+    const options1 = {};
+    const options2 = {};
+    for (const includedAttribute of includedAttributes) {
+      if (includedAttribute in options) {
+        options1[includedAttribute] = options[includedAttribute];
+        options2[includedAttribute] = options[includedAttribute];
       }
     }
 
@@ -3046,10 +3046,12 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
       'widthErrorBox',
       'heightErrorBox',
     ];
-    for (i = 0; i < varyingAttributes.length; i++) {
-      if (typeof options[varyingAttributes[i].concat('1')] != typeof options['abcnonsense']) {
-        options1[varyingAttributes[i]] = options[varyingAttributes[i].concat('1')];
-        options2[varyingAttributes[i]] = options[varyingAttributes[i].concat('2')];
+    for (const varyingAttribute of varyingAttributes) {
+      if (varyingAttribute.concat('1') in options) {
+        options1[varyingAttribute] = options[varyingAttribute.concat('1')];
+      }
+      if (varyingAttribute.concat('2') in options) {
+        options2[varyingAttribute] = options[varyingAttribute.concat('2')];
       }
     }
 

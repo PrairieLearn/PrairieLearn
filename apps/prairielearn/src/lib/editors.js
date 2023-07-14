@@ -21,6 +21,8 @@ const chunks = require('./chunks');
 const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
+const { getLockNameForCoursePath } = require('./course');
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -107,16 +109,17 @@ class Editor {
           });
           jobSequenceId = serverJob.jobSequenceId;
 
-          // We deliberately use `execute` instead of `executeInBackground` here
-          // because we want edits to complete during the request during which
-          // they are made.
-          await serverJob.execute(async (job) => {
+          // We deliberately use `executeUnsafe` here because we want to wait
+          // for the edit to complete during the request during which it was
+          // made. We use `executeUnsafe` instead of `execute` because we want
+          // errors to be thrown and handled by the caller.
+          await serverJob.executeUnsafe(async (job) => {
             const gitEnv = process.env;
             if (config.gitSshCommand != null) {
               gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
             }
 
-            const lockName = `coursedir:${this.course.path}`;
+            const lockName = getLockNameForCoursePath(this.course.path);
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
               const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
 

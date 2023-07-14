@@ -3,6 +3,7 @@
 /**
  * Base element class.
  */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.

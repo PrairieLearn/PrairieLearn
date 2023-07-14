@@ -30,7 +30,6 @@
     "s3-streamlogger": "^1.9.0",
     "tmp": "^0.2.1",
     "winston": "^3.10.0",
-    "winston-aws-cloudwatch": "^3.0.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
