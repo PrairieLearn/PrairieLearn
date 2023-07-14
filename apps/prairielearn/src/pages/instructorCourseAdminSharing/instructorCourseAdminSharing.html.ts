@@ -168,7 +168,7 @@ export const InstructorSharing = ({
                   </td>
                 </tr>
                 <tr>
-                  <th>Sharing ID</th>
+                  <th>Sharing Token</th>
                   <td>
                     ${sharingToken}
                     <button
