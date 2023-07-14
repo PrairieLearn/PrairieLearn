@@ -342,11 +342,12 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
+        str_item = str(item)
 
-        if isinstance(item, sympy.Symbol) and str(item) not in valid_symbols:
-            raise HasInvalidSymbolError(str(item))
+        if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
+            raise HasInvalidSymbolError(str_item)
         elif isinstance(item, sympy.Float):
-            raise HasFloatError(float(str(item)))
+            raise HasFloatError(float(str_item))
         elif not allow_complex and item == sympy.I:
             raise HasComplexError()
 
@@ -397,18 +398,14 @@ def evaluate_with_source(
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed
     parsed_locals_to_eval["functions"].update(
-        {
-            "Integer": sympy.Integer,
-            "Symbol": sympy.Symbol,
-            "Float": sympy.Float,
-        }
+        Integer=sympy.Integer,
+        Symbol=sympy.Symbol,
+        Float=sympy.Float,
     )
 
     parsed_locals_to_eval["variables"].update(
-        {
-            "I": sympy.I,
-            "oo": sympy.oo,
-        }
+        I=sympy.I,
+        oo=sympy.oo,
     )
 
     ast_check(code, parsed_locals_to_eval)
