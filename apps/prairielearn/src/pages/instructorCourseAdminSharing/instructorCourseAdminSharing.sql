@@ -1,6 +1,7 @@
 -- BLOCK get_course_sharing_info
 SELECT
-  *
+  sharing_name,
+  sharing_token
 FROM
   pl_courses
 WHERE
@@ -35,7 +36,7 @@ ORDER BY
 -- BLOCK update_sharing_token
 UPDATE pl_courses
 SET
-  sharing_token = gen_random_uuid()
+  sharing_token = gen_random_uuid ()
 WHERE
   id = $course_id;
 

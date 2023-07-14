@@ -21,7 +21,10 @@ router.get(
       {
         course_id: res.locals.course.id,
       },
-      CourseSchema,
+      z.object({
+        sharing_name: z.string().nullable(),
+        sharing_token: z.string(),
+      }),
     );
 
     const sharingSets = await sqldb.queryRows(
