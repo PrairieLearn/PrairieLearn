@@ -380,10 +380,14 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    builtins_dict = vars(builtins)
-    for name, obj in builtins_dict.items():
-        if isinstance(obj, types.BuiltinFunctionType):
-            global_dict[name] = obj
+    global_dict.update(
+        (name, obj)
+        for name, obj in vars(builtins).items()
+        if isinstance(obj, types.BuiltinFunctionType)
+    )
+
+    global_dict["max"] = sympy.Max
+    global_dict["min"] = sympy.Min
 
     transformations = standard_transformations + (implicit_multiplication_application,)
 
