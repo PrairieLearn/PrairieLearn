@@ -881,7 +881,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
 
-def get_default_partial_credit_type(grading_method: GradingMethodType) -> PartialCreditType:
+def get_default_partial_credit_type(
+    grading_method: GradingMethodType,
+) -> PartialCreditType:
     # For backward compatibility, we need to override the default partial credit type
     # when grading_method = ORDERED
     return (
