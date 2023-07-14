@@ -750,16 +750,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    # For backward compatibility, we need to override the default partial credit type
-    # when grading_method = ORDERED
-    default_partial_credit = (
-        PartialCreditType.NONE
-        if grading_method is GradingMethodType.ORDERED
-        else PartialCreditType.LCS
-    )
-
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, default_partial_credit
+        element, "partial-credit", PartialCreditType, get_default_partial_credit_type(grading_method)
     )
 
     true_answer_list = data["correct_answers"][answer_name]
@@ -886,6 +878,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
 
+def get_default_partial_credit_type(grading_method):
+    # For backward compatibility, we need to override the default partial credit type
+    # when grading_method = ORDERED
+    return (
+        PartialCreditType.NONE
+        if grading_method is GradingMethodType.ORDERED
+        else PartialCreditType.LCS
+    )
+
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     grading_method = pl.get_enum_attrib(
@@ -898,8 +900,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
+
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, PartialCreditType.LCS
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     # Right now invalid input must mean an empty response. Because user input is only
