@@ -200,13 +200,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "error": parse_error or missing_input,
             "a_sub": a_sub,
             "a_sub_raw": a_sub_raw,
-            "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
         }
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+            html_params["feedback"] = feedback
 
         with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()

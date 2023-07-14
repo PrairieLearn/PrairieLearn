@@ -126,7 +126,7 @@ Gives automated feedback in the case of improper asymptotic input.
 | `size`           | integer                                               | 35                      | Size of the input box.                                                                                                                                               |
 | `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 | `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                           |
-| `show-score`     | boolean                                               | true                    | Whether to show the score badge next to this element.                                                                                                                |
+| `show-score`     | boolean                                               | true                    | Whether to show the score badge and feedback next to this element.                                                                                                                |
 
 #### Details
 
