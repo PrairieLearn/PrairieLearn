@@ -23,6 +23,42 @@ const addSharingSetPopover = (resLocals) => {
   `.toString();
 };
 
+const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
+  return html`
+    <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
+      <input type="hidden" name="__action" value="unsafe_course_sharing_set_add" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+      <div class="form-group mb-4">
+        <div class="form-text text-wrap">
+          <p>
+            To allow another course to access questions in the sharing set "${sharing_set.name}",
+            enter their course sharing token below.
+          </p>
+        </div>
+      </div>
+      <div class="form-group">
+        <input
+          class="form-control form-control-sm"
+          type="text"
+          name="course_sharing_token"
+          required
+        />
+      </div>
+      <div>
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary"
+          onclick="$('#addCourseToSS-${sharing_set.id}').popover('hide')"
+        >
+          Cancel
+        </button>
+        <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
+      </div>
+    </form>
+  `.toString();
+};
+
 const chooseSharingNameModal = (resLocals) => {
   return html`
   <div
@@ -121,8 +157,6 @@ export const InstructorSharing = ({
                             id="chooseSharingName"
                             title="Choose Sharing Name"
                             data-toggle="modal"
-                            data-container="body"
-                            data-html="true"
                             data-target="#chooseSharingNameModal"
                             data-trigger="manual"
                           >
@@ -197,60 +231,27 @@ export const InstructorSharing = ({
                       <td class="align-middle">
                         ${sharing_set.shared_with.map(
                           (course_shared_with) => html`
-                            <span class="badge color-gray1  "> ${course_shared_with} </span>
+                            <span class="badge color-gray1"> ${course_shared_with} </span>
                           `,
                         )}
-                        <form
-                          name="sharing-set-access-add-${sharing_set.id}"
-                          method="POST"
-                          class="d-inline"
-                        >
-                          <input
-                            type="hidden"
-                            name="__action"
-                            value="unsafe_course_sharing_set_add"
-                          />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
-                          <div class="btn-group btn-group-sm" role="group">
-                            <button
-                              id="addSSPDrop-${sharing_set.id}"
-                              type="button"
-                              class="btn btn-sm btn-outline-dark dropdown-toggle"
-                              data-toggle="dropdown"
-                              aria-haspopup="true"
-                              aria-expanded="false"
-                            >
-                              Add...
-                            </button>
-                            <div
-                              class="dropdown-menu"
-                              aria-labelledby="addSSPDrop-${sharing_set.id}"
-                            >
-                              <div class="dropdown-header text-wrap">
-                                <p>
-                                  To allow another course to access questions in the sharing set
-                                  "${sharing_set.name}", enter their course sharing token below.
-                                </p>
-                              </div>
-                              <div class="p-1">
-                                <input
-                                  class="form-control form-control-sm"
-                                  type="text"
-                                  name="course_sharing_token"
-                                  required
-                                />
-                                <button class="btn btn-sm btn-primary" type="Submit">
-                                  Add Course
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </form>
+                        <div class="btn-group btn-group-sm" role="group">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-dark"
+                            id="addCourseToSS-${sharing_set.id}"
+                            data-toggle="popover"
+                            data-container="body"
+                            data-html="true"
+                            data-placement="auto"
+                            title="Add Course to Sharing Set"
+                            data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
+                            data-trigger="manual"
+                            onclick="$(this).popover('show')"
+                          >
+                            Add...
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   `,
