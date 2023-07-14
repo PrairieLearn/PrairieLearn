@@ -234,7 +234,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "placeholder": placeholder_text,
             "uuid": pl.get_uuid(),
             display.value: True,
-            "display_append_span": show_info or suffix,
+            "display_append_span": show_info or suffix or parse_error,
             "parse_error": parse_error,
         }
 
