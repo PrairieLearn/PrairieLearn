@@ -751,7 +751,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     partial_credit_type = pl.get_enum_attrib(
-        element, "partial-credit", PartialCreditType, get_default_partial_credit_type(grading_method)
+        element,
+        "partial-credit",
+        PartialCreditType,
+        get_default_partial_credit_type(grading_method),
     )
 
     true_answer_list = data["correct_answers"][answer_name]
