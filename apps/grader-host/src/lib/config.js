@@ -16,14 +16,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
   useEc2MetadataService: z.boolean().default(true),
-  useCloudWatchLogging: z.boolean().default(false),
   useConsoleLoggingForJobs: z.boolean().default(true),
   useImagePreloading: z.boolean().default(false),
   useHealthCheck: z.boolean().default(true),
   cacheImageRegistry: z.string().nullable().default(null),
   parallelInitPulls: z.number().default(5),
   lifecycleHeartbeatIntervalMS: z.number().default(300000),
-  globalLogGroup: z.string().default('grading-instances-debug'),
   jobLogGroup: z.string().default('grading-jobs-debug'),
   reportLoad: z.boolean().default(false),
   reportIntervalSec: z.number().default(10),
@@ -54,7 +52,6 @@ function makeProductionConfigSource() {
       if (!isProduction) return {};
       return {
         useEc2MetadataService: true,
-        useCloudWatchLogging: true,
         useConsoleLoggingForJobs: false,
         useImagePreloading: true,
         reportLoad: true,
@@ -94,15 +91,6 @@ module.exports.loadConfig = async function () {
     makeSecretsManagerConfigSource('ConfSecret'),
     makeAutoScalingGroupConfigSource(),
   ]);
-
-  // Initialize CloudWatch logging if it's enabled
-  if (module.exports.config.useCloudWatchLogging) {
-    const groupName = module.exports.config.globalLogGroup;
-    const streamName = module.exports.config.instanceId;
-    // @ts-expect-error -- Need to type this better in the future.
-    logger.initCloudWatchLogging(groupName, streamName);
-    logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
-  }
 
   await getQueueUrl('jobs');
   await getQueueUrl('results');

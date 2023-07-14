@@ -10,11 +10,11 @@ import { queryAsync } from '@prairielearn/postgres';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-type AuthUser = {
+interface AuthUser {
   name: string;
   uid: string;
   uin: string;
-};
+}
 
 const USER_1 = {
   name: 'Student 1',
