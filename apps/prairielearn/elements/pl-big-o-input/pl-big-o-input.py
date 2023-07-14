@@ -40,6 +40,7 @@ WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 PLACEHOLDER_DEFAULT = "asymptotic expression"
+SHOW_SCORE_DEFAULT = True
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 
 
@@ -55,6 +56,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "type",
         "placeholder",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -95,6 +97,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT).value
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
+
+    parse_error = data["format_errors"].get(name)
 
     constants_class = phs._Constants()
 
@@ -112,6 +118,45 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     score = data["partial_scores"].get(name, {}).get("score")
 
+    # Prepare parse error
+    parse_error: Optional[str] = data["format_errors"].get(name)
+    missing_input = False
+    feedback = None
+    a_sub = None
+    a_sub_raw = None
+    raw_submitted_answer = None
+
+    if parse_error is None and name in data["submitted_answers"]:
+        a_sub = sympy.latex(
+            phs.convert_string_to_sympy(
+                data["submitted_answers"][name],
+                variables,
+                allow_complex=False,
+                allow_trig_functions=False,
+            )
+        )
+        a_sub_raw = data["raw_submitted_answers"].get(name, None)
+
+        if name in data["partial_scores"]:
+            feedback = data["partial_scores"][name].get("feedback")
+    elif name not in data["submitted_answers"]:
+        missing_input = True
+        parse_error = None
+    else:
+        # Use the existing format text in the invalid popup.
+        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            info = chevron.render(f, info_params).strip()
+
+        # Render invalid popup
+        raw_submitted_answer = data["raw_submitted_answers"].get(name)
+        if isinstance(parse_error, str):
+            with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+                parse_error += chevron.render(
+                    f, {"format_error": True, "format_string": info}
+                ).strip()
+        if raw_submitted_answer is not None:
+            raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
+
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name)
@@ -128,17 +173,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "info": info,
             "size": size,
-            "show_info": pl.get_boolean_attrib(
-                element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-            ),
+            "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
             "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
+            "parse_error": parse_error,
+            "display_append_span": show_info or parse_error,
         }
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -146,46 +191,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error: Optional[str] = data["format_errors"].get(name)
-        missing_input = False
-        feedback = None
-        a_sub = None
-        a_sub_raw = None
-        raw_submitted_answer = None
-
-        if parse_error is None and name in data["submitted_answers"]:
-            a_sub = sympy.latex(
-                phs.convert_string_to_sympy(
-                    data["submitted_answers"][name],
-                    variables,
-                    allow_complex=False,
-                    allow_trig_functions=False,
-                )
-            )
-            a_sub_raw = data["raw_submitted_answers"].get(name, None)
-
-            if name in data["partial_scores"]:
-                feedback = data["partial_scores"][name].get("feedback")
-        elif name not in data["submitted_answers"]:
-            missing_input = True
-            parse_error = None
-        else:
-            # Use the existing format text in the invalid popup.
-            with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                info = chevron.render(f, info_params).strip()
-
-            # Render invalid popup
-            raw_submitted_answer = data["raw_submitted_answers"].get(name)
-            if isinstance(parse_error, str):
-                with open(
-                    BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
-                ) as f:
-                    parse_error += chevron.render(
-                        f, {"format_error": True, "format_string": info}
-                    ).strip()
-            if raw_submitted_answer is not None:
-                raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
-
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -199,7 +204,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
         }
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
