@@ -25,7 +25,7 @@ router.get(
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },
-      InstitutionStatisticsSchema
+      InstitutionStatisticsSchema,
     );
     const planGrants = await getPlanGrantsForInstitution(req.params.institution_id);
     res.send(
@@ -34,9 +34,9 @@ router.get(
         statistics,
         planGrants,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.post(
@@ -69,7 +69,7 @@ router.post(
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }
-  })
+  }),
 );
 
 export default router;

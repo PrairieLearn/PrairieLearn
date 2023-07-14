@@ -25,7 +25,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const batchedMigrations = await selectAllBatchedMigrations(PROJECT);
     res.send(AdministratorBatchedMigrations({ batchedMigrations, resLocals: res.locals }));
-  })
+  }),
 );
 
 router.get(
@@ -35,7 +35,7 @@ router.get(
     const recentSucceededJobs = await selectRecentJobsWithStatus(
       batchedMigration.id,
       'succeeded',
-      10
+      10,
     );
     const recentFailedJobs = await selectRecentJobsWithStatus(batchedMigration.id, 'failed', 10);
     res.send(
@@ -44,9 +44,9 @@ router.get(
         recentSucceededJobs,
         recentFailedJobs,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.post(
@@ -58,7 +58,7 @@ router.post(
     } else {
       throw error.make(400, `unknown __action: ${req.body.__action}`);
     }
-  })
+  }),
 );
 
 module.exports = router;

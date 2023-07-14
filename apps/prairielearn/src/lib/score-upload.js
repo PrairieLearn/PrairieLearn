@@ -85,7 +85,7 @@ module.exports = {
             await module.exports._updateInstanceQuestionFromJson(
               json,
               assessment_id,
-              authn_user_id
+              authn_user_id,
             );
             successCount++;
           } catch (err) {
@@ -218,7 +218,7 @@ module.exports = {
 
       if (errorCount === 0) {
         job.verbose(
-          `Successfully updated scores for ${successCount} assessment instances, with no errors`
+          `Successfully updated scores for ${successCount} assessment instances, with no errors`,
         );
       } else {
         job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
@@ -297,17 +297,17 @@ module.exports = {
 
       if (submission_data.rowCount === 0) {
         throw new Error(
-          `Could not locate submission with id=${submission_id}, instance=${ai_number}, uid/group=${uid_or_group}, qid=${qid} for this assessment.`
+          `Could not locate submission with id=${submission_id}, instance=${ai_number}, uid/group=${uid_or_group}, qid=${qid} for this assessment.`,
         );
       }
       if (uid_or_group !== null && submission_data.rows[0].uid_or_group !== uid_or_group) {
         throw new Error(
-          `Found submission with id=${submission_id}, but uid/group does not match ${uid_or_group}.`
+          `Found submission with id=${submission_id}, but uid/group does not match ${uid_or_group}.`,
         );
       }
       if (qid !== null && submission_data.rows[0].qid !== qid) {
         throw new Error(
-          `Found submission with id=${submission_id}, but QID does not match ${qid}.`
+          `Found submission with id=${submission_id}, but QID does not match ${qid}.`,
         );
       }
 
@@ -326,7 +326,7 @@ module.exports = {
           feedback: module.exports._getFeedbackOrNull(json),
           partial_scores: module.exports._getPartialScoresOrNull(json),
         },
-        authn_user_id
+        authn_user_id,
       );
     });
   },

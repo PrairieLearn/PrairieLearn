@@ -29,7 +29,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const supportedAuthenticationProviders = await getSupportedAuthenticationProviders();
     const supportedAuthenticationProviderIds = new Set(
-      supportedAuthenticationProviders.map((p) => p.id)
+      supportedAuthenticationProviders.map((p) => p.id),
     );
 
     const rawEnabledAuthnProviderIds = ensureArray(req.body.enabled_authn_provider_ids ?? []);
@@ -52,7 +52,7 @@ router.post(
     });
 
     res.redirect(req.originalUrl);
-  })
+  }),
 );
 
 router.get(
@@ -63,7 +63,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const institutionSamlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
-      req.params.institution_id
+      req.params.institution_id,
     );
 
     res.send(
@@ -73,9 +73,9 @@ router.get(
         institutionSamlProvider,
         institutionAuthenticationProviders,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

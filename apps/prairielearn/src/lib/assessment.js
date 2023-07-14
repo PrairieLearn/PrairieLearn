@@ -97,7 +97,7 @@ module.exports = {
     mode,
     time_limit_min,
     date,
-    callback
+    callback,
   ) {
     var params = [assessment_id, user_id, group_work, authn_user_id, mode, time_limit_min, date];
     sqldb.callOneRow('assessment_instances_insert', params, (err, result) => {
@@ -154,7 +154,7 @@ module.exports = {
       (err) => {
         if (ERR(err, callback)) return;
         callback(null, updated);
-      }
+      },
     );
   },
 
@@ -178,7 +178,7 @@ module.exports = {
     requireOpen,
     close,
     overrideGradeRate,
-    callback
+    callback,
   ) {
     debug('gradeAssessmentInstance()');
     let rows;
@@ -214,7 +214,7 @@ module.exports = {
               rows = result.rows;
               debug('gradeAssessmentInstance()', 'selected variants', 'count:', rows.length);
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -236,14 +236,14 @@ module.exports = {
                     externalGradingJobIds.push(gradingJobId);
                   }
                   callback(null);
-                }
+                },
               );
             },
             (err) => {
               if (ERR(err, callback)) return;
               debug('gradeAssessmentInstance()', 'finished grading');
               callback(null);
-            }
+            },
           );
         },
         (callback) => {
@@ -283,7 +283,7 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug('gradeAssessmentInstance()', 'success');
         callback(null);
-      }
+      },
     );
   },
 
@@ -301,7 +301,7 @@ module.exports = {
     user_id,
     authn_user_id,
     close,
-    overrideGradeRate
+    overrideGradeRate,
   ) {
     debug('gradeAllAssessmentInstances()');
     const assessmentInfo = await sqldb.queryOneRowAsync(sql.select_assessment_info, {
@@ -339,7 +339,7 @@ module.exports = {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       });
     });
@@ -363,7 +363,7 @@ module.exports = {
             return callback(
               error.makeWithData('invalid grading.feedback', {
                 content: content,
-              })
+              }),
             );
           }
 
@@ -436,7 +436,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 callback(null);
               });
-            }
+            },
           );
         },
       ]);
@@ -489,13 +489,13 @@ module.exports = {
    * @param {number} assessment_instance_id - The ID of the assessment instance.
    * @param {boolean} include_files - A flag indicating if submitted files should be included in the
    * log.
-   * @returns {Promise<Array<z.infer<InstanceLogSchema>>>} the results of the log query.
+   * @returns {Promise<Array<z.infer<typeof InstanceLogSchema>>>} the results of the log query.
    */
   async selectAssessmentInstanceLog(assessment_instance_id, include_files) {
     return sqldb.queryValidatedRows(
       sql.assessment_instance_log,
       { assessment_instance_id, include_files },
-      InstanceLogSchema
+      InstanceLogSchema,
     );
   },
 
@@ -503,7 +503,7 @@ module.exports = {
     return sqldb.queryValidatedCursor(
       sql.assessment_instance_log,
       { assessment_instance_id, include_files },
-      InstanceLogSchema
+      InstanceLogSchema,
     );
   },
 };

@@ -54,7 +54,7 @@ export function makeBatchedMigration<T extends BatchedMigrationImplementation>(f
 }
 
 export function validateBatchedMigrationImplementation(
-  fns: BatchedMigrationImplementation
+  fns: BatchedMigrationImplementation,
 ): asserts fns is BatchedMigrationImplementation {
   if (typeof fns.getParameters !== 'function') {
     throw new Error('getParameters() must be a function');
@@ -74,12 +74,12 @@ type NewBatchedMigration = Pick<
  * project/timestamp pair, returns null, otherwise returns the inserted row.
  */
 export async function insertBatchedMigration(
-  migration: NewBatchedMigration
+  migration: NewBatchedMigration,
 ): Promise<BatchedMigrationRow | null> {
   return queryValidatedZeroOrOneRow(
     sql.insert_batched_migration,
     migration,
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
@@ -87,40 +87,40 @@ export async function selectAllBatchedMigrations(project: string) {
   return queryValidatedRows(
     sql.select_all_batched_migrations,
     { project },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
 export async function selectBatchedMigration(
   project: string,
-  id: string
+  id: string,
 ): Promise<BatchedMigrationRow> {
   return queryValidatedOneRow(
     sql.select_batched_migration,
     { project, id },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
 export async function selectBatchedMigrationForTimestamp(
   project: string,
-  timestamp: string
+  timestamp: string,
 ): Promise<BatchedMigrationRow> {
   return queryValidatedOneRow(
     sql.select_batched_migration_for_timestamp,
     { project, timestamp },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 
 export async function updateBatchedMigrationStatus(
   id: string,
-  status: BatchedMigrationStatus
+  status: BatchedMigrationStatus,
 ): Promise<BatchedMigrationRow> {
   return queryValidatedOneRow(
     sql.update_batched_migration_status,
     { id, status },
-    BatchedMigrationRowSchema
+    BatchedMigrationRowSchema,
   );
 }
 

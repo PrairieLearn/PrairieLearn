@@ -29,7 +29,7 @@ describe('html', () => {
     assert.equal(
       // prettier-ignore
       html`<ul>${arr}</ul>`.toString(),
-      '<ul>cats&gt;&lt;dogs</ul>'
+      '<ul>cats&gt;&lt;dogs</ul>',
     );
   });
 
@@ -38,7 +38,7 @@ describe('html', () => {
     assert.equal(
       // prettier-ignore
       html`<ul>${arr.map((e) => html`<li>${e}</li>`)}</ul>`.toString(),
-      '<ul><li>cats</li><li>dogs</li></ul>'
+      '<ul><li>cats</li><li>dogs</li></ul>',
     );
   });
 
@@ -46,7 +46,7 @@ describe('html', () => {
     assert.throws(
       // @ts-expect-error -- Testing runtime behavior of bad input.
       () => html`<p>${{ foo: 'bar' }}</p>`.toString(),
-      'Cannot interpolate object in template'
+      'Cannot interpolate object in template',
     );
   });
 

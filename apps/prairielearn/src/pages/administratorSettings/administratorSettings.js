@@ -13,7 +13,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.send(AdministratorSettings({ resLocals: res.locals }));
-  })
+  }),
 );
 
 router.post(
@@ -34,7 +34,7 @@ router.post(
       } catch (err) {
         throw error.make(
           400,
-          `could not split course_ids into an array of integers: ${course_ids_string}`
+          `could not split course_ids into an array of integers: ${course_ids_string}`,
         );
       }
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
@@ -42,7 +42,7 @@ router.post(
     } else {
       throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
     }
-  })
+  }),
 );
 
 module.exports = router;

@@ -26,10 +26,10 @@ export interface MigrationFile {
 
 export async function readAndValidateMigrationsFromDirectory(
   dir: string,
-  extensions: string[]
+  extensions: string[],
 ): Promise<MigrationFile[]> {
   const migrationFiles = (await fs.readdir(dir)).filter((m) =>
-    extensions.some((e) => m.endsWith(e))
+    extensions.some((e) => m.endsWith(e)),
   );
 
   const migrations = migrationFiles.map((mf) => {
@@ -71,7 +71,7 @@ export async function readAndValidateMigrationsFromDirectory(
 
 export async function readAndValidateMigrationsFromDirectories(
   directories: string[],
-  extensions: string[]
+  extensions: string[],
 ): Promise<MigrationFile[]> {
   const allMigrations: MigrationFile[] = [];
   for (const directory of directories) {

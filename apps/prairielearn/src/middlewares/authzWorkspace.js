@@ -10,7 +10,7 @@ const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstan
 const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
 const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
 const authzHasCoursePreviewOrInstanceView = promisify(
-  require('./authzHasCoursePreviewOrInstanceView')
+  require('./authzHasCoursePreviewOrInstanceView'),
 );
 
 module.exports = asyncHandler(async (req, res, next) => {

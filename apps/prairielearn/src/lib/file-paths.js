@@ -40,7 +40,7 @@ module.exports.questionFilePathAsync = async function (
   questionDirectory,
   coursePath,
   question,
-  nTemplates = 0
+  nTemplates = 0,
 ) {
   const rootPath = path.join(coursePath, 'questions', questionDirectory);
   const fullPath = path.join(rootPath, filename);
@@ -69,7 +69,7 @@ module.exports.questionFilePathAsync = async function (
       throw error.make(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
-        { sql: sql.select_question, params: params }
+        { sql: sql.select_question, params: params },
       );
     }
 
@@ -79,7 +79,7 @@ module.exports.questionFilePathAsync = async function (
       templateQuestion.directory,
       coursePath,
       templateQuestion,
-      nTemplates + 1
+      nTemplates + 1,
     );
   } else {
     // No template, try default files
@@ -125,7 +125,7 @@ module.exports.questionFilePath = function (
   questionDirectory,
   coursePath,
   question,
-  callback
+  callback,
 ) {
   module.exports
     .questionFilePathAsync(filename, questionDirectory, coursePath, question)

@@ -77,7 +77,7 @@ module.exports = {
                     Math.floor(regrade.new_score_perc) +
                     '% (was ' +
                     Math.floor(regrade.old_score_perc) +
-                    '%)'
+                    '%)',
                 );
               } else {
                 job.verbose('No changes made');
@@ -216,7 +216,7 @@ module.exports = {
                 } else {
                   job.succeed();
                 }
-              }
+              },
             );
           });
         });

@@ -64,7 +64,7 @@ describe('instrumentedWithMetrics', () => {
       instrumentedWithMetrics(meter, 'test', async () => {
         throw new Error('error for test');
       }),
-      'error for test'
+      'error for test',
     );
 
     await waitForMetricsExport(exporter);

@@ -96,7 +96,7 @@ module.exports = {
     // Populate the list of PrairieLearn elements
     coreElementsCache = await module.exports.loadElements(
       path.join(APP_ROOT_PATH, 'elements'),
-      'core'
+      'core',
     );
   },
 
@@ -279,7 +279,7 @@ module.exports = {
 
     const extensions = await module.exports.loadExtensions(
       path.join(course_dir_host, 'elementExtensions'),
-      path.join(course_dir, 'elementExtensions')
+      path.join(course_dir, 'elementExtensions'),
     );
     courseExtensionsCache[course.id] = {
       commit_hash: course.commit_hash,
@@ -327,7 +327,7 @@ module.exports = {
         data.options.base_url,
         'elements',
         elementName,
-        'clientFilesElement'
+        'clientFilesElement',
       );
       dataCopy.options.client_files_extensions_url = {};
 
@@ -338,7 +338,7 @@ module.exports = {
             'elementExtensions',
             elementName,
             extension,
-            'clientFilesExtension'
+            'clientFilesExtension',
           );
           dataCopy.options.client_files_extensions_url[extension] = url;
         });
@@ -408,7 +408,7 @@ module.exports = {
     }
 
     debug(
-      `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
+      `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`,
     );
     try {
       const { result, output } = await codeCaller.call(
@@ -416,7 +416,7 @@ module.exports = {
         directory,
         pythonFile,
         pythonFunction,
-        pythonArgs
+        pythonArgs,
       );
       debug(`execPythonServer(): completed`);
       return { result, output };
@@ -475,7 +475,7 @@ module.exports = {
         if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
         if (!_.isEqual(data[prop], origData[prop])) {
           return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
-            data[prop]
+            data[prop],
           )}", original value: "${JSON.stringify(origData[prop])}"`;
         }
       }
@@ -584,7 +584,7 @@ module.exports = {
         context.question.directory,
         'question.html',
         phase,
-        [data, pythonContext]
+        [data, pythonContext],
       );
       result = res.result;
       output = res.output;
@@ -597,7 +597,7 @@ module.exports = {
         new CourseIssueError(`output logged on console during ${phase}()`, {
           data: { outputBoth: output },
           fatal: false,
-        })
+        }),
       );
     }
 
@@ -645,7 +645,7 @@ module.exports = {
             elementName,
             serializedNode,
             data,
-            context
+            context,
           ));
         } catch (e) {
           // We'll catch this and add it to the course issues list
@@ -664,14 +664,14 @@ module.exports = {
             new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
               data: { outputBoth: consoleLog },
               fatal: false,
-            })
+            }),
           );
         }
         if (phase === 'render') {
           if (!_.isString(ret_val)) {
             throw new CourseIssueError(
               `${elementFile}: Error calling ${phase}(): return value is not a string`,
-              { data: ret_val, fatal: true }
+              { data: ret_val, fatal: true },
             );
           }
           node = parse5.parseFragment(ret_val);
@@ -685,7 +685,7 @@ module.exports = {
               // If fileData already has non-zero length, throw an error
               throw new CourseIssueError(
                 `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-                { fatal: true }
+                { fatal: true },
               );
             } else {
               // If not, replace fileData with buffer
@@ -699,7 +699,7 @@ module.exports = {
           if (checkErr) {
             throw new CourseIssueError(
               `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-              { fatal: true }
+              { fatal: true },
             );
           }
         }
@@ -770,12 +770,12 @@ module.exports = {
               elementName,
               elementHtml,
               data,
-              context
+              context,
             ));
           } catch (err) {
             const courseIssue = new CourseIssueError(
               `${elementFile}: Error calling ${phase}(): ${err.toString()}`,
-              { data: err.data, fatal: true }
+              { data: err.data, fatal: true },
             );
             courseIssues.push(courseIssue);
 
@@ -790,8 +790,8 @@ module.exports = {
             courseIssues.push(
               new CourseIssueError(
                 elementFile + ': output logged on console during ' + phase + '()',
-                { data: { outputBoth: output }, fatal: false }
-              )
+                { data: { outputBoth: output }, fatal: false },
+              ),
             );
           }
 
@@ -799,7 +799,7 @@ module.exports = {
             if (!_.isString(output)) {
               const courseIssue = new CourseIssueError(
                 elementFile + ': Error calling ' + phase + '(): return value is not a string',
-                { data: { result }, fatal: true }
+                { data: { result }, fatal: true },
               );
               courseIssues.push(courseIssue);
 
@@ -819,7 +819,7 @@ module.exports = {
                 // If fileData already has non-zero length, throw an error
                 const courseIssue = new CourseIssueError(
                   `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-                  { fatal: true }
+                  { fatal: true },
                 );
                 courseIssues.push(courseIssue);
 
@@ -836,7 +836,7 @@ module.exports = {
             if (checkErr) {
               const courseIssue = new CourseIssueError(
                 `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-                { fatal: true }
+                { fatal: true },
               );
               courseIssues.push(courseIssue);
 
@@ -960,7 +960,7 @@ module.exports = {
       courseIssues.push(
         new CourseIssueError(`Invalid state before calling server ${phase}(): ${checkErrBefore}`, {
           fatal: true,
-        })
+        }),
       );
       return { courseIssues, data, html: '', fileData: Buffer.from(''), renderedElementNames: [] };
     }
@@ -972,7 +972,7 @@ module.exports = {
         phase,
         data,
         html,
-        context
+        context,
       ));
     } catch (err) {
       const serverFile = path.join(context.question_dir, 'server.py');
@@ -981,7 +981,7 @@ module.exports = {
           data: err.data,
           fatal: true,
           cause: err,
-        })
+        }),
       );
       return { courseIssues, data };
     }
@@ -992,7 +992,7 @@ module.exports = {
         new CourseIssueError(`${serverFile}: output logged on console`, {
           data: { outputBoth: output },
           fatal: false,
-        })
+        }),
       );
     }
 
@@ -1011,8 +1011,8 @@ module.exports = {
           courseIssues.push(
             new CourseIssueError(
               `${serverFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-              { fatal: true }
-            )
+              { fatal: true },
+            ),
           );
           return { courseIssues, data };
         } else {
@@ -1029,7 +1029,7 @@ module.exports = {
       courseIssues.push(
         new CourseIssueError(`${serverFile}: Invalid state after ${phase}(): ${checkErrAfter}`, {
           fatal: true,
-        })
+        }),
       );
       return { courseIssues, data };
     }
@@ -1055,7 +1055,7 @@ module.exports = {
           data,
           '',
           Buffer.from(''),
-          context
+          context,
         );
       } else {
         const {
@@ -1086,7 +1086,7 @@ module.exports = {
           htmlData,
           html,
           fileData,
-          context
+          context,
         );
         courseIssues.push(...serverCourseIssues);
         return {
@@ -1131,7 +1131,7 @@ module.exports = {
           'generate',
           codeCaller,
           data,
-          context
+          context,
         );
         return {
           courseIssues,
@@ -1151,7 +1151,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 
@@ -1174,7 +1174,7 @@ module.exports = {
           'prepare',
           codeCaller,
           data,
-          context
+          context,
         );
         return {
           courseIssues,
@@ -1194,7 +1194,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 
@@ -1285,10 +1285,10 @@ module.exports = {
           'render',
           codeCaller,
           data,
-          context
+          context,
         );
         return { courseIssues, html, renderedElementNames };
-      }
+      },
     );
 
     return {
@@ -1305,7 +1305,7 @@ module.exports = {
     question,
     course,
     locals,
-    context
+    context,
   ) {
     return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
       span.setAttributes({
@@ -1322,7 +1322,7 @@ module.exports = {
         submission,
         course,
         locals,
-        context
+        context,
       );
       span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
       return result;
@@ -1337,7 +1337,7 @@ module.exports = {
     submissions,
     course,
     course_instance,
-    locals
+    locals,
   ) {
     return instrumented('freeform.render', async () => {
       debug('render()');
@@ -1378,7 +1378,7 @@ module.exports = {
               question,
               course,
               locals,
-              context
+              context,
             );
 
             courseIssues.push(...newCourseIssues);
@@ -1401,7 +1401,7 @@ module.exports = {
                 question,
                 course,
                 locals,
-                context
+                context,
               );
 
               courseIssues.push(...newCourseIssues);
@@ -1424,7 +1424,7 @@ module.exports = {
               question,
               course,
               locals,
-              context
+              context,
             );
 
             courseIssues.push(...newCourseIssues);
@@ -1469,12 +1469,12 @@ module.exports = {
               // since they'll be served from their element's directory
               if (_.has(elementDependencies, 'elementStyles')) {
                 elementDependencies.elementStyles = elementDependencies.elementStyles.map(
-                  (dep) => `${resolvedElement.name}/${dep}`
+                  (dep) => `${resolvedElement.name}/${dep}`,
                 );
               }
               if (_.has(elementDependencies, 'elementScripts')) {
                 elementDependencies.elementScripts = elementDependencies.elementScripts.map(
-                  (dep) => `${resolvedElement.name}/${dep}`
+                  (dep) => `${resolvedElement.name}/${dep}`,
                 );
               }
 
@@ -1524,8 +1524,8 @@ module.exports = {
                     courseIssues.push(
                       new CourseIssueError(
                         `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`,
-                        { data: { elementDependencies }, fatal: true }
-                      )
+                        { data: { elementDependencies }, fatal: true },
+                      ),
                     );
                   }
                 }
@@ -1539,16 +1539,16 @@ module.exports = {
                   }
 
                   const extension = _.cloneDeep(
-                    extensions[elementName][extensionName]
+                    extensions[elementName][extensionName],
                   ).dependencies;
                   if (_.has(extension, 'extensionStyles')) {
                     extension.extensionStyles = extension.extensionStyles.map(
-                      (dep) => `${elementName}/${extensionName}/${dep}`
+                      (dep) => `${elementName}/${extensionName}/${dep}`,
                     );
                   }
                   if (_.has(extension, 'extensionScripts')) {
                     extension.extensionScripts = extension.extensionScripts.map(
-                      (dep) => `${elementName}/${extensionName}/${dep}`
+                      (dep) => `${elementName}/${extensionName}/${dep}`,
                     );
                   }
 
@@ -1575,8 +1575,8 @@ module.exports = {
                         courseIssues.push(
                           new CourseIssueError(
                             `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`,
-                            { data: elementDependencies, fatal: true }
-                          )
+                            { data: elementDependencies, fatal: true },
+                          ),
                         );
                       }
                     }
@@ -1590,61 +1590,61 @@ module.exports = {
             const scriptUrls = [];
             const styleUrls = [];
             dependencies.coreStyles.forEach((file) =>
-              styleUrls.push(assets.assetPath(`stylesheets/${file}`))
+              styleUrls.push(assets.assetPath(`stylesheets/${file}`)),
             );
             dependencies.coreScripts.forEach((file) =>
-              coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
+              coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
             );
             dependencies.nodeModulesStyles.forEach((file) =>
-              styleUrls.push(assets.nodeModulesAssetPath(file))
+              styleUrls.push(assets.nodeModulesAssetPath(file)),
             );
             dependencies.nodeModulesScripts.forEach((file) =>
-              coreScriptUrls.push(assets.nodeModulesAssetPath(file))
+              coreScriptUrls.push(assets.nodeModulesAssetPath(file)),
             );
             dependencies.clientFilesCourseStyles.forEach((file) =>
-              styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+              styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
             );
             dependencies.clientFilesCourseScripts.forEach((file) =>
-              scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+              scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
             );
             dependencies.clientFilesQuestionStyles.forEach((file) =>
-              styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+              styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
             );
             dependencies.clientFilesQuestionScripts.forEach((file) =>
-              scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+              scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
             );
             dependencies.coreElementStyles.forEach((file) =>
-              styleUrls.push(assets.coreElementAssetPath(file))
+              styleUrls.push(assets.coreElementAssetPath(file)),
             );
             dependencies.coreElementScripts.forEach((file) =>
-              scriptUrls.push(assets.coreElementAssetPath(file))
+              scriptUrls.push(assets.coreElementAssetPath(file)),
             );
             dependencies.courseElementStyles.forEach((file) =>
               styleUrls.push(
-                assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-              )
+                assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+              ),
             );
             dependencies.courseElementScripts.forEach((file) =>
               scriptUrls.push(
-                assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-              )
+                assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+              ),
             );
             dependencies.extensionStyles.forEach((file) =>
               styleUrls.push(
-                assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
-              )
+                assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
+              ),
             );
             dependencies.extensionScripts.forEach((file) =>
               scriptUrls.push(
-                assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
-              )
+                assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
+              ),
             );
 
             const headerHtmls = [
               ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
               // It's important that any library-style scripts come first
               ...coreScriptUrls.map(
-                (url) => `<script type="text/javascript" src="${url}"></script>`
+                (url) => `<script type="text/javascript" src="${url}"></script>`,
               ),
               ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
             ];
@@ -1666,7 +1666,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback
+    callback,
   ) {
     module.exports
       .renderAsync(
@@ -1677,7 +1677,7 @@ module.exports = {
         submissions,
         course,
         course_instance,
-        locals
+        locals,
       )
       .then(
         ({ courseIssues, htmls }) => {
@@ -1685,7 +1685,7 @@ module.exports = {
         },
         (err) => {
           callback(err);
-        }
+        },
       );
   },
 
@@ -1716,12 +1716,12 @@ module.exports = {
               'file',
               codeCaller,
               data,
-              context
+              context,
             );
             const fileDataBase64 = (fileData || '').toString('base64');
             return { courseIssues, fileDataBase64 };
           });
-        }
+        },
       );
 
       span.setAttribute('cache.status', cacheHit ? 'hit' : 'miss');
@@ -1739,7 +1739,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 
@@ -1765,7 +1765,7 @@ module.exports = {
           'parse',
           codeCaller,
           data,
-          context
+          context,
         );
         if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
         return {
@@ -1790,7 +1790,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 
@@ -1820,7 +1820,7 @@ module.exports = {
           'grade',
           codeCaller,
           data,
-          context
+          context,
         );
         if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
         return {
@@ -1848,7 +1848,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 
@@ -1877,7 +1877,7 @@ module.exports = {
           'test',
           codeCaller,
           data,
-          context
+          context,
         );
         if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
         return {
@@ -1903,7 +1903,7 @@ module.exports = {
       },
       (err) => {
         callback(err);
-      }
+      },
     );
   },
 

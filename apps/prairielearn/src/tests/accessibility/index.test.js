@@ -278,21 +278,21 @@ describe('accessibility', () => {
 
     const firstNewsItemResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {}
+      {},
     );
 
     const questionGalleryAssessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
       {
         tid: 'gallery/elements',
-      }
+      },
     );
 
     const codeElementQuestionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
         qid: 'element/code',
-      }
+      },
     );
 
     routeParams = {

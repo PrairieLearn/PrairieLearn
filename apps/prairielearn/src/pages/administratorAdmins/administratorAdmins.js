@@ -13,7 +13,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryAsync(sql.select_admins, []);
     res.send(AdministratorAdmins({ admins: result.rows, resLocals: res.locals }));
-  })
+  }),
 );
 
 router.post(
@@ -36,7 +36,7 @@ router.post(
     } else {
       throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
     }
-  })
+  }),
 );
 
 module.exports = router;

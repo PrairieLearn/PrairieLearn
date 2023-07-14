@@ -46,7 +46,7 @@ describe('Redirects', function () {
           assert.equal(response.statusCode, 302);
           assert.equal(response.headers.location, redirect.redirect);
           done();
-        }
+        },
       );
     });
   });

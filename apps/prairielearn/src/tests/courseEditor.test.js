@@ -540,7 +540,7 @@ function createCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 
@@ -569,7 +569,7 @@ function deleteCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 }
 

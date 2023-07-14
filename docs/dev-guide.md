@@ -141,7 +141,7 @@ pages/instructorGradebook
 ```javascript
 app.use(
   '/instructor/:courseInstanceId/gradebook',
-  require('./pages/instructorGradebook/instructorGradebook')
+  require('./pages/instructorGradebook/instructorGradebook'),
 );
 ```
 
@@ -579,7 +579,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, next) => {
     // can use "await" here
-  })
+  }),
 );
 ```
 
@@ -812,7 +812,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         body: req.body,
         locals: res.locals,
-      })
+      }),
     );
   }
 });
