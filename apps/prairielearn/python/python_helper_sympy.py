@@ -1,7 +1,5 @@
 import ast
-import builtins
 import copy
-import types
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
@@ -377,17 +375,11 @@ def evaluate_with_source(
     # Based on code here:
     # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
 
+    # Global dict is set up to be very permissive for parsing purposes
+    # (makes it cleaner to call this function with a custom locals dict).
+    # This line shouldn't be dangerous, as it's just loading the global dict.
     global_dict = {}
     exec("from sympy import *", global_dict)
-
-    global_dict.update(
-        (name, obj)
-        for name, obj in vars(builtins).items()
-        if isinstance(obj, types.BuiltinFunctionType)
-    )
-
-    global_dict["max"] = sympy.Max
-    global_dict["min"] = sympy.Min
 
     transformations = standard_transformations + (implicit_multiplication_application,)
 
