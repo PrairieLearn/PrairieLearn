@@ -37,6 +37,8 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
 ALLOW_FEEDBACK_DEFAULT = True
+CUSTOM_FORMAT_DEFAULT = None
+SHOW_SCORE_DEFAULT = True
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
@@ -78,6 +80,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "placeholder",
         "magnitude-partial-credit",
         "allow-feedback",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -170,12 +173,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
     digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
-    custom_format = pl.get_string_attrib(element, "custom-format", None)
+    custom_format = pl.get_string_attrib(
+        element, "custom-format", CUSTOM_FORMAT_DEFAULT
+    )
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
-    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
     partial_scores = data["partial_scores"].get(name, {})
     score = partial_scores.get("score")
 
+    parse_error = data["format_errors"].get(name)
     ureg = pl.get_unit_registry()
 
     if data["panel"] == "question":
@@ -228,9 +235,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "display_append_span": show_info or suffix,
+            "parse_error": parse_error,
         }
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -241,7 +249,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
             "label": label,
@@ -272,7 +279,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     submitted_answer
                 )
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
