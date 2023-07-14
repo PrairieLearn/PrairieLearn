@@ -149,8 +149,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 info_params
             )
 
-
-
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
