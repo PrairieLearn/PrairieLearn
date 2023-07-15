@@ -5,6 +5,12 @@ const {loadSqlEquiv} = require('@prairielearn/postgres');
 const sqldb = require('@prairielearn/postgres');
 const sql = loadSqlEquiv(__filename);
 
+router.use((req, res, next) => {
+  res.locals.policies = []; // Initialize policies array in res.locals
+  next();
+});
+
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -14,9 +20,13 @@ router.get(
       current_assessment_title : res.locals.assessment.title
     };
     const result = await sqldb.queryAsync(sql.selectQuery, params);
-    console.log(result.rows)
+    res.locals.policies = result.rows
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.render(__filename.replace(/\.js$/, '.ejs'), {
-      policies: result.rows,
+      policies: res.locals.policies,
       assessment_id: params.assessment_id,
       current_user_id: params.current_user_id,
       current_assessment_title: params.current_assessment_title
@@ -55,20 +65,19 @@ router.post(
         user_id: req.body.user_id,
         group_id: req.body.group_id,
       };
-  
-      const deleteQuery = sql.deleteQuery;
-  
-      // const result_after_delete = 
-      await sqldb.queryAsync(deleteQuery, delete_params);
+      // const result_after_delete = await sqldb.queryAsync(deleteQuery, delete_params);
       // console.log(result_after_delete)
-      // const result_after_delete = await sqldb.queryAsync(sql.selectQuery, delete_params);
-      // res.render(__filename.replace(/\.js$/, '.ejs'), {
-      //   policies: result_after_delete.rows,
-      //   assessment_id: delete_params.assessment_id,
-      //   current_user_id: delete_params.current_user_id,
-      //   current_assessment_title: delete_params.current_assessment_title
-      // });
-      res.redirect(req.originalUrl);
+      const result_after_delete = await sqldb.queryAsync(sql.deleteQuery, delete_params);
+      console.log(result_after_delete.rows)
+      res.locals.policies = result_after_delete.rows;
+      res.render(__filename.replace(/\.js$/, '.ejs'), {
+        policies: res.locals.policies,
+        assessment_id: delete_params.assessment_id,
+        current_user_id: delete_params.current_user_id,
+        current_assessment_title: delete_params.current_assessment_title
+      });
+      
+      // res.redirect(req.originalUrl);
     }
 
     else if (req.body.__action === 'edit_override') {
