@@ -13,9 +13,8 @@ router.get(
       current_user_id: res.locals.user.uid,
       current_assessment_title : res.locals.assessment.title
     };
-
     const result = await sqldb.queryAsync(sql.selectQuery, params);
-
+    console.log(result.rows)
     res.render(__filename.replace(/\.js$/, '.ejs'), {
       policies: result.rows,
       assessment_id: params.assessment_id,
@@ -59,14 +58,17 @@ router.post(
   
       const deleteQuery = sql.deleteQuery;
   
-      const result_after_delete = await sqldb.queryAsync(deleteQuery, delete_params);
+      // const result_after_delete = 
+      await sqldb.queryAsync(deleteQuery, delete_params);
+      // console.log(result_after_delete)
       // const result_after_delete = await sqldb.queryAsync(sql.selectQuery, delete_params);
-      res.render(__filename.replace(/\.js$/, '.ejs'), {
-        policies: result_after_delete.rows,
-        assessment_id: delete_params.assessment_id,
-        current_user_id: delete_params.current_user_id,
-        current_assessment_title: delete_params.current_assessment_title
-      });
+      // res.render(__filename.replace(/\.js$/, '.ejs'), {
+      //   policies: result_after_delete.rows,
+      //   assessment_id: delete_params.assessment_id,
+      //   current_user_id: delete_params.current_user_id,
+      //   current_assessment_title: delete_params.current_assessment_title
+      // });
+      res.redirect(req.originalUrl);
     }
 
     else if (req.body.__action === 'edit_override') {
