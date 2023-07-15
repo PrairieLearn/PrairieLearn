@@ -39,7 +39,7 @@ router.post(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
@@ -47,7 +47,7 @@ router.post(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
@@ -56,7 +56,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
 module.exports = router;

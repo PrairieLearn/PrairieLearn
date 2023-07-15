@@ -21,7 +21,7 @@ const defaultUser = {
 };
 
 const fibonacciSolution = fs.readFileSync(
-  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py')
+  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py'),
 );
 
 const mockStudents = [
@@ -55,7 +55,7 @@ const waitForExternalGrader = async ($questionsPage) => {
       function (msg) {
         if (!msg) return reject(new Error('Socket initialization failed'));
         handleStatusChange(msg);
-      }
+      },
     );
 
     socket.on('change:status', function (msg) {
@@ -81,7 +81,7 @@ const loadHomeworkPage = async (user) => {
   hm9InternalExternalManaulUrl =
     siteUrl +
     $courseInstancePage(
-      'a:contains("Homework for Internal, External, Manual grading methods")'
+      'a:contains("Homework for Internal, External, Manual grading methods")',
     ).attr('href');
   let res = await fetch(hm9InternalExternalManaulUrl);
   assert.equal(res.ok, true);
@@ -197,7 +197,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
@@ -219,7 +219,7 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -234,7 +234,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
@@ -253,7 +253,7 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -270,7 +270,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
@@ -312,7 +312,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
 
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
@@ -349,7 +349,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")'
+              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -389,7 +389,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")'
+              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -428,7 +428,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")'
+              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -454,7 +454,7 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -469,7 +469,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")'
+              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -492,7 +492,7 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
         it('should NOT result in "grading-block" component being displayed', () => {

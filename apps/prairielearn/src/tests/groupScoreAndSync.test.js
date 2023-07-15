@@ -111,7 +111,7 @@ describe('assessment instance group synchronization test', function () {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           callback(null);
-        }
+        },
       );
     });
     it('should create the correct group configuration', function (callback) {
@@ -169,7 +169,7 @@ describe('assessment instance group synchronization test', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should have 1 assessment instance in db', function (callback) {
@@ -268,7 +268,7 @@ describe('assessment instance group synchronization test', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -321,12 +321,12 @@ describe('assessment instance group synchronization test', function () {
               new Error('bad status: ' + response.statusCode, {
                 response,
                 body,
-              })
+              }),
             );
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {

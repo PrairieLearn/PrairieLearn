@@ -86,7 +86,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'stopped',
-          `Error! Click "Reboot" to try again. Detail: ${err}`
+          `Error! Click "Reboot" to try again. Detail: ${err}`,
         );
       });
     });
@@ -207,7 +207,7 @@ module.exports = {
               `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
               {
                 overwrite: true,
-              }
+              },
             );
           } catch (err) {
             // If the directory couldn't be moved because it didn't exist, ignore the error.
@@ -227,7 +227,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'stopped',
-          'Initialization complete'
+          'Initialization complete',
         );
       }
 
@@ -237,7 +237,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'launching',
-          'Assigning workspace host'
+          'Assigning workspace host',
         );
         shouldAssignHost = true;
       }
@@ -261,7 +261,7 @@ module.exports = {
       const t = attempt * config.workspaceLaunchingRetryIntervalSec;
       await workspaceUtils.updateWorkspaceMessage(
         workspace_id,
-        `Deploying more computational resources (${t} seconds elapsed)`
+        `Deploying more computational resources (${t} seconds elapsed)`,
       );
       await util.promisify(setTimeout)(config.workspaceLaunchingRetryIntervalSec * 1000);
       attempt++;
@@ -321,7 +321,7 @@ module.exports = {
             return file.stats.isFile()
               ? { name: path.relative(localPath, file.path), localPath: file.path }
               : null;
-          }
+          },
         )
         .catch(() => {
           // Path does not exist or is not accessible, do nothing
@@ -329,7 +329,7 @@ module.exports = {
         })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     const mustacheParams = { params: variant.params, correct_answers: variant.true_answer };
@@ -343,7 +343,7 @@ module.exports = {
           async (file) => {
             const generatedFileName = path.relative(
               templatePath,
-              file.path.replace(/\.mustache$/i, '')
+              file.path.replace(/\.mustache$/i, ''),
             );
             try {
               if (!file.stats.isFile()) return null;
@@ -351,14 +351,14 @@ module.exports = {
                 name: generatedFileName,
                 buffer: mustache.render(
                   await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
-                  mustacheParams
+                  mustacheParams,
                 ),
               };
             } catch (_err) {
               // File cannot be rendered, treat file as static file
               return { name: generatedFileName, localPath: file.path };
             }
-          }
+          },
         )
         .catch(() => {
           // Template directory does not exist or is not accessible, do nothing
@@ -366,7 +366,7 @@ module.exports = {
         })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     /** @type {WorkspaceFile[]} */
@@ -407,7 +407,7 @@ module.exports = {
       })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
@@ -420,7 +420,7 @@ module.exports = {
     await fsPromises.chown(
       sourcePath,
       config.workspaceJobsDirectoryOwnerUid,
-      config.workspaceJobsDirectoryOwnerGid
+      config.workspaceJobsDirectoryOwnerGid,
     );
 
     if (allWorkspaceFiles.length > 0) {
@@ -443,7 +443,7 @@ module.exports = {
         await fsPromises.chown(
           file.path,
           config.workspaceJobsDirectoryOwnerUid,
-          config.workspaceJobsDirectoryOwnerGid
+          config.workspaceJobsDirectoryOwnerGid,
         );
       }
     }
@@ -510,7 +510,7 @@ module.exports = {
         {
           maxFiles: config.workspaceMaxGradedFilesCount,
           maxSize: config.workspaceMaxGradedFilesSize,
-        }
+        },
       );
     } catch (err) {
       // Turn any error into a `SubmissionFormatError` so that it is handled correctly.

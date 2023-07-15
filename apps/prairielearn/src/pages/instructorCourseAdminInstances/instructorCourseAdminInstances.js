@@ -58,7 +58,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -76,7 +76,7 @@ router.post('/', (req, res, next) => {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
+            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
           );
           sqldb.queryOneRow(
             sql.select_course_instance_id_from_uuid,
@@ -87,9 +87,9 @@ router.post('/', (req, res, next) => {
                 res.locals.plainUrlPrefix +
                   '/course_instance/' +
                   result.rows[0].course_instance_id +
-                  '/instructor/instance_admin/settings'
+                  '/instructor/instance_admin/settings',
               );
-            }
+            },
           );
         }
       });
@@ -99,7 +99,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

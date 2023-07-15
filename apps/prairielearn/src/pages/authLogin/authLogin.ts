@@ -26,7 +26,7 @@ router.get(
       const institutionAuthnProvidersRes = await queryValidatedRows(
         sql.select_institution_authn_providers,
         {},
-        InstitutionAuthnProviderSchema
+        InstitutionAuthnProviderSchema,
       );
       institutionAuthnProviders = institutionAuthnProvidersRes
         .map((provider) => {
@@ -64,9 +64,9 @@ router.get(
         institutionAuthnProviders,
         service: ServiceSchema.parse(req.query.service ?? null),
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

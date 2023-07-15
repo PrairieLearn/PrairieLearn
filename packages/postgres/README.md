@@ -23,7 +23,7 @@ await sqldb.initAsync(
     max: 2,
     idleTimeoutMillis: 30000,
   },
-  idleErrorHandler
+  idleErrorHandler,
 );
 ```
 

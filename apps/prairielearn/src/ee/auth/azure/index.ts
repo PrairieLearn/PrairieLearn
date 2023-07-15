@@ -22,6 +22,6 @@ export function getAzureStrategy() {
     },
     function (iss, sub, profile, accessToken, refreshToken, done) {
       return done(null, profile);
-    }
+    },
   );
 }

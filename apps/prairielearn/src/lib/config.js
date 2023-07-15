@@ -454,7 +454,7 @@ const ConfigSchema = z.object({
       z.object({
         key: z.string().length(32),
         iv: z.string().length(12),
-      })
+      }),
     )
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
@@ -471,7 +471,7 @@ const ConfigSchema = z.object({
     .string()
     .nullable()
     .default(
-      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000'
+      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
   features: z.record(z.string(), z.boolean()).default({}),
 });

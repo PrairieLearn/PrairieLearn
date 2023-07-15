@@ -26,9 +26,9 @@ module.exports.readJSON = function (jsonFilename, callback) {
     } catch (e) {
       ERR(
         new Error(
-          `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`
+          `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
         ),
-        callback
+        callback,
       );
       return;
     }
@@ -58,9 +58,9 @@ module.exports.validateJSON = function (json, schema, callback) {
     callback(
       new Error(
         `JSON validation error: ${ajv.errorsText(
-          validate.errors
-        )}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`
-      )
+          validate.errors,
+        )}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`,
+      ),
     );
   } else {
     callback(null, json);
@@ -96,7 +96,7 @@ module.exports.readJSONSyncOrDie = function (jsonFilename, schema) {
     var json = jju.parse(data, { mode: 'json' });
   } catch (e) {
     logger.error(
-      `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`
+      `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
     );
     process.exit(1);
     return;
@@ -108,8 +108,8 @@ module.exports.readJSONSyncOrDie = function (jsonFilename, schema) {
       if (!valid) {
         logger.error(
           `JSON validation error: ${ajv.errorsText(
-            validate.errors
-          )}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`
+            validate.errors,
+          )}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`,
         );
         process.exit(1);
         return;
@@ -143,7 +143,7 @@ module.exports.readInfoJSON = function (jsonFilename, schema, callback) {
         if (err) {
           ERR(
             new Error("Error validating file '" + jsonFilename + "' against schema: " + err),
-            callback
+            callback,
           );
           return;
         }
@@ -174,7 +174,7 @@ module.exports.validateOptions = function (
   jsonFilename,
   optionsSchemaPrefix,
   schemas,
-  callback
+  callback,
 ) {
   if (optionsSchemaPrefix && _(json).has('type') && _(json).has('options')) {
     const schema = schemas[optionsSchemaPrefix + json.type];
@@ -186,8 +186,8 @@ module.exports.validateOptions = function (
       if (err) {
         callback(
           new Error(
-            "Error validating 'options' field from '" + jsonFilename + "' against schema: " + err
-          )
+            "Error validating 'options' field from '" + jsonFilename + "' against schema: " + err,
+          ),
         );
         return;
       }

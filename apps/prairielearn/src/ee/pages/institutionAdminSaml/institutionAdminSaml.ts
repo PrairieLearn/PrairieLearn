@@ -16,7 +16,7 @@ const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 function createCertificate(
-  options: pem.CertificateCreationOptions
+  options: pem.CertificateCreationOptions,
 ): Promise<pem.CertificateCreationResult> {
   return new Promise((resolve, reject) => {
     pem.createCertificate(options, (err, keys) => {
@@ -83,7 +83,7 @@ router.post(
     }
 
     res.redirect(req.originalUrl);
-  })
+  }),
 );
 
 router.get(
@@ -92,7 +92,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
-      req.params.institution_id
+      req.params.institution_id,
     );
 
     res.send(
@@ -102,9 +102,9 @@ router.get(
         institutionAuthenticationProviders,
         host: z.string().parse(req.headers.host),
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

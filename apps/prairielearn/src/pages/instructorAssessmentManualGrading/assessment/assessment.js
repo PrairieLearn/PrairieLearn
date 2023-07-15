@@ -20,7 +20,7 @@ router.get(
     res.locals.questions = result.rows;
     res.locals.num_open_instances = result.rows[0]?.num_open_instances || 0;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 module.exports = router;

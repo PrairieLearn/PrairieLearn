@@ -30,7 +30,7 @@ const elements = parseHTML(
   html`
     <div>Hello, world</div>
     <div>Goodbye, world</div>
-  `
+  `,
 );
 const div = parseHTMLElement(document, html`<div>Hello, world</div>`);
 ```

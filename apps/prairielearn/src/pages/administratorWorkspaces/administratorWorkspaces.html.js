@@ -54,11 +54,11 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
         time_in_state: workspace.workspace_host_time_in_state,
         workspaces: workspacesForHost,
       };
-    }
+    },
   );
 
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}

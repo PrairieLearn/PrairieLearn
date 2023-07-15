@@ -15,7 +15,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -31,7 +31,7 @@ router.get(
 
     const result = await sqldb.queryAsync(sql.select_instance_questions_manual_grading, params);
     res.send({ instance_questions: result.rows.map((row, idx) => ({ index: idx + 1, ...row })) });
-  })
+  }),
 );
 
 router.get(
@@ -46,10 +46,10 @@ router.get(
         res.locals.assessment.id,
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id
-      )
+        req.query.prior_instance_question_id,
+      ),
     );
-  })
+  }),
 );
 
 router.post(
@@ -85,7 +85,7 @@ router.post(
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
         },
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       if (result.modified_at_conflict) {
         return res.send({
@@ -101,7 +101,7 @@ router.post(
         null, // submission_id
         req.body.modified_at,
         { score_perc: req.body.score_perc },
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       if (result.modified_at_conflict) {
         return res.send({
@@ -115,10 +115,10 @@ router.post(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

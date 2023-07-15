@@ -86,7 +86,8 @@ WITH
     SET
       finish_date = CURRENT_TIMESTAMP,
       status = $status::enum_job_status,
-      output = $output
+      output = $output,
+      data = $data::jsonb
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status

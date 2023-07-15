@@ -65,7 +65,7 @@
           } catch (e) {
             console.error(e);
           }
-        })
+        }),
       );
     }
 
@@ -94,7 +94,7 @@
               '<strong>' +
                 file.name +
                 '</strong>' +
-                ' did not match any accepted file for this question.'
+                ' did not match any accepted file for this question.',
             );
             return;
           }
@@ -210,7 +210,7 @@
             uuid +
             '-' +
             index +
-            '"></div>'
+            '"></div>',
         );
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
@@ -223,29 +223,29 @@
         $fileStatusContainer.append($fileStatusContainerLeft);
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fas fa-spinner fa-spin" aria-hidden="true"></i>'
+            '<i class="file-status-icon fas fa-spinner fa-spin" aria-hidden="true"></i>',
           );
         } else if (this.failedFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fas fa-circle-exclamation text-danger" aria-hidden="true"></i>'
+            '<i class="file-status-icon fas fa-circle-exclamation text-danger" aria-hidden="true"></i>',
           );
         } else if (fileData) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fa fa-check-circle text-success" aria-hidden="true"></i>'
+            '<i class="file-status-icon fa fa-check-circle text-success" aria-hidden="true"></i>',
           );
         } else {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>'
+            '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>',
           );
         }
         $fileStatusContainerLeft.append(fileName);
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
-            '<p class="file-status">fetching previous submission...</p>'
+            '<p class="file-status">fetching previous submission...</p>',
           );
         } else if (this.failedFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
-            '<p class="file-status">failed to fetch previous submission; upload this file again</p>'
+            '<p class="file-status">failed to fetch previous submission; upload this file again</p>',
           );
         } else if (!fileData) {
           $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
@@ -261,7 +261,11 @@
             '">Download</a>';
 
           var $preview = $(
-            '<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"></div>'
+            '<div class="file-preview collapse" id="file-preview-' +
+              uuid +
+              '-' +
+              index +
+              '"></div>',
           );
 
           var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
@@ -271,7 +275,7 @@
           $preview.append($imgPreview);
 
           var $codePreview = $(
-            '<pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>'
+            '<pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>',
           );
           $preview.append($codePreview);
 
@@ -302,7 +306,7 @@
           $fileStatusContainer.append(
             '<div class="align-self-center">' +
               download +
-              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>'
+              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
           );
         }
 
@@ -312,7 +316,7 @@
 
     addWarningMessage(message) {
       var $alert = $(
-        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>',
       );
       $alert.append(message);
       this.element.find('.messages').append($alert);
@@ -348,7 +352,7 @@
           .map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
           })
-          .join('')
+          .join(''),
       );
     }
   }

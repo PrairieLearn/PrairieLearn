@@ -39,7 +39,7 @@ function escapeValue(value: unknown): string {
   } else {
     // There shouldn't be any other types
     throw new Error(
-      `Unexpected type in template: ${typeof value} for value ${JSON.stringify(value)}`
+      `Unexpected type in template: ${typeof value} for value ${JSON.stringify(value)}`,
     );
   }
 }

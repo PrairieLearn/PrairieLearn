@@ -139,7 +139,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     let R = 0.5 * R2;
     let offsetAngle = (50 * Math.PI) / 180;
     let n = Math.floor(
-      (len - 3 * R - 2 * R * Math.cos(offsetAngle)) / (2 * R * Math.cos(offsetAngle))
+      (len - 3 * R - 2 * R * Math.cos(offsetAngle)) / (2 * R * Math.cos(offsetAngle)),
     );
     let l2 = len / 2;
 
@@ -1008,7 +1008,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
           this['canvas'].renderAll();
         }
       },
-      options
+      options,
     );
   },
   initialize: function (text, options) {
@@ -1420,7 +1420,7 @@ mechanicsObjects.makeCoordinates = function (options) {
     {
       angle: options.angle - 90,
     },
-    options
+    options,
   );
 
   let obj2 = new mechanicsObjects.Arrow(options2);
@@ -1433,7 +1433,7 @@ mechanicsObjects.makeCoordinates = function (options) {
       originY: 'center',
       fill: options.stroke,
     },
-    options
+    options,
   );
 
   let obj3 = new fabric.Circle(options3);
@@ -1608,7 +1608,7 @@ mechanicsObjects.byType['pl-rod'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c2);
           canvas.remove(obj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.x1 = c1.left;
@@ -1630,7 +1630,7 @@ mechanicsObjects.byType['pl-rod'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(obj);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.x2 = c2.left;
@@ -1695,7 +1695,7 @@ mechanicsObjects.byType['pl-collar-rod'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c2);
           canvas.remove(obj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.x1 = c1.left;
@@ -1717,7 +1717,7 @@ mechanicsObjects.byType['pl-collar-rod'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(obj);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.x2 = c2.left;
@@ -1784,7 +1784,7 @@ mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c2);
           canvas.remove(c3);
           canvas.remove(obj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.x1 = c1.left;
@@ -1807,7 +1807,7 @@ mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c1);
           canvas.remove(c3);
           canvas.remove(obj);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.x2 = c2.left;
@@ -1830,7 +1830,7 @@ mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c1);
           canvas.remove(c2);
           canvas.remove(obj);
-        }
+        },
       );
       c3.on('moving', function () {
         obj.x3 = c3.left;
@@ -1899,7 +1899,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c3);
           canvas.remove(c4);
           canvas.remove(obj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.x1 = c1.left;
@@ -1923,7 +1923,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c3);
           canvas.remove(c4);
           canvas.remove(obj);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.x2 = c2.left;
@@ -1947,7 +1947,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c2);
           canvas.remove(c4);
           canvas.remove(obj);
-        }
+        },
       );
       c3.on('moving', function () {
         obj.x3 = c3.left;
@@ -1971,7 +1971,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
           canvas.remove(c2);
           canvas.remove(c3);
           canvas.remove(obj);
-        }
+        },
       );
       c4.on('moving', function () {
         obj.x4 = c4.left;
@@ -2333,7 +2333,7 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     let obj = new fabric.Line(
       [options.x1, options.y1, options.x2, options.y2],
-      _.omit(options, 'left', 'top')
+      _.omit(options, 'left', 'top'),
     );
     obj.setControlVisible('bl', false);
     obj.setControlVisible('tl', false);
@@ -2379,7 +2379,7 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c2);
           canvas.remove(obj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.set({ x1: c1.left, y1: c1.top });
@@ -2399,7 +2399,7 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(obj);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.set({ x2: c2.left, y2: c2.top });
@@ -2517,7 +2517,7 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
         arrowheadWidthRatio: 1.5,
         arrowheadOffsetRatio: 1.5,
       },
-      options
+      options,
     );
     let obj1 = new mechanicsObjects.Arrow(options_axis_1);
     obj.addWithUpdate(obj1);
@@ -2533,7 +2533,7 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
         arrowheadWidthRatio: 1.5,
         arrowheadOffsetRatio: 1.5,
       },
-      options
+      options,
     );
     let obj2 = new mechanicsObjects.Arrow(options_axis_2);
     obj.addWithUpdate(obj2);
@@ -2665,7 +2665,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
           canvas.remove(c3);
           canvas.remove(obj);
           this.removeSubmittedAnswerObj(submittedAnswer, subObj);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.left = c1.left;
@@ -2700,7 +2700,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
           canvas.remove(c3);
           canvas.remove(obj);
           submittedAnswer.deleteObject(subObj);
-        }
+        },
       );
       c2.on('moving', function () {
         const dy = c2.top - obj.top;
@@ -2733,7 +2733,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
           canvas.remove(c2);
           canvas.remove(obj);
           submittedAnswer.deleteObject(subObj);
-        }
+        },
       );
       c3.on('moving', function () {
         const dy = c3.top - obj.top;
@@ -2789,7 +2789,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(c1);
           canvas.remove(c2);
-        }
+        },
       );
       cc.on('moving', function () {
         obj.set({ x1: cc.left, y1: cc.top });
@@ -2810,7 +2810,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c2);
-        }
+        },
       );
       c1.on('moving', function () {
         obj.set({ x2: c1.left, y2: c1.top });
@@ -2831,7 +2831,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
           // Removed
           canvas.remove(cc);
           canvas.remove(c1);
-        }
+        },
       );
       c2.on('moving', function () {
         obj.set({ x3: c2.left, y3: c2.top });
@@ -3137,7 +3137,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
       function () {
         canvas.remove(obj1);
         canvas.remove(obj2);
-      }
+      },
     );
 
     mechanicsObjects.attachHandlersNoClone(
@@ -3152,7 +3152,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
       function () {
         canvas.remove(obj1);
         canvas.remove(obj2);
-      }
+      },
     );
 
     return [obj1, obj2];
@@ -3459,19 +3459,19 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
       options.y1,
       options.x2,
       options.y2,
-      options
+      options,
     );
     var c1 = mechanicsObjects.makeControlHandle(
       options.x1,
       options.y1,
       options.handleRadius,
-      options.strokeWidth / 2
+      options.strokeWidth / 2,
     );
     var c2 = mechanicsObjects.makeControlHandle(
       options.x2,
       options.y2,
       options.handleRadius,
-      options.strokeWidth / 2
+      options.strokeWidth / 2,
     );
     canvas.add(line, c1, c2);
 
@@ -3517,7 +3517,7 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
         // Removed
         canvas.remove(c2);
         canvas.remove(line);
-      }
+      },
     );
     c1.on('moving', function () {
       line.set({ x1: c1.left, y1: c1.top });
@@ -3537,7 +3537,7 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
         // Removed
         canvas.remove(c1);
         canvas.remove(line);
-      }
+      },
     );
     c2.on('moving', function () {
       line.set({ x2: c2.left, y2: c2.top });
@@ -3560,26 +3560,26 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
       options.y2,
       options.x3,
       options.y3,
-      options
+      options,
     );
     line.objectCaching = false;
     var c1 = mechanicsObjects.makeControlHandle(
       options.x1,
       options.y1,
       options.handleRadius,
-      options.strokeWidth / 2
+      options.strokeWidth / 2,
     );
     var c2 = mechanicsObjects.makeControlHandle(
       options.x2,
       options.y2,
       options.handleRadius,
-      options.strokeWidth / 2
+      options.strokeWidth / 2,
     );
     var c3 = mechanicsObjects.makeControlHandle(
       options.x3,
       options.y3,
       options.handleRadius,
-      options.strokeWidth / 2
+      options.strokeWidth / 2,
     );
 
     // c1 and c3 are the end points of the quadratic curve
@@ -3639,7 +3639,7 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
         canvas.remove(c2);
         canvas.remove(c3);
         canvas.remove(line);
-      }
+      },
     );
     c1.on('moving', function () {
       line.path[0][1] = c1.left;
@@ -3661,7 +3661,7 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
         canvas.remove(c1);
         canvas.remove(c3);
         canvas.remove(line);
-      }
+      },
     );
     c2.on('moving', function () {
       line.path[1][1] = c2.left;
@@ -3683,7 +3683,7 @@ mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBa
         canvas.remove(c1);
         canvas.remove(c2);
         canvas.remove(line);
-      }
+      },
     );
     c3.on('moving', function () {
       line.path[1][3] = c3.left;
@@ -3947,7 +3947,7 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
         y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
         dx: gap / 10,
       },
-      options
+      options,
     );
     let resistorSpring = new mechanicsObjects.Spring(springOptions);
     if (!('id' in resistorSpring)) {
@@ -4024,7 +4024,7 @@ mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
         x2: options.x1 + ((d + 1.06 * gap) / 2) * Math.cos(theta),
         y2: options.y1 + ((d + 1.06 * gap) / 2) * Math.sin(theta),
       },
-      options
+      options,
     );
     let inductorCoil = new mechanicsObjects.Coil(coilOptions);
     if (!('id' in inductorCoil)) {
@@ -4097,7 +4097,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
           left: xm1,
           top: ym1,
         },
-        options
+        options,
       );
       let objPin1 = new fabric.Circle(circleOptions);
       if (!('id' in objPin1)) {
@@ -4108,7 +4108,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
           left: xm2,
           top: ym2,
         },
-        circleOptions
+        circleOptions,
       );
       let objPin2 = new fabric.Circle(circleOptions2);
       if (!('id' in objPin2)) {
@@ -4164,7 +4164,7 @@ mechanicsObjects.attachHandlersNoClone = function (
   reference,
   submittedAnswer,
   modifyHandler,
-  removeHandler
+  removeHandler,
 ) {
   submittedAnswer.updateObject(subObj);
   reference.on('modified', function () {
@@ -4196,7 +4196,7 @@ mechanicsObjects.createObjectHandlers = function (
   reference,
   submittedAnswer,
   modifyHandler,
-  removeHandler
+  removeHandler,
 ) {
   var subObj = mechanicsObjects.cloneMechanicsObject(type, options);
   mechanicsObjects.attachHandlersNoClone(
@@ -4204,7 +4204,7 @@ mechanicsObjects.createObjectHandlers = function (
     reference,
     submittedAnswer,
     modifyHandler,
-    removeHandler
+    removeHandler,
   );
 };
 

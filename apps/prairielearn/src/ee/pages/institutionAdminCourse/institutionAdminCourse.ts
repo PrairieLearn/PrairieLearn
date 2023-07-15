@@ -18,7 +18,7 @@ router.get(
         institution_id: req.params.institution_id,
         course_id: req.params.course_id,
       },
-      CourseSchema
+      CourseSchema,
     );
     const courseInstances = await queryRows(
       sql.select_course_instances,
@@ -26,7 +26,7 @@ router.get(
         institution_id: req.params.institution_id,
         course_id: req.params.course_id,
       },
-      CourseInstanceSchema
+      CourseInstanceSchema,
     );
     res.send(
       InstitutionAdminCourse({
@@ -34,9 +34,9 @@ router.get(
         course,
         course_instances: courseInstances,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

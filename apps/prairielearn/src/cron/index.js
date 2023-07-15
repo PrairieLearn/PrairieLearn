@@ -157,7 +157,7 @@ module.exports = {
 
     logger.verbose(
       'initializing cron',
-      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec']))
+      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec'])),
     );
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
@@ -307,7 +307,7 @@ module.exports = {
         debug(`runJobs(): done`);
         logger.verbose('cron: jobs finished', { cronUuid });
         callback(null);
-      }
+      },
     );
   },
 

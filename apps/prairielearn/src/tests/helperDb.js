@@ -31,7 +31,7 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
     // table when resetting the database, we lose the default institution, so we
     // add it back here.
     await client.query(
-      "INSERT INTO institutions (id, long_name, short_name) VALUES (1, 'Default', 'Default') ON CONFLICT DO NOTHING;"
+      "INSERT INTO institutions (id, long_name, short_name) VALUES (1, 'Default', 'Default') ON CONFLICT DO NOTHING;",
     );
   },
 });
@@ -68,7 +68,7 @@ async function runMigrationsAndSprocs(dbName, runMigrations) {
   if (runMigrations) {
     await initMigrations(
       [path.resolve(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
-      'prairielearn'
+      'prairielearn',
     );
   }
 
@@ -105,7 +105,7 @@ async function databaseExists(dbName) {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(
-    `SELECT exists(SELECT * FROM pg_catalog.pg_database WHERE datname = '${dbName}');`
+    `SELECT exists(SELECT * FROM pg_catalog.pg_database WHERE datname = '${dbName}');`,
   );
   const existsResult = result.rows[0].exists;
   await client.end();

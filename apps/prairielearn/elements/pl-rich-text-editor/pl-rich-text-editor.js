@@ -42,8 +42,8 @@ window.PLRTE = function (uuid, options) {
         he.encode(contents, {
           allowUnsafeSymbols: true, // HTML tags should be kept
           useNamedReferences: true,
-        })
-      )
+        }),
+      ),
     );
   });
 };

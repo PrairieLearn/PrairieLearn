@@ -59,8 +59,8 @@ async function checkDBConsistency() {
 
   const db_hosts_nonterminated = new Set(
     (await sqldb.queryAsync(sql.select_nonterminated_workspace_hosts, [])).rows.map(
-      (instance) => instance.instance_id
-    )
+      (instance) => instance.instance_id,
+    ),
   );
 
   // Kill off any host that is running but not in the db

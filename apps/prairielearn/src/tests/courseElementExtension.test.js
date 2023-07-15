@@ -30,7 +30,7 @@ describe('Course element extensions', function () {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
         _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
-        'could not load all extensions'
+        'could not load all extensions',
       );
     };
 
@@ -66,11 +66,11 @@ describe('Course element extensions', function () {
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensions(
         path.join(TEST_COURSE_PATH, 'elementExtensions'),
-        path.join(TEST_COURSE_PATH, 'elementExtensions')
+        path.join(TEST_COURSE_PATH, 'elementExtensions'),
       );
       assert.isEmpty(
         extensions,
-        'non-zero number of extensions were loaded from a course without extensions'
+        'non-zero number of extensions were loaded from a course without extensions',
       );
     });
   });
@@ -129,7 +129,7 @@ describe('Course element extensions', function () {
       assert(found_image !== null, 'could not find image on page');
 
       const image_response = await helperClient.fetchCheerio(
-        locals.siteUrl + found_image.attribs.src
+        locals.siteUrl + found_image.attribs.src,
       );
       assert.isTrue(image_response.ok, 'could not fetch image');
     });

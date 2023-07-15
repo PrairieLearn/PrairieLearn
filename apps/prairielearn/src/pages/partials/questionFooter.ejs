@@ -39,26 +39,20 @@
             <% } else if (question_context != 'instructor') { %>
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
+            </button>
             <% if (disableGradeButton || invalidRoleConfig) { %>
               <%
-              var lockedPopoverText;
+              let lockedPopoverText;
               if (invalidRoleConfig) {
-                lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is corrected."
+                lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is correct."
               } else {
                 lockedPopoverText = "You are not assigned a role that can submit this question."
               }
               %>
-              <a tabindex="0" class="btn btn-xs border ml-1" role="button"
-                data-toggle="popover" data-trigger="hover" data-container="body"
-                data-placement="bottom"
-                data-html="true"
-                data-content="<%= lockedPopoverText %>"
-                aria-label="Locked"
-              >
+              <a tabindex="0" class="btn btn-xs border mr-1 order-1" data-toggle="popover" data-trigger="focus" data-container="body" data-html="true" data-placement="auto" data-content="<%= lockedPopoverText %>">
                 <i class="fas fa-lock" aria-hidden="true"></i>
               </a>
-              <% } %>
-            </button>
+            <% } %>
           <% } %>
         </span>
         <span class="d-flex">
@@ -172,18 +166,3 @@
 <% } %>
   </div>
 <% } %>
-<script>
-  // Install on page load and reinstall on websocket re-render
-  $('a.disable-on-click').on('click', function() {
-    $(this).addClass('disabled');
-  });
-  // Enable popover
-  $(document).ready(function(){
-    $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
-  });
-  window.nextSubmissionReady = function() {
-    $('.question-grade').prop('disabled', false);
-    $('.submission-suspended-msg').hide();
-    $('.grade-rate-limit-popover').hide();
-  };
-</script>
