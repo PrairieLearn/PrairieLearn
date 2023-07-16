@@ -8,7 +8,7 @@ SELECT
   COALESCE(aap.note, '—') AS note,
   COALESCE(format_date_full_compact(aap.start_date, 'America/Chicago'), '—') AS start_date,
   COALESCE(aap.extension_type::text, '—') AS type,
-  COALESCE(aap.user_id::text, '—') AS user_id
+  COALESCE(aap.student_uid::text, '—') AS student_uid
 FROM
   assessment_access_policies AS aap
 WHERE assessment_id = $assessment_id
@@ -17,9 +17,9 @@ ORDER BY
 
 -- BLOCK insertQuery
 INSERT INTO assessment_access_policies
-  (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date, extension_type, user_id)
+  (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date, extension_type, student_uid)
 VALUES
-  ($assessment_id, $created_at, $created_by, $credit, $end_date, $group_id, $note, $start_date, $type, $user_id);
+  ($assessment_id, $created_at, $created_by, $credit, $end_date, $group_id, $note, $start_date, $type, $student_uid);
 
 
 -- BLOCK updateQuery
@@ -33,16 +33,16 @@ SET
   note = $note,
   start_date = $start_date,
   extension_type = $type,
-  user_id = $user_id
+  student_uid = $student_uid
 WHERE
   assessment_id = $assessment_id
-  AND (user_id = $user_id OR group_id = $group_id);
+  AND (student_uid = $student_uid OR group_id = $group_id);
 
 
 -- BLOCK deleteQuery
 WITH deleted_rows AS (
   DELETE FROM assessment_access_policies
-  WHERE (user_id = $user_id OR group_id = $group_id)
+  WHERE (student_uid= $student_uid)
     AND assessment_id = $assessment_id
   RETURNING *
 )
@@ -55,7 +55,7 @@ SELECT
   COALESCE(aap.note, '—') AS note,
   COALESCE(format_date_full_compact(aap.start_date, 'America/Chicago'), '—') AS start_date,
   COALESCE(aap.extension_type::text, '—') AS type,
-  COALESCE(aap.user_id::text, '—') AS user_id
+  COALESCE(aap.student_uid::text, '—') AS student_uid
 FROM
   assessment_access_policies AS aap
 WHERE assessment_id = $assessment_id

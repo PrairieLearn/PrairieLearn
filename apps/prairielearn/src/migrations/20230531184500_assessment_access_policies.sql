@@ -6,7 +6,7 @@ CREATE TYPE enum_assessment_access_policy_type AS ENUM ('manual', 'extension_tok
 -- Create assessment_access_policies table
 CREATE TABLE IF NOT EXISTS assessment_access_policies (
     assessment_id BIGINT REFERENCES assessments(id) NOT NULL,
-    user_id BIGINT REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE ,
+    student_uid TEXT REFERENCES users(uid) ON UPDATE CASCADE ON DELETE CASCADE ,
     group_id BIGINT REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE ,
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
     extension_type enum_assessment_access_policy_type NOT NULL,
     -- Constraint to check that either user_id or group_id (or both) is not null, but not both
     CHECK (
-        (user_id IS NOT NULL AND group_id IS NULL)
-        OR (user_id IS NULL AND group_id IS NOT NULL)
+        (student_uid IS NOT NULL AND group_id IS NULL)
+        OR (student_uid IS NULL AND group_id IS NOT NULL)
     )
 );
 

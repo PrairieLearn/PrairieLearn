@@ -19,7 +19,7 @@
 					$('#end_date').addClass('is-invalid');
 					$('#end_date_error').text('End date should be greater than the start date.').show();
 				}
-				// Check if either user_id or group_id is not empty
+				// Check if either student_uid or group_id is not empty
 				if (userId === '' && groupId === '') {
 					event.preventDefault();
 					$('#group_id').addClass('is-invalid');
@@ -47,7 +47,7 @@
 				var editOverrideForm = $('#edit-override-form');
 				editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
 				console.log(button.data('assessment-id'))
-				editOverrideForm.find('#edit-user_id').val(button.data('user-id'));
+				editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
 				editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
 				editOverrideForm.find('#edit-credit').val(button.data('credit'));
 				var policy_start_date = new Date(button.data('start-date'))
@@ -64,6 +64,30 @@
 				// Show the modal form
 				$('#editPolicyModal').modal('show');
 			});
+				// Event listener for delete button
+				$('.delete-button').on('click', function () {
+					var button = $(this);
+					var student_uid = button.data('student-uid');
+					var assessment_id = button.data('assessment-id');
+					var groupId = button.data('group-id');
+
+					// Set the values of the form's hidden input fields
+					$('#deleteModal input[name="student_uid"]').val(student_uid);
+					$('#deleteModal input[name="assessment_id"]').val(assessment_id);
+					$('#deleteModal input[name="group_id"]').val(groupId);
+
+					// Show the modal confirmation dialog
+					$('#deleteModal').modal('show');
+				});
+
+				// Event listener for confirm delete button in the modal
+				$('#confirmDeleteButton').on('click', function () {
+					// Set the __action value to "delete_override"
+					$('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
+
+					// Submit the form
+					$('form[name="delete-override-form"]').submit();
+				});
 		});
 
 	</script>
@@ -96,8 +120,8 @@
 									<input type="hidden" class="form-control" id="assessment_id" name="assessment_id" value="<%= assessment_id %>" required readonly>
 								</div>
 								<div class="form-group">
-									<label for="user_id">User ID</label>
-									<input type="number" class="form-control" id="user_id" name="user_id">
+									<label for="student_uid">Student UID</label>
+									<input type="text" class="form-control" id="student_uid" name="student_uid">
 								</div>
 								<div class="form-group">
 									<label for="group_id">Group ID</label>
@@ -119,7 +143,7 @@
 								</div>
 								<div class="form-group">
 									<!-- <label for="created_by">Created By</label> -->
-									<input type="hidden" class="form-control" id="current_user_id" name="current_user_id" value="<%= current_user_id %>" required readonly>
+									<input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= current_student_uid %>" required readonly>
 								</div>
 								<div class="form-group">
 									<label for="credit">Credit</label>
@@ -164,8 +188,8 @@
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 								<input type="hidden" id="edit-assessment_id" name="assessment_id">
 								<div class="form-group">
-									<label for="user_id">User ID</label>
-									<input type="number" class="form-control" id="edit-user_id" name="user_id">
+									<label for="student_uid">User ID</label>
+									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
 								</div>
 								<div class="form-group">
 									<label for="group_id">Group ID</label>
@@ -217,7 +241,7 @@
 					<thead>
 						<tr>
 							<!-- <th>Assessment ID</th> -->
-							<th>User ID</th>
+							<th>Student UID</th>
 							<th>Group ID</th>
 							<th>Created At</th>
 							<th>Start Date</th>
@@ -233,7 +257,7 @@
 						<% policies.forEach(function (policy) { %>
 							<tr>
 								<!-- <td><%= policy.assessment_id %></td> -->
-								<td><%= policy.user_id %></td>
+								<td><%= policy.student_uid %></td>
 								<td><%= policy.group_id %></td>
 								<td><%= policy.created_at %></td>
 								<td><%= policy.start_date %></td>
@@ -248,19 +272,24 @@
 											Action
 										</button>
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
-											<form name="edit-override-form" data-user-id="<%= policy.user_id %>" data-group-id="<%= policy.group_id %>" method="POST">
+											<form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-												<button type="button" class="btn edit-override-button" id="edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.user_id %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
+												<button type="button" class="btn edit-override-button" id="edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
 													<i class="fas fa-edit"></i> Edit
 												</button>
 											</form>
 											<form name="delete-override-form" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 												<input type="hidden" name="__action" value="delete_override">
-												<button type="submit" class="btn delete-button">
+												<input type="hidden" name="student_uid" value="<%= policy.student_uid %>">
+												<input type="hidden" name="assessment_id" value="<%= policy.assessment_id %>"> 
+  												<input type="hidden" name="group_id" value="<%= policy.group_id %>">
+												<!-- <button type="submit" class="btn delete-button"> -->
+													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
 													<i class="fas fa-remove"></i> Delete
 												</button>
 											</form>
+
 										</div>
 									</div>
 								</td>
@@ -270,6 +299,26 @@
 				</table>
 			</div>
 			<div class="card-footer">
+			</div>
+			<!-- Modal dialog for delete confirmation -->
+			<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<p>Are you sure you want to delete this Access Override? </p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+							<button id="confirmDeleteButton" type="button" class="btn btn-danger">Delete</button>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</main>
