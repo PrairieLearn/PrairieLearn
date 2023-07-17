@@ -72,6 +72,7 @@
     "d3": "^7.8.5",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
+    "dbmon": "^1.1.0",
     "debug": "^4.3.4",
     "detect-mocha": "^0.1.0",
     "dockerode": "^3.3.5",
