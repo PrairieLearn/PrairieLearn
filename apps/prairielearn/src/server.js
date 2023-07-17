@@ -628,6 +628,15 @@ module.exports.initExpress = function () {
     require('./middlewares/ansifySyncErrorsAndWarnings.js'),
   ]);
 
+  // PLR main page
+  app.use('/pl/course_instance/:course_instance_id/plr', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'plr';
+      next();
+    },
+    require('./pages/plrHome/plrHome.js'),
+  ]);
+
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id/news_items',
