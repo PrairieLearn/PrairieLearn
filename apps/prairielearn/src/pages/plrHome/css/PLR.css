@@ -1,0 +1,81 @@
+/* Colorful card for the profile (rounded corners + gradient) */
+#profile-card {
+  background-image: linear-gradient(to bottom, #71073e, #101761);
+  border: white 1px solid;
+  color: white;
+}
+/* Identical as above, but with flipped gradient direction */
+#quizzes-card {
+   background-image: linear-gradient(to bottom, #101761, #71073e);
+   border: white 1px solid;
+   color: white;
+ }
+/* Row for displaying the student's currently displayed badges */
+#badge-display {
+  border-radius: 5px;
+  border: white 1px solid;
+}
+/* Each achievement has a badge and a description */
+.rounded-pill {
+  border: white 1px solid;
+  text-align: center;
+  font-size: 0.9em;
+  padding: 0.2em;
+}
+/* Default Bootstrap rows/cols margin/padding adjustments */
+.col {
+  padding: 0.5em;
+}
+.row {
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+/* These are for quiz buttons */
+.quiz {
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: transparent;
+  text-align: center;
+  width: 100%;
+  padding-top: 1em;
+  color: white;
+  transform: background-color 1s ease;
+}
+
+.quiz:hover {
+  background-color: rgb(49, 47, 47);
+}
+
+.quiz:active,
+.quiz:focus {
+  background-color: black;
+}
+
+li {
+  list-style-type: none;
+}
+
+#title {
+  padding-bottom: 1em;
+}
+
+.join-session {
+  margin-bottom: 2em;
+  padding-left: 1em;
+  padding-right: 1em;
+  font-size: 1.4em;
+}
+
+.scoreboard, .scoreboard:hover {
+  color: white;
+}
+
+.table-responsive {
+  overflow-y: scroll;
+  height: 670px;
+  animation: moving .5s ease;
+}
+@keyframes moving{
+  from{transform: translateX(50px);opacity: 0;}
+  to{transform: translateX(0px);opacity: 1;}
+}
