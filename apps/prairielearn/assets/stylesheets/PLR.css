@@ -1,3 +1,6 @@
+body {
+  background-color: rgb(35, 35, 35);
+}
 /* Colorful card for the profile (rounded corners + gradient) */
 #profile-card {
   background-image: linear-gradient(to bottom, #71073e, #101761);
