@@ -73,5 +73,5 @@ module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
 };
 
 module.exports.getOrUpdateCourseCommitHashAsync = promisify(
-  module.exports.getOrUpdateCourseCommitHash
+  module.exports.getOrUpdateCourseCommitHash,
 );

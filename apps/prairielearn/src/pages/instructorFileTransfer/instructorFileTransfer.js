@@ -29,8 +29,8 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
               new Error(
                 `must have same user_id: ${
                   file_transfer.user_id
-                } and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`
-              )
+                } and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`,
+              ),
             );
           }
           callback(null);
@@ -44,14 +44,14 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
             if (ERR(err, callback)) return;
             file_transfer.from_course = result.rows[0];
             callback(null);
-          }
+          },
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, file_transfer);
-    }
+    },
   );
 }
 
@@ -85,7 +85,7 @@ router.get('/:file_transfer_id', function (req, res, next) {
             (err, _result) => {
               if (ERR(err, next)) return;
               debug(
-                `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
+                `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
               );
               sqldb.queryOneRow(
                 sql.select_question_id_from_uuid,
@@ -94,12 +94,12 @@ router.get('/:file_transfer_id', function (req, res, next) {
                   if (ERR(err, next)) return;
                   flash(
                     'success',
-                    'Question copied successfully. You are now viewing your copy of the question.'
+                    'Question copied successfully. You are now viewing your copy of the question.',
                   );
                   res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
-                }
+                },
               );
-            }
+            },
           );
         }
       });

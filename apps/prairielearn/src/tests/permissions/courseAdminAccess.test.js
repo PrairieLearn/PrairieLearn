@@ -14,7 +14,7 @@ async function checkPermissions(users) {
   });
   assert.includeMembers(
     users.map((user) => user.uid),
-    result.rows.map((row) => row.uid)
+    result.rows.map((row) => row.uid),
   );
   users.forEach((user) => {
     const row = result.rows.find((row) => row.uid === user.uid);
@@ -116,7 +116,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]'
+      'button[id=coursePermissionsInsertButton]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -141,7 +141,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]'
+      'button[id=coursePermissionsInsertButton]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -168,7 +168,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]'
+      'button[id=coursePermissionsInsertButton]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -195,7 +195,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-3]`
+      `form[name=student-data-access-add-3]`,
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -221,7 +221,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-3]`
+      `form[name=course-content-access-form-3]`,
     );
     const form = {
       __action: 'course_permissions_delete',
@@ -267,7 +267,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-4]`
+      `form[name=course-content-access-form-4]`,
     );
     const form = {
       __action: 'course_permissions_update_role',
@@ -364,7 +364,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]'
+      'button[id=coursePermissionsInsertButton]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -390,7 +390,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-3]`
+      `form[name=student-data-access-add-3]`,
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -416,7 +416,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-change-3-1]`
+      `form[name=student-data-access-change-3-1]`,
     );
     const form = {
       __action: 'course_instance_permissions_update_role_or_delete',
@@ -443,7 +443,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-5]`
+      `form[name=student-data-access-add-5]`,
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -469,7 +469,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-change-5-1]`
+      `form[name=student-data-access-change-5-1]`,
     );
     const form = {
       __action: 'course_instance_permissions_update_role_or_delete',
@@ -495,7 +495,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsRemoveStudentDataAccessButton]'
+      'button[id=coursePermissionsRemoveStudentDataAccessButton]',
     );
     const form = {
       __action: 'remove_all_student_data_access',
@@ -519,7 +519,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-5]`
+      `form[name=student-data-access-add-5]`,
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -545,7 +545,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNoAccessButton]'
+      'button[id=coursePermissionsDeleteNoAccessButton]',
     );
     const form = {
       __action: 'delete_no_access',
@@ -570,7 +570,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNonOwnersButton]'
+      'button[id=coursePermissionsDeleteNonOwnersButton]',
     );
     const form = {
       __action: 'delete_non_owners',
@@ -594,7 +594,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-4]`
+      `form[name=course-content-access-form-4]`,
     );
     const form = {
       __action: 'course_permissions_update_role',

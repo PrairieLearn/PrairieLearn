@@ -41,7 +41,7 @@ async function callFunction(func, question_course, question, inputData) {
     'server.js',
     question.directory,
     coursePath,
-    question
+    question,
   );
   try {
     return withCodeCaller(coursePath, async (codeCaller) => {
@@ -69,14 +69,14 @@ async function callFunction(func, question_course, question, inputData) {
 module.exports.generate = (question, course, variant_seed, callback) => {
   callFunction('generate', course, question, { variant_seed }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => callback(err)
+    (err) => callback(err),
   );
 };
 
 module.exports.grade = (submission, variant, question, question_course, callback) => {
   callFunction('grade', question_course, question, { submission, variant }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => console.log(err)
+    (err) => console.log(err),
   );
 };
 
@@ -88,7 +88,7 @@ module.exports.getFile = (filename, variant, question, course, callback) => {
       const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
       callback(null, courseIssues, unwrappedData);
     },
-    (err) => callback(err)
+    (err) => callback(err),
   );
 };
 
@@ -104,7 +104,7 @@ module.exports.render = function (
   course,
   course_instance,
   locals,
-  callback
+  callback,
 ) {
   const htmls = {
     extraHeadersHtml: '',

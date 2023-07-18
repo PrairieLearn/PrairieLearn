@@ -48,12 +48,14 @@
       {{/has_output}}
       {{#has_images}}
           <ul class="list-group list-group-flush">
-              {{#images}}
-                  <li class="list-group-item">
-                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
-                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
-                  </li>
-              {{/images}}
+              <li class="list-group-item">
+                {{#images}}
+                  <figure class="figure">
+                    <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
+                    <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                  </figure>
+                {{/images}}
+              </li>
           </ul>
       {{/has_images}}
     {{/has_message_or_output_or_image}}
@@ -103,8 +105,10 @@
               {{#has_images}}
                   <li class="list-group-item">
                       {{#images}}
-                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
-                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
+                      <figure class="figure">
+                        <figcaption><strong>{{label}}{{^label}}Figure{{/label}}</strong></figcaption>
+                        <img class="figure-img img-fluid" src="{{url}}{{^url}}{{.}}{{/url}}"/>
+                      </figure>
                       {{/images}}
                   </li>
               {{/has_images}}

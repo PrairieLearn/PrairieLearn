@@ -25,7 +25,7 @@ router.get(
     res.locals.assessment_stats = statsResult.rows;
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -91,7 +91,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 module.exports = router;

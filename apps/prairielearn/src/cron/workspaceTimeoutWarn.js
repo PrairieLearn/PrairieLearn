@@ -21,7 +21,7 @@ module.exports.runAsync = async () => {
     const time_to_timeout_min = Math.ceil(workspace.time_to_timeout_sec / 60);
     await workspaceUtils.updateWorkspaceMessage(
       workspace.id,
-      `WARNING: This workspace will stop in < ${time_to_timeout_min} min. Click "Reboot" to keep working.`
+      `WARNING: This workspace will stop in < ${time_to_timeout_min} min. Click "Reboot" to keep working.`,
     );
   }
 };

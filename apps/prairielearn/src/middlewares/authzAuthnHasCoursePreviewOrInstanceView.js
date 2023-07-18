@@ -11,7 +11,7 @@ module.exports = function (req, res, next) {
     return next(
       error.make(403, 'Requires either course preview access or student data view access', {
         locals: res.locals,
-      })
+      }),
     );
   }
   next();

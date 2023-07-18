@@ -31,7 +31,7 @@ function processSubmission(req, res, callback) {
         error.make(400, 'JSON parse failed on body.postData', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
     variant_id = postData.variant ? postData.variant.id : null;
@@ -59,7 +59,7 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          }
+          },
         );
       } else if (req.body.__action === 'save') {
         question.saveSubmission(
@@ -70,17 +70,17 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          }
+          },
         );
       } else {
         callback(
           error.make(400, 'unknown __action', {
             locals: res.locals,
             body: req.body,
-          })
+          }),
         );
       }
-    }
+    },
   );
 }
 
@@ -114,7 +114,7 @@ router.post('/', function (req, res, next) {
           '/question/' +
           res.locals.question.id +
           '/preview/?variant_id=' +
-          variant_id
+          variant_id,
       );
     });
   } else if (req.body.__action === 'report_issue') {
@@ -125,7 +125,7 @@ router.post('/', function (req, res, next) {
           '/question/' +
           res.locals.question.id +
           '/preview/?variant_id=' +
-          variant_id
+          variant_id,
       );
     });
   } else {
@@ -133,7 +133,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
@@ -152,7 +152,7 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
     (err, results) => {
       if (ERR(err, next)) return;
       res.send({ submissionPanel: results.submissionPanel });
-    }
+    },
   );
 });
 
@@ -170,7 +170,7 @@ router.get('/', function (req, res, next) {
           function (err) {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -185,7 +185,7 @@ router.get('/', function (req, res, next) {
       question.setRendererHeader(res);
       setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 

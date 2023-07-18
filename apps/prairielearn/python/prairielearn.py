@@ -11,25 +11,15 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
 
-import colors
 import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
 import sympy
 import to_precision
+from colors import PLColor
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
@@ -37,7 +27,7 @@ from typing_extensions import NotRequired, assert_never
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
-    score: Optional[float]
+    score: float | None
     weight: NotRequired[int]
     feedback: NotRequired[str]
 
@@ -93,7 +83,7 @@ def get_unit_registry() -> UnitRegistry:
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
 ) -> None:
     """
@@ -137,7 +127,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], bool | float]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
@@ -160,7 +150,7 @@ def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
     enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
+    default: EnumT | None = None,
 ) -> EnumT:
     """
     Returns the named attribute for the element parsed as an enum,
@@ -191,7 +181,9 @@ def get_enum_attrib(
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
+        raise ValueError(
+            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
+        )
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
@@ -569,7 +561,7 @@ def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> 
 @overload
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -598,7 +590,7 @@ def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -
 @overload
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[bool]:
+) -> bool | None:
     ...
 
 
@@ -651,7 +643,7 @@ def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) ->
 @overload
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[int]:
+) -> int | None:
     ...
 
 
@@ -707,7 +699,7 @@ def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> s
 @overload
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -726,9 +718,8 @@ def get_color_attrib(element, name, *args):
         if val is None:
             return val
 
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             return val
 
@@ -736,9 +727,8 @@ def get_color_attrib(element, name, *args):
     if match:
         return val
     else:
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             raise Exception(
                 'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(
@@ -1062,7 +1052,7 @@ def string_partition_outer_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s, base=10):
+def string_to_integer(s: str, base: int = 10) -> int | None:
     """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
@@ -1510,7 +1500,7 @@ def string_to_2darray(s, allow_complex=True):
 
 
 def latex_from_2darray(
-    A: Union[numbers.Number, np.ndarray],
+    A: numbers.Number | np.ndarray,
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1659,7 +1649,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string):
+def escape_unicode_string(string: str) -> str:
     """
     escape_unicode_string(string)
 
@@ -1815,3 +1805,7 @@ def index2key(i):
         key = chr(ord("a") + i)
 
     return key
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1

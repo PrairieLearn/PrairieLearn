@@ -34,7 +34,7 @@ export function getWorkspaceSocketNamespace() {
 export async function updateWorkspaceMessage(
   workspace_id: string | number,
   message: string,
-  toDatabase = true
+  toDatabase = true,
 ): Promise<void> {
   if (toDatabase) await queryAsync(sql.update_workspace_message, { workspace_id, message });
   emitMessageForWorkspace(workspace_id, 'change:message', {
@@ -53,7 +53,7 @@ export async function updateWorkspaceMessage(
 export async function updateWorkspaceState(
   workspace_id: string | number,
   state: string,
-  message = ''
+  message = '',
 ): Promise<void> {
   // TODO: add locking
   await queryAsync(sql.update_workspace_state, { workspace_id, state, message });
@@ -72,7 +72,7 @@ interface GradedFilesLimits {
 export async function getWorkspaceGradedFiles(
   workspaceDir: string,
   gradedFiles: string[],
-  limits: GradedFilesLimits
+  limits: GradedFilesLimits,
 ): Promise<Entry[]> {
   const files = (
     await fg(gradedFiles, {
@@ -91,7 +91,7 @@ export async function getWorkspaceGradedFiles(
     throw new Error(
       `Workspace files exceed limit of ${filesize(limits.maxSize, {
         base: 2,
-      })}.`
+      })}.`,
     );
   }
 

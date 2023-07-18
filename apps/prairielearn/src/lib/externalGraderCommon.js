@@ -82,7 +82,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
             (err) => {
               if (ERR(err, callback)) return;
               callback(null);
-            }
+            },
           );
         } else {
           callback(null);
@@ -109,7 +109,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
             });
           } else {
             logger.warn(
-              `No tests directory found for ${question.qid}; maybe you meant to specify some?`
+              `No tests directory found for ${question.qid}; maybe you meant to specify some?`,
             );
             callback(null);
           }
@@ -150,7 +150,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
             function (err) {
               if (ERR(err, callback)) return;
               callback(null);
-            }
+            },
           );
         } else {
           callback(null);
@@ -181,7 +181,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
 
       logger.verbose(`Successfully set up ${dir}`);
       callback(null);
-    }
+    },
   );
 };
 
@@ -243,7 +243,7 @@ module.exports.makeGradingResult = function (jobId, rawData) {
     return makeGradingFailureWithMessage(
       jobId,
       data,
-      "results.json did not contain 'results' object."
+      "results.json did not contain 'results' object.",
     );
   }
 
@@ -254,7 +254,7 @@ module.exports.makeGradingResult = function (jobId, rawData) {
     return makeGradingFailureWithMessage(
       jobId,
       data,
-      `score "${data.results.score}" was not a number.`
+      `score "${data.results.score}" was not a number.`,
     );
   }
 

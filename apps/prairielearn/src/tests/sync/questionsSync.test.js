@@ -140,11 +140,11 @@ describe('Question syncing', () => {
     assert.isEmpty(syncedQuestion?.client_files, 'client_files should be empty');
     assert.isArray(
       syncedQuestion?.external_grading_files,
-      'external_grading_files should be an array'
+      'external_grading_files should be an array',
     );
     assert.isEmpty(
       syncedQuestion?.external_grading_files,
-      'external_grading_files should be empty'
+      'external_grading_files should be empty',
     );
   });
 
@@ -211,7 +211,7 @@ describe('Question syncing', () => {
     const syncedTag = syncedTags.find((t) => t.name === newTag.name);
     const syncedQuestionTags = await util.dumpTable('question_tags');
     const syncedQuestionTag = syncedQuestionTags.find(
-      (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag?.id)
+      (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag?.id),
     );
     assert.ok(syncedQuestionTag);
   });
@@ -231,7 +231,7 @@ describe('Question syncing', () => {
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.match(
       syncedQuestion?.sync_errors,
-      /data must have required property 'incorrectAnswers'/
+      /data must have required property 'incorrectAnswers'/,
     );
   });
 
@@ -244,14 +244,14 @@ describe('Question syncing', () => {
     const firstSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.match(
       firstSyncedQuestion?.sync_warnings,
-      /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/
+      /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/,
     );
     const secondSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.match(
       secondSyncedQuestion?.sync_warnings,
       new RegExp(
-        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`
-      )
+        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`,
+      ),
     );
   });
 
@@ -266,7 +266,7 @@ describe('Question syncing', () => {
     assert.isOk(syncedQuestion);
     assert.match(
       syncedQuestion?.sync_errors,
-      /Missing JSON file: questions\/badQuestion\/info.json/
+      /Missing JSON file: questions\/badQuestion\/info.json/,
     );
   });
 
@@ -283,7 +283,7 @@ describe('Question syncing', () => {
     assert.isOk(syncedQuestion);
     assert.match(
       syncedQuestion?.sync_errors,
-      /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/
+      /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/,
     );
 
     // We should only record an error for the most deeply nested directories,
@@ -323,7 +323,7 @@ describe('Question syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedQuestions = await util.dumpTable('questions');
     const deletedQuestion = syncedQuestions.find(
-      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
     assert.equal(deletedQuestion?.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion?.title, originalQuestion.title);
@@ -346,14 +346,14 @@ describe('Question syncing', () => {
     // check that the newly-synced question has an error
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find(
-      (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null,
     );
     assert.equal(syncedQuestion?.uuid, newQuestion.uuid);
     assert.match(syncedQuestion?.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted question does not have any errors
     const deletedQuestion = syncedQuestions.find(
-      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
     assert.equal(deletedQuestion?.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion?.sync_errors, null);

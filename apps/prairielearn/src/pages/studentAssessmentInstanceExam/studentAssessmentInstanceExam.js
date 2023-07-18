@@ -57,7 +57,7 @@ router.post(
           error.make(400, 'unknown __action', {
             locals: res.locals,
             body: req.body,
-          })
+          }),
         );
       }
       const requireOpen = true;
@@ -74,30 +74,30 @@ router.post(
           } else {
             res.redirect(req.originalUrl);
           }
-        }
+        },
       );
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(
         '/pl/course_instance/' +
           res.locals.course_instance.id +
           '/assessment/' +
-          res.locals.assessment.id
+          res.locals.assessment.id,
       );
     } else {
       next(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 router.get(
@@ -114,15 +114,15 @@ router.get(
 
     res.locals.has_manual_grading_question = _.some(
       res.locals.instance_questions,
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = _.some(
       res.locals.instance_questions,
-      (q) => q.max_auto_points || q.auto_points || !q.max_points
+      (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
       res.locals.assessment,
-      res.locals.urlPrefix
+      res.locals.urlPrefix,
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
@@ -146,7 +146,7 @@ router.get(
       // Check whether the user is currently in a group in the current assessment by trying to get a group_id
       const groupId = await groupAssessmentHelper.getGroupId(
         res.locals.assessment.id,
-        res.locals.user.user_id
+        res.locals.user.user_id,
       );
 
       if (groupId === null) {
@@ -164,7 +164,7 @@ router.get(
       }
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 module.exports = router;

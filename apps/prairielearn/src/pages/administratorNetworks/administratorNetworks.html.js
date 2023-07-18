@@ -3,7 +3,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 
 function AdministratorNetworks({ resLocals }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -39,7 +39,7 @@ function AdministratorNetworks({ resLocals }) {
                         <td>${network.location}</td>
                         <td>${network.purpose}</td>
                       </tr>
-                    `
+                    `,
                   )}
                 </tbody>
               </table>

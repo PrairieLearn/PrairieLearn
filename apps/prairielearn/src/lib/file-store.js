@@ -34,7 +34,7 @@ module.exports.upload = async (
   instance_question_id,
   user_id,
   authn_user_id,
-  storage_type
+  storage_type,
 ) => {
   storage_type = storage_type || config.fileStoreStorageTypeDefault;
   debug(`upload(): storage_type=${storage_type}`);
@@ -52,7 +52,7 @@ module.exports.upload = async (
       storage_filename,
       null,
       false,
-      buffer
+      buffer,
     );
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
@@ -142,7 +142,7 @@ module.exports.get = async (file_id, data_type = 'buffer') => {
   if (result.rows[0].storage_type === StorageTypes.FileSystem) {
     if (config.filesRoot == null) {
       throw new Error(
-        `config.filesRoot must be non-null to get file_id ${file_id} from file store`
+        `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
@@ -153,7 +153,7 @@ module.exports.get = async (file_id, data_type = 'buffer') => {
       buffer = await fsPromises.readFile(filename);
     } else {
       debug(
-        `get(): createReadStream ${filename} and return object with contents stream and file object`
+        `get(): createReadStream ${filename} and return object with contents stream and file object`,
       );
       readStream = fs.createReadStream(filename);
     }
@@ -162,23 +162,23 @@ module.exports.get = async (file_id, data_type = 'buffer') => {
   if (result.rows[0].storage_type === StorageTypes.S3) {
     if (config.fileStoreS3Bucket == null) {
       throw new Error(
-        `config.fileStoreS3Bucket must be configured to get file_id ${file_id} from file store`
+        `config.fileStoreS3Bucket must be configured to get file_id ${file_id} from file store`,
       );
     }
 
     if (data_type === 'buffer') {
       debug(
-        `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`
+        `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
       );
       buffer = await getFromS3Async(config.fileStoreS3Bucket, result.rows[0].storage_filename);
     } else {
       debug(
-        `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`
+        `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
       );
       readStream = await getFromS3Async(
         config.fileStoreS3Bucket,
         result.rows[0].storage_filename,
-        false
+        false,
       );
     }
   }

@@ -33,7 +33,7 @@ router.get('/', function (req, res, next) {
             if (ERR(err, callback)) return;
             res.locals.tids = result.rows[0].tids;
             callback(null);
-          }
+          },
         );
       },
     ],
@@ -46,7 +46,7 @@ router.get('/', function (req, res, next) {
           res.locals.course_instance.id +
           '/assessment/' +
           res.locals.assessment.id,
-        host
+        host,
       ).href;
       res.locals.studentLinkQRCode = new QR({
         content: res.locals.studentLink,
@@ -59,11 +59,11 @@ router.get('/', function (req, res, next) {
           res.locals.course_instance.short_name,
           'assessments',
           res.locals.assessment.tid,
-          'infoAssessment.json'
-        )
+          'infoAssessment.json',
+        ),
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -81,7 +81,7 @@ router.post('/', function (req, res, next) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`
+            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
@@ -92,9 +92,9 @@ router.post('/', function (req, res, next) {
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(
-                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings'
+                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
               );
-            }
+            },
           );
         }
       });
@@ -120,8 +120,8 @@ router.post('/', function (req, res, next) {
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
-        )
+          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+        ),
       );
     }
     let tid_new;
@@ -155,7 +155,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

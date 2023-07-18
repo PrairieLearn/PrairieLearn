@@ -5,7 +5,7 @@ const { compiledScriptTag } = require('../../lib/assets');
 
 function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en" class="h-100">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}

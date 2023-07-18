@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill,he, MathJax, QuillMarkdown, showdown */
+/* global Quill, he, MathJax, QuillMarkdown, showdown, filterXSS */
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
@@ -32,7 +32,7 @@ window.PLRTE = function (uuid, options) {
   let contents = atob(inputElement.val());
   if (contents && renderer) contents = renderer.makeHtml(contents);
 
-  quill.setContents(quill.clipboard.convert(contents));
+  quill.setContents(quill.clipboard.convert(filterXSS(contents)));
 
   quill.on('text-change', function (_delta, _oldDelta, _source) {
     let contents = quill.root.innerHTML;
@@ -42,8 +42,8 @@ window.PLRTE = function (uuid, options) {
         he.encode(contents, {
           allowUnsafeSymbols: true, // HTML tags should be kept
           useNamedReferences: true,
-        })
-      )
+        }),
+      ),
     );
   });
 };

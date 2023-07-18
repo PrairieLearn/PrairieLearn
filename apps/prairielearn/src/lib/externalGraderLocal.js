@@ -45,7 +45,7 @@ class Grader {
         submission,
         variant,
         question,
-        course
+        course,
       );
 
       if (question.external_grading_entrypoint.includes('serverFilesCourse')) {
@@ -73,7 +73,7 @@ class Grader {
         } catch (err) {
           logger.warn(
             `Error pulling "${question.external_grading_image}" image; attempting to fall back to cached version.`,
-            err
+            err,
           );
         }
       }
@@ -82,7 +82,7 @@ class Grader {
         Image: question.external_grading_image,
         // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
         Env: Object.entries(question.external_grading_environment).map(([k, v]) =>
-          v === null ? k : `${k}=${v}`
+          v === null ? k : `${k}=${v}`,
         ),
         AttachStdout: true,
         AttachStderr: true,

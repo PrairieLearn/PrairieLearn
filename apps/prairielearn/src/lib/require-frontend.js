@@ -51,7 +51,7 @@ requirejs.undefQuestionServers = function (coursePath, logger, callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully unloaded ' + count + ' cached files');
       callback(null);
-    }
+    },
   );
 };
 

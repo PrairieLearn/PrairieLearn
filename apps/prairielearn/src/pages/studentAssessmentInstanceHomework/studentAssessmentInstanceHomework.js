@@ -59,17 +59,17 @@ router.get(
 
     res.locals.has_manual_grading_question = _.some(
       res.locals.questions,
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = _.some(
       res.locals.questions,
-      (q) => q.max_auto_points || q.auto_points || !q.max_points
+      (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
 
     debug('rendering assessment text');
     const assessment_text_templated = assessment.renderText(
       res.locals.assessment,
-      res.locals.urlPrefix
+      res.locals.urlPrefix,
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
@@ -82,7 +82,7 @@ router.get(
       // Check whether the user is currently in a group in the current assessment by trying to get a group_id
       const groupId = await groupAssessmentHelper.getGroupId(
         res.locals.assessment.id,
-        res.locals.user.user_id
+        res.locals.user.user_id,
       );
 
       if (groupId === null) {
@@ -100,14 +100,14 @@ router.get(
         if (groupConfig.has_roles) {
           const result = await groupAssessmentHelper.getAssessmentPermissions(
             res.locals.assessment.id,
-            res.locals.user.user_id
+            res.locals.user.user_id,
           );
           res.locals.canViewRoleTable = result.can_assign_roles_at_start;
         }
       }
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.post(
@@ -138,23 +138,23 @@ router.post(
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(
         '/pl/course_instance/' +
           res.locals.course_instance.id +
           '/assessment/' +
-          res.locals.assessment.id
+          res.locals.assessment.id,
       );
     } else {
       next(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

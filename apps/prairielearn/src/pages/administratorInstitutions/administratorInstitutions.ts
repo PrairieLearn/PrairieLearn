@@ -12,7 +12,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const institutions = await sqldb.queryRows(sql.select_institutions, InstitutionRowSchema);
     res.send(AdministratorInstitutions({ institutions, resLocals: res.locals }));
-  })
+  }),
 );
 
 export default router;
