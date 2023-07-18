@@ -28,7 +28,7 @@ export function InstructorCourseInstanceBilling({
   resLocals: Record<string, any>;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {

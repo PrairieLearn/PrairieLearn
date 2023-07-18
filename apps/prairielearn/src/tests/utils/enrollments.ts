@@ -45,7 +45,7 @@ export async function enrollRandomUsers(courseInstanceId: string, count: number)
   const currentCount = await queryRow(
     'SELECT COUNT(*)::integer FROM enrollments WHERE course_instance_id = $id',
     { id: courseInstanceId },
-    z.number()
+    z.number(),
   );
   for (let i = 0; i < count; i++) {
     const number = currentCount + i + 1;

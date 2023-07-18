@@ -24,13 +24,13 @@ async function loadPageData(res: Response) {
   const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
   const institutionPlanGrants = await getPlanGrantsForInstitution(res.locals.institution.id);
   const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
-    res.locals.course_instance.id
+    res.locals.course_instance.id,
   );
 
   const enrollmentCount = await queryRow(
     sql.course_instance_enrollment_count,
     { course_instance_id: res.locals.course_instance.id },
-    z.number()
+    z.number(),
   );
   const enrollmentLimit =
     res.locals.course_instance.enrollment_limit ??
@@ -77,7 +77,7 @@ router.get(
       z.object({
         external_grading_question_count: z.number(),
         workspace_question_count: z.number(),
-      })
+      }),
     );
 
     res.send(
@@ -91,9 +91,9 @@ router.get(
         externalGradingQuestionCount: external_grading_question_count,
         workspaceQuestionCount: workspace_question_count,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 router.post(
@@ -133,7 +133,7 @@ router.post(
 
     await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, desiredRequiredPlans);
     res.redirect(req.originalUrl);
-  })
+  }),
 );
 
 export default router;

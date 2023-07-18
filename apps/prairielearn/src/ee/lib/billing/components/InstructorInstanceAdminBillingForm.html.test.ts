@@ -97,7 +97,7 @@ describe('instructorInstanceAdminBillingState', () => {
     assert.isTrue(state.studentBillingDidChange);
     assert.match(
       state.studentBillingAlert?.message ?? '',
-      /To disable student billing, first remove excess enrollments./
+      /To disable student billing, first remove excess enrollments./,
     );
   });
 });

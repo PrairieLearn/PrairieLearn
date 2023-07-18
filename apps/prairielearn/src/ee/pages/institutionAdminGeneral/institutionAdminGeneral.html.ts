@@ -165,12 +165,11 @@ function Plans({ planGrants }: { planGrants: PlanGrant[] }) {
             </label>
             <div>
               ${planFeatures.map(
-                (feature) =>
-                  html`
-                    <span class="badge badge-pill badge-secondary text-monospace mr-1">
-                      ${feature}
-                    </span>
-                  `
+                (feature) => html`
+                  <span class="badge badge-pill badge-secondary text-monospace mr-1">
+                    ${feature}
+                  </span>
+                `,
               )}
             </div>
           </div>

@@ -28,17 +28,17 @@ interface AlertProps {
 }
 
 export function instructorInstanceAdminBillingState(
-  input: InstructorInstanceAdminBillingInput
+  input: InstructorInstanceAdminBillingInput,
 ): InstructorInstanceAdminBillingState {
   const studentBillingInitialEnabled = input.initialRequiredPlans.includes('basic');
   const studentBillingEnabled = input.desiredRequiredPlans.includes('basic');
   const computeEnabledByInstitution = planGrantsMatchPlanFeatures(
     input.institutionPlanGrants,
-    'compute'
+    'compute',
   );
   const computeEnabledByCourseInstance = planGrantsMatchPlanFeatures(
     input.courseInstancePlanGrants,
-    'compute'
+    'compute',
   );
   const computeEnabled =
     (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
@@ -94,7 +94,7 @@ export function InstructorInstanceAdminBillingForm(
     externalGradingQuestionCount: number;
     workspaceQuestionCount: number;
     csrfToken: string;
-  }
+  },
 ) {
   const {
     enrollmentCount,
