@@ -8,6 +8,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
+const { idsEqual } = require('../lib/id');
 const { TEST_COURSE_PATH } = require('../lib/paths');
 
 let page, elemList;
@@ -48,6 +49,20 @@ const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, 
   assert.isString(locals.__csrf_token);
 };
 
+const createGroup = async (groupName, csrfToken, assessmentUrl) => {
+  const form = {
+    __action: 'create_group',
+    __csrf_token: csrfToken,
+    groupName: groupName,
+  };
+  const res = await fetch(assessmentUrl, {
+    method: 'POST',
+    body: new URLSearchParams(form),
+  });
+  assert.isOk(res.ok);
+  locals.$ = cheerio.load(await res.text());
+};
+
 /**
  * Joins group as current user with CSRF token and loads page with cheerio.
  * @param {String} assessmentUrl
@@ -84,30 +99,37 @@ describe('Group based exam assess control on student side', function () {
 
   step('1. the database contains a group-based exam assessment', async function () {
     const result = await sqldb.queryAsync(sql.select_group_work_exam_assessment, []);
-    assert.lengthOf(result.rows, 1);
+    assert.lengthOf(result.rows, 2);
     assert.notEqual(result.rows[0].id, undefined);
     locals.assessment_id = result.rows[0].id;
     locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
     locals.instructorAssessmentsUrlGroupTab =
       locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+    locals.assessment_id_2 = idsEqual(result.rows[1].id, locals.assessment_id)
+      ? result.rows[0].id
+      : result.rows[1].id;
+    locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
   });
 
-  step('2. GET to instructor assessments URL group tab for the first assessment loads correctly', async function () {
-    // should load successfully
-    const res = await fetch(locals.instructorAssessmentsUrlGroupTab);
-    page = await res.text();
+  step(
+    '2. GET to instructor assessments URL group tab for the first assessment loads correctly',
+    async function () {
+      // should load successfully
+      const res = await fetch(locals.instructorAssessmentsUrlGroupTab);
+      page = await res.text();
 
-    // should parse
-    locals.$ = cheerio.load(page);
+      // should parse
+      locals.$ = cheerio.load(page);
 
-    // check for CSRF tokens
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 5);
-    // there are 6 occurrences of the same csrf, we will pick the first one
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
+      // check for CSRF tokens
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 5);
+      // there are 6 occurrences of the same csrf, we will pick the first one
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    }
+  );
 
   step('3. Group config in database is correct', async function () {
     const params = {
@@ -140,19 +162,9 @@ describe('Group based exam assess control on student side', function () {
     // switch to user
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
 
-    // create group
+    // create group and load page as first user
     locals.group_name = 'groupBB';
-    const form = {
-      __action: 'create_group',
-      __csrf_token: locals.__csrf_token,
-      groupName: locals.group_name,
-    };
-    const res = await fetch(locals.assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
-    });
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
+    await createGroup(locals.group_name, locals.__csrf_token, locals.assessmentUrl);
   });
 
   step('6. the group information after 1 user join the group should be correct', function () {
@@ -199,7 +211,12 @@ describe('Group based exam assess control on student side', function () {
 
   step('9. the third user can not join the already full group', async function () {
     // join as ungrouped user
-    await switchUserAndLoadAssessment(locals.studentUserNotGrouped, locals.assessmentUrl, '00000004', 2);
+    await switchUserAndLoadAssessment(
+      locals.studentUserNotGrouped,
+      locals.assessmentUrl,
+      '00000004',
+      2
+    );
 
     // send request to join group
     const form = {
@@ -221,15 +238,24 @@ describe('Group based exam assess control on student side', function () {
   step('10. start assessment as the second user successfully', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
 
-    // TODO: check the class honor code before starting the assessment
+    // should have two rows under group members list
+    elemList = locals.$('.col-sm li');
+    assert.lengthOf(elemList, 2);
+
+    // check the honor code is unchecked first and assessment cannot be started
+    assert.isNotTrue(locals.$('#certify-pledge').prop('checked'));
+    elemList = locals.$('#start-assessment');
+    assert.isTrue(elemList.is(':disabled'));
+
+    // check the class honor code before starting the assessment
+    locals.$('#certify-pledge').attr('checked', '');
+    elemList = locals.$('#certify-pledge').find('input:checked');
+    assert.isTrue(locals.$('#certify-pledge').prop('checked'));
 
     // should have a non-disabled "start assessment" button
     elemList = locals.$('#start-assessment');
+    locals.$('#start-assessment').attr('disabled', null);
     assert.isNotTrue(elemList.is(':disabled'));
-
-    // should have three rows under group members list
-    elemList = locals.$('.col-sm li');
-    assert.lengthOf(elemList, 2);
 
     // should have no assessment instances in database
     const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
@@ -240,293 +266,136 @@ describe('Group based exam assess control on student side', function () {
       __action: 'new_instance',
       __csrf_token: locals.__csrf_token,
     };
-    const res = await fetch(locals.assessmentUrl, {
+    const response = await fetch(locals.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams(form),
       follow: true,
     });
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-    // it('should have 1 assessment instance in db', function (callback) {
-    //   sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
-    //     if (ERR(err, callback)) return;
-    //     assert.lengthOf(result.rows, 1);
-    //     locals.assessment_instance_id = result.rows[0].id;
-    //     locals.assessmentInstanceURL =
-    //       locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-    //     assert.equal(result.rows[0].group_id, 1);
-    //     callback(null);
-    //   });
-    // });
+    assert.isOk(response.ok);
+    locals.$ = cheerio.load(await response.text());
+
+    // check there is now one assessment instance in database
+    const res = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
+    assert.lengthOf(res.rows, 1);
+    locals.assessment_instance_id = res.rows[0].id;
+    locals.assessmentInstanceURL =
+      locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
+    assert.equal(res.rows[0].group_id, 1);
   });
 
-  //   describe('15. access control of all members of group 1', function () {
-  //     it('should be able to access the assessment instance 1 as the 1st group member', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 200) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //     it('should be able to switch to 2nd group member', function (callback) {
-  //       var student = locals.studentUsers[1];
-  //       config.authUid = student.uid;
-  //       config.authName = student.name;
-  //       config.authUin = '00000002';
-  //       callback(null);
-  //     });
-  //     it('should be able to access the assessment instance 1 as the 2nd group member', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 200) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //     it('should be able to switch to 3rd group member', function (callback) {
-  //       var student = locals.studentUsers[0];
-  //       config.authUid = student.uid;
-  //       config.authName = student.name;
-  //       config.authUin = '00000001';
-  //       callback(null);
-  //     });
-  //     it('should be able to access the assessment instance 1 as the 3rd group member', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 200) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //   });
+  step('11. check access control of all users of group 1 is correct', async function () {
+    // access assessment instance 1 as first user
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 5);
+    const firstMemberResponse = await fetch(locals.assessmentInstanceURL);
+    assert.isOk(firstMemberResponse.ok);
+    locals.$ = cheerio.load(await firstMemberResponse.text());
 
-  //   describe('16. access control of student who used to be in group 1 but not in any group now', function () {
-  //     it('should have a CSRF token', function () {
-  //       elemList = locals.$('form input[name="__csrf_token"]');
-  //       assert.lengthOf(elemList, 3);
-  //       assert.nestedProperty(elemList[0], 'attribs.value');
-  //       locals.__csrf_token = elemList[0].attribs.value;
-  //       assert.isString(locals.__csrf_token);
-  //     });
-  //     it('should be able to Leave the group', function (callback) {
-  //       var form = {
-  //         __action: 'leave_group',
-  //         __csrf_token: locals.__csrf_token,
-  //       };
-  //       request.post(
-  //         {
-  //           url: locals.assessmentInstanceURL,
-  //           form: form,
-  //           followAllRedirects: true,
-  //         },
-  //         function (error, response, body) {
-  //           if (ERR(error, callback)) return;
-  //           if (response.statusCode !== 200) {
-  //             return callback(new Error('bad status: ' + response.statusCode));
-  //           }
-  //           page = body;
-  //           callback(null);
-  //         }
-  //       );
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //     it('should NOT be able to access the assessment instance 1 as a ungrouped student', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 403) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //   });
-  //   describe('17. access control of student who used to be in group 1 but in a different group now', function () {
-  //     it('should have a CSRF token', function () {
-  //       elemList = locals.$('form input[name="__csrf_token"]');
-  //       assert.lengthOf(elemList, 2);
-  //       assert.nestedProperty(elemList[0], 'attribs.value');
-  //       locals.__csrf_token = elemList[0].attribs.value;
-  //       assert.isString(locals.__csrf_token);
-  //     });
-  //     it('should be able to create a group', function (callback) {
-  //       locals.group_name_alternative1 = 'groupCC';
-  //       var form = {
-  //         __action: 'create_group',
-  //         __csrf_token: locals.__csrf_token,
-  //         groupName: locals.group_name_alternative1,
-  //       };
-  //       request.post(
-  //         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-  //         function (error, response, body) {
-  //           if (ERR(error, callback)) return;
-  //           if (response.statusCode !== 200) {
-  //             return callback(new Error('bad status: ' + response.statusCode));
-  //           }
-  //           page = body;
-  //           callback(null);
-  //         }
-  //       );
-  //     });
-  //     it('should NOT be able to access the assessment instance 1 as a student from a different group', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 403) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //   });
+    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 5);
+    const secondMemberResponse = await fetch(locals.assessmentInstanceURL);
+    assert.isOk(secondMemberResponse.ok);
+    locals.$ = cheerio.load(await secondMemberResponse.text());
+  });
 
-  //   describe('18. access control of student who are not in any group', function () {
-  //     it('should be able to switch to the ungrouped student', function (callback) {
-  //       var student = locals.studentUserNotGrouped;
-  //       config.authUid = student.uid;
-  //       config.authName = student.name;
-  //       config.authUin = '00000004';
-  //       callback(null);
-  //     });
-  //     it('should NOT be able to access the assessment instance 1 as a ungrouped student', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 403) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //   });
+  step(
+    '12. access control of student who used to be in group 1 but not in any group now',
+    async function () {
+      // leaving exam group as second user should be successful
+      const form = {
+        __action: 'leave_group',
+        __csrf_token: locals.__csrf_token,
+      };
+      const leaveResponse = await fetch(locals.assessmentInstanceURL, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(leaveResponse.ok);
+      locals.$ = cheerio.load(await leaveResponse.text());
 
-  //   describe('19. access control of student who are in a different group', function () {
-  //     it('should be able to switch to the student in the different group', function (callback) {
-  //       var student = locals.studentUserInDiffGroup;
-  //       config.authUid = student.uid;
-  //       config.authName = student.name;
-  //       config.authUin = '00000005';
-  //       callback(null);
-  //     });
-  //     it('should load assessment page successfully', function (callback) {
-  //       request(locals.assessmentUrl, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 200) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //     it('should have a CSRF token', function () {
-  //       elemList = locals.$('form input[name="__csrf_token"]');
-  //       assert.lengthOf(elemList, 2);
-  //       assert.nestedProperty(elemList[0], 'attribs.value');
-  //       locals.__csrf_token = elemList[0].attribs.value;
-  //       assert.isString(locals.__csrf_token);
-  //     });
-  //     it('should be able to create a group', function (callback) {
-  //       locals.group_name_alternative2 = 'groupBBCC';
-  //       var form = {
-  //         __action: 'create_group',
-  //         __csrf_token: locals.__csrf_token,
-  //         groupName: locals.group_name_alternative2,
-  //       };
-  //       request.post(
-  //         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-  //         function (error, response, body) {
-  //           if (ERR(error, callback)) return;
-  //           if (response.statusCode !== 200) {
-  //             return callback(new Error('bad status: ' + response.statusCode));
-  //           }
-  //           page = body;
-  //           callback(null);
-  //         }
-  //       );
-  //     });
-  //     it('should NOT be able to access the assessment instance 1 as a student from a different group', function (callback) {
-  //       request(locals.assessmentInstanceURL, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 403) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //   });
+      // attempt to access exam assessment instance should be unsuccessful
+      const accessResponse = await fetch(locals.assessmentInstanceURL);
+      assert.equal(accessResponse.status, 403, 'status should be forbidden');
+    }
+  );
 
-  //   describe('20. cross assessment grouping', function () {
-  //     it('should contain a second group-based homework assessment', function (callback) {
-  //       sqldb.query(sql.select_group_work_assessment, [], function (err, result) {
-  //         if (ERR(err, callback)) return;
-  //         assert.lengthOf(result.rows, 2);
-  //         assert.notEqual(result.rows[1].id, undefined);
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should load the second assessment page successfully', function (callback) {
-  //       request(locals.assessmentUrl_2, function (error, response, body) {
-  //         if (ERR(error, callback)) return;
-  //         if (response.statusCode !== 200) {
-  //           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-  //         }
-  //         page = body;
-  //         callback(null);
-  //       });
-  //     });
-  //     it('should parse', function () {
-  //       locals.$ = cheerio.load(page);
-  //     });
-  //     it('should have a CSRF token', function () {
-  //       elemList = locals.$('form input[name="__csrf_token"]');
-  //       assert.lengthOf(elemList, 2);
-  //       assert.nestedProperty(elemList[0], 'attribs.value');
-  //       locals.__csrf_token = elemList[0].attribs.value;
-  //       assert.isString(locals.__csrf_token);
-  //     });
-  //     it('should NOT be able to join group using the join code from a different assessment', function (callback) {
-  //       var form = {
-  //         __action: 'join_group',
-  //         __csrf_token: locals.__csrf_token,
-  //         join_code: locals.joinCode,
-  //       };
-  //       request.post(
-  //         { url: locals.assessmentUrl_2, form: form, followAllRedirects: true },
-  //         function (error, response, body) {
-  //           if (ERR(error, callback)) return;
-  //           if (response.statusCode !== 200) {
-  //             return callback(new Error('bad status: ' + response.statusCode));
-  //           }
-  //           page = body;
-  //           callback(null);
-  //         }
-  //       );
-  //       it('should contain a prompt to inform the user that the group is full', function () {
-  //         elemList = locals.$('.alert:contains(It is already full)');
-  //         assert.lengthOf(elemList, 1);
-  //       });
-  //     });
-  //   });
+  step(
+    '13. access control of student who used to be in group 1 but in a different group now',
+    async function () {
+      // should have the correct number of CSRF tokens
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+
+      // create an entirely new group
+      locals.group_name_alternative1 = 'groupCC';
+      await createGroup(locals.group_name_alternative1, locals.__csrf_token, locals.assessmentUrl);
+
+      // attempt to access previous exam assessment instance should be unsuccessful
+      const accessResponse = await fetch(locals.assessmentInstanceURL);
+      assert.equal(accessResponse.status, 403, 'status should be forbidden');
+    }
+  );
+
+  step('14. access control of student who are not in any group', async function () {
+    const student = locals.studentUserNotGrouped;
+    config.authUid = student.uid;
+    config.authName = student.name;
+    config.authUin = '00000004';
+
+    const accessResponse = await fetch(locals.assessmentInstanceURL);
+    assert.equal(accessResponse.status, 403, 'status should be forbidden');
+  });
+
+  step('15. access control of student who are in a different group', async function () {
+    // switch to user not in a group and create a new, different group
+    await switchUserAndLoadAssessment(
+      locals.studentUserInDiffGroup,
+      locals.assessmentUrl,
+      '00000005',
+      2
+    );
+    locals.group_name_alternative2 = 'groupBBCC';
+    await createGroup(locals.group_name_alternative2, locals.__csrf_token, locals.assessmentUrl);
+
+    // should NOT be able to access the assessment instance 1 as a student from a different group
+    const accessResponse = await fetch(locals.assessmentInstanceURL);
+    assert.equal(accessResponse.status, 403, 'status should be forbidden');
+  });
+
+  step('16. cross assessment grouping is disallowed', async function () {
+    // ensure there is a second group exam assessment
+    const result = await sqldb.queryAsync(sql.select_group_work_exam_assessment, []);
+    assert.lengthOf(result.rows, 2);
+    assert.notEqual(result.rows[1].id, undefined);
+
+    // load the second assessment
+    let res = await fetch(locals.assessmentUrl_2);
+    assert.isOk(res.ok);
+    const page = await res.text();
+    locals.$ = cheerio.load(page);
+
+    // check for 2 CSRF tokens
+    elemList = locals.$('form input[name="__csrf_token"]');
+    assert.lengthOf(elemList, 2);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.__csrf_token = elemList[0].attribs.value;
+    assert.isString(locals.__csrf_token);
+
+    // attempt to join group in second assessment using join code from first assessment
+    const form = {
+      __action: 'join_group',
+      __csrf_token: locals.__csrf_token,
+      join_code: locals.joinCode,
+    };
+    res = await fetch(locals.assessmentUrl_2, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    locals.$ = cheerio.load(await res.text());
+
+    // check that error message is shown
+    elemList = locals.$('.alert:contains(It is already full)');
+    assert.lengthOf(elemList, 1);
+  });
 });
