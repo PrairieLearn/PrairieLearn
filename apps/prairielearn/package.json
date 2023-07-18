@@ -81,7 +81,7 @@
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
     "express-session": "^1.17.3",
-    "fabric": "^4.6.0",
+    "fabric": "^5.3.0",
     "fast-glob": "^3.3.0",
     "file-type": "^16.5.4",
     "filesize": "^10.0.7",
