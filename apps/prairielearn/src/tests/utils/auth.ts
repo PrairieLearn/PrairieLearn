@@ -1,10 +1,10 @@
 import { config } from '../../lib/config';
 
-export type AuthUser = {
+export interface AuthUser {
   name: string;
   uid: string;
   uin: string;
-};
+}
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
   const originalName = config.authName;

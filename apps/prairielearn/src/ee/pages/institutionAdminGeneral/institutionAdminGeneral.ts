@@ -84,10 +84,7 @@ router.post(
           });
         }
       }
-      await runInTransactionAsync(async () => {
-        const institution = await getInstitution(req.params.institution_id);
-        await reconcilePlanGrantsForInstitution(req.params.institution_id, updates);
-      });
+      await reconcilePlanGrantsForInstitution(req.params.institution_id, updates);
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);
     } else {
