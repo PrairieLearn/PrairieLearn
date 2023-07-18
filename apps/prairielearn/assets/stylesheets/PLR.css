@@ -1,6 +1,9 @@
 body {
   background-color: rgb(35, 35, 35);
 }
+.table-dark {
+  background-color: rgb(35, 35, 35);
+}
 /* Colorful card for the profile (rounded corners + gradient) */
 #profile-card {
   background-image: linear-gradient(to bottom, #71073e, #101761);
@@ -76,9 +79,9 @@ li {
 .table-responsive {
   overflow-y: scroll;
   height: 670px;
-  animation: moving .5s ease;
+  animation: moving .3s ease;
 }
 @keyframes moving{
-  from{transform: translateX(50px);opacity: 0;}
-  to{transform: translateX(0px);opacity: 1;}
+  from{transform: translateY(50px);opacity: 0;}
+  to{transform: translateY(0px);opacity: 1;}
 }
