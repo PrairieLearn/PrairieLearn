@@ -128,7 +128,7 @@ describe('Group based exam assess control on student side', function () {
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
-    }
+    },
   );
 
   step('3. Group config in database is correct', async function () {
@@ -215,7 +215,7 @@ describe('Group based exam assess control on student side', function () {
       locals.studentUserNotGrouped,
       locals.assessmentUrl,
       '00000004',
-      2
+      2,
     );
 
     // send request to join group
@@ -314,7 +314,7 @@ describe('Group based exam assess control on student side', function () {
       // attempt to access exam assessment instance should be unsuccessful
       const accessResponse = await fetch(locals.assessmentInstanceURL);
       assert.equal(accessResponse.status, 403, 'status should be forbidden');
-    }
+    },
   );
 
   step(
@@ -334,7 +334,7 @@ describe('Group based exam assess control on student side', function () {
       // attempt to access previous exam assessment instance should be unsuccessful
       const accessResponse = await fetch(locals.assessmentInstanceURL);
       assert.equal(accessResponse.status, 403, 'status should be forbidden');
-    }
+    },
   );
 
   step('14. access control of student who are not in any group', async function () {
@@ -353,7 +353,7 @@ describe('Group based exam assess control on student side', function () {
       locals.studentUserInDiffGroup,
       locals.assessmentUrl,
       '00000005',
-      2
+      2,
     );
     locals.group_name_alternative2 = 'groupBBCC';
     await createGroup(locals.group_name_alternative2, locals.__csrf_token, locals.assessmentUrl);
