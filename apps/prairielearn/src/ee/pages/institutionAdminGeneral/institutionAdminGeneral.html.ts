@@ -13,10 +13,12 @@ type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
 export function InstitutionAdminGeneral({
   institution,
   statistics,
+  canEditLimits,
   resLocals,
 }: {
   institution: Institution;
   statistics: InstitutionStatistics;
+  canEditLimits: boolean;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -71,6 +73,7 @@ export function InstitutionAdminGeneral({
                 name="course_instance_enrollment_limit"
                 value="${institution.course_instance_enrollment_limit}"
                 aria-describedby="course_instance_enrollment_limit_help"
+                ${canEditLimits ? '' : 'disabled'}
               />
               <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
                 The maximum number of enrollments allowed for a single course instance. A blank
@@ -87,6 +90,7 @@ export function InstitutionAdminGeneral({
                 name="yearly_enrollment_limit"
                 value="${institution.yearly_enrollment_limit}"
                 aria-describedby="yearly_enrollment_limit_help"
+                ${canEditLimits ? '' : 'disabled'}
               />
               <small id="yearly_enrollment_limit_help" class="form-text text-muted">
                 The maximum number of enrollments allowed per year. A blank value allows for
@@ -95,14 +99,18 @@ export function InstitutionAdminGeneral({
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <button
-              type="submit"
-              name="__action"
-              value="update_enrollment_limits"
-              class="btn btn-primary"
-            >
-              Save
-            </button>
+            ${canEditLimits
+              ? html`
+                  <button
+                    type="submit"
+                    name="__action"
+                    value="update_enrollment_limits"
+                    class="btn btn-primary"
+                  >
+                    Save
+                  </button>
+                `
+              : null}
           </form>
         </main>
       </body>

@@ -177,3 +177,10 @@ export const WorkspaceLogSchema = z.object({
   workspace_id: IdSchema,
 });
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
+
+export const InstitutionAdministratorSchema = z.object({
+  id: IdSchema,
+  institution_id: IdSchema,
+  user_id: IdSchema,
+});
+export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;

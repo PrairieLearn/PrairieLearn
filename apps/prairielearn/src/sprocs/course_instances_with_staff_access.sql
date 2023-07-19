@@ -30,7 +30,7 @@ BEGIN
                     ELSE format_date_full_compact(d.end_date, ci.display_timezone)
                 END,
                 'has_course_instance_permission_view',
-                is_administrator OR cip.course_instance_role > 'None'
+                is_administrator OR ia.id IS NOT NULL OR cip.course_instance_role > 'None'
             ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC
         )
     INTO
@@ -41,6 +41,7 @@ BEGIN
             ci.course_id = c.id
             AND ci.deleted_at IS NULL
         )
+        JOIN institutions AS i ON (i.id = c.institution_id)
         LEFT JOIN course_permissions AS cp ON (
             cp.user_id = course_instances_with_staff_access.user_id
             AND cp.course_id = course_instances_with_staff_access.course_id
@@ -48,6 +49,10 @@ BEGIN
         LEFT JOIN course_instance_permissions AS cip ON (
             cip.course_permission_id = cp.id
             AND cip.course_instance_id = ci.id
+        )
+        LEFT JOIN institution_administrators AS ia ON (
+            ia.institution_id = i.id
+            AND ia.user_id = course_instances_with_staff_access.user_id
         ),
         LATERAL (
             SELECT
@@ -64,6 +69,7 @@ BEGIN
         AND c.deleted_at IS NULL
         AND (
             is_administrator
+            OR ia.id IS NOT NULL
             OR cp.course_role > 'None'
             OR cip.course_instance_role > 'None'
             OR c.example_course IS TRUE

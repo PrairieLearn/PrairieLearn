@@ -67,7 +67,13 @@ module.exports = {
           },
           async () => {
             debug('before(): sync from disk');
-            await helperCourse.syncCourse(courseDir);
+            if (Array.isArray(courseDir)) {
+              for (const dir of courseDir) {
+                await helperCourse.syncCourse(dir);
+              }
+            } else {
+              await helperCourse.syncCourse(courseDir);
+            }
           },
           function (callback) {
             debug('before(): set up load estimators');
