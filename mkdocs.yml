@@ -19,6 +19,9 @@ extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
+extra_css:
+  - extra.css
+
 nav:
 - Main: 'index.md'
 - Getting Started:
