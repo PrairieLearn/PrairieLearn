@@ -127,7 +127,7 @@ module.exports.syncDiskToSqlWithLock = syncDiskToSqlWithLock;
  * @param {any} logger
  * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
-module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback) {
+function syncDiskToSql(courseDir, course_id, logger, callback) {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
   namedLocks.tryLock(lockName, (err, lock) => {
@@ -147,7 +147,7 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
       });
     }
   });
-};
+}
 
 /**
  * @param {string} courseDir
@@ -158,7 +158,7 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
 function syncDiskToSqlAsync(courseDir, course_id, logger) {
   // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
   // that it'll always result in a non-undefined value if it doesn't error.
-  return util.promisify(module.exports.syncDiskToSql)(courseDir, course_id, logger);
+  return util.promisify(syncDiskToSql)(courseDir, course_id, logger);
 }
 module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
@@ -171,7 +171,7 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
   sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
     if (ERR(err, callback)) return;
     const course_id = result.rows[0].course_id;
-    module.exports.syncDiskToSql(courseDir, course_id, logger, function (err, result) {
+    syncDiskToSql(courseDir, course_id, logger, function (err, result) {
       if (ERR(err, callback)) return;
       callback(null, result);
     });
