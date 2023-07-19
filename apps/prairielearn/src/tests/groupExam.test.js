@@ -11,9 +11,7 @@ const helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 const { TEST_COURSE_PATH } = require('../lib/paths');
 
-let page, elemList;
 const locals = {};
-locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
@@ -28,7 +26,7 @@ const storedConfig = {};
  * @param {String} authUin
  * @param {Number} numCsrfTokens
  */
-const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, numCsrfTokens) => {
+async function switchUserAndLoadAssessment(studentUser, assessmentUrl, authUin, numCsrfTokens) {
   // Load config
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
@@ -42,45 +40,43 @@ const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, 
   locals.$ = cheerio.load(page);
 
   // Check for CSRF tokens
-  elemList = locals.$('form input[name="__csrf_token"]');
+  const elemList = locals.$('form input[name="__csrf_token"]');
   assert.lengthOf(elemList, numCsrfTokens);
   assert.nestedProperty(elemList[0], 'attribs.value');
   locals.__csrf_token = elemList[0].attribs.value;
   assert.isString(locals.__csrf_token);
-};
+}
 
-const createGroup = async (groupName, csrfToken, assessmentUrl) => {
-  const form = {
-    __action: 'create_group',
-    __csrf_token: csrfToken,
-    groupName: groupName,
-  };
+async function createGroup(groupName, csrfToken, assessmentUrl) {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams(form),
+    body: new URLSearchParams({
+      __action: 'create_group',
+      __csrf_token: csrfToken,
+      groupName: groupName,
+    }),
   });
   assert.isOk(res.ok);
   locals.$ = cheerio.load(await res.text());
-};
+}
 
 /**
  * Joins group as current user with CSRF token and loads page with cheerio.
  * @param {String} assessmentUrl
  * @param {String} joinCode
  */
-const joinGroup = async (assessmentUrl, joinCode) => {
-  const form = {
-    __action: 'join_group',
-    __csrf_token: locals.__csrf_token,
-    join_code: joinCode,
-  };
+async function joinGroup(assessmentUrl, joinCode) {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
-    body: new URLSearchParams(form),
+    body: new URLSearchParams({
+      __action: 'join_group',
+      __csrf_token: locals.__csrf_token,
+      join_code: joinCode,
+    }),
   });
   assert.isOk(res.ok);
   locals.$ = cheerio.load(await res.text());
-};
+}
 
 describe('Group based exam assess control on student side', function () {
   this.timeout(20000);
@@ -97,7 +93,7 @@ describe('Group based exam assess control on student side', function () {
     callback(null);
   });
 
-  step('1. the database contains a group-based exam assessment', async function () {
+  step('the database contains a group-based exam assessment', async function () {
     const result = await sqldb.queryAsync(sql.select_group_work_exam_assessment, []);
     assert.lengthOf(result.rows, 2);
     assert.notEqual(result.rows[0].id, undefined);
@@ -112,37 +108,36 @@ describe('Group based exam assess control on student side', function () {
   });
 
   step(
-    '2. GET to instructor assessments URL group tab for the first assessment loads correctly',
+    'GET to instructor assessments URL group tab for the first assessment loads correctly',
     async function () {
       // should load successfully
       const res = await fetch(locals.instructorAssessmentsUrlGroupTab);
-      page = await res.text();
+      const page = await res.text();
 
       // should parse
       locals.$ = cheerio.load(page);
 
       // check for CSRF tokens
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 5);
       // there are 6 occurrences of the same csrf, we will pick the first one
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
-    },
+    }
   );
 
-  step('3. Group config in database is correct', async function () {
-    const params = {
+  step('Group config in database is correct', async function () {
+    const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
       assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryOneRowAsync(sql.select_group_config, params);
+    });
     const min = result.rows[0]['minimum'];
     const max = result.rows[0]['maximum'];
     assert.equal(min, 2);
     assert.equal(max, 2);
   });
 
-  step('4. get 5 student user', async function () {
+  step('get 5 student user', async function () {
     // generate 5 users in database
     const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
     assert.lengthOf(result.rows, 5);
@@ -158,7 +153,7 @@ describe('Group based exam assess control on student side', function () {
     config.authUin = '00000001';
   });
 
-  step('5. POST request to exam page creates group correctly', async function () {
+  step('POST request to exam page creates group correctly', async function () {
     // switch to user
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
 
@@ -167,9 +162,9 @@ describe('Group based exam assess control on student side', function () {
     await createGroup(locals.group_name, locals.__csrf_token, locals.assessmentUrl);
   });
 
-  step('6. the group information after 1 user join the group should be correct', function () {
+  step('the group information after 1 user join the group should be correct', function () {
     // should contain the correct group name
-    elemList = locals.$('#group-name');
+    let elemList = locals.$('#group-name');
     assert.equal(elemList.text(), locals.group_name);
 
     // should contain the 4-character join code
@@ -186,14 +181,14 @@ describe('Group based exam assess control on student side', function () {
     assert.lengthOf(elemList, 1);
   });
 
-  step('7. the second user can join the group using code', async function () {
+  step('the second user can join the group using code', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
     await joinGroup(locals.assessmentUrl, locals.joinCode);
   });
 
-  step('8. the group information after 2 users join the group', function () {
+  step('the group information after 2 users join the group', function () {
     // should contain the correct group name
-    elemList = locals.$('#group-name');
+    let elemList = locals.$('#group-name');
     assert.equal(elemList.text(), locals.group_name);
 
     // should contain the 4-character join code
@@ -209,37 +204,36 @@ describe('Group based exam assess control on student side', function () {
     assert.lengthOf(elemList, 0);
   });
 
-  step('9. the third user can not join the already full group', async function () {
+  step('the third user can not join the already full group', async function () {
     // join as ungrouped user
     await switchUserAndLoadAssessment(
       locals.studentUserNotGrouped,
       locals.assessmentUrl,
       '00000004',
-      2,
+      2
     );
 
     // send request to join group
-    const form = {
-      __action: 'join_group',
-      __csrf_token: locals.__csrf_token,
-      join_code: locals.joinCode,
-    };
     const res = await fetch(locals.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'join_group',
+        __csrf_token: locals.__csrf_token,
+        join_code: locals.joinCode,
+      }),
     });
     locals.$ = cheerio.load(await res.text());
 
     // alert should show that group is already full
-    elemList = locals.$('.alert:contains(It is already full)');
+    const elemList = locals.$('.alert:contains(It is already full)');
     assert.lengthOf(elemList, 1);
   });
 
-  step('10. start assessment as the second user successfully', async function () {
+  step('start assessment as the second user successfully', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
 
     // should have two rows under group members list
-    elemList = locals.$('.col-sm li');
+    let elemList = locals.$('.col-sm li');
     assert.lengthOf(elemList, 2);
 
     // check the honor code is unchecked first and assessment cannot be started
@@ -262,13 +256,12 @@ describe('Group based exam assess control on student side', function () {
     assert.lengthOf(result.rows, 0);
 
     // start assessment
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: locals.__csrf_token,
-    };
     const response = await fetch(locals.assessmentUrl, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: locals.__csrf_token,
+      }),
       follow: true,
     });
     assert.isOk(response.ok);
@@ -283,7 +276,7 @@ describe('Group based exam assess control on student side', function () {
     assert.equal(res.rows[0].group_id, 1);
   });
 
-  step('11. check access control of all users of group 1 is correct', async function () {
+  step('check access control of all users of group 1 is correct', async function () {
     // access assessment instance 1 as first user
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 5);
     const firstMemberResponse = await fetch(locals.assessmentInstanceURL);
@@ -297,16 +290,15 @@ describe('Group based exam assess control on student side', function () {
   });
 
   step(
-    '12. access control of student who used to be in group 1 but not in any group now',
+    'prevent access of student who used to be in group 1 but not in any group now',
     async function () {
       // leaving exam group as second user should be successful
-      const form = {
-        __action: 'leave_group',
-        __csrf_token: locals.__csrf_token,
-      };
       const leaveResponse = await fetch(locals.assessmentInstanceURL, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams({
+          __action: 'leave_group',
+          __csrf_token: locals.__csrf_token,
+        }),
       });
       assert.isOk(leaveResponse.ok);
       locals.$ = cheerio.load(await leaveResponse.text());
@@ -314,14 +306,14 @@ describe('Group based exam assess control on student side', function () {
       // attempt to access exam assessment instance should be unsuccessful
       const accessResponse = await fetch(locals.assessmentInstanceURL);
       assert.equal(accessResponse.status, 403, 'status should be forbidden');
-    },
+    }
   );
 
   step(
-    '13. access control of student who used to be in group 1 but in a different group now',
+    'prevent access of student who used to be in group 1 but in a different group now',
     async function () {
       // should have the correct number of CSRF tokens
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -334,10 +326,10 @@ describe('Group based exam assess control on student side', function () {
       // attempt to access previous exam assessment instance should be unsuccessful
       const accessResponse = await fetch(locals.assessmentInstanceURL);
       assert.equal(accessResponse.status, 403, 'status should be forbidden');
-    },
+    }
   );
 
-  step('14. access control of student who are not in any group', async function () {
+  step('prevent access of students who are not in any group', async function () {
     const student = locals.studentUserNotGrouped;
     config.authUid = student.uid;
     config.authName = student.name;
@@ -347,13 +339,13 @@ describe('Group based exam assess control on student side', function () {
     assert.equal(accessResponse.status, 403, 'status should be forbidden');
   });
 
-  step('15. access control of student who are in a different group', async function () {
+  step('prevent access of students who are in a different group', async function () {
     // switch to user not in a group and create a new, different group
     await switchUserAndLoadAssessment(
       locals.studentUserInDiffGroup,
       locals.assessmentUrl,
       '00000005',
-      2,
+      2
     );
     locals.group_name_alternative2 = 'groupBBCC';
     await createGroup(locals.group_name_alternative2, locals.__csrf_token, locals.assessmentUrl);
@@ -363,7 +355,7 @@ describe('Group based exam assess control on student side', function () {
     assert.equal(accessResponse.status, 403, 'status should be forbidden');
   });
 
-  step('16. cross assessment grouping is disallowed', async function () {
+  step('cross assessment grouping is disallowed', async function () {
     // ensure there is a second group exam assessment
     const result = await sqldb.queryAsync(sql.select_group_work_exam_assessment, []);
     assert.lengthOf(result.rows, 2);
@@ -376,21 +368,20 @@ describe('Group based exam assess control on student side', function () {
     locals.$ = cheerio.load(page);
 
     // check for 2 CSRF tokens
-    elemList = locals.$('form input[name="__csrf_token"]');
+    let elemList = locals.$('form input[name="__csrf_token"]');
     assert.lengthOf(elemList, 2);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.__csrf_token = elemList[0].attribs.value;
     assert.isString(locals.__csrf_token);
 
     // attempt to join group in second assessment using join code from first assessment
-    const form = {
-      __action: 'join_group',
-      __csrf_token: locals.__csrf_token,
-      join_code: locals.joinCode,
-    };
     res = await fetch(locals.assessmentUrl_2, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'join_group',
+        __csrf_token: locals.__csrf_token,
+        join_code: locals.joinCode,
+      }),
     });
     locals.$ = cheerio.load(await res.text());
 
