@@ -218,7 +218,7 @@ a.badge {
 
 /* Supports a color accent at the tops of nav tabs, github-style */
 .nav-tabs.pl-nav-tabs-bar .nav-link.active {
-    border-top-color: var(--primary);
+    border-top-color: var(--primary, var(--bs-primary));
     border-top-width: 0.2rem;
     padding-top: 0.4rem;
 }
