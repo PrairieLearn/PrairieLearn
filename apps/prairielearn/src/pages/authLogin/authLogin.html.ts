@@ -119,7 +119,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
               </h2>
               ${resLocals.devMode
                 ? html`
-                    ${DevModeBypass({ csrfToken: resLocals.__csrf_token })}
+                    ${DevModeBypass()}
                     <hr />
                     ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
                     <hr />
