@@ -119,9 +119,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
               </h2>
               ${resLocals.devMode
                 ? html`
-                    <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
-                      <span class="font-weight-bold">Dev Mode Bypass</span>
-                    </a>
+                    ${DevModeBypass({ csrfToken: resLocals.__csrf_token })}
                     <hr />
                     ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
                     <hr />
@@ -187,6 +185,15 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
       </body>
     </html>
   `.toString();
+}
+
+function DevModeBypass() {
+  return html`
+    <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
+      <span class="font-weight-bold">Dev Mode Bypass</span>
+    </a>
+    <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
+  `;
 }
 
 function DevModeLogin({ csrfToken }: { csrfToken: string }) {

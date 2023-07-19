@@ -65,7 +65,10 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
 
   // Allow auth to be bypassed for local dev mode; also used for tests.
-  // See `pages/authLoginDev` for cookie-based authentication in dev mode.
+  //
+  // To authenticate as specific users in dev mode, set `authType` to some
+  // other value in your config (e.g. "x-auth"). Then, visit the login page
+  // and enter a UID, name, and UIN. This is implemented in `pages/authLogin`.
   if (config.authType === 'none') {
     var uid = config.authUid;
     var name = config.authName;
