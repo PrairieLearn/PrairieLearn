@@ -28,7 +28,6 @@ export async function insertPlanGrant(
   planGrant: NewPlanGrant,
   authn_user_id: string,
 ): Promise<void> {
-  planGrant.institution_id;
   const newPlanGrant = await queryRow(
     sql.insert_plan_grant,
     {
