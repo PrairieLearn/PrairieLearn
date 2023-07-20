@@ -2,20 +2,21 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { insertAuditLog } from '../../models/audit-log';
 import { PlanGrant, PlanGrantSchema, EnumPlanGrantType } from '../../lib/db-types';
+import { WithRequiredKeys } from '../../lib/types';
 
 const sql = loadSqlEquiv(__filename);
 
 type NewBasePlanGrant = Omit<PlanGrant, 'created_at' | 'id'>;
-type NewInstitutionPlanGrant = Omit<
+type NewInstitutionPlanGrant = WithRequiredKeys<NewBasePlanGrant, 'institution_id'>;
+type NewCourseInstancePlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
-  'course_instance_id' | 'enrollment_id' | 'user_id'
+  'institution_id' | 'course_instance_id'
 >;
-type NewCourseInstancePlanGrant = Omit<NewBasePlanGrant, 'enrollment_id' | 'user_id'>;
-type NewEnrollmentPlanGrant = Omit<NewBasePlanGrant, 'user_id'>;
-type NewUserPlanGrant = Omit<
+type NewEnrollmentPlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
   'institution_id' | 'course_instance_id' | 'enrollment_id'
 >;
+type NewUserPlanGrant = WithRequiredKeys<NewBasePlanGrant, 'user_id'>;
 
 type NewPlanGrant =
   | NewInstitutionPlanGrant
@@ -27,14 +28,16 @@ export async function insertPlanGrant(
   planGrant: NewPlanGrant,
   authn_user_id: string,
 ): Promise<void> {
+  planGrant.institution_id;
   const newPlanGrant = await queryRow(
     sql.insert_plan_grant,
     {
-      institution_id: null,
-      course_instance_id: null,
-      enrollment_id: null,
-      user_id: null,
-      ...planGrant,
+      type: planGrant.type,
+      plan_name: planGrant.plan_name,
+      institution_id: planGrant.institution_id ?? null,
+      course_instance_id: planGrant.course_instance_id ?? null,
+      enrollment_id: planGrant.enrollment_id ?? null,
+      user_id: planGrant.user_id ?? null,
     },
     PlanGrantSchema,
   );

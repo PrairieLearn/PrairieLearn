@@ -13,6 +13,7 @@ import {
   insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
 } from '../../models/course-instance-required-plans';
+import { WithRequiredKeys } from '../../../lib/types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -21,13 +22,17 @@ export interface DesiredPlan {
   grantType: EnumPlanGrantType;
 }
 
-type InstitutionPlanGrantContext = Pick<PlanGrant, 'institution_id'>;
-type CourseInstancePlanGrantContext = Pick<PlanGrant, 'institution_id' | 'course_instance_id'>;
-type EnrollmentPlanGrantContext = Pick<
-  PlanGrant,
+type BasePlanGrantContext = Omit<PlanGrant, 'created_at' | 'id' | 'plan_name' | 'type'>;
+type InstitutionPlanGrantContext = WithRequiredKeys<BasePlanGrantContext, 'institution_id'>;
+type CourseInstancePlanGrantContext = WithRequiredKeys<
+  BasePlanGrantContext,
+  'institution_id' | 'course_instance_id'
+>;
+type EnrollmentPlanGrantContext = WithRequiredKeys<
+  BasePlanGrantContext,
   'institution_id' | 'course_instance_id' | 'enrollment_id'
 >;
-type UserPlanGrantContext = Pick<PlanGrant, 'user_id'>;
+type UserPlanGrantContext = WithRequiredKeys<BasePlanGrantContext, 'user_id'>;
 type PlanGrantContext =
   | InstitutionPlanGrantContext
   | CourseInstancePlanGrantContext
