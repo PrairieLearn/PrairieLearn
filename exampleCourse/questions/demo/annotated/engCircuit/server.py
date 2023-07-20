@@ -6,10 +6,10 @@ import schemdraw.elements as elm
 def file(data):
     if data["filename"] == "figure.svg":
         drawing = Drawing()
-        R1 = str(data["params"]["R1"]) + " $\\Omega$"
-        R2 = str(data["params"]["R2"]) + " $\\Omega$"
-        R3 = str(data["params"]["R3"]) + " $\\Omega$"
-        Vt = str(data["params"]["Vt"]) + "V"
+        R1 = str(data["params"]["R1"]) + " r$\Omega$"
+        R2 = str(data["params"]["R2"]) + " r$\Omega$"
+        R3 = str(data["params"]["R3"]) + " r$\Omega$"
+        Vt = str(data["params"]["Vt"]) + " V"
         if data["params"]["ask"] == "equivalent resistance $R_T$":
             ## parallel resistors
             drawing.push()
