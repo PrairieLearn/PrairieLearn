@@ -1,12 +1,10 @@
 import random
-import io
 
-import matplotlib.pyplot as plt
 from schemdraw import Drawing
 import schemdraw.elements as elm
 
 def file(data):
-    if data["filename"] == "figure.png":
+    if data["filename"] == "figure.svg":
         drawing = Drawing()
         R1 = str(data["params"]["R1"]) + " $\\Omega$"
         R2 = str(data["params"]["R2"]) + " $\\Omega$"
@@ -42,10 +40,7 @@ def file(data):
             drawing += elm.Resistor().left().label(R1)
             drawing.pop()
             drawing += elm.BatteryCell().down().label(Vt,'bottom')
-        drawing.draw(show=False)
-        buf = io.BytesIO()                       
-        plt.savefig(buf, format="png")  
-        return buf
+        return drawing.get_imagedata()
 
 def generate(data):
     ask = ["equivalent resistance $R_T$", "current from the power supply $I_T$"]
