@@ -57,11 +57,6 @@ router.get(
       throw error.make(404, 'Not Found');
     }
 
-    // Only course owners can manage billing.
-    if (!res.locals.authz_data.has_course_permission_own) {
-      throw error.make(403, 'Access denied (must be course owner)');
-    }
-
     const {
       requiredPlans,
       institutionPlanGrants,
@@ -90,6 +85,8 @@ router.get(
         enrollmentLimitSource,
         externalGradingQuestionCount: external_grading_question_count,
         workspaceQuestionCount: workspace_question_count,
+        // Only course owners can manage billing.
+        editable: res.locals.authz_data.has_course_permission_own,
         resLocals: res.locals,
       }),
     );
@@ -117,6 +114,8 @@ router.post(
 
     const state = instructorInstanceAdminBillingState({
       ...pageData,
+      // We already checked authorization above.
+      editable: true,
       initialRequiredPlans: pageData.requiredPlans,
       desiredRequiredPlans,
     });

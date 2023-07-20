@@ -9,6 +9,7 @@ interface InstructorInstanceAdminBillingInput {
   courseInstancePlanGrants: PlanName[];
   enrollmentCount: number;
   enrollmentLimit: number;
+  editable: boolean;
 }
 
 interface InstructorInstanceAdminBillingState {
@@ -44,7 +45,7 @@ export function instructorInstanceAdminBillingState(
     (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
     input.desiredRequiredPlans.includes('compute');
 
-  let studentBillingCanChange = true;
+  let studentBillingCanChange = input.editable;
   const studentBillingDidChange =
     input.initialRequiredPlans.includes('basic') !== input.desiredRequiredPlans.includes('basic');
   let studentBillingAlert: AlertProps | null = null;
@@ -61,7 +62,7 @@ export function instructorInstanceAdminBillingState(
     };
   }
 
-  let computeCanChange = true;
+  let computeCanChange = input.editable;
   const computeDidChange =
     input.initialRequiredPlans.includes('compute') !==
     input.desiredRequiredPlans.includes('compute');
@@ -103,6 +104,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
     enrollmentLimitSource,
     externalGradingQuestionCount,
     workspaceQuestionCount,
+    editable,
     csrfToken,
   } = props;
 
@@ -213,7 +215,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
       </div>
 
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="submit" class="btn btn-primary" ${!editable ? 'disabled' : null}>Save</button>
     </form>
   `;
 }

@@ -15,6 +15,7 @@ export function InstructorCourseInstanceBilling({
   enrollmentLimitSource,
   externalGradingQuestionCount = 0,
   workspaceQuestionCount = 0,
+  editable,
   resLocals,
 }: {
   requiredPlans: PlanName[];
@@ -25,6 +26,7 @@ export function InstructorCourseInstanceBilling({
   enrollmentLimitSource: EnrollmentLimitSource;
   externalGradingQuestionCount: number;
   workspaceQuestionCount: number;
+  editable: boolean;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -41,6 +43,13 @@ export function InstructorCourseInstanceBilling({
           ...resLocals,
         })}
         <main class="container mb-4">
+          ${!editable
+            ? html`
+                <div class="alert alert-warning">
+                  Only course owners can change billing settings.
+                </div>
+              `
+            : null}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
@@ -54,6 +63,7 @@ export function InstructorCourseInstanceBilling({
                 enrollmentLimitSource,
                 externalGradingQuestionCount,
                 workspaceQuestionCount,
+                editable,
                 csrfToken: resLocals.__csrf_token,
               })}
             </div>
