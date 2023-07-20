@@ -576,7 +576,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await courseUtil.getCommitHashAsync(locals.course);
+            const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
             const chunkChanges = await chunks.updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,
