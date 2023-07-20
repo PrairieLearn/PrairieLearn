@@ -88,14 +88,15 @@ export function instructorInstanceAdminBillingState(
   };
 }
 
-export function InstructorInstanceAdminBillingForm(
-  props: InstructorInstanceAdminBillingInput & {
-    enrollmentLimitSource: 'course_instance' | 'institution';
-    externalGradingQuestionCount: number;
-    workspaceQuestionCount: number;
-    csrfToken: string;
-  },
-) {
+export interface InstructorInstanceAdminBillingFormProps
+  extends InstructorInstanceAdminBillingInput {
+  enrollmentLimitSource: 'course_instance' | 'institution';
+  externalGradingQuestionCount: number;
+  workspaceQuestionCount: number;
+  csrfToken: string;
+}
+
+export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdminBillingFormProps) {
   const {
     enrollmentCount,
     enrollmentLimit,

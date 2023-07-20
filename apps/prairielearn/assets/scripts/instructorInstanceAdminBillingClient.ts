@@ -1,12 +1,15 @@
 import morphdom = require('morphdom');
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
-import { InstructorInstanceAdminBillingForm } from '../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.html';
+import {
+  InstructorInstanceAdminBillingForm,
+  InstructorInstanceAdminBillingFormProps,
+} from '../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.html';
 import { type PlanName } from '../../src/ee/lib/billing/plans-types';
 
 onDocumentReady(() => {
   const billingForm = document.querySelector<HTMLFormElement>('.js-billing-form');
-  const initialProps = decodeData('billing-form-data');
+  const initialProps = decodeData<InstructorInstanceAdminBillingFormProps>('billing-form-data');
 
   const studentBillingCheckbox = document.querySelector<HTMLInputElement>('#studentBillingEnabled');
   const computeCheckbox = document.querySelector<HTMLInputElement>('#computeEnabled');
