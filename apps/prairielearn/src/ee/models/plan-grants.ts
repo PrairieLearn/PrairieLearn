@@ -23,7 +23,10 @@ type NewPlanGrant =
   | NewEnrollmentPlanGrant
   | NewUserPlanGrant;
 
-export async function insertPlanGrant(planGrant: NewPlanGrant): Promise<void> {
+export async function insertPlanGrant(
+  planGrant: NewPlanGrant,
+  authn_user_id: string,
+): Promise<void> {
   const newPlanGrant = await queryRow(
     sql.insert_plan_grant,
     {
@@ -37,15 +40,11 @@ export async function insertPlanGrant(planGrant: NewPlanGrant): Promise<void> {
   );
   // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
-    // TODO: pipe this down?
-    authn_user_id: null,
+    authn_user_id,
     table_name: 'plan_grants',
     action: 'insert',
     institution_id: newPlanGrant.institution_id,
     course_instance_id: newPlanGrant.course_instance_id,
-    // TODO: is this the correct usage of `user_id` here? Does this column
-    // represent the user takin an action, or the user being affected by the
-    // action?
     user_id: newPlanGrant.user_id,
     new_state: newPlanGrant,
     row_id: newPlanGrant.id,
@@ -55,6 +54,7 @@ export async function insertPlanGrant(planGrant: NewPlanGrant): Promise<void> {
 export async function updatePlanGrant(
   planGrant: PlanGrant,
   type: EnumPlanGrantType,
+  authn_user_id: string,
 ): Promise<void> {
   const updatedPlanGrant = await queryRow(
     sql.update_plan_grant,
@@ -63,8 +63,7 @@ export async function updatePlanGrant(
   );
   // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
-    // TODO: pipe this down?
-    authn_user_id: null,
+    authn_user_id,
     table_name: 'plan_grants',
     action: 'update',
     column_name: 'type',
@@ -77,7 +76,7 @@ export async function updatePlanGrant(
   });
 }
 
-export async function deletePlanGrant(planGrant: PlanGrant): Promise<void> {
+export async function deletePlanGrant(planGrant: PlanGrant, authn_user_id: string): Promise<void> {
   const deletedPlanGrant = await queryRow(
     sql.delete_plan_grant,
     { id: planGrant.id },
@@ -85,8 +84,7 @@ export async function deletePlanGrant(planGrant: PlanGrant): Promise<void> {
   );
   // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
-    // TODO: pipe this down?
-    authn_user_id: null,
+    authn_user_id,
     table_name: 'plan_grants',
     action: 'delete',
     institution_id: deletedPlanGrant.institution_id,

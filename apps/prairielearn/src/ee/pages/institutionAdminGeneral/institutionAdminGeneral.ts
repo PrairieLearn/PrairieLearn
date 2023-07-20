@@ -84,7 +84,11 @@ router.post(
           });
         }
       }
-      await reconcilePlanGrantsForInstitution(req.params.institution_id, updates);
+      await reconcilePlanGrantsForInstitution(
+        req.params.institution_id,
+        updates,
+        res.locals.authn_user.user_id,
+      );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);
     } else {

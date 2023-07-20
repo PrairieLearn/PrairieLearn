@@ -131,7 +131,11 @@ router.post(
       throw error.make(400, `Compute cannot be ${verb}.`);
     }
 
-    await updateRequiredPlansForCourseInstance(res.locals.course_instance.id, desiredRequiredPlans);
+    await updateRequiredPlansForCourseInstance(
+      res.locals.course_instance.id,
+      desiredRequiredPlans,
+      res.locals.authn_user.user_id,
+    );
     res.redirect(req.originalUrl);
   }),
 );

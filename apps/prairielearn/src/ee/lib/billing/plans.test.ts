@@ -16,15 +16,19 @@ describe('plans', () => {
 
   describe('updatePlanGrantsForInstitution', () => {
     it('persists updates', async () => {
-      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForInstitution(
+        '1',
+        [{ plan: 'compute', grantType: 'invoice' }],
+        '1',
+      );
       let planGrants = await getPlanGrantsForInstitution('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'invoice'));
 
-      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'gift' }]);
+      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'gift' }], '1');
       planGrants = await getPlanGrantsForInstitution('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'gift'));
 
-      await reconcilePlanGrantsForInstitution('1', []);
+      await reconcilePlanGrantsForInstitution('1', [], '1');
       planGrants = await getPlanGrantsForInstitution('1');
       assert.deepEqual(planGrants, []);
     });
@@ -32,15 +36,23 @@ describe('plans', () => {
 
   describe('updatePlanGrantsForCourseInstance', () => {
     it('persists updates', async () => {
-      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForCourseInstance(
+        '1',
+        [{ plan: 'compute', grantType: 'invoice' }],
+        '1',
+      );
       let planGrants = await getPlanGrantsForCourseInstance('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'invoice'));
 
-      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'gift' }]);
+      await reconcilePlanGrantsForCourseInstance(
+        '1',
+        [{ plan: 'compute', grantType: 'gift' }],
+        '1',
+      );
       planGrants = await getPlanGrantsForCourseInstance('1');
       assert.isOk(planGrants.find((pg) => pg.plan_name === 'compute' && pg.type === 'gift'));
 
-      await reconcilePlanGrantsForCourseInstance('1', []);
+      await reconcilePlanGrantsForCourseInstance('1', [], '1');
       planGrants = await getPlanGrantsForCourseInstance('1');
       assert.deepEqual(planGrants, []);
     });
@@ -48,11 +60,11 @@ describe('plans', () => {
 
   describe('updateRequirePlansForCourseInstance', () => {
     it('persists updates', async () => {
-      await updateRequiredPlansForCourseInstance('1', ['compute']);
+      await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
       let requiredPlans = await getRequiredPlansForCourseInstance('1');
       assert.deepEqual(requiredPlans, ['compute']);
 
-      await updateRequiredPlansForCourseInstance('1', []);
+      await updateRequiredPlansForCourseInstance('1', [], '1');
       requiredPlans = await getRequiredPlansForCourseInstance('1');
       assert.deepEqual(requiredPlans, []);
     });

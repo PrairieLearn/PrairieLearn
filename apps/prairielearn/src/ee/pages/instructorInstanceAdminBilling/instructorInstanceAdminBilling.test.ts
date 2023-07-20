@@ -48,7 +48,7 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('shows current state', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-      await updateRequiredPlansForCourseInstance('1', ['basic', 'compute']);
+      await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
       const res = await fetch(pageUrl);
       assert.isTrue(res.ok);
@@ -61,7 +61,7 @@ describe('instructorInstanceAdminBilling', () => {
   it('forbids disabling student billing if enrollment limit exceeded', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
       await updateCourseInstanceEnrollmentLimit(1);
-      await updateRequiredPlansForCourseInstance('1', ['basic', 'compute']);
+      await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
       await enrollRandomUsers('1', 10);
 
       const csrfToken = await getCsrfToken(pageUrl);
@@ -79,7 +79,11 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('forbids enabling compute if already granted to the institution', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-      await reconcilePlanGrantsForInstitution('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForInstitution(
+        '1',
+        [{ plan: 'compute', grantType: 'invoice' }],
+        '1',
+      );
 
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {
@@ -96,7 +100,11 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('forbids enabling compute if already granted to the course instance', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
-      await reconcilePlanGrantsForCourseInstance('1', [{ plan: 'compute', grantType: 'invoice' }]);
+      await reconcilePlanGrantsForCourseInstance(
+        '1',
+        [{ plan: 'compute', grantType: 'invoice' }],
+        '1',
+      );
 
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {

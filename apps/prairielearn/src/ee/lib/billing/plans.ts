@@ -61,6 +61,7 @@ export async function getRequiredPlansForCourseInstance(
 export async function updateRequiredPlansForCourseInstance(
   course_instance_id: string,
   plans: PlanName[],
+  authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
     // TODO: locking?
@@ -69,11 +70,11 @@ export async function updateRequiredPlansForCourseInstance(
     const plansToRemove = existingRequiredPlans.filter((plan) => !plans.includes(plan));
 
     for (const plan of plansToAdd) {
-      await insertCourseInstanceRequiredPlan(course_instance_id, plan);
+      await insertCourseInstanceRequiredPlan(course_instance_id, plan, authn_user_id);
     }
 
     for (const plan of plansToRemove) {
-      await deleteCourseInstanceRequiredPlan(course_instance_id, plan);
+      await deleteCourseInstanceRequiredPlan(course_instance_id, plan, authn_user_id);
     }
   });
 }
@@ -81,17 +82,19 @@ export async function updateRequiredPlansForCourseInstance(
 export async function reconcilePlanGrantsForInstitution(
   institution_id: string,
   plans: DesiredPlan[],
+  authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
     // TODO: address race condition with locking?
     const existingPlanGrants = await getPlanGrantsForInstitution(institution_id);
-    await reconcilePlanGrants({ institution_id }, existingPlanGrants, plans);
+    await reconcilePlanGrants({ institution_id }, existingPlanGrants, plans, authn_user_id);
   });
 }
 
 export async function reconcilePlanGrantsForCourseInstance(
   course_instance_id: string,
   plans: DesiredPlan[],
+  authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
     // TODO: address race condition with locking?
@@ -104,6 +107,7 @@ export async function reconcilePlanGrantsForCourseInstance(
       },
       existingPlanGrants,
       plans,
+      authn_user_id,
     );
   });
 }
@@ -112,6 +116,7 @@ async function reconcilePlanGrants(
   context: PlanGrantContext,
   existingPlanGrants: PlanGrant[],
   desiredPlans: DesiredPlan[],
+  authn_user_id: string,
 ) {
   const newPlans = desiredPlans.filter(
     (plan) => !existingPlanGrants.find((p) => p.plan_name === plan.plan),
@@ -125,11 +130,14 @@ async function reconcilePlanGrants(
   );
 
   for (const plan of newPlans) {
-    await insertPlanGrant({
-      ...context,
-      plan_name: plan.plan,
-      type: plan.grantType,
-    });
+    await insertPlanGrant(
+      {
+        ...context,
+        plan_name: plan.plan,
+        type: plan.grantType,
+      },
+      authn_user_id,
+    );
   }
 
   for (const planGrant of updatedPlanGrants) {
@@ -137,11 +145,11 @@ async function reconcilePlanGrants(
       continue;
     }
 
-    await updatePlanGrant(planGrant.planGrant, planGrant.newType);
+    await updatePlanGrant(planGrant.planGrant, planGrant.newType, authn_user_id);
   }
 
   for (const planGrant of deletedPlanGrants) {
-    await deletePlanGrant(planGrant);
+    await deletePlanGrant(planGrant, authn_user_id);
   }
 }
 
