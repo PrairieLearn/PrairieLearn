@@ -4,14 +4,20 @@ from schemdraw import Drawing
 import schemdraw.elements as elm
 
 def file(data):
-    if data["filename"] == "figure.svg":
-        drawing = Drawing()
-        R1 = str(data["params"]["R1"]) + " r$\Omega$"
-        R2 = str(data["params"]["R2"]) + " r$\Omega$"
-        R3 = str(data["params"]["R3"]) + " r$\Omega$"
-        Vt = str(data["params"]["Vt"]) + " V"
-        if data["params"]["ask"] == "equivalent resistance $R_T$":
-            ## parallel resistors
+    if data["filename"] != "figure.svg":
+        return
+    
+    drawing = Drawing()
+    
+    R1 = str(data["params"]["R1"]) + r" $\Omega$"
+    R2 = str(data["params"]["R2"]) + r" $\Omega$"
+    R3 = str(data["params"]["R3"]) + r" $\Omega$"
+    Vt = str(data["params"]["Vt"]) + " V"
+
+    match data["params"]["whichfig"]:
+        case "R_T": # variant: Find total resistance
+
+            # drawing the circuit using schemdraw
             drawing.push()
             drawing += elm.Line()
             drawing.push()
@@ -28,8 +34,10 @@ def file(data):
             drawing += elm.Line().left()
             drawing.pop()
             drawing += elm.BatteryCell().down().label(Vt,'bottom')
-        else:
-            ## Series resistors
+
+        case "I_T": # variant: Find current
+
+            # drawing the circuit using schemdraw
             drawing.push()
             drawing += elm.Line().right()
             drawing += elm.Line().right()
@@ -40,33 +48,46 @@ def file(data):
             drawing += elm.Resistor().left().label(R1)
             drawing.pop()
             drawing += elm.BatteryCell().down().label(Vt,'bottom')
-        return drawing.get_imagedata()
+
+    return drawing.get_imagedata()
+
 
 def generate(data):
-    ask = ["equivalent resistance $R_T$", "current from the power supply $I_T$"]
-    which = random.choice([0, 1])
-    data["params"]["ask"] = ask[which]
-    label = ["$R_T$", "$I_T$"]
-    data["params"]["lab"] = label[which]
 
+    # Randomly choose Vt, R1, R2, R3
     Vt = random.randint(100, 200)
     data["params"]["Vt"] = Vt
+
     R1 = random.choice(list(range(20, 180, 10)))
     data["params"]["R1"] = R1
+    
     R2 = random.choice(list(range(20, 180, 20)))
     data["params"]["R2"] = R2
+    
     R3 = random.choice(list(range(20, 100, 5)))
     data["params"]["R3"] = R3
-    unit = ["$\\Omega$", "A"]
-    data["params"]["unit"] = unit[which]
+    
+    # Randomly choose variant of the question
+    variant = random.choice([0, 1])
+    match variant:
+        case 0: # Equivalent resistance of 3 parallel resistors
+            data["params"]["ask"] = "equivalent resistance $R_T$"
+            data["params"]["whichfig"] = "R_T"
+            data["params"]["lab"] = "$R_T$"
+            data["params"]["unit"] = r"$\Omega$"
+            
+            # calculate and append the correct answer
+            Rtinv = 1 / R1 + 1 / R2 + 1 / R3
+            Rt = 1 / Rtinv
+            data["correct_answers"]["ans"] = Rt
 
+        case 1: # Current due to 3 resistors and voltage supply
+            data["params"]["ask"] = "current from the power supply $I_T$"
+            data["params"]["whichfig"] = "I_T"
+            data["params"]["lab"] = "$I_T$"
+            data["params"]["unit"] = "$A$"
 
-    if not which: # Equivalent
-        Rtinv = 1 / R1 + 1 / R2 + 1 / R3
-        Rt = 1 / Rtinv
-    else: # Series
-        Rt = R1 + R2 + R3
-
-    It = Vt / Rt
-    ans = [Rt, It]
-    data["correct_answers"]["ans"] = ans[which]
+            # calculate and append the correct answer
+            Rt = R1 + R2 + R3
+            It = Vt / Rt
+            data["correct_answers"]["ans"] = It
