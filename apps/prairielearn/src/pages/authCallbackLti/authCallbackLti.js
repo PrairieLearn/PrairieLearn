@@ -13,6 +13,7 @@ const error = require('@prairielearn/error');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
 const cache = require('../../lib/cache');
+const { shouldSecureCookie } = require('../../lib/cookie');
 
 var timeTolerance = 3000; // seconds
 
@@ -131,7 +132,7 @@ router.post('/', function (req, res, next) {
         res.cookie('pl_authn', pl_authn, {
           maxAge: config.authnCookieMaxAgeMilliseconds,
           httpOnly: true,
-          secure: true,
+          secure: shouldSecureCookie(req),
         });
 
         const params = {
