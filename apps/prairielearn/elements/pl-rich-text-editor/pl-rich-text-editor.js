@@ -31,8 +31,9 @@ window.PLRTE = function (uuid, options) {
 
   let contents = atob(inputElement.val());
   if (contents && renderer) contents = renderer.makeHtml(contents);
+  contents = DOMPurify.sanitize(contents, { SANITIZE_NAMED_PROPS: true });
 
-  quill.setContents(quill.clipboard.convert(DOMPurify.sanitize(contents)));
+  quill.setContents(quill.clipboard.convert(contents));
 
   quill.on('text-change', function (_delta, _oldDelta, _source) {
     let contents = quill.root.innerHTML;
