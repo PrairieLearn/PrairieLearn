@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { insertAuditLog } from '../../lib/audit-log';
+import { insertAuditLog } from '../../models/audit-log';
 import { PlanGrant, PlanGrantSchema, EnumPlanGrantType } from '../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);

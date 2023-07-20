@@ -16,7 +16,7 @@ import {
 import { PlanName } from '../../lib/billing/plans-types';
 import { InstitutionSchema } from '../../../lib/db-types';
 import { flash } from '@prairielearn/flash';
-import { insertAuditLog } from '../../../lib/audit-log';
+import { insertAuditLog } from '../../../models/audit-log';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
