@@ -70,9 +70,8 @@ export function instructorInstanceAdminBillingState(
   if (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) {
     computeCanChange = false;
     computeAlert = {
-      message: computeEnabledByCourseInstance
-        ? 'This course instance already has access to compute features without additional payment.'
-        : 'Courses in your institution already have access to compute features without additional payment.',
+      message:
+        'This course instance already has access to compute features without additional payment.',
       color: 'success',
     };
   }
