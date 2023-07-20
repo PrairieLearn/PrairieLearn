@@ -11,6 +11,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isFalse(state.studentBillingEnabled);
     assert.isTrue(state.studentBillingCanChange);
@@ -26,6 +27,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isTrue(state.computeEnabled);
     assert.isFalse(state.computeCanChange);
@@ -39,6 +41,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: ['compute'],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isTrue(state.computeEnabled);
     assert.isFalse(state.computeCanChange);
@@ -52,6 +55,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isFalse(state.computeEnabled);
     assert.isTrue(state.computeCanChange);
@@ -65,6 +69,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: [],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isFalse(state.computeEnabled);
     assert.isTrue(state.computeCanChange);
@@ -78,6 +83,7 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: ['compute'],
       enrollmentCount: 0,
       enrollmentLimit: 0,
+      editable: true,
     });
     assert.isFalse(state.computeEnabled);
     assert.isTrue(state.computeCanChange);
@@ -91,13 +97,27 @@ describe('instructorInstanceAdminBillingState', () => {
       courseInstancePlanGrants: [],
       enrollmentCount: 100,
       enrollmentLimit: 50,
+      editable: true,
     });
-    // assert.isTrue(state.studentBillingEnabled);
     assert.isFalse(state.studentBillingCanChange);
     assert.isTrue(state.studentBillingDidChange);
     assert.match(
       state.studentBillingAlert?.message ?? '',
       /To disable student billing, first remove excess enrollments./,
     );
+  });
+
+  it('disallows changes when editing is disabled', () => {
+    const state = instructorInstanceAdminBillingState({
+      initialRequiredPlans: [],
+      desiredRequiredPlans: [],
+      institutionPlanGrants: [],
+      courseInstancePlanGrants: [],
+      enrollmentCount: 0,
+      enrollmentLimit: 0,
+      editable: false,
+    });
+    assert.isFalse(state.studentBillingCanChange);
+    assert.isFalse(state.computeCanChange);
   });
 });
