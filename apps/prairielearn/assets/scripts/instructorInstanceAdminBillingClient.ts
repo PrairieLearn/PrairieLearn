@@ -23,7 +23,7 @@ onDocumentReady(() => {
       billingForm,
       InstructorInstanceAdminBillingForm({
         ...initialProps,
-        requiredPlans,
+        desiredRequiredPlans: requiredPlans,
       }).toString(),
     );
   });
