@@ -69,7 +69,6 @@ export async function updateRequiredPlansForCourseInstance(
   authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
-    // TODO: locking?
     const existingRequiredPlans = await getRequiredPlansForCourseInstance(course_instance_id);
     const plansToAdd = plans.filter((plan) => !existingRequiredPlans.includes(plan));
     const plansToRemove = existingRequiredPlans.filter((plan) => !plans.includes(plan));
@@ -90,7 +89,6 @@ export async function reconcilePlanGrantsForInstitution(
   authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
-    // TODO: address race condition with locking?
     const existingPlanGrants = await getPlanGrantsForInstitution(institution_id);
     await reconcilePlanGrants({ institution_id }, existingPlanGrants, plans, authn_user_id);
   });
@@ -102,7 +100,6 @@ export async function reconcilePlanGrantsForCourseInstance(
   authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
-    // TODO: address race condition with locking?
     const institution = await getInstitutionForCourseInstance(course_instance_id);
     const existingPlanGrants = await getPlanGrantsForCourseInstance(course_instance_id);
     await reconcilePlanGrants(
