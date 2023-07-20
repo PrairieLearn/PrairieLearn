@@ -85,3 +85,11 @@ li {
   from{transform: translateY(50px);opacity: 0;}
   to{transform: translateY(0px);opacity: 1;}
 }
+
+#quizzes-card-staff
+{
+  min-height: 100%;
+  background-image: linear-gradient(to bottom, #101761, #71073e);
+  border: white 1px solid;
+  color: white;
+}

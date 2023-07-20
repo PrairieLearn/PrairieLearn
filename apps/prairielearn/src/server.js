@@ -637,6 +637,18 @@ module.exports.initExpress = function () {
     require('./pages/plrHome/plrHome.js'),
   ]);
 
+  // PLR staff page
+
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/plrstaff', [
+    require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'),
+    require('./middlewares/selectOpenIssueCount'),
+    function (req, res, next) {
+      res.locals.navSubPage = 'plrstaff';
+      next();
+    },
+    require('./pages/plrStaff/staff.js'),
+  ]);
+
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id/news_items',

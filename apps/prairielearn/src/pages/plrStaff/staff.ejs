@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <!-- Custom styling -->
+    <%- compiled_stylesheet_tag('PLR.css') %>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="img/favicon/favicon.ico" />
+    <!-- Google Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <!-- Main content -->
+    <main class="container">
+     <div class="row">
+        <!-- First column: Scoreboards -->
+        <div class="col-md-7">
+          <!-- <form action="/join-session" method="post">
+            <button id="join-session-btn" class="btn btn-dark rounded-pill join-session" id="nav-join-session-tab" type="submit" role="tab" aria-controls="nav-join-session" aria-selected="false">
+              Join Live Session
+            </button>
+          </form> -->
+          <a href="/join-session" class="btn btn-dark rounded-pill join-session" id="nav-join-session-tab" role="tab" aria-controls="nav-join-session" aria-selected="false">
+
+            Join Live Session
+          </a>
+          <!-- Tabs to navigate between scoreboards -->
+          <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+              <!-- Tab 1: Live Scoreboard -->
+              <button
+                class="nav-link active scoreboard"
+                id="nav-live-scoreboard-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#nav-live-scoreboard"
+                type="button"
+                role="tab"
+                aria-controls="nav-live-scoreboard"
+                aria-selected="true"
+              >
+                Live Scoreboard
+              </button>
+              <!-- Tab 2: Seasonal Scoreboard -->
+              <button
+                class="nav-link scoreboard"
+                id="nav-seasonal-scoreboard-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#nav-seasonal-scoreboard"
+                type="button"
+                role="tab"
+                aria-controls="nav-seasonal-scoreboard"
+                aria-selected="false"
+              >
+                Seasonal Scoreboard
+              </button>
+              <!-- Tab 3: All-Time Scoreboard -->
+              <button
+                class="nav-link scoreboard"
+                id="nav-all-time-scoreboard-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#nav-all-time-scoreboard"
+                type="button"
+                role="tab"
+                aria-controls="nav-all-time-scoreboard"
+                aria-selected="false"
+              >
+                All-Time Scoreboard
+              </button>
+            </div>
+          </nav>
+          <div class="tab-content" id="nav-tabContent">
+            <!-- Live Scoreboard -->
+
+            <div
+              class="tab-pane fade text-white show active"
+              id="nav-live-scoreboard"
+              role="tabpanel"
+              aria-labelledby="nav-live-scoreboard-tab"
+            >
+              <h3 id="current-user"></h3>
+              <div class="table-responsive">
+                <table class="table table-dark">
+                  <thead>
+                    <tr>
+                      <th scope="col">Rank</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Displayed Badges</th>
+                      <th scope="col">Score</th>
+                      <th scope="col">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Seasonal Scoreboard -->
+            <div
+              class="tab-pane fade text-white"
+              id="nav-seasonal-scoreboard"
+              role="tabpanel"
+              aria-labelledby="nav-seasonal-scoreboard-tab"
+            >
+            <div class="table-responsive">
+              <table class="table table-dark">
+                <thead>
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Displayed Badges</th>
+                    <th scope="col">Total Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">1</th>
+                    <td>Sfaz</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">elderly</span>
+                      <span class="material-symbols-outlined align-bottom">local_fire_department</span>
+                      <span class="material-symbols-outlined align-bottom">sprint</span>
+                    </td>
+                    <td>16,121</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">2</th>
+                    <td>Big Ramon</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">rocket_launch</span>
+                      <span class="material-symbols-outlined align-bottom">trophy</span>
+                    </td>
+                    <td>13,412</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">3</th>
+                    <td>Abdallah</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">savings</span>
+                    </td>
+                    <td>11,902</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">4</th>
+                    <td>Gaod</td>
+                    <td>
+                      <span class="material-symbols-outlined">emoji_people</span>
+                      <span class="material-symbols-outlined">cookie</span>
+                    </td>
+                    <td>11,555</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">5</th>
+                    <td>Louis</td>
+                    <td>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                    </td>
+                    <td>10,948</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">6</th>
+                    <td>Yegor</td>
+                    <td>
+                      <span class="material-symbols-outlined">cookie</span>
+                      <span class="material-symbols-outlined">hotel_class</span>
+                    </td>
+                    <td>10,793</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">7</th>
+                    <td>Sheel</td>
+                    <td>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                      <span class="material-symbols-outlined">workspace_premium</span>
+                      <span class="material-symbols-outlined">psychology</span>
+                    </td>
+                    <td>10,492</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">8</th>
+                    <td>Rylan</td>
+                    <td>
+                      <span class="material-symbols-outlined">school</span>
+                      <span class="material-symbols-outlined">elderly</span>
+                    </td>
+                    <td>10,045</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">9</th>
+                    <td>Charvie</td>
+                    <td>
+                      <span class="material-symbols-outlined">cookie</span>
+                    </td>
+                    <td>9,845</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">10</th>
+                    <td>Kevin</td>
+                    <td>
+                      <span class="material-symbols-outlined">hotel_class</span>
+                    </td>
+                    <td>9,452</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">11</th>
+                    <td>Andrei</td>
+                    <td>
+                      <span class="material-symbols-outlined">elderly</span>
+                      <span class="material-symbols-outlined">self_improvement</span>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                    </td>
+                    <td>8,845</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">12</th>
+                    <td>Adam</td>
+                    <td>
+                      <span class="material-symbols-outlined">psychology</span>
+                      <span class="material-symbols-outlined">school</span>
+                    </td>
+                    <td>8,605</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">13</th>
+                    <td>Nishant</td>
+                    <td>
+                      <span class="material-symbols-outlined">psychology</span>
+                      <span class="material-symbols-outlined">elderly</span>
+                      <span class="material-symbols-outlined">hotel_class</span>
+                    </td>
+                    <td>6,705</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">14</th>
+                    <td>Jimmy</td>
+                    <td>
+                      <span class="material-symbols-outlined">school</span>
+                    </td>
+                    <td>5,304</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">15</th>
+                    <td>LeBron</td>
+                    <td>
+                      <span class="material-symbols-outlined">rocket_launch</span>
+                      <span class="material-symbols-outlined">cookie</span>
+                    </td>
+                    <td>3,311</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            </div>
+            <!-- All-Time Scoreboard -->
+            <div
+              class="tab-pane fade text-white"
+              id="nav-all-time-scoreboard"
+              role="tabpanel"
+              aria-labelledby="nav-all-time-scoreboard-tab"
+            >
+            <div class="table-responsive">
+              <table class="table table-dark">
+                <thead>
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Displayed Badges</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Season</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">1</th>
+                    <td>SE God</td>
+                    <td>
+                      <span class="material-symbols-outlined">elderly</span>
+                      <span class="material-symbols-outlined">self_improvement</span>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                    </td>
+                    <td>99,999</td>
+                    <td>W-2001</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">2</th>
+                    <td>Your TA</td>
+                    <td>
+                      <span class="material-symbols-outlined">psychology</span>
+                      <span class="material-symbols-outlined">school</span>
+                    </td>
+                    <td>88,888</td>
+                    <td>S-2023</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">3</th>
+                    <td>Sfaz</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">elderly</span>
+                      <span class="material-symbols-outlined align-bottom">local_fire_department</span>
+                      <span class="material-symbols-outlined align-bottom">sprint</span>
+                    </td>
+                    <td>16,121</td>
+                    <td>S-2023</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">4</th>
+                    <td>Big Ramon</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">rocket_launch</span>
+                      <span class="material-symbols-outlined align-bottom">trophy</span>
+                    </td>
+                    <td>13,412</td>
+                    <td>W-2022</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">5</th>
+                    <td>Abdallah</td>
+                    <td>
+                      <span class="material-symbols-outlined align-bottom">savings</span>
+                    </td>
+                    <td>11,902</td>
+                    <td>W-2021</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">6</th>
+                    <td>Gaod</td>
+                    <td>
+                      <span class="material-symbols-outlined">emoji_people</span>
+                      <span class="material-symbols-outlined">cookie</span>
+                    </td>
+                    <td>11,555</td>
+                    <td>S-2020</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">7</th>
+                    <td>Louis</td>
+                    <td>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                    </td>
+                    <td>10,948</td>
+                    <td>W-2023</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">8</th>
+                    <td>Yegor</td>
+                    <td>
+                      <span class="material-symbols-outlined">cookie</span>
+                      <span class="material-symbols-outlined">hotel_class</span>
+                    </td>
+                    <td>10,793</td>
+                    <td>W-2019</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">9</th>
+                    <td>Sheel</td>
+                    <td>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                      <span class="material-symbols-outlined">workspace_premium</span>
+                      <span class="material-symbols-outlined">psychology</span>
+                    </td>
+                    <td>10,492</td>
+                    <td>W-2019</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">10</th>
+                    <td>Rylan</td>
+                    <td>
+                      <span class="material-symbols-outlined">school</span>
+                      <span class="material-symbols-outlined">elderly</span>
+                    </td>
+                    <td>10,045</td>
+                    <td>S-2020</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">11</th>
+                    <td>Charvie</td>
+                    <td>
+                      <span class="material-symbols-outlined">cookie</span>
+                    </td>
+                    <td>9,845</td>
+                    <td>S-2018</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">12</th>
+                    <td>Kevin</td>
+                    <td>
+                      <span class="material-symbols-outlined">hotel_class</span>
+                    </td>
+                    <td>9,452</td>
+                    <td>W-2020</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">13</th>
+                    <td>Andrei</td>
+                    <td>
+                      <span class="material-symbols-outlined">elderly</span>
+                      <span class="material-symbols-outlined">self_improvement</span>
+                      <span class="material-symbols-outlined">heart_broken</span>
+                    </td>
+                    <td>8,845</td>
+                    <td>W-2017</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">14</th>
+                    <td>Adam</td>
+                    <td>
+                      <span class="material-symbols-outlined">psychology</span>
+                      <span class="material-symbols-outlined">school</span>
+                    </td>
+                    <td>8,605</td>
+                    <td>S-2022</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">14</th>
+                    <td>Nishant</td>
+                    <td>
+                      <span class="material-symbols-outlined">rocket_launch</span>
+                      <span class="material-symbols-outlined">school</span>
+                      <span class="material-symbols-outlined">elderly</span>
+                    </td>
+                    <td>7,321</td>
+                    <td>S-2021</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">14</th>
+                    <td>LeBron</td>
+                    <td>
+                      <span class="material-symbols-outlined">school</span>
+                    </td>
+                    <td>6,312</td>
+                    <td>W-2018</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            </div>
+          </div>
+        </div>
+        <!-- Second column: Profile and Cards -->
+        <!-- Second column: Profile and Cards -->
+        <div class="maincardcontainer col-md-5 mt-3">
+            <!-- Quizzes -->
+            <div class="card container p-3 mt-3" id="quizzes-card-staff">
+            <h5 id="title">List of Available Quizzes</h5>
+            <div class="row">
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">SQL Queries</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">Relational Algebra</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">ER Diagrams</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">Database Theory</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">Triggers</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">ACID Concepts</button>
+                </div>
+                <div class="col-md-12">
+                    <button class="rounded-pill quiz">Database Security</button>
+                </div>
+            </div>
+         </div>
+        </div>
+        
+      </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+    function formatTime(time) 
+    {
+        const date = new Date(time);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+    </script>
+
+<script>
+  function formatTime(time) {
+    const date = new Date(time);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  }
+</script>
+
+<script>
+  // Join session
+  const joinSessionBtn = document.getElementById('join-session-btn');
+  joinSessionBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    window.location.href = '/join-session';
+    //more work to be done here
+  });
+</script>
+<script>
+  // // Establish a WebSocket connection
+  // const socket = io();
+  const userId = 1; // Get the user ID from the server
+  const studentId = 1; // Get the student ID from the server
+  // socket.emit('user connected', userId, studentId); // Send user ID to the server
+  // // Receive the list of connected users from the server
+  // socket.on('connected users', (users) => {
+  //   const currentUserElement = document.getElementById('current-user');
+  //   currentUserElement.textContent = `Connected users: ${users.length}`;
+  // });
+  // // Receive score updates from the server
+  // socket.on('score update', (data) => {
+  //   const { scoreData } = data;
+  //   console.log(data);
+  //   updateScores(scoreData);
+  // });
+  // Function to update the scores in the table
+  function updateScores(scores) {
+    const tableBody = document.querySelector('tbody');
+    tableBody.innerHTML = '';
+    if (scores.length === 0) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.setAttribute('colspan', '5');
+      cell.textContent = 'No live scores available.';
+      row.appendChild(cell);
+      tableBody.appendChild(row);
+    }
+    scores.forEach((score, index) => {
+      const row = document.createElement('tr');
+      const rankCell = document.createElement('th');
+      const nameCell = document.createElement('td');
+      const achievementCell = document.createElement('td');
+      const scoreCell = document.createElement('td');
+      const timeCell = document.createElement('td');
+      rankCell.setAttribute('scope', 'row');
+      rankCell.textContent = index + 1;
+      nameCell.textContent = score.name;
+      achievementCell.textContent = score.achievements;
+      scoreCell.textContent = score.score;
+      var time = score.time;
+      var dateFormatTime = new Date(time);
+      timeCell.textContent =
+        dateFormatTime.getHours() +
+        ':' +
+        dateFormatTime.getMinutes() +
+        ':' +
+        dateFormatTime.getSeconds();
+      row.appendChild(rankCell);
+      row.appendChild(nameCell);
+      row.appendChild(achievementCell);
+      row.appendChild(scoreCell);
+      row.appendChild(timeCell);
+      tableBody.appendChild(row);
+    });
+  }
+    </script>
+  </body>
+</html>

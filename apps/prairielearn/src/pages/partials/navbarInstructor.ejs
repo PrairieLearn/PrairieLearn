@@ -23,6 +23,7 @@
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "issues") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/questions">Questions</a></li>
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
+    <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "plrstaff") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/plrstaff">PLR Staff</a></li>
 
     <% if (locals.course_instance) { %>
 
