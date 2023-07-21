@@ -1,6 +1,17 @@
 /* eslint-env browser,jquery */
 /* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify */
 
+const rtePurify = DOMPurify();
+const rtePurifyConfig = { SANITIZE_NAMED_PROPS: true };
+
+rtePurify.addHook('uponSanitizeElement', (node, data) => {
+  if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
+    // Quill formulas don't need their SVG content in the sanitized version,
+    // as they are re-rendered upon loading.
+    node.innerText = `$${node.dataset.value}$`;
+  }
+});
+
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
   if (options.readOnly) {
@@ -27,24 +38,16 @@ window.PLRTE = function (uuid, options) {
     });
   }
 
-  DOMPurify.addHook('uponSanitizeElement', (node, data) => {
-    if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
-      // Quill formulas don't need their SVG content in the sanitized version,
-      // as they are re-rendered upon loading.
-      node.innerText = `$${node.dataset.value}$`;
-    }
-  });
-
   if (options.markdownShortcuts) new QuillMarkdown(quill, {});
 
   let contents = atob(inputElement.val());
   if (contents && renderer) contents = renderer.makeHtml(contents);
-  contents = DOMPurify.sanitize(contents, { SANITIZE_NAMED_PROPS: true });
+  contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
   quill.setContents(quill.clipboard.convert(contents));
 
   quill.on('text-change', function () {
-    let contents = DOMPurify.sanitize(quill.root.innerHTML);
+    let contents = rtePurify.sanitize(quill.root.innerHTML, rtePurifyConfig);
     if (contents && renderer) contents = renderer.makeMarkdown(contents);
     inputElement.val(
       btoa(
