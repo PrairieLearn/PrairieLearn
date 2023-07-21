@@ -39,7 +39,7 @@
       });
     }
 
-    if (options.markdownShortcuts) new QuillMarkdown(quill, {});
+    if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     let contents = atob(inputElement.val());
     if (contents && renderer) contents = renderer.makeHtml(contents);
