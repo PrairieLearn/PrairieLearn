@@ -33,10 +33,7 @@ module.exports = function (req, res, next) {
           allow_example_course_override: true,
           ip: req.ip,
           req_date: res.locals.req_date,
-          req_mode:
-            config.authType === 'none' && req.cookies.pl_test_mode
-              ? req.cookies.pl_test_mode
-              : null,
+          req_mode: config.devMode && req.cookies.pl_test_mode ? req.cookies.pl_test_mode : null,
           req_course_role: null,
           req_course_instance_role: null,
         };
