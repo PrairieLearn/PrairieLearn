@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS PLR_students (
     --user_id BIGINT NOT NULL,
     display_name VARCHAR(256) NOT NULL,
     color VARCHAR(256),
-    course_instance_id bigint,
+    course_instance_id BIGINT,
     live_score INT DEFAULT 0
     -- FOREIGN KEY (user_id) REFERENCES users (user_id),
     -- CONSTRAINT unique_student_user UNIQUE (user_id)
