@@ -27,6 +27,14 @@ window.PLRTE = function (uuid, options) {
     });
   }
 
+  DOMPurify.addHook('uponSanitizeElement', (node, data) => {
+    if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
+      // Quill formulas don't need their SVG content in the sanitized version,
+      // as they are re-rendered upon loading.
+      node.innerText = '';
+    }
+  });
+
   if (options.markdownShortcuts) new QuillMarkdown(quill, {});
 
   let contents = atob(inputElement.val());
@@ -35,8 +43,8 @@ window.PLRTE = function (uuid, options) {
 
   quill.setContents(quill.clipboard.convert(contents));
 
-  quill.on('text-change', function (_delta, _oldDelta, _source) {
-    let contents = quill.root.innerHTML;
+  quill.on('text-change', function () {
+    let contents = DOMPurify.sanitize(quill.root.innerHTML);
     if (contents && renderer) contents = renderer.makeMarkdown(contents);
     inputElement.val(
       btoa(
