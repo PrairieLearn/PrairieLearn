@@ -12,10 +12,10 @@ body {
 }
 /* Identical as above, but with flipped gradient direction */
 #quizzes-card {
-   background-image: linear-gradient(to bottom, #101761, #71073e);
-   border: white 1px solid;
-   color: white;
- }
+  background-image: linear-gradient(to bottom, #101761, #71073e);
+  border: white 1px solid;
+  color: white;
+}
 /* Row for displaying the student's currently displayed badges */
 #badge-display {
   border-radius: 5px;
@@ -72,22 +72,53 @@ li {
   font-size: 1.4em;
 }
 
-.scoreboard, .scoreboard:hover {
+.scoreboard,
+.scoreboard:hover {
   color: white;
 }
 
 .table-responsive {
   overflow-y: scroll;
   height: 670px;
-  animation: moving .3s ease;
+  animation: moving 0.3s ease;
 }
-@keyframes moving{
-  from{transform: translateY(50px);opacity: 0;}
-  to{transform: translateY(0px);opacity: 1;}
+.nav-tabs {
+  flex-wrap: nowrap;
+}
+@keyframes moving {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+@media (max-width: 700px) {
+  .col-md-5 {
+    width: 100%;
+  }
+}
+@media (max-width: 1000px) {
+  .col-md-6 {
+    font-size: 13px;
+  }
+}
+::-webkit-scrollbar {
+  width: 12px;
 }
 
-#quizzes-card-staff
-{
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgb(49, 47, 47);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: #000000;
+  -webkit-box-shadow: inset 0 0 6px rgba(49, 47, 47);
+}
+#quizzes-card-staff {
   min-height: 100%;
   background-image: linear-gradient(to bottom, #101761, #71073e);
   border: white 1px solid;
