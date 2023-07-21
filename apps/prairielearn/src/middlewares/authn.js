@@ -72,7 +72,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   //
   // If the user clicks "Log out" in dev mode, we'll set a special cookie to
   // prevent this automatic authentication. The user will get bounced to the
-  // login page like they would in production. Then can then use the "bypass"
+  // login page like they would in production. They can then use the "bypass"
   // authentication option on the login page to log in as the dev user.
   // See `pages/authLoginDev` for more details.
   if (config.devMode && !req.cookies.pl_disable_auto_authn && !req.cookies.pl_authn) {
