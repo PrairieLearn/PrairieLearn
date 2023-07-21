@@ -4,6 +4,7 @@ const sqldb = require('@prairielearn/postgres');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
+const { shouldSecureCookie } = require('../lib/cookie');
 const { InstitutionSchema, UserSchema } = require('./db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -66,7 +67,7 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
-      secure: true,
+      secure: shouldSecureCookie(req),
     });
   }
 
