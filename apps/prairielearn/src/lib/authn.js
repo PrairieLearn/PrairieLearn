@@ -69,6 +69,10 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
       httpOnly: true,
       secure: shouldSecureCookie(req),
     });
+
+    // After explicitly authenticating, clear the cookie that disables
+    // automatic authentication.
+    res.clearCookie('pl_disable_auto_authn');
   }
 
   if (options.redirect) {
