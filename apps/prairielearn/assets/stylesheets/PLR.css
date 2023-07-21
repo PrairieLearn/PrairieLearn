@@ -11,7 +11,7 @@ body {
   color: white;
 }
 /* Identical as above, but with flipped gradient direction */
-#quizzes-card {
+#statistics-card {
   background-image: linear-gradient(to bottom, #101761, #71073e);
   border: white 1px solid;
   color: white;

@@ -82,16 +82,17 @@
             </div>
           </nav>
           <div class="tab-content" id="nav-tabContent">
-            <!-- Live Scoreboard -->
+            <!-- TAB 1: Live Scoreboard -->
             <%- include('../partials/plr/liveScoreboard.ejs'); %>
-            <!-- Seasonal Scoreboard -->
+            <!-- TAB 2: Seasonal Scoreboard -->
             <%- include('../partials/plr/seasonalScoreboard.ejs'); %>
-            <!-- All-Time Scoreboard -->
+            <!-- TAB 3: All-Time Scoreboard -->
             <%- include('../partials/plr/allTimeScoreboard.ejs'); %>
           </div>
-        </div>
-        <!-- Second column: Profile and Cards -->
+        </div> <!-- End first column... -->
+        <!-- Second column: Profile Card, and Statistics Card -->
         <div class="maincardcontainer col-md-5 mt-3">
+          <!-- Profile Card -->
           <div class="card container p-3" id="profile-card">
             <!-- Row 1: Include profile icon, name, and rank in the semester -->
             <div class="row">
@@ -110,9 +111,9 @@
             </div>
             <!-- Row 3: Achievements -->
           </div>
-          <!-- Quizzes -->
-          <div class="card container p-3 mt-3" id="quizzes-card">
-            <h5 id="title">List of Available Quizzes</h5>
+          <!-- Statistics Card -->
+          <div class="card container p-3 mt-3" id="statistics-card">
+            <h5 id="title">Statistics</h5>
             <div class="row">
               <div class="col-md-6">
                 <button class="rounded-pill quiz">SQL Queries</button>
