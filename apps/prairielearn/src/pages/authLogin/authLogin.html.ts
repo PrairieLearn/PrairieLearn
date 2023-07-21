@@ -124,7 +124,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                     ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
                     <hr />
                   `
-                : null}
+                : ''}
               <div class="login-methods">
                 ${config.hasShib && !config.hideShibLogin
                   ? html`
@@ -139,7 +139,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">${config.shibLinkText}</span>
                       </a>
                     `
-                  : null}
+                  : ''}
                 ${config.hasOauth
                   ? html`
                       <a
@@ -151,7 +151,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">Sign in with Google</span>
                       </a>
                     `
-                  : null}
+                  : ''}
                 ${config.hasAzure && isEnterprise()
                   ? html`
                       <a
@@ -163,7 +163,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">Sign in with Microsoft</span>
                       </a>
                     `
-                  : null}
+                  : ''}
               </div>
               ${institutionAuthnProviders?.length
                 ? html`
@@ -178,7 +178,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                       )}
                     </div>
                   `
-                : null}
+                : ''}
             </div>
           </div>
         </main>
