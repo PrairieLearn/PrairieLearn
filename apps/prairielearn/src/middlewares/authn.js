@@ -66,7 +66,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   // Allow auth to be bypassed for local dev mode; also used for tests.
   // See `pages/authLoginDev` for cookie-based authentication in dev mode.
-  if (config.authType === 'none') {
+  if (config.devMode) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
