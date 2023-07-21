@@ -116,30 +116,41 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
     computeAlert,
   } = instructorInstanceAdminBillingState(props);
 
-  const enrollmentLimitText = studentBillingEnabled ? '∞' : enrollmentLimit;
-  const enrollmentLimitPercentage = studentBillingEnabled
-    ? 0
-    : Math.max(0, Math.min(100, (enrollmentCount / enrollmentLimit) * 100)).toFixed(2);
+  const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
+
+  // Make the colored portion of the progress bar at least 2% wide at all
+  // times to ensure that it's not just a gray box.
+  const enrollmentLimitProgressBarPercentage = Math.max(2, enrollmentLimitPercentage);
+  const enrollmentLimitProgressBarColor = enrollmentLimitExceeded
+    ? 'bg-danger'
+    : enrollmentLimitPercentage > 90
+    ? 'bg-warning'
+    : 'bg-primary';
 
   return html`
     <form method="POST" class="js-billing-form">
       ${EncodedData(props, 'billing-form-data')}
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
-        <div class="progress">
+        <div class="d-flex flex-row align-items-center">
+          <span class="mr-2">
+            ${formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
+          </span>
           <div
-            class="progress-bar ${!studentBillingEnabled && enrollmentLimitExceeded
-              ? 'bg-danger'
-              : null}"
-            role="progressbar"
-            style="width: ${enrollmentLimitPercentage}%"
-            aria-valuenow="${enrollmentLimitPercentage}"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          ></div>
+            class="progress flex-grow-1 ${studentBillingEnabled ? 'd-none' : ''}"
+            style="max-width: 100px"
+          >
+            <div
+              class="progress-bar ${enrollmentLimitProgressBarColor}"
+              role="progressbar"
+              style="width: ${enrollmentLimitProgressBarPercentage}%"
+              aria-valuenow="${enrollmentCount}"
+              aria-valuemin="0"
+              aria-valuemax="${enrollmentLimit}"
+            ></div>
+          </div>
         </div>
-        <div>${enrollmentCount} / ${enrollmentLimitText} enrollments</div>
         <div class="small text-muted">
           ${enrollmentLimitExplanation({
             studentBillingEnabled,
@@ -246,4 +257,17 @@ function enrollmentLimitExplanation({
 
 function pluralizeQuestionCount(count: number) {
   return count === 1 ? `${count} question` : `${count} questions`;
+}
+
+function formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled) {
+  if (studentBillingEnabled) {
+    const pluralizedEnrollments = enrollmentCount === 1 ? 'enrollment' : 'enrollments';
+
+    // Student billing doesn't have a limit, so don't show it.
+    return `${enrollmentCount} ${pluralizedEnrollments}`;
+  } else {
+    const pluralizedEnrollments = enrollmentLimit === 1 ? 'enrollment' : 'enrollments';
+
+    return `${enrollmentCount} / ${enrollmentLimit} ${pluralizedEnrollments}`;
+  }
 }
