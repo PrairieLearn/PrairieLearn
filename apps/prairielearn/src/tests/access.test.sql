@@ -6,12 +6,6 @@ FROM
 WHERE
   u.uid = 'student@illinois.edu';
 
--- BLOCK insert_enrollment
-INSERT INTO
-  enrollments (user_id, course_instance_id)
-VALUES
-  ($user_id, 1);
-
 -- BLOCK select_e1
 SELECT
   a.id

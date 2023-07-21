@@ -6,6 +6,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+const { insertEnrollment } = require('../../models/enrollment');
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -53,7 +54,7 @@ describe('effective user', function () {
       'Editor',
       2,
     ]);
-    await sqldb.queryAsync(sql.insert_enrollment, {
+    await insertEnrollment({
       user_id: 4,
       course_instance_id: 1,
     });
