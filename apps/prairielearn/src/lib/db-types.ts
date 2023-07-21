@@ -199,6 +199,7 @@ export const AuditLogSchema = z.object({
   column_name: z.string().nullable(),
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
+  enrollment_id: IdSchema.nullable(),
   date: z.date().nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,

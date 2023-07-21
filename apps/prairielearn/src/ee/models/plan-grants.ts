@@ -40,13 +40,13 @@ export async function insertPlanGrant(
     },
     PlanGrantSchema,
   );
-  // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
     action: 'insert',
     institution_id: newPlanGrant.institution_id,
     course_instance_id: newPlanGrant.course_instance_id,
+    enrollment_id: newPlanGrant.enrollment_id,
     user_id: newPlanGrant.user_id,
     new_state: newPlanGrant,
     row_id: newPlanGrant.id,
@@ -63,7 +63,6 @@ export async function updatePlanGrant(
     { id: planGrant.id, type },
     PlanGrantSchema,
   );
-  // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
@@ -71,6 +70,7 @@ export async function updatePlanGrant(
     column_name: 'type',
     institution_id: updatedPlanGrant.institution_id,
     course_instance_id: updatedPlanGrant.course_instance_id,
+    enrollment_id: updatedPlanGrant.enrollment_id,
     user_id: updatedPlanGrant.user_id,
     old_state: planGrant,
     new_state: updatedPlanGrant,
@@ -84,13 +84,13 @@ export async function deletePlanGrant(planGrant: PlanGrant, authn_user_id: strin
     { id: planGrant.id },
     PlanGrantSchema,
   );
-  // TODO: this doesn't yet associate plan grants with enrollments.
   await insertAuditLog({
     authn_user_id,
     table_name: 'plan_grants',
     action: 'delete',
     institution_id: deletedPlanGrant.institution_id,
     course_instance_id: deletedPlanGrant.course_instance_id,
+    enrollment_id: deletedPlanGrant.enrollment_id,
     user_id: deletedPlanGrant.user_id,
     old_state: deletedPlanGrant,
     row_id: deletedPlanGrant.id,
