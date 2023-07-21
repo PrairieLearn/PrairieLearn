@@ -142,28 +142,38 @@ module.exports = {
    * @param {String} filename
    * @param {Object} variant - The variant.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, fileData) function.
    */
-  getFile(filename, variant, question, course, authn_user_id, callback) {
-    questionServers.getModule(question.type, (err, questionModule) => {
-      if (ERR(err, callback)) return;
-      questionModule.file(filename, variant, question, course, (err, courseIssues, fileData) => {
+  getFile(filename, variant, question, variant_course, authn_user_id, callback) {
+    module.exports.getQuestionCourse(question, variant_course).then((question_course) => {
+      questionServers.getModule(question.type, (err, questionModule) => {
         if (ERR(err, callback)) return;
-
-        const studentMessage = 'Error creating file: ' + filename;
-        const courseData = { variant, question, course };
-        module.exports._writeCourseIssues(
-          courseIssues,
+        // FIXME: this function call won't work is questionModule is not freeform
+        questionModule.file(
+          filename,
           variant,
-          authn_user_id,
-          studentMessage,
-          courseData,
-          (err) => {
+          question,
+          variant_course,
+          question_course,
+          (err, courseIssues, fileData) => {
             if (ERR(err, callback)) return;
 
-            return callback(null, fileData);
+            const studentMessage = 'Error creating file: ' + filename;
+            const courseData = { variant, question, course: variant_course };
+            module.exports._writeCourseIssues(
+              courseIssues,
+              variant,
+              authn_user_id,
+              studentMessage,
+              courseData,
+              (err) => {
+                if (ERR(err, callback)) return;
+
+                return callback(null, fileData);
+              },
+            );
           },
         );
       });
@@ -1430,7 +1440,7 @@ module.exports = {
     if (variant.workspace_id) {
       urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
     }
-    console.log(urls);
+
     return urls;
   },
 
@@ -1617,8 +1627,6 @@ module.exports = {
         },
         (callback) => {
           const { urlPrefix, variant, question, instance_question, assessment } = locals;
-          // console.log(locals);
-
           const urls = module.exports._buildQuestionUrls(
             urlPrefix,
             variant,
