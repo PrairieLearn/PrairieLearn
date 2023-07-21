@@ -31,7 +31,7 @@ window.PLRTE = function (uuid, options) {
     if (data.tagName === 'span' && node.classList.contains('ql-formula')) {
       // Quill formulas don't need their SVG content in the sanitized version,
       // as they are re-rendered upon loading.
-      node.innerText = '';
+      node.innerText = `$${node.dataset.value}$`;
     }
   });
 
