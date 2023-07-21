@@ -5,7 +5,14 @@
     "options": {
         "useNewQuestionRenderer": true
     },
-    "assessmentSets": [],
+    "assessmentSets": [
+        {
+            "abbreviation": "LV",
+            "name": "Live Assessment",
+            "heading": "Live Assessments",
+            "color": "red3"
+        }
+    ],
     "assessmentModules": [
         {"name": "Module1", "heading": "Module 1"},
         {"name": "Module2", "heading": "Module 2"},

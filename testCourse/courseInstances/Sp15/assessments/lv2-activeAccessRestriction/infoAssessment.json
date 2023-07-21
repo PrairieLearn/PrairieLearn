@@ -2,8 +2,8 @@
     "uuid": "1f7b004e-1431-48ba-8bac-ca5c14a80cfb",
     "type": "Homework",
     "title": "Homework to test Active Rule",
-    "set": "Homework",
-    "number": "8",
+    "set": "Live Assessment",
+    "number": "2",
     "allowAccess": [
         {
             "startDate": "2020-01-01T00:00:01Z",
