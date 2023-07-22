@@ -1,3 +1,6 @@
+import { checkPlanGrants } from '../ee/middlewares/checkPlanGrants';
+import { isEnterprise } from '../lib/license';
+
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -104,6 +107,20 @@ module.exports = function (req, res, next) {
         }
 
         debug('authn user is authorized');
+      },
+      // TODO: how do we account for user overrides when checking plan grants?
+      async () => {
+        console.log('auth...');
+        // If this is an enterprise instance, check that any required plan
+        // grants are present.
+        if (isEnterprise()) {
+          console.log('checking plan grants');
+          const hasPlanGrants = await checkPlanGrants(req, res);
+          if (!hasPlanGrants) {
+            // TODO: render pretty page that prompts students to subscribe.
+            throw error.make(403, 'Access denied (TODO implement plan grant page)');
+          }
+        }
       },
     ],
     (err) => {

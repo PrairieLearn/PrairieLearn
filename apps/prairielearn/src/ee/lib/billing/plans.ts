@@ -40,17 +40,37 @@ type PlanGrantContext =
   | UserPlanGrantContext;
 
 export async function getPlanGrantsForInstitution(institution_id: string): Promise<PlanGrant[]> {
-  return queryRows(sql.select_plan_grants_for_institution, { institution_id }, PlanGrantSchema);
+  return await getPlanGrantsForContext({ institution_id });
 }
 
-export async function getPlanGrantsForCourseInstance(
-  course_instance_id: string,
-): Promise<PlanGrant[]> {
-  return queryRows(
-    sql.select_plan_grants_for_course_instance,
-    { course_instance_id },
+export async function getPlanGrantsForCourseInstance({
+  institution_id,
+  course_instance_id,
+}: {
+  institution_id: string;
+  course_instance_id: string;
+}): Promise<PlanGrant[]> {
+  return await getPlanGrantsForContext({ institution_id, course_instance_id });
+}
+
+// TODO: needs a better type for the argument? We might have both an enrollment context and a user context.
+export async function getPlanGrantsForContext(context: PlanGrantContext): Promise<PlanGrant[]> {
+  return await queryRows(
+    sql.select_plan_grants_for_context,
+    {
+      institution_id: context.institution_id ?? null,
+      course_instance_id: context.course_instance_id ?? null,
+      enrollment_id: context.enrollment_id ?? null,
+      user_id: context.user_id ?? null,
+    },
     PlanGrantSchema,
   );
+}
+
+export function getPlanNamesFromPlanGrants(planGrants: PlanGrant[]): PlanName[] {
+  const planNames = new Set<PlanName>();
+  planGrants.forEach((planGrant) => planNames.add(planGrant.plan_name));
+  return Array.from(planNames);
 }
 
 export async function getRequiredPlansForCourseInstance(
@@ -101,7 +121,10 @@ export async function reconcilePlanGrantsForCourseInstance(
 ) {
   await runInTransactionAsync(async () => {
     const institution = await getInstitutionForCourseInstance(course_instance_id);
-    const existingPlanGrants = await getPlanGrantsForCourseInstance(course_instance_id);
+    const existingPlanGrants = await getPlanGrantsForCourseInstance({
+      institution_id: institution.id,
+      course_instance_id,
+    });
     await reconcilePlanGrants(
       {
         institution_id: institution.id,
@@ -153,6 +176,11 @@ async function reconcilePlanGrants(
   for (const planGrant of deletedPlanGrants) {
     await deletePlanGrant(planGrant, authn_user_id);
   }
+}
+
+export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], requiredPlans: PlanName[]) {
+  const planNames = getPlanNamesFromPlanGrants(planGrants);
+  return requiredPlans.every((requiredPlan) => planNames.includes(requiredPlan));
 }
 
 async function getInstitutionForCourseInstance(course_instance_id: string): Promise<Institution> {
