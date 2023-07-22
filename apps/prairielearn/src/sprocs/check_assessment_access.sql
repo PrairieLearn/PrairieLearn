@@ -26,28 +26,71 @@ DECLARE
     active_access_rule_id bigint;
     next_active_start_date TIMESTAMP WITH TIME ZONE;
     next_active_credit integer;
+    credit_from_override integer;
+    end_date_from_override TIMESTAMP WITH TIME ZONE;
+
 BEGIN
+    -- Check if the user has an entry in the assessment_access_policies table for this assessment_id.
+    -- If yes, get the end_date from the assessment_access_policies table, otherwise, use the end_date from the assessment_access_rules table.
+    SELECT end_date , credit
+    INTO end_date_from_override , credit_from_override
+    FROM assessment_access_policies
+    WHERE assessment_id = check_assessment_access.assessment_id
+        AND (student_uid = check_assessment_access.uid)
+        AND start_date <= check_assessment_access.date
+        AND end_date >= check_assessment_access.date
+    ORDER BY end_date DESC
+    LIMIT 1;
+
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
         caar.exam_access_end,
-        aar.credit,
+        CASE
+            WHEN end_date_from_override IS NOT NULL THEN end_date_from_override
+            ELSE aar.end_date
+        END AS end_date,
+        -- aar.credit,
+        CASE
+            WHEN credit_from_override IS NOT NULL THEN credit_from_override
+            ELSE aar.credit
+        END AS credit,
+        -- CASE
+        --     WHEN aar.credit > 0 AND aar.active THEN
+        --         aar.credit::text || '%'
+        --         || (CASE
+        --                 WHEN aar.end_date IS NOT NULL
+        --                 THEN ' until ' || format_date_short(aar.end_date, display_timezone)
+        --                 ELSE ''
+        --             END)
+        --     ELSE 'None'
+        -- END AS credit_date_string,
         CASE
             WHEN aar.credit > 0 AND aar.active THEN
-                aar.credit::text || '%'
+                (CASE
+                    WHEN credit_from_override IS NOT NULL THEN credit_from_override::text || '%'
+                    ELSE aar.credit::text || '%'
+                END)
                 || (CASE
-                        WHEN aar.end_date IS NOT NULL
-                        THEN ' until ' || format_date_short(aar.end_date, display_timezone)
-                        ELSE ''
+                        WHEN end_date_from_override IS NOT NULL
+                        THEN ' until ' || format_date_short(end_date_from_override, display_timezone)
+                        ELSE ' until ' || format_date_short(aar.end_date, display_timezone)
                     END)
             ELSE 'None'
         END AS credit_date_string,
         -- If timer hits 0:00 at end_date, exam might end after end_date (overdue submission).
         -- Resolve race condition by subtracting 31 sec from end_date.
         -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
+        -- CASE WHEN aar.time_limit_min IS NULL THEN NULL
+        --      WHEN aar.mode = 'Exam' THEN NULL
+        --      ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
+        -- END AS time_limit_min,
         CASE WHEN aar.time_limit_min IS NULL THEN NULL
              WHEN aar.mode = 'Exam' THEN NULL
-             ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
+             ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', CASE
+                 WHEN end_date_from_override IS NOT NULL THEN end_date_from_override
+                 ELSE aar.end_date
+             END - now() - INTERVAL '31 seconds') / 60)::integer
         END AS time_limit_min,
         aar.password,
         aar.mode,
