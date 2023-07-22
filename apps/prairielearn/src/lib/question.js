@@ -1411,7 +1411,11 @@ module.exports = {
       // FIXME: broken?
       urls.calculationQuestionGeneratedFileUrl = questionUrl + 'generatedFilesQuestion';
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      if (variant.course_id === question.course_id) {
+        urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      } else {
+        urls.clientFilesCourseUrl = `/pl/course/${question.course_id}/clientFilesCourse`;
+      }
       urls.clientFilesQuestionGeneratedFileUrl =
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
@@ -1431,7 +1435,11 @@ module.exports = {
       urls.calculationQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      if (variant.course_id === question.course_id) {
+        urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      } else {
+        urls.clientFilesCourseUrl = `/pl/course/${question.course_id}/clientFilesCourse`;
+      }
       urls.clientFilesQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
@@ -1441,6 +1449,7 @@ module.exports = {
       urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
     }
 
+    console.log(urls);
     return urls;
   },
 
