@@ -25,7 +25,8 @@ $(function () {
     questionContainer.find('.submission-body').each(function (i, x) {
       client.renderSubmission(x, questionData, i);
     });
-    questionContainer.find('.answer-body').each(function (i, x) {
+    questionContainer.find('.answer-body:visible').each(function (i, x) {
+      console.log('each-answer-body', { x, questionData });
       client.renderAnswer(x, questionData);
     });
   };
@@ -49,7 +50,6 @@ $(function () {
     };
     questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
     questionContainer.find('form.question-form input.__action').val(action);
-    questionContainer.find('form.question-form').submit();
   };
 
   var grade = function (event) {
