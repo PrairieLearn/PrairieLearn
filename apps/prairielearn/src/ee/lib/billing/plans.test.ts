@@ -58,7 +58,7 @@ describe('plans', () => {
     });
   });
 
-  describe('updateRequirePlansForCourseInstance', () => {
+  describe('updateRequiredPlansForCourseInstance', () => {
     it('persists updates', async () => {
       await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
       let requiredPlans = await getRequiredPlansForCourseInstance('1');

@@ -43,51 +43,84 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
--- BLOCK select_and_lock_enrollment_counts
+-- BLOCK select_course_instance
+SELECT
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(c.*) AS course
+FROM
+  course_instances AS ci
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+WHERE
+  ci.id = $course_instance_id;
+
+-- BLOCK select_and_lock_institution
+SELECT
+  to_jsonb(i.*) AS institution
+FROM
+  institutions AS i
+WHERE
+  i.id = $institution_id
+FOR NO KEY UPDATE OF
+  i;
+
+-- BLOCK select_enrollment_counts
 WITH
-  institution AS (
-    SELECT
-      i.*
-    FROM
-      institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
-      JOIN course_instances AS ci ON (ci.course_id = c.id)
-    WHERE
-      ci.id = $course_instance_id
-    FOR NO KEY UPDATE OF
-      i
-  ),
   course_instance_enrollments AS (
     SELECT
-      COUNT(*)::integer AS count
-    FROM
-      enrollments
-    WHERE
-      course_instance_id = $course_instance_id
-  ),
-  institution_enrollments AS (
-    SELECT
-      COUNT(*)::integer AS count
+      (
+        CASE
+          WHEN pg.id IS NOT NULL THEN 'paid'
+          ELSE 'free'
+        END
+      ) AS kind,
+      COUNT(e.*)::integer AS count
     FROM
       enrollments AS e
       JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
       JOIN pl_courses AS c ON (ci.course_id = c.id)
-      JOIN institution AS i ON (i.id = c.institution_id)
+      JOIN institutions AS i ON (i.id = c.institution_id)
+      LEFT JOIN plan_grants AS pg ON (
+        pg.institution_id = i.id
+        AND pg.course_instance_id = ci.id
+        AND pg.enrollment_id = e.id
+      )
+    WHERE
+      e.course_instance_id = $course_instance_id
+    GROUP BY
+      kind
+  ),
+  institution_enrollments AS (
+    SELECT
+      (
+        CASE
+          WHEN pg.id IS NOT NULL THEN 'paid'
+          ELSE 'free'
+        END
+      ) AS kind,
+      COUNT(e.*)::integer AS count
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
+      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN institutions AS i ON (i.id = c.institution_id)
+      LEFT JOIN plan_grants AS pg ON (
+        pg.institution_id = i.id
+        AND pg.course_instance_id = ci.id
+        AND pg.enrollment_id = e.id
+      )
     WHERE
       e.created_at > now() - interval '1 year'
+      AND i.id = $institution_id
+    GROUP BY
+      kind
   )
 SELECT
-  to_jsonb(i.*) AS institution,
-  to_jsonb(ci.*) AS course_instance,
-  course_instance_enrollments.count AS course_instance_enrollment_count,
-  institution_enrollments.count AS institution_enrollment_count
+  COALESCE(ie.kind, cie.kind) AS kind,
+  cie.count AS course_instance_enrollment_count,
+  ie.count AS institution_enrollment_count
 FROM
-  course_instances AS ci,
-  institution AS i,
-  course_instance_enrollments,
-  institution_enrollments
-WHERE
-  ci.id = $course_instance_id;
+  course_instance_enrollments AS cie
+  FULL OUTER JOIN institution_enrollments AS ie ON (ie.kind = cie.kind);
 
 -- BLOCK enroll
 INSERT INTO

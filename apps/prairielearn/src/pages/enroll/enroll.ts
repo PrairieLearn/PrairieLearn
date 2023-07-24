@@ -12,7 +12,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { InstitutionSchema, CourseInstanceSchema } from '../../lib/db-types';
+import { InstitutionSchema, CourseInstanceSchema, CourseSchema } from '../../lib/db-types';
 import {
   Enroll,
   EnrollLtiMessage,
@@ -66,21 +66,37 @@ router.post(
         // Enrollment limits can only be configured on enterprise instances, so
         // we'll also only check and enforce the limits on enterprise instances.
         if (isEnterprise()) {
-          const {
-            institution,
-            course_instance,
-            institution_enrollment_count,
-            course_instance_enrollment_count,
-          } = await queryRow(
-            sql.select_and_lock_enrollment_counts,
+          const { course, course_instance } = await queryRow(
+            sql.select_course_instance,
             { course_instance_id: req.body.course_instance_id },
             z.object({
-              institution: InstitutionSchema,
+              course: CourseSchema,
               course_instance: CourseInstanceSchema,
-              institution_enrollment_count: z.number(),
-              course_instance_enrollment_count: z.number(),
             }),
           );
+          const institution = await queryRow(
+            sql.select_and_lock_institution,
+            { institution_id: course.institution_id },
+            InstitutionSchema,
+          );
+
+          const result = await queryRows(
+            sql.select_enrollment_counts,
+            {
+              institution_id: institution.id,
+              course_instance_id: req.body.course_instance_id,
+            },
+            z.object({
+              kind: z.enum(['free', 'paid']),
+              course_instance_enrollment_count: z.number().nullable(),
+              institution_enrollment_count: z.number().nullable(),
+            }),
+          );
+          console.log(result);
+
+          // TODO: fix
+          const institution_enrollment_count = 1;
+          const course_instance_enrollment_count = 1;
 
           const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
           const courseInstanceEnrollmentLimit =
