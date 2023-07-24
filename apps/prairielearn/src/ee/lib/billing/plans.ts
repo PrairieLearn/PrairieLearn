@@ -53,7 +53,6 @@ export async function getPlanGrantsForCourseInstance({
   return await getPlanGrantsForContext({ institution_id, course_instance_id });
 }
 
-// TODO: needs a better type for the argument? We might have both an enrollment context and a user context.
 export async function getPlanGrantsForContext(context: PlanGrantContext): Promise<PlanGrant[]> {
   return await queryRows(
     sql.select_plan_grants_for_context,

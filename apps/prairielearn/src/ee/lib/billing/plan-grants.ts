@@ -1,4 +1,4 @@
-import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../../lib/db-types';
+import { CourseInstanceSchema, InstitutionSchema } from '../../../lib/db-types';
 import { getEnrollmentForUserInCourseInstance } from '../../../models/enrollment';
 import {
   getPlanGrantsForContext,
@@ -7,9 +7,7 @@ import {
 } from '../../lib/billing/plans';
 import { planGrantsMatchPlanFeatures } from './plans-types';
 
-// TODO: move this out of the middleware directory since it isn't actually a middleware?
-// Alternatively, actually make this a middleware and use it in the appropriate places.
-export async function checkPlanGrants(req, res) {
+export async function checkPlanGrants(res) {
   // We'll only check plan grants for course instances, as students can't
   // currently ever access a course directly. And even if they could, plan
   // grans aren't associated with courses.
@@ -30,15 +28,11 @@ export async function checkPlanGrants(req, res) {
   }
 
   const institution = InstitutionSchema.parse(res.locals.institution);
-  const course = CourseSchema.parse(res.locals.course);
   const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
   const enrollment = await getEnrollmentForUserInCourseInstance({
     user_id: res.locals.authn_user.id,
     course_instance_id: course_instance.id,
   });
-
-  console.log(institution, course, course_instance);
-  console.log(res.locals);
 
   const requiredPlans = await getRequiredPlansForCourseInstance(course_instance.id);
   const planGrants = await getPlanGrantsForContext({
@@ -49,8 +43,5 @@ export async function checkPlanGrants(req, res) {
   });
   const planGrantNames = getPlanNamesFromPlanGrants(planGrants);
 
-  console.log(planGrantNames, requiredPlans);
-  const satisfies = planGrantsMatchPlanFeatures(planGrantNames, requiredPlans);
-
-  return satisfies;
+  return planGrantsMatchPlanFeatures(planGrantNames, requiredPlans);
 }
