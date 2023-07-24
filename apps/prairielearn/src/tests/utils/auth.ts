@@ -28,9 +28,21 @@ export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise
 }
 
 export async function getConfiguredUser(): Promise<User> {
+  if (!config.authUid || !config.authName || !config.authUin) {
+    throw new Error('No configured user');
+  }
+
+  return await getOrCreateUser({
+    uid: config.authUid,
+    name: config.authName,
+    uin: config.authUin,
+  });
+}
+
+export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   const user = await callValidatedOneRow(
     'users_select_or_insert',
-    [config.authUid, config.authName, config.authUin, 'dev'],
+    [authUser.uid, authUser.name, authUser.uin, 'dev'],
     z.object({ user_id: IdSchema }),
   );
   return await queryRow(

@@ -38,6 +38,7 @@ type PlanGrantContext =
   | CourseInstancePlanGrantContext
   | EnrollmentPlanGrantContext
   | UserPlanGrantContext;
+type RecursivePlanGrantContext = PlanGrantContext | BasePlanGrantContext;
 
 /**
  * Returns the plan grants that apply directly to the given context. For
@@ -75,7 +76,7 @@ export async function getPlanGrantsForContext(context: PlanGrantContext): Promis
  * {@link getPlanGrantsForContext}.
  */
 export async function getPlanGrantsForContextRecursive(
-  context: PlanGrantContext,
+  context: RecursivePlanGrantContext,
 ): Promise<PlanGrant[]> {
   return await queryRows(
     sql.select_plan_grants_for_context_recursive,

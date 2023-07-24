@@ -9,7 +9,12 @@ import {
   reconcilePlanGrantsForEnrollment,
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
-import { withUser, type AuthUser, getConfiguredUser } from '../../../tests/utils/auth';
+import {
+  withUser,
+  type AuthUser,
+  getConfiguredUser,
+  getOrCreateUser,
+} from '../../../tests/utils/auth';
 import { insertEnrollment } from '../../../models/enrollment';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
@@ -71,5 +76,35 @@ describe('studentCourseInstanceUpgrade', () => {
       assert.isOk(res.ok);
       assert.equal(res.url, upgradeUrl);
     });
+  });
+
+  it('respects user overrides without access overrides', async () => {
+    await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
+
+    const user = await getOrCreateUser(studentUser);
+    await insertEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+
+    const res = await fetch(assessmentsUrl, {
+      headers: {
+        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=None; pl_requested_course_instance_role=None`,
+      },
+    });
+    assert.isOk(res.ok);
+    assert.equal(res.url, upgradeUrl);
+  });
+
+  it('respects user overrides with access overrides', async () => {
+    await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
+
+    const user = await getOrCreateUser(studentUser);
+    await insertEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+
+    const res = await fetch(assessmentsUrl, {
+      headers: {
+        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=Owner; pl_requested_course_instance_role=Student Data Editor`,
+      },
+    });
+    assert.isOk(res.ok);
+    assert.equal(res.url, assessmentsUrl);
   });
 });
