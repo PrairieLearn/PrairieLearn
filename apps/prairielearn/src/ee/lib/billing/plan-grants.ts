@@ -16,10 +16,8 @@ export async function checkPlanGrants(res) {
   }
 
   // We won't check plan grants if the user has a specific role in the course
-  // or course instance. We always grant instructors access to data.
-  //
-  // TODO: is this conditional checking the correct values?
-  // TODO: how do we account for user overrides when checking plan grants?
+  // or course instance. We always grant instructor-like users access to all
+  // features.
   if (
     res.locals.authz_data.course_role !== 'None' ||
     res.locals.authz_data.course_instance_role !== 'None'
@@ -30,7 +28,12 @@ export async function checkPlanGrants(res) {
   const institution = InstitutionSchema.parse(res.locals.institution);
   const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
   const enrollment = await getEnrollmentForUserInCourseInstance({
-    user_id: res.locals.authn_user.user_id,
+    // Note that this takes into account user overrides set by instructors.
+    // This means that instructors impersonating a student will see the same
+    // behavior that students themselves would see. If the instructor wants to
+    // bypass any plan grant checks, they can use the "Student view without
+    // access restrictions" option.
+    user_id: res.locals.user.user_id,
     course_instance_id: course_instance.id,
   });
 
