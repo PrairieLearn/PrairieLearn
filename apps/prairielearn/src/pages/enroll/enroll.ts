@@ -80,7 +80,7 @@ router.post(
             InstitutionSchema,
           );
 
-          const result = await queryRows(
+          const enrollmentCounts = await queryRows(
             sql.select_enrollment_counts,
             {
               institution_id: institution.id,
@@ -92,7 +92,17 @@ router.post(
               institution_enrollment_count: z.number().nullable(),
             }),
           );
-          console.log(result);
+
+          const freeEnrollmentCounts = enrollmentCounts.find((ec) => ec.kind === 'free');
+          const paidEnrollmentCounts = enrollmentCounts.find((ec) => ec.kind === 'paid');
+          const freeInstitutionEnrollmentCount =
+            freeEnrollmentCounts?.institution_enrollment_count ?? 0;
+          const freeCourseInstanceEnrollmentCount =
+            freeEnrollmentCounts?.course_instance_enrollment_count ?? 0;
+          const paidInstitutionEnrollmentCount =
+            paidEnrollmentCounts?.institution_enrollment_count ?? 0;
+          const paidCourseInstanceEnrollmentCount =
+            paidEnrollmentCounts?.course_instance_enrollment_count ?? 0;
 
           // TODO: fix
           const institution_enrollment_count = 1;
@@ -103,8 +113,8 @@ router.post(
             course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
 
           if (
-            institution_enrollment_count + 1 > yearlyEnrollmentLimit ||
-            course_instance_enrollment_count + 1 > courseInstanceEnrollmentLimit
+            freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
+            freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
           ) {
             return true;
           }
