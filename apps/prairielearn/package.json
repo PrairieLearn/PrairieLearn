@@ -75,6 +75,7 @@
     "debug": "^4.3.4",
     "detect-mocha": "^0.1.0",
     "dockerode": "^3.3.5",
+    "dompurify": "^3.0.5",
     "dropzone": "^5.9.3",
     "ejs": "^3.1.9",
     "execa": "^5.1.1",
@@ -109,6 +110,7 @@
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
     "mime": "^3.0.0",
+    "morphdom": "^2.7.0",
     "multer": "^1.4.5-lts.1",
     "mustache": "^4.2.0",
     "ncp": "^2.0.0",
@@ -158,7 +160,6 @@
     "uuid": "^9.0.0",
     "winston": "^3.10.0",
     "xml2js": "^0.6.0",
-    "xss": "^1.0.14",
     "yargs-parser": "^21.1.1",
     "zod": "^3.21.4"
   },
