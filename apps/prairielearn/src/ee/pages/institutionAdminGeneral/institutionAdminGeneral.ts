@@ -10,7 +10,7 @@ import {
 import { getInstitution } from '../../lib/institution';
 import {
   DesiredPlan,
-  getPlanGrantsForInstitution,
+  getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans';
 import { PlanName } from '../../lib/billing/plans-types';
@@ -30,7 +30,7 @@ router.get(
       { institution_id: req.params.institution_id },
       InstitutionStatisticsSchema,
     );
-    const planGrants = await getPlanGrantsForInstitution(req.params.institution_id);
+    const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
     res.send(
       InstitutionAdminGeneral({
         institution,
