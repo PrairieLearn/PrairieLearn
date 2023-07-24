@@ -14,6 +14,8 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseInstanceUrl = baseUrl + '/course_instance/1';
 
+const storedConfig: any = {};
+
 const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
 
@@ -107,14 +109,16 @@ describe('Group based exam assessments', function () {
   this.timeout(20000);
 
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set authenticated user', function (callback) {
+    storedConfig.authUid = config.authUid;
+    storedConfig.authName = config.authName;
+    storedConfig.authUin = config.authUin;
+    callback(null);
+  });
 
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function (callback) {
-    Object.assign(config, {
-      authUid: config.authUid,
-      authName: config.authName,
-      authUin: config.authUin,
-    });
+    Object.assign(config, storedConfig);
     callback(null);
   });
 
@@ -333,14 +337,16 @@ describe('Group based exam assessments', function () {
 describe('cross group exam acess', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set authenticated user', function (callback) {
+    storedConfig.authUid = config.authUid;
+    storedConfig.authName = config.authName;
+    storedConfig.authUin = config.authUin;
+    callback(null);
+  });
 
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function (callback) {
-    Object.assign(config, {
-      authUid: config.authUid,
-      authName: config.authName,
-      authUin: config.authUin,
-    });
+    Object.assign(config, storedConfig);
     callback(null);
   });
 
@@ -431,14 +437,16 @@ describe('cross group exam acess', function () {
 describe('cross exam assessment acess', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set authenticated user', function (callback) {
+    storedConfig.authUid = config.authUid;
+    storedConfig.authName = config.authName;
+    storedConfig.authUin = config.authUin;
+    callback(null);
+  });
 
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function (callback) {
-    Object.assign(config, {
-      authUid: config.authUid,
-      authName: config.authName,
-      authUin: config.authUin,
-    });
+    Object.assign(config, storedConfig);
     callback(null);
   });
 
