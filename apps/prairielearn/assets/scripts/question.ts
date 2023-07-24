@@ -114,7 +114,7 @@ function fetchResults(socket, submissionId) {
         answerContainer.closest('.grading-block').classList.remove('d-none');
       }
       if (msg.submissionPanel) {
-        document.getElementById('submission-' + submissionId).outerHTML = msg.submissionPanel;
+        $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
         mathjaxTypeset();
         // Restore modal state if need be
         if (wasModalOpen) {
