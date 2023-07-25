@@ -20,6 +20,10 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
 import { isEnterprise } from '../../lib/license';
+import {
+  getEnrollmentCountsForCourseInstance,
+  getEnrollmentCountsForInstitution,
+} from '../../ee/models/enrollment';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -80,33 +84,16 @@ router.post(
             InstitutionSchema,
           );
 
-          const enrollmentCounts = await queryRows(
-            sql.select_enrollment_counts,
-            {
-              institution_id: institution.id,
-              course_instance_id: req.body.course_instance_id,
-            },
-            z.object({
-              kind: z.enum(['free', 'paid']),
-              course_instance_enrollment_count: z.number().nullable(),
-              institution_enrollment_count: z.number().nullable(),
-            }),
+          const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
+            institution_id: institution.id,
+            created_since: '1 year',
+          });
+          const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
+            req.body.course_instance_id,
           );
 
-          const freeEnrollmentCounts = enrollmentCounts.find((ec) => ec.kind === 'free');
-          const paidEnrollmentCounts = enrollmentCounts.find((ec) => ec.kind === 'paid');
-          const freeInstitutionEnrollmentCount =
-            freeEnrollmentCounts?.institution_enrollment_count ?? 0;
-          const freeCourseInstanceEnrollmentCount =
-            freeEnrollmentCounts?.course_instance_enrollment_count ?? 0;
-          const paidInstitutionEnrollmentCount =
-            paidEnrollmentCounts?.institution_enrollment_count ?? 0;
-          const paidCourseInstanceEnrollmentCount =
-            paidEnrollmentCounts?.course_instance_enrollment_count ?? 0;
-
-          // TODO: fix
-          const institution_enrollment_count = 1;
-          const course_instance_enrollment_count = 1;
+          const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
+          const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
 
           const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
           const courseInstanceEnrollmentLimit =
