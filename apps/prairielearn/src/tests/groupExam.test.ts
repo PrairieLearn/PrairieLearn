@@ -3,13 +3,13 @@ import cheerio = require('cheerio');
 import fetch from 'node-fetch';
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
-import { z } from 'zod';
 
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 const sql = loadSqlEquiv(__filename);
 
 import helperServer = require('./helperServer');
 import { TEST_COURSE_PATH } from '../lib/paths';
+import { UserSchema } from '../lib/db-types';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -22,17 +22,17 @@ const GROUP_EXAM_2_TID = 'exam15-groupWorkRoles';
 const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
 
-const StudentUserSchema = z.object({
-  user_id: z.string(),
-  uid: z.string(),
-  name: z.string(),
-  uin: z.string().nullable(),
+const StudentUserSchema = UserSchema.pick({
+  user_id: true,
+  uid: true,
+  name: true,
+  uin: true,
 });
 
 interface StudentUser {
-  user_id: string;
+  user_id: string | null;
   uid: string;
-  name: string;
+  name: string | null;
   uin: string | null;
 }
 
@@ -63,7 +63,7 @@ async function switchUserAndLoadAssessment(
   const $ = cheerio.load(page);
 
   // Check that the correct CSRF form exists
-  const elementQuery = 'form[name="' + formName + '"] input[name="__csrf_token"]';
+  const elementQuery = `form[name="${formName}"] input[name="__csrf_token"]`;
   const csrfTokenElement = $(elementQuery);
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
   assert.isString(csrfTokenElement.attr('value'));

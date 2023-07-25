@@ -5,10 +5,7 @@ FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
-  a.course_instance_id = 1
-  AND a.tid = $assessment_tid
-  AND aset.abbreviation = 'E'
-  AND a.group_work is TRUE;
+  a.tid = $assessment_tid;
 
 -- BLOCK select_group_config
 SELECT
