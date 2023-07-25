@@ -3,8 +3,9 @@ import cheerio = require('cheerio');
 import fetch from 'node-fetch';
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
+import { z } from 'zod';
 
-import { queryAsync, queryOneRowAsync, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 const sql = loadSqlEquiv(__filename);
 
 import helperServer = require('./helperServer');
@@ -16,36 +17,44 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
+const GROUP_EXAM_1_TID = 'exam14-groupWork';
+const GROUP_EXAM_2_TID = 'exam15-groupWorkRoles';
 const GROUP_NAME = 'groupBB';
 const GROUP_NAME_ALTERNATIVE = 'groupCC';
+
+const StudentUserSchema = z.object({
+  user_id: z.string(),
+  uid: z.string(),
+  name: z.string(),
+  uin: z.string().nullable(),
+});
 
 interface StudentUser {
   user_id: string;
   uid: string;
   name: string;
-  uin: string;
+  uin: string | null;
 }
 
 async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const result = await queryAsync(sql.generate_and_enroll_3_users, []);
-  assert.lengthOf(result.rows, 3);
-  return result.rows;
+  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+  assert.lengthOf(rows, 3);
+  return rows;
 }
 
 /**
- * Switches active user and loads assessment. Asserts the number of CSRF tokens on the page
- * after loading the given assessment URL.
+ * Switches active user and loads assessment, returning the user's CSRF
+ * token value from a form on the page
  */
 async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
-  authUin: string,
-  numCsrfTokens: number,
+  formName: string,
 ): Promise<{ $: cheerio.Root; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
-  config.authUin = authUin;
+  config.authUin = studentUser.uin;
 
   // Load assessment
   const res = await fetch(assessmentUrl);
@@ -53,12 +62,12 @@ async function switchUserAndLoadAssessment(
   const page = await res.text();
   const $ = cheerio.load(page);
 
-  // Check for CSRF tokens
-  const elemList = $('form input[name="__csrf_token"]');
-  assert.lengthOf(elemList, numCsrfTokens);
-  assert.nestedProperty(elemList[0], 'attribs.value');
-  assert.isString(elemList.attr('value'));
-  const csrfToken = elemList.attr('value') as string; // guaranteed to be string by assertion
+  // Check that the correct CSRF form exists
+  const elementQuery = 'form[name="' + formName + '"] input[name="__csrf_token"]';
+  const csrfTokenElement = $(elementQuery);
+  assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
+  assert.isString(csrfTokenElement.attr('value'));
+  const csrfToken = csrfTokenElement.attr('value') as string; // guaranteed to be string by assertion
 
   return { $, csrfToken };
 }
@@ -124,56 +133,46 @@ describe('Group based exam assessments', function () {
 
   describe('instructor access for exam assessment', function () {
     step("should load the group tab for the first assessment's instructor URL", async function () {
-      // Get exam assessment URLs using ids from database
-      const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.isDefined(result.rows[0].id);
+      // Get exam assessment URL using ids from database
+      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+        assessment_tid: GROUP_EXAM_1_TID,
+      });
+      assert.lengthOf(result.rows, 1);
       const assessmentId = result.rows[0].id;
+      assert.isDefined(assessmentId);
       const instructorAssessmentsUrlGroupTab =
         courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
       // Page should load successfully
       const res = await fetch(instructorAssessmentsUrlGroupTab);
-      const page = await res.text();
-
-      // Check for correct CSRF tokens
-      const $ = cheerio.load(page);
-      const elemList = $('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      const csrfToken = elemList.attr('value');
-      assert.isString(csrfToken);
+      assert.isOk(res.ok);
     });
 
     step("should load the group tab for the second assessment's instructor URL", async function () {
       // Get exam assessment URLs using ids from database
-      const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.isDefined(result.rows[1].id);
-      const assessmentId = result.rows[1].id; // get second assessment
+      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+        assessment_tid: GROUP_EXAM_2_TID,
+      });
+      assert.lengthOf(result.rows, 1);
+      const assessmentId = result.rows[0].id;
+      assert.isDefined(assessmentId);
       const instructorAssessmentsUrlGroupTab =
         courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
       // Page should load successfully
       const res = await fetch(instructorAssessmentsUrlGroupTab);
-      const page = await res.text();
-
-      // Check for correct CSRF tokens
-      const $ = cheerio.load(page);
-      const elemList = $('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      const csrfToken = elemList.attr('value');
-      assert.isString(csrfToken);
+      assert.isOk(res.ok);
     });
   });
 
   describe('group config correctness', function () {
     step('first assessment group config in database is correct', async function () {
-      const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.isDefined(result.rows[0].id);
+      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+        assessment_tid: GROUP_EXAM_1_TID,
+      });
+      assert.lengthOf(result.rows, 1);
       const assessmentId = result.rows[0].id;
+      assert.isDefined(assessmentId);
 
       const groupConfigResult = await queryOneRowAsync(sql.select_group_config, {
         assessment_id: assessmentId,
@@ -185,10 +184,12 @@ describe('Group based exam assessments', function () {
     });
 
     step('second assessment group config in database is correct', async function () {
-      const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.isDefined(result.rows[1].id);
-      const assessmentId = result.rows[1].id;
+      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+        assessment_tid: GROUP_EXAM_2_TID,
+      });
+      assert.lengthOf(result.rows, 1);
+      const assessmentId = result.rows[0].id;
+      assert.isDefined(assessmentId);
 
       const groupConfigResult = await queryOneRowAsync(sql.select_group_config, {
         assessment_id: assessmentId,
@@ -202,11 +203,13 @@ describe('Group based exam assessments', function () {
 
   describe('exam group creation, joining, and starting', function () {
     it('allows group creation, joining, and starting', async function () {
-      // Get exam assessment URL using ids from database
-      const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.isDefined(result.rows[0].id);
+      // Get exam assessment URL using id from database
+      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+        assessment_tid: GROUP_EXAM_1_TID,
+      });
+      assert.lengthOf(result.rows, 1);
       const assessmentId = result.rows[0].id;
+      assert.isDefined(assessmentId);
       const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
       // Generate students
@@ -216,8 +219,7 @@ describe('Group based exam assessments', function () {
       const { csrfToken: firstUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentUrl,
-        '00000001',
-        2,
+        'create-form',
       );
 
       // As first user, create group, load the page, and check group information
@@ -245,8 +247,7 @@ describe('Group based exam assessments', function () {
       const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[1],
         assessmentUrl,
-        '00000002',
-        2,
+        'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, secondUserCsrfToken);
       assert.equal(
@@ -272,8 +273,7 @@ describe('Group based exam assessments', function () {
       const { csrfToken: thirdUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[2],
         assessmentUrl,
-        '00000004',
-        2,
+        'joingroup-form',
       );
       $ = await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
       const elemList = $('.alert:contains(It is already full)');
@@ -283,8 +283,7 @@ describe('Group based exam assessments', function () {
       const { $: $secondUser } = await switchUserAndLoadAssessment(
         studentUsers[1],
         assessmentUrl,
-        '00000002',
-        2,
+        'confirm-form',
       );
       $ = $secondUser;
       assert.isNotTrue($('#certify-pledge').prop('checked'), 'Honor code must be unchecked');
@@ -323,18 +322,18 @@ describe('Group based exam assessments', function () {
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
       // Ensure all group members can access the assessment instance correctly
-      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, '00000001', 5);
+      await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, 'leave-group-form');
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
 
-      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, '00000002', 5);
+      await switchUserAndLoadAssessment(studentUsers[1], assessmentUrl, 'leave-group-form');
       const secondMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(secondMemberResponse.ok);
     });
   });
 });
 
-describe('cross group exam acess', function () {
+describe('cross group exam access', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   before('set authenticated user', function (callback) {
@@ -351,11 +350,13 @@ describe('cross group exam acess', function () {
   });
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
-    // Get exam assessment URL using ids from database
-    const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-    assert.lengthOf(result.rows, 2);
-    assert.isDefined(result.rows[0].id);
+    // Get exam assessment URL using id from database
+    const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+      assessment_tid: GROUP_EXAM_1_TID,
+    });
+    assert.lengthOf(result.rows, 1);
     const assessmentId = result.rows[0].id;
+    assert.isDefined(assessmentId);
     const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
     // Generate students
@@ -365,8 +366,7 @@ describe('cross group exam acess', function () {
     const { csrfToken: firstUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[0],
       assessmentUrl,
-      '00000001',
-      2,
+      'create-form',
     );
 
     // As first user, create group, load the page, and check group information
@@ -377,8 +377,7 @@ describe('cross group exam acess', function () {
     const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       assessmentUrl,
-      '00000002',
-      2,
+      'joingroup-form',
     );
     $ = await joinGroup(assessmentUrl, joinCode, secondUserCsrfToken);
 
@@ -406,8 +405,7 @@ describe('cross group exam acess', function () {
     const { csrfToken: secondUserInstanceCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       assessmentUrl, // redirects to instance URL
-      '00000002',
-      5,
+      'leave-group-form',
     );
 
     // Leave exam group as second user
@@ -434,7 +432,7 @@ describe('cross group exam acess', function () {
   });
 });
 
-describe('cross exam assessment acess', function () {
+describe('cross exam assessment access', function () {
   this.timeout(20000);
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   before('set authenticated user', function (callback) {
@@ -452,14 +450,20 @@ describe('cross exam assessment acess', function () {
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
     // Get exam assessment URL using ids from database
-    const result = await queryAsync(sql.select_group_work_exam_assessment, []);
-    assert.lengthOf(result.rows, 2);
-    assert.isDefined(result.rows[0].id);
-    assert.isDefined(result.rows[1].id);
-
-    const firstAssessmentId = result.rows[0].id;
+    const firstAssessmentResult = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+      assessment_tid: GROUP_EXAM_1_TID,
+    });
+    assert.lengthOf(firstAssessmentResult.rows, 1);
+    const firstAssessmentId = firstAssessmentResult.rows[0].id;
+    assert.isDefined(firstAssessmentId);
     const firstAssessmentUrl = courseInstanceUrl + '/assessment/' + firstAssessmentId;
-    const secondAssessmentId = result.rows[1].id;
+
+    const secondAssessmentResult = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+      assessment_tid: GROUP_EXAM_2_TID,
+    });
+    assert.lengthOf(secondAssessmentResult.rows, 1);
+    const secondAssessmentId = secondAssessmentResult.rows[0].id;
+    assert.isDefined(secondAssessmentId);
     const secondAssessmentUrl = courseInstanceUrl + '/assessment/' + secondAssessmentId;
 
     // Generate students
@@ -469,8 +473,7 @@ describe('cross exam assessment acess', function () {
     const { csrfToken: firstUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[0],
       firstAssessmentUrl,
-      '00000001',
-      2,
+      'create-form',
     );
 
     // As first user, create group, load the page, and check group information
@@ -481,8 +484,7 @@ describe('cross exam assessment acess', function () {
     const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       firstAssessmentUrl,
-      '00000002',
-      2,
+      'joingroup-form',
     );
     $ = await joinGroup(firstAssessmentUrl, firstAssessmentJoinCode, secondUserCsrfToken);
 
@@ -490,8 +492,7 @@ describe('cross exam assessment acess', function () {
     const { csrfToken: thirdUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[2],
       secondAssessmentUrl,
-      '00000003',
-      2,
+      'joingroup-form',
     );
 
     // Attempt to join a first assessment group from the second assessment

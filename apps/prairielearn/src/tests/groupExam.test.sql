@@ -1,4 +1,4 @@
--- BLOCK select_group_work_exam_assessment
+-- BLOCK select_group_exam_by_tid
 SELECT
   a.id
 FROM
@@ -6,6 +6,7 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
   a.course_instance_id = 1
+  AND a.tid = $assessment_tid
   AND aset.abbreviation = 'E'
   AND a.group_work is TRUE;
 
@@ -19,12 +20,6 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK select_student_user
-SELECT
-  count(*) as result
-FROM
-  users AS u;
-
 -- BLOCK generate_and_enroll_3_users
 SELECT
   user_id,
@@ -37,13 +32,6 @@ FROM
   LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
 ORDER BY
   user_id;
-
--- BLOCK select_all_user_in_group
-SELECT
-  group_id,
-  user_id
-FROM
-  group_users;
 
 -- BLOCK select_all_assessment_instance
 SELECT
