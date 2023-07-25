@@ -12,16 +12,16 @@ type NewCourseInstancePlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
   'institution_id' | 'course_instance_id'
 >;
-type NewEnrollmentPlanGrant = WithRequiredKeys<
+type NewCourseInstanceUserPlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
-  'institution_id' | 'course_instance_id' | 'enrollment_id'
+  'institution_id' | 'course_instance_id' | 'user_id'
 >;
 type NewUserPlanGrant = WithRequiredKeys<NewBasePlanGrant, 'user_id'>;
 
 type NewPlanGrant =
   | NewInstitutionPlanGrant
   | NewCourseInstancePlanGrant
-  | NewEnrollmentPlanGrant
+  | NewCourseInstanceUserPlanGrant
   | NewUserPlanGrant;
 
 export async function insertPlanGrant(
