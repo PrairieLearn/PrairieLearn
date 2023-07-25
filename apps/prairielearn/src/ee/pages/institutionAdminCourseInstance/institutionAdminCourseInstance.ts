@@ -3,6 +3,8 @@ import { z } from 'zod';
 import asyncHandler = require('express-async-handler');
 import error = require('@prairielearn/error');
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { flash } from '@prairielearn/flash';
+
 import { getInstitution } from '../../lib/institution';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
 import { InstitutionAdminCourseInstance } from './institutionAdminCourseInstance.html';
@@ -75,6 +77,7 @@ router.post(
         course_instance_id: course_instance.id,
         enrollment_limit: req.body.enrollment_limit || null,
       });
+      flash('success', 'Successfully updated enrollment limit.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({
@@ -88,6 +91,7 @@ router.post(
         desiredPlans,
         res.locals.authn_user.user_id,
       );
+      flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
