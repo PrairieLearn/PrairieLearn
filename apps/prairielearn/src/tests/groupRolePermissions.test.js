@@ -448,30 +448,47 @@ describe('Test group role functionality within assessments', function () {
       );
     });
 
-    // TODO: Write tests that confirm actually hitting "Submit" is still fine, or doesn't work
-    // step('submitting by POST request with invalid permission produces an error', async function () {
-    //     const form = {
-    //         __action: 'grade',
-    //         __csrf_token: locals.__csrf_token,
-    //     };
-    //     const res = await fetch(questionOneUrl, {
-    //         method: 'POST',
-    //         body: new URLSearchParams(form),
-    //     });
-    //     assert.isNotOk(res.ok);
-    // });
+    // TODO: verify why this test passes, even though we have no code that actually checks
+    // whether a user has the correct permission to save & grade a question
+    step('submitting by POST request with invalid permission produces an error', async function () {
+      // Get question variant
+      const questionForm = locals.$('.question-form input[name="__variant_id"]');
+      assert.lengthOf(questionForm, 1);
+      assert.nestedProperty(questionForm[0], 'attribs.value');
+      const variantId = Number.parseInt(questionForm[0].attribs.value);
 
-    // step('submitting with valid permissions does not yield any errors', async function () {
-    //     await switchUserAndLoadAssessment(locals.studentUsers[1], questionOneUrl, '00000002', 5);
-    //     const form = {
-    //         __action: 'grade',
-    //         __csrf_token: locals.__csrf_token,
-    //     };
-    //     const res = await fetch(questionOneUrl, {
-    //         method: 'POST',
-    //         body: new URLSearchParams(form),
-    //     });
-    //     assert.isOk(res.ok);
-    // });
+      const result = await sqldb.queryAsync(sql.select_variant, {
+        variant_id: variantId,
+      });
+      assert.lengthOf(result.rows, 1);
+      locals.variant = result.rows[0];
+
+      // Send request to save & grade question
+      const form = {
+        __action: 'grade',
+        __csrf_token: locals.__csrf_token,
+        __variant_id: locals.variant.id,
+      };
+      const res = await fetch(questionOneUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isNotOk(res.ok);
+      assert.equal(res.status, 403, 'status should be forbidden');
+    });
+
+    step('submitting with valid permissions does not yield any errors', async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[1], questionOneUrl, '00000002', 5);
+      const form = {
+        __action: 'grade',
+        __csrf_token: locals.__csrf_token,
+        __variant_id: locals.variant.id,
+      };
+      const res = await fetch(questionOneUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+    });
   });
 });
