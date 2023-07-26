@@ -12,7 +12,7 @@ import {
   updateRequiredPlansForCourseInstance,
 } from './plans';
 import { insertPlanGrant } from '../../models/plan-grants';
-import { queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 class RollbackTransactionError extends Error {
   constructor() {
