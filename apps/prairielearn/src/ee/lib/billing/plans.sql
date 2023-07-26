@@ -6,8 +6,7 @@ FROM
 WHERE
   institution_id = $institution_id
   AND course_instance_id IS NULL
-  AND user_id IS NULL
-  and enrollment_id IS NULL;
+  AND user_id IS NULL;
 
 -- BLOCK select_plan_grants_for_course_instance
 SELECT
