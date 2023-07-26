@@ -57,7 +57,7 @@ describe('plans', () => {
 
         await reconcilePlanGrantsForInstitution('1', [], '1');
         planGrants = await getPlanGrantsForContext({ institution_id: '1' });
-        assert.deepEqual(planGrants, []);
+        assert.sameDeepMembers(planGrants, []);
       });
     });
   });
@@ -92,21 +92,21 @@ describe('plans', () => {
           institution_id: '1',
           course_instance_id: '1',
         });
-        assert.deepEqual(planGrants, []);
+        assert.sameDeepMembers(planGrants, []);
       });
     });
 
     it('does not modify institution plan grants', async () => {
       await runInTransactionAndRollback(async () => {
         // Manually insert an institution plan grant.
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'everything',
             type: 'gift',
             institution_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         await reconcilePlanGrantsForCourseInstance(
           '1',
@@ -126,11 +126,11 @@ describe('plans', () => {
       await runInTransactionAndRollback(async () => {
         await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
         let requiredPlans = await getRequiredPlansForCourseInstance('1');
-        assert.deepEqual(requiredPlans, ['compute']);
+        assert.sameDeepMembers(requiredPlans, ['compute']);
 
         await updateRequiredPlansForCourseInstance('1', [], '1');
         requiredPlans = await getRequiredPlansForCourseInstance('1');
-        assert.deepEqual(requiredPlans, []);
+        assert.sameDeepMembers(requiredPlans, []);
       });
     });
   });
@@ -139,37 +139,37 @@ describe('plans', () => {
     it('only returns plan grants directly associated with the course instance', async () => {
       await runInTransactionAndRollback(async () => {
         // Institution plan grant
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'everything',
             type: 'gift',
             institution_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         // Course instance plan grant
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'compute',
             type: 'invoice',
             institution_id: '1',
             course_instance_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         // Course instance user plan grant
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'basic',
             type: 'stripe',
             institution_id: '1',
             course_instance_id: '1',
             user_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         const planGrants = await getPlanGrantsForCourseInstance({
           institution_id: '1',
@@ -184,83 +184,90 @@ describe('plans', () => {
   describe('getPlanGrantsForContext', () => {
     it('returns institution plan grants', async () => {
       await runInTransactionAndRollback(async () => {
-        await insertPlanGrant({ plan_name: 'compute', type: 'invoice', institution_id: '1' }, '1');
+        await insertPlanGrant({
+          plan_grant: {
+            plan_name: 'compute',
+            type: 'invoice',
+            institution_id: '1',
+          },
+          authn_user_id: '1',
+        });
 
         const planGrants = await getPlanGrantsForContext({ institution_id: '1' });
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
-        assert.deepEqual(grantedPlans, ['compute']);
+        assert.sameDeepMembers(grantedPlans, ['compute']);
 
         const recursivePlanGrants = await getPlanGrantsForContextRecursive({ institution_id: '1' });
         const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
-        assert.deepEqual(recursiveGrantedPlans, ['compute']);
+        assert.sameDeepMembers(recursiveGrantedPlans, ['compute']);
       });
     });
 
     it('returns course instance plan grants', async () => {
       await runInTransactionAndRollback(async () => {
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'basic',
             type: 'invoice',
             institution_id: '1',
           },
-          '1',
-        );
-        await insertPlanGrant(
-          {
+          authn_user_id: '1',
+        });
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'compute',
             type: 'gift',
             institution_id: '1',
             course_instance_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         const planGrants = await getPlanGrantsForContext({
           institution_id: '1',
           course_instance_id: '1',
         });
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
-        assert.deepEqual(grantedPlans, ['compute']);
+        assert.sameDeepMembers(grantedPlans, ['compute']);
 
         const recursivePlanGrants = await getPlanGrantsForContextRecursive({
           institution_id: '1',
           course_instance_id: '1',
         });
         const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
-        assert.deepEqual(recursiveGrantedPlans, ['basic', 'compute']);
+        assert.sameDeepMembers(recursiveGrantedPlans, ['basic', 'compute']);
       });
     });
 
     it('returns course instance user plan grants', async () => {
       await runInTransactionAndRollback(async () => {
-        await insertPlanGrant(
-          {
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'basic',
             type: 'invoice',
             institution_id: '1',
           },
-          '1',
-        );
-        await insertPlanGrant(
-          {
+          authn_user_id: '1',
+        });
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'compute',
             type: 'gift',
             institution_id: '1',
             course_instance_id: '1',
           },
-          '1',
-        );
-        await insertPlanGrant(
-          {
+          authn_user_id: '1',
+        });
+        await insertPlanGrant({
+          plan_grant: {
             plan_name: 'everything',
             type: 'stripe',
             institution_id: '1',
             course_instance_id: '1',
             user_id: '1',
           },
-          '1',
-        );
+          authn_user_id: '1',
+        });
 
         const planGrants = await getPlanGrantsForContext({
           institution_id: '1',
@@ -268,7 +275,7 @@ describe('plans', () => {
           user_id: '1',
         });
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
-        assert.deepEqual(grantedPlans, ['everything']);
+        assert.sameDeepMembers(grantedPlans, ['everything']);
 
         const recursivePlanGrants = await getPlanGrantsForContextRecursive({
           institution_id: '1',
@@ -276,7 +283,7 @@ describe('plans', () => {
           user_id: '1',
         });
         const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
-        assert.deepEqual(recursiveGrantedPlans, ['basic', 'compute', 'everything']);
+        assert.sameDeepMembers(recursiveGrantedPlans, ['basic', 'compute', 'everything']);
       });
     });
   });
