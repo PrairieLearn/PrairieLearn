@@ -197,14 +197,14 @@ async function reconcilePlanGrants(
   );
 
   for (const plan of newPlans) {
-    await insertPlanGrant(
-      {
+    await insertPlanGrant({
+      plan_grant: {
         ...context,
         plan_name: plan.plan,
         type: plan.grantType,
       },
       authn_user_id,
-    );
+    });
   }
 
   for (const planGrant of updatedPlanGrants) {
@@ -212,11 +212,15 @@ async function reconcilePlanGrants(
       continue;
     }
 
-    await updatePlanGrant(planGrant.planGrant, planGrant.newType, authn_user_id);
+    await updatePlanGrant({
+      plan_grant: planGrant.planGrant,
+      type: planGrant.newType,
+      authn_user_id,
+    });
   }
 
   for (const planGrant of deletedPlanGrants) {
-    await deletePlanGrant(planGrant, authn_user_id);
+    await deletePlanGrant({ plan_grant: planGrant, authn_user_id });
   }
 }
 
