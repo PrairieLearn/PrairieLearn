@@ -436,6 +436,11 @@ describe('Test group role functionality within assessments', function () {
       const res = await fetch(questionOneUrl);
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
+      // Load the question's CSRF token
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
 
       const button = locals.$('.question-grade');
       assert.isTrue(button.is(':disabled'));
@@ -448,8 +453,6 @@ describe('Test group role functionality within assessments', function () {
       );
     });
 
-    // TODO: verify why this test passes, even though we have no code that actually checks
-    // whether a user has the correct permission to save & grade a question
     step('submitting by POST request with invalid permission produces an error', async function () {
       // Get question variant
       const questionForm = locals.$('.question-form input[name="__variant_id"]');
@@ -473,7 +476,6 @@ describe('Test group role functionality within assessments', function () {
         method: 'POST',
         body: new URLSearchParams(form),
       });
-      assert.isNotOk(res.ok);
       assert.equal(res.status, 403, 'status should be forbidden');
     });
 

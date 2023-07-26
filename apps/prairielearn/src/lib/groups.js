@@ -53,10 +53,16 @@ const AssessmentLevelPermissionsSchema = z.object({
   can_assign_roles_during_assessment: z.boolean().nullable(),
 });
 
+const QuestionLevelPermissionsSchema = z.object({
+  can_submit: z.boolean().nullable(),
+  can_view: z.boolean().nullable(),
+});
+
 /** @typedef {z.infer<GroupConfigSchema>} GroupConfig */
 /** @typedef {z.infer<GroupMemberSchema>} GroupMember */
 /** @typedef {z.infer<GroupRoleSchema>} GroupRole */
 /** @typedef {z.infer<AssessmentLevelPermissionsSchema>} AssessmentLevelPermissions */
+/** @typedef {z.infer<QuestionLevelPermissionsSchema>} QuestionLevelPermissions */
 
 /**
  * @typedef {Object} RolesInfo
@@ -440,6 +446,20 @@ module.exports.getAssessmentPermissions = async function (assessmentId, userId) 
     sql.get_assessment_level_permissions,
     params,
     AssessmentLevelPermissionsSchema,
+  );
+};
+
+/**
+ * @param {string} assessmentQuestionId
+ * @param {string} userId
+ * @returns {Promise<QuestionLevelPermissions>}
+ */
+module.exports.getQuestionPermissions = async function (assessmentQuestionId, userId) {
+  const params = { assessment_question_id: assessmentQuestionId, user_id: userId };
+  return await sqldb.queryValidatedOneRow(
+    sql.get_question_permissions,
+    params,
+    QuestionLevelPermissionsSchema,
   );
 };
 

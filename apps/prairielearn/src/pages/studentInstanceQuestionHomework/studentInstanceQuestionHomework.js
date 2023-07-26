@@ -88,16 +88,37 @@ function processSubmission(req, res, callback) {
   );
 }
 
-router.post('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Homework') return next();
+router.post(
+  '/',
+  asyncHandler(async function (req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
 
-  if (!res.locals.authz_result.authorized_edit) {
-    return next(error.make(403, 'Not authorized', res.locals));
-  }
+    if (!res.locals.authz_result.authorized_edit) {
+      return next(error.make(403, 'Not authorized', res.locals));
+    }
 
-  if (req.body.__action === 'grade' || req.body.__action === 'save') {
-    processSubmission(req, res, function (err, variant_id) {
-      if (ERR(err, next)) return;
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      if (res.locals.assessment.group_work) {
+        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+        if (groupConfig.has_roles) {
+          const result = await groupAssessmentHelper.getQuestionPermissions(
+            res.locals.assessment_question.id,
+            res.locals.user.user_id,
+          );
+          // Users without the correct roles cannot submit
+          if (!result.can_submit) {
+            return next(
+              error.make(
+                403,
+                'Current group roles have no permission to submit this question',
+                res.locals,
+              ),
+            );
+          }
+        }
+      }
+
+      const variant_id = await util.promisify(processSubmission)(req, res);
       res.redirect(
         res.locals.urlPrefix +
           '/instance_question/' +
@@ -105,72 +126,72 @@ router.post('/', function (req, res, next) {
           '/?variant_id=' +
           variant_id,
       );
-    });
-  } else if (req.body.__action === 'attach_file') {
-    util.callbackify(studentInstanceQuestion.processFileUpload)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'attach_text') {
-    util.callbackify(studentInstanceQuestion.processTextUpload)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'delete_file') {
-    util.callbackify(studentInstanceQuestion.processDeleteFile)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'report_issue') {
-    util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
-      if (ERR(err, next)) return;
-      res.redirect(
-        res.locals.urlPrefix +
-          '/instance_question/' +
-          res.locals.instance_question.id +
-          '/?variant_id=' +
-          variant_id,
+    } else if (req.body.__action === 'attach_file') {
+      util.callbackify(studentInstanceQuestion.processFileUpload)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
       );
-    });
-  } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
-  }
-});
+    } else if (req.body.__action === 'attach_text') {
+      util.callbackify(studentInstanceQuestion.processTextUpload)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
+      );
+    } else if (req.body.__action === 'delete_file') {
+      util.callbackify(studentInstanceQuestion.processDeleteFile)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
+      );
+    } else if (req.body.__action === 'report_issue') {
+      util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
+        if (ERR(err, next)) return;
+        res.redirect(
+          res.locals.urlPrefix +
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
+        );
+      });
+    } else {
+      next(
+        error.make(400, 'unknown __action: ' + req.body.__action, {
+          locals: res.locals,
+          body: req.body,
+        }),
+      );
+    }
+  }),
+);
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   question.renderPanelsForSubmission(

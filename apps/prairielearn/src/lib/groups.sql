@@ -171,6 +171,19 @@ WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
 
+-- BLOCK get_question_permissions
+SELECT
+  bool_or(aqrp.can_submit) as can_submit,
+  bool_or(aqrp.can_view) as can_view
+FROM
+  users u
+  JOIN group_user_roles gu ON u.user_id = gu.user_id
+  JOIN group_roles gr ON gu.group_role_id = gr.id
+  JOIN assessment_question_role_permissions aqrp on aqrp.group_role_id = gu.group_role_id
+WHERE
+  aqrp.assessment_question_id = $assessment_question_id
+  AND gu.user_id = $user_id;
+
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur
 WHERE
