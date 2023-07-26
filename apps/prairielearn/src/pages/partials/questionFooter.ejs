@@ -40,7 +40,7 @@
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
             </button>
-            <% if (disableGradeButton || invalidRoleConfig) { %>
+            <% if (question_context != 'instructor' && (disableGradeButton || invalidRoleConfig)) { %>
               <%
               let lockedPopoverText;
               if (invalidRoleConfig) {
