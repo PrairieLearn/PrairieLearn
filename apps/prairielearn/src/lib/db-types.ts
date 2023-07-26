@@ -189,7 +189,6 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 export const PlanGrantSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   created_at: z.date(),
-  enrollment_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   plan_name: z.enum(['basic', 'compute', 'everything']),
@@ -204,7 +203,6 @@ export const AuditLogSchema = z.object({
   column_name: z.string().nullable(),
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
-  enrollment_id: IdSchema.nullable(),
   date: z.date().nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,

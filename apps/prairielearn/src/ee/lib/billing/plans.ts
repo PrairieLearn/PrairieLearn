@@ -28,15 +28,15 @@ type CourseInstancePlanGrantContext = WithRequiredKeys<
   BasePlanGrantContext,
   'institution_id' | 'course_instance_id'
 >;
-type EnrollmentPlanGrantContext = WithRequiredKeys<
+type CourseInstanceUserPlanGrantContext = WithRequiredKeys<
   BasePlanGrantContext,
-  'institution_id' | 'course_instance_id' | 'enrollment_id'
+  'institution_id' | 'course_instance_id' | 'user_id'
 >;
 type UserPlanGrantContext = WithRequiredKeys<BasePlanGrantContext, 'user_id'>;
 type PlanGrantContext =
   | InstitutionPlanGrantContext
   | CourseInstancePlanGrantContext
-  | EnrollmentPlanGrantContext
+  | CourseInstanceUserPlanGrantContext
   | UserPlanGrantContext;
 type RecursivePlanGrantContext = PlanGrantContext | BasePlanGrantContext;
 

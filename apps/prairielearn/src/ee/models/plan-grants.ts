@@ -12,16 +12,16 @@ type NewCourseInstancePlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
   'institution_id' | 'course_instance_id'
 >;
-type NewEnrollmentPlanGrant = WithRequiredKeys<
+type NewCourseInstanceUserPlanGrant = WithRequiredKeys<
   NewBasePlanGrant,
-  'institution_id' | 'course_instance_id' | 'enrollment_id'
+  'institution_id' | 'course_instance_id' | 'user_id'
 >;
 type NewUserPlanGrant = WithRequiredKeys<NewBasePlanGrant, 'user_id'>;
 
 type NewPlanGrant =
   | NewInstitutionPlanGrant
   | NewCourseInstancePlanGrant
-  | NewEnrollmentPlanGrant
+  | NewCourseInstanceUserPlanGrant
   | NewUserPlanGrant;
 
 export async function insertPlanGrant(
@@ -35,7 +35,6 @@ export async function insertPlanGrant(
       plan_name: planGrant.plan_name,
       institution_id: planGrant.institution_id ?? null,
       course_instance_id: planGrant.course_instance_id ?? null,
-      enrollment_id: planGrant.enrollment_id ?? null,
       user_id: planGrant.user_id ?? null,
     },
     PlanGrantSchema,
@@ -46,7 +45,6 @@ export async function insertPlanGrant(
     action: 'insert',
     institution_id: newPlanGrant.institution_id,
     course_instance_id: newPlanGrant.course_instance_id,
-    enrollment_id: newPlanGrant.enrollment_id,
     user_id: newPlanGrant.user_id,
     new_state: newPlanGrant,
     row_id: newPlanGrant.id,
@@ -70,7 +68,6 @@ export async function updatePlanGrant(
     column_name: 'type',
     institution_id: updatedPlanGrant.institution_id,
     course_instance_id: updatedPlanGrant.course_instance_id,
-    enrollment_id: updatedPlanGrant.enrollment_id,
     user_id: updatedPlanGrant.user_id,
     old_state: planGrant,
     new_state: updatedPlanGrant,
@@ -90,7 +87,6 @@ export async function deletePlanGrant(planGrant: PlanGrant, authn_user_id: strin
     action: 'delete',
     institution_id: deletedPlanGrant.institution_id,
     course_instance_id: deletedPlanGrant.course_instance_id,
-    enrollment_id: deletedPlanGrant.enrollment_id,
     user_id: deletedPlanGrant.user_id,
     old_state: deletedPlanGrant,
     row_id: deletedPlanGrant.id,
