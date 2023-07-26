@@ -49,7 +49,7 @@ type RecursivePlanGrantContext = PlanGrantContext | BasePlanGrantContext;
  * only the `bar` plan grant.
  *
  * To get *all* plan grants that apply to a context, use
- * {@link getPlanGrantsForContextRecursive}.
+ * {@link getPlanGrantsForPartialContexts}.
  */
 export async function getPlanGrantsForContext(context: PlanGrantContext): Promise<PlanGrant[]> {
   return await queryRows(
@@ -74,11 +74,11 @@ export async function getPlanGrantsForContext(context: PlanGrantContext): Promis
  * To get only the plan grants that apply directly to a context, use
  * {@link getPlanGrantsForContext}.
  */
-export async function getPlanGrantsForContextRecursive(
+export async function getPlanGrantsForPartialContexts(
   context: RecursivePlanGrantContext,
 ): Promise<PlanGrant[]> {
   return await queryRows(
-    sql.select_plan_grants_for_context_recursive,
+    sql.select_plan_grants_for_partial_contexts,
     {
       institution_id: context.institution_id ?? null,
       course_instance_id: context.course_instance_id ?? null,

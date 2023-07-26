@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import helperServer = require('../../../tests/helperServer');
 import {
   getPlanGrantsForContext,
-  getPlanGrantsForContextRecursive,
+  getPlanGrantsForPartialContexts,
   getPlanGrantsForCourseInstance,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
@@ -12,7 +12,7 @@ import {
   updateRequiredPlansForCourseInstance,
 } from './plans';
 import { insertPlanGrant } from '../../models/plan-grants';
-import { runInTransactionAsync } from '@prairielearn/postgres';
+import { queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
 class RollbackTransactionError extends Error {
   constructor() {
@@ -197,8 +197,8 @@ describe('plans', () => {
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
         assert.sameDeepMembers(grantedPlans, ['compute']);
 
-        const recursivePlanGrants = await getPlanGrantsForContextRecursive({ institution_id: '1' });
-        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
+        const allPlanGrants = await getPlanGrantsForPartialContexts({ institution_id: '1' });
+        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(allPlanGrants);
         assert.sameDeepMembers(recursiveGrantedPlans, ['compute']);
       });
     });
@@ -230,11 +230,11 @@ describe('plans', () => {
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
         assert.sameDeepMembers(grantedPlans, ['compute']);
 
-        const recursivePlanGrants = await getPlanGrantsForContextRecursive({
+        const allPlanGrants = await getPlanGrantsForPartialContexts({
           institution_id: '1',
           course_instance_id: '1',
         });
-        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
+        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(allPlanGrants);
         assert.sameDeepMembers(recursiveGrantedPlans, ['basic', 'compute']);
       });
     });
@@ -277,12 +277,12 @@ describe('plans', () => {
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
         assert.sameDeepMembers(grantedPlans, ['everything']);
 
-        const recursivePlanGrants = await getPlanGrantsForContextRecursive({
+        const allPlanGrants = await getPlanGrantsForPartialContexts({
           institution_id: '1',
           course_instance_id: '1',
           user_id: '1',
         });
-        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
+        const recursiveGrantedPlans = getPlanNamesFromPlanGrants(allPlanGrants);
         assert.sameDeepMembers(recursiveGrantedPlans, ['basic', 'compute', 'everything']);
       });
     });

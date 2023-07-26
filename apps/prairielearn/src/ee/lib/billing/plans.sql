@@ -4,44 +4,11 @@ SELECT
 FROM
   plan_grants AS pg
 WHERE
-  -- Institution plan grant
-  (
-    $institution_id::bigint IS NOT NULL
-    AND $course_instance_id::bigint IS NULL
-    AND $user_id::bigint IS NULL
-    AND institution_id = $institution_id
-    AND course_instance_id IS NULL
-    AND user_id IS NULL
-  )
-  -- Course instance plan grant
-  OR (
-    $institution_id::bigint IS NOT NULL
-    AND $course_instance_id::bigint IS NOT NULL
-    AND $user_id::bigint IS NULL
-    AND institution_id = $institution_id
-    AND course_instance_id = $course_instance_id
-    AND user_id IS NULL
-  )
-  -- Course instance user plan grant
-  OR (
-    $institution_id::bigint IS NOT NULL
-    AND $course_instance_id::bigint IS NOT NULL
-    AND $user_id::bigint IS NOT NULL
-    AND institution_id = $institution_id
-    AND course_instance_id = $course_instance_id
-    AND user_id = $user_id
-  )
-  -- User plan grant
-  OR (
-    $institution_id::bigint IS NULL
-    AND $course_instance_id::bigint IS NULL
-    AND $user_id::bigint IS NOT NULL
-    AND institution_id IS NULL
-    AND course_instance_id IS NULL
-    AND user_id = $user_id
-  );
+  institution_id IS NOT DISTINCT FROM $institution_id
+  AND course_instance_id IS NOT DISTINCT FROM $course_instance_id
+  AND user_id IS NOT DISTINCT FROM $user_id;
 
--- BLOCK select_plan_grants_for_context_recursive
+-- BLOCK select_plan_grants_for_partial_contexts
 SELECT
   pg.*
 FROM

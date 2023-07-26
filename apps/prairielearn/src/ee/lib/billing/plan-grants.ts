@@ -2,7 +2,7 @@ import { type Response } from 'express';
 
 import { CourseInstanceSchema, InstitutionSchema, UserSchema } from '../../../lib/db-types';
 import {
-  getPlanGrantsForContextRecursive,
+  getPlanGrantsForPartialContexts,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
@@ -32,7 +32,7 @@ export async function checkPlanGrants(res: Response) {
   // We use `getPlanGrantsForContextRecursive` to get all plan grants that apply
   // to the institution, *or* the course instance, *or* a user within a course instance,
   // *or* the user directly.
-  const planGrants = await getPlanGrantsForContextRecursive({
+  const planGrants = await getPlanGrantsForPartialContexts({
     institution_id: institution.id,
     course_instance_id: course_instance.id,
     user_id: user.user_id,
