@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { Enrollment, EnrollmentSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
