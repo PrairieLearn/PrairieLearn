@@ -12,14 +12,3 @@ export async function insertEnrollment({
 }): Promise<Enrollment> {
   return await queryRow(sql.insert_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
 }
-
-export async function getEnrollmentForUserInCourseInstance({
-  user_id,
-  course_instance_id,
-}): Promise<Enrollment | null> {
-  return await queryOptionalRow(
-    sql.select_enrollment_for_user_in_course_instance,
-    { user_id, course_instance_id },
-    EnrollmentSchema,
-  );
-}

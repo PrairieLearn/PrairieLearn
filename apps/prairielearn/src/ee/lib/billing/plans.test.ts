@@ -12,7 +12,6 @@ import {
   updateRequiredPlansForCourseInstance,
 } from './plans';
 import { insertPlanGrant } from '../../models/plan-grants';
-import { insertEnrollment } from '../../../models/enrollment';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 class RollbackTransactionError extends Error {
@@ -160,15 +159,14 @@ describe('plans', () => {
           '1',
         );
 
-        // Enrollment plan grant
-        await insertEnrollment({ course_instance_id: '1', user_id: '1' });
+        // Course instance user plan grant
         await insertPlanGrant(
           {
             plan_name: 'basic',
             type: 'stripe',
             institution_id: '1',
             course_instance_id: '1',
-            enrollment_id: '1',
+            user_id: '1',
           },
           '1',
         );
@@ -234,10 +232,8 @@ describe('plans', () => {
       });
     });
 
-    it('returns enrollment plan grants', async () => {
+    it('returns course instance user plan grants', async () => {
       await runInTransactionAndRollback(async () => {
-        const enrollment = await insertEnrollment({ course_instance_id: '1', user_id: '1' });
-
         await insertPlanGrant(
           {
             plan_name: 'basic',
@@ -261,7 +257,7 @@ describe('plans', () => {
             type: 'stripe',
             institution_id: '1',
             course_instance_id: '1',
-            enrollment_id: enrollment.id,
+            user_id: '1',
           },
           '1',
         );
@@ -269,7 +265,7 @@ describe('plans', () => {
         const planGrants = await getPlanGrantsForContext({
           institution_id: '1',
           course_instance_id: '1',
-          enrollment_id: enrollment.id,
+          user_id: '1',
         });
         const grantedPlans = getPlanNamesFromPlanGrants(planGrants);
         assert.deepEqual(grantedPlans, ['everything']);
@@ -277,7 +273,7 @@ describe('plans', () => {
         const recursivePlanGrants = await getPlanGrantsForContextRecursive({
           institution_id: '1',
           course_instance_id: '1',
-          enrollment_id: enrollment.id,
+          user_id: '1',
         });
         const recursiveGrantedPlans = getPlanNamesFromPlanGrants(recursivePlanGrants);
         assert.deepEqual(recursiveGrantedPlans, ['basic', 'compute', 'everything']);

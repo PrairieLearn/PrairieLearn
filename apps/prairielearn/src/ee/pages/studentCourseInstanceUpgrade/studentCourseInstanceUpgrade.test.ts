@@ -6,7 +6,7 @@ import helperServer = require('../../../tests/helperServer');
 import { enableEnterpriseEdition } from '../../tests/ee-helpers';
 import {
   reconcilePlanGrantsForCourseInstance,
-  reconcilePlanGrantsForEnrollment,
+  reconcilePlanGrantsForCourseInstanceUser,
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
 import {
@@ -44,10 +44,6 @@ describe('studentCourseInstanceUpgrade', () => {
     await withUser(studentUser, async () => {
       await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
-      // Enroll student in course instance so we can add a plan grant.
-      const user = await getConfiguredUser();
-      const enrollment = await insertEnrollment({ user_id: user.user_id, course_instance_id: '1' });
-
       // Grant `compute` to course instance.
       await reconcilePlanGrantsForCourseInstance(
         '1',
@@ -55,9 +51,10 @@ describe('studentCourseInstanceUpgrade', () => {
         '1',
       );
 
-      // Grant `basic` to student's enrollment.
-      await reconcilePlanGrantsForEnrollment(
-        { institution_id: '1', course_instance_id: '1', enrollment_id: enrollment.id },
+      // Grant `basic` to student in course instance.
+      const user = await getConfiguredUser();
+      await reconcilePlanGrantsForCourseInstanceUser(
+        { institution_id: '1', course_instance_id: '1', user_id: user.user_id },
         [{ plan: 'basic', grantType: 'stripe' }],
         '1',
       );

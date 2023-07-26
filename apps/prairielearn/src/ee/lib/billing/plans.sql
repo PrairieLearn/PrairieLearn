@@ -8,44 +8,36 @@ WHERE
   (
     $institution_id::bigint IS NOT NULL
     AND $course_instance_id::bigint IS NULL
-    AND $enrollment_id::bigint IS NULL
     AND $user_id::bigint IS NULL
     AND institution_id = $institution_id
     AND course_instance_id IS NULL
-    AND enrollment_id IS NULL
     AND user_id IS NULL
   )
   -- Course instance plan grant
   OR (
     $institution_id::bigint IS NOT NULL
     AND $course_instance_id::bigint IS NOT NULL
-    AND $enrollment_id::bigint IS NULL
     AND $user_id::bigint IS NULL
     AND institution_id = $institution_id
     AND course_instance_id = $course_instance_id
-    AND enrollment_id IS NULL
     AND user_id IS NULL
   )
-  -- Enrollment plan grant
+  -- Course instance user plan grant
   OR (
     $institution_id::bigint IS NOT NULL
     AND $course_instance_id::bigint IS NOT NULL
-    AND $enrollment_id::bigint IS NOT NULL
-    AND $user_id::bigint IS NULL
+    AND $user_id::bigint IS NOT NULL
     AND institution_id = $institution_id
     AND course_instance_id = $course_instance_id
-    AND enrollment_id = $enrollment_id
-    AND user_id IS NULL
+    AND user_id = $user_id
   )
   -- User plan grant
   OR (
     $institution_id::bigint IS NULL
     AND $course_instance_id::bigint IS NULL
-    AND $enrollment_id::bigint IS NULL
     AND $user_id::bigint IS NOT NULL
     AND institution_id IS NULL
     AND course_instance_id IS NULL
-    AND enrollment_id IS NULL
     AND user_id = $user_id
   );
 
@@ -60,7 +52,6 @@ WHERE
     $institution_id::bigint IS NOT NULL
     AND institution_id = $institution_id
     AND course_instance_id IS NULL
-    AND enrollment_id IS NULL
     AND user_id IS NULL
   )
   -- Course instance plan grant
@@ -69,25 +60,22 @@ WHERE
     AND $course_instance_id::bigint IS NOT NULL
     AND institution_id = $institution_id
     AND course_instance_id = $course_instance_id
-    AND enrollment_id IS NULL
     AND user_id IS NULL
   )
-  -- Enrollment plan grant
+  -- Course instance user plan grant
   OR (
     $institution_id::bigint IS NOT NULL
     AND $course_instance_id::bigint IS NOT NULL
-    AND $enrollment_id::bigint IS NOT NULL
+    AND $user_id::bigint IS NOT NULL
     AND institution_id = $institution_id
     AND course_instance_id = $course_instance_id
-    AND enrollment_id = $enrollment_id
-    AND user_id IS NULL
+    AND user_id = $user_id
   )
   -- User plan grant
   OR (
     $user_id::bigint IS NOT NULL
     AND institution_id IS NULL
     AND course_instance_id IS NULL
-    AND enrollment_id IS NULL
     AND user_id = $user_id
   );
 

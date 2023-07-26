@@ -57,7 +57,6 @@ export async function getPlanGrantsForContext(context: PlanGrantContext): Promis
     {
       institution_id: context.institution_id ?? null,
       course_instance_id: context.course_instance_id ?? null,
-      enrollment_id: context.enrollment_id ?? null,
       user_id: context.user_id ?? null,
     },
     PlanGrantSchema,
@@ -83,7 +82,6 @@ export async function getPlanGrantsForContextRecursive(
     {
       institution_id: context.institution_id ?? null,
       course_instance_id: context.course_instance_id ?? null,
-      enrollment_id: context.enrollment_id ?? null,
       user_id: context.user_id ?? null,
     },
     PlanGrantSchema,
@@ -170,17 +168,11 @@ export async function reconcilePlanGrantsForCourseInstance(
   });
 }
 
-export async function reconcilePlanGrantsForEnrollment(
-  context: EnrollmentPlanGrantContext,
+export async function reconcilePlanGrantsForCourseInstanceUser(
+  context: CourseInstanceUserPlanGrantContext,
   plans: DesiredPlan[],
   authn_user_id: string,
 ) {
-  // TODO: Associating plan grants with enrollments might be problematic. If a
-  // user enrolls in a course, pays for access, then un-enrolls, then re-enrolls,
-  // we'll have lost the `plan_grants` row that tells us that this user paid.
-  // Perhaps instead of associating a plan grant with an enrollment directly, we
-  // can associate it with a (course_instance_id, user_id) pair? The DB schema
-  // already supports this.
   await runInTransactionAsync(async () => {
     const existingPlanGrants = await getPlanGrantsForContext(context);
     await reconcilePlanGrants(context, existingPlanGrants, plans, authn_user_id);
