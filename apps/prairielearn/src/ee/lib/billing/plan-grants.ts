@@ -12,6 +12,10 @@ export async function checkPlanGrants(res: Response) {
   // We won't check plan grants if the user has a specific role in the course
   // or course instance. We always grant instructor-like users access to all
   // features.
+  //
+  // This function should always be run after the `authzCourseOrInstance`
+  // middleware, which will have taken into account the effective user
+  // and any overridden roles.
   if (
     res.locals.authz_data.course_role !== 'None' ||
     res.locals.authz_data.course_instance_role !== 'None'
