@@ -8,6 +8,7 @@ require('@sentry/tracing');
 const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
@@ -68,7 +69,7 @@ const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { featuresMiddleware } = require('./lib/features');
+const { features, featuresMiddleware } = require('./lib/features');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -416,6 +417,7 @@ module.exports.initExpress = function () {
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
     res.locals.response_id = uuidv4();
+    res.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
@@ -1177,6 +1179,16 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'instance_admin';
       next();
     },
+    asyncHandler(async (req, res, next) => {
+      // The navigation tabs rely on this value to know when to show/hide the
+      // billing tab, so we need to load it for all instance admin pages.
+      const hasCourseInstanceBilling = await features.enabledFromLocals(
+        'course-instance-billing',
+        res.locals,
+      );
+      res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+      next();
+    }),
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', [
     function (req, res, next) {
@@ -1231,6 +1243,15 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload'),
   );
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/billing', [
+      function (req, res, next) {
+        res.locals.navSubPage = 'billing';
+        next();
+      },
+      require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
+    ]);
+  }
 
   // clientFiles
   app.use(
@@ -1897,21 +1918,6 @@ if (require.main === module && config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
-
-        // Start capturing CPU and memory profiles as soon as possible.
-        if (config.pyroscopeEnabled) {
-          const Pyroscope = require('@pyroscope/nodejs');
-          Pyroscope.init({
-            appName: 'prairielearn',
-            serverAddress: config.pyroscopeServerAddress,
-            authToken: config.pyroscopeAuthToken,
-            tags: {
-              instanceId: config.instanceId,
-              ...(config.pyroscopeTags ?? {}),
-            },
-          });
-          Pyroscope.start();
-        }
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {

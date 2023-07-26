@@ -17,9 +17,7 @@ export function flashMiddleware() {
   };
 }
 
-export function flash(): FlashMessage[];
-export function flash(type: FlashMessageType): FlashMessage[];
-export function flash(type: FlashMessageType[]): FlashMessage[];
+export function flash(type?: FlashMessageType | FlashMessageType[]): FlashMessage[];
 export function flash(type: FlashMessageType, message: string): void;
 export function flash(type?: FlashMessageType | FlashMessageType[], message?: string) {
   const flashStorage = als.getStore();

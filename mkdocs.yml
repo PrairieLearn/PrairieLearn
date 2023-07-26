@@ -12,9 +12,15 @@ markdown_extensions:
   # https://pypi.org/project/mdx-truly-sane-lists/
   - mdx_truly_sane_lists
 
+  # allows indented code blocks inside lists
+  - pymdownx.superfences
+
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
+extra_css:
+  - extra.css
 
 nav:
 - Main: 'index.md'

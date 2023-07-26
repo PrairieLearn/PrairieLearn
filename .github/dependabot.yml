@@ -15,6 +15,10 @@ updates:
     opentelemetry:
       patterns:
         - "@opentelemetry/*"
+    ace:
+      patterns:
+        - "ace-code"
+        - "ace-builds"
 - package-ecosystem: github-actions
   directory: "/"
   schedule:

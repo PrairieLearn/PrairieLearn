@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "logform": "^2.5.1",
-    "winston": "^3.9.0",
+    "winston": "^3.10.0",
     "zod": "^3.21.4"
   }
 }

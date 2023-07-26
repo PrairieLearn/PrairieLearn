@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, filterXSS */
+/* global ace, showdown, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -122,7 +122,7 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = filterXSS(html_contents);
+    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
@@ -192,12 +192,12 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       );
     }
 
-    this.modal.find('#modal-' + uuid + '-themes').change(function () {
-      var theme = $(this).val();
+    this.modal.find('#modal-' + uuid + '-themes').change((e) => {
+      var theme = $(e.currentTarget).val();
       this.editor.setTheme(theme);
     });
-    this.modal.find('#modal-' + uuid + '-fontsize').change(function () {
-      var fontSize = $(this).val();
+    this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
+      var fontSize = $(e.currentTarget).val();
       this.editor.setFontSize(fontSize);
     });
   });
