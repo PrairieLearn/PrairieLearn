@@ -17,7 +17,7 @@ import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsE
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-async function selectCourseInstanceAndCourseInstitution({
+async function selectCourseInstanceAndCourseInInstitution({
   institution_id,
   unsafe_course_id,
   unsafe_course_instance_id,
@@ -44,7 +44,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
-    const { course, course_instance } = await selectCourseInstanceAndCourseInstitution({
+    const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
       unsafe_course_id: req.params.course_id,
       unsafe_course_instance_id: req.params.course_instance_id,
@@ -65,7 +65,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course_instance } = await selectCourseInstanceAndCourseInstitution({
+    const { course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
       unsafe_course_id: req.params.course_id,
       unsafe_course_instance_id: req.params.course_instance_id,
@@ -73,7 +73,6 @@ router.post(
 
     if (req.body.__action === 'update_enrollment_limit') {
       await queryAsync(sql.update_enrollment_limit, {
-        institution_id: req.params.institution_id,
         course_instance_id: course_instance.id,
         enrollment_limit: req.body.enrollment_limit || null,
       });
