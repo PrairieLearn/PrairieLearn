@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
+import { flash } from '@prairielearn/flash';
 
 import {
   InstitutionAdminGeneral,
@@ -9,14 +10,12 @@ import {
 } from './institutionAdminGeneral.html';
 import { getInstitution } from '../../lib/institution';
 import {
-  DesiredPlan,
   getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans';
-import { PlanName } from '../../lib/billing/plans-types';
 import { InstitutionSchema } from '../../../lib/db-types';
-import { flash } from '@prairielearn/flash';
 import { insertAuditLog } from '../../../models/audit-log';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -70,23 +69,15 @@ router.post(
       flash('success', 'Successfully updated enrollment limits.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
-      // We exclude `basic` from the list of allowed plans because it should
-      // only ever be used for student billing for enrollments.
-      const allowedPlans: PlanName[] = ['compute', 'everything'];
-      const updates: DesiredPlan[] = [];
-      for (const plan of allowedPlans) {
-        const planGranted = !!req.body[`plan_${plan}`];
-        const planGrantType = req.body[`plan_${plan}_grant_type`];
-        if (planGranted) {
-          updates.push({
-            plan,
-            grantType: planGrantType,
-          });
-        }
-      }
+      const desiredPlans = parseDesiredPlanGrants({
+        body: req.body,
+        // We exclude `basic` from the list of allowed plans because it should
+        // only ever be used for student billing for enrollments.
+        allowedPlans: ['compute', 'everything'],
+      });
       await reconcilePlanGrantsForInstitution(
         req.params.institution_id,
-        updates,
+        desiredPlans,
         res.locals.authn_user.user_id,
       );
       flash('success', 'Successfully updated institution plan grants.');
