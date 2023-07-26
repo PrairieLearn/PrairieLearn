@@ -9,13 +9,6 @@ import {
 import { planGrantsMatchPlanFeatures } from './plans-types';
 
 export async function checkPlanGrants(res: Response) {
-  // We'll only check plan grants for course instances, as students can't
-  // currently ever access a course directly. And even if they could, plan
-  // grants aren't associated with courses.
-  if (!res.locals.course_instance) {
-    return true;
-  }
-
   // We won't check plan grants if the user has a specific role in the course
   // or course instance. We always grant instructor-like users access to all
   // features.
