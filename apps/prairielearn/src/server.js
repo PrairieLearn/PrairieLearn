@@ -92,6 +92,13 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
+function enterpriseOnlyMiddleware(load) {
+  if (isEnterprise()) {
+    return load();
+  }
+  return (req, res, next) => next();
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {import('express').Application} The express "app" object that was created.
@@ -1375,6 +1382,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);

@@ -39,7 +39,7 @@ export function getFeaturesForPlans(plans: PlanName[]): PlanFeatureName[] {
   return Array.from(features);
 }
 
-export function planGrantsMatchPlanFeatures(plans: PlanName[], plan: PlanName): boolean {
+export function planMatchPlanFeatures(plans: PlanName[], plan: PlanName): boolean {
   const planGrantsFeatures = getFeaturesForPlans(plans);
   const planFeatures = getFeaturesForPlans([plan]);
   return (
