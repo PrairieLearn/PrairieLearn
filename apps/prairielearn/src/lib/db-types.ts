@@ -179,3 +179,43 @@ export const WorkspaceLogSchema = z.object({
   workspace_id: IdSchema,
 });
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
+
+export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
+export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
+
+export const PlanGrantSchema = z.object({
+  course_instance_id: IdSchema.nullable(),
+  created_at: z.date(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+  type: EnumPlanGrantTypeSchema,
+  user_id: IdSchema.nullable(),
+});
+export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const AuditLogSchema = z.object({
+  action: z.string().nullable(),
+  authn_user_id: IdSchema.nullable(),
+  column_name: z.string().nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: z.date().nullable(),
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  new_state: z.any(),
+  old_state: z.any(),
+  parameters: z.any(),
+  row_id: IdSchema.nullable(),
+  table_name: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type AuditLog = z.infer<typeof AuditLogSchema>;
+
+export const CourseInstanceRequiredPlanSchema = z.object({
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+});
+export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPlanSchema>;

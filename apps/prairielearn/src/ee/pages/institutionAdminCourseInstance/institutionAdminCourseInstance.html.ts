@@ -1,16 +1,25 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { Course, type CourseInstance, type Institution } from '../../../lib/db-types';
+import {
+  type Course,
+  type CourseInstance,
+  type Institution,
+  type PlanGrant,
+} from '../../../lib/db-types';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
+import { compiledScriptTag } from '../../../lib/assets';
 
 export function InstitutionAdminCourseInstance({
   institution,
   course,
   course_instance,
+  planGrants,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
+  planGrants: PlanGrant[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -22,6 +31,7 @@ export function InstitutionAdminCourseInstance({
           navPage: 'institution_admin',
           pageTitle: 'Courses',
         })}
+        ${compiledScriptTag('institutionAdminCourseInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
@@ -47,8 +57,8 @@ export function InstitutionAdminCourseInstance({
           </ol>
         </nav>
         <main class="container mb-4">
-          <h2 class="h4 mb-4">Limits</h2>
-          <form method="POST">
+          <h2 class="h4">Limits</h2>
+          <form method="POST" class="mb-3">
             <div class="form-group">
               <label for="institution_course_instance_enrollment_limit">
                 Enrollment limit for institution
@@ -89,6 +99,15 @@ export function InstitutionAdminCourseInstance({
               Save
             </button>
           </form>
+
+          <h2 class="h4">Plans</h2>
+          ${PlanGrantsEditor({
+            planGrants,
+            // The basic plan is never available at the course instance level; it's only
+            // used for student billing for enrollments.
+            excludedPlanNames: ['basic'],
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>
