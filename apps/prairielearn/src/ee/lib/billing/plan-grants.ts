@@ -12,7 +12,7 @@ import { planGrantsMatchPlanFeatures } from './plans-types';
 export async function checkPlanGrants(res: Response) {
   // We'll only check plan grants for course instances, as students can't
   // currently ever access a course directly. And even if they could, plan
-  // grans aren't associated with courses.
+  // grants aren't associated with courses.
   if (!res.locals.course_instance) {
     return true;
   }
