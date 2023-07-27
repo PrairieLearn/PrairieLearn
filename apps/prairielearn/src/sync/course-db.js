@@ -1275,14 +1275,14 @@ async function validateAssessment(assessment, questions) {
       (canView || []).forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`
+            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
       (canSubmit || []).forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`
+            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
@@ -1299,7 +1299,7 @@ async function validateAssessment(assessment, questions) {
         validateViewAndSubmitRolePermissions(
           zoneQuestion.canView,
           zoneQuestion.canSubmit,
-          'zone question'
+          'zone question',
         );
       });
     });
