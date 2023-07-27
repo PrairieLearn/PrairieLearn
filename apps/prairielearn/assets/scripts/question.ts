@@ -114,6 +114,9 @@ function fetchResults(socket, submissionId) {
         answerContainer.closest('.grading-block').classList.remove('d-none');
       }
       if (msg.submissionPanel) {
+        // Using jQuery here because msg.submissionPanel may contain scripts
+        // that must be executed. Typical vanilla JS alternatives don't support
+        // this kind of script.
         $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
         mathjaxTypeset();
         // Restore modal state if need be
