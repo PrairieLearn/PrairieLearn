@@ -92,6 +92,7 @@
     "google-auth-library": "^8.9.0",
     "he": "^1.2.0",
     "highlight.js": "^11.8.0",
+    "htmx.org": "^1.9.4",
     "http-proxy-middleware": "^2.0.6",
     "http-status": "^1.6.2",
     "isbinaryfile": "^5.0.0",
