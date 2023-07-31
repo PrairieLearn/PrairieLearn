@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { PlanName, planMatchPlanFeatures } from '../plans-types';
+import { PlanName, plansMatchPlanFeatures } from '../plans-types';
 
 interface InstructorInstanceAdminBillingInput {
   initialRequiredPlans: PlanName[];
@@ -33,8 +33,11 @@ export function instructorInstanceAdminBillingState(
 ): InstructorInstanceAdminBillingState {
   const studentBillingInitialEnabled = input.initialRequiredPlans.includes('basic');
   const studentBillingEnabled = input.desiredRequiredPlans.includes('basic');
-  const computeEnabledByInstitution = planMatchPlanFeatures(input.institutionPlanGrants, 'compute');
-  const computeEnabledByCourseInstance = planMatchPlanFeatures(
+  const computeEnabledByInstitution = plansMatchPlanFeatures(
+    input.institutionPlanGrants,
+    'compute',
+  );
+  const computeEnabledByCourseInstance = plansMatchPlanFeatures(
     input.courseInstancePlanGrants,
     'compute',
   );
