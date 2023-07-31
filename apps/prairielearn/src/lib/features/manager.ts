@@ -41,8 +41,6 @@ type FeatureContext =
   | CourseContext
   | CourseInstanceContext;
 
-function validateFeatureContext(context: object): FeatureContext {}
-
 export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
   als: AsyncLocalStorage<FeatureOverrides>;
@@ -62,7 +60,7 @@ export class FeatureManager<FeatureName extends string> {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
-    validateFeatureContext(context);
+    this.validateContext(context);
   }
 
   hasFeature(feature: string): feature is FeatureName {
