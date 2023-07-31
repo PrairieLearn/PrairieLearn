@@ -301,7 +301,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     debug(`effective req_date = ${req_date}`);
   }
 
-  const params2 = {
+  const effectiveParams = {
     user_id: user.user_id,
     course_id: req.params.course_id || null,
     course_instance_id: req.params.course_instance_id || null,
@@ -314,13 +314,13 @@ module.exports = asyncHandler(async (req, res, next) => {
     req_course_instance_role: req.cookies.pl_requested_course_instance_role || null,
   };
 
-  const result2 = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, params);
+  const effectiveResult = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, params);
 
   // If the authn user were denied access, then we would return an error. Here,
   // we simply return (without error). This allows the authn user to keep access
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
-  if (result2.rowCount === 0) {
+  if (effectiveResult.rowCount === 0) {
     debug(`effective user was denied access`);
 
     res.locals.authz_data.user = user;
@@ -354,7 +354,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.user = res.locals.authz_data.user;
     res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
-    res.locals.authz_data.mode = params2.req_mode;
+    res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
     return;
   }
@@ -365,7 +365,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_preview &&
-    result2.rows[0].permissions_course.has_course_permission_preview
+    effectiveResult.rows[0].permissions_course.has_course_permission_preview
   ) {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
@@ -386,7 +386,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_view &&
-    result2.rows[0].permissions_course.has_course_permission_view
+    effectiveResult.rows[0].permissions_course.has_course_permission_view
   ) {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
@@ -407,7 +407,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_edit &&
-    result2.rows[0].permissions_course.has_course_permission_edit
+    effectiveResult.rows[0].permissions_course.has_course_permission_edit
   ) {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
@@ -428,7 +428,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_own &&
-    result2.rows[0].permissions_course.has_course_permission_own
+    effectiveResult.rows[0].permissions_course.has_course_permission_own
   ) {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
@@ -450,7 +450,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // remove all override cookies and return with error
     if (
       !res.locals.authz_data.authn_has_course_instance_permission_view &&
-      result2.rows[0].permissions_course_instance.has_course_instance_permission_view
+      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view
     ) {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
@@ -473,7 +473,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // remove all override cookies and return with error
     if (
       !res.locals.authz_data.authn_has_course_instance_permission_edit &&
-      result2.rows[0].permissions_course_instance.has_course_instance_permission_edit
+      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit
     ) {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
@@ -498,7 +498,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // with error
     if (
       user.uid !== res.locals.authn_user.uid && // effective uid is not the same as authn uid
-      result2.rows[0].permissions_course_instance.has_student_access_with_enrollment && // effective user is enrolled with access
+      effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment && // effective user is enrolled with access
       !user_with_requested_uid_has_instructor_access_to_course_instance && // effective user is not an instructor (i.e., is a student)
       !res.locals.authz_data.authn_has_course_instance_permission_edit
     ) {
@@ -524,15 +524,15 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   res.locals.authz_data.user = user;
   res.locals.authz_data.is_administrator = is_administrator;
-  res.locals.authz_data.course_role = result2.rows[0].permissions_course.course_role;
+  res.locals.authz_data.course_role = effectiveResult.rows[0].permissions_course.course_role;
   res.locals.authz_data.has_course_permission_preview =
-    result2.rows[0].permissions_course.has_course_permission_preview;
+    effectiveResult.rows[0].permissions_course.has_course_permission_preview;
   res.locals.authz_data.has_course_permission_view =
-    result2.rows[0].permissions_course.has_course_permission_view;
+    effectiveResult.rows[0].permissions_course.has_course_permission_view;
   res.locals.authz_data.has_course_permission_edit =
-    result2.rows[0].permissions_course.has_course_permission_edit;
+    effectiveResult.rows[0].permissions_course.has_course_permission_edit;
   res.locals.authz_data.has_course_permission_own =
-    result2.rows[0].permissions_course.has_course_permission_own;
+    effectiveResult.rows[0].permissions_course.has_course_permission_own;
 
   // Effective users are confined to one course, so we discard all other
   // courses from the list of those to which the effective user has staff
@@ -545,11 +545,12 @@ module.exports = asyncHandler(async (req, res, next) => {
   // remains in the list (the current course) with what it should be.
   //
   // We then update editable_courses as usual.
-  res.locals.authz_data.courses = (result2.rows[0].courses || []).filter((course) =>
-    idsEqual(course.id, result2.rows[0].course.id),
+  res.locals.authz_data.courses = (effectiveResult.rows[0].courses || []).filter((course) =>
+    idsEqual(course.id, effectiveResult.rows[0].course.id),
   );
   res.locals.authz_data.courses.forEach(
-    (course) => (course.permissions_course = _.cloneDeep(result2.rows[0].permissions_course)),
+    (course) =>
+      (course.permissions_course = _.cloneDeep(effectiveResult.rows[0].permissions_course)),
   );
   res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(
     (course) => course.permissions_course.has_course_permission_edit,
@@ -557,22 +558,22 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   // Use the course_instances for the effective user, but keeping only
   // those ones for which the authn user also has access.
-  res.locals.authz_data.course_instances = result2.rows[0].course_instances || [];
+  res.locals.authz_data.course_instances = effectiveResult.rows[0].course_instances || [];
   res.locals.authz_data.course_instances = res.locals.authz_data.course_instances.filter((ci) =>
     res.locals.authz_data.authn_course_instances.some((authn_ci) => idsEqual(authn_ci.id, ci.id)),
   );
 
   if (isCourseInstance) {
     res.locals.authz_data.course_instance_role =
-      result2.rows[0].permissions_course_instance.course_instance_role;
+      effectiveResult.rows[0].permissions_course_instance.course_instance_role;
     res.locals.authz_data.has_course_instance_permission_view =
-      result2.rows[0].permissions_course_instance.has_course_instance_permission_view;
+      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view;
     res.locals.authz_data.has_course_instance_permission_edit =
-      result2.rows[0].permissions_course_instance.has_course_instance_permission_edit;
+      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit;
     res.locals.authz_data.has_student_access =
-      result2.rows[0].permissions_course_instance.has_student_access;
+      effectiveResult.rows[0].permissions_course_instance.has_student_access;
     res.locals.authz_data.has_student_access_with_enrollment =
-      result2.rows[0].permissions_course_instance.has_student_access_with_enrollment;
+      effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment;
 
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
@@ -585,7 +586,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   res.locals.user = res.locals.authz_data.user;
   res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
-  res.locals.authz_data.mode = result2.rows[0].mode;
+  res.locals.authz_data.mode = effectiveResult.rows[0].mode;
   res.locals.req_date = req_date;
 
   next();
