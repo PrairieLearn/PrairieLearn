@@ -1,4 +1,4 @@
-automata-lib==7.1.0
+automata-lib==8.0.0
 beautifulsoup4==4.12.2
 bokeh==3.2.0
 colormath==3.0.0
