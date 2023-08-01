@@ -2944,7 +2944,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@sa11y/format": ^5.2.0
-    "@sentry/profiling-node": ^1.0.8
+    "@sentry/profiling-node": ^1.1.2
     "@sentry/tracing": ^7.57.0
     "@socket.io/redis-adapter": ^8.2.1
     "@swc/core": ^1.3.68
@@ -3434,9 +3434,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/profiling-node@npm:^1.0.8":
-  version: 1.0.8
-  resolution: "@sentry/profiling-node@npm:1.0.8"
+"@sentry/profiling-node@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@sentry/profiling-node@npm:1.1.2"
   dependencies:
     "@sentry/core": ^7.53.0
     "@sentry/hub": ^7.53.0
@@ -3448,7 +3448,7 @@ __metadata:
     node-gyp: ^9.3.0
   bin:
     sentry-prune-profiler-binaries: scripts/prune-profiler-binaries.mjs
-  checksum: 0d3a11b125736239ac663d3d69811961639df00f93f1975eecde5a56e81c770c8e42184d638c61212d34c62145d0b49335cb8aeb685192eac4eb0321f64c9bfe
+  checksum: da513bb314c9227e99f52bde4391f6a5c8dec70382b48ca74508b6236f0fedbeee0dc920cf42fd79bb0fef9b3a15ca041b3ad4ffdffd3ef57927f32c31cd1fe8
   languageName: node
   linkType: hard
 
