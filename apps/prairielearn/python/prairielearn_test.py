@@ -24,7 +24,7 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
     json_df = pl.to_json(df, df_encoding_version=2)
     json_str = json.dumps(json_df)
 
-    assert type(json_str) == str
+    assert isinstance(json_str, str)
 
     # Deserialize and check equality
     loaded_str = json.loads(json_str)
@@ -70,7 +70,7 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
     decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(networkx_graph) == type(decoded_json_object)
+    assert type(networkx_graph) == type(decoded_json_object)  # noqa: E721
 
     assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
@@ -156,7 +156,7 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     )
     decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(numpy_object) == type(decoded_json_object)
+    assert type(numpy_object) == type(decoded_json_object)  # noqa: E721
     np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
 
 
@@ -257,7 +257,7 @@ def test_grade_answer_parametrized_correct(
 
     expected_score = 1.0 if expected_grade else 0.0
     assert question_data["partial_scores"][question_name]["score"] == expected_score
-    assert type(question_data["partial_scores"][question_name]["score"]) == float
+    assert isinstance(question_data["partial_scores"][question_name]["score"], float)
 
     assert "weight" in question_data["partial_scores"][question_name]
     assert question_data["partial_scores"][question_name].get("weight") == weight
