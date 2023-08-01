@@ -71,7 +71,7 @@ describe('Question Sharing', function () {
     });
 
     step('Fail to sync course when validating shared question paths', async () => {
-      // config.checkSharingOnSync = true;
+      config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
@@ -80,7 +80,7 @@ describe('Question Sharing', function () {
       }
 
       // reset default config to avoid breaking other tests
-      // config.checkSharingOnSync = false;
+      config.checkSharingOnSync = false;
     });
 
     step(
@@ -299,14 +299,14 @@ describe('Question Sharing', function () {
     });
 
     step('Re-sync test course, validating shared questions', async () => {
-      // config.checkSharingOnSync = true;
+      config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
       }
 
       // reset default config to avoid breaking other tests
-      // config.checkSharingOnSync = false;
+      config.checkSharingOnSync = false;
     });
 
     step('Successfully access shared question', async () => {
