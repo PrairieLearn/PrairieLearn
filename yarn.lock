@@ -2732,7 +2732,7 @@ __metadata:
     tmp: ^0.2.1
     ts-node: ^10.9.1
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
     winston: ^3.10.0
     zod: ^3.21.4
   languageName: unknown
@@ -2795,7 +2795,7 @@ __metadata:
     serialize-error: ^8.1.0
     ts-node: ^10.9.1
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
     zod: ^3.21.4
   languageName: unknown
   linkType: soft
@@ -2879,7 +2879,7 @@ __metadata:
     lodash: ^4.17.21
     postgres-array: ^3.0.2
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
     yargs: ^17.7.2
   bin:
     pg-describe: ./dist/bin/pg-describe.js
@@ -3100,7 +3100,7 @@ __metadata:
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
     tzientist: ^3.1.0
     unified: ^9.2.2
     unist-util-visit: ^2.0.3
@@ -3203,7 +3203,7 @@ __metadata:
     socket.io: ^4.7.1
     ts-node: ^10.9.1
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
     uuid: ^9.0.0
     yargs-parser: ^21.1.1
     zod: ^3.21.4
@@ -3221,7 +3221,7 @@ __metadata:
     fast-glob: ^3.3.0
     filesize: ^10.0.7
     typescript: ^5.1.6
-    typescript-cp: ^0.1.8
+    typescript-cp: ^0.1.9
   languageName: unknown
   linkType: soft
 
@@ -16119,9 +16119,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-cp@npm:^0.1.8":
-  version: 0.1.8
-  resolution: "typescript-cp@npm:0.1.8"
+"typescript-cp@npm:^0.1.9":
+  version: 0.1.9
+  resolution: "typescript-cp@npm:0.1.9"
   dependencies:
     chokidar: ^3.5.3
     commander: ^10.0.1
@@ -16135,7 +16135,7 @@ __metadata:
     typescript: ">=4.2.3"
   bin:
     tscp: dist/bin/tscp.js
-  checksum: 72f2d05600f96d9b1dd0642a67e9affcb77d8f9983c7388bb9b16d8abc4628c3bae74d08539c36e5e45897a1e241fc6c380df4a6ccd77ea3c20c8db4b61d5bef
+  checksum: 2e024a4ec564cd6e63e29500b3d2034506d9d7d63798502648430da1e3092a04f831fc14303d81ad446badc3df04387e2a6a992fd76dd39102cdf60261263c05
   languageName: node
   linkType: hard
 

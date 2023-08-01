@@ -16,7 +16,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.16.19",
     "typescript": "^5.1.6",
-    "typescript-cp": "^0.1.8"
+    "typescript-cp": "^0.1.9"
   },
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
