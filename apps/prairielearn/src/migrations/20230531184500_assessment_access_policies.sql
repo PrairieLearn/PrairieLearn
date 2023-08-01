@@ -1,12 +1,11 @@
--- enum_assessment_access_policy_type
-CREATE TYPE enum_assessment_access_policy_type AS ENUM ('manual', 'extension_token');
-
-
+CREATE SEQUENCE IF NOT EXISTS assessment_access_policies_id_seq;
 
 -- Create assessment_access_policies table
 CREATE TABLE IF NOT EXISTS assessment_access_policies (
+    id BIGINT NOT NULL DEFAULT nextval('assessment_access_policies_id_seq'::regclass),
     assessment_id BIGINT REFERENCES assessments(id) NOT NULL,
-    student_uid TEXT REFERENCES users(uid) ON UPDATE CASCADE ON DELETE CASCADE ,
+    user_id BIGINT REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    -- student_uid TEXT,
     group_id BIGINT REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE ,
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -14,11 +13,13 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
     note TEXT,
     created_by TEXT REFERENCES users(uid) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    extension_type enum_assessment_access_policy_type NOT NULL,
-    -- Constraint to check that either user_id or group_id (or both) is not null, but not both
+    -- CHECK (
+    --     (student_uid IS NOT NULL AND group_id IS NULL)
+    --     OR (student_uid IS NULL AND group_id IS NOT NULL)
+    -- )
     CHECK (
-        (student_uid IS NOT NULL AND group_id IS NULL)
-        OR (student_uid IS NULL AND group_id IS NOT NULL)
-    )
+        num_nonnulls(user_id, group_id) <= 1
+    ),
+    PRIMARY KEY (id)
 );
 

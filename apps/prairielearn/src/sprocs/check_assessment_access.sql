@@ -27,18 +27,19 @@ DECLARE
     next_active_start_date TIMESTAMP WITH TIME ZONE;
     next_active_credit integer;
     credit_from_override integer;
+    assessment_end_date TIMESTAMP WITH TIME ZONE;
     end_date_from_override TIMESTAMP WITH TIME ZONE;
 
 BEGIN
     -- Check if the user has an entry in the assessment_access_policies table for this assessment_id.
     -- If yes, get the end_date from the assessment_access_policies table, otherwise, use the end_date from the assessment_access_rules table.
-    SELECT end_date , credit
+    SELECT aap.end_date , aap.credit
     INTO end_date_from_override , credit_from_override
-    FROM assessment_access_policies
-    WHERE assessment_id = check_assessment_access.assessment_id
+    FROM assessment_access_policies as aap
+    WHERE aap.assessment_id = check_assessment_access.assessment_id
         AND (student_uid = check_assessment_access.uid)
-        AND start_date <= check_assessment_access.date
-        AND end_date >= check_assessment_access.date
+        -- AND start_date <= check_assessment_access.date
+        -- AND end_date >= check_assessment_access.date
     ORDER BY end_date DESC
     LIMIT 1;
 
@@ -46,14 +47,15 @@ BEGIN
     SELECT
         caar.authorized,
         caar.exam_access_end,
+        -- aar.end_date,
         CASE
             WHEN end_date_from_override IS NOT NULL THEN end_date_from_override
             ELSE aar.end_date
         END AS end_date,
         -- aar.credit,
         CASE
-            WHEN credit_from_override IS NOT NULL THEN credit_from_override
-            ELSE aar.credit
+            WHEN credit_from_override IS NULL THEN aar.credit
+            ELSE credit_from_override
         END AS credit,
         -- CASE
         --     WHEN aar.credit > 0 AND aar.active THEN
@@ -66,18 +68,19 @@ BEGIN
         --     ELSE 'None'
         -- END AS credit_date_string,
         CASE
-            WHEN aar.credit > 0 AND aar.active THEN
+            WHEN (aar.credit > 0 OR credit_from_override > 0) AND aar.active THEN
                 (CASE
-                    WHEN credit_from_override IS NOT NULL THEN credit_from_override::text || '%'
-                    ELSE aar.credit::text || '%'
+                    WHEN credit_from_override IS NULL THEN aar.credit::text || '%'
+                    ELSE credit_date_string::text || '%'
                 END)
                 || (CASE
-                        WHEN end_date_from_override IS NOT NULL
-                        THEN ' until ' || format_date_short(end_date_from_override, display_timezone)
-                        ELSE ' until ' || format_date_short(aar.end_date, display_timezone)
-                    END)
+                        WHEN end_date_from_override IS NULL THEN ' until ' || format_date_short(aar.end_date, display_timezone)
+                        WHEN end_date_from_override IS NOT NULL THEN ' until ' || format_date_short(end_date_from_override, display_timezone)
+                            ELSE ''
+                        END)
             ELSE 'None'
         END AS credit_date_string,
+
         -- If timer hits 0:00 at end_date, exam might end after end_date (overdue submission).
         -- Resolve race condition by subtracting 31 sec from end_date.
         -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
@@ -102,6 +105,7 @@ BEGIN
     INTO
         authorized,
         exam_access_end,
+        assessment_end_date,
         credit,
         credit_date_string,
         time_limit_min,
@@ -195,20 +199,27 @@ BEGIN
     -- List of all access rules that will grant access to this user/mode at some date (past or future),
     -- computed by ignoring the date argument.
     SELECT
-        coalesce(jsonb_agg(jsonb_build_object(
-            'credit', CASE WHEN aar.credit IS NOT NULL THEN aar.credit::text || '%' ELSE 'None' END,
-            'time_limit_min', CASE WHEN aar.time_limit_min IS NOT NULL THEN aar.time_limit_min::text || ' min' ELSE '—' END,
-            'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
-            'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
-            'mode', aar.mode,
-            'active', aar.id = active_access_rule_id
-        ) ORDER BY aar.number), '[]'::jsonb)
+    coalesce(jsonb_agg(jsonb_build_object(
+        'credit', CASE 
+            WHEN credit_from_override IS NOT NULL THEN credit_from_override::text || '%' 
+            ELSE CASE WHEN aar.credit IS NOT NULL THEN aar.credit::text || '%' ELSE 'None' END
+        END,
+        'time_limit_min', CASE WHEN aar.time_limit_min IS NOT NULL THEN aar.time_limit_min::text || ' min' ELSE '—' END,
+        'start_date', CASE WHEN aar.start_date IS NOT NULL THEN format_date_full(aar.start_date, display_timezone) ELSE '—' END,
+        'end_date', CASE 
+            WHEN end_date_from_override IS NOT NULL THEN format_date_full(end_date_from_override, display_timezone) 
+            ELSE CASE WHEN aar.end_date IS NOT NULL THEN format_date_full(aar.end_date, display_timezone) ELSE '—' END
+        END,
+        'mode', aar.mode,
+        'active', aar.id = active_access_rule_id
+    ) ORDER BY aar.number), '[]'::jsonb)
     INTO
         access_rules
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+        LEFT JOIN assessment_access_policies as aap ON aap.assessment_id = aar.assessment_id AND aap.student_uid = check_assessment_access.uid
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND ((aar.role > 'Student') IS NOT TRUE)
@@ -216,5 +227,5 @@ BEGIN
             (aar.active AND caar.authorized)
             OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
         );
-END;
-$$ LANGUAGE plpgsql VOLATILE;
+    END;
+    $$ LANGUAGE plpgsql VOLATILE;

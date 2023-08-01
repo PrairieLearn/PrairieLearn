@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-	<meta http-equiv="Pragma" content="no-cache">
-	<meta http-equiv="Expires" content="0">
-
 	<%- include('../partials/head'); %>
 </head>
 <body>
@@ -129,8 +125,7 @@
 									<div id="group_id_error" class="invalid-feedback" style="display: none; color: red;"></div>
 								</div>
 								<div class="form-group">
-									<label for="created_at">Created At</label>
-									<input type="datetime-local" class="form-control" id="created_at" name="created_at" required readonly>
+									<input type="hidden" class="form-control" id="created_at" name="created_at" required readonly>
 								</div>
 								<div class="form-group">
 									<label for="start_date">Start Date</label>
@@ -149,21 +144,11 @@
 									<label for="credit">Credit</label>
 									<input type="number" class="form-control" id="credit" name="credit">
 								</div>
-
-
 								<div class="form-group">
 									<label for="note">Note</label>
 									<textarea class="form-control" id="note" name="note"></textarea>
 								</div>
 
-								<div class="form-group">
-									<label for="type">Type</label>
-									<select class="form-control" id="type" name="type" required>
-										<option value="">Select a type</option>
-										<option value="manual">Manual</option>
-										<option value="extension_token">Extension Token</option>
-									</select>
-								</div>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -188,7 +173,7 @@
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 								<input type="hidden" id="edit-assessment_id" name="assessment_id">
 								<div class="form-group">
-									<label for="student_uid">User ID</label>
+									<label for="student_uid">Student UID</label>
 									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
 								</div>
 								<div class="form-group">
@@ -201,14 +186,12 @@
 									<input type="number" class="form-control" id="edit-credit" name="credit">
 								</div>
 								<div class="form-group">
-									<label for="created_at">Created At</label>
-									<input type="datetime-local" class="form-control" id="edit-created_at" name="created_at" required readonly>
+									<input type="hidden" class="form-control" id="edit-created_at" name="created_at" required readonly>
 								</div>
 								<div class="form-group">
 									<label for="edit-start_date">Start Date</label>
 									<input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
 								</div>
-
 								<div class="form-group">
 									<label for="edit-end_date">End Date</label>
 									<input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
@@ -217,15 +200,6 @@
 								<div class="form-group">
 									<label for="edit-note">Note</label>
 									<textarea class="form-control" id="edit-note" name="note"></textarea>
-								</div>
-
-								<div class="form-group">
-									<label for="edit-type">Type</label>
-									<select class="form-control" id="edit-type" name="type" required>
-										<option value="">Select a type</option>
-										<option value="manual">Manual</option>
-										<option value="extension_token">Extension Token</option>
-									</select>
 								</div>
 						</div>
 						<div class="modal-footer">
@@ -240,7 +214,6 @@
 				<table class="table table-sm table-hover">
 					<thead>
 						<tr>
-							<!-- <th>Assessment ID</th> -->
 							<th>Student UID</th>
 							<th>Group ID</th>
 							<th>Created At</th>
@@ -249,14 +222,12 @@
 							<th>Created By</th>
 							<th>Credit</th>
 							<th>Note</th>
-							<th>Extension Type</th>
 							<th>Action</th>
 						</tr>
 					</thead>
 					<tbody>
 						<% policies.forEach(function (policy) { %>
 							<tr>
-								<!-- <td><%= policy.assessment_id %></td> -->
 								<td><%= policy.student_uid %></td>
 								<td><%= policy.group_id %></td>
 								<td><%= policy.created_at %></td>
@@ -265,7 +236,6 @@
 								<td><%= policy.created_by %></td>
 								<td><%= policy.credit %></td>
 								<td><%= policy.note %></td>
-								<td><%= policy.type %></td>
 								<td>
 									<div class="dropdown">
 										<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

@@ -5,22 +5,16 @@ const {loadSqlEquiv} = require('@prairielearn/postgres');
 const sqldb = require('@prairielearn/postgres');
 const sql = loadSqlEquiv(__filename);
 
-router.use((req, res, next) => {
-  // Initialize policies array in res.locals
-  res.locals.policies = []; 
-  next();
-});
-
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    console.log(JSON.stringify(res.locals.course_instance))
     const params = {
       assessment_id: res.locals.assessment.id,
       current_student_uid: res.locals.user.uid,
       current_assessment_title : res.locals.assessment.title
     };
-    const result = await sqldb.queryAsync(sql.selectQuery, params);
+    const result = await sqldb.queryAsync(sql.select_assessment_access_policy, params);
     res.locals.policies = result.rows
     // console.log(res)
     res.render(__filename.replace(/\.js$/, '.ejs'), {
@@ -37,21 +31,28 @@ router.post(
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_new_override') {
     const params = {
-      assessment_id: req.body.assessment_id,
+      assessment_id: res.locals.assessment.id,
       created_at: new Date(req.body.created_at),
-      created_by: req.body.current_student_uid,
+      created_by: res.locals.user.uid,
       credit: req.body.credit,
       end_date: new Date(req.body.end_date),
       group_id: req.body.group_id || null,
       note: req.body.note || null,
       start_date: new Date(req.body.start_date),
-      type: req.body.type,
+      // type: req.body.type,
       student_uid: req.body.student_uid,
     };
+    // First, validate if group belongs to course instance
+    const group_validation_result = await sqldb.queryAsync(sql.check_group_in_course_instance, {group_id: params.group_id, course_instance_id: res.locals.course_instance.id});
+    console.log(group_validation_result.rows)
+    // If group does not belong to course instance, return error
+    if (group_validation_result.rows[0].count === 0) {
+      return res.status(400).send({ error: 'Group does not belong to the current course instance.' });
+    }
 
-    const insertQuery = sql.insertQuery;
+    const insert_assessment_access_policy = sql.insert_assessment_access_policy;
 
-    await sqldb.queryAsync(insertQuery, params);
+    await sqldb.queryAsync(insert_assessment_access_policy, params);
     res.redirect(req.originalUrl);
   
   } 
@@ -66,16 +67,9 @@ router.post(
       console.log(delete_params)
       // const result_after_delete = await sqldb.queryAsync(deleteQuery, delete_params);
       // console.log(result_after_delete)
-      const result_after_delete = await sqldb.queryAsync(sql.deleteQuery, delete_params);
+      const result_after_delete = await sqldb.queryAsync(sql.delete_assessment_access_policy, delete_params);
       console.log(result_after_delete.rows)
       res.locals.policies = result_after_delete.rows;
-      // res.render(__filename.replace(/\.js$/, '.ejs'), {
-      //   policies: result_after_delete.rows,
-      //   assessment_id: delete_params.assessment_id,
-      //   current_student_uid: delete_params.current_student_uid,
-      //   current_assessment_title: delete_params.current_assessment_title
-      // });
-      
       res.redirect(req.originalUrl);
     }
 
@@ -89,14 +83,13 @@ router.post(
         group_id: req.body.group_id || null,
         note: req.body.note || null,
         start_date: new Date(req.body.start_date),
-        type: req.body.type,
         student_uid: req.body.student_uid,
         
       };
 
-      const updateQuery = sql.updateQuery;
+      const update_assessment_access_policy = sql.update_assessment_access_policy;
 
-      await sqldb.queryAsync(updateQuery, edit_params);
+      await sqldb.queryAsync(update_assessment_access_policy, edit_params);
       res.redirect(req.originalUrl);
     }
   })
