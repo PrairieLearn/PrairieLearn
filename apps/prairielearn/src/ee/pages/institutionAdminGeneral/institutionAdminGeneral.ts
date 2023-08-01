@@ -10,7 +10,7 @@ import {
 } from './institutionAdminGeneral.html';
 import { getInstitution } from '../../lib/institution';
 import {
-  getPlanGrantsForInstitution,
+  getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans';
 import { InstitutionSchema } from '../../../lib/db-types';
@@ -29,7 +29,7 @@ router.get(
       { institution_id: req.params.institution_id },
       InstitutionStatisticsSchema,
     );
-    const planGrants = await getPlanGrantsForInstitution(req.params.institution_id);
+    const planGrants = await getPlanGrantsForContext({ institution_id: req.params.institution_id });
     res.send(
       InstitutionAdminGeneral({
         institution,
