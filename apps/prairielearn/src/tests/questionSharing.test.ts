@@ -304,7 +304,7 @@ describe('Question Sharing', function () {
       }
 
       // reset default config to avoid breaking other tests
-      config.checkSharingOnSync = false;
+      // config.checkSharingOnSync = false;
     });
 
     step('Successfully access shared question', async () => {
