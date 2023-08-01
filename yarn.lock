@@ -2987,7 +2987,7 @@ __metadata:
     async-mutex: ^0.4.0
     async-stacktrace: ^0.0.2
     axe-core: ^4.7.2
-    backbone: ^1.4.1
+    backbone: ^1.5.0
     better-ajv-errors: ^1.2.0
     blocked: ^1.3.0
     blocked-at: ^1.2.0
@@ -5473,12 +5473,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"backbone@npm:^1.4.1":
-  version: 1.4.1
-  resolution: "backbone@npm:1.4.1"
+"backbone@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "backbone@npm:1.5.0"
   dependencies:
     underscore: ">=1.8.3"
-  checksum: 709bd7dde1bbd93eee9375ae9bcd33efa9f253a56f5bf22d67197d8e3c57574f93ab230dcbb750d224a0d9bc58a66ade1d4c6082b998b6c89e939c2e66b65832
+  checksum: baaa229bbbbc697b41e1a15375b7bb1d55f41aaa5cc3a0a0f0733e5328136ca6d798c37f26e5cf6f1b706e1deaf6d8a6ae13634b10a7ce50fbbbaf214f81604a
   languageName: node
   linkType: hard
 
