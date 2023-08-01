@@ -3120,7 +3120,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.16.19
     prettier: 3.0.0
-    sql-formatter: ^12.2.3
+    sql-formatter: ^12.2.4
     typescript: ^5.1.6
   languageName: unknown
   linkType: soft
@@ -9187,6 +9187,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"get-stdin@npm:=8.0.0":
+  version: 8.0.0
+  resolution: "get-stdin@npm:8.0.0"
+  checksum: 40128b6cd25781ddbd233344f1a1e4006d4284906191ed0a7d55ec2c1a3e44d650f280b2c9eeab79c03ac3037da80257476c0e4e5af38ddfb902d6ff06282d77
+  languageName: node
+  linkType: hard
+
 "get-stream@npm:^6.0.0":
   version: 6.0.1
   resolution: "get-stream@npm:6.0.1"
@@ -15095,15 +15102,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sql-formatter@npm:^12.2.3":
-  version: 12.2.3
-  resolution: "sql-formatter@npm:12.2.3"
+"sql-formatter@npm:^12.2.4":
+  version: 12.2.4
+  resolution: "sql-formatter@npm:12.2.4"
   dependencies:
     argparse: ^2.0.1
+    get-stdin: =8.0.0
     nearley: ^2.20.1
   bin:
     sql-formatter: bin/sql-formatter-cli.cjs
-  checksum: 4a1787410a0f9167803e030025f64c1ab5b7d79fe5effa21f559caacd7fd352e3cafc773463bf9f4d40bb0e610021eed4bbb601cbf998be60756caaaaf32b16d
+  checksum: b95c36f19aacddc20cfa82ca0f098e8f6c3a0cee99a85e395a9768de3547fbd7e79013a3d32c62bbf47d949f21511e4ef1df19fee769bffba306a3a66b75b2ef
   languageName: node
   linkType: hard
 
