@@ -29,6 +29,11 @@ export async function checkPlanGrants(res: Response) {
 
   const requiredPlans = await getRequiredPlansForCourseInstance(course_instance.id);
 
+  if (requiredPlans.length === 0) {
+    // If there aren't any required plans, no need to check plan grants!
+    return true;
+  }
+
   // We use `getPlanGrantsForContextRecursive` to get all plan grants that apply
   // to the institution, *or* the course instance, *or* a user within a course instance,
   // *or* the user directly.
