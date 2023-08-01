@@ -1353,27 +1353,36 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if a zone references a QID from another course that does not exist or we do not have permissions for', async () => {
-    features.enable('question-sharing');
-    config.checkSharingOnSync = true;
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.zones?.push({
-      title: 'test zone',
-      questions: [
-        {
-          id: '@example-course/i do not exist',
-          points: [1, 2, 3],
-        },
-      ],
+  describe('Test validating shared quesitons on sync', () => {
+    before('Temporarily enable validation of shared questions', () => {
+      features.enable('question-sharing');
+      config.checkSharingOnSync = true;
     });
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(
-      syncedAssessment?.sync_errors,
-      /For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: @example-course\/i do not exist/,
-    );
+    after('Disable again for other tests', () => {
+      config.checkSharingOnSync = false;
+    });
+
+    it('records an error if a zone references a QID from another course that does not exist or we do not have permissions for', async () => {
+      features.enable('question-sharing');
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            id: '@example-course/i do not exist',
+            points: [1, 2, 3],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+      const syncedAssessment = await findSyncedAssessment('fail');
+      assert.match(
+        syncedAssessment?.sync_errors,
+        /For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: @example-course\/i do not exist/,
+      );
+    });
   });
 
   it('records an error if an assessment references a QID more than once', async () => {
