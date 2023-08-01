@@ -58,33 +58,37 @@ async function accessSharedQuestionAssessment() {
 
 describe('Question Sharing', function () {
   this.timeout(80000);
+  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+  after('shut down testing server', helperServer.after);
 
-  describe('Create a sharing set and add a question to it', () => {
-    let exampleCourseSharingToken;
-    let testCourseSharingToken;
+  before('ensure course has question sharing enabled', async () => {
+    await features.enable('question-sharing');
+  });
 
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
-
-    before('ensure course has question sharing enabled', async () => {
-      await features.enable('question-sharing');
+  describe('Test syncing code to identify missing shared question', function () {
+    before('alter config to check sharing on sync', () => {
+      config.checkSharingOnSync = true;
+    });
+    after('reset config', () => {
+      config.checkSharingOnSync = false;
     });
 
     step('Fail to sync course when validating shared question paths', async () => {
-      config.checkSharingOnSync = true;
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
           `Sync of ${TEST_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
         );
       }
-
-      // reset default config to avoid breaking other tests
-      config.checkSharingOnSync = false;
     });
+  });
+
+  describe('Create a sharing set and add a question to it', () => {
+    let exampleCourseSharingToken;
+    let testCourseSharingToken;
 
     step(
-      'Sync course with sharing enabled, disabling validation shared question paths',
+      'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
         const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
         if (result?.hadJsonErrorsOrWarnings) {
@@ -297,16 +301,20 @@ describe('Question Sharing', function () {
       const settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
       assert(settingsPageResponse.text().includes('share-set-example'));
     });
+  });
 
-    step('Re-sync test course, validating shared questions', async () => {
+  describe('Test syncing code succeeding once question is added to sharing set', function () {
+    before('alter config to check sharing on sync', () => {
       config.checkSharingOnSync = true;
+    });
+    after('reset config', () => {
+      config.checkSharingOnSync = false;
+    });
+    step('Re-sync test course, validating shared questions', async () => {
       const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
       }
-
-      // reset default config to avoid breaking other tests
-      config.checkSharingOnSync = false;
     });
 
     step('Successfully access shared question', async () => {
