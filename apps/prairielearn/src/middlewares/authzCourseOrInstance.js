@@ -314,7 +314,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     req_course_instance_role: req.cookies.pl_requested_course_instance_role || null,
   };
 
-  const effectiveResult = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, params);
+  const effectiveResult = await sqldb.queryZeroOrOneRowAsync(sql.select_authz_data, effectiveParams);
 
   // If the authn user were denied access, then we would return an error. Here,
   // we simply return (without error). This allows the authn user to keep access
