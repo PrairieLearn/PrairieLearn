@@ -1,14 +1,21 @@
 import { type Response } from 'express';
 
-import { CourseInstanceSchema, InstitutionSchema, UserSchema } from '../../../lib/db-types';
+import {
+  CourseInstanceSchema,
+  InstitutionSchema,
+  QuestionSchema,
+  UserSchema,
+} from '../../../lib/db-types';
 import {
   getPlanGrantsForPartialContexts,
   getPlanNamesFromPlanGrants,
   getRequiredPlansForCourseInstance,
+  planGrantsMatchFeatures,
 } from '../../lib/billing/plans';
-import { planGrantsMatchPlanFeatures } from './plans-types';
+import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types';
+import { features } from '../../../lib/features';
 
-export async function checkPlanGrants(res: Response) {
+function userHasRole(res: Response) {
   // We won't check plan grants if the user has a specific role in the course
   // or course instance. We always grant instructor-like users access to all
   // features.
@@ -16,10 +23,14 @@ export async function checkPlanGrants(res: Response) {
   // This function should always be run after the `authzCourseOrInstance`
   // middleware, which will have taken into account the effective user
   // and any overridden roles.
-  if (
+  return (
     res.locals.authz_data.course_role !== 'None' ||
     res.locals.authz_data.course_instance_role !== 'None'
-  ) {
+  );
+}
+
+export async function checkPlanGrants(res: Response) {
+  if (userHasRole(res)) {
     return true;
   }
 
@@ -45,4 +56,46 @@ export async function checkPlanGrants(res: Response) {
   const planGrantNames = getPlanNamesFromPlanGrants(planGrants);
 
   return planGrantsMatchPlanFeatures(planGrantNames, requiredPlans);
+}
+
+export async function checkPlanGrantsForQuestion(res: Response) {
+  if (userHasRole(res)) {
+    return true;
+  }
+
+  // For the time being, put this being a feature flag so that we can land
+  // this change before we've created plan grants for all existing institutions.
+  const shouldCheck = await features.enabledFromLocals(
+    'enforce-plan-grants-for-questions',
+    res.locals,
+  );
+  if (!shouldCheck) {
+    return true;
+  }
+
+  const question = QuestionSchema.parse(res.locals.question);
+  const requiredFeatures: PlanFeatureName[] = [];
+  if (question.external_grading_enabled) {
+    requiredFeatures.push('external-grading');
+  }
+  if (question.workspace_image) {
+    requiredFeatures.push('workspaces');
+  }
+
+  // If there aren't any features to check, don't even bother hitting the database.
+  if (requiredFeatures.length === 0) {
+    return true;
+  }
+
+  const institution = InstitutionSchema.parse(res.locals.institution);
+  const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+  const user = UserSchema.parse(res.locals.user);
+
+  const planGrants = await getPlanGrantsForPartialContexts({
+    institution_id: institution.id,
+    course_instance_id: course_instance.id,
+    user_id: user.user_id,
+  });
+
+  return planGrantsMatchFeatures(planGrants, requiredFeatures);
 }
