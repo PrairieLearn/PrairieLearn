@@ -1,8 +1,8 @@
 import asyncHandler = require('express-async-handler');
 
 import { PlanFeatureName } from '../lib/billing/plans-types';
-import { CourseInstanceSchema, QuestionSchema } from '../../lib/db-types';
-import { getPlanGrantsForCourseInstance, planGrantsMatchFeatures } from '../lib/billing/plans';
+import { CourseInstanceSchema, InstitutionSchema, QuestionSchema } from '../../lib/db-types';
+import { getPlanGrantsForContext, planGrantsMatchFeatures } from '../lib/billing/plans';
 import { features } from '../../lib/features';
 
 export default asyncHandler(async (req, res, next) => {
@@ -28,13 +28,17 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
+  const institution = InstitutionSchema.parse(res.locals.institution);
   const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
 
   // TODO: This should use `getPlanGrantsForContext`, which will be available after
   // the following PR is merged: https://github.com/PrairieLearn/PrairieLearn/pull/8213
   //
   // TODO: We also need to all the user ID here.
-  const planGrants = await getPlanGrantsForCourseInstance(course_instance.id);
+  const planGrants = await getPlanGrantsForContext({
+    institution_id: institution.id,
+    course_instance_id: course_instance.id,
+  });
 
   if (!planGrantsMatchFeatures(planGrants, requiredFeatures)) {
     // TODO: Show a fancier error page explaining what happened and prompting

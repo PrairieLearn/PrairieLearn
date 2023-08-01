@@ -39,9 +39,9 @@ export function getFeaturesForPlans(plans: PlanName[]): PlanFeatureName[] {
   return Array.from(features);
 }
 
-export function plansMatchPlanFeatures(plans: PlanName[], plan: PlanName): boolean {
-  const planGrantsFeatures = getFeaturesForPlans(plans);
-  const planFeatures = getFeaturesForPlans([plan]);
+export function planGrantsMatchPlanFeatures(grantedPlans: PlanName[], plans: PlanName[]): boolean {
+  const planGrantsFeatures = getFeaturesForPlans(grantedPlans);
+  const planFeatures = getFeaturesForPlans(plans);
   return (
     planGrantsFeatures.length === planFeatures.length &&
     planGrantsFeatures.every((feature) => planFeatures.includes(feature))

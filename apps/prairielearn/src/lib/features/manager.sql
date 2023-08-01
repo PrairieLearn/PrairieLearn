@@ -41,7 +41,8 @@ VALUES
     $course_id,
     $course_instance_id,
     $user_id
-  );
+  )
+ON CONFLICT DO NOTHING;
 
 -- BLOCK disable_feature
 DELETE FROM feature_grants
