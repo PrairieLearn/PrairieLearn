@@ -1621,13 +1621,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grpc/grpc-js@npm:^1.7.1, @grpc/grpc-js@npm:^1.8.17":
+"@grpc/grpc-js@npm:^1.7.1":
   version: 1.8.17
   resolution: "@grpc/grpc-js@npm:1.8.17"
   dependencies:
     "@grpc/proto-loader": ^0.7.0
     "@types/node": ">=12.12.47"
   checksum: 0ac8cd7342a33d7e507ec0ebb470721ae84eb964fd164e4b7b829cb35774c09df158124cbce859d9398c9a015f0e29d2308a3a17be35d54e030a7dc091e7e9a4
+  languageName: node
+  linkType: hard
+
+"@grpc/grpc-js@npm:^1.8.21":
+  version: 1.8.21
+  resolution: "@grpc/grpc-js@npm:1.8.21"
+  dependencies:
+    "@grpc/proto-loader": ^0.7.0
+    "@types/node": ">=12.12.47"
+  checksum: 32bbb3667c20005987eaef0268898fcb49b7bf46e8f338f3ad6f3343e5ff125d63da9aa869b6bca2a918adacf39715d29431461f233c677012206faedbd71169
   languageName: node
   linkType: hard
 
@@ -2815,7 +2825,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
   dependencies:
-    "@grpc/grpc-js": ^1.8.17
+    "@grpc/grpc-js": ^1.8.21
     "@opentelemetry/api": ^1.4.1
     "@opentelemetry/core": ^1.15.0
     "@opentelemetry/exporter-jaeger": ^1.15.0
