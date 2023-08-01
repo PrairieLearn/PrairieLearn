@@ -33,13 +33,12 @@ export function instructorInstanceAdminBillingState(
 ): InstructorInstanceAdminBillingState {
   const studentBillingInitialEnabled = input.initialRequiredPlans.includes('basic');
   const studentBillingEnabled = input.desiredRequiredPlans.includes('basic');
-  const computeEnabledByInstitution = planGrantsMatchPlanFeatures(
-    input.institutionPlanGrants,
+  const computeEnabledByInstitution = planGrantsMatchPlanFeatures(input.institutionPlanGrants, [
     'compute',
-  );
+  ]);
   const computeEnabledByCourseInstance = planGrantsMatchPlanFeatures(
     input.courseInstancePlanGrants,
-    'compute',
+    ['compute'],
   );
   const computeEnabled =
     (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
