@@ -10,8 +10,7 @@ import {
 } from './instructorInstanceAdminBilling.html';
 import { PlanName } from '../../lib/billing/plans-types';
 import {
-  getPlanGrantsForCourseInstance,
-  getPlanGrantsForInstitution,
+  getPlanGrantsForContext,
   getRequiredPlansForCourseInstance,
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
@@ -22,10 +21,13 @@ const sql = loadSqlEquiv(__filename);
 
 async function loadPageData(res: Response) {
   const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
-  const institutionPlanGrants = await getPlanGrantsForInstitution(res.locals.institution.id);
-  const courseInstancePlanGrants = await getPlanGrantsForCourseInstance(
-    res.locals.course_instance.id,
-  );
+  const institutionPlanGrants = await getPlanGrantsForContext({
+    institution_id: res.locals.institution.id,
+  });
+  const courseInstancePlanGrants = await getPlanGrantsForContext({
+    institution_id: res.locals.institution.id,
+    course_instance_id: res.locals.course_instance.id,
+  });
 
   const enrollmentCount = await queryRow(
     sql.course_instance_enrollment_count,

@@ -49,7 +49,10 @@ router.get(
       unsafe_course_id: req.params.course_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
-    const planGrants = await getPlanGrantsForCourseInstance(course_instance.id);
+    const planGrants = await getPlanGrantsForCourseInstance({
+      institution_id: institution.id,
+      course_instance_id: course_instance.id,
+    });
     res.send(
       InstitutionAdminCourseInstance({
         institution,
