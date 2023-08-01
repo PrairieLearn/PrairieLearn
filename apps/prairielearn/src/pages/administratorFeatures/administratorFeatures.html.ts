@@ -139,8 +139,17 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
   const hasCourse = featureGrant.course_id !== null;
   const hasCourseInstance = featureGrant.course_instance_id !== null;
   const hasUser = featureGrant.user_id !== null;
+  const isGlobal = !hasInstitution && !hasCourse && !hasCourseInstance && !hasUser;
   return html`
     <ol class="list-inline mb-0">
+      ${
+        isGlobal
+          ? html`<li class="list-inline-item inline-flex">
+              <i class="fa-solid fa-globe mr-1"></i>
+              Global
+            </li>`
+          : null
+      }
       ${
         hasInstitution
           ? html`
