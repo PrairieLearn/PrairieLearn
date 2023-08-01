@@ -3031,6 +3031,7 @@ __metadata:
     google-auth-library: ^8.9.0
     he: ^1.2.0
     highlight.js: ^11.8.0
+    htmx.org: ^1.9.4
     http-proxy-middleware: ^2.0.6
     http-status: ^1.6.2
     isbinaryfile: ^5.0.0
@@ -9834,6 +9835,13 @@ __metadata:
     inherits: ^2.0.1
     readable-stream: ^3.1.1
   checksum: 6875f7dd875aa10be17d9b130e3738cd8ed4010b1f2edaf4442c82dfafe9d9336b155870dcc39f38843cbf7fef5e4fcfdf0c4c1fd4db3a1b91a1e0ee8f6c3475
+  languageName: node
+  linkType: hard
+
+"htmx.org@npm:^1.9.4":
+  version: 1.9.4
+  resolution: "htmx.org@npm:1.9.4"
+  checksum: da276e821d389f62d2f6198ee42b5cebc96c47036999dd0afae73a07a2c91f9727aaebea36452d4c8aa9245b2646b30176ce5ebb28e42d734af51a5c3a09599e
   languageName: node
   linkType: hard
 
