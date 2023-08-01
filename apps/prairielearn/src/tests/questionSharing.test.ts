@@ -19,11 +19,12 @@ const baseUrl = siteUrl + '/pl';
 
 const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 
-const testCourseId = 1;
+const testCourseId = 2;
 const testCourseSharingName = 'test-course';
-const exampleCourseId = 2;
+const exampleCourseId = 1;
 const exampleCourseSharingName = 'example-course';
 const sharingSetName = 'share-set-example';
+const sharedQuestionQid = 'element/numberInput';
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -45,12 +46,12 @@ async function setSharingName(courseId, name) {
 }
 
 async function accessSharedQuestionAssessment() {
-  const assessmentsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/instance_admin/assessments`;
+  const assessmentsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/instance_admin/assessments`;
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
     siteUrl +
     assessmentsPage
-      .$(`a:contains("Example of Importing Questions From Another Course")`)
+      .$(`a:contains("Test of Importing Questions From Another Course")`)
       .attr('href');
   const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
@@ -64,7 +65,7 @@ describe('Question Sharing', function () {
     let exampleCourseSharingToken;
     let testCourseSharingToken;
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
     before('ensure course has question sharing enabled', async () => {
@@ -73,10 +74,10 @@ describe('Question Sharing', function () {
 
     step('Fail to sync course when validating shared question paths', async () => {
       config.checkSharingOnSync = true;
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
-          `Sync of ${EXAMPLE_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
+          `Sync of ${TEST_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
         );
       }
     });
@@ -85,9 +86,9 @@ describe('Question Sharing', function () {
       'Sync course with sharing enabled, disabling validation shared question paths',
       async () => {
         config.checkSharingOnSync = false;
-        const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+        const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
         if (result?.hadJsonErrorsOrWarnings) {
-          throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
+          throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
         }
       },
     );
@@ -97,23 +98,23 @@ describe('Question Sharing', function () {
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment();
-        assert(!res.text().includes('addNumbers'));
+        assert(!res.text().includes(sharedQuestionQid));
 
         // Question can be accessed through the owning course
         const questionId = (
           await sqldb.queryOneRowAsync(sql.get_question_id, {
-            course_id: testCourseId,
-            qid: 'addNumbers',
+            course_id: exampleCourseId,
+            qid: sharedQuestionQid,
           })
         ).rows[0].id;
-        const addNumbersUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${questionId}/settings`;
-        const addNumbersPage = await helperClient.fetchCheerio(addNumbersUrl);
-        assert(addNumbersPage.ok);
+        const sharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}/settings`;
+        const sharedQuestionPage = await helperClient.fetchCheerio(sharedQuestionUrl);
+        assert(sharedQuestionPage.ok);
 
         // Question cannot be accessed through the consuming course, sharing permissions not yet set
-        const addNumbersSharedUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}/settings`;
-        const addNumbersSharedPage = await helperClient.fetchCheerio(addNumbersSharedUrl);
-        assert(!addNumbersSharedPage.ok);
+        const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${questionId}/settings`;
+        const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+        assert(!sharedQuestionSharedPage.ok);
       },
     );
 
@@ -176,7 +177,7 @@ describe('Question Sharing', function () {
     });
 
     step('Create a sharing set', async () => {
-      const sharingUrl = sharingPageUrl(testCourseId);
+      const sharingUrl = sharingPageUrl(exampleCourseId);
       const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
@@ -187,15 +188,10 @@ describe('Question Sharing', function () {
           sharing_set_name: sharingSetName,
         }),
       });
-
-      const sharingPage = await fetch(sharingPageUrl(exampleCourseId));
-      assert(sharingPage.ok);
-      const sharingPageText = await sharingPage.text();
-      assert(sharingPageText.includes(exampleCourseSharingName));
     });
 
     step('Attempt to create another sharing set with the same name', async () => {
-      const sharingUrl = sharingPageUrl(testCourseId);
+      const sharingUrl = sharingPageUrl(exampleCourseId);
       const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const result = await fetch(sharingUrl, {
@@ -209,8 +205,8 @@ describe('Question Sharing', function () {
       assert.equal(result.status, 500);
     });
 
-    step('Share sharing set with example course', async () => {
-      const sharingUrl = sharingPageUrl(testCourseId);
+    step('Share sharing set with test course', async () => {
+      const sharingUrl = sharingPageUrl(exampleCourseId);
       const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
@@ -219,7 +215,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken,
+          unsafe_course_sharing_token: testCourseSharingToken,
         }),
       });
 
@@ -231,7 +227,7 @@ describe('Question Sharing', function () {
     });
 
     step('Attempt to share sharing set with invalid course token', async () => {
-      const sharingUrl = sharingPageUrl(testCourseId);
+      const sharingUrl = sharingPageUrl(exampleCourseId);
       const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
@@ -247,22 +243,6 @@ describe('Question Sharing', function () {
     });
 
     step('Attempt to share sharing set with own course', async () => {
-      const sharingUrl = sharingPageUrl(testCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      const res = await fetch(sharingUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
-          __csrf_token: token,
-          unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: testCourseSharingToken,
-        }),
-      });
-      assert.equal(res.status, 400);
-    });
-
-    step('Attempt to share sharing set that does not belong to the course', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
       const response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
@@ -278,12 +258,28 @@ describe('Question Sharing', function () {
       assert.equal(res.status, 400);
     });
 
-    step('Add question "addNumbers" to sharing set', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
-        course_id: testCourseId,
-        qid: 'addNumbers',
+    step('Attempt to share sharing set that does not belong to the course', async () => {
+      const sharingUrl = sharingPageUrl(testCourseId);
+      const response = await helperClient.fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const res = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+          unsafe_course_sharing_token: exampleCourseSharingToken,
+        }),
       });
-      const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${result.rows[0].id}/settings`;
+      assert.equal(res.status, 400);
+    });
+
+    step(`Add question "${sharedQuestionQid}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: exampleCourseId,
+        qid: sharedQuestionQid,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${result.rows[0].id}/settings`;
       let res = await helperClient.fetchCheerio(questionSettingsUrl);
       assert(res.ok);
 
@@ -302,17 +298,20 @@ describe('Question Sharing', function () {
       assert(settingsPageResponse.text().includes('share-set-example'));
     });
 
-    step('Re-sync example course, validating shared questions', async () => {
+    step('Re-sync test course, validating shared questions', async () => {
       config.checkSharingOnSync = true;
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(EXAMPLE_COURSE_PATH, logger);
+      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
-        throw new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`);
+        throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
       }
+
+      // reset default config to avoid breaking other tests
+      config.checkSharingOnSync = false;
     });
 
     step('Successfully access shared question', async () => {
       let res = await accessSharedQuestionAssessment();
-      const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
+      const sharedQuestionUrl = siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
 
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
       assert(res.ok);
