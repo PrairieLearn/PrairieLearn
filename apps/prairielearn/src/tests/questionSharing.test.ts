@@ -50,9 +50,7 @@ async function accessSharedQuestionAssessment() {
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
     siteUrl +
-    assessmentsPage
-      .$(`a:contains("Test of Importing Questions From Another Course")`)
-      .attr('href');
+    assessmentsPage.$(`a:contains("Test of Importing Questions From Another Course")`).attr('href');
   const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
@@ -311,7 +309,8 @@ describe('Question Sharing', function () {
 
     step('Successfully access shared question', async () => {
       let res = await accessSharedQuestionAssessment();
-      const sharedQuestionUrl = siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
+      const sharedQuestionUrl =
+        siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
 
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
       assert(res.ok);
