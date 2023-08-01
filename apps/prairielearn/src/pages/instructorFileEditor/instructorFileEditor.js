@@ -153,7 +153,7 @@ router.get('/*', (req, res, next) => {
           // We check for presence of the `pushed` key to determine if we
           // attempted a push, and we check for the value to know if the push
           // succeeded or not.
-          if ('pushed' in job.data && !job.data.pushed) {
+          if (job.data.pushAttempted && !job.data.pushSucceeded) {
             fileEdit.failedPush = true;
           }
         } else {
@@ -543,9 +543,7 @@ async function saveAndSync(fileEdit, locals) {
           }
 
           try {
-            // Remember that we attempted a push. If the push fails, we'll retain
-            // the `false` value.
-            job.data.pushed = false;
+            job.data.pushAttempted = true;
 
             await job.exec('git', ['push'], {
               cwd: locals.course.path,
@@ -555,7 +553,7 @@ async function saveAndSync(fileEdit, locals) {
             // Remember that we successfully pushed. When a user views the file
             // editing page again, we'll check for this flag to know if we need
             // to display instructions for a failed push.
-            job.data.pushed = true;
+            job.data.pushSucceeded = true;
           } catch (err) {
             await job.exec('git', ['reset', '--hard', 'HEAD~1'], {
               cwd: locals.course.path,
@@ -578,7 +576,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await courseUtil.getCommitHashAsync(locals.course);
+            const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
             const chunkChanges = await chunks.updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,

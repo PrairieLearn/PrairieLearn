@@ -92,7 +92,7 @@ module.exports.pullAndUpdate = async function (locals) {
         const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncFromDisk.syncDiskToSqlAsync(
+        const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
           locals.course.path,
           locals.course.id,
           job,

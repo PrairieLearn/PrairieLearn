@@ -47,13 +47,11 @@ const ConfigSchema = z.object({
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
-  /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
-  /** Overrides the user UID in development with `authType: 'none'` */
+  /** Sets the default user UID in development. */
   authUid: z.string().nullable().default('dev@illinois.edu'),
-  /** Overrides the user name in development with `authType: 'none'` */
+  /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
-  /** Overrides the user UIN in development with `authType: 'none'` */
+  /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),

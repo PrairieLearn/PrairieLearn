@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { Modal } from '../../components/Modal.html';
+import { Course, CourseInstance, Institution } from '../../lib/db-types';
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -68,9 +71,11 @@ export function AdministratorFeatures({
 export function AdministratorFeature({
   feature,
   featureGrants,
+  institutions,
   resLocals,
 }: {
   feature: string;
+  institutions: Institution[];
   featureGrants: FeatureGrantRow[];
   resLocals: Record<string, any>;
 }) {
@@ -79,10 +84,14 @@ export function AdministratorFeature({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
             margin-right: 0.5rem;
             content: '/';
+          }
+          [data-loading] {
+            display: none;
           }
         </style>
       </head>
@@ -92,10 +101,18 @@ export function AdministratorFeature({
           navPage: 'admin',
           navSubPage: 'features',
         })}
+        ${AddFeatureGrantModal({ feature, institutions, csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
               <span class="text-monospace">${feature}</span>
+              <button
+                class="btn btn-light ml-auto"
+                data-toggle="modal"
+                data-target="#add-feature-grant-modal"
+              >
+                Grant feature
+              </button>
             </div>
             ${featureGrants.length > 0
               ? html`
@@ -122,8 +139,17 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
   const hasCourse = featureGrant.course_id !== null;
   const hasCourseInstance = featureGrant.course_instance_id !== null;
   const hasUser = featureGrant.user_id !== null;
+  const isGlobal = !hasInstitution && !hasCourse && !hasCourseInstance && !hasUser;
   return html`
     <ol class="list-inline mb-0">
+      ${
+        isGlobal
+          ? html`<li class="list-inline-item inline-flex">
+              <i class="fa-solid fa-globe mr-1"></i>
+              Global
+            </li>`
+          : null
+      }
       ${
         hasInstitution
           ? html`
@@ -164,5 +190,124 @@ function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
     <div class="list-group-item d-flex flex-row align-items-center">
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
     </div>
+  `;
+}
+
+interface FeatureGrantModalProps {
+  feature: string;
+  institutions: Institution[];
+  institution_id?: string | null;
+  courses?: Course[];
+  course_id?: string | null;
+  course_instances?: CourseInstance[];
+  course_instance_id?: string | null;
+  csrfToken: string;
+}
+
+function AddFeatureGrantModal(props: FeatureGrantModalProps) {
+  return Modal({
+    title: 'Grant feature',
+    id: 'add-feature-grant-modal',
+    body: AddFeatureGrantModalBody(props),
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Grant feature</button>
+    `,
+  });
+}
+
+export function AddFeatureGrantModalBody({
+  feature,
+  institutions,
+  institution_id,
+  courses,
+  course_id,
+  course_instances,
+  course_instance_id,
+}: Omit<FeatureGrantModalProps, 'csrfToken'>) {
+  const modalUrl = `/pl/administrator/features/${feature}/modal`;
+  return html`
+    <fieldset
+      hx-get="${modalUrl}"
+      hx-trigger="change"
+      hx-target="this"
+      hx-include="closest .modal-body"
+      hx-ext="loading-states,morphdom-swap"
+      hx-swap="morphdom"
+      data-loading-disable
+      data-loading-delay="200"
+    >
+      <div class="form-group">
+        <label for="feature-grant-institution">
+          Institution
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-institution"
+          name="institution_id"
+        >
+          <option value="">None</option>
+          ${institutions.map((institution) => {
+            return html`
+              <option
+                value="${institution.id}"
+                ${institution.id === institution_id ? 'selected' : ''}
+              >
+                ${institution.long_name}
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="feature-grant-course">
+          Course
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-course"
+          name="course_id"
+          ${!institution_id ? 'disabled' : ''}
+        >
+          <option value="">None</option>
+          ${(courses ?? []).map((course) => {
+            return html`
+              <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
+                ${course.title}
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="feature-grant-course-instance">
+          Course instance
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-course-instance"
+          name="course_instance_id"
+          ${!course_id ? 'disabled' : ''}
+        >
+          <option value="">None</option>
+          ${(course_instances ?? []).map((course_instance) => {
+            return html`
+              <option
+                value="${course_instance.id}"
+                ${course_instance.id === course_instance_id ? 'selected' : ''}
+              >
+                ${course_instance.long_name}
+              </option>
+            `;
+          })}
+        </select>
+      </div>
+    </fieldset>
   `;
 }
