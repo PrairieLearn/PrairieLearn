@@ -1355,7 +1355,6 @@ describe('Assessment syncing', () => {
 
   describe('Test validating shared quesitons on sync', () => {
     before('Temporarily enable validation of shared questions', () => {
-      features.enable('question-sharing');
       config.checkSharingOnSync = true;
     });
     after('Disable again for other tests', () => {
