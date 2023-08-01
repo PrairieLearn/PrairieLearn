@@ -3279,17 +3279,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:7.57.0":
-  version: 7.57.0
-  resolution: "@sentry/core@npm:7.57.0"
-  dependencies:
-    "@sentry/types": 7.57.0
-    "@sentry/utils": 7.57.0
-    tslib: ^2.4.1 || ^1.9.3
-  checksum: 93f6c0934610b75c0ca49417f56bae63400e68fae4050dc099e4957ea3a660d79e12b614bf2df33841c3fbd6cf1341627fff4f313fd8a3ae215b1e909e5a987e
-  languageName: node
-  linkType: hard
-
 "@sentry/core@npm:7.61.0, @sentry/core@npm:^7.53.0":
   version: 7.61.0
   resolution: "@sentry/core@npm:7.61.0"
@@ -3302,14 +3291,14 @@ __metadata:
   linkType: hard
 
 "@sentry/hub@npm:^7.53.0":
-  version: 7.57.0
-  resolution: "@sentry/hub@npm:7.57.0"
+  version: 7.61.0
+  resolution: "@sentry/hub@npm:7.61.0"
   dependencies:
-    "@sentry/core": 7.57.0
-    "@sentry/types": 7.57.0
-    "@sentry/utils": 7.57.0
+    "@sentry/core": 7.61.0
+    "@sentry/types": 7.61.0
+    "@sentry/utils": 7.61.0
     tslib: ^2.4.1 || ^1.9.3
-  checksum: b667ebaa25aa8bd8c4a1aa3baee77eda9bd0c1127bb15851fa67aadae24ca7effad92c139d5af6291f2f171cc7cc2951b1503e86b49436b62c97862c68fbb4ad
+  checksum: 0dc971294dad1acbedfaa63552906a264ca5711bf265a8768a6e441107680069d297337e54d6e3be7970c23386192fe028609951302388eb29f15b6a855c83cc
   languageName: node
   linkType: hard
 
@@ -3356,27 +3345,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/types@npm:7.57.0":
-  version: 7.57.0
-  resolution: "@sentry/types@npm:7.57.0"
-  checksum: 2836f35af0579fd1666d5871809143f3e138af63b102a3137ec0a72be5c24b7e59747e48e160cbdf0700f067a36d70915dbf14617ebf4c9a3990e9d37ceb74ae
-  languageName: node
-  linkType: hard
-
 "@sentry/types@npm:7.61.0, @sentry/types@npm:^7.53.0":
   version: 7.61.0
   resolution: "@sentry/types@npm:7.61.0"
   checksum: b61cbade0870a377e4bc26274c0d471cc5ee0114a2a29519be121176f68821af708248a3c1033b65b2b74a5214331029c79f37e6c542fb43f8ad16d6a3d34ce6
-  languageName: node
-  linkType: hard
-
-"@sentry/utils@npm:7.57.0":
-  version: 7.57.0
-  resolution: "@sentry/utils@npm:7.57.0"
-  dependencies:
-    "@sentry/types": 7.57.0
-    tslib: ^2.4.1 || ^1.9.3
-  checksum: 02031a74e83f49d9f1e8711f7242c740fd604e3dd0453ac1c666431c283609eeeb4113049049a6832ee7dac350503872e14c6454fda74874c48ba6e3b6e79863
   languageName: node
   linkType: hard
 
