@@ -37,7 +37,7 @@ FROM
   LEFT JOIN plan_grants AS pg ON (
     pg.institution_id = i.id
     AND pg.course_instance_id = ci.id
-    AND pg.enrollment_id = e.id
+    AND pg.user_id = e.user_id
     AND pg.plan_name = 'basic'
   )
 WHERE

@@ -54,52 +54,52 @@ describe('getEnrollmentCountsForInstitution', () => {
       uin: 'paid2',
     });
 
-    const freeEnrollment = await insertEnrollment({
+    await insertEnrollment({
       course_instance_id: '1',
       user_id: freeUser.user_id,
     });
-    const paidEnrollment1 = await insertEnrollment({
+    await insertEnrollment({
       course_instance_id: '1',
       user_id: paidUser1.user_id,
     });
-    const paidEnrollment2 = await insertEnrollment({
+    await insertEnrollment({
       course_instance_id: courseInstance.id,
       user_id: paidUser2.user_id,
     });
 
-    await insertPlanGrant(
-      {
+    await insertPlanGrant({
+      plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        enrollment_id: freeEnrollment.id,
+        user_id: freeUser.user_id,
         // This plan grant should not make this user count as a paid enrollment.
         plan_name: 'compute',
         type: 'stripe',
       },
-      '1',
-    );
+      authn_user_id: '1',
+    });
 
-    await insertPlanGrant(
-      {
+    await insertPlanGrant({
+      plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        enrollment_id: paidEnrollment1.id,
+        user_id: paidUser1.user_id,
         plan_name: 'basic',
         type: 'stripe',
       },
-      '1',
-    );
+      authn_user_id: '1',
+    });
 
-    await insertPlanGrant(
-      {
+    await insertPlanGrant({
+      plan_grant: {
         institution_id: '1',
         course_instance_id: courseInstance.id,
-        enrollment_id: paidEnrollment2.id,
+        user_id: paidUser2.user_id,
         plan_name: 'basic',
         type: 'stripe',
       },
-      '1',
-    );
+      authn_user_id: '1',
+    });
 
     const result = await getEnrollmentCountsForInstitution({ institution_id: '1' });
 
@@ -145,18 +145,19 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       name: 'Example Student',
       uin: 'student',
     });
-    const enrollment = await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant(
-      {
+    await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await insertPlanGrant({
+      plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        enrollment_id: enrollment.id,
+        user_id: user.user_id,
         plan_name: 'basic',
         type: 'stripe',
       },
-      '1',
-    );
+      authn_user_id: '1',
+    });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
     assert.equal(result.free, 0);
@@ -169,18 +170,19 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       name: 'Example Student',
       uin: 'student',
     });
-    const enrollment = await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant(
-      {
+    await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
+
+    await insertPlanGrant({
+      plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        enrollment_id: enrollment.id,
+        user_id: user.user_id,
         plan_name: 'compute',
         type: 'stripe',
       },
-      '1',
-    );
+      authn_user_id: '1',
+    });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
     assert.equal(result.free, 1);
