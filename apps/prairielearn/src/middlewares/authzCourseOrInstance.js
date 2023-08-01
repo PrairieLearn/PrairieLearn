@@ -359,7 +359,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
-    return;
+    return next();
   }
 
   // Now that we know the effective user has access, parse the authz data
