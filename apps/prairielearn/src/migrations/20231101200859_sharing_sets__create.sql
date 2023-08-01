@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS
     UNIQUE (sharing_set_id, question_id)
   );
 
+CREATE INDEX IF NOT EXISTS sharing_set_questions_question_id_idx ON sharing_set_questions (question_id);
+
 CREATE TABLE IF NOT EXISTS
   sharing_set_courses (
     id BIGSERIAL PRIMARY KEY,
@@ -21,6 +23,8 @@ CREATE TABLE IF NOT EXISTS
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (sharing_set_id, course_id)
   );
+
+CREATE INDEX IF NOT EXISTS sharing_set_courses_course_id_idx ON sharing_set_courses (course_id);
 
 ALTER TABLE pl_courses
 ADD COLUMN IF NOT EXISTS sharing_name text UNIQUE;
