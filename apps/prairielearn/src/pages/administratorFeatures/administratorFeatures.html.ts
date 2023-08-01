@@ -90,6 +90,9 @@ export function AdministratorFeature({
             margin-right: 0.5rem;
             content: '/';
           }
+          [data-loading] {
+            display: none;
+          }
         </style>
       </head>
       <body>
@@ -216,15 +219,26 @@ export function AddFeatureGrantModalBody({
 }: Omit<FeatureGrantModalProps, 'csrfToken'>) {
   const modalUrl = `/pl/administrator/features/${feature}/modal`;
   return html`
-    <div
+    <fieldset
       hx-get="${modalUrl}"
       hx-trigger="change"
-      hx-target="closest .modal-body"
+      hx-target="this"
       hx-include="closest .modal-body"
+      hx-ext="loading-states,morphdom-swap"
+      hx-swap="morphdom"
+      data-loading-disable
+      data-loading-delay="200"
     >
       <div class="form-group">
-        <label for="feature-grant-institution">Institution</label>
-        <select class="form-control" id="feature-grant-institution" name="institution_id">
+        <label for="feature-grant-institution">
+          Institution
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
+        <select
+          class="form-control custom-select"
+          id="feature-grant-institution"
+          name="institution_id"
+        >
           <option value="">None</option>
           ${institutions.map((institution) => {
             return html`
@@ -240,9 +254,12 @@ export function AddFeatureGrantModalBody({
       </div>
 
       <div class="form-group">
-        <label for="feature-grant-course">Course</label>
+        <label for="feature-grant-course">
+          Course
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
         <select
-          class="form-control"
+          class="form-control custom-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -259,9 +276,12 @@ export function AddFeatureGrantModalBody({
       </div>
 
       <div class="form-group">
-        <label for="feature-grant-course-instance">Course instance</label>
+        <label for="feature-grant-course-instance">
+          Course instance
+          <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
+        </label>
         <select
-          class="form-control"
+          class="form-control custom-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}
@@ -279,6 +299,6 @@ export function AddFeatureGrantModalBody({
           })}
         </select>
       </div>
-    </div>
+    </fieldset>
   `;
 }
