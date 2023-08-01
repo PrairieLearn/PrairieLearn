@@ -43,8 +43,7 @@ router.get(
 router.get(
   '/:feature',
   asyncHandler(async (req, res) => {
-    const feature = req.params.feature;
-    validateFeature(feature);
+    const feature = validateFeature(req.params.feature);
 
     const featureGrants = await queryRows(
       sql.select_feature_grants,
