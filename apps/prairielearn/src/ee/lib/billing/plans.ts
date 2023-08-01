@@ -38,19 +38,70 @@ type PlanGrantContext =
   | CourseInstancePlanGrantContext
   | CourseInstanceUserPlanGrantContext
   | UserPlanGrantContext;
+type RecursivePlanGrantContext = PlanGrantContext | BasePlanGrantContext;
 
-export async function getPlanGrantsForInstitution(institution_id: string): Promise<PlanGrant[]> {
-  return queryRows(sql.select_plan_grants_for_institution, { institution_id }, PlanGrantSchema);
-}
-
-export async function getPlanGrantsForCourseInstance(
-  course_instance_id: string,
-): Promise<PlanGrant[]> {
-  return queryRows(
-    sql.select_plan_grants_for_course_instance,
-    { course_instance_id },
+/**
+ * Returns the plan grants that apply directly to the given context. For
+ * example, consider a course instance with a plan grant `foo` and a parent
+ * institution with a plan grant `bar`. If we call this function with the
+ * course instance's context, it will return only the `foo` plan grant.
+ * If we call this function with the institution's context, it will return
+ * only the `bar` plan grant.
+ *
+ * To get *all* plan grants that apply to a context, use
+ * {@link getPlanGrantsForPartialContexts}.
+ */
+export async function getPlanGrantsForContext(context: PlanGrantContext): Promise<PlanGrant[]> {
+  return await queryRows(
+    sql.select_plan_grants_for_context,
+    {
+      institution_id: context.institution_id ?? null,
+      course_instance_id: context.course_instance_id ?? null,
+      user_id: context.user_id ?? null,
+    },
     PlanGrantSchema,
   );
+}
+
+/**
+ * Returns the plan grants that apply to the given context, including those
+ * that belong to a parent entity. For example, consider a course instance
+ * with a plan grant for `foo` and a parent institution with a plan grant for
+ * `bar`. If we call this function with the course instance's context, it will
+ * return both the `foo` and `bar` plan grants. If we call this function with
+ * the institution's context, it will return only the `bar` plan grant.
+ *
+ * To get only the plan grants that apply directly to a context, use
+ * {@link getPlanGrantsForContext}.
+ */
+export async function getPlanGrantsForPartialContexts(
+  context: RecursivePlanGrantContext,
+): Promise<PlanGrant[]> {
+  return await queryRows(
+    sql.select_plan_grants_for_partial_contexts,
+    {
+      institution_id: context.institution_id ?? null,
+      course_instance_id: context.course_instance_id ?? null,
+      user_id: context.user_id ?? null,
+    },
+    PlanGrantSchema,
+  );
+}
+
+export async function getPlanGrantsForCourseInstance({
+  institution_id,
+  course_instance_id,
+}: {
+  institution_id: string;
+  course_instance_id: string;
+}): Promise<PlanGrant[]> {
+  return await getPlanGrantsForContext({ institution_id, course_instance_id });
+}
+
+export function getPlanNamesFromPlanGrants(planGrants: PlanGrant[]): PlanName[] {
+  const planNames = new Set<PlanName>();
+  planGrants.forEach((planGrant) => planNames.add(planGrant.plan_name));
+  return Array.from(planNames);
 }
 
 export async function getRequiredPlansForCourseInstance(
@@ -89,7 +140,7 @@ export async function reconcilePlanGrantsForInstitution(
   authn_user_id: string,
 ) {
   await runInTransactionAsync(async () => {
-    const existingPlanGrants = await getPlanGrantsForInstitution(institution_id);
+    const existingPlanGrants = await getPlanGrantsForContext({ institution_id });
     await reconcilePlanGrants({ institution_id }, existingPlanGrants, plans, authn_user_id);
   });
 }
@@ -101,7 +152,10 @@ export async function reconcilePlanGrantsForCourseInstance(
 ) {
   await runInTransactionAsync(async () => {
     const institution = await getInstitutionForCourseInstance(course_instance_id);
-    const existingPlanGrants = await getPlanGrantsForCourseInstance(course_instance_id);
+    const existingPlanGrants = await getPlanGrantsForCourseInstance({
+      institution_id: institution.id,
+      course_instance_id,
+    });
     await reconcilePlanGrants(
       {
         institution_id: institution.id,
@@ -111,6 +165,17 @@ export async function reconcilePlanGrantsForCourseInstance(
       plans,
       authn_user_id,
     );
+  });
+}
+
+export async function reconcilePlanGrantsForCourseInstanceUser(
+  context: CourseInstanceUserPlanGrantContext,
+  plans: DesiredPlan[],
+  authn_user_id: string,
+) {
+  await runInTransactionAsync(async () => {
+    const existingPlanGrants = await getPlanGrantsForContext(context);
+    await reconcilePlanGrants(context, existingPlanGrants, plans, authn_user_id);
   });
 }
 
@@ -132,14 +197,14 @@ async function reconcilePlanGrants(
   );
 
   for (const plan of newPlans) {
-    await insertPlanGrant(
-      {
+    await insertPlanGrant({
+      plan_grant: {
         ...context,
         plan_name: plan.plan,
         type: plan.grantType,
       },
       authn_user_id,
-    );
+    });
   }
 
   for (const planGrant of updatedPlanGrants) {
@@ -147,12 +212,21 @@ async function reconcilePlanGrants(
       continue;
     }
 
-    await updatePlanGrant(planGrant.planGrant, planGrant.newType, authn_user_id);
+    await updatePlanGrant({
+      plan_grant: planGrant.planGrant,
+      type: planGrant.newType,
+      authn_user_id,
+    });
   }
 
   for (const planGrant of deletedPlanGrants) {
-    await deletePlanGrant(planGrant, authn_user_id);
+    await deletePlanGrant({ plan_grant: planGrant, authn_user_id });
   }
+}
+
+export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], requiredPlans: PlanName[]) {
+  const planNames = getPlanNamesFromPlanGrants(planGrants);
+  return requiredPlans.every((requiredPlan) => planNames.includes(requiredPlan));
 }
 
 async function getInstitutionForCourseInstance(course_instance_id: string): Promise<Institution> {

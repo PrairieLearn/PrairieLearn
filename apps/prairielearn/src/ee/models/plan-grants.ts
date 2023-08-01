@@ -24,18 +24,21 @@ type NewPlanGrant =
   | NewCourseInstanceUserPlanGrant
   | NewUserPlanGrant;
 
-export async function insertPlanGrant(
-  planGrant: NewPlanGrant,
-  authn_user_id: string,
-): Promise<void> {
+export async function insertPlanGrant({
+  plan_grant,
+  authn_user_id,
+}: {
+  plan_grant: NewPlanGrant;
+  authn_user_id: string;
+}): Promise<void> {
   const newPlanGrant = await queryRow(
     sql.insert_plan_grant,
     {
-      type: planGrant.type,
-      plan_name: planGrant.plan_name,
-      institution_id: planGrant.institution_id ?? null,
-      course_instance_id: planGrant.course_instance_id ?? null,
-      user_id: planGrant.user_id ?? null,
+      type: plan_grant.type,
+      plan_name: plan_grant.plan_name,
+      institution_id: plan_grant.institution_id ?? null,
+      course_instance_id: plan_grant.course_instance_id ?? null,
+      user_id: plan_grant.user_id ?? null,
     },
     PlanGrantSchema,
   );
@@ -51,14 +54,18 @@ export async function insertPlanGrant(
   });
 }
 
-export async function updatePlanGrant(
-  planGrant: PlanGrant,
-  type: EnumPlanGrantType,
-  authn_user_id: string,
-): Promise<void> {
+export async function updatePlanGrant({
+  plan_grant,
+  type,
+  authn_user_id,
+}: {
+  plan_grant: PlanGrant;
+  type: EnumPlanGrantType;
+  authn_user_id: string;
+}): Promise<void> {
   const updatedPlanGrant = await queryRow(
     sql.update_plan_grant,
-    { id: planGrant.id, type },
+    { id: plan_grant.id, type },
     PlanGrantSchema,
   );
   await insertAuditLog({
@@ -69,16 +76,22 @@ export async function updatePlanGrant(
     institution_id: updatedPlanGrant.institution_id,
     course_instance_id: updatedPlanGrant.course_instance_id,
     user_id: updatedPlanGrant.user_id,
-    old_state: planGrant,
+    old_state: plan_grant,
     new_state: updatedPlanGrant,
     row_id: updatedPlanGrant.id,
   });
 }
 
-export async function deletePlanGrant(planGrant: PlanGrant, authn_user_id: string): Promise<void> {
+export async function deletePlanGrant({
+  plan_grant,
+  authn_user_id,
+}: {
+  plan_grant: PlanGrant;
+  authn_user_id: string;
+}): Promise<void> {
   const deletedPlanGrant = await queryRow(
     sql.delete_plan_grant,
-    { id: planGrant.id },
+    { id: plan_grant.id },
     PlanGrantSchema,
   );
   await insertAuditLog({
