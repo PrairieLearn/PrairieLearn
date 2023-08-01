@@ -78,12 +78,14 @@ describe('Question Sharing', function () {
           `Sync of ${TEST_COURSE_PATH} succeeded when it should have failed due to unresolved shared question path.`,
         );
       }
+
+      // reset default config to avoid breaking other tests
+      config.checkSharingOnSync = false;
     });
 
     step(
       'Sync course with sharing enabled, disabling validation shared question paths',
       async () => {
-        config.checkSharingOnSync = false;
         const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
         if (result?.hadJsonErrorsOrWarnings) {
           throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
@@ -304,7 +306,7 @@ describe('Question Sharing', function () {
       }
 
       // reset default config to avoid breaking other tests
-      // config.checkSharingOnSync = false;
+      config.checkSharingOnSync = false;
     });
 
     step('Successfully access shared question', async () => {
