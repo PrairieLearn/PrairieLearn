@@ -1,5 +1,11 @@
 # @prairielearn/prettier-plugin-sql
 
+## 1.0.3
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
 ## 1.0.2
 
 ### Patch Changes
