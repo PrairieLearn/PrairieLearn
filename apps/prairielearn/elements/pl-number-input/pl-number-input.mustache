@@ -14,25 +14,26 @@
         {{#label}}
         <label for="pl-number-input-textfield-{{uuid}}" hidden>{{accessibility_description}}</label>
         <span class="input-group-prepend">
-            <span class="input-group-text">{{{label}}}</span>
+            <span class="input-group-text" id="pl-number-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
         <input
           id="pl-number-input-textfield-{{uuid}}" 
-          name="{{name}}" 
-          autocomplete="off" 
+          name="{{name}}"
           type="text" 
-          class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" 
+          inputmode="text"
+          autocomplete="off" 
+          class="form-control pl-number-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" 
           size="{{size}}" 
           {{^editable}}disabled{{/editable}} 
-          {{#raw_submitted_answer}}
-          value="{{raw_submitted_answer}}"
-          {{/raw_submitted_answer}} 
-          aria-describedby="basic-addon1" 
+          {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} 
+          aria-describedby="pl-integer-input-{{uuid}}-label pl-number-input-{{uuid}}-suffix" 
           placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
+            {{#suffix}}
+            <span class="input-group-text {{^show_info}}rounded-right{{/show_info}}" id="pl-number-input-{{uuid}}-suffix">{{suffix}}</span>
+            {{/suffix}}
             {{#show_info}}
               <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
               <i class="fa fa-question-circle" aria-hidden="true"></i>
