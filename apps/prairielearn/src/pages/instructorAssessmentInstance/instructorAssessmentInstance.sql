@@ -25,13 +25,6 @@ FROM
   JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
   LEFT JOIN groups AS g ON (g.id = ai.group_id)
   LEFT JOIN group_users AS gu ON (g.id = gu.group_id)
-  JOIN enrollments AS e ON (
-    (
-      (ai.user_id = e.user_id)
-      OR (e.user_id = gu.user_id)
-    )
-    AND ci.id = e.course_instance_id
-  )
 WHERE
   ai.id = $assessment_instance_id
   AND aq.deleted_at IS NULL
