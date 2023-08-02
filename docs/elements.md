@@ -2317,9 +2317,9 @@ Displays the contents of question directions.
 
 #### Details
 
-Generally, any text placed in `question.html` will appear in 
-`question-panel`, `submission-panel`, and `answer-panel`. To prevent 
-content from being displayed in the `submission-panel` and 
+Generally, any text placed in `question.html` will appear in
+`question-panel`, `submission-panel`, and `answer-panel`. To prevent
+content from being displayed in the `submission-panel` and
 `answer-panel`, surround that content with the `<pl-question-panel>` tags.
 
 #### Example implementations
