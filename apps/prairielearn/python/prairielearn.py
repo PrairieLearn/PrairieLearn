@@ -11,17 +11,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -29,8 +19,8 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
-from numpy.typing import ArrayLike
 from colors import PLColor
+from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
