@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.0.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
 ## 1.0.3
 
 ### Patch Changes

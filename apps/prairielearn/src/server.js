@@ -1326,8 +1326,20 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+
+    // Important: this middleware must come after the upgrade page. Otherwise,
+    // this middleware will always try to redirect before the upgrade page
+    // can be rendered.
+    app.use(
+      '/pl/course_instance/:course_instance_id',
+      require('./ee/middlewares/checkPlanGrants').default,
+    );
+  }
+
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
@@ -1346,6 +1358,8 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
+  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
