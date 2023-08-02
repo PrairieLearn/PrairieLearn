@@ -103,14 +103,14 @@ def generate(data):
     match variant:
         case 0:
             data["params"]["ask"] = "equivalent resistance $R_T$"
-            data["params"]["lab"] = "$R_T$"
+            data["params"]["lab"] = "R_T"
             data["params"]["placeholder"] = "equivalent resistance"
 
             data["correct_answers"]["ans"] = str(Rt)
 
         case 1:
             data["params"]["ask"] = "current from the power supply $I_T$"
-            data["params"]["lab"] = "$I_T$"
+            data["params"]["lab"] = "I_T"
             data["params"]["placeholder"] = "current"
 
             It = (Vt / Rt).to_base_units()
