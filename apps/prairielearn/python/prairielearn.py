@@ -75,9 +75,14 @@ def check_answers_names(data: QuestionData, name: str) -> None:
 def get_unit_registry() -> UnitRegistry:
     """Get a unit registry using cache folder valid on production machines."""
 
-    pid = os.getpid()
-    cache_dir = f"/tmp/pint_{pid}"
-    return UnitRegistry(cache_folder=cache_dir)
+    try:
+        # First, try loading from cache
+        cache_dir = "/tmp/pint"
+        return UnitRegistry(cache_folder=cache_dir)
+    except Exception:
+        # Exception might happen because of concurrency issues,
+        # so in this case just return.
+        return UnitRegistry()
 
 
 def grade_answer_parameterized(
