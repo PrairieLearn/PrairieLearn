@@ -23,13 +23,10 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessments AS a ON (ai.assessment_id = a.id)
   JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN group_users AS gu ON (g.id = gu.group_id)
 WHERE
   ai.id = $assessment_instance_id
   AND aq.deleted_at IS NULL
   AND q.deleted_at IS NULL
-  AND g.deleted_at IS NULL
 GROUP BY
   q.id,
   iq.id,
