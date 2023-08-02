@@ -1599,7 +1599,9 @@ def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
-def is_correct_scalar_ra(a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8) -> bool:
+def is_correct_scalar_ra(
+    a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
+) -> bool:
     """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
     return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
