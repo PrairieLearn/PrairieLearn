@@ -162,7 +162,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "show_score": show_score,
             "accessibility_description": accessibility_description,
-            "parse_error": parse_error is not None,
+            "parse_error": parse_error,
             display.value: True,
         }
 
