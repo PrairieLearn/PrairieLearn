@@ -218,6 +218,7 @@ const SKIP_ROUTES = [
   // Admin page; we aren't guaranteed to have subpages to navigate to.
   '/pl/administrator/batchedMigrations/:batched_migration_id',
   '/pl/administrator/features/:feature',
+  '/pl/administrator/features/:feature/modal',
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,

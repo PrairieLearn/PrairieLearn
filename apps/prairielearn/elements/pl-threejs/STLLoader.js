@@ -54,6 +54,7 @@
  */
 
 class STLLoader extends THREE.Loader {
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
   constructor(manager) {
     super(manager);
   }

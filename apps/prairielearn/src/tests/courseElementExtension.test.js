@@ -118,19 +118,10 @@ describe('Course element extensions', function () {
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
-      const images = response.$('img');
-      let found_image = null;
-      for (let i = 0; i < images.length; i++) {
-        if (images[i].attribs.src.includes(incImg)) {
-          found_image = images[i];
-          break;
-        }
-      }
-      assert(found_image !== null, 'could not find image on page');
+      const image = Array.from(response.$('img')).find((img) => img.attribs.src.includes(incImg));
+      assert(image != null, 'could not find image on page');
 
-      const image_response = await helperClient.fetchCheerio(
-        locals.siteUrl + found_image.attribs.src,
-      );
+      const image_response = await helperClient.fetchCheerio(locals.siteUrl + image.attribs.src);
       assert.isTrue(image_response.ok, 'could not fetch image');
     });
   });

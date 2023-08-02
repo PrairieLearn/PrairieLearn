@@ -1,196 +1,145 @@
-from typing import Optional
+"""
+Custom colors for the PrarieLearn project based on Coloraide.
 
-colors: dict[str, str] = {
-    # Colors used in /public/stylesheets/colors.css
-    "red1": "#ffccbc",
-    "red2": "#ff6c5c",
-    "red3": "#b71c0c",
-    "pink1": "#ffbcd8",
-    "pink2": "#fa5c98",
-    "pink3": "#ba1c58",
-    "purple1": "#dcc6e0",
-    "purple2": "#9b59b6",
-    "purple3": "#5e147d",
-    "blue1": "#39d5ff",
-    "blue2": "#1297e0",
-    "blue3": "#0057a0",
-    "turquoise1": "#5efaf7",
-    "turquoise2": "#27cbc0",
-    "turquoise3": "#008b80",
-    "green1": "#8effc1",
-    "green2": "#2ecc71",
-    "green3": "#008c31",
-    "yellow1": "#fde3a7",
-    "yellow2": "#f5ab35",
-    "yellow3": "#d87400",
-    "orange1": "#ffdcb5",
-    "orange2": "#ff926b",
-    "orange3": "#f3825b",
-    "brown1": "#f6c4a3",
-    "brown2": "#ce9c7b",
-    "brown3": "#8e5c3b",
-    "brown": "#8e5c3b",
-    "gray1": "#e0e0e0",
-    "gray2": "#909090",
-    "gray": "#909090",
-    "gray3": "#505050",
-    # Standard CSS colors
-    "aliceblue": "#F0F8FF",
-    "antiquewhite": "#FAEBD7",
-    "aqua": "#00FFFF",
-    "aquamarine": "#7FFFD4",
-    "azure": "#F0FFFF",
-    "beige": "#F5F5DC",
-    "bisque": "#FFE4C4",
-    "black": "#000000",
-    "blanchedalmond": "#FFEBCD",
-    "blue": "#0000FF",
-    "blueviolet": "#8A2BE2",
-    "burlywood": "#DEB887",
-    "cadetblue": "#5F9EA0",
-    "chartreuse": "#7FFF00",
-    "chocolate": "#D2691E",
-    "coral": "#FF7F50",
-    "cornflowerblue": "#6495ED",
-    "cornsilk": "#FFF8DC",
-    "crimson": "#DC143C",
-    "cyan": "#00FFFF",
-    "darkblue": "#00008B",
-    "darkcyan": "#008B8B",
-    "darkgoldenrod": "#B8860B",
-    "darkgray": "#A9A9A9",
-    "darkgrey": "#A9A9A9",
-    "darkgreen": "#006400",
-    "darkkhaki": "#BDB76B",
-    "darkmagenta": "#8B008B",
-    "darkolivegreen": "#556B2F",
-    "darkorange": "#FF8C00",
-    "darkorchid": "#9932CC",
-    "darkred": "#8B0000",
-    "darksalmon": "#E9967A",
-    "darkseagreen": "#8FBC8F",
-    "darkslateblue": "#483D8B",
-    "darkslategray": "#2F4F4F",
-    "darkslategrey": "#2F4F4F",
-    "darkturquoise": "#00CED1",
-    "darkviolet": "#9400D3",
-    "deeppink": "#FF1493",
-    "deepskyblue": "#00BFFF",
-    "dimgray": "#696969",
-    "dimgrey": "#696969",
-    "dodgerblue": "#1E90FF",
-    "firebrick": "#B22222",
-    "floralwhite": "#FFFAF0",
-    "forestgreen": "#228B22",
-    "fuchsia": "#FF00FF",
-    "gainsboro": "#DCDCDC",
-    "ghostwhite": "#F8F8FF",
-    "gold": "#FFD700",
-    "goldenrod": "#DAA520",
-    "green": "#008000",
-    "greenyellow": "#ADFF2F",
-    "honeydew": "#F0FFF0",
-    "hotpink": "#FF69B4",
-    "indianred": "#CD5C5C",
-    "indigo": "#4B0082",
-    "ivory": "#FFFFF0",
-    "khaki": "#F0E68C",
-    "lavender": "#E6E6FA",
-    "lavenderblush": "#FFF0F5",
-    "lawngreen": "#7CFC00",
-    "lemonchiffon": "#FFFACD",
-    "lightblue": "#ADD8E6",
-    "lightcoral": "#F08080",
-    "lightcyan": "#E0FFFF",
-    "lightgoldenrodyellow": "#FAFAD2",
-    "lightgray": "#D3D3D3",
-    "lightgrey": "#D3D3D3",
-    "lightgreen": "#90EE90",
-    "lightpink": "#FFB6C1",
-    "lightsalmon": "#FFA07A",
-    "lightseagreen": "#20B2AA",
-    "lightskyblue": "#87CEFA",
-    "lightslategray": "#778899",
-    "lightslategrey": "#778899",
-    "lightsteelblue": "#B0C4DE",
-    "lightyellow": "#FFFFE0",
-    "lime": "#00FF00",
-    "limegreen": "#32CD32",
-    "linen": "#FAF0E6",
-    "magenta": "#FF00FF",
-    "maroon": "#800000",
-    "mediumaquamarine": "#66CDAA",
-    "mediumblue": "#0000CD",
-    "mediumorchid": "#BA55D3",
-    "mediumpurple": "#9370DB",
-    "mediumseagreen": "#3CB371",
-    "mediumslateblue": "#7B68EE",
-    "mediumspringgreen": "#00FA9A",
-    "mediumturquoise": "#48D1CC",
-    "mediumvioletred": "#C71585",
-    "midnightblue": "#191970",
-    "mintcream": "#F5FFFA",
-    "mistyrose": "#FFE4E1",
-    "moccasin": "#FFE4B5",
-    "navajowhite": "#FFDEAD",
-    "navy": "#000080",
-    "oldlace": "#FDF5E6",
-    "olive": "#808000",
-    "olivedrab": "#6B8E23",
-    "orange": "#FFA500",
-    "orangered": "#FF4500",
-    "orchid": "#DA70D6",
-    "palegoldenrod": "#EEE8AA",
-    "palegreen": "#98FB98",
-    "paleturquoise": "#AFEEEE",
-    "palevioletred": "#DB7093",
-    "papayawhip": "#FFEFD5",
-    "peachpuff": "#FFDAB9",
-    "peru": "#CD853F",
-    "pink": "#FFC0CB",
-    "plum": "#DDA0DD",
-    "powderblue": "#B0E0E6",
-    "purple": "#800080",
-    "rebeccapurple": "#663399",
-    "red": "#FF0000",
-    "rosybrown": "#BC8F8F",
-    "royalblue": "#4169E1",
-    "saddlebrown": "#8B4513",
-    "salmon": "#FA8072",
-    "sandybrown": "#F4A460",
-    "seagreen": "#2E8B57",
-    "seashell": "#FFF5EE",
-    "sienna": "#A0522D",
-    "silver": "#C0C0C0",
-    "skyblue": "#87CEEB",
-    "slateblue": "#6A5ACD",
-    "slategray": "#708090",
-    "slategrey": "#708090",
-    "snow": "#FFFAFA",
-    "springgreen": "#00FF7F",
-    "steelblue": "#4682B4",
-    "tan": "#D2B48C",
-    "teal": "#008080",
-    "thistle": "#D8BFD8",
-    "tomato": "#FF6347",
-    "turquoise": "#40E0D0",
-    "violet": "#EE82EE",
-    "wheat": "#F5DEB3",
-    "white": "#FFFFFF",
-    "whitesmoke": "#F5F5F5",
-    "yellow": "#FFFF00",
-    "yellowgreen": "#9ACD32",
+Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
+"""
+import re
+
+from coloraide import Color as PLColor
+from coloraide import algebra as alg
+from coloraide.css import serialize
+from coloraide.spaces.srgb.css import sRGB
+from coloraide.types import Vector
+
+ColorTuple = tuple[float, float, float, float]
+
+# Match the pattern of a PL color name;
+# only accepts numbers, lowercase letters, and a single underscore
+RE_PL_COLORS = re.compile(r"(?i)\b([0-9a-z][0-9a-z_]{2,})\b")
+
+# Colors used in /public/stylesheets/colors.css
+# includes additional aliases (e.g, "red3" also known as "incorrect_red")
+PL_COLORS_NAME_MAP: dict[str, ColorTuple] = {
+    "blue1": (57, 213, 255, 255),
+    "blue2": (18, 151, 224, 255),
+    "blue3": (0, 87, 160, 255),
+    "brown": (142, 92, 59, 255),
+    "brown1": (246, 196, 163, 255),
+    "brown2": (206, 156, 123, 255),
+    "brown3": (142, 92, 59, 255),
+    "correct_green": (0, 140, 49, 255),
+    "gray": (144, 144, 144, 255),
+    "gray1": (224, 224, 224, 255),
+    "gray2": (144, 144, 144, 255),
+    "gray3": (80, 80, 80, 255),
+    "green1": (142, 255, 193, 255),
+    "green2": (46, 204, 113, 255),
+    "green3": (0, 140, 49, 255),
+    "incorrect_red": (183, 28, 12, 255),
+    "orange1": (255, 220, 181, 255),
+    "orange2": (255, 146, 107, 255),
+    "orange3": (243, 130, 91, 255),
+    "pink1": (255, 188, 216, 255),
+    "pink2": (250, 92, 152, 255),
+    "pink3": (186, 28, 88, 255),
+    "purple1": (220, 198, 224, 255),
+    "purple2": (155, 89, 182, 255),
+    "purple3": (94, 20, 125, 255),
+    "red1": (255, 204, 188, 255),
+    "red2": (255, 108, 92, 255),
+    "red3": (183, 28, 12, 255),
+    "turquoise1": (94, 250, 247, 255),
+    "turquoise2": (39, 203, 192, 255),
+    "turquoise3": (0, 139, 128, 255),
+    "yellow1": (253, 227, 167, 255),
+    "yellow2": (245, 171, 53, 255),
+    "yellow3": (216, 116, 0, 255),
+}
+
+PL_COLORS_VALUE_MAP: dict[ColorTuple, str] = {
+    v: k for k, v in PL_COLORS_NAME_MAP.items()
 }
 
 
-def get_css_color(name: str) -> Optional[str]:
+class PrarieLearnColor(sRGB):
+    """Custom sRGB class to handle custom PrarieLearn colors, via Coloraide."""
+
+    def match(
+        self, string: str, start: int = 0, fullmatch: bool = True
+    ) -> tuple[tuple[Vector, float], int] | None:
+        """
+        Match a color string, first trying PrarieLearn.
+        If no match is found, defaults to sRGB class' implementation.
+        """
+        # Match the string using fullmatch if requested
+        match = (
+            RE_PL_COLORS.fullmatch(string, start)
+            if fullmatch
+            else RE_PL_COLORS.match(string, start)
+        )
+
+        if match:
+            # See if we can find the name
+            name = match.group(1)
+            values = PL_COLORS_NAME_MAP.get(name.lower(), None)
+
+            if values is not None:
+                # Normalize back to 0 - 1
+                values_norm = [c / 255 for c in values]
+                # Return the coordinates and transparency separate,
+                # also include the match end position
+                return (values_norm[:-1], values_norm[-1]), match.end(1)
+
+        # Couldn't find custom colors, so use the default color matching
+        return super().match(string, start, fullmatch)
+
+    def to_string(
+        self,
+        parent: PLColor,
+        *,
+        alpha: bool | None = None,
+        fit: str | bool = True,
+        names: bool = False,
+        **kwargs,
+    ) -> str:
+        """Convert to string."""
+
+        if names:
+            # Get alpha and coordinates resolving undefined values as required
+            alpha_float = serialize.get_alpha(parent, alpha, False, False)
+            if alpha_float is None:
+                alpha_float = 1.0
+
+            coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
+
+            # See if the color value is a match, if so, return the string
+            value = tuple(alg.round_half_up(c * 255) for c in coords)
+
+            result = PL_COLORS_VALUE_MAP.get(value)
+            if result is not None:
+                return result
+
+        # Color name not requested, or there was no color match, use default serialization.
+        return super().to_string(
+            parent,
+            alpha=alpha,
+            fit=fit,
+            names=names,
+            **kwargs,
+        )
+
+
+PLColor.register(PrarieLearnColor(), overwrite=True)
+
+
+def get_css_color(name: str) -> str | None:
     """
     Tries to look up a hex code value from a named css color, otherwise will
     return None if not a valid color.
     """
-
     name = name.lower()
-    if name in colors:
-        return colors[name]
-    else:
-        return None
+
+    if PLColor.match(name):
+        return PLColor(name).to_string(hex=True)
+
+    return None
