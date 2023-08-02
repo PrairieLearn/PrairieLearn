@@ -2104,11 +2104,16 @@ receive further answers for grading.
 
 #### Details
 
-Contents are only displayed when the answer panel is requested.
-Common reasons that trigger the display of this element are:
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+question panel (so, only in the answer panel), surround that content
+with the `<pl-answer-panel>` tags.
 
-- The question is fully correct
-- There are no more submission attempts
+Common reasons that trigger the display of the answer panel are:
+
+- The question is fully correct.
+- There are no more submission attempts.
 - The time limit for the assessment has expired.
 
 #### Example implementations
@@ -2318,9 +2323,10 @@ Displays the contents of question directions.
 #### Details
 
 Generally, the contents of `question.html` will appear in
-the question panel`, submission panel, and answer panel. To prevent
+the question panel, submission panel, and answer panel. To prevent
 content from being displayed in the submission panel and
- answer panel, surround that content with the `<pl-question-panel>` tags.
+answer panel (so, only in the question panel), surround that content
+with the `<pl-question-panel>` tags.
 
 #### Example implementations
 
@@ -2346,8 +2352,14 @@ Customizes how information entered by a user is displayed before grading.
 
 #### Details
 
-Contents are only shown after the student has submitted an answer. This answer
-may be correct, incorrect, or invalid.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the question panel and
+answer panel (so, only in the submission panel), surround that content
+with the `<pl-submission-panel>` tags.
+
+The submission panel is only shown after the student has submitted an
+answer. This answer may be correct, incorrect, or invalid.
 
 #### Example implementations
 
