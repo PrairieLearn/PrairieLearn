@@ -1,5 +1,6 @@
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../lib/config');
+const { shouldSecureCookie } = require('../lib/cookie');
 
 module.exports = (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and
@@ -17,7 +18,7 @@ module.exports = (req, res, next) => {
   res.cookie(cookieName, cookieData, {
     maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
     httpOnly: true,
-    secure: true,
+    secure: shouldSecureCookie(req),
   });
   next();
 };
