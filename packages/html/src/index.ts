@@ -46,10 +46,10 @@ function escapeValue(value: unknown): string {
 
 // Based on https://github.com/Janpot/escape-html-template-tag
 export class HtmlSafeString {
-  private readonly strings: ReadonlyArray<string>;
+  private readonly strings: readonly string[];
   private readonly values: unknown[];
 
-  constructor(strings: ReadonlyArray<string>, values: unknown[]) {
+  constructor(strings: readonly string[], values: unknown[]) {
     this.strings = strings;
     this.values = values;
   }

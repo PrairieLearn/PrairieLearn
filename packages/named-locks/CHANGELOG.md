@@ -1,5 +1,19 @@
 # @prairielearn/named-locks
 
+## 1.5.1
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/postgres@1.7.3
+
+## 1.5.0
+
+### Minor Changes
+
+- cdb0f2109: Add optional `onNotAcquired` function to `doWithLock` and `tryWithLock`
+
 ## 1.4.0
 
 ### Minor Changes

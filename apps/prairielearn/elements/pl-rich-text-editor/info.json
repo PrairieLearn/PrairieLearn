@@ -6,7 +6,7 @@
       "quilljs-markdown/dist/quilljs-markdown.js",
       "showdown/dist/showdown.js",
       "he/he.js",
-      "xss/dist/xss.min.js"
+      "dompurify/dist/purify.min.js"
     ],
     "nodeModulesStyles": [
       "quill/dist/quill.snow.css",

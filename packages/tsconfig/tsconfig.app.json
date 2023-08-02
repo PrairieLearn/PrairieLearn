@@ -10,6 +10,6 @@
     // Allow spreading Maps/Sets into arrays
     "downlevelIteration": true,
     "strictNullChecks": true,
-    "module": "NodeNext",
+    "module": "NodeNext"
   }
 }
