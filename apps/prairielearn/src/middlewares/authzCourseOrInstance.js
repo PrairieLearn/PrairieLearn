@@ -9,6 +9,7 @@ const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
+const { insertEnrollment } = require('../models/enrollment');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -94,6 +95,24 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.authz_data.has_student_access_with_enrollment =
       permissions_course_instance.has_student_access_with_enrollment;
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
+
+    // If the user does not currently have access to the course, but could if
+    // they were enrolled, automatically enroll them.
+    if (
+      res.locals.authz_data.has_student_access &&
+      !res.locals.authz_data.has_student_access_with_enrollment
+    ) {
+      console.log('auto-enrolling');
+      // TODO: this enrollment should enforce enrollment limits.
+      await insertEnrollment({
+        user_id: res.locals.authn_user.user_id,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      // Redirect them back to the same page/verb to pick up the new enrollment.
+      res.redirect(307, req.originalUrl);
+      return;
+    }
   }
 
   debug('authn user is authorized');
@@ -187,16 +206,25 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   // If the user is not enrolled in the course instance but could be, then
   // automatically enroll them.
+  //
+  // TODO: is this actually required? It looks like we would have already
+  // enrolled them above. Would `res.locals.authz_data.user` and `res.locals.authn_user`
+  // ever be different at this point?
   if (
     isCourseInstance &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
     // Enroll authenticated user in course instance
-    await sqldb.queryAsync(sql.ensure_enrollment, {
+    console.log('auto-enrolling again');
+    await insertEnrollment({
       course_instance_id: res.locals.course_instance.id,
       user_id: user.user_id,
     });
+
+    // Redirect them back to the same page/verb to pick up the new enrollment.
+    res.redirect(307, req.originalUrl);
+    return;
   }
 
   // Verify requested UID
@@ -323,6 +351,10 @@ module.exports = asyncHandler(async (req, res, next) => {
   // we simply return (without error). This allows the authn user to keep access
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
+  //
+  // TODO: this might require a change. The `WHERE` clause changed from looking
+  // at `has_student_access_with_enrollment` to just `has_student_access`.
+  // We should check here if we have to automatically enroll the student?
   if (effectiveResult.rowCount === 0) {
     debug(`effective user was denied access`);
 
@@ -360,6 +392,9 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.authz_data.mode = effectiveParams.req_mode;
     res.locals.req_date = req_date;
     return next();
+  }
+
+  if (isCourseInstance) {
   }
 
   // Now that we know the effective user has access, parse the authz data
@@ -581,6 +616,24 @@ module.exports = asyncHandler(async (req, res, next) => {
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
+    }
+
+    // If the user does not currently have access to the course, but could if
+    // they were enrolled, automatically enroll them.
+    if (
+      res.locals.authz_data.has_student_access &&
+      !res.locals.authz_data.has_student_access_with_enrollment
+    ) {
+      console.log('auto-enrolling');
+      // TODO: this enrollment should enforce enrollment limits.
+      await insertEnrollment({
+        user_id: res.locals.authn_user.user_id,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      // Redirect them back to the same page/verb to pick up the new enrollment.
+      res.redirect(307, req.originalUrl);
+      return;
     }
   }
 
