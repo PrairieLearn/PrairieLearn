@@ -97,12 +97,15 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
 
     // If the user does not currently have access to the course, but could if
-    // they were enrolled, automatically enroll them.
+    // they were enrolled, automatically enroll them. However, we will not
+    // attempt to enroll them if they are an instructor (that is, if they have
+    // a specific role in the course or course instance).
     if (
+      res.locals.authz_data.course_role === 'None' &&
+      res.locals.authz_data.course_instance_role === 'None' &&
       res.locals.authz_data.has_student_access &&
       !res.locals.authz_data.has_student_access_with_enrollment
     ) {
-      console.log('auto-enrolling');
       // TODO: this enrollment should enforce enrollment limits.
       await insertEnrollment({
         user_id: res.locals.authn_user.user_id,
@@ -203,29 +206,6 @@ module.exports = asyncHandler(async (req, res, next) => {
   let user = res.locals.authz_data.user;
   let is_administrator = res.locals.is_administrator;
   let user_with_requested_uid_has_instructor_access_to_course_instance = false;
-
-  // If the user is not enrolled in the course instance but could be, then
-  // automatically enroll them.
-  //
-  // TODO: is this actually required? It looks like we would have already
-  // enrolled them above. Would `res.locals.authz_data.user` and `res.locals.authn_user`
-  // ever be different at this point?
-  if (
-    isCourseInstance &&
-    res.locals.authz_data.authn_has_student_access &&
-    !res.locals.authz_data.authn_has_student_access_with_enrollment
-  ) {
-    // Enroll authenticated user in course instance
-    console.log('auto-enrolling again');
-    await insertEnrollment({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: user.user_id,
-    });
-
-    // Redirect them back to the same page/verb to pick up the new enrollment.
-    res.redirect(307, req.originalUrl);
-    return;
-  }
 
   // Verify requested UID
   if (req.cookies.pl_requested_uid) {
@@ -394,9 +374,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     return next();
   }
 
-  if (isCourseInstance) {
-  }
-
   // Now that we know the effective user has access, parse the authz data
 
   // The effective user is a Previewer and the authn_user is not - remove
@@ -558,6 +535,35 @@ module.exports = asyncHandler(async (req, res, next) => {
       `.toString();
       throw err;
     }
+
+    // The effective user is not enrolled in the course instance and is also not
+    // either a course instructor or a course instance instructor - remove all
+    // override cookies and return with error.
+    //
+    // Note that we skip this check if the effective user is the same as the
+    // authenticated user, since an instructor may want to view their course
+    // as a student without enrolling in their own course.
+    if (
+      !idsEqual(user.uid, res.locals.authn_user.uid) &&
+      !effectiveResult.rows[0].permissions_course.has_course_permission_preview &&
+      !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
+      !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
+    ) {
+      console.log('clearing overrides');
+      overrides.forEach((override) => {
+        debug(`clearing cookie: ${override.cookie}`);
+        res.clearCookie(override.cookie);
+      });
+
+      let err = error.make(403, 'Access denied');
+      err.info = html`
+        <p>
+          You have tried to change the effective user to one who is not enrolled in this course
+          instance. All required changes to the effective user have been removed.
+        </p>
+      `.toString();
+      throw err;
+    }
   }
 
   res.locals.authz_data.user = user;
@@ -616,24 +622,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
-    }
-
-    // If the user does not currently have access to the course, but could if
-    // they were enrolled, automatically enroll them.
-    if (
-      res.locals.authz_data.has_student_access &&
-      !res.locals.authz_data.has_student_access_with_enrollment
-    ) {
-      console.log('auto-enrolling');
-      // TODO: this enrollment should enforce enrollment limits.
-      await insertEnrollment({
-        user_id: res.locals.authn_user.user_id,
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      // Redirect them back to the same page/verb to pick up the new enrollment.
-      res.redirect(307, req.originalUrl);
-      return;
     }
   }
 
