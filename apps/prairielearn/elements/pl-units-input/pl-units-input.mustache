@@ -21,7 +21,7 @@
             name={{name}}
             autocomplete="off"
             type="text"
-            class="form-control pl-units-input-input {{^display_append_span}}rounded-right{{/display_append_span}}"
+            class="form-control pl-units-input-input"
             size="{{size}}"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
@@ -32,7 +32,7 @@
         <span class="input-group-append">
             {{#suffix}}
             <span
-                class="input-group-text {{^display_append_span}}rounded-right{{/display_append_span}}"
+                class="input-group-text"
                 id="pl-units-input-{{uuid}}-suffix"
             >{{suffix}}</span>
             {{/suffix}}
@@ -45,23 +45,23 @@
             {{/show_info}}
 
             {{#correct}}
-                <span class="input-group-text rounded-right">
+                <span class="input-group-text">
                     <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
                 </span>
             {{/correct}}
             {{#partial}}
-                <span class="input-group-text rounded-right">
+                <span class="input-group-text">
                     <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
                 </span>
             {{/partial}}
             {{#incorrect}}
-                <span class="input-group-text rounded-right">
+                <span class="input-group-text">
                     <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
                 </span>
             {{/incorrect}}
             {{#parse_error}}
                 <a role="button"
-                   class="btn btn-light border d-flex align-items-center text-danger rounded-right"
+                   class="btn btn-light border d-flex align-items-center text-danger"
                    data-toggle="popover"
                    data-html="true"
                    title="Format Error"
