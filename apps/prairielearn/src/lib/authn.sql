@@ -6,7 +6,7 @@ SELECT
   users_is_instructor_in_any_course (u.user_id) AS is_instructor,
   (
     SELECT
-      count(*)
+      count(*)::integer
     FROM
       news_item_notifications
     WHERE

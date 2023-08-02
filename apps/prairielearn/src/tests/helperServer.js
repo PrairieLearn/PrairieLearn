@@ -89,12 +89,9 @@ module.exports = {
             debug('before(): initialize socket server');
             socketServer.init(httpServer);
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize cache');
-            cache.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await cache.init();
           },
           async () => {
             debug('before(): initialize server jobs');
@@ -121,7 +118,7 @@ module.exports = {
           debug('before(): completed');
           if (ERR(err, callback)) return;
           callback(null);
-        }
+        },
       );
     };
   },
@@ -138,16 +135,15 @@ module.exports = {
           await codeCaller.finish();
         },
         function (callback) {
-          debug('after(): close load estimators');
-          load.close();
-          callback(null);
-        },
-        function (callback) {
           debug('after(): stop server');
           server.stopServer(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
+        },
+        async () => {
+          debug('after(): close load estimators');
+          load.close();
         },
         async () => {
           debug('after(): stop cron');
@@ -161,12 +157,9 @@ module.exports = {
           debug('after(): close server jobs');
           await serverJobs.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close cache');
-          cache.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await cache.close();
         },
         function (callback) {
           debug('after(): close local cache');
@@ -182,7 +175,7 @@ module.exports = {
         debug('after(): complete');
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   },
 };
@@ -225,5 +218,5 @@ module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(
-  module.exports.waitForJobSequenceSuccessAsync
+  module.exports.waitForJobSequenceSuccessAsync,
 );

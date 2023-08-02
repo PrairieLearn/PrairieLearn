@@ -32,7 +32,10 @@ jobs:
         uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: images/plbase
-          platforms: linux/amd64,linux/arm64
+          # We don't build `priarielearn/prairielearn` itself for ARM, so we'll skip
+          # building the base image for `linux/arm64` as well. This results in
+          # significantly faster overall builds.
+          platforms: linux/amd64
           push: true
           no-cache: true
           tags: prairielearn/plbase:latest

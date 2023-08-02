@@ -31,7 +31,7 @@ async function nextUngradedInstanceQuestionUrl(
   assessment_id,
   assessment_question_id,
   user_id,
-  prior_instance_question_id
+  prior_instance_question_id,
 ) {
   const params = {
     assessment_id,
@@ -41,7 +41,7 @@ async function nextUngradedInstanceQuestionUrl(
   };
   const result = await sqldb.queryZeroOrOneRowAsync(
     sql.select_next_ungraded_instance_question,
-    params
+    params,
   );
 
   if (result.rowCount > 0) {
@@ -79,13 +79,13 @@ async function populateRubricData(locals) {
 
   await async.eachLimit(locals.rubric_data?.rubric_items || [], 3, async (item) => {
     item.description_rendered = await markdown.processContentInline(
-      mustache.render(item.description || '', mustache_data)
+      mustache.render(item.description || '', mustache_data),
     );
     item.explanation_rendered = await markdown.processContent(
-      mustache.render(item.explanation || '', mustache_data)
+      mustache.render(item.explanation || '', mustache_data),
     );
     item.grader_note_rendered = await markdown.processContent(
-      mustache.render(item.grader_note || '', mustache_data)
+      mustache.render(item.grader_note || '', mustache_data),
     );
   });
 }
@@ -108,7 +108,7 @@ async function populateManualGradingData(submission) {
   }
   if (submission.feedback?.manual) {
     submission.feedback_manual_html = await markdown.processContent(
-      submission.feedback?.manual?.toString() || ''
+      submission.feedback?.manual?.toString() || '',
     );
   }
 }
@@ -139,7 +139,7 @@ async function updateAssessmentQuestionRubric(
   max_extra_points,
   rubric_items,
   tag_for_manual_grading,
-  authn_user_id
+  authn_user_id,
 ) {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
@@ -156,7 +156,7 @@ async function updateAssessmentQuestionRubric(
       }
       if (item.description.length > 100) {
         throw new Error(
-          'Rubric item description is too long, must be no longer than 100 characters. Use the explanation for further comments.'
+          'Rubric item description is too long, must be no longer than 100 characters. Use the explanation for further comments.',
         );
       }
     });
@@ -179,7 +179,7 @@ async function updateAssessmentQuestionRubric(
       // question's values change.
       if (max_points <= Number(min_points)) {
         throw new Error(
-          `Question has no range of possible points. Rubric points are limited to a minimum of ${min_points} and a maximum of ${max_points}.`
+          `Question has no range of possible points. Rubric points are limited to a minimum of ${min_points} and a maximum of ${max_points}.`,
         );
       }
     }
@@ -253,7 +253,7 @@ async function updateAssessmentQuestionRubric(
               number,
             });
           }
-        }
+        },
       );
 
       await recomputeInstanceQuestions(assessment_question_id, authn_user_id);
@@ -289,7 +289,7 @@ async function recomputeInstanceQuestions(assessment_question_id, authn_user_id)
         {
           manual_rubric_data: instance_question,
         },
-        authn_user_id
+        authn_user_id,
       );
     });
   });
@@ -309,7 +309,7 @@ async function insertRubricGrading(
   max_points,
   max_manual_points,
   rubric_items,
-  adjust_points
+  adjust_points,
 ) {
   return sqldb.runInTransactionAsync(async () => {
     const { rubric_data, rubric_item_data } = (
@@ -324,14 +324,14 @@ async function insertRubricGrading(
         (item) =>
           (item.score ?? 1) *
           (rubric_item_data.find((db_item) => idsEqual(db_item.id, item.rubric_item_id))?.points ??
-            0)
-      )
+            0),
+      ),
     );
     const computed_points =
       Math.min(
         Math.max(rubric_data.starting_points + sum_rubric_item_points, rubric_data.min_points),
         (rubric_data.replace_auto_points ? max_points : max_manual_points) +
-          rubric_data.max_extra_points
+          rubric_data.max_extra_points,
       ) + Number(adjust_points || 0);
 
     const rubric_grading_result = (
@@ -378,7 +378,7 @@ async function updateInstanceQuestionScore(
   submission_id,
   check_modified_at,
   score,
-  authn_user_id
+  authn_user_id,
 ) {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = (
@@ -407,7 +407,7 @@ async function updateInstanceQuestionScore(
         (100 *
           _.sumBy(
             _.toPairs(score.partial_scores),
-            ([_, value]) => (value?.score ?? 0) * (value?.weight ?? 1)
+            ([_, value]) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
         _.sumBy(_.toPairs(score.partial_scores), ([_, value]) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * current_submission.max_auto_points;
@@ -441,7 +441,7 @@ async function updateInstanceQuestionScore(
         current_submission.max_points,
         current_submission.max_manual_points,
         score?.manual_rubric_data?.applied_rubric_items || [],
-        score?.manual_rubric_data?.adjust_points
+        score?.manual_rubric_data?.adjust_points,
       );
       score.manual_points =
         manual_rubric_grading.computed_points -

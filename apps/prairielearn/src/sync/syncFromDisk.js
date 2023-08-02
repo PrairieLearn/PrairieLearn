@@ -19,8 +19,7 @@ const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
 const { chalk, chalkDim } = require('../lib/chalk');
-
-const { promisify } = require('util');
+const { getLockNameForCoursePath } = require('../lib/course');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
@@ -44,21 +43,21 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir)
+    courseDB.loadFullCourse(courseDir),
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
-    syncCourseInstances.sync(courseId, courseData)
+    syncCourseInstances.sync(courseId, courseData),
   );
   await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
   const questionIds = await perf.timedAsync('syncQuestions', () =>
-    syncQuestions.sync(courseId, courseData)
+    syncQuestions.sync(courseId, courseData),
   );
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timedAsync('syncAssessmentModules', () =>
-    syncAssessmentModules.sync(courseId, courseData)
+    syncAssessmentModules.sync(courseId, courseData),
   );
   perf.start('syncAssessments');
   await Promise.all(
@@ -69,10 +68,10 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
           courseId,
           courseInstanceId,
           courseInstanceData.assessments,
-          questionIds
-        )
+          questionIds,
+        ),
       );
-    })
+    }),
   );
   perf.end('syncAssessments');
   if (config.devMode) {
@@ -85,7 +84,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
   } else if (courseDataHasErrorsOrWarnings) {
     logger.info(
-      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced')
+      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced'),
     );
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
@@ -96,7 +95,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   // sync process. For instance, we don't actually validate exam UUIDs until
   // the database sync step.
   courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
+    logger.info(line || ''),
   );
 
   perf.end('sync');
@@ -120,14 +119,16 @@ module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, 
   })(callback);
 };
 
+module.exports.syncDiskToSqlWithLock = syncDiskToSqlWithLock;
+
 /**
  * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
  * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
-module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback) {
-  const lockName = 'coursedir:' + courseDir;
+function syncDiskToSql(courseDir, course_id, logger, callback) {
+  const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
   namedLocks.tryLock(lockName, (err, lock) => {
     if (ERR(err, callback)) return;
@@ -146,7 +147,7 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
       });
     }
   });
-};
+}
 
 /**
  * @param {string} courseDir
@@ -157,7 +158,7 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
 function syncDiskToSqlAsync(courseDir, course_id, logger) {
   // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
   // that it'll always result in a non-undefined value if it doesn't error.
-  return promisify(module.exports.syncDiskToSql)(courseDir, course_id, logger);
+  return util.promisify(syncDiskToSql)(courseDir, course_id, logger);
 }
 module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
@@ -170,10 +171,10 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
   sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
     if (ERR(err, callback)) return;
     const course_id = result.rows[0].course_id;
-    module.exports.syncDiskToSql(courseDir, course_id, logger, function (err, result) {
+    syncDiskToSql(courseDir, course_id, logger, function (err, result) {
       if (ERR(err, callback)) return;
       callback(null, result);
     });
   });
 };
-module.exports.syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);
+module.exports.syncOrCreateDiskToSqlAsync = util.promisify(module.exports.syncOrCreateDiskToSql);

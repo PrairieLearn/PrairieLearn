@@ -100,7 +100,7 @@ class LoadEstimator {
       debug(
         `LoadEstimator._reportLoad(): jobType = ${this.jobType}, scheduling next call for ${
           config.reportIntervalSec * 1000
-        } ms`
+        } ms`,
       );
       this.timeoutID = setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
     });
@@ -131,7 +131,7 @@ const estimators = {};
 module.exports = {
   initEstimator(jobType, maxJobCount, warnOnOldJobs) {
     debug(
-      `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`
+      `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
     );
     if (_.has(estimators, jobType)) throw new Error(`duplicate jobType: ${jobType}`);
     estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);

@@ -203,7 +203,7 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
       });
     default:
       throw new Error(
-        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
+        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`,
       );
   }
 }
@@ -275,7 +275,7 @@ export async function init(config: OpenTelemetryConfig) {
 
   if (config.serviceName) {
     resource = resource.merge(
-      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName })
+      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName }),
     );
   }
 

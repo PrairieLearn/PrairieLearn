@@ -46,7 +46,7 @@ BEGIN
         course_display_timezone
     FROM
         questions AS q
-        JOIN pl_courses AS c ON (c.id = q.course_id)
+        JOIN pl_courses AS c ON (c.id = variant_with_id.course_id)
     WHERE
         q.id = variant_with_id.question_id;
 

@@ -4,7 +4,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 
 function AdministratorAdmins({ admins, resLocals }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
@@ -38,7 +38,7 @@ function AdministratorAdmins({ admins, resLocals }) {
                   AdministratorInsertForm({
                     csrfToken: resLocals.__csrf_token,
                     id: 'administratorInsertButton',
-                  })
+                  }),
                 )}"
                 data-trigger="manual"
                 onclick="$(this).popover('show')"
@@ -81,7 +81,7 @@ function AdministratorAdmins({ admins, resLocals }) {
                                 id: 'administratorDeleteButton' + i,
                                 uid: admin.uid,
                                 userId: admin.user_id,
-                              })
+                              }),
                             )}"
                             data-trigger="manual"
                             onclick="$(this).popover('show')"
@@ -90,7 +90,7 @@ function AdministratorAdmins({ admins, resLocals }) {
                           </button>
                         </td>
                       </tr>
-                    `
+                    `,
                   )}
                 </tbody>
               </table>

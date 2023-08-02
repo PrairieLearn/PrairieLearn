@@ -1,8 +1,6 @@
 {
-    "controller": "pl-units-input.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-units-input.css"
-        ]
-    }
+  "controller": "pl-units-input.py",
+  "dependencies": {
+    "elementStyles": ["pl-units-input.css"]
+  }
 }

@@ -21,7 +21,7 @@ var undefAllCourseCode = function (callback) {
       function (err) {
         if (ERR(err, callback)) return;
         callback(null);
-      }
+      },
     );
   });
 };

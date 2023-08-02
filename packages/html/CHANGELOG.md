@@ -1,5 +1,23 @@
 # @prairielearn/html
 
+## 3.0.3
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 2c5504f1f: Mark package as free from side effects
+
+## 3.0.1
+
+### Patch Changes
+
+- 8fd47d928: Upgrade all dependencies
+
 ## 3.0.0
 
 ### Major Changes

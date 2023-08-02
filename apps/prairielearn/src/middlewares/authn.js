@@ -64,16 +64,26 @@ module.exports = asyncHandler(async (req, res, next) => {
     return next();
   }
 
-  // Allow auth to be bypassed for local dev mode; also used for tests.
-  // See `pages/authLoginDev` for cookie-based authentication in dev mode.
-  if (config.authType === 'none') {
+  // In dev mode, by default, we'll authenticate the user automatically using
+  // the UID, name, and UIN specified in the config. This is to reduce the
+  // friction of getting started with PrairieLearn.
+  //
+  // If an authentication cookie is already present, we won't set a new one.
+  //
+  // If the user clicks "Log out" in dev mode, we'll set a special cookie to
+  // prevent this automatic authentication. The user will get bounced to the
+  // login page like they would in production. They then have two options:
+  //
+  // - Use the "bypass" authentication option on the login page to log in as
+  //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
+  // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
+  if (config.devMode && !req.cookies.pl_disable_auto_authn && !req.cookies.pl_authn) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
 
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
-
     if (req.cookies.pl_test_user === 'test_student') {
       uid = 'student@illinois.edu';
       name = 'Student User';
@@ -95,7 +105,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: false,
-      pl_authn_cookie: false,
+      pl_authn_cookie: true,
     });
     return next();
   }
@@ -110,7 +120,10 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
   if (authnData == null) {
     // We failed to authenticate.
-    //
+
+    // Clear the pl_authn cookie in case it was bad
+    res.clearCookie('pl_authn');
+
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.
     const requestPath = req.baseUrl + req.path;
@@ -122,8 +135,6 @@ module.exports = asyncHandler(async (req, res, next) => {
       // we aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page
       // first set the preAuthUrl cookie for redirection after authn
       res.cookie('preAuthUrl', req.originalUrl);
-      // clear the pl_authn cookie in case it was bad
-      res.clearCookie('pl_authn');
 
       // If we're in the middle of a PrairieTest login flow, propagate that to
       // the login page so we can show a message to the user.

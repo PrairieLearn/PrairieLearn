@@ -21,7 +21,7 @@ const defaultUser = {
 };
 
 const fibonacciSolution = fs.readFileSync(
-  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py')
+  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py'),
 );
 
 const mockStudents = [
@@ -31,13 +31,8 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-const waitForExternalGrader = async ($questionsPage, questionsPage) => {
-  const variantId = $questionsPage('form > input[name="__variant_id"]').val();
-
-  // The variant token (used for a sort of authentication) is inlined into
-  // a `<script>` tag. This regex will read it out of the page's raw HTML.
-  const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
-
+const waitForExternalGrader = async ($questionsPage) => {
+  const { variantId, variantToken } = $questionsPage('.question-container').data();
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise((resolve, reject) => {
@@ -54,9 +49,14 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
       });
     };
 
-    socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
-      handleStatusChange(msg);
-    });
+    socket.emit(
+      'init',
+      { variant_id: variantId.toString(), variant_token: variantToken.toString() },
+      function (msg) {
+        if (!msg) return reject(new Error('Socket initialization failed'));
+        handleStatusChange(msg);
+      },
+    );
 
     socket.on('change:status', function (msg) {
       handleStatusChange(msg);
@@ -81,7 +81,7 @@ const loadHomeworkPage = async (user) => {
   hm9InternalExternalManaulUrl =
     siteUrl +
     $courseInstancePage(
-      'a:contains("Homework for Internal, External, Manual grading methods")'
+      'a:contains("Homework for Internal, External, Manual grading methods")',
     ).attr('href');
   let res = await fetch(hm9InternalExternalManaulUrl);
   assert.equal(res.ok, true);
@@ -149,8 +149,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -183,8 +183,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -197,7 +197,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
@@ -219,11 +219,11 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
 
@@ -234,7 +234,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
@@ -253,11 +253,11 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -270,7 +270,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
@@ -285,7 +285,7 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
 
           iqId = parseInstanceQuestionId(iqUrl);
-          await waitForExternalGrader($questionsPage, questionsPage);
+          await waitForExternalGrader($questionsPage);
           // reload QuestionsPage since socket io cannot update without DOM
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
@@ -301,8 +301,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
       describe('"save" action', () => {
@@ -312,7 +312,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href'
+              'href',
             );
 
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
@@ -335,8 +335,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -349,7 +349,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")'
+              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -378,8 +378,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -389,7 +389,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")'
+              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -414,8 +414,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -428,7 +428,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")'
+              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -454,11 +454,11 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
 
@@ -469,7 +469,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")'
+              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -492,11 +492,11 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
-            'manual grading: waiting for grading'
+            'manual grading: waiting for grading',
           );
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });
@@ -534,8 +534,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
-        it('should result in 1 "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 1);
+        it('should result in 1 "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 1);
         });
       });
       describe('"save" action', () => {
@@ -566,8 +566,8 @@ describe('Grading method(s)', function () {
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
-        it('should NOT result in "grading-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.grading-block'), 0);
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
     });

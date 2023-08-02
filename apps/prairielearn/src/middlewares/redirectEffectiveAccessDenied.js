@@ -30,7 +30,7 @@ module.exports = function (err, req, res, next) {
       res.locals?.authz_data?.has_course_permission_preview)
   ) {
     res.redirect(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`
+      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`,
     );
     return;
   }

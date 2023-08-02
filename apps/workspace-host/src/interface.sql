@@ -7,7 +7,7 @@ FROM
   workspaces AS w
   JOIN variants AS v ON (v.workspace_id = w.id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN pl_courses AS c ON (c.id = v.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   w.id = $workspace_id;
@@ -173,12 +173,27 @@ WHERE
   AND wh.instance_id = $instance_id;
 
 -- BLOCK mark_host_unhealthy
-UPDATE workspace_hosts AS wh
-SET
-  state = 'unhealthy',
-  state_changed_at = NOW(),
-  unhealthy_at = NOW(),
-  unhealthy_reason = $unhealthy_reason
-WHERE
-  wh.instance_id = $instance_id
-  AND wh.state IN ('launching', 'ready', 'draining');
+WITH
+  updated_workspace_hosts AS (
+    UPDATE workspace_hosts AS wh
+    SET
+      state = 'unhealthy',
+      state_changed_at = NOW(),
+      unhealthy_at = NOW(),
+      unhealthy_reason = $unhealthy_reason
+    WHERE
+      wh.instance_id = $instance_id
+      AND wh.state IN ('launching', 'ready', 'draining')
+    RETURNING
+      wh.id,
+      wh.state,
+      wh.unhealthy_reason
+  )
+INSERT INTO
+  workspace_host_logs (workspace_host_id, state, message)
+SELECT
+  wh.id,
+  wh.state,
+  wh.unhealthy_reason
+FROM
+  updated_workspace_hosts AS wh;

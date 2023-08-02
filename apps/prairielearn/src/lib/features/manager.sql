@@ -29,7 +29,6 @@ SELECT
 INSERT INTO
   feature_grants (
     name,
-    type,
     institution_id,
     course_id,
     course_instance_id,
@@ -38,12 +37,12 @@ INSERT INTO
 VALUES
   (
     $name,
-    $type,
     $institution_id,
     $course_id,
     $course_instance_id,
     $user_id
-  );
+  )
+ON CONFLICT DO NOTHING;
 
 -- BLOCK disable_feature
 DELETE FROM feature_grants

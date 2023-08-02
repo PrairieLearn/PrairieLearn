@@ -15,21 +15,18 @@ migrate-dev:
 
 dev: start-support
 	@yarn dev
-dev-workspace-host: start-support kill-running-workspaces
+dev-workspace-host: start-support
 	@yarn dev-workspace-host
 
 start: start-support
 	@yarn start
-start-workspace-host: start-support kill-running-workspaces
+start-workspace-host: start-support
 	@yarn start-workspace-host
 start-executor:
 	@node apps/prairielearn/dist/executor.js
 
 update-database-description:
 	@yarn --cwd apps/prairielearn pg-describe postgres -o ../../database
-
-kill-running-workspaces:
-	@docker/kill_running_workspaces.sh
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
@@ -46,14 +43,14 @@ test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
 # explicitly exclude it here.
-	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
+	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py --cov=apps
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
-	@yarn prettier --check "**/*.{js,ts,md,sql}"
+	@yarn prettier --check "**/*.{js,ts,md,sql,json}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
@@ -64,7 +61,7 @@ lint-links:
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
-	@yarn prettier --write "**/*.{js,ts,md,sql}"
+	@yarn prettier --write "**/*.{js,ts,md,sql,json}"
 format-python:
 	@python3 -m isort ./
 	@python3 -m black ./

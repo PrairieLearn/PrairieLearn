@@ -112,4 +112,5 @@ def question_data() -> QuestionData:
         "extensions": dict(),
         "num_valid_submissions": 0,
         "manual_grading": False,
+        "answers_names": dict(),
     }

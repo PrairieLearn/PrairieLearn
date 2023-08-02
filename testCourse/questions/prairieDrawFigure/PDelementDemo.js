@@ -42,7 +42,7 @@ this.pd.triangularDistributedLoad(
   '1',
   '0.5',
   true,
-  true
+  true,
 );
 // Next, a point force acting upward at point Q
 this.pd.arrow(Q.subtract($V([0, 2])), Q, 'force');

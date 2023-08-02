@@ -1,6 +1,5 @@
 const winston = require('winston');
 const { format } = require('logform');
-const CloudWatchTransport = require('winston-aws-cloudwatch');
 
 const consoleTransport = new winston.transports.Console({
   name: 'console',
@@ -12,26 +11,5 @@ const consoleTransport = new winston.transports.Console({
 const logger = winston.createLogger({
   transports: [consoleTransport],
 });
-
-logger.initCloudWatchLogging = function (groupName, streamName) {
-  // IMPORTANT: don't require('./config') until after module is initialized
-  // in order to prevent a circular dependency issue
-  const { config } = require('./config');
-
-  logger.add(
-    new CloudWatchTransport({
-      level: 'info',
-      logGroupName: groupName,
-      logStreamName: streamName,
-      createLogGroup: true,
-      createLogStream: true,
-      submissionInterval: 500,
-      batchSize: 100,
-      awsConfig: {
-        region: config.awsRegion,
-      },
-    })
-  );
-};
 
 module.exports = logger;

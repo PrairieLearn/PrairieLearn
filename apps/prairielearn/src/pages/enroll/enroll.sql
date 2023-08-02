@@ -1,7 +1,7 @@
 -- BLOCK select_course_instances
 SELECT
   c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
-  c.short_name || ', ' || ci.short_name AS short_label,
+  c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
   (e.id IS NOT NULL) AS enrolled,
   users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
@@ -43,6 +43,52 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
+-- BLOCK select_and_lock_enrollment_counts
+WITH
+  institution AS (
+    SELECT
+      i.*
+    FROM
+      institutions AS i
+      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN course_instances AS ci ON (ci.course_id = c.id)
+    WHERE
+      ci.id = $course_instance_id
+    FOR NO KEY UPDATE OF
+      i
+  ),
+  course_instance_enrollments AS (
+    SELECT
+      COUNT(*)::integer AS count
+    FROM
+      enrollments
+    WHERE
+      course_instance_id = $course_instance_id
+  ),
+  institution_enrollments AS (
+    SELECT
+      COUNT(*)::integer AS count
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
+      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN institution AS i ON (i.id = c.institution_id)
+    WHERE
+      e.created_at > now() - interval '1 year'
+  )
+SELECT
+  to_jsonb(i.*) AS institution,
+  to_jsonb(ci.*) AS course_instance,
+  course_instance_enrollments.count AS course_instance_enrollment_count,
+  institution_enrollments.count AS institution_enrollment_count
+FROM
+  course_instances AS ci,
+  institution AS i,
+  course_instance_enrollments,
+  institution_enrollments
+WHERE
+  ci.id = $course_instance_id;
+
 -- BLOCK enroll
 INSERT INTO
   enrollments AS e (user_id, course_instance_id)
@@ -59,8 +105,7 @@ WHERE
     u.institution_id,
     $req_date
   )
-RETURNING
-  e.id;
+ON CONFLICT DO NOTHING;
 
 -- BLOCK unenroll
 DELETE FROM enrollments AS e USING users AS u

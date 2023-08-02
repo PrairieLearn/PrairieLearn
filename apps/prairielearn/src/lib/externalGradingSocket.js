@@ -69,13 +69,14 @@ module.exports.connection = function (socket) {
         if (ERR(err, (err) => logger.error('Error rendering panels for submission', err))) return;
         callback({
           submission_id: msg.submission_id,
+          answerPanel: panels.answerPanel,
           submissionPanel: panels.submissionPanel,
           questionScorePanel: panels.questionScorePanel,
           assessmentScorePanel: panels.assessmentScorePanel,
           questionPanelFooter: panels.questionPanelFooter,
           questionNavNextButton: panels.questionNavNextButton,
         });
-      }
+      },
     );
   });
 };
@@ -113,7 +114,7 @@ module.exports.renderPanelsForSubmission = function (
   questionContext,
   csrfToken,
   authorizedEdit,
-  callback
+  callback,
 ) {
   question.renderPanelsForSubmission(
     submission_id,
@@ -128,7 +129,7 @@ module.exports.renderPanelsForSubmission = function (
     (err, results) => {
       if (ERR(err, callback)) return;
       callback(null, results);
-    }
+    },
   );
 };
 

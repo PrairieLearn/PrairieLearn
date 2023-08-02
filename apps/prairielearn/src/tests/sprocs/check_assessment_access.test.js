@@ -10,7 +10,7 @@ var caa_reservation_tests = function (
   exam_id,
   second_assessment_id,
   expectWideOpen = false,
-  seeOtherExams = false
+  seeOtherExams = false,
 ) {
   var expectedWord = 'fail';
   var expectedBool = false;
@@ -87,7 +87,7 @@ var caa_reservation_tests = function (
           assert.strictEqual(result.rows[0].authorized, expectedBool);
           callback(null);
         });
-      }
+      },
     );
 
     var otherExams = {

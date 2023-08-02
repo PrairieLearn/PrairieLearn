@@ -15,7 +15,7 @@ $(() => {
     ) {
       document
         .querySelectorAll(
-          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`
+          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`,
         )
         .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
@@ -46,7 +46,7 @@ function resetInstructorGradingPanel() {
           { backgroundColor: '#000', color: '#fff', offset: 0.5 },
           { backgroundColor: '', color: '', offset: 1 },
         ],
-        500
+        500,
       );
       $(e.trigger)
         .popover({
@@ -76,7 +76,7 @@ function resetInstructorGradingPanel() {
         element.style.display = use_percentage ? '' : 'none';
       });
       window.localStorage.manual_grading_score_use = use_percentage ? 'percentage' : 'points';
-      updatePointsView();
+      updatePointsView(null);
     });
     toggle.checked = window.localStorage.manual_grading_score_use === 'percentage';
     toggle.dispatchEvent(new Event('change'));
@@ -115,7 +115,7 @@ function resetInstructorGradingPanel() {
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
     button.addEventListener('click', function () {
       $('.js-rubric-settings-modal').modal('show');
-    })
+    }),
   );
 
   document
@@ -123,32 +123,32 @@ function resetInstructorGradingPanel() {
     .forEach((item) => item.addEventListener('change', computePointsFromRubric));
   document
     .querySelectorAll('.js-grading-score-input')
-    .forEach((input) => input.addEventListener('input', computePointsFromRubric));
+    .forEach((input) => input.addEventListener('input', () => computePointsFromRubric(input)));
 
   document.querySelectorAll('.js-adjust-points-enable').forEach((link) =>
     link.addEventListener('click', function () {
       this.style.display = 'none';
       const input = this.closest('.js-adjust-points').querySelector(
-        '.js-adjust-points-input-container'
+        '.js-adjust-points-input-container',
       );
       input.style.display = '';
       input.classList.remove('d-none');
       input.querySelector('input').focus();
-    })
+    }),
   );
   document.querySelectorAll('.js-adjust-points-points').forEach((input) =>
     input.addEventListener('input', function () {
       this.closest('.js-adjust-points').querySelector('.js-adjust-points-percentage').value =
         (this.value * 100) / this.dataset.maxPoints;
       computePointsFromRubric();
-    })
+    }),
   );
   document.querySelectorAll('.js-adjust-points-percentage').forEach((input) =>
     input.addEventListener('input', function () {
       this.closest('.js-adjust-points').querySelector('.js-adjust-points-points').value =
         (this.value * this.dataset.maxPoints) / 100;
       computePointsFromRubric();
-    })
+    }),
   );
 
   document
@@ -168,8 +168,8 @@ function resetInstructorGradingPanel() {
     .querySelectorAll('.js-disable-rubric-button')
     .forEach((button) =>
       button.addEventListener('click', (e) =>
-        submitSettings.bind(button.closest('form'))(e, 'false')
-      )
+        submitSettings.bind(button.closest('form'))(e, 'false'),
+      ),
     );
 
   resetRubricItemRowsListeners();
@@ -205,7 +205,7 @@ function checkRubricItemTotals() {
     .map((input) => Number(input.value))
     .reduce(
       ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
-      [startingPoints, startingPoints]
+      [startingPoints, startingPoints],
     );
   const minPoints = Number(form.querySelector('[name="min_points"]').value);
   const maxPoints =
@@ -219,7 +219,7 @@ function checkRubricItemTotals() {
       `Rubric item points reach at most ${totalPositive} points. ${
         maxPoints - totalPositive
       } left to reach maximum.`,
-      ['alert-warning']
+      ['alert-warning'],
     );
   }
 
@@ -227,7 +227,7 @@ function checkRubricItemTotals() {
     addAlert(
       form.querySelector('.js-settings-points-warning-placeholder'),
       `Minimum grade from rubric item penalties is ${totalNegative} points.`,
-      ['alert-warning']
+      ['alert-warning'],
     );
   }
 }
@@ -236,7 +236,7 @@ function submitSettings(e, use_rubric) {
   e.preventDefault();
   const modal = this.closest('.modal');
   const gradingForm = document.querySelector(
-    '.js-main-grading-panel form[name=manual-grading-form]'
+    '.js-main-grading-panel form[name=manual-grading-form]',
   );
   // Save values in grading rubric so they can be re-applied once the form is re-created.
   const rubricFormData = Array.from(new FormData(gradingForm).entries());
@@ -269,7 +269,7 @@ function submitSettings(e, use_rubric) {
 
         // Restore any values that had been set before the settings were configured.
         const newRubricForm = document.querySelector(
-          '.js-main-grading-panel form[name=manual-grading-form]'
+          '.js-main-grading-panel form[name=manual-grading-form]',
         );
         newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
           input.checked = false;
@@ -345,7 +345,7 @@ function roundPoints(points) {
   return Math.round(Number(points) * 100) / 100;
 }
 
-function updatePointsView() {
+function updatePointsView(sourceInput) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     const max_auto_points = Number(form.dataset.maxAutoPoints);
     const max_manual_points = Number(form.dataset.maxManualPoints);
@@ -353,31 +353,31 @@ function updatePointsView() {
 
     const auto_points =
       roundPoints(
-        this.name === 'score_auto_percent'
-          ? (this.value * max_auto_points) / 100
-          : form.querySelector('[name=score_auto_points]')?.value
+        sourceInput?.name === 'score_auto_percent'
+          ? (sourceInput?.value * max_auto_points) / 100
+          : form.querySelector('[name=score_auto_points]')?.value,
       ) || 0;
     const manual_points =
       roundPoints(
-        this.name === 'score_manual_percent'
-          ? (this.value * max_manual_points) / 100
-          : form.querySelector('[name=score_manual_points]')?.value
+        sourceInput?.name === 'score_manual_percent'
+          ? (sourceInput?.value * max_manual_points) / 100
+          : form.querySelector('[name=score_manual_points]')?.value,
       ) || 0;
     const points = roundPoints(auto_points + manual_points);
     const auto_perc = roundPoints((auto_points * 100) / (max_auto_points || max_points));
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
 
-    if (this.name !== 'score_auto_points') {
+    if (sourceInput?.name !== 'score_auto_points') {
       updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
     }
-    if (this.name !== 'score_auto_percent') {
+    if (sourceInput?.name !== 'score_auto_percent') {
       updateQueryObjects(form, '[name=score_auto_percent]', { value: auto_perc });
     }
-    if (this.name !== 'score_manual_points') {
+    if (sourceInput?.name !== 'score_manual_points') {
       updateQueryObjects(form, '[name=score_manual_points]', { value: manual_points });
     }
-    if (this.name !== 'score_manual_percent') {
+    if (sourceInput?.name !== 'score_manual_percent') {
       updateQueryObjects(form, '[name=score_manual_percent]', { value: manual_perc });
     }
 
@@ -390,7 +390,7 @@ function updatePointsView() {
   });
 }
 
-function computePointsFromRubric() {
+function computePointsFromRubric(sourceInput = null) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     if (form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector('.js-manual-score-value-input-points');
@@ -403,7 +403,7 @@ function computePointsFromRubric() {
         Math.min(
           Math.max(Math.round(itemsSum * 100) / 100, Number(form.dataset.rubricMinPoints)),
           Number(replaceAutoPoints ? form.dataset.maxPoints : form.dataset.maxManualPoints) +
-            Number(form.dataset.rubricMaxExtraPoints)
+            Number(form.dataset.rubricMaxExtraPoints),
         ) + Number(form.querySelector('input[name="score_manual_adjust_points"]')?.value || 0);
       const manualPoints =
         rubricValue -
@@ -414,7 +414,7 @@ function computePointsFromRubric() {
       manualInput.value = manualPoints;
     }
   });
-  updatePointsView();
+  updatePointsView(sourceInput);
 }
 
 function enableRubricItemLongTextField(event) {
@@ -499,10 +499,10 @@ function addRubricItemRow() {
   row.querySelector('.js-rubric-item-points').value = points;
   row.querySelector('.js-rubric-item-description').name = `rubric_item[new${next_id}][description]`;
   row.querySelector(
-    '.js-rubric-item-explanation'
+    '.js-rubric-item-explanation',
   ).dataset.inputName = `rubric_item[new${next_id}][explanation]`;
   row.querySelector(
-    '.js-rubric-item-grader-note'
+    '.js-rubric-item-grader-note',
   ).dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
 
   row.querySelector('.js-rubric-item-points').focus();

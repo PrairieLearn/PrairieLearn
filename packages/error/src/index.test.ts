@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { make, makeWithData, addData, newMessage } from './index';
+import { make, makeWithData, addData, newMessage, makeWithInfo } from './index';
 
 describe('make', () => {
   it('makes an error without data', () => {
@@ -22,6 +22,14 @@ describe('makeWithData', () => {
     const err = makeWithData('Not Found', { foo: 'bar' });
     assert.equal(err.message, 'Not Found');
     assert.equal(err.data.foo, 'bar');
+  });
+});
+
+describe('makeWithInfo', () => {
+  it('makes an error with the expected properties', () => {
+    const err = makeWithInfo('Not Found', 'bar');
+    assert.equal(err.message, 'Not Found');
+    assert.equal(err.info, 'bar');
   });
 });
 

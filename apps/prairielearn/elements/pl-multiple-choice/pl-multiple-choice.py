@@ -2,6 +2,8 @@ import json
 import math
 import pathlib
 import random
+from collections import Counter
+from itertools import chain
 
 import chevron
 import lxml.html
@@ -19,6 +21,8 @@ HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = "correct"
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 FEEDBACK_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
+SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 
 def categorize_options(element, data):
@@ -123,11 +127,28 @@ def prepare(element_html, data):
         "external-json",
         "external-json-correct-key",
         "external-json-incorrect-key",
+        "allow-blank",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+    pl.check_answers_names(data, name)
 
     correct_answers, incorrect_answers = categorize_options(element, data)
+
+    # Making a conscious choice *NOT* to apply .lower() to all list elements
+    # in case instructors want to explicitly have matrix M vs. vector m as
+    # possible options. Ignore trailing/leading whitespace
+
+    choices_dict = Counter(
+        choice[2].strip() for choice in chain(correct_answers, incorrect_answers)
+    )
+
+    duplicates = [item for item, count in choices_dict.items() if count > 1]
+
+    if duplicates:
+        raise ValueError(
+            f'pl-multiple-choice element "{name}" has duplicate choices: {"; ".join(duplicates)}'
+        )
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -375,19 +396,23 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
+        hide_letter_keys = pl.get_boolean_attrib(
+            element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+        )
+
         html_params = {
             "submission": True,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
-            "hide_letter_keys": pl.get_boolean_attrib(
-                element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-            ),
+            "hide_letter_keys": hide_letter_keys or submitted_key is None,
         }
 
         if parse_error is None:
             submitted_answer = next(
-                filter(lambda a: a["key"] == submitted_key, answers), None
+                filter(lambda a: a["key"] == submitted_key, answers),
+                SUBMITTED_ANSWER_BLANK,
             )
+
             html_params["key"] = submitted_key
             html_params["answer"] = submitted_answer
 
@@ -439,14 +464,15 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
-    submitted_key = data["submitted_answers"].get(name, None)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    submitted_key = data["submitted_answers"].get(name)
     all_keys = [a["key"] for a in data["params"][name]]
 
-    if submitted_key is None:
+    if not allow_blank and submitted_key is None:
         data["format_errors"][name] = "No answer was submitted."
         return
 
-    if submitted_key not in all_keys:
+    if submitted_key not in all_keys and submitted_key is not None:
         data["format_errors"][
             name
         ] = f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
