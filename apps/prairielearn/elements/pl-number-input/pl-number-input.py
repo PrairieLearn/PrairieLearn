@@ -473,10 +473,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             assert_never(comparison)
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
-    # if correct:
-    #    data["partial_scores"][name] = {"score": 1, "weight": weight}
-    # else:
-    #    data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
