@@ -1,5 +1,13 @@
 # @prairielearn/html-ejs
 
+## 1.1.6
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/html@3.0.4
+
 ## 1.1.5
 
 ### Patch Changes
