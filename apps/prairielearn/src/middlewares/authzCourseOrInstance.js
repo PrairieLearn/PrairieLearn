@@ -549,7 +549,6 @@ module.exports = asyncHandler(async (req, res, next) => {
       !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
       !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
     ) {
-      console.log('clearing overrides');
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
