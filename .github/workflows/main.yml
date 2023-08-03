@@ -147,13 +147,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-    - name: Install Node dependencies
-      run: yarn install --immutable
+    - name: Install OS packages
+      run: sudo apt-get install -y graphviz graphviz-dev
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -163,6 +158,14 @@ jobs:
         cache-dependency-path: images/plbase/python-requirements.txt
     - name: Install Python dependencies
       run: pip install -r images/plbase/python-requirements.txt
+
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'yarn'
+    - name: Install Node dependencies
+      run: yarn install --immutable
 
     - name: Build all code
       run: make build
