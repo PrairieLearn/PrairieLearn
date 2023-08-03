@@ -95,8 +95,6 @@ jobs:
         PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
     - name: Tag executor image as latest
       run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
-      env:
-        PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
 
     # The following steps won't run correctly for forks since the Dockerhub
     # credentials secrets will be missing. We only run them if the secrets are
