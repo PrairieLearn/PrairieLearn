@@ -13,6 +13,11 @@ migrate:
 migrate-dev:
 	@yarn migrate-dev
 
+refresh-workspace-hosts:
+	@yarn refresh-workspace-hosts
+refresh-workspace-hosts-dev:
+	@yarn refresh-workspace-hosts-dev
+
 dev: start-support
 	@yarn dev
 dev-workspace-host: start-support

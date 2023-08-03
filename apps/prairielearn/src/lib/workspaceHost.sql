@@ -1,4 +1,4 @@
--- BLOCK set_host_unhealthy
+-- BLOCK set_hosts_unhealthy
 WITH
   updated_workspace_hosts AS (
     UPDATE workspace_hosts AS wh
@@ -7,21 +7,28 @@ WITH
       unhealthy_at = NOW(),
       unhealthy_reason = $reason
     WHERE
-      wh.id = $workspace_host_id
+      (
+        $workspace_host_id::bigint IS NULL
+        OR wh.id = $workspace_host_id
+      )
       AND wh.state IN ('launching', 'ready', 'draining')
     RETURNING
+      wh.*
+  ),
+  updated_workspace_host_logs AS (
+    INSERT INTO
+      workspace_host_logs (workspace_host_id, state, message)
+    SELECT
       wh.id,
       wh.state,
       wh.unhealthy_reason
+    FROM
+      updated_workspace_hosts AS wh
   )
-INSERT INTO
-  workspace_host_logs (workspace_host_id, state, message)
 SELECT
-  wh.id,
-  wh.state,
-  wh.unhealthy_reason
+  *
 FROM
-  updated_workspace_hosts AS wh;
+  updated_workspace_hosts;
 
 -- BLOCK assign_workspace_to_host
 WITH
