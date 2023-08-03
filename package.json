@@ -1,4 +1,5 @@
 {
+  "name": "prairielearn",
   "private": true,
   "scripts": {
     "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",

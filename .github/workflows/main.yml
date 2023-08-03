@@ -133,13 +133,6 @@ jobs:
       #
       # We put the Postgres data on a tmpfs volume, which should be much faster.
       run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
-    - name: Run the Python linter
-      run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-    - name: Run the Python typechecker
-      run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
-    - name: Run the Python tests
-      run: docker exec test_container /PrairieLearn/docker/test_python.sh
-      timeout-minutes: 5
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
       # The JS tests hang relatively often when someone makes a mistake in a PR,
@@ -148,23 +141,28 @@ jobs:
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
 
-  javascript-native:
+  native-checks:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
-      with:
-        # We need the whole history so we can diff against `master` to determine
-        # what images need to be built.
-        fetch-depth: 0
 
     - name: Set up Node
       uses: actions/setup-node@v3
       with:
         node-version: '16'
         cache: 'yarn'
-    - name: Install dependencies
+    - name: Install Node dependencies
       run: yarn install --immutable
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: pip
+        cache-dependency-path: images/plbase/python-requirements.txt
+    - name: Install Python dependencies
+      run: pip install -r images/plbase/python-requirements.txt
 
     - name: Build all code
       run: make build
@@ -174,7 +172,15 @@ jobs:
       run: make lint-html
     - name: Run the links linter
       run: make lint-links
+    - name: Run the Python typechecker
+      run: make typecheck-python
+    - name: Run the Python linter
+      run: make lint-python
+    - name: Run the Python tests
+      run: make test-python
+      timeout-minutes: 5
+    
     # The rest of our code is typechecked in the `build` Makefile target, which
-    # is run when the Docker image is built.
+    # is run above.
     - name: Run the TypeScript typechecker for tools
       run: make typecheck-tools
