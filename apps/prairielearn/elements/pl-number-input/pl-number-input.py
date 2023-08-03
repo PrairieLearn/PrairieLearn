@@ -1,3 +1,4 @@
+import math
 import random
 from enum import Enum
 from html import escape
@@ -453,10 +454,21 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-            return (
-                pl.is_correct_scalar_ra(a_sub_converted, a_tru_converted, rtol, atol),
-                None,
+
+            a_sub_precision = get_string_precision(str(a_sub))
+            is_correct = pl.is_correct_scalar_ra(
+                a_sub_converted, a_tru_converted, rtol, atol
             )
+            feedback = None
+
+            if not is_correct and not math.isclose(a_sub_precision, rtol, rel_tol=rtol):
+                feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
+            
+            return (
+                is_correct,
+                feedback,
+            )
+
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             return (
