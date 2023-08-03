@@ -10,20 +10,7 @@ def file(data):
         return
 
     drawing = Drawing()
-    params = data["params"]
-    ureg = pl.get_unit_registry()
-
-    # Re-parse quantities
-    R1 = ureg.Quantity(params["R1"])
-    R2 = ureg.Quantity(params["R2"])
-    R3 = ureg.Quantity(params["R3"])
-    Vt = ureg.Quantity(params["Vt"])
-
-    # Generate labels, "~L" is the short latex format specifier
-    R1_label = f"$R_1 = {R1:~L}$"
-    R2_label = f"$R_2 = {R2:~L}$"
-    R3_label = f"$R_3 = {R3:~L}$"
-    Vt_label = f"$V_T = {Vt:~L}$"
+    params_dict = data["params"]
 
     match data["params"]["whichfig"]:
         case 0:
@@ -34,11 +21,11 @@ def file(data):
             drawing += elm.Line().right()
             drawing += elm.Line().right()
             drawing += elm.Line().down()
-            drawing += elm.Resistor().left().label(R3_label)
-            drawing += elm.Resistor().left().label(R2_label)
-            drawing += elm.Resistor().left().label(R1_label)
+            drawing += elm.Resistor().left().label(params_dict["R3_label"])
+            drawing += elm.Resistor().left().label(params_dict["R2_label"])
+            drawing += elm.Resistor().left().label(params_dict["R1_label"])
             drawing.pop()
-            drawing += elm.BatteryCell().down().label(Vt_label)
+            drawing += elm.BatteryCell().down().label(params_dict["Vt_label"])
 
         case 1:
             # variant: Find total resistance
@@ -46,47 +33,49 @@ def file(data):
             drawing.push()
             drawing += elm.Line()
             drawing.push()
-            drawing += elm.Resistor().down().label(R1_label)
+            drawing += elm.Resistor().down().label(params_dict["R1_label"])
             drawing.pop()
             drawing += elm.Line().right()
             drawing.push()
-            drawing += elm.Resistor().down().label(R2_label)
+            drawing += elm.Resistor().down().label(params_dict["R2_label"])
             drawing.pop()
             drawing += elm.Line().right()
-            drawing += elm.Resistor().down().label(R3_label)
+            drawing += elm.Resistor().down().label(params_dict["R3_label"])
             drawing += elm.Line().left()
             drawing += elm.Line().left()
             drawing += elm.Line().left()
             drawing.pop()
-            drawing += elm.BatteryCell().down().label(Vt_label)
+            drawing += elm.BatteryCell().down().label(params_dict["Vt_label"])
 
     return drawing.get_imagedata()
 
 
 def generate(data):
     ureg = pl.get_unit_registry()
+    params_dict = data["params"]
 
-    # Randomly choose Vt, R1, R2, R3
+    # Randomly choose Vt, R1, R2, R3 with appropriate units
     Vt = random.randint(100, 200) * ureg.volt
-    data["params"]["Vt"] = str(Vt)
-    data["params"]["Vt_quantity"] = int(Vt.magnitude)
-
     R1 = random.choice(list(range(20, 180, 10))) * ureg.ohm
-    data["params"]["R1"] = str(R1)
-    data["params"]["R1_quantity"] = int(R1.magnitude)
-
     R2 = random.choice(list(range(20, 180, 20))) * ureg.ohm
-    data["params"]["R2"] = str(R2)
-    data["params"]["R2_quantity"] = int(R2.magnitude)
-
     R3 = random.choice(list(range(20, 100, 5))) * ureg.ohm
-    data["params"]["R3"] = str(R3)
-    data["params"]["R3_quantity"] = int(R3.magnitude)
+
+    # Store magnitudes to present to the student
+    params_dict["Vt_quantity"] = int(Vt.magnitude)
+    params_dict["R1_quantity"] = int(R1.magnitude)
+    params_dict["R2_quantity"] = int(R2.magnitude)
+    params_dict["R3_quantity"] = int(R3.magnitude)
+
+    # Generate labels for use in diagram, "~L" is the short latex format specifier
+    params_dict["R1_label"] = f"$R_1 = {R1:~L}$"
+    params_dict["R2_label"] = f"$R_2 = {R2:~L}$"
+    params_dict["R3_label"] = f"$R_3 = {R3:~L}$"
+    params_dict["Vt_label"] = f"$V_T = {Vt:~L}$"
 
     # Next randomly choose which diagram to ask about and compute
     # the resistance
     whichfig = random.choice([0, 1])
-    data["params"]["whichfig"] = whichfig
+    params_dict["whichfig"] = whichfig
 
     match whichfig:
         case 0:
@@ -102,16 +91,16 @@ def generate(data):
     variant = random.choice([0, 1])
     match variant:
         case 0:
-            data["params"]["ask"] = "equivalent resistance $R_T$"
-            data["params"]["lab"] = "R_T"
-            data["params"]["placeholder"] = "equivalent resistance"
+            params_dict["ask"] = "equivalent resistance $R_T$"
+            params_dict["lab"] = "R_T"
+            params_dict["placeholder"] = "equivalent resistance"
 
             data["correct_answers"]["ans"] = str(Rt)
 
         case 1:
-            data["params"]["ask"] = "current from the power supply $I_T$"
-            data["params"]["lab"] = "I_T"
-            data["params"]["placeholder"] = "current"
+            params_dict["ask"] = "current from the power supply $I_T$"
+            params_dict["lab"] = "I_T"
+            params_dict["placeholder"] = "current"
 
             It = (Vt / Rt).to_base_units()
             data["correct_answers"]["ans"] = str(It)
