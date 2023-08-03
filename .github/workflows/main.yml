@@ -135,7 +135,7 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
       timeout-minutes: 5
 
-  javascript:
+  javascript-native:
     runs-on: ubuntu-latest
     needs: build-core-images
 
@@ -154,6 +154,22 @@ jobs:
     - name: Install dependencies
       run: yarn install --immutable
 
+    - name: Run the JavaScript linter
+      run: make lint-js
+    - name: Run the HTML linter
+      run: make lint-html
+    - name: Run the links linter
+      run: make lint-links
+    # The rest of our code is typechecked in the `build` Makefile target, which
+    # is run when the Docker image is built.
+    - name: Run the TypeScript typechecker for tools
+      run: make typecheck-tools
+
+  javascript-container:
+    runs-on: ubuntu-latest
+    needs: build-core-images
+
+    steps:
     - name: Create a temporary directory for host files
       run: mkdir -p /tmp/prairielearn
     - name: Start the container
@@ -164,17 +180,6 @@ jobs:
       #
       # We put the Postgres data on a tmpfs volume, which should be much faster.
       run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
-    - name: Run the JavaScript linter
-      run: docker exec test_container /PrairieLearn/docker/lint_js.sh
-    - name: Run the HTML linter
-      run: docker exec test_container /PrairieLearn/docker/lint_html.sh
-    # This is run outside the container so that it can see the full repository.
-    - name: Run the links linter
-      run: make lint-links
-    # The rest of our code is typechecked in the `build` Makefile target, which
-    # is run when the Docker image is built.
-    - name: Run the TypeScript typechecker for tools
-      run: docker exec test_container /PrairieLearn/docker/typecheck_tools.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
       # The JS tests hang relatively often when someone makes a mistake in a PR,
@@ -182,4 +187,3 @@ jobs:
       # spinning until it eventually times out. This shorter timeout helps
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
-
