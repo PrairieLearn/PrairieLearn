@@ -5,6 +5,8 @@ const sqldb = require('@prairielearn/postgres');
 const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
+const { features } = require('../../lib/features/index');
+const { z } = require('zod');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -268,6 +270,22 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   return assessmentParams;
 }
 
+function parseSharedQuestionReference(qid) {
+  const firstSlash = qid.indexOf('/');
+  if (firstSlash === -1) {
+    // No QID, invalid question reference. An error will be recorded when trying to locate this question
+    return {
+      sharing_name: qid.substring(1, qid.length),
+      qid: '',
+    };
+  }
+
+  return {
+    sharing_name: qid.substring(1, firstSlash),
+    qid: qid.substring(firstSlash + 1, qid.length),
+  };
+}
+
 /**
  * @param {any} courseId
  * @param {any} courseInstanceId
@@ -315,6 +333,80 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
       }
     });
   }
+
+  /** @type {Set<string>} */
+  const importedQids = new Set();
+  /** @type {Map<string, string[]>} */
+  const importedQidAssessmentMap = new Map();
+  Object.entries(assessments).forEach(([tid, assessment]) => {
+    if (!assessment.data) return;
+    (assessment.data.zones || []).forEach((zone) => {
+      (zone.questions || []).forEach((question) => {
+        let qids = question.alternatives
+          ? question.alternatives.map((alternative) => alternative.id)
+          : [];
+        if (question.id) {
+          qids.push(question.id);
+        }
+        qids.forEach((qid) => {
+          if (qid[0] === '@') {
+            importedQids.add(qid);
+            let tids = importedQidAssessmentMap.get(qid);
+            if (!tids) {
+              tids = [];
+              importedQidAssessmentMap.set(qid, tids);
+            }
+            tids.push(tid);
+          }
+        });
+      });
+    });
+  });
+
+  if (importedQids.size > 0) {
+    let institutionId = await sqldb.queryRow(
+      sql.get_institution_id,
+      { course_id: courseId },
+      z.string(),
+    );
+    let questionSharingEnabled = await features.enabled('question-sharing', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!questionSharingEnabled && config.checkSharingOnSync) {
+      for (let qid of importedQids) {
+        importedQidAssessmentMap.get(qid)?.forEach((tid) => {
+          infofile.addError(
+            assessments[tid],
+            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+          );
+        });
+      }
+    }
+  }
+
+  const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
+    course_id: courseId,
+    imported_question_info: JSON.stringify(Array.from(importedQids, parseSharedQuestionReference)),
+  });
+  for (let row of importedQuestions.rows) {
+    questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+  }
+  let missingQids = Array.from(importedQids).filter((qid) => !(qid in questionIds));
+  if (config.checkSharingOnSync) {
+    missingQids.forEach((qid) => {
+      importedQidAssessmentMap.get(qid)?.forEach((tid) => {
+        infofile.addError(
+          assessments[tid],
+          `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
+            ...missingQids,
+          ].join(', ')}`,
+        );
+      });
+    });
+  }
+
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
       tid,
@@ -325,7 +417,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     ]);
   });
 
-  const params = [assessmentParams, courseId, courseInstanceId];
+  const params = [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync];
   perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');
