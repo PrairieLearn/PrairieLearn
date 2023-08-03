@@ -2093,13 +2093,13 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-answer-panel` element
 
-Provide information regarding the question answer after the student is unable to
-receive further answers for grading.
+Provide information regarding the question answer after the student is unable
+to submit further answers for grading.
 
 #### Sample element
 
 ```html
-<pl-answer-panel> This is answer-panel text. </pl-answer-panel>
+<pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
 ```
 
 #### Details
@@ -2317,7 +2317,7 @@ Displays the contents of question directions.
 #### Sample element
 
 ```html
-<pl-question-panel> This is question-panel text. </pl-question-panel>
+<pl-question-panel>This content is only shown in the question panel.</pl-question-panel>
 ```
 
 #### Details
@@ -2347,7 +2347,7 @@ Customizes how information entered by a user is displayed before grading.
 #### Sample element
 
 ```html
-<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
+<pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
 ```
 
 #### Details
