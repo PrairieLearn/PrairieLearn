@@ -1094,6 +1094,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
   ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+  ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
     function (req, res, next) {
       res.locals.navSubPage = 'staff';
@@ -1548,6 +1555,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
