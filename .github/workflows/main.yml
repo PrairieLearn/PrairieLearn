@@ -167,6 +167,14 @@ jobs:
     - name: Install Node dependencies
       run: yarn install --immutable
 
+    - name: Restore Turborepo cache
+      uses: actions/cache@v3
+      with:
+        path: .turbo
+        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-
+
     - name: Build all code
       run: make build
     - name: Run the JavaScript linter
