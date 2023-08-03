@@ -273,16 +273,17 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 function parseSharedQuestionReference(qid) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
+    // No QID, invalid question reference. An error will be recorded when trying to locate this question
     return {
       sharing_name: qid.substring(1, qid.length),
       qid: '',
     };
-  } else {
-    return {
-      sharing_name: qid.substring(1, firstSlash),
-      qid: qid.substring(firstSlash + 1, qid.length),
-    };
   }
+
+  return {
+    sharing_name: qid.substring(1, firstSlash),
+    qid: qid.substring(firstSlash + 1, qid.length),
+  };
 }
 
 /**
@@ -333,54 +334,56 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     });
   }
 
-  /** @type {Set<string>} */
-  const importedQids = new Set();
-  /** @type {Map<string, string[]>} */
-  const importedQidAssessmentMap = new Map();
-  Object.entries(assessments).forEach(([tid, assessment]) => {
-    if (!assessment.data) return;
-    (assessment.data.zones || []).forEach((zone) => {
-      (zone.questions || []).forEach((question) => {
-        let qids = question.alternatives
-          ? question.alternatives.map((alternative) => alternative.id)
-          : [];
-        if (question.id) {
-          qids.push(question.id);
-        }
-        qids.forEach((qid) => {
-          if (qid[0] === '@') {
-            importedQids.add(qid);
-            let tids = importedQidAssessmentMap.get(qid);
-            if (!tids) {
-              tids = [];
-              importedQidAssessmentMap.set(qid, tids);
-            }
-            tids.push(tid);
+  if (config.checkSharingOnSync) {
+    /** @type {Set<string>} */
+    const importedQids = new Set();
+    /** @type {Map<string, string[]>} */
+    const importedQidAssessmentMap = new Map();
+    Object.entries(assessments).forEach(([tid, assessment]) => {
+      if (!assessment.data) return;
+      (assessment.data.zones || []).forEach((zone) => {
+        (zone.questions || []).forEach((question) => {
+          let qids = question.alternatives
+            ? question.alternatives.map((alternative) => alternative.id)
+            : [];
+          if (question.id) {
+            qids.push(question.id);
           }
+          qids.forEach((qid) => {
+            if (qid[0] === '@') {
+              importedQids.add(qid);
+              let tids = importedQidAssessmentMap.get(qid);
+              if (!tids) {
+                tids = [];
+                importedQidAssessmentMap.set(qid, tids);
+              }
+              tids.push(tid);
+            }
+          });
         });
       });
     });
-  });
 
-  if (importedQids.size > 0) {
-    let institutionId = await sqldb.queryRow(
-      sql.get_institution_id,
-      { course_id: courseId },
-      z.string(),
-    );
-    let questionSharingEnabled = await features.enabled('question-sharing', {
-      course_id: courseId,
-      course_instance_id: courseInstanceId,
-      institution_id: institutionId,
-    });
-    if (!questionSharingEnabled && config.checkSharingOnSync) {
-      for (let qid of importedQids) {
-        importedQidAssessmentMap.get(qid)?.forEach((tid) => {
-          infofile.addError(
-            assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
-          );
-        });
+    if (importedQids.size > 0) {
+      let institutionId = await sqldb.queryRow(
+        sql.get_institution_id,
+        { course_id: courseId },
+        z.string(),
+      );
+      let questionSharingEnabled = await features.enabled('question-sharing', {
+        course_id: courseId,
+        course_instance_id: courseInstanceId,
+        institution_id: institutionId,
+      });
+      if (!questionSharingEnabled) {
+        for (let qid of importedQids) {
+          importedQidAssessmentMap.get(qid)?.forEach((tid) => {
+            infofile.addError(
+              assessments[tid],
+              `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+            );
+          });
+        }
       }
     }
   }
