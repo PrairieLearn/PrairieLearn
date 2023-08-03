@@ -55,9 +55,9 @@
                 </a>
             {{/parse_error}}
             {{#show_score}}
-              {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-              {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-              {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+              {{#correct}}<span class="badge badge-success ml-1"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+              {{#partial}}<span class="badge badge-warning ml-1"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+              {{#incorrect}}<span class="badge badge-danger ml-1"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             {{/show_score}}
             {{#show_info}}
               </a>
@@ -176,8 +176,8 @@ number {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}
         {{/format_error_message}}
         {{#allow_fractions}} You may express your answer as a fraction.{{/allow_fractions}} No symbolic inputs {{^allow_fractions}} or fractions {{/allow_fractions}} are allowed.
     </p>
-    <p> Example <i>valid</i> inputs: <code class="user-output">5</code> &nbsp; <code class="user-output">-17</code> &nbsp; <code class="user-output">4.25e7</code> {{#complex}}&nbsp; <code class="user-output">3.6i</code>{{/complex}} {{#allow_fractions}} &nbsp; <code class="user-output">3/7</code> {{/allow_fractions}} </p>
-    <p> Example <i>invalid</i> inputs: <code class="user-output">6+9</code> &nbsp; <code class="user-output">4*10^7</code> &nbsp; <code class="user-output">3*pi</code> {{^complex}}&nbsp; <code class="user-output">3.6i</code>{{/complex}} {{^allow_fractions}} &nbsp; <code class="user-output">3/7</code> {{/allow_fractions}} </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output">5</code><code class="user-output ml-3">-17</code><code class="user-output ml-3">4.25e7</code> {{#complex}}<code class="user-output ml-3">3.6i</code>{{/complex}} {{#allow_fractions}} <code class="user-output ml-3">3/7</code> {{/allow_fractions}} </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output">6+9</code> <code class="user-output ml-3">4*10^7</code> <code class="user-output ml-3">3*pi</code> {{^complex}} <code class="user-output ml-3">3.6i</code>{{/complex}} {{^allow_fractions}} <code class="user-output ml-3">3/7</code> {{/allow_fractions}} </p>
     <hr>
     <small>
         <p> The submitted answer must be formatted as a <i>double-precision floating-point</i> {{#complex}}or complex{{/complex}} number.  These numbers {{#complex}}(both real and complex parts){{/complex}} lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>.</p>
