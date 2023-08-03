@@ -273,16 +273,17 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 function parseSharedQuestionReference(qid) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
+    // No QID, invalid question reference. An error will be recorded when trying to locate this question
     return {
       sharing_name: qid.substring(1, qid.length),
       qid: '',
     };
-  } else {
-    return {
-      sharing_name: qid.substring(1, firstSlash),
-      qid: qid.substring(firstSlash + 1, qid.length),
-    };
   }
+
+  return {
+    sharing_name: qid.substring(1, firstSlash),
+    qid: qid.substring(firstSlash + 1, qid.length),
+  };
 }
 
 /**
