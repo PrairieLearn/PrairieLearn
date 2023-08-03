@@ -1,4 +1,3 @@
-import math
 import random
 from enum import Enum
 from html import escape
