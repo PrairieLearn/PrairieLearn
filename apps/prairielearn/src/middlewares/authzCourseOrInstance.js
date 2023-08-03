@@ -9,6 +9,7 @@ const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
+const { features } = require('../lib/features/index');
 const { insertEnrollment } = require('../models/enrollment');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -119,6 +120,11 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
 
   debug('authn user is authorized');
+
+  res.locals.question_sharing_enabled = await features.enabledFromLocals(
+    'question-sharing',
+    res.locals,
+  );
 
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];

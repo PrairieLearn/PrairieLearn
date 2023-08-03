@@ -113,11 +113,15 @@ describe('workspaceHost utilities', function () {
     await sqldb.queryAsync('DELETE FROM workspace_host_logs;', {});
   });
 
-  describe('markHostUnhealthy()', () => {
+  describe('markWorkspaceHostUnhealthy()', () => {
     it('should mark a host as unhealthy', async () => {
       await insertWorkspaceHost(1);
+      await insertWorkspaceHost(2);
 
-      await workspaceHostUtils.markWorkspaceHostUnhealthy('1', 'test');
+      const host = await workspaceHostUtils.markWorkspaceHostUnhealthy('1', 'test');
+
+      // First host should be marked as unhealthy
+      assert.equal(host.state, 'unhealthy');
 
       const logs = await getWorkspaceHostLogs(1);
       assert.lengthOf(logs, 1);
@@ -126,6 +130,34 @@ describe('workspaceHost utilities', function () {
       assert.equal(log.workspace_host_id, '1');
       assert.equal(log.message, 'test');
       assert.equal(log.state, 'unhealthy');
+
+      // Second workspace host should be unaffected
+      const secondHost = await selectWorkspaceHost(2);
+      assert.equal(secondHost.state, 'launching');
+
+      const secondLogs = await getWorkspaceHostLogs(2);
+      assert.lengthOf(secondLogs, 0);
+    });
+  });
+
+  describe('markAllWorkspaceHostsUnhealthy()', () => {
+    it('should mark all hosts as unhealthy', async () => {
+      await insertWorkspaceHost(1);
+      await insertWorkspaceHost(2);
+
+      const hosts = await workspaceHostUtils.markAllWorkspaceHostsUnhealthy('test');
+
+      assert.isTrue(hosts.every((host) => host.state === 'unhealthy'));
+
+      for (const id of ['1', '2']) {
+        const logs = await getWorkspaceHostLogs(id);
+        assert.lengthOf(logs, 1);
+
+        const log = logs[0];
+        assert.equal(log.workspace_host_id, id);
+        assert.equal(log.message, 'test');
+        assert.equal(log.state, 'unhealthy');
+      }
     });
   });
 

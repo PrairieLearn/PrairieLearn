@@ -1,5 +1,12 @@
 # @prairielearn/browser-utils
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [098f581da]
+  - @prairielearn/html@3.0.4
+
 ## 1.1.0
 
 ### Minor Changes
