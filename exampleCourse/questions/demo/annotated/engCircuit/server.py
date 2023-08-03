@@ -12,7 +12,7 @@ def file(data):
     drawing = Drawing()
     params_dict = data["params"]
 
-    match data["params"]["whichfig"]:
+    match params_dict["whichfig"]:
         case 0:
             # variant: Resistors in series
             drawing.push()
