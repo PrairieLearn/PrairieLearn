@@ -84,6 +84,32 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
+            <tr>
+              <th class="align-middle">Sharing Sets</th>
+              <td>
+                <% sharing_sets_in.forEach(function(sharing_set) { %>
+                  <span class="badge color-gray1"><%= sharing_set.name %></span>
+                <% }); %>
+                <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && sharing_sets_other.length > 0) { %>
+                  <form name="sharing-set-add" method="POST" class="d-inline">
+                    <input type="hidden" name="__action" value="sharing_set_add">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button id="addSharingSet" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Add...
+                      </button>
+                      <div class="dropdown-menu" aria-labelledby="addSharingSet">
+                          <% sharing_sets_other.forEach(function(sharing_set) { %>
+                            <button class="dropdown-item" type="submit" name="unsafe_sharing_set_id" value="<%= sharing_set.id %>">
+                              <%= sharing_set.name %>
+                            </button>
+                        <% }); %>
+                      </div>
+                    </div>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
             <% if (question.type == 'Freeform' && question.grading_method != 'External' && authz_data.has_course_permission_view) { %>
             <tr>
               <th class="align-middle">Tests</th>
@@ -111,7 +137,7 @@
                ((authz_data.has_course_permission_edit) && (! course.example_course))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view) { %>
+            <% if (authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view && question.course_id === course.id) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>

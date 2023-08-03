@@ -468,6 +468,12 @@ const ConfigSchema = z.object({
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
   features: z.record(z.string(), z.boolean()).default({}),
+  /**
+   * Determines if QIDs of shared questions being imported should be validated.
+   * Turn off in dev mode to enable successful syncs when you don't have access
+   * to imported questions. Must be true in production for data integrity.
+   */
+  checkSharingOnSync: z.boolean().default(false),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

@@ -89,7 +89,11 @@ SELECT
   (z.best_questions IS NOT NULL) AS zone_has_best_questions,
   aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
   q.sync_errors,
-  q.sync_warnings
+  q.sync_warnings,
+  CASE
+    WHEN q.course_id = $course_id THEN qid
+    ELSE '@' || c.sharing_name || '/' || q.qid
+  END AS display_name
 FROM
   assessment_questions AS aq
   JOIN questions AS q ON (q.id = aq.question_id)
@@ -101,6 +105,7 @@ FROM
   LEFT JOIN tags_list ON (tags_list.assessment_question_id = aq.id)
   LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
   LEFT JOIN question_scores ON (question_scores.question_id = q.id)
+  LEFT JOIN pl_courses AS c ON (q.course_id = c.id)
 WHERE
   a.id = $assessment_id
   AND aq.deleted_at IS NULL
