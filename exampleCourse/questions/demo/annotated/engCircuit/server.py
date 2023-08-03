@@ -24,7 +24,9 @@ def file(data):
             drawing += elm.Resistor().left().label(params_dict["R2_label"])
             drawing += elm.Resistor().left().label(params_dict["R1_label"])
             drawing.pop()
-            drawing += elm.BatteryCell().down().label(params_dict["Vt_label"])
+            drawing += (
+                elm.BatteryCell().down().label(["$+$", params_dict["Vt_label"], "$-$"])
+            )
 
         case 1:
             # variant: Resistors in parallel
