@@ -154,6 +154,8 @@ jobs:
     - name: Install dependencies
       run: yarn install --immutable
 
+    - name: Build all code
+      run: make build
     - name: Run the JavaScript linter
       run: make lint-js
     - name: Run the HTML linter
