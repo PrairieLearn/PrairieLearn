@@ -14,8 +14,7 @@ def file(data):
 
     match data["params"]["whichfig"]:
         case 0:
-            # variant: Find current
-            # drawing the circuit using schemdraw
+            # variant: Resistors in series
             drawing.push()
             drawing += elm.Line().right()
             drawing += elm.Line().right()
@@ -28,8 +27,7 @@ def file(data):
             drawing += elm.BatteryCell().down().label(params_dict["Vt_label"])
 
         case 1:
-            # variant: Find total resistance
-            # drawing the circuit using schemdraw
+            # variant: Resistors in parallel
             drawing.push()
             drawing += elm.Line()
             drawing.push()
