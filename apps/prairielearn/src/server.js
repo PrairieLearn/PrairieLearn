@@ -70,6 +70,7 @@ const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
+const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -86,6 +87,7 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
 `;
 
   console.log(msg);
@@ -2054,6 +2056,19 @@ if (require.main === module && config.startServer) {
         });
 
         logger.verbose('Successfully connected to database');
+      },
+      async () => {
+        if (argv['refresh-workspace-hosts-and-exit']) {
+          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+          const hosts = await markAllWorkspaceHostsUnhealthy();
+
+          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+          process.exit(0);
+        }
       },
       async () => {
         // We need to do this before we run migrations, as some migrations will
