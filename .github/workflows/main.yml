@@ -115,12 +115,14 @@ jobs:
     - name: Push executor image to Docker registry
       if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       run: docker push prairielearn/executor:${{ env.COMMIT_SHA }}
+    # Only push the `:latest` image if we're on the `master` branch.
     - name: Push latest executor image to Docker registry
       if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
       run: docker push prairielearn/executor:latest
       
   python:
     runs-on: ubuntu-latest
+    needs: build-core-images
 
     steps:
     - name: Start the container
@@ -135,6 +137,7 @@ jobs:
 
   javascript:
     runs-on: ubuntu-latest
+    needs: build-core-images
 
     steps:
     - uses: actions/checkout@v3
