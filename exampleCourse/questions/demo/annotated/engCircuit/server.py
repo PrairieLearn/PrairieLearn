@@ -65,10 +65,10 @@ def generate(data):
     params_dict["R3_quantity"] = int(R3.magnitude)
 
     # Generate labels for use in diagram, "~L" is the short latex format specifier
+    params_dict["Vt_label"] = f"$V_T = {Vt:~L}$"
     params_dict["R1_label"] = f"$R_1 = {R1:~L}$"
     params_dict["R2_label"] = f"$R_2 = {R2:~L}$"
     params_dict["R3_label"] = f"$R_3 = {R3:~L}$"
-    params_dict["Vt_label"] = f"$V_T = {Vt:~L}$"
 
     # Next randomly choose which diagram to ask about and compute
     # the resistance
