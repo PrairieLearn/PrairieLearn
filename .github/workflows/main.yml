@@ -167,10 +167,10 @@ jobs:
     - name: Install Node dependencies
       run: yarn install --immutable
 
-    - name: Restore Turborepo cache
+    - name: Set up Turborepo cache
       uses: actions/cache@v3
       with:
-        path: .turbo
+        path: ./node_modules/.cache/turbo
         key: ${{ runner.os }}-turbo-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-turbo-
