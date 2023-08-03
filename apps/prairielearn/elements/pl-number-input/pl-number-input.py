@@ -463,7 +463,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
             if not is_correct and not math.isclose(a_sub_precision, rtol, rel_tol=rtol):
                 feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
-            
+
             return (
                 is_correct,
                 feedback,
