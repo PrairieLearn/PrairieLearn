@@ -2094,22 +2094,27 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-answer-panel` element
 
-Provide information regarding the question answer after the student is unable to
-receive further answers for grading.
+Provide information regarding the question answer after the student is unable
+to submit further answers for grading.
 
 #### Sample element
 
 ```html
-<pl-answer-panel> This is answer-panel text. </pl-answer-panel>
+<pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
 ```
 
 #### Details
 
-Contents are only displayed when the answer panel is requested.
-Common reasons that trigger the display of this element are:
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+question panel (so, only in the answer panel), surround that content
+with the `<pl-answer-panel>` tags.
 
-- The question is fully correct
-- There are no more submission attempts
+Common reasons that trigger the display of the answer panel are:
+
+- The question is fully correct.
+- There are no more submission attempts.
 - The time limit for the assessment has expired.
 
 #### Example implementations
@@ -2313,15 +2318,16 @@ Displays the contents of question directions.
 #### Sample element
 
 ```html
-<pl-question-panel> This is question-panel text. </pl-question-panel>
+<pl-question-panel>This content is only shown in the question panel.</pl-question-panel>
 ```
 
 #### Details
 
-Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information
-between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside the answer.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+answer panel (so, only in the question panel), surround that content
+with the `<pl-question-panel>` tags.
 
 #### Example implementations
 
@@ -2342,13 +2348,19 @@ Customizes how information entered by a user is displayed before grading.
 #### Sample element
 
 ```html
-<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
+<pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
 ```
 
 #### Details
 
-Contents are only shown after the student has submitted an answer. This answer
-may be correct, incorrect, or invalid.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the question panel and
+answer panel (so, only in the submission panel), surround that content
+with the `<pl-submission-panel>` tags.
+
+The submission panel is only shown after the student has submitted an
+answer. This answer may be correct, incorrect, or invalid.
 
 #### Example implementations
 

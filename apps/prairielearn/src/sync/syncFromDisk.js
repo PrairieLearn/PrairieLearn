@@ -54,6 +54,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   const questionIds = await perf.timedAsync('syncQuestions', () =>
     syncQuestions.sync(courseId, courseData),
   );
+
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timedAsync('syncAssessmentModules', () =>
@@ -92,8 +93,8 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
 
   // Note that we deliberately log warnings/errors after syncing to the database
   // since in some cases we actually discover new warnings/errors during the
-  // sync process. For instance, we don't actually validate exam UUIDs until
-  // the database sync step.
+  // sync process. For instance, we don't actually validate exam UUIDs or qids of
+  // questions imported from other courses until the database sync step.
   courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
     logger.info(line || ''),
   );
