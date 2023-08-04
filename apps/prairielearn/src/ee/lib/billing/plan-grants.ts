@@ -63,16 +63,6 @@ export async function checkPlanGrantsForQuestion(res: Response) {
     return true;
   }
 
-  // For the time being, put this being a feature flag so that we can land
-  // this change before we've created plan grants for all existing institutions.
-  const shouldCheck = await features.enabledFromLocals(
-    'enforce-plan-grants-for-questions',
-    res.locals,
-  );
-  if (!shouldCheck) {
-    return true;
-  }
-
   const question = QuestionSchema.parse(res.locals.question);
   const requiredFeatures: PlanFeatureName[] = [];
   if (question.external_grading_enabled) {
@@ -84,6 +74,16 @@ export async function checkPlanGrantsForQuestion(res: Response) {
 
   // If there aren't any features to check, don't even bother hitting the database.
   if (requiredFeatures.length === 0) {
+    return true;
+  }
+
+  // For the time being, put this being a feature flag so that we can land
+  // this change before we've created plan grants for all existing institutions.
+  const shouldCheck = await features.enabledFromLocals(
+    'enforce-plan-grants-for-questions',
+    res.locals,
+  );
+  if (!shouldCheck) {
     return true;
   }
 
