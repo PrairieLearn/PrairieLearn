@@ -60,9 +60,9 @@ describe('instructorInstanceAdminBilling', () => {
 
   it('forbids disabling student billing if enrollment limit exceeded', async () => {
     await features.runWithGlobalOverrides({ 'course-instance-billing': true }, async () => {
+      await enrollRandomUsers('1', 10);
       await updateCourseInstanceEnrollmentLimit(1);
       await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
-      await enrollRandomUsers('1', 10);
 
       const csrfToken = await getCsrfToken(pageUrl);
       const res = await fetch(pageUrl, {

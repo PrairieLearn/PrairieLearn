@@ -1,8 +1,6 @@
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const fs = require('fs-extra');
-const path = require('path');
 const _ = require('lodash');
 const { step } = require('mocha-steps');
 
@@ -12,7 +10,6 @@ const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
-const { TEST_COURSE_PATH } = require('../lib/paths');
 const { features } = require('../lib/features/index');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -22,10 +19,6 @@ const defaultUser = {
   authName: config.authName,
   authUin: config.authUin,
 };
-
-const fibonacciSolution = fs.readFileSync(
-  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py'),
-);
 
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
@@ -387,7 +380,7 @@ describe('Manual Grading', function () {
 
       step('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-          { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+          { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
         ]);
         const questionsPage = await gradeRes.text();
         const $questionsPage = cheerio.load(questionsPage);
@@ -959,7 +952,7 @@ describe('Manual Grading', function () {
 
       step('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-          { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+          { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
         ]);
         const questionsPage = await gradeRes.text();
         const $questionsPage = cheerio.load(questionsPage);
