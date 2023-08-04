@@ -9,6 +9,8 @@ const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
+const { features } = require('../lib/features/index');
+const { insertEnrollment } = require('../models/enrollment');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -94,9 +96,35 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.authz_data.has_student_access_with_enrollment =
       permissions_course_instance.has_student_access_with_enrollment;
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
+
+    // If the user does not currently have access to the course, but could if
+    // they were enrolled, automatically enroll them. However, we will not
+    // attempt to enroll them if they are an instructor (that is, if they have
+    // a specific role in the course or course instance).
+    if (
+      res.locals.authz_data.course_role === 'None' &&
+      res.locals.authz_data.course_instance_role === 'None' &&
+      res.locals.authz_data.has_student_access &&
+      !res.locals.authz_data.has_student_access_with_enrollment
+    ) {
+      // TODO: this enrollment should enforce enrollment limits.
+      await insertEnrollment({
+        user_id: res.locals.authn_user.user_id,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      // This is the only part of the `authz_data` that would change as a
+      // result of this enrollment, so we can just update it directly.
+      res.locals.authz_data.has_student_access_with_enrollment = true;
+    }
   }
 
   debug('authn user is authorized');
+
+  res.locals.question_sharing_enabled = await features.enabledFromLocals(
+    'question-sharing',
+    res.locals,
+  );
 
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];
@@ -184,20 +212,6 @@ module.exports = asyncHandler(async (req, res, next) => {
   let user = res.locals.authz_data.user;
   let is_administrator = res.locals.is_administrator;
   let user_with_requested_uid_has_instructor_access_to_course_instance = false;
-
-  // If the user is not enrolled in the course instance but could be, then
-  // automatically enroll them.
-  if (
-    isCourseInstance &&
-    res.locals.authz_data.authn_has_student_access &&
-    !res.locals.authz_data.authn_has_student_access_with_enrollment
-  ) {
-    // Enroll authenticated user in course instance
-    await sqldb.queryAsync(sql.ensure_enrollment, {
-      course_instance_id: res.locals.course_instance.id,
-      user_id: user.user_id,
-    });
-  }
 
   // Verify requested UID
   if (req.cookies.pl_requested_uid) {
@@ -523,6 +537,34 @@ module.exports = asyncHandler(async (req, res, next) => {
       `.toString();
       throw err;
     }
+
+    // The effective user is not enrolled in the course instance and is also not
+    // either a course instructor or a course instance instructor - remove all
+    // override cookies and return with error.
+    //
+    // Note that we skip this check if the effective user is the same as the
+    // authenticated user, since an instructor may want to view their course
+    // as a student without enrolling in their own course.
+    if (
+      !idsEqual(user.user_id, res.locals.authn_user.user_id) &&
+      !effectiveResult.rows[0].permissions_course.has_course_permission_preview &&
+      !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
+      !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
+    ) {
+      overrides.forEach((override) => {
+        debug(`clearing cookie: ${override.cookie}`);
+        res.clearCookie(override.cookie);
+      });
+
+      let err = error.make(403, 'Access denied');
+      err.info = html`
+        <p>
+          You have tried to change the effective user to one who is not enrolled in this course
+          instance. All required changes to the effective user have been removed.
+        </p>
+      `.toString();
+      throw err;
+    }
   }
 
   res.locals.authz_data.user = user;
@@ -581,6 +623,19 @@ module.exports = asyncHandler(async (req, res, next) => {
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
+    }
+
+    // If the effective user is the same as the authenticated user and the
+    // effective user has not requested any specific role, we'll treat them
+    // as though they're enrolled in the course instance as a student. This is
+    // important because we no longer automatically enroll instructors in their
+    // own course instances when they view them.
+    if (
+      idsEqual(user.user_id, res.locals.authn_user.user_id) &&
+      !res.locals.authz_data.has_course_instance_permission_view &&
+      !res.locals.authz_data.has_course_permission_view
+    ) {
+      res.locals.authz_data.has_student_access_with_enrollment = true;
     }
   }
 

@@ -1,5 +1,13 @@
 # @prairielearn/postgres-tools
 
+## 1.1.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/postgres@1.7.3
+
 ## 1.1.3
 
 ### Patch Changes

@@ -69,6 +69,6 @@ FROM
 WHERE
   g.id IS NULL
   AND e.course_instance_id = $course_instance_id
-  AND NOT users_is_instructor_in_course (e.user_id, e.course_instance_id)
+  AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
 ORDER BY
   u.uid;
