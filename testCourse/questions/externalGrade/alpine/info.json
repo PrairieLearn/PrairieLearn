@@ -1,0 +1,15 @@
+{
+    "uuid": "3f3946e4-ebbd-452f-b1f3-756cb4f3a2f2",
+    "title": "External Grading: Alpine Linux smoke test",
+    "topic": "Autograder",
+    "tags": ["code", "v3"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "alpine:latest",
+        "entrypoint": "/grade/tests/grade.sh",
+        "timeout": 10
+    }
+}
