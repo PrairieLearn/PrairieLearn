@@ -682,12 +682,18 @@ module.exports.initExpress = function () {
     require('./pages/news_item/news_item.js'),
   );
 
-  // This must come before `authzHasCourseInstanceAccess` so that we can render
-  // it even when the student isn't enrolled in the course instance.
   if (isEnterprise()) {
+    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
+    // below so that we can render it even when the student isn't enrolled in the
+    // course instance.
     app.use('/pl/course_instance/:course_instance_id/upgrade', [
       require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
     ]);
+
+    app.use(
+      '/pl/course_instance/:course_instance_id',
+      require('./ee/middlewares/checkPlanGrants').default,
+    );
   }
 
   // All other course instance student pages require the effective user to have permissions
@@ -1342,13 +1348,6 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
-
-  if (isEnterprise()) {
-    app.use(
-      '/pl/course_instance/:course_instance_id',
-      require('./ee/middlewares/checkPlanGrants').default,
-    );
-  }
 
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
