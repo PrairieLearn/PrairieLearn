@@ -77,7 +77,7 @@ export async function checkPlanGrantsForQuestion(res: Response) {
     return true;
   }
 
-  // For the time being, put this being a feature flag so that we can land
+  // For the time being, put this behind a feature flag so that we can land
   // this change before we've created plan grants for all existing institutions.
   const shouldCheck = await features.enabledFromLocals(
     'enforce-plan-grants-for-questions',
