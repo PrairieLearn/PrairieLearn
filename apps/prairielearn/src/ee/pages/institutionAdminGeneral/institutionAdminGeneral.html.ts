@@ -1,7 +1,10 @@
 import { z } from 'zod';
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution } from '../../../lib/db-types';
+
+import { type PlanGrant, type Institution } from '../../../lib/db-types';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
@@ -13,10 +16,12 @@ type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
 export function InstitutionAdminGeneral({
   institution,
   statistics,
+  planGrants,
   resLocals,
 }: {
   institution: Institution;
   statistics: InstitutionStatistics;
+  planGrants: PlanGrant[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -28,6 +33,7 @@ export function InstitutionAdminGeneral({
           navPage: 'institution_admin',
           pageTitle: 'General',
         })}
+        ${compiledScriptTag('institutionAdminGeneralClient.ts')}
         <style>
           .card-grid {
             display: grid;
@@ -60,8 +66,9 @@ export function InstitutionAdminGeneral({
             })}
             ${StatisticsCard({ title: 'Enrollments', value: statistics.enrollment_count })}
           </div>
+
           <h2 class="h4">Limits</h2>
-          <form method="POST">
+          <form method="POST" class="mb-3">
             <div class="form-group">
               <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
               <input
@@ -91,7 +98,7 @@ export function InstitutionAdminGeneral({
               <small id="yearly_enrollment_limit_help" class="form-text text-muted">
                 The maximum number of enrollments allowed per year. A blank value allows for
                 unlimited enrollments. The limit is applied on a rolling basis; that is, it applies
-                to the previous 365 days from the instance a student attempts to enroll.
+                to the previous 365 days from the instant a student attempts to enroll.
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -104,6 +111,15 @@ export function InstitutionAdminGeneral({
               Save
             </button>
           </form>
+
+          <h2 class="h4">Plans</h2>
+          ${PlanGrantsEditor({
+            planGrants,
+            // The basic plan is never available at the institution level; it's only
+            // used for student billing for enrollments.
+            excludedPlanNames: ['basic'],
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>

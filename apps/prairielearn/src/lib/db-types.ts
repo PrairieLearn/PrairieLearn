@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 // IDs are always coerced to strings. This ensures consistent handling when an
 // ID is fetched directly or via `to_jsonb`, which returns a number.
-export const IdSchema = z.string({ coerce: true });
+//
+// The `refine` step is important to ensure that the thing we've coerced to a
+// string is actually a number. If it's not, we want to fail quickly.
+export const IdSchema = z
+  .string({ coerce: true })
+  .refine((val) => /^\d+$/.test(val), { message: 'ID is not an integer' });
 
 export const CourseSchema = z.object({
   branch: z.string(),
@@ -15,6 +20,8 @@ export const CourseSchema = z.object({
   options: z.any(),
   path: z.string().nullable(),
   repository: z.string().nullable(),
+  sharing_name: z.string().nullable(),
+  sharing_token: z.string(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -150,3 +157,81 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
+
+export const WorkspaceHostSchema = z.object({
+  hostname: z.string().nullable(),
+  id: IdSchema,
+  instance_id: z.string(),
+  launched_at: z.date().nullable(),
+  load_count: z.number().nullable(),
+  ready_at: z.date().nullable(),
+  state: z
+    .enum(['launching', 'ready', 'draining', 'unhealthy', 'terminating', 'terminated'])
+    .nullable(),
+  state_changed_at: z.date().nullable(),
+  terminated_at: z.date().nullable(),
+  unhealthy_at: z.date().nullable(),
+  unhealthy_reason: z.string().nullable(),
+});
+export type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
+
+export const WorkspaceLogSchema = z.object({
+  date: z.date().nullable(),
+  id: IdSchema,
+  message: z.string().nullable(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']).nullable(),
+  version: z.string(),
+  workspace_id: IdSchema,
+});
+export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
+
+export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
+export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
+
+export const PlanGrantSchema = z.object({
+  course_instance_id: IdSchema.nullable(),
+  created_at: z.date(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+  type: EnumPlanGrantTypeSchema,
+  user_id: IdSchema.nullable(),
+});
+export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const AuditLogSchema = z.object({
+  action: z.string().nullable(),
+  authn_user_id: IdSchema.nullable(),
+  column_name: z.string().nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: z.date().nullable(),
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  new_state: z.any(),
+  old_state: z.any(),
+  parameters: z.any(),
+  row_id: IdSchema.nullable(),
+  table_name: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type AuditLog = z.infer<typeof AuditLogSchema>;
+
+export const CourseInstanceRequiredPlanSchema = z.object({
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  plan_name: z.enum(['basic', 'compute', 'everything']),
+});
+export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPlanSchema>;
+
+export const EnrollmentSchema = z.object({
+  course_instance_id: IdSchema,
+  created_at: z.date(),
+  id: IdSchema,
+  // Currently unused.
+  // TODO: remove from schema entirely?
+  role: z.any(),
+  user_id: IdSchema,
+});
+export type Enrollment = z.infer<typeof EnrollmentSchema>;

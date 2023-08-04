@@ -430,13 +430,15 @@ def generate(data):
 | `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
 | `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
-| `blank-value`    | float               | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
+| `blank-value`    | integer             | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
 | `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
 | `suffix`         | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
 | `base`           | integer             | 10       | The base used to parse and represent the answer, or the special value 0 (see below).                                                                                 |
 | `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                      |
 | `size`           | integer             | 35       | Size of the input box.                                                                                                                                               |
 | `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
+| `placeholder`    | string              | -        | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base `base`".                                                      |
+| `show-score`     | boolean             | true     | Whether to show the score badge next to this element.                                                                                                                |
 
 #### Specifying a non-trivial base
 
@@ -450,7 +452,9 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 #### Integer range
 
-The valid range of values accepted by pl-integer-input is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input, one option you can consider is a [`pl-string-input`](#pl-string-input-element) with a [custom grade function](question.md#question-serverpy).
+pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string. This distinction is important in `server.py` scripts for `parse()` and `grade()`, as well as downloaded assessment results.
+
+Note that answers can include underscores which are ignored (i.e., `1_000` will be parsed as `1000`).
 
 #### Example implementations
 
@@ -677,6 +681,9 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
+Duplicate answer choices (string equivalents) are not permitted in the
+`pl-multiple-choice` element, and an exception will be raised upon question
+generation if two (or more) choices are identical.
 
 #### Sample element
 
@@ -692,21 +699,22 @@ incorrect answers and displays them in a random order as radio buttons.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                          |
-| ----------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                              |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                  |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                           |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                   |
-| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                |
-| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                               |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.           |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.          |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                     |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                           |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                         |
+| Attribute                     | Type    | Default | Description                                                                                                                                                                    |
+| ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`                | string  | —       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
+| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                           |
+| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                                        |
+| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
+| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                                     |
+| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
+| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                                          |
+| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                                         |
+| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
+| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
+| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                               |
+| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                                     |
+| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                                   |
+| `allow-blank`                 | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -850,7 +858,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 #### Customizations
 
 | Attribute             | Type                                            | Default                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------------------- | ----------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| --------------------- | ----------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`        | string                                          | —                              | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                                                                           |
 | `weight`              | integer                                         | 1                              | Weight to use when computing a weighted average score over all elements in a question.                                                                                                                                                                                                                                                                                                                                                                         |
 | `grading-method`      | string                                          | "ordered"                      | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.                                                                                                                                                                                                                                                                                                                                                            |
@@ -864,7 +872,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `solution-header`     | string                                          | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `solution-placement`  | "right" or "bottom"                             | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                                                                      |
 | `partial-credit`      | "none" or "lcs"                                 | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so.                                                       |
-| `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) | .   |
+| `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) |
 | `format`              | "code" or "default"                             | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                                                                           |
 | `code-language`       | string                                          | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                                                                                |
 
@@ -1053,7 +1061,7 @@ Correct answers are best created as `sympy` expressions and converted to json us
 
 Variables with the same name as greek letters (e.g., `alpha`, `beta`, etc.) will be automatically converted to their LaTeX equivalents for display on the correct answer and submission panels.
 
-Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions` and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`, and do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc). The element code will check for (and disallow) conflicts between your list of `variables`, `custom-functions`, and reserved names.
 
 Note that variables created with additional assumptions in a correct answer will have those assumptions respected when evaluating student answers.
 See example question for details.
@@ -2085,22 +2093,27 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-answer-panel` element
 
-Provide information regarding the question answer after the student is unable to
-receive further answers for grading.
+Provide information regarding the question answer after the student is unable
+to submit further answers for grading.
 
 #### Sample element
 
 ```html
-<pl-answer-panel> This is answer-panel text. </pl-answer-panel>
+<pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
 ```
 
 #### Details
 
-Contents are only displayed when the answer panel is requested.
-Common reasons that trigger the display of this element are:
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+question panel (so, only in the answer panel), surround that content
+with the `<pl-answer-panel>` tags.
 
-- The question is fully correct
-- There are no more submission attempts
+Common reasons that trigger the display of the answer panel are:
+
+- The question is fully correct.
+- There are no more submission attempts.
 - The time limit for the assessment has expired.
 
 #### Example implementations
@@ -2304,15 +2317,16 @@ Displays the contents of question directions.
 #### Sample element
 
 ```html
-<pl-question-panel> This is question-panel text. </pl-question-panel>
+<pl-question-panel>This content is only shown in the question panel.</pl-question-panel>
 ```
 
 #### Details
 
-Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information
-between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside the answer.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the submission panel and
+answer panel (so, only in the question panel), surround that content
+with the `<pl-question-panel>` tags.
 
 #### Example implementations
 
@@ -2333,13 +2347,19 @@ Customizes how information entered by a user is displayed before grading.
 #### Sample element
 
 ```html
-<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
+<pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
 ```
 
 #### Details
 
-Contents are only shown after the student has submitted an answer. This answer
-may be correct, incorrect, or invalid.
+Generally, the contents of `question.html` will appear in
+the question panel, submission panel, and answer panel. To prevent
+content from being displayed in the question panel and
+answer panel (so, only in the submission panel), surround that content
+with the `<pl-submission-panel>` tags.
+
+The submission panel is only shown after the student has submitted an
+answer. This answer may be correct, incorrect, or invalid.
 
 #### Example implementations
 

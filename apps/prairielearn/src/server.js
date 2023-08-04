@@ -8,6 +8,7 @@ require('@sentry/tracing');
 const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
@@ -68,7 +69,8 @@ const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { featuresMiddleware } = require('./lib/features');
+const { features, featuresMiddleware } = require('./lib/features');
+const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -85,6 +87,7 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
 `;
 
   console.log(msg);
@@ -416,6 +419,7 @@ module.exports.initExpress = function () {
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
     res.locals.response_id = uuidv4();
+    res.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
@@ -1092,6 +1096,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
   ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+  ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
     function (req, res, next) {
       res.locals.navSubPage = 'staff';
@@ -1177,6 +1188,16 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'instance_admin';
       next();
     },
+    asyncHandler(async (req, res, next) => {
+      // The navigation tabs rely on this value to know when to show/hide the
+      // billing tab, so we need to load it for all instance admin pages.
+      const hasCourseInstanceBilling = await features.enabledFromLocals(
+        'course-instance-billing',
+        res.locals,
+      );
+      res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+      next();
+    }),
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', [
     function (req, res, next) {
@@ -1231,6 +1252,15 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload'),
   );
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/billing', [
+      function (req, res, next) {
+        res.locals.navSubPage = 'billing';
+        next();
+      },
+      require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
+    ]);
+  }
 
   // clientFiles
   app.use(
@@ -1298,8 +1328,20 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+
+    // Important: this middleware must come after the upgrade page. Otherwise,
+    // this middleware will always try to redirect before the upgrade page
+    // can be rendered.
+    app.use(
+      '/pl/course_instance/:course_instance_id',
+      require('./ee/middlewares/checkPlanGrants').default,
+    );
+  }
+
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
@@ -1318,6 +1360,8 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
+  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
@@ -1513,6 +1557,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
@@ -1898,21 +1949,6 @@ if (require.main === module && config.startServer) {
           serviceName: 'prairielearn',
         });
 
-        // Start capturing CPU and memory profiles as soon as possible.
-        if (config.pyroscopeEnabled) {
-          const Pyroscope = require('@pyroscope/nodejs');
-          Pyroscope.init({
-            appName: 'prairielearn',
-            serverAddress: config.pyroscopeServerAddress,
-            authToken: config.pyroscopeAuthToken,
-            tags: {
-              instanceId: config.instanceId,
-              ...(config.pyroscopeTags ?? {}),
-            },
-          });
-          Pyroscope.start();
-        }
-
         // Same with Sentry configuration.
         if (config.sentryDsn) {
           const integrations = [];
@@ -2020,6 +2056,19 @@ if (require.main === module && config.startServer) {
         });
 
         logger.verbose('Successfully connected to database');
+      },
+      async () => {
+        if (argv['refresh-workspace-hosts-and-exit']) {
+          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+          const hosts = await markAllWorkspaceHostsUnhealthy();
+
+          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+          process.exit(0);
+        }
       },
       async () => {
         // We need to do this before we run migrations, as some migrations will
