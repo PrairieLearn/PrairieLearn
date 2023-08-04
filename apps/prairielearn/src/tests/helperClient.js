@@ -130,7 +130,7 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
   }
 
   // Hacky: if this question is using `pl-file-editor` and not `pl-file-upload`,
-  // assume a single file and massage `fileDate` to match the expected format.
+  // assume a single file and massage `fileData` to match the expected format.
   if (fileData) {
     if (fileEditorInputName && !fileUploadInputName) {
       fileData = fileData[0].contents;
