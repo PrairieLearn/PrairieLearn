@@ -18,6 +18,7 @@ const server = require('../../server');
 const news_items = require('../../news_items');
 const { config } = require('../../lib/config');
 const helperServer = require('../helperServer');
+const { features } = require('../../lib/features/index');
 const { EXAMPLE_COURSE_PATH } = require('../../lib/paths');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
@@ -218,6 +219,7 @@ const SKIP_ROUTES = [
   // Admin page; we aren't guaranteed to have subpages to navigate to.
   '/pl/administrator/batchedMigrations/:batched_migration_id',
   '/pl/administrator/features/:feature',
+  '/pl/administrator/features/:feature/modal',
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
@@ -294,6 +296,8 @@ describe('accessibility', () => {
         qid: 'element/code',
       },
     );
+
+    await features.enable('question-sharing');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
