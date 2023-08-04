@@ -113,9 +113,9 @@ module.exports = asyncHandler(async (req, res, next) => {
         course_instance_id: res.locals.course_instance.id,
       });
 
-      // Redirect them back to the same page/verb to pick up the new enrollment.
-      res.redirect(307, req.originalUrl);
-      return;
+      // This is the only part of the `authz_data` that would change as a
+      // result of this enrollment, so we can just update it directly.
+      res.locals.authz_data.has_student_access_with_enrollment = true;
     }
   }
 
@@ -337,10 +337,6 @@ module.exports = asyncHandler(async (req, res, next) => {
   // we simply return (without error). This allows the authn user to keep access
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
-  //
-  // TODO: this might require a change. The `WHERE` clause changed from looking
-  // at `has_student_access_with_enrollment` to just `has_student_access`.
-  // We should check here if we have to automatically enroll the student?
   if (effectiveResult.rowCount === 0) {
     debug(`effective user was denied access`);
 
@@ -550,7 +546,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     // authenticated user, since an instructor may want to view their course
     // as a student without enrolling in their own course.
     if (
-      !idsEqual(user.uid, res.locals.authn_user.uid) &&
+      !idsEqual(user.user_id, res.locals.authn_user.user_id) &&
       !effectiveResult.rows[0].permissions_course.has_course_permission_preview &&
       !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
       !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
@@ -627,6 +623,19 @@ module.exports = asyncHandler(async (req, res, next) => {
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
         user_with_requested_uid_has_instructor_access_to_course_instance;
+    }
+
+    // If the effective user is the same as the authenticated user and the
+    // effective user has not requested any specific role, we'll treat them
+    // as though they're enrolled in the course instance as a student. This is
+    // important because we no longer automatically enroll instructors in their
+    // own course instances when they view them.
+    if (
+      idsEqual(user.user_id, res.locals.authn_user.user_id) &&
+      !res.locals.authz_data.has_course_instance_permission_view &&
+      !res.locals.authz_data.has_course_permission_view
+    ) {
+      res.locals.authz_data.has_student_access_with_enrollment = true;
     }
   }
 
