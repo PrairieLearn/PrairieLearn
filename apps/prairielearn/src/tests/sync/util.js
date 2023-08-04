@@ -138,6 +138,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} [maxChoose]
  * @property {number} [bestQuestions]
  * @property {ZoneQuestion[]} [questions]
+ * @property {string[]} [canSubmit]
+ * @property {string[]} [canView]
  */
 
 /**
@@ -167,6 +169,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} [studentGroupJoin]
  * @property {boolean} [studentGroupLeave]
  * @property {boolean} [hasRoles]
+ * @property {string[]} [canSubmit]
+ * @property {string[]} [canView]
  */
 
 /**

@@ -124,7 +124,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
-            "display_append_span": show_info or suffix or parse_error,
             "parse_error": parse_error,
             "use_numeric": True if 1 <= base <= 10 else False,
         }

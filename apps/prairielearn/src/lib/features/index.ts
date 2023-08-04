@@ -7,6 +7,7 @@ const featureNames = [
   'enforce-plan-grants-for-questions',
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
+  'question-sharing',
 ] as const;
 
 const features = new FeatureManager(featureNames);

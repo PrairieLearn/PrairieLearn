@@ -1530,13 +1530,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grpc/grpc-js@npm:^1.7.1, @grpc/grpc-js@npm:^1.8.21":
-  version: 1.8.21
-  resolution: "@grpc/grpc-js@npm:1.8.21"
+"@grpc/grpc-js@npm:^1.7.1, @grpc/grpc-js@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "@grpc/grpc-js@npm:1.9.0"
   dependencies:
     "@grpc/proto-loader": ^0.7.0
     "@types/node": ">=12.12.47"
-  checksum: 32bbb3667c20005987eaef0268898fcb49b7bf46e8f338f3ad6f3343e5ff125d63da9aa869b6bca2a918adacf39715d29431461f233c677012206faedbd71169
+  checksum: 32817c84e4b0eedc523b123cbfce935cafedbf33f94f7609931a878dd6945c4d83b4a781a9d7dedbd4fd273a95e8bd3b0de5f6ca920112331e1c3279fa104b3e
   languageName: node
   linkType: hard
 
@@ -2699,7 +2699,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
   dependencies:
-    "@grpc/grpc-js": ^1.8.21
+    "@grpc/grpc-js": ^1.9.0
     "@opentelemetry/api": ^1.4.1
     "@opentelemetry/core": ^1.15.1
     "@opentelemetry/exporter-jaeger": ^1.15.1
@@ -13640,6 +13640,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prairielearn@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "prairielearn@workspace:."
+  dependencies:
+    "@changesets/cli": ^2.26.2
+    "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@typescript-eslint/eslint-plugin": ^6.2.1
+    "@typescript-eslint/parser": ^6.2.1
+    eslint: ^8.46.0
+    eslint-config-prettier: ^8.9.0
+    eslint-import-resolver-typescript: ^3.5.5
+    eslint-plugin-import: 2.28.0
+    eslint-plugin-mocha: ^10.1.0
+    eslint-plugin-no-floating-promise: ^1.0.2
+    eslint-plugin-no-only-tests: ^3.1.0
+    htmlhint: ^1.1.4
+    jsdoc: ^4.0.2
+    prettier: 3.0.0
+    pyright: ^1.1.319
+    s3rver: ^3.7.1
+    turbo: ^1.10.12
+    typescript: ^5.1.6
+  languageName: unknown
+  linkType: soft
+
 "preferred-pm@npm:^3.0.0":
   version: 3.0.3
   resolution: "preferred-pm@npm:3.0.3"
@@ -14460,31 +14485,6 @@ __metadata:
   checksum: f483b28a0605097a725b080c088262b0fa21f7bce66f741df73d9ff0be6a3baaf2927916b094ce95412f4f15cc59bb5eae020f59cae3d3a6993d123faceb5b41
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@changesets/cli": ^2.26.2
-    "@prairielearn/prettier-plugin-sql": "workspace:^"
-    "@typescript-eslint/eslint-plugin": ^6.2.1
-    "@typescript-eslint/parser": ^6.2.1
-    eslint: ^8.46.0
-    eslint-config-prettier: ^8.9.0
-    eslint-import-resolver-typescript: ^3.5.5
-    eslint-plugin-import: 2.28.0
-    eslint-plugin-mocha: ^10.1.0
-    eslint-plugin-no-floating-promise: ^1.0.2
-    eslint-plugin-no-only-tests: ^3.1.0
-    htmlhint: ^1.1.4
-    jsdoc: ^4.0.2
-    prettier: 3.0.0
-    pyright: ^1.1.319
-    s3rver: ^3.7.1
-    turbo: ^1.10.12
-    typescript: ^5.1.6
-  languageName: unknown
-  linkType: soft
 
 "rrweb-cssom@npm:^0.6.0":
   version: 0.6.0
