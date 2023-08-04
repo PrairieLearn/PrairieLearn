@@ -45,7 +45,9 @@ def file(data):
             drawing += elm.Line().left()
             drawing += elm.Line().left()
             drawing.pop()
-            drawing += elm.BatteryCell().down().label(params_dict["Vt_label"])
+            drawing += (
+                elm.BatteryCell().down().label(["$+$", params_dict["Vt_label"], "$-$"])
+            )
 
     return drawing.get_imagedata()
 
