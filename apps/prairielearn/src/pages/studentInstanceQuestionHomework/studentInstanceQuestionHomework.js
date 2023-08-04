@@ -115,6 +115,25 @@ router.post(
               ),
             );
           }
+
+          // Get group information
+          const groupId = await groupAssessmentHelper.getGroupId(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+          );
+          const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+          const { validationErrors, rolesAreBalanced, usersWithoutRoles } = groupInfo.rolesInfo;
+
+          // Prevent submissions if role configuration is invalid
+          if (validationErrors.length > 0 || !rolesAreBalanced || usersWithoutRoles.length > 0) {
+            return next(
+              error.make(
+                403,
+                'Current group role configuration is invalid. Submissions are disabled',
+                res.locals,
+              ),
+            );
+          }
         }
       }
 

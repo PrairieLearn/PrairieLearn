@@ -584,7 +584,6 @@ describe('Assessment instance with group roles & permissions', function () {
         method: 'POST',
         body: new URLSearchParams(form),
       });
-      // FIXME: implement submission blocking when role config is invalid
       assert.equal(
         questionSubmissionWithInvalidConfigResponse.status,
         403,
