@@ -269,16 +269,14 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('button[value="grade"]'), 1);
         });
         it('should submit "grade" action', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
           questionsPage = await gradeRes.text();
@@ -311,12 +309,10 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
 
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
 

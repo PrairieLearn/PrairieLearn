@@ -120,12 +120,23 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
   const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
   const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
   const fileUploadInputName = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
+  const fileEditorInputName = $instanceQuestionPage('input[name^=_file_editor]').attr('name');
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
   if (payload && payload.postData) {
     payload.postData = JSON.parse(payload.postData);
     payload.postData.variant.id = variantId;
     payload.postData = JSON.stringify(payload.postData);
+  }
+
+  // Hacky: if this question is using `pl-file-editor` and not `pl-file-upload`,
+  // assume a single file and massage `fileDate` to match the expected format.
+  if (fileData) {
+    if (fileEditorInputName && !fileUploadInputName) {
+      fileData = fileData[0].contents;
+    } else {
+      fileData = JSON.stringify(fileData);
+    }
   }
 
   return fetch(instanceQuestionUrl, {
@@ -135,7 +146,7 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
       __variant_id: variantId,
       __action: action,
       __csrf_token: token,
-      ...(fileData ? { [fileUploadInputName]: JSON.stringify(fileData) } : {}),
+      ...(fileData ? { [fileUploadInputName ?? fileEditorInputName]: fileData } : {}),
       ...payload,
     }).toString(),
   });
