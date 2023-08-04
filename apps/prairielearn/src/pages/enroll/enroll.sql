@@ -43,49 +43,15 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
--- BLOCK select_and_lock_enrollment_counts
-WITH
-  institution AS (
-    SELECT
-      i.*
-    FROM
-      institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
-      JOIN course_instances AS ci ON (ci.course_id = c.id)
-    WHERE
-      ci.id = $course_instance_id
-    FOR NO KEY UPDATE OF
-      i
-  ),
-  course_instance_enrollments AS (
-    SELECT
-      COUNT(*)::integer AS count
-    FROM
-      enrollments
-    WHERE
-      course_instance_id = $course_instance_id
-  ),
-  institution_enrollments AS (
-    SELECT
-      COUNT(*)::integer AS count
-    FROM
-      enrollments AS e
-      JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
-      JOIN pl_courses AS c ON (ci.course_id = c.id)
-      JOIN institution AS i ON (i.id = c.institution_id)
-    WHERE
-      e.created_at > now() - interval '1 year'
-  )
+-- BLOCK select_course_instance
 SELECT
-  to_jsonb(i.*) AS institution,
   to_jsonb(ci.*) AS course_instance,
-  course_instance_enrollments.count AS course_instance_enrollment_count,
-  institution_enrollments.count AS institution_enrollment_count
+  to_jsonb(c.*) AS course,
+  to_jsonb(i.*) AS institution
 FROM
-  course_instances AS ci,
-  institution AS i,
-  course_instance_enrollments,
-  institution_enrollments
+  course_instances AS ci
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   ci.id = $course_instance_id;
 

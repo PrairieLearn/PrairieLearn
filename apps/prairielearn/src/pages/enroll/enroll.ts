@@ -9,7 +9,6 @@ import {
   queryRow,
   queryRows,
   queryZeroOrOneRowAsync,
-  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { InstitutionSchema, CourseInstanceSchema } from '../../lib/db-types';
@@ -20,6 +19,10 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
 import { isEnterprise } from '../../lib/license';
+import {
+  getEnrollmentCountsForCourseInstance,
+  getEnrollmentCountsForInstitution,
+} from '../../ee/models/enrollment';
 import { checkPlanGrants } from '../../ee/lib/billing/plan-grants';
 import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
 import { promisify } from 'node:util';
@@ -65,77 +68,80 @@ router.post(
     }
 
     if (req.body.__action === 'enroll') {
-      let didRedirect = false;
-      const limitExceeded = await runInTransactionAsync(async () => {
-        // Enrollment limits can only be configured on enterprise instances, so
-        // we'll also only check and enforce the limits on enterprise instances.
-        if (isEnterprise()) {
-          const {
-            institution,
-            course_instance,
-            institution_enrollment_count,
-            course_instance_enrollment_count,
-          } = await queryRow(
-            sql.select_and_lock_enrollment_counts,
-            { course_instance_id: req.body.course_instance_id },
-            z.object({
-              institution: InstitutionSchema,
-              course_instance: CourseInstanceSchema,
-              institution_enrollment_count: z.number(),
-              course_instance_enrollment_count: z.number(),
-            }),
-          );
+      let limitExceeded = false;
 
-          // Abuse the middleware to authorize the user for the course instance.
-          req.params.course_instance_id = course_instance.id;
-          await promisify(authzCourseOrInstance)(req, res);
+      // Enrollment limits can only be configured on enterprise instances, so
+      // we'll also only check and enforce the limits on enterprise instances.
+      //
+      // Note that this check is susceptible to race conditions: if two users
+      // enroll at the same time, they may both be able to enroll even if the
+      // enrollment limit would be exceeded. We've decided that this is
+      // acceptable behavior as we don't really care if the enrollment limit is
+      // exceeded by one or two users. Future enrollments will still be blocked,
+      // which will prompt course/institution staff to seek an increase in their
+      // enrollment limit.
+      if (isEnterprise()) {
+        const { institution, course_instance } = await queryRow(
+          sql.select_course_instance,
+          { course_instance_id: req.body.course_instance_id },
+          z.object({
+            institution: InstitutionSchema,
+            course_instance: CourseInstanceSchema,
+          }),
+        );
 
-          const hasPlanGrants = await checkPlanGrants({
-            institution,
-            course_instance,
-            authz_data: res.locals.authz_data,
-          });
+        // Abuse the middleware to authorize the user for the course instance.
+        req.params.course_instance_id = course_instance.id;
+        await promisify(authzCourseOrInstance)(req, res);
 
-          if (!hasPlanGrants) {
-            didRedirect = true;
-            res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
-            return;
-          }
+        const hasPlanGrants = await checkPlanGrants({
+          institution,
+          course_instance,
+          authz_data: res.locals.authz_data,
+        });
 
-          const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
-          const courseInstanceEnrollmentLimit =
-            course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
-
-          if (
-            institution_enrollment_count + 1 > yearlyEnrollmentLimit ||
-            course_instance_enrollment_count + 1 > courseInstanceEnrollmentLimit
-          ) {
-            return true;
-          }
+        if (!hasPlanGrants) {
+          res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
+          return;
         }
 
+        const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
+          institution_id: institution.id,
+          created_since: '1 year',
+        });
+        const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
+          req.body.course_instance_id,
+        );
+
+        const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
+        const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
+
+        const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
+        const courseInstanceEnrollmentLimit =
+          course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
+
+        if (
+          freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
+          freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
+        ) {
+          limitExceeded = true;
+        }
+      }
+
+      if (!limitExceeded) {
         // No limits would be exceeded, so we can enroll the user.
         await queryAsync(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
           req_date: res.locals.req_date,
         });
-      });
-
-      // TODO: refactor after rebasing with https://github.com/PrairieLearn/PrairieLearn/pull/8214
-      if (didRedirect) {
-        return;
-      }
-
-      if (limitExceeded) {
+        res.redirect(req.originalUrl);
+      } else {
         // We would exceed an enrollment limit. We won't share any specific
         // details here. In the future, course staff will be able to check
         // their enrollment limits for themselves.
         res.redirect('/pl/enroll/limit_exceeded');
-        return;
       }
-
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
       await queryZeroOrOneRowAsync(sql.unenroll, {
         course_instance_id: req.body.course_instance_id,
