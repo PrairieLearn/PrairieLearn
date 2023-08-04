@@ -15,10 +15,10 @@ interface EnrollmentCounts {
 
 export async function getEnrollmentCountsForInstitution({
   institution_id,
-  created_since = null,
+  created_since,
 }: {
   institution_id: string;
-  created_since?: string | null;
+  created_since: string;
 }): Promise<EnrollmentCounts> {
   const result = await queryOptionalRow(
     sql.select_enrollment_counts_for_institution,

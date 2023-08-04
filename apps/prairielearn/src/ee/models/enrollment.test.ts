@@ -23,7 +23,10 @@ describe('getEnrollmentCountsForInstitution', () => {
   });
 
   it('returns zero enrollments by default', async () => {
-    const result = await getEnrollmentCountsForInstitution({ institution_id: '1' });
+    const result = await getEnrollmentCountsForInstitution({
+      institution_id: '1',
+      created_since: '1 year',
+    });
 
     assert.equal(result.free, 0);
     assert.equal(result.paid, 0);
@@ -101,7 +104,10 @@ describe('getEnrollmentCountsForInstitution', () => {
       authn_user_id: '1',
     });
 
-    const result = await getEnrollmentCountsForInstitution({ institution_id: '1' });
+    const result = await getEnrollmentCountsForInstitution({
+      institution_id: '1',
+      created_since: '1 year',
+    });
 
     assert.equal(result.free, 1);
     assert.equal(result.paid, 2);
