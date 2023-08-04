@@ -22,10 +22,14 @@ const { generateSignedToken } = require('@prairielearn/signed-token');
 const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
 const { callbackify } = require('node:util');
 const { flash } = require('@prairielearn/flash');
+const { features } = require('../../lib/features/index');
 
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
+    if (res.locals.question.course_id !== res.locals.course.id) {
+      throw error.make(403, 'Access denied');
+    }
     // We use a separate `test/` POST route so that we can always use the
     // route to distinguish between pages that need to execute course code
     // (this `test/` handler) and pages that need access to course content
@@ -80,6 +84,9 @@ router.post(
 );
 
 router.post('/', function (req, res, next) {
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid QID (was falsy): ${req.body.id}`));
@@ -178,6 +185,25 @@ router.post('/', function (req, res, next) {
         }
       });
     });
+  } else if (req.body.__action === 'sharing_set_add') {
+    debug('Add question to sharing set');
+    features.enabledFromLocals('question-sharing', res.locals).then((questionSharingEnabled) => {
+      if (!questionSharingEnabled) {
+        next(error.make(403, 'Access denied (feature not available)'));
+      }
+      sqldb.queryZeroOrOneRow(
+        sql.sharing_set_add,
+        {
+          course_id: res.locals.course.id,
+          question_id: res.locals.question.id,
+          unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+        },
+        (err) => {
+          if (ERR(err, next)) return;
+          res.redirect(req.originalUrl);
+        },
+      );
+    });
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
@@ -189,6 +215,9 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/', function (req, res, next) {
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   // Construct the path of the question test route. We'll do this based on
   // `originalUrl` so that this router doesn't have to be aware of where it's
   // mounted.
@@ -245,6 +274,14 @@ router.get('/', function (req, res, next) {
             callback(null);
           },
         );
+      },
+      async () => {
+        let result = await sqldb.queryAsync(sql.select_sharing_sets, {
+          question_id: res.locals.question.id,
+          course_id: res.locals.course.id,
+        });
+        res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
+        res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
       },
     ],
     (err) => {

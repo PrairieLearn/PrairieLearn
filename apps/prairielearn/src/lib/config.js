@@ -47,13 +47,11 @@ const ConfigSchema = z.object({
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
-  /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
-  /** Overrides the user UID in development with `authType: 'none'` */
+  /** Sets the default user UID in development. */
   authUid: z.string().nullable().default('dev@illinois.edu'),
-  /** Overrides the user name in development with `authType: 'none'` */
+  /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
-  /** Overrides the user UIN in development with `authType: 'none'` */
+  /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
@@ -470,6 +468,12 @@ const ConfigSchema = z.object({
       'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
   features: z.record(z.string(), z.boolean()).default({}),
+  /**
+   * Determines if QIDs of shared questions being imported should be validated.
+   * Turn off in dev mode to enable successful syncs when you don't have access
+   * to imported questions. Must be true in production for data integrity.
+   */
+  checkSharingOnSync: z.boolean().default(false),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */
