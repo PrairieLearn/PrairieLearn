@@ -21,8 +21,8 @@ export async function getEnrollmentCountsForInstitution({
   created_since?: string | null;
 }): Promise<EnrollmentCounts> {
   const result = await queryOptionalRow(
-    sql.select_enrollment_counts,
-    { institution_id, created_since, course_instance_id: null },
+    sql.select_enrollment_counts_for_institution,
+    { institution_id, created_since },
     EnrollmentCountsSchema,
   );
 
@@ -36,8 +36,8 @@ export async function getEnrollmentCountsForCourseInstance(
   course_instance_id: string,
 ): Promise<EnrollmentCounts> {
   const result = await queryOptionalRow(
-    sql.select_enrollment_counts,
-    { course_instance_id, institution_id: null, created_since: null },
+    sql.select_enrollment_counts_for_course_instance,
+    { course_instance_id },
     EnrollmentCountsSchema,
   );
 

@@ -9,10 +9,9 @@ import {
   queryRow,
   queryRows,
   queryZeroOrOneRowAsync,
-  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { InstitutionSchema, CourseInstanceSchema, CourseSchema } from '../../lib/db-types';
+import { InstitutionSchema, CourseInstanceSchema } from '../../lib/db-types';
 import {
   Enroll,
   EnrollLtiMessage,
@@ -66,64 +65,65 @@ router.post(
     }
 
     if (req.body.__action === 'enroll') {
-      const limitExceeded = await runInTransactionAsync(async () => {
-        // Enrollment limits can only be configured on enterprise instances, so
-        // we'll also only check and enforce the limits on enterprise instances.
-        if (isEnterprise()) {
-          const { course, course_instance } = await queryRow(
-            sql.select_course_instance,
-            { course_instance_id: req.body.course_instance_id },
-            z.object({
-              course: CourseSchema,
-              course_instance: CourseInstanceSchema,
-            }),
-          );
-          const institution = await queryRow(
-            sql.select_and_lock_institution,
-            { institution_id: course.institution_id },
-            InstitutionSchema,
-          );
+      let limitExceeded = false;
 
-          const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
-            institution_id: institution.id,
-            created_since: '1 year',
-          });
-          const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
-            req.body.course_instance_id,
-          );
+      // Enrollment limits can only be configured on enterprise instances, so
+      // we'll also only check and enforce the limits on enterprise instances.
+      //
+      // Note that this check is susceptible to race conditions: if two users
+      // enroll at the same time, they may both be able to enroll even if the
+      // enrollment limit would be exceeded. We've decided that this is
+      // acceptable behavior as we don't really care if the enrollment limit is
+      // exceeded by one or two users. Future enrollments will still be blocked,
+      // which will prompt course/institution staff to seek an increase in their
+      // enrollment limit.
+      if (isEnterprise()) {
+        const { institution, course_instance } = await queryRow(
+          sql.select_course_instance,
+          { course_instance_id: req.body.course_instance_id },
+          z.object({
+            institution: InstitutionSchema,
+            course_instance: CourseInstanceSchema,
+          }),
+        );
 
-          const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
-          const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
+        const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
+          institution_id: institution.id,
+          created_since: '1 year',
+        });
+        const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
+          req.body.course_instance_id,
+        );
 
-          const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
-          const courseInstanceEnrollmentLimit =
-            course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
+        const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
+        const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
 
-          if (
-            freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
-            freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
-          ) {
-            return true;
-          }
+        const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
+        const courseInstanceEnrollmentLimit =
+          course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
+
+        if (
+          freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
+          freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
+        ) {
+          limitExceeded = true;
         }
+      }
 
+      if (!limitExceeded) {
         // No limits would be exceeded, so we can enroll the user.
         await queryAsync(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
           req_date: res.locals.req_date,
         });
-      });
-
-      if (limitExceeded) {
+        res.redirect(req.originalUrl);
+      } else {
         // We would exceed an enrollment limit. We won't share any specific
         // details here. In the future, course staff will be able to check
         // their enrollment limits for themselves.
         res.redirect('/pl/enroll/limit_exceeded');
-        return;
       }
-
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
       await queryZeroOrOneRowAsync(sql.unenroll, {
         course_instance_id: req.body.course_instance_id,
