@@ -1,11 +1,10 @@
 -- BLOCK select_assessment
 SELECT
-  id
+  a.id
 FROM
-  assessments
+  assessments AS a
 WHERE
-  tid = $tid
-  AND deleted_at IS NULL;
+  a.tid = $assessment_tid;
 
 -- BLOCK generate_and_enroll_3_users
 SELECT
@@ -61,7 +60,7 @@ WHERE
 
 -- BLOCK select_variant
 SELECT
-  v.*
+  v.id
 FROM
   variants AS v
 WHERE

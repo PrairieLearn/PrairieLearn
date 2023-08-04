@@ -133,7 +133,7 @@ describe('Test group role functionality within assessments', function () {
 
     // Find the ID of an assessment that has group roles
     const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      tid: 'hw5-templateGroupWork',
+      assessment_tid: 'hw5-templateGroupWork',
     });
     locals.assessmentId = assessmentResults.rows[0].id;
     locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessmentId;
