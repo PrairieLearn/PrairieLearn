@@ -4,7 +4,7 @@ mkdir -p /grade/results
 
 cat /grade/student/answer.txt
 
-if cmp /grade/student/answer.txt <(echo -n "correct"); then
+if diff -Bwq /grade/student/answer.txt <(echo -n "correct"); then
     echo "Correct!"
     echo "{\"score\":1.0}" > /grade/results/results.json
 else
