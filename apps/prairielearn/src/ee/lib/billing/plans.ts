@@ -7,7 +7,7 @@ import {
   PlanGrant,
   PlanGrantSchema,
 } from '../../../lib/db-types';
-import { PLAN_NAMES, PlanName } from './plans-types';
+import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types';
 import { insertPlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
 import {
   insertCourseInstanceRequiredPlan,
@@ -234,5 +234,25 @@ async function getInstitutionForCourseInstance(course_instance_id: string): Prom
     sql.select_institution_for_course_instance,
     { course_instance_id },
     InstitutionSchema,
+  );
+}
+
+function getPlansForPlanGrants(planGrants: PlanGrant[]): PlanName[] {
+  const plans = new Set<PlanName>();
+  for (const planGrant of planGrants) {
+    plans.add(planGrant.plan_name);
+  }
+  return Array.from(plans);
+}
+
+export function planGrantsMatchFeatures(
+  planGrants: PlanGrant[],
+  features: PlanFeatureName[],
+): boolean {
+  const grantedPlans = getPlansForPlanGrants(planGrants);
+  const grantedFeatures = getFeaturesForPlans(grantedPlans);
+  return (
+    grantedFeatures.length === features.length &&
+    grantedFeatures.every((feature) => features.includes(feature))
   );
 }
