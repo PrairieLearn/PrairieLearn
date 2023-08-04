@@ -24,10 +24,7 @@ FROM
     AND pg.plan_name = 'basic'
   )
 WHERE
-  (
-    $created_since::interval IS NULL
-    OR e.created_at > now() - $created_since::interval
-  )
+  e.created_at > now() - $created_since::interval
   AND i.id = $institution_id;
 
 -- BLOCK select_enrollment_counts_for_course_instance
