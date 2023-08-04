@@ -65,6 +65,7 @@ router.post(
     }
 
     if (req.body.__action === 'enroll') {
+      let didRedirect = false;
       const limitExceeded = await runInTransactionAsync(async () => {
         // Enrollment limits can only be configured on enterprise instances, so
         // we'll also only check and enforce the limits on enterprise instances.
@@ -96,6 +97,7 @@ router.post(
           });
 
           if (!hasPlanGrants) {
+            didRedirect = true;
             res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
             return;
           }
@@ -119,6 +121,11 @@ router.post(
           req_date: res.locals.req_date,
         });
       });
+
+      // TODO: refactor after rebasing with https://github.com/PrairieLearn/PrairieLearn/pull/8214
+      if (didRedirect) {
+        return;
+      }
 
       if (limitExceeded) {
         // We would exceed an enrollment limit. We won't share any specific

@@ -682,6 +682,14 @@ module.exports.initExpress = function () {
     require('./pages/news_item/news_item.js'),
   );
 
+  // This must come before `authzHasCourseInstanceAccess` so that we can render
+  // it even when the student isn't enrolled in the course instance.
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+  }
+
   // All other course instance student pages require the effective user to have permissions
   app.use(
     '/pl/course_instance/:course_instance_id',
@@ -1336,13 +1344,6 @@ module.exports.initExpress = function () {
   // Student pages /////////////////////////////////////////////////////
 
   if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id/upgrade', [
-      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
-    ]);
-
-    // Important: this middleware must come after the upgrade page. Otherwise,
-    // this middleware will always try to redirect before the upgrade page
-    // can be rendered.
     app.use(
       '/pl/course_instance/:course_instance_id',
       require('./ee/middlewares/checkPlanGrants').default,
