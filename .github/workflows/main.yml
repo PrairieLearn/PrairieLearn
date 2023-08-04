@@ -89,6 +89,8 @@ jobs:
       run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
       env: 
         PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
+    - name: Tag prairielearn image as latest
+      run docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
     - name: Build executor image
       run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
       env:
