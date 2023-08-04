@@ -2,10 +2,10 @@ import { assert } from 'chai';
 
 import helperDb = require('../../tests/helperDb');
 import helperCourse = require('../../tests/helperCourse');
+import { insertEnrollment } from '../../models/enrollment';
 import {
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
-  insertEnrollment,
 } from './enrollment';
 import { getOrCreateUser } from '../../tests/utils/auth';
 import { insertPlanGrant } from './plan-grants';
