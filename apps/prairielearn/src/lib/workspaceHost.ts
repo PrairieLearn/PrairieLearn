@@ -17,12 +17,34 @@ const sql = loadSqlEquiv(__filename);
 
 /**
  * Marks the given workspace host as unhealthy.
+ *
+ * @returns All updated workspace hosts
  */
-export async function markWorkspaceHostUnhealthy(workspace_host_id: string, reason: string) {
-  await queryAsync(sql.set_host_unhealthy, {
-    workspace_host_id,
-    reason,
-  });
+export async function markWorkspaceHostUnhealthy(
+  workspace_host_id: string,
+  reason: string,
+): Promise<WorkspaceHost> {
+  return await queryRow(
+    sql.set_hosts_unhealthy,
+    {
+      workspace_host_id,
+      reason,
+    },
+    WorkspaceHostSchema,
+  );
+}
+
+/**
+ * Marks all active workspace hosts as unhealthy.
+ *
+ * @returns All updated workspace hosts
+ */
+export async function markAllWorkspaceHostsUnhealthy(reason: string): Promise<WorkspaceHost[]> {
+  return await queryRows(
+    sql.set_hosts_unhealthy,
+    { workspace_host_id: null, reason },
+    WorkspaceHostSchema,
+  );
 }
 
 export async function assignWorkspaceToHost(

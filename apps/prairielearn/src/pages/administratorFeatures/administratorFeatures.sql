@@ -16,4 +16,31 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = fg.course_instance_id)
   LEFT JOIN users AS u ON (u.user_id = fg.user_id)
 WHERE
-  fg.name = $name;
+  fg.name = $name
+ORDER BY
+  i.id ASC NULLS FIRST,
+  c.id ASC NULLS FIRST,
+  ci.id ASC NULLS FIRST,
+  u.user_id ASC NULLS FIRST;
+
+-- BLOCK select_institutions
+SELECT
+  *
+FROM
+  institutions;
+
+-- BLOCK select_courses_for_institution
+SELECT
+  *
+FROM
+  pl_courses
+WHERE
+  institution_id = $institution_id;
+
+-- BLOCK select_course_instances_for_course
+SELECT
+  *
+FROM
+  course_instances
+WHERE
+  course_id = $course_id;

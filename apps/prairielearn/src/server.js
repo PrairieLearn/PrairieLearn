@@ -70,6 +70,7 @@ const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
+const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -86,6 +87,7 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
 `;
 
   console.log(msg);
@@ -1094,6 +1096,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
   ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+  ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
     function (req, res, next) {
       res.locals.navSubPage = 'staff';
@@ -1319,8 +1328,20 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+
+    // Important: this middleware must come after the upgrade page. Otherwise,
+    // this middleware will always try to redirect before the upgrade page
+    // can be rendered.
+    app.use(
+      '/pl/course_instance/:course_instance_id',
+      require('./ee/middlewares/checkPlanGrants').default,
+    );
+  }
+
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
@@ -1339,6 +1360,8 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
+  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
@@ -1534,6 +1557,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
@@ -2026,6 +2056,19 @@ if (require.main === module && config.startServer) {
         });
 
         logger.verbose('Successfully connected to database');
+      },
+      async () => {
+        if (argv['refresh-workspace-hosts-and-exit']) {
+          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+          const hosts = await markAllWorkspaceHostsUnhealthy();
+
+          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+          process.exit(0);
+        }
       },
       async () => {
         // We need to do this before we run migrations, as some migrations will

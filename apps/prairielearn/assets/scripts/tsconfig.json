@@ -4,7 +4,8 @@
     "noEmit": true,
     "rootDir": "../../",
     "outDir": "../../public/build/scripts",
-    "types": ["jquery", "bootstrap"]
+    "types": ["jquery", "bootstrap"],
+    "esModuleInterop": true
   },
   "include": ["**/*"]
 }

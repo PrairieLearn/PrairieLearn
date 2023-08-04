@@ -4,7 +4,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type PlanGrant, type Institution } from '../../../lib/db-types';
-import { PLAN_NAMES, PLANS } from '../../lib/billing/plans-types';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
@@ -113,13 +113,13 @@ export function InstitutionAdminGeneral({
           </form>
 
           <h2 class="h4">Plans</h2>
-          <form method="POST">
-            ${Plans({ planGrants })}
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <button type="submit" name="__action" value="update_plans" class="btn btn-primary">
-              Save
-            </button>
-          </form>
+          ${PlanGrantsEditor({
+            planGrants,
+            // The basic plan is never available at the institution level; it's only
+            // used for student billing for enrollments.
+            excludedPlanNames: ['basic'],
+            csrfToken: resLocals.__csrf_token,
+          })}
         </main>
       </body>
     </html>
@@ -133,61 +133,4 @@ function StatisticsCard({ title, value }: { title: string; value: HtmlValue }) {
       <span class="text-muted">${title}</span>
     </div>
   `;
-}
-
-function Plans({ planGrants }: { planGrants: PlanGrant[] }) {
-  return html`<ul class="list-group mb-3">
-    ${PLAN_NAMES.map((planName) => {
-      if (planName === 'basic') {
-        // The basic plan is never available at the institution level; it's only
-        // used for student billing for enrollments.
-        return null;
-      }
-
-      const planFeatures = PLANS[planName].features;
-      const planGrant = planGrants.find((grant) => grant.plan_name === planName);
-      const hasPlanGrant = !!planGrant;
-      const planGrantType = planGrant?.type ?? 'trial';
-
-      return html`
-        <li class="list-group-item d-flex flex-row align-items-center js-plan">
-          <div class="form-check flex-grow-1">
-            <input
-              class="form-check-input js-plan-enabled"
-              type="checkbox"
-              name="plan_${planName}"
-              ${hasPlanGrant ? 'checked' : ''}
-              value="1"
-              id="plan_${planName}"
-            />
-            <label class="form-check-label text-monospace" for="plan_${planName}">
-              ${planName}
-            </label>
-            <div>
-              ${planFeatures.map(
-                (feature) => html`
-                  <span class="badge badge-pill badge-secondary text-monospace mr-1">
-                    ${feature}
-                  </span>
-                `,
-              )}
-            </div>
-          </div>
-
-          <select
-            class="custom-select w-auto js-plan-type"
-            name="plan_${planName}_grant_type"
-            ${!hasPlanGrant ? 'disabled' : null}
-          >
-            <option value="trial" ${planGrantType === 'trial' ? 'selected' : null}>trial</option>
-            <option value="stripe" ${planGrantType === 'stripe' ? 'selected' : null}>stripe</option>
-            <option value="invoice" ${planGrantType === 'invoice' ? 'selected' : null}>
-              invoice
-            </option>
-            <option value="gift" ${planGrantType === 'gift' ? 'selected' : null}>gift</option>
-          </select>
-        </li>
-      `;
-    })}
-  </ul>`;
 }
