@@ -121,16 +121,22 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
+  let assessmentCanView = assessment?.canView ?? [];
+  let assessmentCanSubmit = assessment?.canSubmit ?? [];
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
+    let zoneCanView = zone?.canView ?? assessmentCanView;
+    let zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
       /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
       let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
+      let questionCanView = question.canView ?? zoneCanView;
+      let questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
@@ -154,8 +160,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
-            canView: alternative?.canView ?? question?.canView ?? null,
-            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
+            canView: alternative?.canView ?? questionCanView,
+            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
         });
       } else if (question.id) {
@@ -171,8 +177,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: question.canView,
-            canSubmit: question.canSubmit,
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
           },
         ];
       }

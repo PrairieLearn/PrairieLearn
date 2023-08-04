@@ -13640,6 +13640,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prairielearn@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "prairielearn@workspace:."
+  dependencies:
+    "@changesets/cli": ^2.26.2
+    "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@typescript-eslint/eslint-plugin": ^6.2.1
+    "@typescript-eslint/parser": ^6.2.1
+    eslint: ^8.46.0
+    eslint-config-prettier: ^8.9.0
+    eslint-import-resolver-typescript: ^3.5.5
+    eslint-plugin-import: 2.28.0
+    eslint-plugin-mocha: ^10.1.0
+    eslint-plugin-no-floating-promise: ^1.0.2
+    eslint-plugin-no-only-tests: ^3.1.0
+    htmlhint: ^1.1.4
+    jsdoc: ^4.0.2
+    prettier: 3.0.0
+    pyright: ^1.1.319
+    s3rver: ^3.7.1
+    turbo: ^1.10.12
+    typescript: ^5.1.6
+  languageName: unknown
+  linkType: soft
+
 "preferred-pm@npm:^3.0.0":
   version: 3.0.3
   resolution: "preferred-pm@npm:3.0.3"
@@ -14460,31 +14485,6 @@ __metadata:
   checksum: f483b28a0605097a725b080c088262b0fa21f7bce66f741df73d9ff0be6a3baaf2927916b094ce95412f4f15cc59bb5eae020f59cae3d3a6993d123faceb5b41
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@changesets/cli": ^2.26.2
-    "@prairielearn/prettier-plugin-sql": "workspace:^"
-    "@typescript-eslint/eslint-plugin": ^6.2.1
-    "@typescript-eslint/parser": ^6.2.1
-    eslint: ^8.46.0
-    eslint-config-prettier: ^8.9.0
-    eslint-import-resolver-typescript: ^3.5.5
-    eslint-plugin-import: 2.28.0
-    eslint-plugin-mocha: ^10.1.0
-    eslint-plugin-no-floating-promise: ^1.0.2
-    eslint-plugin-no-only-tests: ^3.1.0
-    htmlhint: ^1.1.4
-    jsdoc: ^4.0.2
-    prettier: 3.0.0
-    pyright: ^1.1.319
-    s3rver: ^3.7.1
-    turbo: ^1.10.12
-    typescript: ^5.1.6
-  languageName: unknown
-  linkType: soft
 
 "rrweb-cssom@npm:^0.6.0":
   version: 0.6.0
