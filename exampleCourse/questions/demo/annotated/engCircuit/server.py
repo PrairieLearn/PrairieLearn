@@ -11,6 +11,7 @@ def file(data):
 
     drawing = Drawing()
     params_dict = data["params"]
+    battery_label_list = ["$+$", params_dict["Vt_label"], "$-$"]
 
     match params_dict["whichfig"]:
         case 0:
@@ -24,9 +25,7 @@ def file(data):
             drawing += elm.Resistor().left().label(params_dict["R2_label"])
             drawing += elm.Resistor().left().label(params_dict["R1_label"])
             drawing.pop()
-            drawing += (
-                elm.BatteryCell().down().label(["$+$", params_dict["Vt_label"], "$-$"])
-            )
+            drawing += elm.BatteryCell().down().label(battery_label_list)
 
         case 1:
             # variant: Resistors in parallel
@@ -45,9 +44,7 @@ def file(data):
             drawing += elm.Line().left()
             drawing += elm.Line().left()
             drawing.pop()
-            drawing += (
-                elm.BatteryCell().down().label(["$+$", params_dict["Vt_label"], "$-$"])
-            )
+            drawing += elm.BatteryCell().down().label(battery_label_list)
 
     return drawing.get_imagedata()
 
@@ -58,9 +55,9 @@ def generate(data):
 
     # Randomly choose Vt, R1, R2, R3 with appropriate units
     Vt = random.randint(100, 200) * ureg.volt
-    R1 = random.choice(list(range(20, 180, 10))) * ureg.ohm
-    R2 = random.choice(list(range(20, 180, 20))) * ureg.ohm
-    R3 = random.choice(list(range(20, 100, 5))) * ureg.ohm
+    R1 = random.randrange(20, 180, 10) * ureg.ohm
+    R2 = random.randrange(20, 180, 20) * ureg.ohm
+    R3 = random.randrange(20, 100, 5) * ureg.ohm
 
     # Store magnitudes to present to the student
     params_dict["Vt_quantity"] = int(Vt.magnitude)
@@ -83,10 +80,12 @@ def generate(data):
         case 0:
             # this is the series
             Rt = R1 + R2 + R3
+            params_dict["alt"] = "A circuit with three resistors in series."
         case 1:
             # this is the parallel
             Rtinv = 1 / R1 + 1 / R2 + 1 / R3
             Rt = 1 / Rtinv
+            params_dict["alt"] = "A circuit with three resistors in parallel."
 
     # Finally, choose what to ask about (current or resistance)
     # Note: This is independent of the previous choice of which figure.
@@ -95,14 +94,14 @@ def generate(data):
         case 0:
             params_dict["ask"] = "equivalent resistance $R_T$"
             params_dict["lab"] = "R_T"
-            params_dict["placeholder"] = "equivalent resistance"
+            params_dict["placeholder"] = "equivalent resistance + unit"
 
             data["correct_answers"]["ans"] = str(Rt)
 
         case 1:
             params_dict["ask"] = "current from the power supply $I_T$"
             params_dict["lab"] = "I_T"
-            params_dict["placeholder"] = "current"
+            params_dict["placeholder"] = "current + unit"
 
             It = (Vt / Rt).to_base_units()
             data["correct_answers"]["ans"] = str(It)
