@@ -20,6 +20,9 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
 import { isEnterprise } from '../../lib/license';
+import { checkPlanGrants } from '../../ee/lib/billing/plan-grants';
+import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
+import { promisify } from 'node:util';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -81,6 +84,21 @@ router.post(
               course_instance_enrollment_count: z.number(),
             }),
           );
+
+          // Abuse the middleware to authorize the user for the course instance.
+          req.params.course_instance_id = course_instance.id;
+          await promisify(authzCourseOrInstance)(req, res);
+
+          const hasPlanGrants = await checkPlanGrants({
+            institution,
+            course_instance,
+            authz_data: res.locals.authz_data,
+          });
+
+          if (!hasPlanGrants) {
+            res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
+            return;
+          }
 
           const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
           const courseInstanceEnrollmentLimit =
