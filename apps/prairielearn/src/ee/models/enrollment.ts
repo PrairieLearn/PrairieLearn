@@ -1,11 +1,9 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
 
 import { Institution, CourseInstance } from '../../lib/db-types';
 import { checkPlanGrants } from '../lib/billing/plan-grants';
-import { insertEnrollment } from '../../models/enrollment';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -54,16 +52,17 @@ export async function getEnrollmentCountsForCourseInstance(
 }
 
 /**
- * Inserts an enrollment into the database, but only if two checks pass:
+ * Performs enterprise-specific checks for a potential enrollment:
  *
  * - The new enrollment must not push either the institution or the course instance
  *   over either of their enrollment limits.
  * - The user must have any necessary plan grants.
  *
- * This function will return `true` if the enrollment was successfully inserted.
- * Otherwise, it will redirect the user to the appropriate page and return `false`.
+ * This function will return `true` if the enrollment would be allowed.
+ * Otherwise, it will redirect the user to the appropriate page and
+ * return `false`.
  */
-export async function insertCheckedEnrollment(
+export async function checkEnterpriseEnrollment(
   res: Response,
   {
     institution,
@@ -75,13 +74,6 @@ export async function insertCheckedEnrollment(
     authz_data: any;
   },
 ): Promise<boolean> {
-  // Safety check: ensure the student would otherwise have access to the course.
-  // If they don't, throw an access denied error. In most cases, this should
-  // have already been checked.
-  if (!authz_data.has_student_access) {
-    throw error.make(403, 'Access denied');
-  }
-
   const hasPlanGrants = await checkPlanGrants({
     institution,
     course_instance,
@@ -95,6 +87,13 @@ export async function insertCheckedEnrollment(
     return false;
   }
 
+  // Note that this check is susceptible to race conditions: if two users
+  // enroll at the same time, they may both be able to enroll even if the
+  // enrollment limit would be exceeded. We've decided that this is
+  // acceptable behavior as we don't really care if the enrollment limit is
+  // exceeded by one or two users. Future enrollments will still be blocked,
+  // which will prompt course/institution staff to seek an increase in their
+  // enrollment limit.
   const institutionEnrollmentCounts = await getEnrollmentCountsForInstitution({
     institution_id: institution.id,
     created_since: '1 year',
@@ -120,11 +119,6 @@ export async function insertCheckedEnrollment(
     res.redirect('/pl/enroll/limit_exceeded');
     return false;
   }
-
-  await insertEnrollment({
-    course_instance_id: course_instance.id,
-    user_id: res.locals.authn_user.user_id,
-  });
 
   return true;
 }

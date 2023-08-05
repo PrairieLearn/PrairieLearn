@@ -1,6 +1,6 @@
 import asyncHandler = require('express-async-handler');
 import { idsEqual } from '../lib/id';
-import { insertEnrollment } from '../models/enrollment';
+import { insertCheckedEnrollment } from '../models/enrollment';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -15,15 +15,17 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    // TODO: this enrollment should enforce enrollment limits.
-    await insertEnrollment({
-      user_id: res.locals.authn_user.user_id,
-      course_instance_id: res.locals.course_instance.id,
+    const didEnroll = await insertCheckedEnrollment(res, {
+      institution: res.locals.institution,
+      course_instance: res.locals.course_instance,
+      authz_data: res.locals.authz_data,
     });
 
-    // This is the only part of the `authz_data` that would change as a
-    // result of this enrollment, so we can just update it directly.
-    res.locals.authz_data.has_student_access_with_enrollment = true;
+    if (didEnroll) {
+      // This is the only part of the `authz_data` that would change as a
+      // result of this enrollment, so we can just update it directly.
+      res.locals.authz_data.has_student_access_with_enrollment = true;
+    }
   }
 
   next();

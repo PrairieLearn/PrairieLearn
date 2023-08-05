@@ -4,7 +4,6 @@ import { z } from 'zod';
 import error = require('@prairielearn/error');
 import {
   loadSqlEquiv,
-  queryAsync,
   queryOneRowAsync,
   queryRow,
   queryRows,
@@ -19,8 +18,7 @@ import {
   CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
-import { isEnterprise } from '../../lib/license';
-import { insertCheckedEnrollment } from '../../ee/models/enrollment';
+import { insertCheckedEnrollment } from '../../models/enrollment';
 import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
 import { promisify } from 'node:util';
 
@@ -77,38 +75,21 @@ router.post(
     const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
 
     if (req.body.__action === 'enroll') {
-      // Enrollment limits can only be configured on enterprise instances, so
-      // we'll also only check and enforce the limits on enterprise instances.
-      //
-      // Note that this check is susceptible to race conditions: if two users
-      // enroll at the same time, they may both be able to enroll even if the
-      // enrollment limit would be exceeded. We've decided that this is
-      // acceptable behavior as we don't really care if the enrollment limit is
-      // exceeded by one or two users. Future enrollments will still be blocked,
-      // which will prompt course/institution staff to seek an increase in their
-      // enrollment limit.
-      if (isEnterprise()) {
-        // Abuse the middleware to authorize the user for the course instance.
-        req.params.course_instance_id = course_instance.id;
-        await promisify(authzCourseOrInstance)(req, res);
+      // Abuse the middleware to authorize the user for the course instance.
+      req.params.course_instance_id = course_instance.id;
+      await promisify(authzCourseOrInstance)(req, res);
 
-        const didEnroll = await insertCheckedEnrollment(res, {
-          institution,
-          course_instance,
-          authz_data: res.locals.authz_data,
-        });
+      const didEnroll = await insertCheckedEnrollment(res, {
+        institution,
+        course_instance,
+        authz_data: res.locals.authz_data,
+      });
 
-        if (!didEnroll) {
-          // We've already been redirected to the appropriate page; do nothing.
-          return;
-        }
-      } else {
-        await queryAsync(sql.enroll, {
-          course_instance_id: req.body.course_instance_id,
-          user_id: res.locals.authn_user.user_id,
-          req_date: res.locals.req_date,
-        });
+      if (!didEnroll) {
+        // We've already been redirected to the appropriate page; do nothing.
+        return;
       }
+
       flash('success', `You have added yourself to ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
