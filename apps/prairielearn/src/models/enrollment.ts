@@ -8,14 +8,14 @@ import { checkEnterpriseEnrollment } from '../ee/models/enrollment';
 
 const sql = loadSqlEquiv(__filename);
 
-export async function insertEnrollment({
+export async function ensureEnrollment({
   course_instance_id,
   user_id,
 }: {
   course_instance_id: string;
   user_id: string;
 }): Promise<Enrollment> {
-  return await queryRow(sql.insert_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
+  return await queryRow(sql.ensure_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
 }
 
 export async function insertCheckedEnrollment(
@@ -49,7 +49,7 @@ export async function insertCheckedEnrollment(
     }
   }
 
-  await insertEnrollment({
+  await ensureEnrollment({
     course_instance_id: course_instance.id,
     user_id: res.locals.authn_user.user_id,
   });
