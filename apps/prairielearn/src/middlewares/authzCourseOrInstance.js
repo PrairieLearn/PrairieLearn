@@ -10,7 +10,6 @@ const sqldb = require('@prairielearn/postgres');
 const { html } = require('@prairielearn/html');
 const { idsEqual } = require('../lib/id');
 const { features } = require('../lib/features/index');
-const { insertEnrollment } = require('../models/enrollment');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
