@@ -474,6 +474,11 @@ const ConfigSchema = z.object({
    * to imported questions. Must be true in production for data integrity.
    */
   checkSharingOnSync: z.boolean().default(false),
+  /**
+   * A Stripe secret key to be used for billing. Only useful for enterprise
+   * installations.
+   */
+  stripeSecretKey: z.string().nullable().default(null),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

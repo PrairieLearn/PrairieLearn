@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import Stripe from 'stripe';
 import error = require('@prairielearn/error');
+import { config } from '../../../lib/config';
 
 import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
@@ -33,7 +35,6 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'upgrade') {
-      const institution = InstitutionSchema.parse(res.locals.institution);
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
 
       if (!req.body.terms_agreement) {
@@ -42,37 +43,68 @@ router.post(
 
       console.log(req.body);
 
-      // TODO: redirect to Stripe to complete the checkout.
-      //
-      // TODO: handle duplicate plan grant creation?
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'basic',
-          type: 'stripe',
-          institution_id: institution.id,
-          course_instance_id: course_instance.id,
-          user_id: res.locals.user.id,
-        },
-        authn_user_id: res.locals.authn_user.id,
-      });
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'compute',
-          type: 'stripe',
-          institution_id: institution.id,
-          course_instance_id: course_instance.id,
-          user_id: res.locals.user.id,
-        },
-        authn_user_id: res.locals.authn_user.id,
+      if (!config.stripeSecretKey) {
+        throw error.make(500, 'Stripe is not configured.');
+      }
+
+      const stripe = new Stripe(config.stripeSecretKey, { apiVersion: '2022-11-15' });
+
+      const urlBase = new URL(`${req.protocol}://${req.get('host')}`).pathname;
+
+      const session = await stripe.checkout.sessions.create({
+        line_items: [],
+        mode: 'payment',
+        success_url: `${urlBase}/pl/course_instance/${course_instance.id}/upgrade/success`,
+        cancel_url: `${urlBase}/pl/course_instance/${course_instance.id}/upgrade/cancel`,
       });
 
-      flash('success', 'Your account has been upgraded!');
+      if (!session.url) throw error.make(500, 'Stripe session URL not found');
 
-      res.redirect(req.originalUrl);
+      res.redirect(session.url);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }
   }),
 );
+
+router.get(
+  '/upgrade/success',
+  asyncHandler(async (req, res) => {
+    // TODO: mutation in GET handler? Is there some token we should check?
+    const institution = InstitutionSchema.parse(res.locals.institution);
+    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+
+    // TODO: handle duplicate plan grant creation?
+    await insertPlanGrant({
+      plan_grant: {
+        plan_name: 'basic',
+        type: 'stripe',
+        institution_id: institution.id,
+        course_instance_id: course_instance.id,
+        user_id: res.locals.user.id,
+      },
+      authn_user_id: res.locals.authn_user.id,
+    });
+    await insertPlanGrant({
+      plan_grant: {
+        plan_name: 'compute',
+        type: 'stripe',
+        institution_id: institution.id,
+        course_instance_id: course_instance.id,
+        user_id: res.locals.user.id,
+      },
+      authn_user_id: res.locals.authn_user.id,
+    });
+
+    flash('success', 'Your account has been upgraded!');
+
+    // TODO: show actual success page.
+    res.send('Success!');
+  }),
+);
+
+router.get('/upgrade/cancel', (req, res) => {
+  res.send('Canceled!');
+});
 
 export default router;
