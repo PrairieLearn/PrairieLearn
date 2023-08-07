@@ -57,12 +57,12 @@ router.post(
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            // Course access
+            // (TEST) Course access
             price: 'price_1NcXivCnE0RA08SRx0axfkLD',
             quantity: 1,
           },
           {
-            // Compute
+            // (TEST) Compute
             price: 'price_1NcXk5CnE0RA08SRaMbYwToh',
             quantity: 1,
           },
