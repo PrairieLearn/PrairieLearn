@@ -1,5 +1,6 @@
 import express = require('express');
 import asyncHandler = require('express-async-handler');
+import Stripe from 'stripe';
 import error = require('@prairielearn/error');
 
 import { config } from '../../../lib/config';
@@ -31,6 +32,22 @@ router.post(
     const event = constructEvent(req);
 
     console.log(event);
+
+    if (event.type === 'checkout.session.completed') {
+      // TODO: handle this
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      // If the order is paid, ensure that plan grants are created. We may have
+      // already done this in the success page for the session, so we need to
+      // gracefully handle duplicate plan grants.
+      if (session.payment_status === 'paid') {
+        // TODO: ensure plan grants
+      }
+    } else if (event.type === 'checkout.session.async_payment_succeeded') {
+      // TODO: handle this
+    } else if (event.type === 'checkout.session.async_payment_failed') {
+      // TODO: handle this
+    }
 
     res.json({ received: true });
   }),

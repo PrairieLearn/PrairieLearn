@@ -104,6 +104,7 @@ export const UserSchema = z.object({
   lti_course_instance_id: IdSchema.nullable(),
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
+  stripe_customer_id: z.string().nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,

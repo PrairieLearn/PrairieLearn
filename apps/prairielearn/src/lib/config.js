@@ -480,6 +480,7 @@ const ConfigSchema = z.object({
    */
   stripeSecretKey: z.string().nullable().default(null),
   stripeWebhookSigningSecret: z.string().nullable().default(null),
+  stripeCustomerPortalLink: z.string().nullable().default(null),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

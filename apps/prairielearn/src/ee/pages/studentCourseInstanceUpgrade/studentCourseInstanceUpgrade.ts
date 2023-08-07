@@ -1,15 +1,14 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import Stripe from 'stripe';
 import error = require('@prairielearn/error');
-import { config } from '../../../lib/config';
+import { flash } from '@prairielearn/flash';
 
 import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
 import { getRequiredPlansForCourseInstance } from '../../lib/billing/plans';
-import { flash } from '@prairielearn/flash';
 import { insertPlanGrant } from '../../models/plan-grants';
-import { CourseInstanceSchema, InstitutionSchema } from '../../../lib/db-types';
+import { CourseInstanceSchema, InstitutionSchema, UserSchema } from '../../../lib/db-types';
+import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe';
 
 const router = Router({ mergeParams: true });
 
@@ -35,26 +34,27 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'upgrade') {
+      console.log(res.locals);
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+      const user = UserSchema.parse(res.locals.user);
 
       if (!req.body.terms_agreement) {
         throw error.make(400, 'You must agree to the terms and conditions.');
       }
 
-      console.log(req.body);
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const urlBase = `${protocol}://${host}/pl/course_instance/${course_instance.id}/upgrade`;
 
-      if (!config.stripeSecretKey) {
-        throw error.make(500, 'Stripe is not configured.');
-      }
-
-      const stripe = new Stripe(config.stripeSecretKey, { apiVersion: '2022-11-15' });
-
-      const urlBase = `${req.protocol}://${req.get('host')}/pl/course_instance/${
-        course_instance.id
-      }/upgrade`;
-      console.log('urlBase', urlBase);
-
+      const stripe = getStripeClient();
+      const customerId = await getOrCreateStripeCustomerId(user.user_id, {
+        name: user.name,
+      });
       const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_update: {
+          name: 'auto',
+        },
         line_items: [
           {
             // (TEST) Course access
@@ -71,6 +71,8 @@ router.post(
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${urlBase}/cancel?session_id={CHECKOUT_SESSION_ID}`,
       });
+
+      // TODO: persist session ID to database so we can retrieve it later.
 
       if (!session.url) throw error.make(500, 'Stripe session URL not found');
 
@@ -90,38 +92,37 @@ router.get(
 
     if (!req.query.session_id) throw error.make(400, 'Missing session_id');
 
-    if (!config.stripeSecretKey) {
-      throw error.make(500, 'Stripe is not configured.');
-    }
-
-    const stripe = new Stripe(config.stripeSecretKey, { apiVersion: '2022-11-15' });
-
+    const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(req.query.session_id as string);
     console.log(session);
 
-    // TODO: handle duplicate plan grant creation?
-    await insertPlanGrant({
-      plan_grant: {
-        plan_name: 'basic',
-        type: 'stripe',
-        institution_id: institution.id,
-        course_instance_id: course_instance.id,
-        user_id: res.locals.user.id,
-      },
-      authn_user_id: res.locals.authn_user.id,
-    });
-    await insertPlanGrant({
-      plan_grant: {
-        plan_name: 'compute',
-        type: 'stripe',
-        institution_id: institution.id,
-        course_instance_id: course_instance.id,
-        user_id: res.locals.user.id,
-      },
-      authn_user_id: res.locals.authn_user.id,
-    });
+    if (session.payment_status === 'paid') {
+      // TODO: handle duplicate plan grant creation?
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'basic',
+          type: 'stripe',
+          institution_id: institution.id,
+          course_instance_id: course_instance.id,
+          user_id: res.locals.user.id,
+        },
+        authn_user_id: res.locals.user.id,
+      });
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'compute',
+          type: 'stripe',
+          institution_id: institution.id,
+          course_instance_id: course_instance.id,
+          user_id: res.locals.user.id,
+        },
+        authn_user_id: res.locals.user.id,
+      });
 
-    flash('success', 'Your account has been upgraded!');
+      flash('success', 'Your account has been upgraded!');
+    } else {
+      // TODO: handle async payments?
+    }
 
     // TODO: show actual success page.
     res.send('Success!');
