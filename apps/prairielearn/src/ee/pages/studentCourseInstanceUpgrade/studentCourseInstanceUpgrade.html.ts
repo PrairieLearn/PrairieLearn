@@ -3,11 +3,16 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { PlanName } from '../../lib/billing/plans-types';
 import { compiledScriptTag } from '../../../lib/assets';
+import { Course, CourseInstance } from '../../../lib/db-types';
 
 export function StudentCourseInstanceUpgrade({
+  course,
+  course_instance,
   requiredPlans,
   resLocals,
 }: {
+  course: Course;
+  course_instance: CourseInstance;
   requiredPlans: PlanName[];
   resLocals: Record<string, any>;
 }) {
@@ -27,62 +32,51 @@ export function StudentCourseInstanceUpgrade({
           navPage: 'upgrade',
         })}
         <main class="container mb-4">
-          <div class="d-flex flex-column justify-content-center mb-4">
-            <h1>
-              <i class="fa-solid fa-lock"></i>
-              Upgrade required
-            </h1>
-            <p>
-              This course requires an upgrade to support certain features selected by your
-              instructor.
-            </p>
-          </div>
+          <h1>
+            <i class="fa-solid fa-lock"></i>
+            Upgrade required
+          </h1>
+          <p>
+            <strong>${course.short_name}: ${course.title}, ${course_instance.long_name}</strong>
+            requires an upgrade to support certain features selected by your instructor.
+          </p>
 
-          <div class="row">
-            <div class="col-md-8">
-              <ul class="list-group mb-3">
-                ${requiredPlans.map((planName) => BillingLineItem(planName))}
-                <li
-                  class="list-group-item d-flex justify-content-between align-items-center bg-light"
-                >
-                  <strong>Total</strong>
-                  <strong>$16</strong>
-                </li>
-              </ul>
+          <ul class="list-group mb-3">
+            ${requiredPlans.map((planName) => BillingLineItem(planName))}
+            <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+              <strong>Total</strong>
+              <strong>$16</strong>
+            </li>
+          </ul>
+
+          <form method="POST">
+            <div class="custom-control custom-checkbox mb-3">
+              <input
+                type="checkbox"
+                class="custom-control-input"
+                id="js-terms-agreement"
+                name="terms_agreement"
+                value="1"
+              />
+              <label class="custom-control-label" for="js-terms-agreement">
+                I agree to the PrairieLearn
+                <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
+                <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
+              </label>
             </div>
-            <div class="col-md-4">
-              <form method="POST">
-                <div class="custom-control custom-checkbox mb-3">
-                  <input
-                    type="checkbox"
-                    class="custom-control-input"
-                    id="js-terms-agreement"
-                    name="terms_agreement"
-                    value="1"
-                  />
-                  <label class="custom-control-label" for="js-terms-agreement">
-                    I agree to the PrairieLearn
-                    <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
-                    <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
-                  </label>
-                </div>
 
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <button
-                  id="js-upgrade"
-                  type="submit"
-                  name="__action"
-                  value="upgrade"
-                  class="btn btn-primary btn-block"
-                  disabled
-                >
-                  Upgrade
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <p></p>
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button
+              id="js-upgrade"
+              type="submit"
+              name="__action"
+              value="upgrade"
+              class="btn btn-primary btn-block"
+              disabled
+            >
+              Upgrade
+            </button>
+          </form>
         </main>
       </body>
     </html>

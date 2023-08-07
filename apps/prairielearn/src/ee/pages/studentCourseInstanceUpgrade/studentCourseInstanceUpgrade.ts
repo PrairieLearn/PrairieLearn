@@ -7,7 +7,12 @@ import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.htm
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
 import { getRequiredPlansForCourseInstance } from '../../lib/billing/plans';
 import { insertPlanGrant } from '../../models/plan-grants';
-import { CourseInstanceSchema, InstitutionSchema, UserSchema } from '../../../lib/db-types';
+import {
+  CourseInstanceSchema,
+  CourseSchema,
+  InstitutionSchema,
+  UserSchema,
+} from '../../../lib/db-types';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe';
 
 const router = Router({ mergeParams: true });
@@ -24,9 +29,20 @@ router.get(
       return;
     }
 
+    // TODO: take into account existing plan grants that apply to this user.
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
 
-    res.send(StudentCourseInstanceUpgrade({ requiredPlans, resLocals: res.locals }));
+    const course = CourseSchema.parse(res.locals.course);
+    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+
+    res.send(
+      StudentCourseInstanceUpgrade({
+        course,
+        course_instance,
+        requiredPlans,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
@@ -35,8 +51,10 @@ router.post(
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'upgrade') {
       console.log(res.locals);
+      const institution = InstitutionSchema.parse(res.locals.institution);
+      const course = CourseSchema.parse(res.locals.course);
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
-      const user = UserSchema.parse(res.locals.user);
+      const user = UserSchema.parse(res.locals.authn_user);
 
       if (!req.body.terms_agreement) {
         throw error.make(400, 'You must agree to the terms and conditions.');
@@ -55,6 +73,13 @@ router.post(
         customer_update: {
           name: 'auto',
         },
+        metadata: {
+          prairielearn_institution_id: institution.id,
+          prairielearn_course_id: course.id,
+          prairielearn_course_instance_id: course_instance.id,
+          prairielearn_user_id: user.user_id,
+        },
+        // TODO: have client send back list of plans; validate list.
         line_items: [
           {
             // (TEST) Course access
@@ -104,9 +129,9 @@ router.get(
           type: 'stripe',
           institution_id: institution.id,
           course_instance_id: course_instance.id,
-          user_id: res.locals.user.id,
+          user_id: res.locals.authn_user.id,
         },
-        authn_user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
       });
       await insertPlanGrant({
         plan_grant: {
@@ -114,9 +139,9 @@ router.get(
           type: 'stripe',
           institution_id: institution.id,
           course_instance_id: course_instance.id,
-          user_id: res.locals.user.id,
+          user_id: res.locals.authn_user.id,
         },
-        authn_user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       flash('success', 'Your account has been upgraded!');
