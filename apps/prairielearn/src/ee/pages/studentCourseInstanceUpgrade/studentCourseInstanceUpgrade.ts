@@ -89,11 +89,19 @@ router.post(
         },
         metadata: {
           prairielearn_institution_id: institution.id,
+          prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
           prairielearn_course_id: course.id,
+          prairielearn_course_name: `${course.short_name}: ${course.title}`,
           prairielearn_course_instance_id: course_instance.id,
+          prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
           prairielearn_user_id: user.user_id,
         },
         // TODO: have client send back list of plans; validate list.
+        //
+        // TODO: should we use lookup keys instead? See
+        // https://stripe.com/docs/products-prices/manage-prices#lookup-keys
+        // Unfortunately, these can't be set or modified from the Stripe console,
+        // so they aren't as useful as they could be.
         line_items: [
           {
             price: config.stripePriceIds.basic,
@@ -106,7 +114,7 @@ router.post(
         ],
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${urlBase}/cancel?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: urlBase,
       });
 
       // TODO: persist session ID to database so we can retrieve it later.
