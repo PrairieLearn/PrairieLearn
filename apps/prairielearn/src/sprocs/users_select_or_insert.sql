@@ -68,7 +68,7 @@ BEGIN
             iap.institution_id = institution.id
             AND ap.name = authn_provider_name;
 
-        IF NOT FOUND THEN
+        IF NOT FOUND AND authn_provider_name != 'dev' THEN
             RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
         END IF;
     END IF;
