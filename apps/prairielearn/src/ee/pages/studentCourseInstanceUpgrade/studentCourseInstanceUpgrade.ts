@@ -5,7 +5,11 @@ import { flash } from '@prairielearn/flash';
 
 import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
-import { getRequiredPlansForCourseInstance } from '../../lib/billing/plans';
+import {
+  getMissingPlanGrants,
+  getPlanGrantsForPartialContexts,
+  getRequiredPlansForCourseInstance,
+} from '../../lib/billing/plans';
 import { insertPlanGrant } from '../../models/plan-grants';
 import {
   CourseInstanceSchema,
@@ -14,6 +18,7 @@ import {
   UserSchema,
 } from '../../../lib/db-types';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe';
+import { config } from '../../../lib/config';
 
 const router = Router({ mergeParams: true });
 
@@ -29,17 +34,26 @@ router.get(
       return;
     }
 
-    // TODO: take into account existing plan grants that apply to this user.
-    const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
-
+    const institution = InstitutionSchema.parse(res.locals.institution);
     const course = CourseSchema.parse(res.locals.course);
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+    const user = UserSchema.parse(res.locals.authn_user);
+
+    const planGrants = await getPlanGrantsForPartialContexts({
+      institution_id: institution.id,
+      course_instance_id: course_instance.id,
+      user_id: user.user_id,
+    });
+    const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
+    const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
+
+    // TODO: fetch pricing information from Stripe API; cache it too.
 
     res.send(
       StudentCourseInstanceUpgrade({
         course,
         course_instance,
-        requiredPlans,
+        missingPlans,
         resLocals: res.locals,
       }),
     );
@@ -82,13 +96,11 @@ router.post(
         // TODO: have client send back list of plans; validate list.
         line_items: [
           {
-            // (TEST) Course access
-            price: 'price_1NcXivCnE0RA08SRx0axfkLD',
+            price: config.stripePriceIds.basic,
             quantity: 1,
           },
           {
-            // (TEST) Compute
-            price: 'price_1NcXk5CnE0RA08SRaMbYwToh',
+            price: config.stripePriceIds.compute,
             quantity: 1,
           },
         ],

@@ -256,3 +256,8 @@ export function planGrantsMatchFeatures(
     grantedFeatures.every((feature) => features.includes(feature))
   );
 }
+
+export function getMissingPlanGrants(existingPlanGrants: PlanGrant[], requiredPlans: PlanName[]) {
+  const existingPlans = getPlansForPlanGrants(existingPlanGrants);
+  return requiredPlans.filter((plan) => !existingPlans.includes(plan));
+}

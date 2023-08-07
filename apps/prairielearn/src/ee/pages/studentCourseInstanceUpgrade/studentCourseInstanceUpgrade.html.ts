@@ -8,12 +8,12 @@ import { Course, CourseInstance } from '../../../lib/db-types';
 export function StudentCourseInstanceUpgrade({
   course,
   course_instance,
-  requiredPlans,
+  missingPlans,
   resLocals,
 }: {
   course: Course;
   course_instance: CourseInstance;
-  requiredPlans: PlanName[];
+  missingPlans: PlanName[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -42,7 +42,7 @@ export function StudentCourseInstanceUpgrade({
           </p>
 
           <ul class="list-group mb-3">
-            ${requiredPlans.map((planName) => BillingLineItem(planName))}
+            ${missingPlans.map((planName) => BillingLineItem(planName))}
             <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
               <strong>Total</strong>
               <strong>$16</strong>
