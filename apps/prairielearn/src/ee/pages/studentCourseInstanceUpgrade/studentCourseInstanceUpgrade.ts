@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import error = require('@prairielearn/error');
+
 import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
 import { getRequiredPlansForCourseInstance } from '../../lib/billing/plans';
+import { flash } from '@prairielearn/flash';
+import { insertPlanGrant } from '../../models/plan-grants';
+import { CourseInstanceSchema, InstitutionSchema } from '../../../lib/db-types';
 
 const router = Router({ mergeParams: true });
 
@@ -21,6 +26,52 @@ router.get(
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
 
     res.send(StudentCourseInstanceUpgrade({ requiredPlans, resLocals: res.locals }));
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'upgrade') {
+      const institution = InstitutionSchema.parse(res.locals.institution);
+      const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+
+      if (!req.body.terms_agreement) {
+        throw error.make(400, 'You must agree to the terms and conditions.');
+      }
+
+      console.log(req.body);
+
+      // TODO: redirect to Stripe to complete the checkout.
+      //
+      // TODO: handle duplicate plan grant creation?
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'basic',
+          type: 'stripe',
+          institution_id: institution.id,
+          course_instance_id: course_instance.id,
+          user_id: res.locals.user.id,
+        },
+        authn_user_id: res.locals.authn_user.id,
+      });
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'compute',
+          type: 'stripe',
+          institution_id: institution.id,
+          course_instance_id: course_instance.id,
+          user_id: res.locals.user.id,
+        },
+        authn_user_id: res.locals.authn_user.id,
+      });
+
+      flash('success', 'Your account has been upgraded!');
+
+      res.redirect(req.originalUrl);
+    } else {
+      throw error.make(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 

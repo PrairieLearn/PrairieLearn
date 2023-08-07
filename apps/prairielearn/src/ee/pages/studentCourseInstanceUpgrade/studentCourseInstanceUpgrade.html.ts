@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { PlanName } from '../../lib/billing/plans-types';
+import { compiledScriptTag } from '../../../lib/assets';
 
 export function StudentCourseInstanceUpgrade({
   requiredPlans,
@@ -17,6 +18,7 @@ export function StudentCourseInstanceUpgrade({
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
           ...resLocals,
         })}
+        ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
@@ -25,26 +27,59 @@ export function StudentCourseInstanceUpgrade({
           navPage: 'upgrade',
         })}
         <main class="container mb-4">
-          <div class="d-flex flex-column justify-content-center text-center">
-            <i class="fa-solid fa-lock fa-2xl"></i>
-            <h1>Upgrade required</h1>
+          <div class="d-flex flex-column justify-content-center mb-4">
+            <h1>
+              <i class="fa-solid fa-lock"></i>
+              Upgrade required
+            </h1>
             <p>
               This course requires an upgrade to support certain features selected by your
               instructor.
             </p>
           </div>
 
-          <ul class="list-group mb-3">
-            ${requiredPlans.map((planName) => BillingLineItem(planName))}
-          </ul>
+          <div class="row">
+            <div class="col-md-8">
+              <ul class="list-group mb-3">
+                ${requiredPlans.map((planName) => BillingLineItem(planName))}
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center bg-light"
+                >
+                  <strong>Total</strong>
+                  <strong>$16</strong>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-4">
+              <form method="POST">
+                <div class="custom-control custom-checkbox mb-3">
+                  <input
+                    type="checkbox"
+                    class="custom-control-input"
+                    id="js-terms-agreement"
+                    name="terms_agreement"
+                    value="1"
+                  />
+                  <label class="custom-control-label" for="js-terms-agreement">
+                    I agree to the PrairieLearn
+                    <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
+                    <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
+                  </label>
+                </div>
 
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input" id="terms-agreement" />
-            <label class="custom-control-label" for="terms-agreement">
-              I agree to the PrairieLearn
-              <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
-              <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
-            </label>
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <button
+                  id="js-upgrade"
+                  type="submit"
+                  name="__action"
+                  value="upgrade"
+                  class="btn btn-primary btn-block"
+                  disabled
+                >
+                  Upgrade
+                </button>
+              </form>
+            </div>
           </div>
 
           <p></p>
@@ -80,7 +115,7 @@ function BillingLineItem(planName: PlanName) {
     <li class="list-group-item d-flex justify-content-between align-items-center">
       <div class="d-flex flex-column">
         ${name}
-        <span class="text-muted text-small">${description}</span>
+        <small class="text-muted text-small">${description}</small>
       </div>
       <div>
         <span class="badge badge-pill badge-primary">$${price}</span>
