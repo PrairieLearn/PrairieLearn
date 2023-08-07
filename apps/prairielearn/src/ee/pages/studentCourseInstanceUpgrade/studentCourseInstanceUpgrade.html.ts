@@ -118,7 +118,7 @@ function BillingLineItem(planName: PlanName) {
         <small class="text-muted text-small">${description}</small>
       </div>
       <div>
-        <span class="badge badge-pill badge-primary">$${price}</span>
+        <strong>$${price}</strong>
       </div>
     </li>
   `;
