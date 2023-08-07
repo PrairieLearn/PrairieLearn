@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
+import { getRequiredPlansForCourseInstance } from '../../lib/billing/plans';
 
 const router = Router({ mergeParams: true });
 
@@ -17,7 +18,9 @@ router.get(
       return;
     }
 
-    res.send(StudentCourseInstanceUpgrade({ resLocals: res.locals }));
+    const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
+
+    res.send(StudentCourseInstanceUpgrade({ requiredPlans, resLocals: res.locals }));
   }),
 );
 
