@@ -49,13 +49,27 @@ router.post(
 
       const stripe = new Stripe(config.stripeSecretKey, { apiVersion: '2022-11-15' });
 
-      const urlBase = new URL(`${req.protocol}://${req.get('host')}`).pathname;
+      const urlBase = `${req.protocol}://${req.get('host')}/pl/course_instance/${
+        course_instance.id
+      }/upgrade`;
+      console.log('urlBase', urlBase);
 
       const session = await stripe.checkout.sessions.create({
-        line_items: [],
+        line_items: [
+          {
+            // Course access
+            price: 'price_1NcXivCnE0RA08SRx0axfkLD',
+            quantity: 1,
+          },
+          {
+            // Compute
+            price: 'price_1NcXk5CnE0RA08SRaMbYwToh',
+            quantity: 1,
+          },
+        ],
         mode: 'payment',
-        success_url: `${urlBase}/pl/course_instance/${course_instance.id}/upgrade/success`,
-        cancel_url: `${urlBase}/pl/course_instance/${course_instance.id}/upgrade/cancel`,
+        success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${urlBase}/cancel?session_id={CHECKOUT_SESSION_ID}`,
       });
 
       if (!session.url) throw error.make(500, 'Stripe session URL not found');
@@ -68,11 +82,22 @@ router.post(
 );
 
 router.get(
-  '/upgrade/success',
+  '/success',
   asyncHandler(async (req, res) => {
     // TODO: mutation in GET handler? Is there some token we should check?
     const institution = InstitutionSchema.parse(res.locals.institution);
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+
+    if (!req.query.session_id) throw error.make(400, 'Missing session_id');
+
+    if (!config.stripeSecretKey) {
+      throw error.make(500, 'Stripe is not configured.');
+    }
+
+    const stripe = new Stripe(config.stripeSecretKey, { apiVersion: '2022-11-15' });
+
+    const session = await stripe.checkout.sessions.retrieve(req.query.session_id as string);
+    console.log(session);
 
     // TODO: handle duplicate plan grant creation?
     await insertPlanGrant({
@@ -103,7 +128,7 @@ router.get(
   }),
 );
 
-router.get('/upgrade/cancel', (req, res) => {
+router.get('/cancel', (req, res) => {
   res.send('Canceled!');
 });
 
