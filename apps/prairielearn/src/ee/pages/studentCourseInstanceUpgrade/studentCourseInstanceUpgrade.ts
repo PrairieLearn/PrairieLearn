@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import { z } from 'zod';
 import error = require('@prairielearn/error');
 import { flash } from '@prairielearn/flash';
 
@@ -60,6 +61,14 @@ router.get(
   }),
 );
 
+const UpgradeBodySchema = z.object({
+  terms_agreement: z.literal('1').optional(),
+  unsafe_plan_names: z.string(),
+});
+
+// Only a subset of all plans are allowed to be paid for on this page.
+const PlanNamesSchema = z.array(z.enum(['basic', 'compute']));
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -70,8 +79,28 @@ router.post(
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
 
-      if (!req.body.terms_agreement) {
+      const body = UpgradeBodySchema.parse(req.body);
+
+      if (!body.terms_agreement) {
         throw error.make(400, 'You must agree to the terms and conditions.');
+      }
+
+      const rawPlanNames = body.unsafe_plan_names.split(',');
+      const planNames = PlanNamesSchema.parse(rawPlanNames);
+
+      // Validate that the plan names from the client are actually valid. We
+      // consider them to be valid if they are in the list of missing plans,
+      // which in turn is defined as a plan that is required for the current
+      // course instance and isn't already granted to the user.
+      const planGrants = await getPlanGrantsForPartialContexts({
+        institution_id: institution.id,
+        course_instance_id: course_instance.id,
+        user_id: user.user_id,
+      });
+      const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
+      const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
+      if (!planNames.every((planName) => missingPlans.includes(planName))) {
+        throw error.make(400, 'Invalid plan selection.');
       }
 
       const protocol = req.protocol;
@@ -140,6 +169,12 @@ router.get(
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(req.query.session_id as string);
     console.log(session);
+
+    // TODO: retrieve our stored session from the database and check that it
+    // applies to this user/course instance.
+    //
+    // TODO: remember that we've already created plan grants so that the user
+    // can't replay the same session ID to get plan grants in the future.
 
     if (session.payment_status === 'paid') {
       // TODO: handle duplicate plan grant creation?
