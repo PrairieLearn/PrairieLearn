@@ -5,17 +5,31 @@ import { PlanName } from '../../lib/billing/plans-types';
 import { compiledScriptTag } from '../../../lib/assets';
 import { Course, CourseInstance } from '../../../lib/db-types';
 
+const priceFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
+
+function formatStripePrice(price: number) {
+  return priceFormatter.format(price / 100);
+}
+
 export function StudentCourseInstanceUpgrade({
   course,
   course_instance,
   missingPlans,
+  planPrices,
   resLocals,
 }: {
   course: Course;
   course_instance: CourseInstance;
   missingPlans: PlanName[];
+  planPrices: Record<string, number>;
   resLocals: Record<string, any>;
 }) {
+  const totalPrice = missingPlans.reduce((total, planName) => total + planPrices[planName], 0);
+  const formattedTotalPrice = formatStripePrice(totalPrice);
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -42,10 +56,12 @@ export function StudentCourseInstanceUpgrade({
           </p>
 
           <ul class="list-group mb-3">
-            ${missingPlans.map((planName) => BillingLineItem(planName))}
+            ${missingPlans.map((planName) =>
+              BillingLineItem({ planName, planPrice: planPrices[planName] }),
+            )}
             <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
               <strong>Total</strong>
-              <strong>$16</strong>
+              <strong>${formattedTotalPrice}</strong>
             </li>
           </ul>
 
@@ -137,21 +153,21 @@ function getPlanDetails(planName: PlanName) {
       return {
         name: 'Course access',
         description: 'Provides access to this course.',
-        price: 10,
       };
     case 'compute':
       return {
         name: 'Compute',
         description: 'Enables features like in-browser IDEs and code autograding.',
-        price: 6,
       };
     default:
       throw new Error(`Unknown plan name: ${planName}`);
   }
 }
 
-function BillingLineItem(planName: PlanName) {
-  const { name, description, price } = getPlanDetails(planName);
+function BillingLineItem({ planName, planPrice }: { planName: PlanName; planPrice: number }) {
+  const { name, description } = getPlanDetails(planName);
+
+  const formattedPrice = formatStripePrice(planPrice);
 
   return html`
     <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -160,7 +176,7 @@ function BillingLineItem(planName: PlanName) {
         <small class="text-muted text-small">${description}</small>
       </div>
       <div>
-        <strong>$${price}</strong>
+        <strong>${formattedPrice}</strong>
       </div>
     </li>
   `;

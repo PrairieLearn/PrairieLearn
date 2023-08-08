@@ -21,7 +21,11 @@ import {
   InstitutionSchema,
   UserSchema,
 } from '../../../lib/db-types';
-import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe';
+import {
+  getOrCreateStripeCustomerId,
+  getPricesForPlans,
+  getStripeClient,
+} from '../../lib/billing/stripe';
 import { config } from '../../../lib/config';
 import {
   getStripeCheckoutSessionBySessionId,
@@ -57,13 +61,15 @@ router.get(
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
     const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
 
-    // TODO: fetch pricing information from Stripe API; cache it too.
+    // Prices may be cached; if they are not, they will be fetched from Stripe.
+    const planPrices = await getPricesForPlans(missingPlans);
 
     res.send(
       StudentCourseInstanceUpgrade({
         course,
         course_instance,
         missingPlans,
+        planPrices,
         resLocals: res.locals,
       }),
     );
@@ -82,7 +88,6 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'upgrade') {
-      console.log(res.locals);
       const institution = InstitutionSchema.parse(res.locals.institution);
       const course = CourseSchema.parse(res.locals.course);
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
