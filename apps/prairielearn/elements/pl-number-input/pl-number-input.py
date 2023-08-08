@@ -143,9 +143,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
-    accessibility_description = pl.get_string_attrib(
-        element, "accessibility-description", name
-    )
 
     if data["panel"] == "question":
         editable = data["editable"]
