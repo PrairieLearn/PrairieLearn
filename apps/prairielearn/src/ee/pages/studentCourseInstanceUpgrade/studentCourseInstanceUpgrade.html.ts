@@ -84,6 +84,40 @@ export function StudentCourseInstanceUpgrade({
   `.toString();
 }
 
+export function CourseInstanceStudentUpdateSuccess({
+  paid,
+  resLocals,
+}: {
+  paid: boolean;
+  resLocals: Record<string, any>;
+}) {
+  // TODO: handle the paid and unpaid case.
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
+          ...resLocals,
+        })}
+      </head>
+      <body>
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+          ...resLocals,
+          // This won't actually render anything on the page; it just has to be non-null.
+          navPage: 'upgrade',
+        })}
+        <main class="container mb-4">
+          SUCCESS!!
+
+          <a href="https://google.com" class="btn btn-primary">
+            Continue to COURSE INSTANCE NAME HERE
+          </a>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
+
 function getPlanDetails(planName: PlanName) {
   switch (planName) {
     case 'basic':

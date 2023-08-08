@@ -5,6 +5,12 @@ import error = require('@prairielearn/error');
 
 import { config } from '../../../lib/config';
 import { getStripeClient } from '../../lib/billing/stripe';
+import {
+  getStripeCheckoutSessionBySessionId,
+  markStripeCheckoutSessionCompleted,
+} from '../../models/stripe-checkout-sessions';
+import { runInTransactionAsync } from '@prairielearn/postgres';
+import { insertPlanGrant } from '../../models/plan-grants';
 
 const router = express.Router({ mergeParams: true });
 
@@ -25,6 +31,57 @@ function constructEvent(req: express.Request) {
   }
 }
 
+async function handleSessionUpdate(session: Stripe.Checkout.Session) {
+  // If the order is paid, ensure that plan grants are created. We may have
+  // already done this in the success page for the session, so we need to
+  // gracefully handle duplicate plan grants.
+  if (session.payment_status === 'paid') {
+    const localSession = await getStripeCheckoutSessionBySessionId(session.id);
+
+    if (localSession.plan_grants_created) {
+      return;
+    }
+
+    const institution_id = localSession.institution_id;
+    const course_instance_id = localSession.course_instance_id;
+
+    if (!institution_id) {
+      throw new Error('Stripe checkout session missing institution_id');
+    }
+
+    if (!course_instance_id) {
+      throw new Error('Stripe checkout session missing course_instance_id');
+    }
+
+    await runInTransactionAsync(async () => {
+      // TODO: handle duplicate plan grant creation?
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'basic',
+          type: 'stripe',
+          institution_id: institution_id,
+          course_instance_id: course_instance_id,
+          user_id: localSession.user_id,
+        },
+        authn_user_id: localSession.user_id,
+      });
+      await insertPlanGrant({
+        plan_grant: {
+          plan_name: 'compute',
+          type: 'stripe',
+          institution_id: institution_id,
+          course_instance_id: course_instance_id,
+          user_id: localSession.user_id,
+        },
+        authn_user_id: localSession.user_id,
+      });
+
+      await markStripeCheckoutSessionCompleted(session.id);
+    });
+    // TODO: ensure plan grants
+  }
+}
+
 router.post(
   '/',
   express.raw({ type: 'application/json' }),
@@ -33,20 +90,11 @@ router.post(
 
     console.log(event);
 
-    if (event.type === 'checkout.session.completed') {
-      // TODO: handle this
+    if (
+      event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded'
+    ) {
       const session = event.data.object as Stripe.Checkout.Session;
-
-      // If the order is paid, ensure that plan grants are created. We may have
-      // already done this in the success page for the session, so we need to
-      // gracefully handle duplicate plan grants.
-      if (session.payment_status === 'paid') {
-        // TODO: ensure plan grants
-      }
-    } else if (event.type === 'checkout.session.async_payment_succeeded') {
-      // TODO: handle this
-    } else if (event.type === 'checkout.session.async_payment_failed') {
-      // TODO: handle this
     }
 
     res.json({ received: true });

@@ -236,3 +236,15 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
+
+export const StripeCheckoutSessionSchema = z.object({
+  completed_at: z.date().nullable(),
+  course_instance_id: IdSchema.nullable(),
+  created_at: z.date(),
+  data: z.any(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  plan_grants_created: z.boolean(),
+  session_id: z.string(),
+  user_id: IdSchema,
+});

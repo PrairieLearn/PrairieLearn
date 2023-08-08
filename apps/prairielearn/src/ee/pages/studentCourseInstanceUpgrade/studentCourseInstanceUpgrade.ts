@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+import type Stripe from 'stripe';
 import { z } from 'zod';
 import error = require('@prairielearn/error');
 import { flash } from '@prairielearn/flash';
 
-import { StudentCourseInstanceUpgrade } from './studentCourseInstanceUpgrade.html';
+import {
+  CourseInstanceStudentUpdateSuccess,
+  StudentCourseInstanceUpgrade,
+} from './studentCourseInstanceUpgrade.html';
 import { checkPlanGrants } from '../../lib/billing/plan-grants';
 import {
   getMissingPlanGrants,
@@ -20,6 +24,12 @@ import {
 } from '../../../lib/db-types';
 import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe';
 import { config } from '../../../lib/config';
+import {
+  getStripeCheckoutSessionBySessionId,
+  insertStripeCheckoutSessionForUserInCourseInstance,
+  markStripeCheckoutSessionCompleted,
+} from '../../models/stripe-checkout-sessions';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 const router = Router({ mergeParams: true });
 
@@ -88,6 +98,24 @@ router.post(
       const rawPlanNames = body.unsafe_plan_names.split(',');
       const planNames = PlanNamesSchema.parse(rawPlanNames);
 
+      // TODO: should we use lookup keys instead? See
+      // https://stripe.com/docs/products-prices/manage-prices#lookup-keys
+      // Unfortunately, these can't be set or modified from the Stripe console,
+      // so they aren't as useful as they could be.
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+      if (planNames.includes('basic')) {
+        lineItems.push({
+          price: config.stripePriceIds.basic,
+          quantity: 1,
+        });
+      }
+      if (planNames.includes('compute')) {
+        lineItems.push({
+          price: config.stripePriceIds.compute,
+          quantity: 1,
+        });
+      }
+
       // Validate that the plan names from the client are actually valid. We
       // consider them to be valid if they are in the list of missing plans,
       // which in turn is defined as a plan that is required for the current
@@ -115,6 +143,7 @@ router.post(
         customer: customerId,
         customer_update: {
           name: 'auto',
+          address: 'auto',
         },
         metadata: {
           prairielearn_institution_id: institution.id,
@@ -125,28 +154,20 @@ router.post(
           prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
           prairielearn_user_id: user.user_id,
         },
-        // TODO: have client send back list of plans; validate list.
-        //
-        // TODO: should we use lookup keys instead? See
-        // https://stripe.com/docs/products-prices/manage-prices#lookup-keys
-        // Unfortunately, these can't be set or modified from the Stripe console,
-        // so they aren't as useful as they could be.
-        line_items: [
-          {
-            price: config.stripePriceIds.basic,
-            quantity: 1,
-          },
-          {
-            price: config.stripePriceIds.compute,
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: 'payment',
         success_url: `${urlBase}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: urlBase,
       });
 
-      // TODO: persist session ID to database so we can retrieve it later.
+      await insertStripeCheckoutSessionForUserInCourseInstance({
+        session_id: session.id,
+        institution_id: institution.id,
+        course_instance_id: course_instance.id,
+        user_id: user.user_id,
+        data: session,
+        plan_names: planNames,
+      });
 
       if (!session.url) throw error.make(500, 'Stripe session URL not found');
 
@@ -160,7 +181,6 @@ router.post(
 router.get(
   '/success',
   asyncHandler(async (req, res) => {
-    // TODO: mutation in GET handler? Is there some token we should check?
     const institution = InstitutionSchema.parse(res.locals.institution);
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
 
@@ -168,49 +188,74 @@ router.get(
 
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(req.query.session_id as string);
-    console.log(session);
 
-    // TODO: retrieve our stored session from the database and check that it
-    // applies to this user/course instance.
-    //
-    // TODO: remember that we've already created plan grants so that the user
-    // can't replay the same session ID to get plan grants in the future.
+    const localSession = await getStripeCheckoutSessionBySessionId(session.id);
+
+    // Verify that the session is associated with the current course instance
+    // and user. We shouldn't hit this during normal operations, but an attacker
+    // could try to replay a session ID from a different course instance or user.
+    if (
+      localSession.institution_id !== institution.id ||
+      localSession.course_instance_id !== course_instance.id ||
+      localSession.user_id !== res.locals.authn_user.user_id
+    ) {
+      throw error.make(400, 'Invalid session');
+    }
 
     if (session.payment_status === 'paid') {
-      // TODO: handle duplicate plan grant creation?
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'basic',
-          type: 'stripe',
-          institution_id: institution.id,
-          course_instance_id: course_instance.id,
-          user_id: res.locals.authn_user.id,
-        },
-        authn_user_id: res.locals.authn_user.id,
-      });
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'compute',
-          type: 'stripe',
-          institution_id: institution.id,
-          course_instance_id: course_instance.id,
-          user_id: res.locals.authn_user.id,
-        },
-        authn_user_id: res.locals.authn_user.id,
+      if (localSession.plan_grants_created) {
+        // Don't throw an error - it's possible we processed the webhook for
+        // this session already. Instead, just render the success page.
+        res.send(CourseInstanceStudentUpdateSuccess({ paid: true, resLocals: res.locals }));
+        return;
+      }
+
+      // Create plan grants and mark the session as completed.
+      //
+      // Doing these mutations in a GET handler isn't great, but we have
+      // reasonable protection in place against replay attacks, and it would
+      // be difficult to perform a CSRF attack because the session must have
+      // been created in Stripe and must refer to the same user and course instance.
+      await runInTransactionAsync(async () => {
+        // TODO: handle duplicate plan grant creation?
+        await insertPlanGrant({
+          plan_grant: {
+            plan_name: 'basic',
+            type: 'stripe',
+            institution_id: institution.id,
+            course_instance_id: course_instance.id,
+            user_id: res.locals.authn_user.id,
+          },
+          authn_user_id: res.locals.authn_user.id,
+        });
+        await insertPlanGrant({
+          plan_grant: {
+            plan_name: 'compute',
+            type: 'stripe',
+            institution_id: institution.id,
+            course_instance_id: course_instance.id,
+            user_id: res.locals.authn_user.id,
+          },
+          authn_user_id: res.locals.authn_user.id,
+        });
+
+        await markStripeCheckoutSessionCompleted(session.id);
       });
 
       flash('success', 'Your account has been upgraded!');
+      res.send(CourseInstanceStudentUpdateSuccess({ paid: true, resLocals: res.locals }));
     } else {
-      // TODO: handle async payments?
+      // The user paid with an asynchronous payment method (e.g. ACH), so we
+      // can't immediately grant them any plans. Instead, we'll show a thanks
+      // page and let them know that their plans will be granted once the
+      // payment is complete.
+      //
+      // We don't expect to hit this case, since we're only offering credit
+      // card payments at the moment, but this at least allows us to behave
+      // sensibly if something goes very wrong.
+      res.send(CourseInstanceStudentUpdateSuccess({ paid: false, resLocals: res.locals }));
     }
-
-    // TODO: show actual success page.
-    res.send('Success!');
   }),
 );
-
-router.get('/cancel', (req, res) => {
-  res.send('Canceled!');
-});
 
 export default router;
