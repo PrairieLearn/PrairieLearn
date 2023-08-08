@@ -271,7 +271,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             or show_correct
         ):
             html_params["show_info"] = True
-        html_params["display_append_span"] = "show_info" in html_params or suffix
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
