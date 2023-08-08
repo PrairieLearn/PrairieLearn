@@ -109,6 +109,11 @@ PROPS: dict[str, PropInfo] = {
         "present_phases": frozenset({"test"}),
         "edit_phases": frozenset(),
     },
+    "answers_names": {
+        "type": "object",
+        "present_phases": frozenset({"prepare"}),
+        "edit_phases": frozenset({"prepare"}),
+    },
     "extensions": {
         "type": "object",
         "present_phases": all_phases,

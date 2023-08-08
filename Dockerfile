@@ -1,4 +1,4 @@
-FROM prairielearn/plbase
+FROM prairielearn/plbase:${PRAIRIELEARN_IMAGE_TAG:-latest}
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
