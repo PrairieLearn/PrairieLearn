@@ -324,34 +324,20 @@ def fib(n):
 
 #### Customizations
 
-| Attribute             | Type                                   | Default                        | Description                                                                                                                                                                                                                                                                                                                                                                                              |
-| --------------------- | -------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`        | string                                 | —                              | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                                                                                                                                                                                                     |
-| `weight`              | integer                                | 1                              | Weight to use when computing a weighted average score over all elements in a question.                                                                                                                                                                                                                                                                                                                   |
-| `grading-method`      | string                                 | "ordered"                      | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.                                                                                                                                                                                                                                                                                                      |
-| `file-name`           | string                                 | `user_code.py`                 | Name of the file where the information from the blocks will be saved, to be used by the external grader.                                                                                                                                                                                                                                                                                                 |
-| `source-blocks-order` | "random", "ordered", or "alphabetized" | "random"                       | The order of the blocks in the source area. See more details below.                                                                                                                                                                                                                                                                                                                                      |
-| `indentation`         | boolean                                | false                          | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).                                                                                                                                                                                                                                           |
-| `max-incorrect`       | integer                                | special                        | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
-| `min-incorrect`       | integer                                | special                        | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
-| `source-header`       | string                                 | "Drag from here"               | The text that appears at the start of the source area.                                                                                                                                                                                                                                                                                                                                                   |
-| `solution-header`     | string                                 | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                 |
-| `solution-placement`  | "right" or "bottom"                    | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
-| `partial-credit`      | "none" or "lcs"                        | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
-| `feedback`            | "none" or "first-wrong"                | "none"                         | The level of feedback the student will receive upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
-| `format`              | "code" or "default"                    | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
-| `code-language`       | string                                 | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
-
-Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
-
-| Attribute        | Type               | Default | Description                                                                                                                                                                                                                                                                                                                                                               |
-| ---------------- | ------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`        | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                        |
-| `ranking`        | positive integer   | —       | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
-| `indent`         | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                                  |
-| `depends`        | string             | ""      | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                              |
-| `tag`            | string             | ""      | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                                 |
-| `distractor-for` | string             | ""      | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                           |
+| Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`          | string  | -                  | The name of this file; will be used to store this file in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                                               |
+| `ace-mode`           | string  | None               | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).                                                                                                                                                                                                                                                    |
+| `ace-theme`          | string  | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).                                                                                                                                                                                                                                                                                                                          |
+| `font-size`          | string  | `12px`             | Sets the font size for the Ace editor. Specified as a CSS-style size (e.g., `1rem`, `110%`, `16pt`, or `20px`).                                                                                                                                                                                                                                                                                                                                       |
+| `source-file-name`   | string  | None               | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                       |
+| `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `min-lines`          | integer | None               | Minimum number of lines the editor should show initially.                                                                                                                                                                                                                                                                                                                                                                                             |
+| `max-lines`          | integer | None               | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.                                                                                                                                                                                                                                                                                                                                                          |
+| `auto-resize`        | boolean | true               | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.                                                                                                                                                                                                                                     |
+| `preview`            | string  | None               | If set, provides a live preview mode for editing markup languages. Currently supports `html` or `markdown`.                                                                                                                                                                                                                                                                                                                                           |
+| `focus`              | boolean | false              | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.                                                                                                                                                                                                                                                                                                                            |
+| `normalize-to-ascii` | boolean | false              | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.                                                                                                                                                                                                                                                                             |
 
 #### Details
 
@@ -2107,27 +2093,22 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-answer-panel` element
 
-Provide information regarding the question answer after the student is unable
-to submit further answers for grading.
+Provide information regarding the question answer after the student is unable to
+receive further answers for grading.
 
 #### Sample element
 
 ```html
-<pl-answer-panel>This content is only shown in the answer panel.</pl-answer-panel>
+<pl-answer-panel> This is answer-panel text. </pl-answer-panel>
 ```
 
 #### Details
 
-Generally, the contents of `question.html` will appear in
-the question panel, submission panel, and answer panel. To prevent
-content from being displayed in the submission panel and
-question panel (so, only in the answer panel), surround that content
-with the `<pl-answer-panel>` tags.
+Contents are only displayed when the answer panel is requested.
+Common reasons that trigger the display of this element are:
 
-Common reasons that trigger the display of the answer panel are:
-
-- The question is fully correct.
-- There are no more submission attempts.
+- The question is fully correct
+- There are no more submission attempts
 - The time limit for the assessment has expired.
 
 #### Example implementations
@@ -2331,16 +2312,15 @@ Displays the contents of question directions.
 #### Sample element
 
 ```html
-<pl-question-panel>This content is only shown in the question panel.</pl-question-panel>
+<pl-question-panel> This is question-panel text. </pl-question-panel>
 ```
 
 #### Details
 
-Generally, the contents of `question.html` will appear in
-the question panel, submission panel, and answer panel. To prevent
-content from being displayed in the submission panel and
-answer panel (so, only in the question panel), surround that content
-with the `<pl-question-panel>` tags.
+Contents are only shown during question input portion. When a student
+either makes a submission or receives the correct answer, the information
+between these tags is hidden. If content exists outside of a question panel,
+then it will be displayed alongside the answer.
 
 #### Example implementations
 
@@ -2361,19 +2341,13 @@ Customizes how information entered by a user is displayed before grading.
 #### Sample element
 
 ```html
-<pl-submission-panel>This content is only shown in the submission panel.</pl-submission-panel>
+<pl-submission-panel> This is submission-panel text. </pl-submission-panel>
 ```
 
 #### Details
 
-Generally, the contents of `question.html` will appear in
-the question panel, submission panel, and answer panel. To prevent
-content from being displayed in the question panel and
-answer panel (so, only in the submission panel), surround that content
-with the `<pl-submission-panel>` tags.
-
-The submission panel is only shown after the student has submitted an
-answer. This answer may be correct, incorrect, or invalid.
+Contents are only shown after the student has submitted an answer. This answer
+may be correct, incorrect, or invalid.
 
 #### Example implementations
 
