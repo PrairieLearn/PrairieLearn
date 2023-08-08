@@ -41,6 +41,9 @@ export async function getOrCreateStripeCustomerId(
   return customer.id;
 }
 
+/**
+ * Returns the price in cents for the given plan.
+ */
 export async function getPriceForPlan(plan: PlanName): Promise<number> {
   const cacheKey = `stripe:price:${plan}`;
   let price: number = await cache.get(cacheKey);
@@ -72,6 +75,10 @@ export async function getPriceForPlan(plan: PlanName): Promise<number> {
   return price;
 }
 
+/**
+ * Fetches the prices for the given plans. The result is a map from plan name
+ * to the price in cents.
+ */
 export async function getPricesForPlans(plans: PlanName[]): Promise<Record<string, number>> {
   const prices: Record<string, number> = {};
   for (const plan of plans) {
