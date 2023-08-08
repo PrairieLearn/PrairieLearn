@@ -62,27 +62,19 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
     }
 
     await runInTransactionAsync(async () => {
-      // TODO: handle duplicate plan grant creation?
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'basic',
-          type: 'stripe',
-          institution_id: institution_id,
-          course_instance_id: course_instance_id,
-          user_id: localSession.user_id,
-        },
-        authn_user_id: localSession.user_id,
-      });
-      await insertPlanGrant({
-        plan_grant: {
-          plan_name: 'compute',
-          type: 'stripe',
-          institution_id: institution_id,
-          course_instance_id: course_instance_id,
-          user_id: localSession.user_id,
-        },
-        authn_user_id: localSession.user_id,
-      });
+      for (const planName of localSession.plan_names) {
+        // TODO: handle duplicate plan grant creation?
+        await insertPlanGrant({
+          plan_grant: {
+            plan_name: planName,
+            type: 'stripe',
+            institution_id: institution_id,
+            course_instance_id: course_instance_id,
+            user_id: localSession.user_id,
+          },
+          authn_user_id: localSession.user_id,
+        });
+      }
 
       await markStripeCheckoutSessionCompleted(session.id);
     });

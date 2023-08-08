@@ -245,6 +245,9 @@ function getPlansForPlanGrants(planGrants: PlanGrant[]): PlanName[] {
   return Array.from(plans);
 }
 
+/**
+ * Returns whether or not the given plan grants match all of the given features.
+ */
 export function planGrantsMatchFeatures(
   planGrants: PlanGrant[],
   features: PlanFeatureName[],
@@ -257,6 +260,10 @@ export function planGrantsMatchFeatures(
   );
 }
 
+/**
+ * Given a list of existing plan grants and a list of required plans, returns
+ * a list of plans that are required but not granted.
+ */
 export function getMissingPlanGrants(existingPlanGrants: PlanGrant[], requiredPlans: PlanName[]) {
   const existingPlans = getPlansForPlanGrants(existingPlanGrants);
   return requiredPlans.filter((plan) => !existingPlans.includes(plan));

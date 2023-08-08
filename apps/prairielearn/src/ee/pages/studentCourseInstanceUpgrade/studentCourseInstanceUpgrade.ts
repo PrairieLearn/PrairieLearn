@@ -3,7 +3,6 @@ import asyncHandler = require('express-async-handler');
 import type Stripe from 'stripe';
 import { z } from 'zod';
 import error = require('@prairielearn/error');
-import { flash } from '@prairielearn/flash';
 
 import {
   CourseInstanceStudentUpdateSuccess,
@@ -209,53 +208,32 @@ router.get(
     }
 
     if (session.payment_status === 'paid') {
-      if (localSession.plan_grants_created) {
-        // Don't throw an error - it's possible we processed the webhook for
-        // this session already. Instead, just render the success page.
-        res.send(
-          CourseInstanceStudentUpdateSuccess({
-            course,
-            course_instance,
-            paid: true,
-            resLocals: res.locals,
-          }),
-        );
-        return;
+      if (!localSession.plan_grants_created) {
+        // Create plan grants and mark the session as completed.
+        //
+        // Doing these mutations in a GET handler isn't great, but we have
+        // reasonable protection in place against replay attacks, and it would
+        // be difficult to perform a CSRF attack because the session must have
+        // been created in Stripe and must refer to the same user and course instance.
+        await runInTransactionAsync(async () => {
+          for (const planName of localSession.plan_names) {
+            // TODO: handle duplicate plan grant creation?
+            await insertPlanGrant({
+              plan_grant: {
+                plan_name: planName,
+                type: 'stripe',
+                institution_id: institution.id,
+                course_instance_id: course_instance.id,
+                user_id: res.locals.authn_user.id,
+              },
+              authn_user_id: res.locals.authn_user.id,
+            });
+          }
+
+          await markStripeCheckoutSessionCompleted(session.id);
+        });
       }
 
-      // Create plan grants and mark the session as completed.
-      //
-      // Doing these mutations in a GET handler isn't great, but we have
-      // reasonable protection in place against replay attacks, and it would
-      // be difficult to perform a CSRF attack because the session must have
-      // been created in Stripe and must refer to the same user and course instance.
-      await runInTransactionAsync(async () => {
-        // TODO: handle duplicate plan grant creation?
-        await insertPlanGrant({
-          plan_grant: {
-            plan_name: 'basic',
-            type: 'stripe',
-            institution_id: institution.id,
-            course_instance_id: course_instance.id,
-            user_id: res.locals.authn_user.id,
-          },
-          authn_user_id: res.locals.authn_user.id,
-        });
-        await insertPlanGrant({
-          plan_grant: {
-            plan_name: 'compute',
-            type: 'stripe',
-            institution_id: institution.id,
-            course_instance_id: course_instance.id,
-            user_id: res.locals.authn_user.id,
-          },
-          authn_user_id: res.locals.authn_user.id,
-        });
-
-        await markStripeCheckoutSessionCompleted(session.id);
-      });
-
-      flash('success', 'Your account has been upgraded!');
       res.send(
         CourseInstanceStudentUpdateSuccess({
           course,

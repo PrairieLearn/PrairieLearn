@@ -476,9 +476,13 @@ const ConfigSchema = z.object({
   checkSharingOnSync: z.boolean().default(false),
   /**
    * A Stripe secret key to be used for billing. Only useful for enterprise
-   * installations.
+   * installations. See https://stripe.com/docs/keys.
    */
   stripeSecretKey: z.string().nullable().default(null),
+  /**
+   * A secret key used to sign Stripe webhook events. Only useful for enterprise
+   * installations. See https://stripe.com/docs/webhooks.
+   */
   stripeWebhookSigningSecret: z.string().nullable().default(null),
   /**
    * Maps a plan name ("basic", "compute", etc.) to a Stripe price ID.
