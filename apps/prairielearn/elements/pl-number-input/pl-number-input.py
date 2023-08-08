@@ -228,7 +228,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["show_info"] = pl.get_boolean_attrib(
             element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
         )
-        info_params["show_correct"] = show_correct
         info_params["allow_fractions"] = allow_fractions
 
         # Find the true answer to be able to display it in the info popup
@@ -266,10 +265,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["popup_title"] = "Correct Answer"
 
         # Enable or disable the popup
-        if (
-            pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-            or show_correct
-        ):
+        if pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT):
             html_params["show_info"] = True
 
         if raw_submitted_answer is not None:
@@ -309,7 +305,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
         ):
             ans_true = format_true_ans(element, data, name)
-            html_params["show_correct"] = True
         if ans_true is not None:
             html_params["a_tru"] = ans_true
 
