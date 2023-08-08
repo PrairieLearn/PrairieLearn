@@ -85,9 +85,13 @@ export function StudentCourseInstanceUpgrade({
 }
 
 export function CourseInstanceStudentUpdateSuccess({
+  course,
+  course_instance,
   paid,
   resLocals,
 }: {
+  course: Course;
+  course_instance: CourseInstance;
   paid: boolean;
   resLocals: Record<string, any>;
 }) {
@@ -107,11 +111,21 @@ export function CourseInstanceStudentUpdateSuccess({
           navPage: 'upgrade',
         })}
         <main class="container mb-4">
-          SUCCESS!!
+          <h1>Thanks!</h1>
 
-          <a href="https://google.com" class="btn btn-primary">
-            Continue to COURSE INSTANCE NAME HERE
-          </a>
+          ${paid
+            ? html`
+                <p>Your payment was successfully processed. You may now access the course.</p>
+
+                <a href="/pl/course_instance/${course_instance.id}" class="btn btn-primary">
+                  Continue to ${course.short_name}
+                </a>
+              `
+            : html`
+                <p>
+                  Once your payment has been fully processed, check back for access to the course.
+                </p>
+              `}
         </main>
       </body>
     </html>

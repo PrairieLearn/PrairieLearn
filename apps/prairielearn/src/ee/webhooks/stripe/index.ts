@@ -38,7 +38,15 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
   if (session.payment_status === 'paid') {
     const localSession = await getStripeCheckoutSessionBySessionId(session.id);
 
+    if (!localSession) {
+      // We got a webhook for a session that we don't know about. It was likely
+      // created by a different PrairieLearn instance, so we can safely ignore.
+      return;
+    }
+
     if (localSession.plan_grants_created) {
+      // We already handled the results from this session, so we don't have to
+      // do anything else.
       return;
     }
 
@@ -78,7 +86,6 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
 
       await markStripeCheckoutSessionCompleted(session.id);
     });
-    // TODO: ensure plan grants
   }
 }
 
@@ -88,13 +95,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const event = constructEvent(req);
 
-    console.log(event);
-
     if (
       event.type === 'checkout.session.completed' ||
       event.type === 'checkout.session.async_payment_succeeded'
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
+      await handleSessionUpdate(session);
     }
 
     res.json({ received: true });

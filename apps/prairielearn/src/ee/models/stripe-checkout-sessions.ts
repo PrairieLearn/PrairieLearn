@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import { PlanName } from '../lib/billing/plans-types';
 import { StripeCheckoutSessionSchema } from '../../lib/db-types';
 
@@ -30,7 +30,7 @@ export async function insertStripeCheckoutSessionForUserInCourseInstance({
 }
 
 export async function getStripeCheckoutSessionBySessionId(session_id: string) {
-  return await queryRow(
+  return await queryOptionalRow(
     sql.get_stripe_checkout_session_by_session_id,
     {
       session_id,

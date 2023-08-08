@@ -182,14 +182,20 @@ router.get(
   '/success',
   asyncHandler(async (req, res) => {
     const institution = InstitutionSchema.parse(res.locals.institution);
+    const course = CourseSchema.parse(res.locals.course);
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
 
     if (!req.query.session_id) throw error.make(400, 'Missing session_id');
 
-    const stripe = getStripeClient();
-    const session = await stripe.checkout.sessions.retrieve(req.query.session_id as string);
+    const stripeSessionId = z.string().parse(req.query.session_id);
 
-    const localSession = await getStripeCheckoutSessionBySessionId(session.id);
+    const localSession = await getStripeCheckoutSessionBySessionId(stripeSessionId);
+    if (!localSession) {
+      throw new Error(`Unknown Stripe session: ${stripeSessionId}`);
+    }
+
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
 
     // Verify that the session is associated with the current course instance
     // and user. We shouldn't hit this during normal operations, but an attacker
@@ -206,7 +212,14 @@ router.get(
       if (localSession.plan_grants_created) {
         // Don't throw an error - it's possible we processed the webhook for
         // this session already. Instead, just render the success page.
-        res.send(CourseInstanceStudentUpdateSuccess({ paid: true, resLocals: res.locals }));
+        res.send(
+          CourseInstanceStudentUpdateSuccess({
+            course,
+            course_instance,
+            paid: true,
+            resLocals: res.locals,
+          }),
+        );
         return;
       }
 
@@ -243,7 +256,14 @@ router.get(
       });
 
       flash('success', 'Your account has been upgraded!');
-      res.send(CourseInstanceStudentUpdateSuccess({ paid: true, resLocals: res.locals }));
+      res.send(
+        CourseInstanceStudentUpdateSuccess({
+          course,
+          course_instance,
+          paid: true,
+          resLocals: res.locals,
+        }),
+      );
     } else {
       // The user paid with an asynchronous payment method (e.g. ACH), so we
       // can't immediately grant them any plans. Instead, we'll show a thanks
@@ -253,7 +273,14 @@ router.get(
       // We don't expect to hit this case, since we're only offering credit
       // card payments at the moment, but this at least allows us to behave
       // sensibly if something goes very wrong.
-      res.send(CourseInstanceStudentUpdateSuccess({ paid: false, resLocals: res.locals }));
+      res.send(
+        CourseInstanceStudentUpdateSuccess({
+          course,
+          course_instance,
+          paid: false,
+          resLocals: res.locals,
+        }),
+      );
     }
   }),
 );
