@@ -157,7 +157,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),
             "uuid": pl.get_uuid(),
             "show_score": show_score,
-            "accessibility_description": accessibility_description,
             "parse_error": parse_error,
             display.value: True,
         }
@@ -311,6 +310,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
         ):
             ans_true = format_true_ans(element, data, name)
+            html_params["show_correct"] = True
         if ans_true is not None:
             html_params["a_tru"] = ans_true
 

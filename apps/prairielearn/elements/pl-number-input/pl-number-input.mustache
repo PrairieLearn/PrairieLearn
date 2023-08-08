@@ -113,6 +113,8 @@
   {{feedback}}
 </div>
 {{/feedback}}
+
+
 {{#correct}}
 <script>
     $(function(){
@@ -123,6 +125,11 @@
         });
     });
 </script>
+{{#show_correct}}
+<div class="d-inline pl-number-input-feedback">
+    The correct answer used for grading is <samp>{{a_tru}}</samp>
+</div>
+{{/show_correct}}
 <span id="pl-number-input-correct-{{uuid}}">
     <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
 </span>
@@ -156,9 +163,6 @@ Your answer must be a real number between <code>-1e308</code> and <code>1e308</c
 {{/allow_complex}}
 No symbolic expressions (those that involve{{^allow_fractions}} fractions,{{/allow_fractions}} square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#allow_fractions}} You may express your answer as a fraction of two numbers. {{/allow_fractions}} {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digit{{#digits_plural}}s{{/digits_plural}} after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
 {{/show_info}}
-{{#show_correct}}
-The correct answer used for grading is <samp>{{a_tru}}</samp>
-{{/show_correct}}
 {{/format}}
 
 {{#shortformat}}
