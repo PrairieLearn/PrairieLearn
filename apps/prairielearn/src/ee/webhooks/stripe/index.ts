@@ -10,7 +10,7 @@ import {
   markStripeCheckoutSessionCompleted,
 } from '../../models/stripe-checkout-sessions';
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import { insertPlanGrant } from '../../models/plan-grants';
+import { ensurePlanGrant } from '../../models/plan-grants';
 
 const router = express.Router({ mergeParams: true });
 
@@ -63,8 +63,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
 
     await runInTransactionAsync(async () => {
       for (const planName of localSession.plan_names) {
-        // TODO: handle duplicate plan grant creation?
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: planName,
             type: 'stripe',

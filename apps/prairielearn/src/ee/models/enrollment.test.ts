@@ -8,7 +8,7 @@ import {
   getEnrollmentCountsForInstitution,
 } from './enrollment';
 import { getOrCreateUser } from '../../tests/utils/auth';
-import { insertPlanGrant } from './plan-grants';
+import { ensurePlanGrant } from './plan-grants';
 import { queryRow } from '@prairielearn/postgres';
 import { CourseInstanceSchema } from '../../lib/db-types';
 
@@ -70,7 +70,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       user_id: paidUser2.user_id,
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -82,7 +82,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       authn_user_id: '1',
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -93,7 +93,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       authn_user_id: '1',
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: courseInstance.id,
@@ -154,7 +154,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
 
     await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -179,7 +179,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
 
     await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',

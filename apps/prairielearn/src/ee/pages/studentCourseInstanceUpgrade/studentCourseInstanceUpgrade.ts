@@ -14,7 +14,7 @@ import {
   getPlanGrantsForPartialContexts,
   getRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans';
-import { insertPlanGrant } from '../../models/plan-grants';
+import { ensurePlanGrant } from '../../models/plan-grants';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -217,8 +217,7 @@ router.get(
         // been created in Stripe and must refer to the same user and course instance.
         await runInTransactionAsync(async () => {
           for (const planName of localSession.plan_names) {
-            // TODO: handle duplicate plan grant creation?
-            await insertPlanGrant({
+            await ensurePlanGrant({
               plan_grant: {
                 plan_name: planName,
                 type: 'stripe',

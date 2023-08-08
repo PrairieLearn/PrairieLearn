@@ -8,7 +8,7 @@ import {
   PlanGrantSchema,
 } from '../../../lib/db-types';
 import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types';
-import { insertPlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
+import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
 import {
   insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
@@ -197,7 +197,7 @@ async function reconcilePlanGrants(
   );
 
   for (const plan of newPlans) {
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         ...context,
         plan_name: plan.plan,
