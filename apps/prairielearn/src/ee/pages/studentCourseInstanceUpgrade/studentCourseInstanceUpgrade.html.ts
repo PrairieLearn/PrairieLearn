@@ -95,7 +95,6 @@ export function CourseInstanceStudentUpdateSuccess({
   paid: boolean;
   resLocals: Record<string, any>;
 }) {
-  // TODO: handle the paid and unpaid case.
   return html`
     <!doctype html>
     <html lang="en">
