@@ -62,7 +62,7 @@ router.get(
     const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
 
     // Prices may be cached; if they are not, they will be fetched from Stripe.
-    const planPrices = await getPricesForPlans(missingPlans);
+    const planPrices = config.stripeSecretKey ? await getPricesForPlans(missingPlans) : null;
 
     res.send(
       StudentCourseInstanceUpgrade({

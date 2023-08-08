@@ -24,12 +24,13 @@ export function StudentCourseInstanceUpgrade({
   course: Course;
   course_instance: CourseInstance;
   missingPlans: PlanName[];
-  planPrices: Record<string, number>;
+  /**
+   * `null` here will indicate that we aren't configured with Stripe credentials
+   * and thus that we can't show prices of the upgrade button
+   */
+  planPrices: Record<string, number> | null;
   resLocals: Record<string, any>;
 }) {
-  const totalPrice = missingPlans.reduce((total, planName) => total + planPrices[planName], 0);
-  const formattedTotalPrice = formatStripePrice(totalPrice);
-
   return html`
     <!doctype html>
     <html lang="en">
@@ -55,45 +56,41 @@ export function StudentCourseInstanceUpgrade({
             requires an upgrade to support certain features selected by your instructor.
           </p>
 
-          <ul class="list-group mb-3">
-            ${missingPlans.map((planName) =>
-              BillingLineItem({ planName, planPrice: planPrices[planName] }),
-            )}
-            <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
-              <strong>Total</strong>
-              <strong>${formattedTotalPrice}</strong>
-            </li>
-          </ul>
+          ${planPrices !== null
+            ? html`
+                ${PriceTable({ planNames: missingPlans, planPrices })}
 
-          <form method="POST">
-            <div class="custom-control custom-checkbox mb-3">
-              <input
-                type="checkbox"
-                class="custom-control-input"
-                id="js-terms-agreement"
-                name="terms_agreement"
-                value="1"
-              />
-              <label class="custom-control-label" for="js-terms-agreement">
-                I agree to the PrairieLearn
-                <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
-                <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
-              </label>
-            </div>
+                <form method="POST">
+                  <div class="custom-control custom-checkbox mb-3">
+                    <input
+                      type="checkbox"
+                      class="custom-control-input"
+                      id="js-terms-agreement"
+                      name="terms_agreement"
+                      value="1"
+                    />
+                    <label class="custom-control-label" for="js-terms-agreement">
+                      I agree to the PrairieLearn
+                      <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
+                      <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.
+                    </label>
+                  </div>
 
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="unsafe_plan_names" value="${missingPlans.join(',')}" />
-            <button
-              id="js-upgrade"
-              type="submit"
-              name="__action"
-              value="upgrade"
-              class="btn btn-primary btn-block"
-              disabled
-            >
-              Upgrade
-            </button>
-          </form>
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <input type="hidden" name="unsafe_plan_names" value="${missingPlans.join(',')}" />
+                  <button
+                    id="js-upgrade"
+                    type="submit"
+                    name="__action"
+                    value="upgrade"
+                    class="btn btn-primary btn-block"
+                    disabled
+                  >
+                    Upgrade
+                  </button>
+                </form>
+              `
+            : ''}
         </main>
       </body>
     </html>
@@ -179,5 +176,26 @@ function BillingLineItem({ planName, planPrice }: { planName: PlanName; planPric
         <strong>${formattedPrice}</strong>
       </div>
     </li>
+  `;
+}
+
+function PriceTable({
+  planNames,
+  planPrices,
+}: {
+  planNames: PlanName[];
+  planPrices: Record<string, number>;
+}) {
+  const totalPrice = planNames.reduce((total, planName) => total + planPrices[planName], 0);
+  const formattedTotalPrice = formatStripePrice(totalPrice);
+
+  return html`
+    <ul class="list-group mb-3">
+      ${planNames.map((planName) => BillingLineItem({ planName, planPrice: planPrices[planName] }))}
+      <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+        <strong>Total</strong>
+        <strong>${formattedTotalPrice}</strong>
+      </li>
+    </ul>
   `;
 }
