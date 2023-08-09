@@ -40,6 +40,8 @@
             "showClosedAssessment": false
        }
     ],
+    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+    "canSubmit": ["Recorder"],
     "zones": [
         {
             "title": "Fundamental questions",
@@ -47,8 +49,6 @@
                 {
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/calculation"},
                         {"id": "demo/matrixAlgebra"}
@@ -57,8 +57,6 @@
                 {
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/fixedCheckbox"},
                         {"id": "demo/randomPlot"}
@@ -72,8 +70,6 @@
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/matrixComplexAlgebra"},
                         {"id": "demo/randomCheckbox"}
@@ -82,8 +78,6 @@
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/randomMultipleChoice"}
                     ]
@@ -96,8 +90,6 @@
                 {
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
-                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
-                    "canSubmit": ["Recorder"],
                     "alternatives": [
                         {"id": "demo/randomDataFrame"},
                         {"id": "demo/randomSymbolic"}
