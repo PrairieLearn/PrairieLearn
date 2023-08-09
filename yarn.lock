@@ -2854,7 +2854,7 @@ __metadata:
     "@types/multer": ^1.4.7
     "@types/node": ^18.17.1
     "@types/node-fetch": ^2.6.4
-    "@types/object-hash": ^3.0.2
+    "@types/object-hash": ^3.0.3
     "@types/passport": ^1.0.12
     "@types/passport-azure-ad": ^4.3.1
     "@types/pem": ^1.14.0
@@ -4514,10 +4514,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/object-hash@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "@types/object-hash@npm:3.0.2"
-  checksum: 0332e59074e7df2e74c093a7419c05c1e1c5ae1e12d3779f3240b3031835ff045b4ac591362be0b411ace24d3b5e760386b434761c33af25904f7a3645cb3785
+"@types/object-hash@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "@types/object-hash@npm:3.0.3"
+  checksum: 210624b9d1c690e6166ae9728fd2f514acfc718c1f7ac687dadaa3ecb19a7b145d518a555031307cda14ba715e5e22bd80da57a4089111d000e4a27d50b4e555
   languageName: node
   linkType: hard
 
