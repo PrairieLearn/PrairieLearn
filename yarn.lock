@@ -2974,7 +2974,7 @@ __metadata:
     serve-favicon: ^2.5.0
     showdown: ^2.1.0
     sinon: ^15.2.0
-    socket.io: ^4.7.1
+    socket.io: ^4.7.2
     socket.io-client: ^4.7.1
     streamifier: ^0.1.1
     strip-ansi: ^6.0.1
@@ -3085,7 +3085,7 @@ __metadata:
     nodemon: ^3.0.1
     redis: ^4.6.7
     request: ^2.88.2
-    socket.io: ^4.7.1
+    socket.io: ^4.7.2
     ts-node: ^10.9.1
     typescript: ^5.1.6
     typescript-cp: ^0.1.9
@@ -7784,9 +7784,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"engine.io@npm:~6.5.0":
-  version: 6.5.1
-  resolution: "engine.io@npm:6.5.1"
+"engine.io-parser@npm:~5.2.1":
+  version: 5.2.1
+  resolution: "engine.io-parser@npm:5.2.1"
+  checksum: 55b0e8e18500f50c1573675c53597c5552554ead08d3f30ff19fde6409e48f882a8e01f84e9772cd155c18a1d653d06f6bf57b4e1f8b834c63c9eaf3b657b88e
+  languageName: node
+  linkType: hard
+
+"engine.io@npm:~6.5.2":
+  version: 6.5.2
+  resolution: "engine.io@npm:6.5.2"
   dependencies:
     "@types/cookie": ^0.4.1
     "@types/cors": ^2.8.12
@@ -7796,9 +7803,9 @@ __metadata:
     cookie: ~0.4.1
     cors: ~2.8.5
     debug: ~4.3.1
-    engine.io-parser: ~5.1.0
+    engine.io-parser: ~5.2.1
     ws: ~8.11.0
-  checksum: e902bbb3a484236edd6f0be89c14eb694cd905e727f88f3082a8b33ba23af9a71ca51e109b213962ccf836b02ba5bb9eea6f680a44d5008eb5b6aa2028d3bb7f
+  checksum: 2fb1da39932d526cd5033c399978c65d367cce51e6b511a572bcf4a520b863652e26123d7efceee6cef8c96221585eb953a0e541ae25f6009e9ff5149b067ecd
   languageName: node
   linkType: hard
 
@@ -15009,18 +15016,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io@npm:^4.7.1":
-  version: 4.7.1
-  resolution: "socket.io@npm:4.7.1"
+"socket.io@npm:^4.7.2":
+  version: 4.7.2
+  resolution: "socket.io@npm:4.7.2"
   dependencies:
     accepts: ~1.3.4
     base64id: ~2.0.0
     cors: ~2.8.5
     debug: ~4.3.2
-    engine.io: ~6.5.0
+    engine.io: ~6.5.2
     socket.io-adapter: ~2.5.2
     socket.io-parser: ~4.2.4
-  checksum: 81404d06383aa5495b3cb9a1a4fc1435cfa97d8963c89fa54403c3ef20e0884eccedb8799b1c804a40896f903d64543e2303071d5d60dcbf7e062edf7a98d87f
+  checksum: 2dfac8983a75e100e889c3dafc83b21b75a9863d0d1ee79cdc60c4391d5d9dffcf3a86fc8deca7568032bc11c2572676335fd2e469c7982f40d19f1141d4b266
   languageName: node
   linkType: hard
 
