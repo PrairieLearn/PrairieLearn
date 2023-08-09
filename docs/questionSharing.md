@@ -41,7 +41,7 @@ If a sharing course attempts to share a question which accesses client or server
 
 Questions that make use of `clientFilesQuestion`, `serverFilesQuestion`, and `serverFilesCourse` will work as expected. Using `clientFilesCourse` in a question is not supported at this time.
 
-See See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
+See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
 
 ## Steps to share a question for the first time
 
