@@ -85,7 +85,7 @@
     "fabric": "^4.6.0",
     "fast-glob": "^3.3.1",
     "file-type": "^16.5.4",
-    "filesize": "^10.0.8",
+    "filesize": "^10.0.9",
     "folder-hash": "^4.0.4",
     "fs-extra": "^11.1.1",
     "generic-pool": "^3.9.0",

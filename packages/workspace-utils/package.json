@@ -22,6 +22,6 @@
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "fast-glob": "^3.3.1",
-    "filesize": "^10.0.8"
+    "filesize": "^10.0.9"
   }
 }
