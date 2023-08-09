@@ -59,7 +59,8 @@ BEGIN
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it
-    IF institution.id IS NOT NULL THEN
+    -- In development mode, 'dev' is always a valid authn_provider so skip the check
+    IF institution.id IS NOT NULL AND authn_provider_name != 'dev' THEN
         PERFORM *
         FROM
             institution_authn_providers AS iap
@@ -68,7 +69,7 @@ BEGIN
             iap.institution_id = institution.id
             AND ap.name = authn_provider_name;
 
-        IF NOT FOUND AND authn_provider_name != 'dev' THEN
+        IF NOT FOUND THEN
             RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
         END IF;
     END IF;
