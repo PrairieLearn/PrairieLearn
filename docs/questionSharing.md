@@ -35,6 +35,14 @@ To refer to a question from another course, use the question id (qid) prefixed b
 ]
 ```
 
+## Client and Server Files
+
+If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course intance or assessment.
+
+Client and server files associated with a question or course will work as expected in shared questions. A result of this is that any student with access rights to a course that you have shared a question with will be able to access your `clientFilesCourse`, [just as students in your own course can](clientServerFiles.md#access-control).
+
+See See the [the client and server files documentation](clientServerFiles.md) for general information about client and server files.
+
 ## Steps to share a question for the first time
 
 1. On your course admin page, visit the 'sharing' tab
