@@ -2457,7 +2457,7 @@ __metadata:
     "@types/node": ^18.17.4
     chai: ^4.3.7
     commander: ^11.0.0
-    esbuild: ^0.18.7
+    esbuild: ^0.18.17
     express: ^4.18.2
     express-static-gzip: ^2.1.7
     fs-extra: ^11.1.1
@@ -7978,7 +7978,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.18.2, esbuild@npm:^0.18.7":
+"esbuild@npm:^0.18.17, esbuild@npm:^0.18.2":
   version: 0.18.20
   resolution: "esbuild@npm:0.18.20"
   dependencies:
