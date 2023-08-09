@@ -2445,7 +2445,7 @@ __metadata:
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
     "@prairielearn/tsconfig": "*"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     node-fetch: ^2.6.12
     typescript: ^5.1.6
     zod: ^3.21.4
@@ -2480,7 +2480,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     chai: ^4.3.7
     commander: ^11.0.0
     esbuild: ^0.18.17
@@ -2511,7 +2511,7 @@ __metadata:
     "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.196
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     fs-extra: ^11.1.1
     lodash: ^4.17.21
     mocha: ^10.2.0
@@ -2528,7 +2528,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
     "@types/multipipe": ^3.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     csv-stringify: ^6.4.0
     mocha: ^10.2.0
     multipipe: ^4.0.0
@@ -2546,7 +2546,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     date-fns: ^2.30.0
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2560,7 +2560,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     lodash: ^4.17.21
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2575,7 +2575,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": ^4.17.17
     "@types/express-session": ^1.17.7
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     mocha: ^10.2.0
     ts-node: ^10.9.1
     typescript: ^5.1.6
@@ -2599,7 +2599,7 @@ __metadata:
     "@types/chai": ^4.3.5
     "@types/dockerode": ^3.3.19
     "@types/fs-extra": ^11.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     "@types/tmp": ^0.2.3
     ajv: ^8.12.0
     async: ^3.2.4
@@ -2629,7 +2629,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": ^3.1.2
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     ejs: ^3.1.9
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2642,7 +2642,7 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     mocha: ^10.2.0
     ts-node: ^10.9.1
     typescript: ^5.1.6
@@ -2654,7 +2654,7 @@ __metadata:
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     logform: ^2.5.1
     typescript: ^5.1.6
     winston: ^3.10.0
@@ -2673,7 +2673,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": ^11.0.1
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     fs-extra: ^11.1.1
     mocha: ^10.2.0
     serialize-error: ^8.1.0
@@ -2690,7 +2690,7 @@ __metadata:
   dependencies:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     typescript: ^5.1.6
   languageName: unknown
   linkType: soft
@@ -2723,7 +2723,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.5
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     chai: ^4.3.7
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2738,7 +2738,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.5
     "@types/mocha": ^10.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     chai: ^4.3.7
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2755,7 +2755,7 @@ __metadata:
     "@types/diff": ^5.0.3
     "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.196
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     "@types/yargs": ^17.0.24
     chalk: ^4.1.2
     diff: ^5.1.0
@@ -2780,7 +2780,7 @@ __metadata:
     "@types/lodash": ^4.14.196
     "@types/mocha": ^10.0.1
     "@types/multipipe": ^3.0.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     "@types/pg-cursor": ^2.7.0
     mocha: ^10.2.0
     multipipe: ^4.0.0
@@ -2852,7 +2852,7 @@ __metadata:
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
     "@types/multer": ^1.4.7
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     "@types/node-fetch": ^2.6.4
     "@types/object-hash": ^3.0.2
     "@types/passport": ^1.0.12
@@ -3003,7 +3003,7 @@ __metadata:
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     prettier: 3.0.0
     sql-formatter: ^12.2.4
     typescript: ^5.1.6
@@ -3015,7 +3015,7 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     mocha: ^10.2.0
     ts-node: ^10.9.1
     typescript: ^5.1.6
@@ -3028,7 +3028,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": ^7.61.0
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     execa: ^5.1.1
     ts-node: ^10.9.1
     typescript: ^5.1.6
@@ -3041,7 +3041,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "*"
     "@types/debug": ^4.1.8
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     base64url: ^3.0.1
     debug: ^4.3.4
     lodash: ^4.17.21
@@ -3069,7 +3069,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": ^8.2.1
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     archiver: ^5.3.1
     async: ^3.2.4
     async-mutex: ^0.4.0
@@ -3102,7 +3102,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": ^18.17.1
+    "@types/node": ^18.17.4
     fast-glob: ^3.3.1
     filesize: ^10.0.8
     typescript: ^5.1.6
@@ -4493,7 +4493,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.17.1":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0":
   version: 18.17.1
   resolution: "@types/node@npm:18.17.1"
   checksum: 56201bda9a2d05d68602df63b4e67b0545ac8c6d0280bd5fb31701350a978a577a027501fbf49db99bf177f2242ebd1244896bfd35e89042d5bd7dfebff28d4e
@@ -4504,6 +4504,13 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: e4f86785f4092706e0d3b0edff8dca5a13b45627e4b36700acd8dfe6ad53db71928c8dee914d4276c7fd3b6ccd829aa919811c9eb708a2c8e4c6eb3701178c37
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^18.17.4":
+  version: 18.17.4
+  resolution: "@types/node@npm:18.17.4"
+  checksum: d4c458202d82c999f38d85ca9ae8a2d3e521645c7f1b908cd6a0303d0e13c7d5eb3f888c41f584ba029ecf802d0a0005b7816c149400371a3c035abc4bd9a4c5
   languageName: node
   linkType: hard
 
