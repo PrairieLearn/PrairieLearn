@@ -21,7 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
- * @property {number | null} [institution_id]
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
