@@ -1,59 +1,59 @@
 body {
-    margin: 0;
-    background-color: rgb(40, 40, 40);
-    height: 100%;
+  margin: 0;
+  background-color: rgb(40, 40, 40);
+  height: 100%;
 }
 html {
-    height: 100%;
-    font-family: sans-serif;
+  height: 100%;
+  font-family: sans-serif;
 }
 #screen {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 }
 .ui-element {
-    box-shadow: 0px 0px 10px black;
-    background-color: rgb(52, 58, 71);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    padding-top: 0.75rem;
-    color: white;
+  box-shadow: 0px 0px 10px black;
+  background-color: rgb(52, 58, 71);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  padding-top: 0.75rem;
+  color: white;
 }
 .ui-button {
-    cursor: pointer;
-    padding: 0.25rem;
-    transform: translateY(-50%);
+  cursor: pointer;
+  padding: 0.25rem;
+  transform: translateY(-50%);
 }
 .ui-button:hover {
-    filter: brightness(1.2);
+  filter: brightness(1.2);
 }
 .ui-button.active {
-    filter: brightness(1.2);
+  filter: brightness(1.2);
 }
 .ui-button img {
-    margin-bottom: -0.25rem;
+  margin-bottom: -0.25rem;
 }
 .hidden {
-    visibility: hidden;
+  visibility: hidden;
 }
 #clipboard-button {
-    position: absolute;
-    left: 0;
-    top: 50%;
+  position: absolute;
+  left: 0;
+  top: 50%;
 }
 #clipboard-paste-modal {
-    position: absolute;
-    left: 40px;
-    top: 50%;
-    transform: translateY(-50%);
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 #clipboard-paste-modal > textarea {
-    min-width: 320px;
-    min-height: 150px;
+  min-width: 320px;
+  min-height: 150px;
 }
 #clipboard-paste-modal > p {
-    margin-left: 0.25rem;
+  margin-left: 0.25rem;
 }
