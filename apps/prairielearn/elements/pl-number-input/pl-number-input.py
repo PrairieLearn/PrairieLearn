@@ -413,6 +413,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         # back to a standard type (otherwise, do nothing)
         a_sub_parsed: Any = pl.from_json(a_sub)
         feedback = ""
+        is_correct = None
 
         # Cast both submitted and true answers as np.float64, because...
         #
@@ -449,29 +450,24 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub_converted, a_tru_converted, rtol, atol
             )
             if not is_correct and (a_sub_precision > rtol):
-                feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
-            elif is_correct:
-                feedback += f"The correct answer used for grading was {a_tru_converted}"
-
-            return (
-                is_correct,
-                feedback,
-            )
+                feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
 
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            return (
-                pl.is_correct_scalar_sf(a_sub_converted, a_tru_converted, digits),
-                None,
+            is_correct = pl.is_correct_scalar_sf(
+                a_sub_converted, a_tru_converted, digits
             )
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            return (
-                pl.is_correct_scalar_dd(a_sub_converted, a_tru_converted, digits),
-                None,
+            is_correct = pl.is_correct_scalar_dd(
+                a_sub_converted, a_tru_converted, digits
             )
         else:
             assert_never(comparison)
+
+        if is_correct:
+            feedback += f"The correct answer used for grading was {a_tru_converted}"
+        return (is_correct, feedback)
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
 
