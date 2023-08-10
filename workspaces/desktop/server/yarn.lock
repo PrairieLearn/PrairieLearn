@@ -3,9 +3,9 @@
 
 
 "@novnc/novnc@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.2.0.tgz#535ffd7d074022d35205deae2753100f1f2b29f3"
-  integrity sha512-FaUckOedGhSbwQBXk/KGyxKt9ngskg4wPw6ghbHWXOUEmQscAZr3467lTU5DSfppwHJt5k+lQiHoeYUuY90l2Q==
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.4.0.tgz#68adae81a741624142b518323441e852c1f34281"
+  integrity sha512-kW6ALMc5BuH08e/ond/I1naYcfjc19JYMN1EdtmgjjjzPGCjW8fMtVM3MwM6q7YLRjPlQ3orEvoKMgSS7RkEVQ==
 
 accepts@~1.3.8:
   version "1.3.8"
