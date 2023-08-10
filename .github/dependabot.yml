@@ -51,6 +51,30 @@ updates:
       timezone: America/Chicago
     open-pull-requests-limit: 99
     rebase-strategy: disabled
+  - package-ecosystem: pip
+    directory: '/graders/c'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: docker
+    directory: '/graders/c'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: docker
+    directory: '/graders/java'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
   - package-ecosystem: docker
     directory: '/images/plbase'
     schedule:
@@ -77,6 +101,30 @@ updates:
     rebase-strategy: disabled
   - package-ecosystem: docker
     directory: '/workspaces/xtermjs'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: npm
+    directory: '/workspaces/xtermjs/src'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: docker
+    directory: '/workspaces/desktop'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: npm
+    directory: '/workspaces/desktop/server'
     schedule:
       interval: monthly
       time: '06:00'
