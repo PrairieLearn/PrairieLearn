@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 COPY pre-install.sh /pre-install.sh
 RUN /bin/bash /pre-install.sh
