@@ -195,7 +195,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -266,7 +266,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -336,7 +336,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should have 3 students in group 1 in db', function (callback) {
@@ -404,7 +404,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -473,7 +473,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should have 1 assessment instance in db', function (callback) {
@@ -571,7 +571,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should parse', function () {
@@ -612,7 +612,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should NOT be able to access the assessment instance 1 as a student from a different group', function (callback) {
@@ -691,7 +691,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
     });
     it('should NOT be able to access the assessment instance 1 as a student from a different group', function (callback) {
@@ -750,7 +750,7 @@ describe('Group based homework assess control on student side', function () {
           }
           page = body;
           callback(null);
-        }
+        },
       );
       it('should contain a prompt to inform the user that the group is full', function () {
         elemList = locals.$('.alert:contains(It is already full)');

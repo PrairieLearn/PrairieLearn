@@ -27,7 +27,7 @@ export const InstitutionAdminSaml = ({
   const testSamlUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test`;
 
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {

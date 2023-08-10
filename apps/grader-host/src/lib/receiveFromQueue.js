@@ -35,7 +35,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
                 MaxNumberOfMessages: 1,
                 QueueUrl: queueUrl,
                 WaitTimeSeconds: 20,
-              })
+              }),
             );
             const message = data.Messages?.[0];
             if (!message || !message.Body) return null;
@@ -50,7 +50,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -86,7 +86,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
             QueueUrl: queueUrl,
             ReceiptHandle: receiptHandle,
             VisibilityTimeout: newTimeout,
-          })
+          }),
         );
       },
       (callback) => {
@@ -99,7 +99,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           () => {
             globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
             callback(null);
-          }
+          },
         );
       },
       async () => {
@@ -107,13 +107,13 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           new DeleteMessageCommand({
             QueueUrl: queueUrl,
             ReceiptHandle: receiptHandle,
-          })
+          }),
         );
       },
     ],
     (err) => {
       if (ERR(err, doneCallback)) return;
       doneCallback(null);
-    }
+    },
   );
 };

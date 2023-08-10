@@ -740,7 +740,7 @@
         [factor.e(1), 0, 0],
         [0, factor.e(2), 0],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -756,7 +756,7 @@
         [1, 0, offset.e(1)],
         [0, 1, offset.e(2)],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -845,7 +845,7 @@
         [0, factor, 0, 0],
         [0, 0, factor, 0],
         [0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -862,7 +862,7 @@
         [0, 1, 0, offset.e(2)],
         [0, 0, 1, offset.e(3)],
         [0, 0, 0, 1],
-      ])
+      ]),
     );
   };
 
@@ -923,7 +923,7 @@
   PrairieGeom.prototype.rotateTransform3D = function (transform, angleX, angleY, angleZ) {
     return this.rotateTransform3DZ(
       this.rotateTransform3DY(this.rotateTransform3DX(transform, angleX), angleY),
-      angleZ
+      angleZ,
     );
   };
 
@@ -1391,7 +1391,7 @@
           points[i].e(1).toFixed(numDecPlaces) +
           ', ' +
           points[i].e(2).toFixed(numDecPlaces) +
-          ']),'
+          ']),',
       );
     }
     console.log('],');
@@ -1783,7 +1783,7 @@
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        })
+        }),
       );
     } else if (val instanceof Sylvester.Vector) {
       return val.modulus();
@@ -1792,7 +1792,7 @@
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        })
+        }),
       );
     } else {
       return Infinity;
@@ -1825,7 +1825,7 @@
       return numeric.norm2(
         _(_.zip(trueVal, submittedVal)).map(function (v) {
           return that.absError(v[0], v[1]);
-        })
+        }),
       );
     } else if (trueVal instanceof Sylvester.Vector) {
       subVal = submittedVal;
@@ -1837,7 +1837,7 @@
       return numeric.norm2(
         _(trueVal).map(function (val, key) {
           return that.absError(val, submittedVal[key]);
-        })
+        }),
       );
     } else {
       return Infinity;

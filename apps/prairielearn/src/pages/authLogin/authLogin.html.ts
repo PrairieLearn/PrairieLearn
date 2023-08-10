@@ -18,7 +18,7 @@ interface AuthLoginProps {
 
 export function AuthLogin({ institutionAuthnProviders, service, resLocals }: AuthLoginProps) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
@@ -48,7 +48,9 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
             }
             .login-container {
               border-radius: 5px;
-              box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
+              box-shadow:
+                0 19px 38px rgba(0, 0, 0, 0.3),
+                0 15px 12px rgba(0, 0, 0, 0.22);
               height: auto;
               margin: 20px;
             }
@@ -112,17 +114,18 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
           <div class="login-container">
             <div>
               <h1 class="text-center">PrairieLearn</h1>
-              <h2 class="text-center subheader">
+              <h2 class="text-center subheader mb-5">
                 Sign in ${service ? `to continue to ${service}` : ''}
               </h2>
-              <div class="login-methods mt-5">
-                ${resLocals.devMode
-                  ? html`
-                      <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
-                        <span class="font-weight-bold">DevMode by-pass</span>
-                      </a>
-                    `
-                  : null}
+              ${resLocals.devMode
+                ? html`
+                    ${DevModeBypass()}
+                    <hr />
+                    ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
+                    <hr />
+                  `
+                : ''}
+              <div class="login-methods">
                 ${config.hasShib && !config.hideShibLogin
                   ? html`
                       <a
@@ -136,7 +139,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">${config.shibLinkText}</span>
                       </a>
                     `
-                  : null}
+                  : ''}
                 ${config.hasOauth
                   ? html`
                       <a
@@ -148,7 +151,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">Sign in with Google</span>
                       </a>
                     `
-                  : null}
+                  : ''}
                 ${config.hasAzure && isEnterprise()
                   ? html`
                       <a
@@ -160,7 +163,7 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                         <span class="font-weight-bold">Sign in with Microsoft</span>
                       </a>
                     `
-                  : null}
+                  : ''}
               </div>
               ${institutionAuthnProviders?.length
                 ? html`
@@ -171,15 +174,50 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
                           <a href="${provider.url}" class="btn btn-outline-dark btn-block">
                             ${provider.name}
                           </a>
-                        `
+                        `,
                       )}
                     </div>
                   `
-                : null}
+                : ''}
             </div>
           </div>
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function DevModeBypass() {
+  return html`
+    <a class="btn btn-success w-100" href="/pl/dev_login" role="button">
+      <span class="font-weight-bold">Dev Mode Bypass</span>
+    </a>
+    <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
+  `;
+}
+
+function DevModeLogin({ csrfToken }: { csrfToken: string }) {
+  return html`
+    <form method="POST">
+      <div class="form-group">
+        <label for="dev_uid">UID</label>
+        <input class="form-control" id="dev_uid" name="uid" required />
+      </div>
+      <div class="form-group">
+        <label for="dev_name">Name</label>
+        <input class="form-control" id="dev_name" name="name" required />
+      </div>
+      <div class="form-group">
+        <label for="dev_uin">UIN</label>
+        <input class="form-control" id="dev_uin" name="uin" aria-describedby="dev_uin_help" />
+        <small id="dev_uin_help" class="form-text text-muted">
+          Optional; will be set to <tt>null</tt> if not specified.
+        </small>
+      </div>
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="submit" class="btn btn-primary btn-block" name="__action" value="dev_login">
+        <span class="font-weight-bold">Dev Mode Login</span>
+      </button>
+    </form>
+  `;
 }

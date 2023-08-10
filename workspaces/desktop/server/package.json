@@ -15,7 +15,6 @@
     "express": "^4.17.1",
     "express-ws": "^5.0.2",
     "http-proxy": "^1.18.1",
-    "node-http-proxy": "^0.2.4",
     "spin.js": "^4.1.1"
   }
 }

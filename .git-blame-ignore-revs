@@ -10,3 +10,6 @@ b5ee36cebacd8c3192dd0e2457ab472cc185a055
 
 # Format SQL files with sql-formatter
 890fb860c0cada3c8a77206858cc5f3de8bb5c81
+
+# Format JSON files with Prettier
+993e20be4503c0be5576b307036604541f052c39

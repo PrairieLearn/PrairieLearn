@@ -20,7 +20,7 @@ app.use(
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-  })
+  }),
 );
 app.use(flashMiddleware());
 ```

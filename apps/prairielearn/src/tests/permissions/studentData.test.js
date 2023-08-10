@@ -6,6 +6,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+const { insertEnrollment } = require('../../models/enrollment');
 
 describe('student data access', function () {
   this.timeout(60000);
@@ -46,7 +47,7 @@ describe('student data access', function () {
       'Owner',
       1,
     ]);
-    await sqldb.queryAsync(sql.insert_enrollment, {
+    await insertEnrollment({
       user_id: 3,
       course_instance_id: 1,
     });
@@ -218,7 +219,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -243,7 +244,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -268,7 +269,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -291,7 +292,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step('instructor (student data viewer) cannot emulate student', async () => {
@@ -333,7 +334,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -358,7 +359,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -383,7 +384,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -406,7 +407,7 @@ describe('student data access', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -432,7 +433,7 @@ describe('student data access', function () {
         headers,
       });
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step(
@@ -459,7 +460,7 @@ describe('student data access', function () {
         headers,
       });
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step(
@@ -486,7 +487,7 @@ describe('student data access', function () {
         headers,
       });
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step(
@@ -512,14 +513,14 @@ describe('student data access', function () {
         headers,
       });
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step('instructor (student data editor) can view gradebook', async () => {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -528,7 +529,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -537,7 +538,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -548,17 +549,17 @@ describe('student data access', function () {
       const headers = { cookie: 'pl_test_user=test_instructor' };
       let response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-        { headers }
+        { headers },
       );
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step('instructor (student data editor) can view exam assessment instances', async () => {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -567,7 +568,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_instructor' };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -578,7 +579,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -589,7 +590,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -600,7 +601,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -614,10 +615,10 @@ describe('student data access', function () {
       };
       let response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-        { headers }
+        { headers },
       );
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step('instructor (student data viewer) can view exam assessment instances', async () => {
@@ -626,7 +627,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -637,7 +638,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.isTrue(response.ok);
   });
@@ -648,7 +649,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
-      { headers }
+      { headers },
     );
     // This page itself is visible even if the user doesn't have permissions to
     // view student data, but it won't actually show student data, which is
@@ -667,7 +668,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.equal(response.status, 403);
   });
@@ -678,7 +679,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.equal(response.status, 403);
   });
@@ -689,7 +690,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.equal(response.status, 403);
   });
@@ -700,7 +701,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
-      { headers }
+      { headers },
     );
     assert.equal(response.status, 403);
   });
@@ -711,7 +712,7 @@ describe('student data access', function () {
     };
     let response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
-      { headers }
+      { headers },
     );
     assert.equal(response.status, 403);
   });

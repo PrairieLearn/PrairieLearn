@@ -22,7 +22,7 @@ export function setQuestionCopyTargets(res: Response) {
         url: copyUrl,
         authn_user_id: res.locals.authn_user.user_id,
       },
-      config.secretKey
+      config.secretKey,
     );
 
     return {
@@ -44,7 +44,7 @@ export async function copyQuestionBetweenCourses(
     fromCourse: Course;
     toCourseId: string;
     question: Question;
-  }
+  },
 ) {
   // In this case, we are sending a copy of this question to a different course.
   //
@@ -80,6 +80,6 @@ export async function copyQuestionBetweenCourses(
 
   const result = await sqldb.queryOneRowAsync(sql.insert_file_transfer, params);
   res.redirect(
-    `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${result.rows[0].id}`
+    `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${result.rows[0].id}`,
   );
 }

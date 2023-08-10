@@ -103,23 +103,23 @@ function updateScore(ai_id, callback) {
             'imsx_statusInfo',
             'imsx_codeMajor',
           ],
-          null
+          null,
         );
         if (imsx_codeMajor === 'success') {
           logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
           );
           debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
           );
         } else {
           logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
           );
           logger.info('post_params:', post_params);
           logger.info('body:', body);
           debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`
+            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
           );
           debug('post_params', post_params);
           debug('body', body);

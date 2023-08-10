@@ -30,7 +30,7 @@ module.exports = function (req, res, next) {
           locals: res.locals,
           tokenData,
           __csrf_token,
-        })
+        }),
       );
     }
   }

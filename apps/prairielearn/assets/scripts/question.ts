@@ -120,7 +120,10 @@ function fetchResults(socket, submissionId) {
         answerContainer.closest('.grading-block').classList.remove('d-none');
       }
       if (msg.submissionPanel) {
-        document.getElementById('submission-' + submissionId).outerHTML = msg.submissionPanel;
+        // Using jQuery here because msg.submissionPanel may contain scripts
+        // that must be executed. Typical vanilla JS alternatives don't support
+        // this kind of script.
+        $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
         window.MathJax.startup.promise.then(async () => {
           window.MathJax.typesetPromise();
         });
@@ -142,7 +145,7 @@ function fetchResults(socket, submissionId) {
         document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
       }
       setupDynamicObjects();
-    }
+    },
   );
 }
 

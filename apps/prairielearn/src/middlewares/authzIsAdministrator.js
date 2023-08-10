@@ -5,7 +5,7 @@ module.exports = function (req, res, next) {
     return next(
       error.make(403, 'Requires administrator privileges', {
         locals: res.locals,
-      })
+      }),
     );
   }
   next();

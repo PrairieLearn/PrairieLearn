@@ -30,9 +30,9 @@ router.get(
         jwt,
         prairieTestCallback: `${config.ptHost}/pt/auth/prairielearn/callback`,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 export default router;

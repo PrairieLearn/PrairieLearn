@@ -1,8 +1,6 @@
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const fs = require('fs-extra');
-const path = require('path');
 const _ = require('lodash');
 const { step } = require('mocha-steps');
 
@@ -12,7 +10,6 @@ const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
-const { TEST_COURSE_PATH } = require('../lib/paths');
 const { features } = require('../lib/features/index');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -22,10 +19,6 @@ const defaultUser = {
   authName: config.authName,
   authUin: config.authUin,
 };
-
-const fibonacciSolution = fs.readFileSync(
-  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py')
-);
 
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
@@ -197,20 +190,20 @@ const checkGradingResults = (assigned_grader, grader) => {
 
     assert.equal(
       getLatestSubmissionStatus($questionsPage),
-      `manual grading: ${Math.floor(score_percent)}%`
+      `manual grading: ${Math.floor(score_percent)}%`,
     );
     assert.equal(
       $questionsPage(
-        '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
+        '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]',
       )
         .first()
         .text()
         .trim(),
-      `${score_points}`
+      `${score_points}`,
     );
     assert.equal(
       feedbackBlock.find('[data-testid="feedback-body"]').first().text().trim(),
-      feedback_note
+      feedback_note,
     );
 
     if (!rubric_items) {
@@ -222,20 +215,20 @@ const checkGradingResults = (assigned_grader, grader) => {
         assert.equal(container.length, 1);
         assert.equal(
           container.find('input[type="checkbox"]').is(':checked'),
-          selected_rubric_items.includes(index)
+          selected_rubric_items.includes(index),
         );
         assert.equal(
           container.find('[data-testid="rubric-item-points"]').text().trim(),
-          `[${item.points >= 0 ? '+' : ''}${item.points}]`
+          `[${item.points >= 0 ? '+' : ''}${item.points}]`,
         );
         assert.equal(
           container.find('[data-testid="rubric-item-description"]').html()?.trim(),
-          item.description_render ?? item.description
+          item.description_render ?? item.description,
         );
         if (item.explanation) {
           assert.equal(
             container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
-            item.explanation_render ?? `<p>${item.explanation}</p>`
+            item.explanation_render ?? `<p>${item.explanation}</p>`,
           );
         } else {
           assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
@@ -245,7 +238,7 @@ const checkGradingResults = (assigned_grader, grader) => {
     if (adjust_points) {
       assert.equal(
         feedbackBlock.find('[data-testid="rubric-adjust-points"]').text().trim(),
-        `[${adjust_points >= 0 ? '+' : ''}${adjust_points}]`
+        `[${adjust_points >= 0 ? '+' : ''}${adjust_points}]`,
       );
     } else {
       assert.equal(feedbackBlock.find('[data-testid="rubric-adjust-points"]').length, 0);
@@ -261,7 +254,7 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
 
     assert.equal(
       form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
-      true
+      true,
     );
     assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
@@ -281,11 +274,11 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
       const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
       const explanation = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][explanation]"]`
+        `label[data-input-name="rubric_item[cur${item.id}][explanation]"]`,
       );
       assert.equal(explanation.attr('data-current-value') ?? '', item.explanation ?? '');
       const graderNote = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`
+        `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
       );
       assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
     });
@@ -303,19 +296,19 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
       assert.equal(container.length, 1);
       assert.equal(
         container.find('[data-testid="rubric-item-points"]').text().trim(),
-        `[${item.points >= 0 ? '+' : ''}${item.points}]`
+        `[${item.points >= 0 ? '+' : ''}${item.points}]`,
       );
       assert.equal(
         container.find('[data-testid="rubric-item-description"]').html()?.trim(),
-        item.description_render ?? item.description
+        item.description_render ?? item.description,
       );
       assert.equal(
         container.find('[data-testid="rubric-item-explanation"]').html()?.trim(),
-        item.explanation_render ?? (item.explanation ? `<p>${item.explanation}</p>` : '')
+        item.explanation_render ?? (item.explanation ? `<p>${item.explanation}</p>` : ''),
       );
       assert.equal(
         container.find('[data-testid="rubric-item-grader-note"]').html()?.trim(),
-        item.grader_note_render ?? (item.grader_note ? `<p>${item.grader_note}</p>` : '')
+        item.grader_note_render ?? (item.grader_note ? `<p>${item.grader_note}</p>` : ''),
       );
     });
   });
@@ -329,8 +322,8 @@ const buildRubricItemFields = (items) =>
         _.map(_.toPairs({ order, ...item }), ([field, value]) => [
           `rubric_item[${key}][${field}]`,
           value,
-        ])
-    )
+        ]),
+    ),
   );
 
 describe('Manual Grading', function () {
@@ -356,17 +349,17 @@ describe('Manual Grading', function () {
         const courseStaffParams = [1, staff.authUid, 'None', 1];
         const courseStaffResult = await sqldb.callAsync(
           'course_permissions_insert_by_user_uid',
-          courseStaffParams
+          courseStaffParams,
         );
         assert.equal(courseStaffResult.rowCount, 1);
         staff.user_id = courseStaffResult.rows[0].user_id;
         const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
         const ciStaffResult = await sqldb.callAsync(
           'course_instance_permissions_insert',
-          ciStaffParams
+          ciStaffParams,
         );
         assert.equal(ciStaffResult.rowCount, 1);
-      })
+      }),
     );
   });
 
@@ -387,7 +380,7 @@ describe('Manual Grading', function () {
 
       step('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-          { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+          { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
         ]);
         const questionsPage = await gradeRes.text();
         const $questionsPage = cheerio.load(questionsPage);
@@ -395,7 +388,7 @@ describe('Manual Grading', function () {
         assert.equal(gradeRes.status, 200);
         assert.equal(
           getLatestSubmissionStatus($questionsPage),
-          'manual grading: waiting for grading'
+          'manual grading: waiting for grading',
         );
       });
 
@@ -438,7 +431,7 @@ describe('Manual Grading', function () {
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
           const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
           assert.equal(row.length, 1);
-        }
+        },
       );
 
       step('manual grading page for assessment question should list one instance', async () => {
@@ -465,7 +458,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const row = $manualGradingIQPage('div.alert:contains("is still open")');
           assert.equal(row.length, 1);
-        }
+        },
       );
     });
 
@@ -505,7 +498,7 @@ describe('Manual Grading', function () {
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
           const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
           assert.equal(row.length, 0);
-        }
+        },
       );
 
       step(
@@ -516,7 +509,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const row = $manualGradingIQPage('div.alert:contains("is still open")');
           assert.equal(row.length, 0);
-        }
+        },
       );
 
       step('next ungraded button should point to existing instance for all graders', async () => {
@@ -596,7 +589,7 @@ describe('Manual Grading', function () {
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 0);
-        }
+        },
       );
 
       step(
@@ -606,7 +599,7 @@ describe('Manual Grading', function () {
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
           assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
-        }
+        },
       );
 
       step(
@@ -616,7 +609,7 @@ describe('Manual Grading', function () {
           const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
           assert.equal(nextUngraded.status, 302);
           assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
-        }
+        },
       );
     });
 
@@ -959,7 +952,7 @@ describe('Manual Grading', function () {
 
       step('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-          { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+          { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
         ]);
         const questionsPage = await gradeRes.text();
         const $questionsPage = cheerio.load(questionsPage);
@@ -967,7 +960,7 @@ describe('Manual Grading', function () {
         assert.equal(gradeRes.status, 200);
         assert.equal(
           getLatestSubmissionStatus($questionsPage),
-          'manual grading: waiting for grading'
+          'manual grading: waiting for grading',
         );
       });
 
@@ -987,7 +980,7 @@ describe('Manual Grading', function () {
         assert.equal(submissions.eq(1).find('[id^="submission-feedback-"]').length, 1);
         assert.equal(
           submissions.eq(1).find('[data-testid="feedback-body"]').first().text().trim(),
-          feedback_note
+          feedback_note,
         );
       });
 
@@ -1019,7 +1012,7 @@ describe('Manual Grading', function () {
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
           const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
           assert.equal(row.length, 1);
-        }
+        },
       );
 
       step('manual grading page for assessment question should list one instance', async () => {
@@ -1042,7 +1035,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const row = $manualGradingIQPage('div.alert:contains("is still open")');
           assert.equal(row.length, 1);
-        }
+        },
       );
 
       step('submit a new grade', async () => {

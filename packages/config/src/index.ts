@@ -42,7 +42,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       const tags = await ec2Client.send(
         new DescribeTagsCommand({
           Filters: [{ Name: 'resource-id', Values: [identity.instanceId] }],
-        })
+        }),
       );
 
       const secretId = tags.Tags?.find((tag) => tag.Key === tagKey)?.Value;
@@ -50,7 +50,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
 
       const secretsManagerClient = new SecretsManagerClient({ region: identity.region });
       const secretValue = await secretsManagerClient.send(
-        new GetSecretValueCommand({ SecretId: secretId })
+        new GetSecretValueCommand({ SecretId: secretId }),
       );
       if (!secretValue.SecretString) return {};
 

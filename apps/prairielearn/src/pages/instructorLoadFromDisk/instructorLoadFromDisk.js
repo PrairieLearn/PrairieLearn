@@ -50,7 +50,7 @@ async function update(locals) {
 
     if (anyCourseHadJsonErrors) {
       throw new Error(
-        'One or more courses had JSON files that contained errors and were unable to be synced'
+        'One or more courses had JSON files that contained errors and were unable to be synced',
       );
     }
   });
@@ -64,7 +64,7 @@ router.get(
     if (!res.locals.devMode) return next();
     const jobSequenceId = await update(res.locals);
     res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-  })
+  }),
 );
 
 module.exports = router;
