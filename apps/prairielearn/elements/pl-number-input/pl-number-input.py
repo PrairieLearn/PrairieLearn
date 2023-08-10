@@ -487,7 +487,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
     if result == "correct":
         data["raw_submitted_answers"][name] = str(a_tru)
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        data["partial_scores"][name] = {
+            "score": 1,
+            "weight": weight,
+            "feedback": f"The correct answer used for grading was {a_tru}",
+        }
     elif result == "incorrect":
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         # Get method of comparison, with relabs as default
