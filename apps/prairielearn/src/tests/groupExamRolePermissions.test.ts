@@ -24,7 +24,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const GROUP_WORK_ASSESSMENT_TID = 'hw5-templateGroupWork';
+const GROUP_WORK_EXAM_TID = 'exam15-groupWorkRoles';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
@@ -214,7 +214,7 @@ async function getQuestionUrl(
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
   const assessmentResult = await queryOneRowAsync(sql.select_assessment, {
-    assessment_tid: GROUP_WORK_ASSESSMENT_TID,
+    assessment_tid: GROUP_WORK_EXAM_TID,
   });
   assert.lengthOf(assessmentResult.rows, 1);
   const assessmentId = assessmentResult.rows[0].id;
@@ -359,8 +359,6 @@ describe('Assessment instance with group roles & permissions', function () {
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
-        const rowLabelText = $(element).find('span.text-muted, a').text();
-        assert.match(rowLabelText, /HW5\.[23]\./);
         const popoverText = $(element).find('[data-toggle="popover"]').attr('data-content');
         assert.strictEqual(
           popoverText,
