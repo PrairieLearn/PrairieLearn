@@ -95,7 +95,9 @@ function processSubmission(req, res, callback) {
   );
 }
 
-router.post('/', asyncHandler(async function (req, res, next) {
+router.post(
+  '/',
+  asyncHandler(async function (req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
     if (!res.locals.authz_result.authorized_edit) {
@@ -160,7 +162,7 @@ router.post('/', asyncHandler(async function (req, res, next) {
       if (!res.locals.assessment_instance_time_limit_expired) {
         return res.redirect(req.originalUrl);
       }
-  
+
       const requireOpen = true;
       const closeExam = true;
       const overrideGradeRate = false;

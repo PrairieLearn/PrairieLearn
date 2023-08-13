@@ -625,7 +625,7 @@ describe('Assessment instance with group roles & permissions', function () {
       // Check that the errors no longer show
       invalidRoleConfigError = $('.alert:contains(Invalid role configuration)');
       assert.lengthOf(invalidRoleConfigError, 0, 'no invalid role config error should show');
-      errorNotification = $('span.badge-danger');
+      errorNotification = $('#role-config-errors');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       tooManyRolesError = $('.alert:contains(A user has too many roles.)');
       assert.lengthOf(tooManyRolesError, 0, 'role config should be valid and show no errors');
