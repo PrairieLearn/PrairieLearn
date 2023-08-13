@@ -95,117 +95,157 @@ function processSubmission(req, res, callback) {
   );
 }
 
-router.post('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
+router.post('/', asyncHandler(async function (req, res, next) {
+    if (res.locals.assessment.type !== 'Exam') return next();
 
-  if (!res.locals.authz_result.authorized_edit) {
-    return next(error.make(403, 'Not authorized', res.locals));
-  }
+    if (!res.locals.authz_result.authorized_edit) {
+      return next(error.make(403, 'Not authorized', res.locals));
+    }
 
-  if (req.body.__action === 'grade' || req.body.__action === 'save') {
-    if (res.locals.authz_result.time_limit_expired) {
-      return next(
-        error.make(403, 'time limit is expired, please go back and finish your assessment'),
-      );
-    }
-    if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-      next(error.make(403, 'Real-time grading is not allowed for this assessment'));
-      return;
-    }
-    processSubmission(req, res, function (err) {
-      if (ERR(err, next)) return;
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      if (res.locals.authz_result.time_limit_expired) {
+        return next(
+          error.make(403, 'time limit is expired, please go back and finish your assessment'),
+        );
+      }
+      if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
+        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+        return;
+      }
+      if (res.locals.assessment.group_work) {
+        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+        if (groupConfig.has_roles) {
+          const result = await groupAssessmentHelper.getQuestionPermissions(
+            res.locals.assessment_question.id,
+            res.locals.user.user_id,
+          );
+          // Users without the correct roles cannot submit
+          if (!result.can_submit) {
+            return next(
+              error.make(
+                403,
+                'Current group roles have no permission to submit this question',
+                res.locals,
+              ),
+            );
+          }
+
+          // Get group information
+          const groupId = await groupAssessmentHelper.getGroupId(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+          );
+          const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+          const { validationErrors, rolesAreBalanced, usersWithoutRoles } = groupInfo.rolesInfo;
+
+          // Prevent submissions if role configuration is invalid
+          if (validationErrors.length > 0 || !rolesAreBalanced || usersWithoutRoles.length > 0) {
+            return next(
+              error.make(
+                403,
+                'Current group role configuration is invalid. Submissions are disabled',
+                res.locals,
+              ),
+            );
+          }
+        }
+      }
+
+      await util.promisify(processSubmission)(req, res);
       res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'timeLimitFinish') {
-    // Only close if the timer expired due to time limit, not for access end
-    if (!res.locals.assessment_instance_time_limit_expired) {
-      return res.redirect(req.originalUrl);
-    }
+    } else if (req.body.__action === 'timeLimitFinish') {
+      // TODO: Does this need to be turned async?
 
-    const requireOpen = true;
-    const closeExam = true;
-    const overrideGradeRate = false;
-    assessment.gradeAssessmentInstance(
-      res.locals.assessment_instance.id,
-      res.locals.authn_user.user_id,
-      requireOpen,
-      closeExam,
-      overrideGradeRate,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/assessment_instance/' +
-            res.locals.assessment_instance.id +
-            '?timeLimitExpired=true',
-        );
-      },
-    );
-  } else if (req.body.__action === 'attach_file') {
-    util.callbackify(studentInstanceQuestion.processFileUpload)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'attach_text') {
-    util.callbackify(studentInstanceQuestion.processTextUpload)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'delete_file') {
-    util.callbackify(studentInstanceQuestion.processDeleteFile)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
-  } else if (req.body.__action === 'report_issue') {
-    util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
-      if (ERR(err, next)) return;
-      res.redirect(
-        res.locals.urlPrefix +
-          '/instance_question/' +
-          res.locals.instance_question.id +
-          '/?variant_id=' +
-          variant_id,
+      // Only close if the timer expired due to time limit, not for access end
+      if (!res.locals.assessment_instance_time_limit_expired) {
+        return res.redirect(req.originalUrl);
+      }
+  
+      const requireOpen = true;
+      const closeExam = true;
+      const overrideGradeRate = false;
+      assessment.gradeAssessmentInstance(
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+        requireOpen,
+        closeExam,
+        overrideGradeRate,
+        function (err) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/assessment_instance/' +
+              res.locals.assessment_instance.id +
+              '?timeLimitExpired=true',
+          );
+        },
       );
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
-  }
-});
+    } else if (req.body.__action === 'attach_file') {
+      util.callbackify(studentInstanceQuestion.processFileUpload)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
+      );
+    } else if (req.body.__action === 'attach_text') {
+      util.callbackify(studentInstanceQuestion.processTextUpload)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
+      );
+    } else if (req.body.__action === 'delete_file') {
+      util.callbackify(studentInstanceQuestion.processDeleteFile)(
+        req,
+        res,
+        function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
+          );
+        },
+      );
+    } else if (req.body.__action === 'report_issue') {
+      util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
+        if (ERR(err, next)) return;
+        res.redirect(
+          res.locals.urlPrefix +
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
+        );
+      });
+    } else {
+      next(
+        error.make(400, 'unknown __action', {
+          locals: res.locals,
+          body: req.body,
+        }),
+      );
+    }
+  }),
+);
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   question.renderPanelsForSubmission(
