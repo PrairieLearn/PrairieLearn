@@ -80,15 +80,8 @@ module.exports.grade = (submission, variant, question, question_course, callback
   );
 };
 
-module.exports.getFile = (
-  filename,
-  variant,
-  question,
-  variant_course,
-  question_course,
-  callback,
-) => {
-  callFunction('getFile', question_course, question, { filename, variant }).then(
+module.exports.getFile = (filename, variant, question, course, callback) => {
+  callFunction('getFile', course, question, { filename, variant }).then(
     ({ data, courseIssues }) => {
       // We need to "unwrap" buffers if needed
       const isBuffer = data.type === 'buffer';

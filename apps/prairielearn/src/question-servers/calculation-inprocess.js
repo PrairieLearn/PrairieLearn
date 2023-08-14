@@ -131,9 +131,9 @@ module.exports = {
     callback(null, [], data);
   },
 
-  getFile: function (filename, variant, question, variant_course, question_course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
-    module.exports.loadServer(question, question_course, function (err, server) {
+  getFile: function (filename, variant, question, course, callback) {
+    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+    module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
       var fileData;
       try {
@@ -147,7 +147,7 @@ module.exports = {
         var data = {
           variant: variant,
           question: question,
-          course: question_course,
+          course: course,
         };
         err.status = 500;
         return ERR(error.addData(err, data), callback);

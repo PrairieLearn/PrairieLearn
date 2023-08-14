@@ -150,6 +150,7 @@ module.exports = {
     module.exports._getQuestionCourse(question, variant_course).then((question_course) => {
       questionServers.getModule(question.type, (err, questionModule) => {
         if (ERR(err, callback)) return;
+        // FIXME: this function call won't work is questionModule is not freeform
         questionModule.file(
           filename,
           variant,
