@@ -63,6 +63,12 @@ describe('Markdown processing', () => {
     testMarkdownQuestion(question, expected);
   });
 
+  it('handles empty <markdown> tags', async () => {
+    const question = 'before\n<markdown></markdown>\n*between*\n<markdown>`second`</markdown>';
+    const expected = 'before\n\n*between*\n<p><code>second</code></p>';
+    testMarkdownQuestion(question, expected);
+  });
+
   it('handles inline latex with underscores', async () => {
     const question = '$a _{1_ 2}$';
     const expected = '<p>$a _{1_ 2}$</p>';
