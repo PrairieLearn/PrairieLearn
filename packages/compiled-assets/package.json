@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": {
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.17.1",
+    "@types/node": "^18.17.4",
     "chai": "^4.3.7",
     "get-port": "^5.1.1",
     "mocha": "^10.2.0",
