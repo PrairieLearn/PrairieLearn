@@ -18,7 +18,7 @@ router.get(
         body: req.body,
       });
     }
-    const course = await getQuestionCourse(res.locals.question, res.locals.course).then();
+    const course = await getQuestionCourse(res.locals.question, res.locals.course);
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
     /** @type {chunks.QuestionChunk} */
