@@ -1689,13 +1689,12 @@ module.exports = {
       );
   },
 
-  async fileAsync(filename, variant, question, variant_course, question_course) {
+  async fileAsync(filename, variant, question, course) {
     return instrumented('freeform.file', async (span) => {
       debug('file()');
       if (variant.broken) throw new Error('attemped to get a file for a broken variant');
 
-      const variantContext = await module.exports.getContext(question, variant_course);
-      const questionContext = await module.exports.getContext(question, question_course);
+      const context = await module.exports.getContext(question, course);
 
       const data = {
         params: _.get(variant, 'params', {}),
@@ -1704,20 +1703,20 @@ module.exports = {
         options: _.get(variant, 'options', {}),
         filename: filename,
       };
-      _.extend(data.options, module.exports.getContextOptions(questionContext));
+      _.extend(data.options, module.exports.getContextOptions(context));
 
       const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrCompute(
-        variant_course,
+        course,
         data,
-        variantContext,
+        context,
         async () => {
           // function to compute the file data and return the cachedData
-          return withCodeCaller(questionContext.course_dir_host, async (codeCaller) => {
+          return withCodeCaller(context.course_dir_host, async (codeCaller) => {
             const { courseIssues, fileData } = await module.exports.processQuestion(
               'file',
               codeCaller,
               data,
-              questionContext,
+              context,
             );
             const fileDataBase64 = (fileData || '').toString('base64');
             return { courseIssues, fileDataBase64 };
@@ -1733,8 +1732,8 @@ module.exports = {
     });
   },
 
-  file(filename, variant, question, variant_course, question_course, callback) {
-    module.exports.fileAsync(filename, variant, question, variant_course, question_course).then(
+  file(filename, variant, question, course, callback) {
+    module.exports.fileAsync(filename, variant, question, course).then(
       ({ courseIssues, fileData }) => {
         callback(null, courseIssues, fileData);
       },
