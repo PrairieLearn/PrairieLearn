@@ -152,6 +152,7 @@ window.PLOrderBlocks = function (uuid, options) {
       let leftDiff = calculateIndent(ui, placeholder.parent());
       placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
+      placeholder[0].style.width = ui.item[0].style.width;
     },
     stop: function (event, ui) {
       // when the user stops interacting with the list

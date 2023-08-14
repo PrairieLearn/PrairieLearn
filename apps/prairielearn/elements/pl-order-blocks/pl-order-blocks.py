@@ -44,7 +44,6 @@ class FormatType(Enum):
     DEFAULT = "default"
     CODE = "code"
 
-
 class GroupInfo(TypedDict):
     tag: Optional[str]
     depends: Optional[list[str]]
@@ -81,6 +80,7 @@ FILE_NAME_DEFAULT = "user_code.py"
 SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
+ORIENTATION_DEFAULT = False
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -156,6 +156,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "format",
         "code-language",
         "allow-blank",
+        "horizontal",
     ]
 
     pl.check_attribs(
@@ -171,6 +172,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     feedback_type = pl.get_enum_attrib(
         element, "feedback", FeedbackType, FEEDBACK_DEFAULT
     )
+    horizontal = pl.get_boolean_attrib(
+        element, "horizontal", ORIENTATION_DEFAULT
+    )   
 
     if (
         grading_method is not GradingMethodType.DAG
@@ -437,6 +441,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
+    block_orientation = pl.get_boolean_attrib(
+        element, "horizontal", ORIENTATION_DEFAULT
+    )
+
 
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
@@ -472,6 +480,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         dropzone_layout = pl.get_string_attrib(
             element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
         )
+        if block_orientation == "horizontal" and dropzone_layout != "bottom":
+            raise Exception(
+                'The block-orientation attribute may only be "horizontal" when solution-placement is "bottom".'
+            )
+
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
         )
@@ -508,6 +521,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
+            "orientation": "pl-block-horizontal" if block_orientation else "pl-block-vertical",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
