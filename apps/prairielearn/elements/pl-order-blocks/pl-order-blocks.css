@@ -41,7 +41,7 @@ li.ui-state-highlight {
   /* This styling applies to the placeholder answer tile created by jquery-ui when the user is dragging */
   border: none !important;
   list-style-type: none;
-  background-color: #d8d1d1 !important;
+  background-color: #90a4ae !important;
   min-width: 3em !important;
 }
 
