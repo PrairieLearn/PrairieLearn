@@ -65,7 +65,8 @@ BEGIN
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it
-    IF institution.id IS NOT NULL THEN
+    -- In development mode, 'dev' is always a valid authn_provider so skip the check
+    IF institution.id IS NOT NULL AND authn_provider_name != 'dev' THEN
         PERFORM *
         FROM
             institution_authn_providers AS iap
