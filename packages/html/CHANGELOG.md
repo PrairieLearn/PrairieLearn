@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 3.0.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
 ## 3.0.4
 
 ### Patch Changes
