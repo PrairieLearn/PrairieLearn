@@ -63,7 +63,7 @@
     "bowser": "^2.11.0",
     "byline": "^5.0.0",
     "chalk": "^4.1.2",
-    "cheerio": "^0.22.0",
+    "cheerio": "^1.0.0-rc.12",
     "clipboard": "^2.0.11",
     "cookie-parser": "^1.4.6",
     "crypto-js": "^4.1.1",
