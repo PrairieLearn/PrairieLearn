@@ -479,6 +479,13 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
+  app.use('/pl/logout', [
+    function (req, res, next) {
+      res.locals.navPage = 'logout';
+      next();
+    },
+    require('./pages/authLogout/authLogout'),
+  ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -538,13 +545,6 @@ module.exports.initExpress = function () {
     require('./pages/userSettings/userSettings'),
   ]);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
-  app.use('/pl/logout', [
-    function (req, res, next) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    require('./pages/authLogout/authLogout'),
-  ]);
   app.use('/pl/password', [
     function (req, res, next) {
       res.locals.navPage = 'password';
