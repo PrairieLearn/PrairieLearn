@@ -106,7 +106,7 @@ router.post(
 
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       if (res.locals.authz_result.time_limit_expired) {
-        throw error.make(403, 'time limit is expired, please go back and finish your assessment')
+        throw error.make(403, 'time limit is expired, please go back and finish your assessment');
       }
       if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
         throw error.make(403, 'Real-time grading is not allowed for this assessment');
@@ -167,9 +167,9 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-            '/assessment_instance/' +
-            res.locals.assessment_instance.id +
-            '?timeLimitExpired=true',
+              '/assessment_instance/' +
+              res.locals.assessment_instance.id +
+              '?timeLimitExpired=true',
           );
         },
       );
@@ -181,10 +181,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
           );
         },
       );
@@ -196,10 +196,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
           );
         },
       );
@@ -211,10 +211,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
+              '/instance_question/' +
+              res.locals.instance_question.id +
+              '/?variant_id=' +
+              variant_id,
           );
         },
       );
@@ -223,10 +223,10 @@ router.post(
         if (ERR(err, next)) return;
         res.redirect(
           res.locals.urlPrefix +
-          '/instance_question/' +
-          res.locals.instance_question.id +
-          '/?variant_id=' +
-          variant_id,
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
         );
       });
     } else {
