@@ -170,9 +170,13 @@ module.exports.initExpress = function () {
 
     // If the cookie was issued more than an hour in the past, refresh it
     // with a new expiration date.
-    if (issuedAt < new Date(Date.now() - 60 * 60 * 1000)) {
+    if (issuedAt < config.sessionStoreExtendCooldownSeconds * 1000) {
       const newExpiration = new Date(Date.now() + config.sessionStoreExpireSeconds * 1000);
       req.session.cookie.expires = newExpiration;
+
+      // The above assignment won't actually force `express-session` to write
+      // a new cookie or persist the session to the session store, so we'll
+      // write this value directly to the session to force it to be persisted.
       req.session.expires = newExpiration;
     }
 

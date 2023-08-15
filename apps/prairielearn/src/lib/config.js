@@ -54,7 +54,20 @@ const ConfigSchema = z.object({
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
+  /**
+   * How long the session store will wait before considering a session expired.
+   */
   sessionStoreExpireSeconds: z.number().default(86400),
+  /**
+   * How long the session store will wait since a session was last extended
+   * before allowing it to be extended again. This is useful for reducing the
+   * number of writes to the session store.
+   *
+   *
+   * This value should be sufficiently smaller than `sessionStoreExpireSeconds`
+   * to ensure that users don't notice if their sessions expire a little early.
+   */
+  sessionStoreExtendCooldownSeconds: z.number().default(10 * 60),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
