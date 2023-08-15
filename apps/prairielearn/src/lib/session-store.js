@@ -58,13 +58,14 @@ class SessionStore extends session.Store {
   destroy = util.callbackify(this.destroyAsync).bind(this);
 
   /**
-   * @param {string} sid
-   * @param {import('express-session').SessionData} session
-   * @param {() => void} callback
+   * We want to avoid touching the session for every single request, since
+   * that would cause a lot of unnecessary writes to the database. Instead,
+   * we'll claim to support touches, but then just do nothing. Then, in our
+   * own middleware, we'll manually modify the session when we actually want
+   * to persist it.
    */
   touch = (sid, session, callback) => {
-    // Does the same thing as set() in our implementation
-    this.set(sid, session, callback);
+    return callback();
   };
 
   async lengthAsync() {

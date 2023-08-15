@@ -165,6 +165,20 @@ module.exports.initExpress = function () {
     }),
   );
 
+  app.use((req, res, next) => {
+    const issuedAt = new Date(req.session.cookie.expires - req.session.cookie.originalMaxAge);
+
+    // If the cookie was issued more than an hour in the past, refresh it
+    // with a new expiration date.
+    if (issuedAt < new Date(Date.now() - 60 * 60 * 1000)) {
+      const newExpiration = new Date(Date.now() + config.sessionStoreExpireSeconds * 1000);
+      req.session.cookie.expires = newExpiration;
+      req.session.expires = newExpiration;
+    }
+
+    next();
+  });
+
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
