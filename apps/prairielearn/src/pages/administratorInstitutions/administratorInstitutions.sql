@@ -6,6 +6,9 @@ SELECT
       ap.name
       ORDER BY
         ap.name
+    ) FILTER (
+      WHERE
+        ap.id IS NOT NULL
     ),
     '[]'::jsonb
   ) AS authn_providers
@@ -13,5 +16,7 @@ FROM
   institutions AS i
   LEFT JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
   LEFT JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
+WHERE
+  i.id = 154
 GROUP BY
   i.id;
