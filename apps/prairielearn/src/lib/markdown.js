@@ -8,7 +8,10 @@ const stringify = require('rehype-stringify');
 const sanitize = require('rehype-sanitize');
 const visit = require('unist-util-visit');
 
-const regex = /<markdown>(.+?)<\/markdown>/gms;
+// The ? symbol is used to make the match non-greedy (i.e., match the shortest
+// possible string that fulfills the regex). See
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Quantifiers#types
+const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
