@@ -100,6 +100,7 @@ router.post(
       name: authnName,
       uin: authnUin,
       provider: 'SAML',
+      institution_id: institutionId,
     };
 
     await authnLib.loadUser(req, res, authnParams, {
