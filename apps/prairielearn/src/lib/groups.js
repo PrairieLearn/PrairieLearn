@@ -54,8 +54,8 @@ const AssessmentLevelPermissionsSchema = z.object({
 });
 
 const QuestionLevelPermissionsSchema = z.object({
-  can_submit: z.boolean().nullable(),
-  can_view: z.boolean().nullable(),
+  can_submit: z.boolean(),
+  can_view: z.boolean(),
 });
 
 /** @typedef {z.infer<GroupConfigSchema>} GroupConfig */
