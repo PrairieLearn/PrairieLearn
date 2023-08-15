@@ -438,7 +438,7 @@ module.exports = {
     let html = mustache.render(rawFile, data);
     html = markdown.processQuestion(html);
     const $ = cheerio.load(html, {
-      recognizeSelfClosing: true,
+      xml: { xmlMode: false, recognizeSelfClosing: true },
     });
     return { html, $ };
   },
