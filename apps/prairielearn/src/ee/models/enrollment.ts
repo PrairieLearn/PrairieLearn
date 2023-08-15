@@ -1,4 +1,3 @@
-import { Response } from 'express';
 import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
@@ -68,18 +67,15 @@ export enum PotentialEnterpriseEnrollmentStatus {
  * Otherwise, it will redirect the user to the appropriate page and
  * return `false`.
  */
-export async function checkPotentialEnterpriseEnrollment(
-  res: Response,
-  {
-    institution,
-    course_instance,
-    authz_data,
-  }: {
-    institution: Institution;
-    course_instance: CourseInstance;
-    authz_data: any;
-  },
-): Promise<PotentialEnterpriseEnrollmentStatus> {
+export async function checkPotentialEnterpriseEnrollment({
+  institution,
+  course_instance,
+  authz_data,
+}: {
+  institution: Institution;
+  course_instance: CourseInstance;
+  authz_data: any;
+}): Promise<PotentialEnterpriseEnrollmentStatus> {
   const hasPlanGrants = await checkPlanGrants({
     institution,
     course_instance,

@@ -79,10 +79,11 @@ router.post(
       req.params.course_instance_id = course_instance.id;
       await promisify(authzCourseOrInstance)(req, res);
 
-      const didEnroll = await ensureCheckedEnrollment(res, {
+      const didEnroll = await ensureCheckedEnrollment({
         institution,
         course_instance,
         authz_data: res.locals.authz_data,
+        redirect: res.redirect.bind(res),
       });
 
       if (!didEnroll) {

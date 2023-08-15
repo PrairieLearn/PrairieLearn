@@ -35,18 +35,17 @@ export async function ensureEnrollment({
  * false. If false is returned, the response has already been redirected to
  * an appropriate page.
  */
-export async function ensureCheckedEnrollment(
-  res: Response,
-  {
-    institution,
-    course_instance,
-    authz_data,
-  }: {
-    institution: Institution;
-    course_instance: CourseInstance;
-    authz_data: any;
-  },
-): Promise<boolean> {
+export async function ensureCheckedEnrollment({
+  institution,
+  course_instance,
+  authz_data,
+  redirect,
+}: {
+  institution: Institution;
+  course_instance: CourseInstance;
+  authz_data: any;
+  redirect: Response['redirect'];
+}): Promise<boolean> {
   // Safety check: ensure the student would otherwise have access to the course.
   // If they don't, throw an access denied error. In most cases, this should
   // have already been checked.
@@ -55,7 +54,7 @@ export async function ensureCheckedEnrollment(
   }
 
   if (isEnterprise()) {
-    const status = await checkPotentialEnterpriseEnrollment(res, {
+    const status = await checkPotentialEnterpriseEnrollment({
       institution,
       course_instance,
       authz_data,
@@ -63,10 +62,10 @@ export async function ensureCheckedEnrollment(
 
     switch (status) {
       case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED:
-        res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
+        redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
         return false;
       case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED:
-        res.redirect('/pl/enroll/limit_exceeded');
+        redirect('/pl/enroll/limit_exceeded');
         return false;
       case PotentialEnterpriseEnrollmentStatus.ALLOWED:
         break;
@@ -77,7 +76,7 @@ export async function ensureCheckedEnrollment(
 
   await ensureEnrollment({
     course_instance_id: course_instance.id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: authz_data.authn_user.user_id,
   });
 
   return true;

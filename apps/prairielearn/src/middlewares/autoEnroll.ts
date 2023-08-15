@@ -15,10 +15,11 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    const didEnroll = await ensureCheckedEnrollment(res, {
+    const didEnroll = await ensureCheckedEnrollment({
       institution: res.locals.institution,
       course_instance: res.locals.course_instance,
       authz_data: res.locals.authz_data,
+      redirect: res.redirect.bind(res),
     });
 
     if (didEnroll) {
