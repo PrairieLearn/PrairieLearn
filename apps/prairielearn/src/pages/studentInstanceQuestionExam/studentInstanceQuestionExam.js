@@ -156,8 +156,6 @@ router.post(
       await util.promisify(processSubmission)(req, res);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'timeLimitFinish') {
-      // TODO: Does this need to be turned async?
-
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
         return res.redirect(req.originalUrl);
