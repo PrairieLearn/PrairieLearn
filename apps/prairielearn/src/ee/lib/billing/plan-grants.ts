@@ -1,7 +1,9 @@
 import { type Response } from 'express';
 
 import {
+  CourseInstance,
   CourseInstanceSchema,
+  Institution,
   InstitutionSchema,
   QuestionSchema,
   UserSchema,
@@ -15,7 +17,9 @@ import {
 import { PlanFeatureName, planGrantsMatchPlanFeatures } from './plans-types';
 import { features } from '../../../lib/features';
 
-function userHasRole(res: Response) {
+type ResLocals = Record<string, any>;
+
+function userHasRole(authz_data: any) {
   // We won't check plan grants if the user has a specific role in the course
   // or course instance. We always grant instructor-like users access to all
   // features.
@@ -23,20 +27,32 @@ function userHasRole(res: Response) {
   // This function should always be run after the `authzCourseOrInstance`
   // middleware, which will have taken into account the effective user
   // and any overridden roles.
-  return (
-    res.locals.authz_data.course_role !== 'None' ||
-    res.locals.authz_data.course_instance_role !== 'None'
-  );
+  return authz_data.course_role !== 'None' || authz_data.course_instance_role !== 'None';
 }
 
-export async function checkPlanGrants(res: Response) {
-  if (userHasRole(res)) {
+export async function checkPlanGrantsForLocals(locals: ResLocals) {
+  const institution = InstitutionSchema.parse(locals.institution);
+  const course_instance = CourseInstanceSchema.parse(locals.course_instance);
+
+  return await checkPlanGrants({
+    institution,
+    course_instance,
+    authz_data: locals.authz_data,
+  });
+}
+
+export async function checkPlanGrants({
+  institution,
+  course_instance,
+  authz_data,
+}: {
+  institution: Institution;
+  course_instance: CourseInstance;
+  authz_data: any;
+}): Promise<boolean> {
+  if (userHasRole(authz_data)) {
     return true;
   }
-
-  const institution = InstitutionSchema.parse(res.locals.institution);
-  const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
-  const user = UserSchema.parse(res.locals.user);
 
   const requiredPlans = await getRequiredPlansForCourseInstance(course_instance.id);
 
@@ -51,7 +67,7 @@ export async function checkPlanGrants(res: Response) {
   const planGrants = await getPlanGrantsForPartialContexts({
     institution_id: institution.id,
     course_instance_id: course_instance.id,
-    user_id: user.user_id,
+    user_id: authz_data.user.user_id,
   });
   const planGrantNames = getPlanNamesFromPlanGrants(planGrants);
 

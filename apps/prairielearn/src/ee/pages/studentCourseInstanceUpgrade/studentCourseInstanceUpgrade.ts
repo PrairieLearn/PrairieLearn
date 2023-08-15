@@ -8,7 +8,7 @@ import {
   CourseInstanceStudentUpdateSuccess,
   StudentCourseInstanceUpgrade,
 } from './studentCourseInstanceUpgrade.html';
-import { checkPlanGrants } from '../../lib/billing/plan-grants';
+import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants';
 import {
   getMissingPlanGrants,
   getPlanGrantsForPartialContexts,
@@ -42,7 +42,7 @@ router.get(
     // Check if the student is *actually* missing plan grants, or if they just
     // came across this URL on accident. If they have all the necessary plan grants,
     // redirect them back to the assessments page.
-    const hasPlanGrants = await checkPlanGrants(res);
+    const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
     if (hasPlanGrants) {
       res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/assessments`);
       return;
