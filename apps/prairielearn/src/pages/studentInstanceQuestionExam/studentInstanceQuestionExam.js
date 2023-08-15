@@ -101,18 +101,15 @@ router.post(
     if (res.locals.assessment.type !== 'Exam') return next();
 
     if (!res.locals.authz_result.authorized_edit) {
-      return next(error.make(403, 'Not authorized', res.locals));
+      throw error.make(403, 'Not authorized', res.locals);
     }
 
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       if (res.locals.authz_result.time_limit_expired) {
-        return next(
-          error.make(403, 'time limit is expired, please go back and finish your assessment'),
-        );
+        throw error.make(403, 'time limit is expired, please go back and finish your assessment')
       }
       if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
-        return;
+        throw error.make(403, 'Real-time grading is not allowed for this assessment');
       }
       if (res.locals.assessment.group_work) {
         const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
@@ -123,12 +120,10 @@ router.post(
           );
           // Users without the correct roles cannot submit
           if (!result.can_submit) {
-            return next(
-              error.make(
-                403,
-                'Current group roles have no permission to submit this question',
-                res.locals,
-              ),
+            throw error.make(
+              403,
+              'Current group roles have no permission to submit this question',
+              res.locals,
             );
           }
 
@@ -142,12 +137,10 @@ router.post(
 
           // Prevent submissions if role configuration is invalid
           if (validationErrors.length > 0 || !rolesAreBalanced || usersWithoutRoles.length > 0) {
-            return next(
-              error.make(
-                403,
-                'Current group role configuration is invalid. Submissions are disabled',
-                res.locals,
-              ),
+            throw error.make(
+              403,
+              'Current group role configuration is invalid. Submissions are disabled',
+              res.locals,
             );
           }
         }
@@ -174,9 +167,9 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-              '/assessment_instance/' +
-              res.locals.assessment_instance.id +
-              '?timeLimitExpired=true',
+            '/assessment_instance/' +
+            res.locals.assessment_instance.id +
+            '?timeLimitExpired=true',
           );
         },
       );
@@ -188,10 +181,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
           );
         },
       );
@@ -203,10 +196,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
           );
         },
       );
@@ -218,10 +211,10 @@ router.post(
           if (ERR(err, next)) return;
           res.redirect(
             res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
+            '/instance_question/' +
+            res.locals.instance_question.id +
+            '/?variant_id=' +
+            variant_id,
           );
         },
       );
@@ -230,10 +223,10 @@ router.post(
         if (ERR(err, next)) return;
         res.redirect(
           res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id,
         );
       });
     } else {
