@@ -15,7 +15,7 @@ import {
   getConfiguredUser,
   getOrCreateUser,
 } from '../../../tests/utils/auth';
-import { insertEnrollment } from '../../../models/enrollment';
+import { ensureEnrollment } from '../../../models/enrollment';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const assessmentsUrl = `${siteUrl}/pl/course_instance/1/assessments`;
@@ -79,7 +79,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await insertEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
 
     const res = await fetch(assessmentsUrl, {
       headers: {
@@ -94,7 +94,7 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await insertEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
 
     const res = await fetch(assessmentsUrl, {
       headers: {
