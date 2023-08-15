@@ -168,8 +168,10 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     const issuedAt = new Date(req.session.cookie.expires - req.session.cookie.originalMaxAge);
 
-    // If the cookie was issued more than an hour in the past, refresh it
-    // with a new expiration date.
+    // We use a "cooldown period" to avoid refreshing the session cookie (and
+    // thus persisting it to the store) too frequently, which helps reduce
+    // database load. If the cookie was issued more than the cooldown period
+    // ago, we'll refresh it.
     if (issuedAt < config.sessionStoreExtendCooldownSeconds * 1000) {
       const newExpiration = new Date(Date.now() + config.sessionStoreExpireSeconds * 1000);
       req.session.cookie.expires = newExpiration;
@@ -177,6 +179,9 @@ module.exports.initExpress = function () {
       // The above assignment won't actually force `express-session` to write
       // a new cookie or persist the session to the session store, so we'll
       // write this value directly to the session to force it to be persisted.
+      //
+      // This value should never be read, as it will get out of sync with
+      // `cookie.expires`. It is *only* used to force the session to be persisted.
       req.session.expires = newExpiration;
     }
 
