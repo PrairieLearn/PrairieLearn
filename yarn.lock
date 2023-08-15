@@ -2811,7 +2811,6 @@ __metadata:
     "@types/bootstrap": ^5.2.6
     "@types/chai": ^4.3.5
     "@types/chai-as-promised": ^7.1.5
-    "@types/cheerio": ^0.22.31
     "@types/dockerode": ^3.3.19
     "@types/express": ^4.17.17
     "@types/express-session": ^1.17.7
@@ -4148,15 +4147,6 @@ __metadata:
   version: 4.3.5
   resolution: "@types/chai@npm:4.3.5"
   checksum: c8f26a88c6b5b53a3275c7f5ff8f107028e3cbb9ff26795fff5f3d9dea07106a54ce9e2dce5e40347f7c4cc35657900aaf0c83934a25a1ae12e61e0f5516e431
-  languageName: node
-  linkType: hard
-
-"@types/cheerio@npm:^0.22.31":
-  version: 0.22.31
-  resolution: "@types/cheerio@npm:0.22.31"
-  dependencies:
-    "@types/node": "*"
-  checksum: 8d73d22fdd384c290514dad6f9f4a436f5a90bc836bbe9b46fe4f557041a03484f0547291d0347185a806149f465355fc225dc87477b8cf5af5be307bb75e6a4
   languageName: node
   linkType: hard
 
