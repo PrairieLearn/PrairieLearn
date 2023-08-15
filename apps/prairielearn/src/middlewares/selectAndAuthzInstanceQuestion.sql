@@ -18,8 +18,8 @@ WITH
       bool_or(aqrp.can_view) AS can_user_view,
       bool_or(aqrp.can_submit) AS can_user_submit
     FROM
-      assessment_instances AS ai
-      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+      instance_questions AS iq
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN assessment_question_role_permissions AS aqrp ON (aqrp.assessment_question_id = aq.id)
     WHERE
