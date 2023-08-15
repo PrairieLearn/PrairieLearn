@@ -4,7 +4,9 @@ const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
-const cheerio = require('cheerio');
+// Use slim export, which relies on htmlparser2 instead of parse5. This provides
+// support for questions with legacy renderer.
+const cheerio = require('cheerio/lib/slim');
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
@@ -438,7 +440,7 @@ module.exports = {
     let html = mustache.render(rawFile, data);
     html = markdown.processQuestion(html);
     const $ = cheerio.load(html, {
-      xml: { xmlMode: false, recognizeSelfClosing: true },
+      recognizeSelfClosing: true,
     });
     return { html, $ };
   },
