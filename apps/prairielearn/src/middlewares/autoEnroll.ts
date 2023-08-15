@@ -1,6 +1,6 @@
 import asyncHandler = require('express-async-handler');
 import { idsEqual } from '../lib/id';
-import { insertCheckedEnrollment } from '../models/enrollment';
+import { ensureCheckedEnrollment } from '../models/enrollment';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -15,7 +15,7 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment
   ) {
-    const didEnroll = await insertCheckedEnrollment(res, {
+    const didEnroll = await ensureCheckedEnrollment(res, {
       institution: res.locals.institution,
       course_instance: res.locals.course_instance,
       authz_data: res.locals.authz_data,
@@ -25,6 +25,9 @@ export default asyncHandler(async (req, res, next) => {
       // This is the only part of the `authz_data` that would change as a
       // result of this enrollment, so we can just update it directly.
       res.locals.authz_data.has_student_access_with_enrollment = true;
+    } else {
+      // The user has already been redirected to an appropriate page; do nothing.
+      return;
     }
   }
 

@@ -18,7 +18,7 @@ import {
   CourseInstanceRowSchema,
   EnrollmentLimitExceededMessage,
 } from './enroll.html';
-import { insertCheckedEnrollment } from '../../models/enrollment';
+import { ensureCheckedEnrollment } from '../../models/enrollment';
 import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
 import { promisify } from 'node:util';
 
@@ -79,7 +79,7 @@ router.post(
       req.params.course_instance_id = course_instance.id;
       await promisify(authzCourseOrInstance)(req, res);
 
-      const didEnroll = await insertCheckedEnrollment(res, {
+      const didEnroll = await ensureCheckedEnrollment(res, {
         institution,
         course_instance,
         authz_data: res.locals.authz_data,
@@ -90,7 +90,7 @@ router.post(
         return;
       }
 
-      flash('success', `You have added yourself to ${courseDisplayName}.`);
+      flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
       await queryZeroOrOneRowAsync(sql.unenroll, {
@@ -98,7 +98,7 @@ router.post(
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
       });
-      flash('success', `You have removed yourself from ${courseDisplayName}.`);
+      flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, 'unknown action: ' + res.locals.__action, {

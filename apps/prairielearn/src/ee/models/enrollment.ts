@@ -51,6 +51,12 @@ export async function getEnrollmentCountsForCourseInstance(
   };
 }
 
+export enum PotentialEnterpriseEnrollmentStatus {
+  ALLOWED = 'allowed',
+  LIMIT_EXCEEDED = 'limit_exceeded',
+  PLAN_GRANTS_REQUIRED = 'plan_grants_required',
+}
+
 /**
  * Performs enterprise-specific checks for a potential enrollment:
  *
@@ -62,7 +68,7 @@ export async function getEnrollmentCountsForCourseInstance(
  * Otherwise, it will redirect the user to the appropriate page and
  * return `false`.
  */
-export async function checkEnterpriseEnrollment(
+export async function checkPotentialEnterpriseEnrollment(
   res: Response,
   {
     institution,
@@ -73,7 +79,7 @@ export async function checkEnterpriseEnrollment(
     course_instance: CourseInstance;
     authz_data: any;
   },
-): Promise<boolean> {
+): Promise<PotentialEnterpriseEnrollmentStatus> {
   const hasPlanGrants = await checkPlanGrants({
     institution,
     course_instance,
@@ -81,10 +87,7 @@ export async function checkEnterpriseEnrollment(
   });
 
   if (!hasPlanGrants) {
-    // The user does not have the necessary plan grants. Redirect them to the
-    // upgrade page where they can purchase any necessary plans.
-    res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
-    return false;
+    return PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED;
   }
 
   // Note that this check is susceptible to race conditions: if two users
@@ -113,12 +116,8 @@ export async function checkEnterpriseEnrollment(
     freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
     freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
   ) {
-    // We would exceed an enrollment limit. We won't share any specific
-    // details here. In the future, course staff will be able to check
-    // their enrollment limits for themselves.
-    res.redirect('/pl/enroll/limit_exceeded');
-    return false;
+    return PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED;
   }
 
-  return true;
+  return PotentialEnterpriseEnrollmentStatus.ALLOWED;
 }

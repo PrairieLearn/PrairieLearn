@@ -4,7 +4,11 @@ import error = require('@prairielearn/error');
 
 import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
 import { isEnterprise } from '../lib/license';
-import { checkEnterpriseEnrollment } from '../ee/models/enrollment';
+import {
+  PotentialEnterpriseEnrollmentStatus,
+  checkPotentialEnterpriseEnrollment,
+} from '../ee/models/enrollment';
+import { assertNever } from '../lib/types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -18,7 +22,20 @@ export async function ensureEnrollment({
   return await queryRow(sql.ensure_enrollment, { course_instance_id, user_id }, EnrollmentSchema);
 }
 
-export async function insertCheckedEnrollment(
+/**
+ * Ensures that the user is enrolled in the given course instance. If the
+ * enrollment already exists, this is a no-op.
+ *
+ * For enterprise installations, this will also check if the user is eligible
+ * for an enrollment. They are considered eligible if they have all required
+ * plan grants and if their enrollment wouldn't cause an institution or course
+ * instance enrollment limit to be exceeded.
+ *
+ * If the user was successfully enrolled, returns true. Otherwise, returns
+ * false. If false is returned, the response has already been redirected to
+ * an appropriate page.
+ */
+export async function ensureCheckedEnrollment(
   res: Response,
   {
     institution,
@@ -38,14 +55,23 @@ export async function insertCheckedEnrollment(
   }
 
   if (isEnterprise()) {
-    const isValid = await checkEnterpriseEnrollment(res, {
+    const status = await checkPotentialEnterpriseEnrollment(res, {
       institution,
       course_instance,
       authz_data,
     });
-    if (!isValid) {
-      // Do nothing; the user has already been redirected to the appropriate page.
-      return false;
+
+    switch (status) {
+      case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED:
+        res.redirect(`/pl/course_instance/${course_instance.id}/upgrade`);
+        return false;
+      case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED:
+        res.redirect('/pl/enroll/limit_exceeded');
+        return false;
+      case PotentialEnterpriseEnrollmentStatus.ALLOWED:
+        break;
+      default:
+        assertNever(status);
     }
   }
 
