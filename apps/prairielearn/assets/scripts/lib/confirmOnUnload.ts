@@ -33,9 +33,12 @@ export function confirmOnUnload(form: HTMLFormElement) {
       // but they do seem to support setting `event.returnValue`.
       // Safari on iOS does not support confirmation on beforeunload at all.
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
+      // Note that per the spec, we must technically return a non-empty string,
+      // although the contents of the string should always be ignored.
+      // https://html.spec.whatwg.org/multipage/browsing-the-web.html#unloading-documents:event-beforeunload
       event.preventDefault();
-      event.returnValue = '';
-      return '';
+      event.returnValue = 'prompt';
+      return 'prompt';
     }
   });
 }
