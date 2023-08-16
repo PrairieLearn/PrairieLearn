@@ -524,7 +524,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
-            "orientation": "pl-block-horizontal" if block_orientation  is BlockOrientationType.HORIZONTAL else "pl-block-vertical",
+            "orientation": "pl-block-horizontal" if block_orientation  is BlockOrientationType.HORIZONTAL else "",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
