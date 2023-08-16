@@ -235,3 +235,10 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
+
+export const GroupRoleSchema = z.object({
+  id: z.string(),
+  role_name: z.string(),
+  minimum: z.number().nullable(),
+  maximum: z.number().nullable(),
+});

@@ -16,7 +16,7 @@ const sql = loadSqlEquiv(__filename);
 
 import helperServer = require('./helperServer');
 import { TEST_COURSE_PATH } from '../lib/paths';
-import { QuestionSchema, UserSchema } from '../lib/db-types';
+import { QuestionSchema, UserSchema, GroupRoleSchema } from '../lib/db-types';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -43,13 +43,6 @@ const StudentUserSchema = UserSchema.pick({
   uid: true,
   name: true,
   uin: true,
-});
-
-const GroupRoleSchema = z.object({
-  id: z.string(),
-  role_name: z.string(),
-  minimum: z.number().nullable(),
-  maximum: z.number().nullable(),
 });
 
 interface StudentUser {
