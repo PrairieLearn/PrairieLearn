@@ -33,3 +33,10 @@ SET
   plan_grants_created = TRUE
 WHERE
   stripe_object_id = $stripe_object_id;
+
+-- BLOCK update_stripe_checkout_session_data
+UPDATE stripe_checkout_sessions
+SET
+  data = $data
+WHERE
+  stripe_object_id = $stripe_object_id;

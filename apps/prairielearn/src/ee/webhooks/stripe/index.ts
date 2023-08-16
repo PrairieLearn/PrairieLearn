@@ -9,6 +9,7 @@ import { getStripeClient } from '../../lib/billing/stripe';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
+  updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions';
 import { ensurePlanGrant } from '../../models/plan-grants';
 import { selectInstitutionForCourseInstance } from '../../../models/institution';
@@ -73,6 +74,10 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
         });
       }
 
+      await updateStripeCheckoutSessionData({
+        stripe_object_id: session.id,
+        data: session,
+      });
       await markStripeCheckoutSessionCompleted(session.id);
     });
   }
@@ -92,7 +97,7 @@ router.post(
       await handleSessionUpdate(session);
     }
 
-    res.json({ received: true });
+    res.sendStatus(204);
   }),
 );
 

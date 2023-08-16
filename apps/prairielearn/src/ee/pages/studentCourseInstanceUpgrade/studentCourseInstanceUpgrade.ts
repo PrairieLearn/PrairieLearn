@@ -31,6 +31,7 @@ import {
   getStripeCheckoutSessionByStripeObjectId,
   insertStripeCheckoutSessionForUserInCourseInstance,
   markStripeCheckoutSessionCompleted,
+  updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
@@ -235,6 +236,10 @@ router.get(
             });
           }
 
+          await updateStripeCheckoutSessionData({
+            stripe_object_id: stripeSessionId,
+            data: session,
+          });
           await markStripeCheckoutSessionCompleted(session.id);
         });
       }

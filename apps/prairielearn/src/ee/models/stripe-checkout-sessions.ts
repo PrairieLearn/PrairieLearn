@@ -1,6 +1,7 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import type Stripe from 'stripe';
 import { PlanName } from '../lib/billing/plans-types';
-import { StripeCheckoutSessionSchema } from '../../lib/db-types';
+import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -29,7 +30,9 @@ export async function insertStripeCheckoutSessionForUserInCourseInstance({
   });
 }
 
-export async function getStripeCheckoutSessionByStripeObjectId(stripe_object_id: string) {
+export async function getStripeCheckoutSessionByStripeObjectId(
+  stripe_object_id: string,
+): Promise<StripeCheckoutSession | null> {
   return await queryOptionalRow(
     sql.get_stripe_checkout_session_by_stripe_object_id,
     {
@@ -49,4 +52,21 @@ export async function markStripeCheckoutSessionCompleted(stripe_object_id: strin
   await queryAsync(sql.mark_stripe_checkout_session_completed, {
     stripe_object_id,
   });
+}
+
+export async function updateStripeCheckoutSessionData({
+  stripe_object_id,
+  data,
+}: {
+  stripe_object_id: string;
+  data: Stripe.Checkout.Session;
+}): Promise<StripeCheckoutSession> {
+  return await queryRow(
+    sql.update_stripe_checkout_session_data,
+    {
+      stripe_object_id,
+      data,
+    },
+    StripeCheckoutSessionSchema,
+  );
 }

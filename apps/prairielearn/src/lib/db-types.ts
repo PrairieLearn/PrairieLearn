@@ -248,3 +248,4 @@ export const StripeCheckoutSessionSchema = z.object({
   stripe_object_id: z.string(),
   user_id: IdSchema,
 });
+export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
