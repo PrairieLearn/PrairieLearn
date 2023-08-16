@@ -110,7 +110,7 @@ router.post(
             return next(
               error.make(
                 403,
-                'Current group roles have no permission to submit this question',
+                'Your current group roles don\'t have permission to submit this question.',
                 res.locals,
               ),
             );
@@ -129,7 +129,7 @@ router.post(
             return next(
               error.make(
                 403,
-                'Current group role configuration is invalid. Submissions are disabled',
+                'The current group role configuration is invalid. Submissions are disabled.',
                 res.locals,
               ),
             );

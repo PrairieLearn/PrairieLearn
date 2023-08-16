@@ -457,7 +457,7 @@ describe('Assessment instance with group roles & permissions', function () {
         'status should be forbidden',
       );
 
-      // Submitting with valid permissions does not yield any errors'
+      // Submitting with valid permissions does not yield any errors
       const { csrfToken: questionOneSecondtUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[1],
         questionOneUrl,
