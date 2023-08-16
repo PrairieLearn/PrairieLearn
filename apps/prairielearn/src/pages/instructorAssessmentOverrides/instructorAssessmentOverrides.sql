@@ -4,11 +4,10 @@ SELECT
   COALESCE(aap.created_by::text, '—') AS created_by,
   COALESCE(aap.credit::text, '—') AS credit,
   COALESCE(format_date_full_compact(aap.end_date, 'America/Chicago'), '—') AS end_date,
-  COALESCE(aap.group_id::text, '—') AS group_id,
   COALESCE(aap.note, '—') AS note,
   COALESCE(format_date_full_compact(aap.start_date, 'America/Chicago'), '—') AS start_date,
-  -- COALESCE(aap.student_uid::text, '—') AS student_uid
-  (SELECT uid FROM users WHERE user_id = aap.user_id) AS student_uid
+  COALESCE((SELECT name from groups where id = aap.group_id),'-') as group_name,
+  COALESCE((SELECT uid FROM users WHERE user_id = aap.user_id),'-') AS student_uid
 FROM
   assessment_access_policies AS aap
 WHERE assessment_id = $assessment_id
@@ -21,13 +20,13 @@ SELECT
 FROM
   groups
 WHERE
-  course_instance_id = $course_instance_id AND id = $group_id;
+  course_instance_id = $course_instance_id AND id = (SELECT id from groups where name = $group_name)
 
 -- BLOCK insert_assessment_access_policy
 INSERT INTO assessment_access_policies
   (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date,user_id)
 VALUES
-  ($assessment_id, $created_at, $created_by, $credit, $end_date, $group_id, $note, $start_date, (SELECT user_id FROM users WHERE uid = $student_uid));
+  ($assessment_id, $created_at, $created_by, $credit, $end_date, (SELECT id from groups where name = $group_name), $note, $start_date, (SELECT user_id FROM users WHERE uid = $student_uid));
 
 
 -- BLOCK update_assessment_access_policy
@@ -37,20 +36,19 @@ SET
   created_by = $created_by,
   credit = $credit,
   end_date = $end_date,
-  group_id = $group_id,
+  group_id = (SELECT id from groups where name = $group_name),
   note = $note,
   start_date = $start_date,
   user_id = (SELECT user_id FROM users WHERE uid = $student_uid)
 WHERE
   assessment_id = $assessment_id
-  AND (user_id = (SELECT user_id FROM users WHERE uid = $student_uid) OR group_id = $group_id);
+  AND (user_id = (SELECT user_id FROM users WHERE uid = $student_uid));
 
 
 -- BLOCK delete_assessment_access_policy
 WITH deleted_rows AS (
   DELETE FROM assessment_access_policies
-  WHERE (user_id = (SELECT user_id FROM users WHERE uid = $student_uid) OR group_id = $group_id)
-    AND assessment_id = $assessment_id
+  WHERE (user_id = (SELECT user_id FROM users WHERE uid = $student_uid) OR group_id = (SELECT id from groups where name = $group_name)) AND assessment_id = $assessment_id
   RETURNING *
 )
 SELECT
@@ -58,10 +56,10 @@ SELECT
   COALESCE(aap.created_by::text, '—') AS created_by,
   COALESCE(aap.credit::text, '—') AS credit,
   COALESCE(format_date_full_compact(aap.end_date, 'America/Chicago'), '—') AS end_date,
-  COALESCE(aap.group_id::text, '—') AS group_id,
   COALESCE(aap.note, '—') AS note,
+  COALESCE((SELECT name from groups where id = aap.group_id),'-') as group_name ,
   COALESCE(format_date_full_compact(aap.start_date, 'America/Chicago'), '—') AS start_date,
-  COALESCE(aap.student_uid::text, '—') AS student_uid
+   COALESCE((SELECT uid FROM users WHERE user_id = aap.user_id),'-') AS student_uid
 FROM
   assessment_access_policies AS aap
 WHERE assessment_id = $assessment_id

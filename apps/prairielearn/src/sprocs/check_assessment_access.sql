@@ -12,6 +12,7 @@ CREATE FUNCTION
         OUT exam_access_end timestamp with time zone, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
+        OUT end_date TIMESTAMP WITH TIME ZONE,
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
@@ -29,20 +30,37 @@ DECLARE
     credit_from_override integer;
     assessment_end_date TIMESTAMP WITH TIME ZONE;
     end_date_from_override TIMESTAMP WITH TIME ZONE;
+    start_date_from_override TIMESTAMP WITH TIME ZONE;
 
 BEGIN
     -- Check if the user has an entry in the assessment_access_policies table for this assessment_id.
     -- If yes, get the end_date from the assessment_access_policies table, otherwise, use the end_date from the assessment_access_rules table.
-    SELECT aap.end_date , aap.credit
-    INTO end_date_from_override , credit_from_override
+    SELECT aap.end_date , aap.credit , aap.start_date
+    INTO end_date_from_override , credit_from_override , start_date_from_override
     FROM assessment_access_policies as aap
     WHERE aap.assessment_id = check_assessment_access.assessment_id
-        AND (student_uid = check_assessment_access.uid)
+        AND (aap.user_id= check_assessment_access.user_id)
         -- AND start_date <= check_assessment_access.date
         -- AND end_date >= check_assessment_access.date
     ORDER BY end_date DESC
     LIMIT 1;
 
+    IF end_date_from_override IS NOT NULL THEN
+        authorized = TRUE;
+        credit = credit_from_override;
+        credit_date_string =  CASE
+            WHEN (credit_from_override > 0) THEN
+                credit_from_override::text || '%' || ' until ' || format_date_short(end_date_from_override, display_timezone)
+                ELSE '' END;
+        time_limit_min = (DATE_PART('epoch', end_date_from_override - now() - INTERVAL '31 seconds') / 60)::integer;
+        password = NULL;
+        mode = NULL;
+        seb_config = NULL;
+        show_closed_assessment = FALSE;
+        show_closed_assessment_score = TRUE;
+        active = TRUE;
+        active_access_rule_id = 0;
+    ELSE
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
@@ -57,26 +75,16 @@ BEGIN
             WHEN credit_from_override IS NULL THEN aar.credit
             ELSE credit_from_override
         END AS credit,
-        -- CASE
-        --     WHEN aar.credit > 0 AND aar.active THEN
-        --         aar.credit::text || '%'
-        --         || (CASE
-        --                 WHEN aar.end_date IS NOT NULL
-        --                 THEN ' until ' || format_date_short(aar.end_date, display_timezone)
-        --                 ELSE ''
-        --             END)
-        --     ELSE 'None'
-        -- END AS credit_date_string,
         CASE
             WHEN (aar.credit > 0 OR credit_from_override > 0) AND aar.active THEN
                 (CASE
                     WHEN credit_from_override IS NULL THEN aar.credit::text || '%'
-                    ELSE credit_date_string::text || '%'
+                    ELSE credit_from_override::text || '%'
                 END)
                 || (CASE
                         WHEN end_date_from_override IS NULL THEN ' until ' || format_date_short(aar.end_date, display_timezone)
                         WHEN end_date_from_override IS NOT NULL THEN ' until ' || format_date_short(end_date_from_override, display_timezone)
-                            ELSE ''
+                            ELSE ''         
                         END)
             ELSE 'None'
         END AS credit_date_string,
@@ -128,7 +136,7 @@ BEGIN
         aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1;
-
+   
     -- Fill in data if there were no access rules found
     IF active_access_rule_id IS NULL THEN
         authorized = FALSE;
@@ -144,7 +152,7 @@ BEGIN
     END IF;
     
     -- Select the *next* access rule with active = true that gives the user access
-    IF active_access_rule_id IS NOT NULL AND check_assessment_access.date IS NOT NULL AND NOT active THEN
+    IF end_date_from_override IS NULL and active_access_rule_id IS NOT NULL AND check_assessment_access.date IS NOT NULL AND NOT active THEN
         SELECT
             aar.start_date,
             aar.credit
@@ -171,7 +179,7 @@ BEGIN
 
     -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future.
     -- In addition, assigns next_active_time a text representation of the next time the assessment can be submitted.
-    IF NOT active AND next_active_start_date IS NOT NULL THEN
+    IF end_date_from_override IS NULL AND  NOT active AND next_active_start_date IS NOT NULL THEN
         IF next_active_credit IS NOT NULL AND next_active_credit > 0 THEN
             credit_date_string = next_active_credit::text || '% starting from ' || format_date_short(next_active_start_date, display_timezone);
         ELSE
@@ -180,7 +188,8 @@ BEGIN
 
         next_active_time = format_date_full_compact(next_active_start_date, display_timezone);
     END IF;
-
+    END IF;
+    
     -- Override if we are course staff
     IF (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') THEN
         authorized = TRUE;
@@ -198,6 +207,17 @@ BEGIN
 
     -- List of all access rules that will grant access to this user/mode at some date (past or future),
     -- computed by ignoring the date argument.
+    
+    IF end_date_from_override IS NOT NULL AND credit_from_override IS NOT NULL THEN
+    access_rules = jsonb_build_array(jsonb_build_object(
+        'credit', credit_from_override::text || '%',
+        'time_limit_min' , (DATE_PART('epoch', end_date_from_override - now() - INTERVAL '31 seconds') / 60)::integer,
+        'start_date', format_date_full(start_date_from_override, display_timezone),
+        'end_date', format_date_full(end_date_from_override, display_timezone),
+        'mode' , NULL,
+        'active', 0
+    ));
+ELSE
     SELECT
     coalesce(jsonb_agg(jsonb_build_object(
         'credit', CASE 
@@ -219,7 +239,6 @@ BEGIN
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
-        LEFT JOIN assessment_access_policies as aap ON aap.assessment_id = aar.assessment_id AND aap.student_uid = check_assessment_access.uid
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND ((aar.role > 'Student') IS NOT TRUE)
@@ -227,5 +246,6 @@ BEGIN
             (aar.active AND caar.authorized)
             OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
         );
+    END IF;
     END;
     $$ LANGUAGE plpgsql VOLATILE;
