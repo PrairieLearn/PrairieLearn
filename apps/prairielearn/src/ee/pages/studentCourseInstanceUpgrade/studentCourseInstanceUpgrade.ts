@@ -206,7 +206,6 @@ router.get(
     // and user. We shouldn't hit this during normal operations, but an attacker
     // could try to replay a session ID from a different course instance or user.
     if (
-      localSession.institution_id !== institution.id ||
       localSession.course_instance_id !== course_instance.id ||
       localSession.user_id !== res.locals.authn_user.user_id
     ) {

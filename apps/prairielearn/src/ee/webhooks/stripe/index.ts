@@ -2,6 +2,7 @@ import express = require('express');
 import asyncHandler = require('express-async-handler');
 import Stripe from 'stripe';
 import error = require('@prairielearn/error');
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config';
 import { getStripeClient } from '../../lib/billing/stripe';
@@ -9,8 +10,8 @@ import {
   getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
 } from '../../models/stripe-checkout-sessions';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 import { ensurePlanGrant } from '../../models/plan-grants';
+import { selectInstitutionForCourseInstance } from '../../../models/institution';
 
 const router = express.Router({ mergeParams: true });
 
@@ -50,16 +51,13 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
       return;
     }
 
-    const institution_id = localSession.institution_id;
     const course_instance_id = localSession.course_instance_id;
-
-    if (!institution_id) {
-      throw new Error('Stripe checkout session missing institution_id');
-    }
 
     if (!course_instance_id) {
       throw new Error('Stripe checkout session missing course_instance_id');
     }
+
+    const institution = await selectInstitutionForCourseInstance({ course_instance_id });
 
     await runInTransactionAsync(async () => {
       for (const planName of localSession.plan_names) {
@@ -67,7 +65,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
           plan_grant: {
             plan_name: planName,
             type: 'stripe',
-            institution_id: institution_id,
+            institution_id: institution.id,
             course_instance_id: course_instance_id,
             user_id: localSession.user_id,
           },
