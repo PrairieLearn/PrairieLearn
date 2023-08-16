@@ -71,8 +71,9 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-order-blocks-container.pl-block-horizontal{
-  overflow: hidden;
+.pl-order-blocks-container.pl-block-horizontal > .list-group{
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .pl-order-blocks-container.pl-block-horizontal > ul > li,
@@ -80,8 +81,6 @@ li.ui-state-highlight {
   display: inline-block !important;
   float: none !important;
   white-space: nowrap;
-  overflow-y: scroll;
-  overflow-x: auto;
 }
 
 .pl-order-blocks-answer-container > ul {
