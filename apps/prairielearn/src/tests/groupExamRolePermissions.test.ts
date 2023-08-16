@@ -401,9 +401,9 @@ describe('Assessment instance with group roles & permissions', function () {
       const secondUserSubmitButton = $('.question-grade');
       assert.isFalse(secondUserSubmitButton.is(':disabled'));
 
-      // Save button is present with correct permission
+      // Save button is not disabled with correct permission
       const secondUserSaveButton = $('.question-save');
-      assert.lengthOf(secondUserSaveButton, 1);
+      assert.isFalse(secondUserSaveButton.is(':disabled'));
 
       // Switch to first user
       const { $: $questionOneFirstUserPage, csrfToken: questionOneFirstUserCsrfToken } =
@@ -421,9 +421,9 @@ describe('Assessment instance with group roles & permissions', function () {
         'You are not assigned a role that can submit this question.',
       );
 
-      // Save button should not appear without correct permission
+      // Save button should be disabled without correct permission
       const firstUserSaveButton = $('.question-save');
-      assert.lengthOf(firstUserSaveButton, 0);
+      assert.isTrue(firstUserSaveButton.is(':disabled'));
 
       // Get question variant
       const questionForm = $('.question-form input[name="__variant_id"]');

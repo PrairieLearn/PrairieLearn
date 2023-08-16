@@ -1448,6 +1448,7 @@ module.exports = {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.disableGradeButton = false;
+    locals.disableSaveButton = false;
     locals.showNewVariantButton = false;
     locals.showTryAgainButton = false;
     locals.showSubmissions = false;
@@ -1556,7 +1557,7 @@ module.exports = {
 
     if (instance_question?.can_user_submit !== null && !instance_question?.can_user_submit) {
       locals.disableGradeButton = true;
-      locals.showSaveButton = false;
+      locals.disableSaveButton = true;
     }
 
     return locals;

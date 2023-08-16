@@ -12,7 +12,7 @@
       <div class="col d-flex justify-content-between">
         <span class="d-flex align-items-center">
           <% if (showSaveButton) { %>
-            <button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">
+            <button class="btn btn-info question-save disable-on-submit order-2" <%= disableSaveButton ? "disabled" : "" %> name="__action" value="save">
               <% if (showGradeButton) { %>
                 Save only
               <% } else { %>
@@ -106,7 +106,7 @@
         <div class="col d-flex justify-content-between">
           <span class="d-flex align-items-center">
               <% if (showSaveButton) { %>
-                <button class="btn btn-info question-save disable-on-submit order-2">
+                <button class="btn btn-info question-save disable-on-submit order-2" <%= disableSaveButton ? "disabled" : "" %>>
                   <% if (showGradeButton) { %>
                     Save only
                   <% } else { %>
