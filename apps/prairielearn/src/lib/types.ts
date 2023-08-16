@@ -48,3 +48,7 @@ export type ExpandRecursively<T> = T extends object
     ? { [K in keyof O]: ExpandRecursively<O[K]> }
     : never
   : T;
+
+export function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${value}`);
+}
