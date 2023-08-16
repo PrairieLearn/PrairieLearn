@@ -1,8 +1,7 @@
 CREATE TABLE IF NOT EXISTS
   stripe_checkout_sessions (
     id BIGSERIAL PRIMARY KEY,
-    -- TODO: better name?
-    session_id TEXT NOT NULL UNIQUE,
+    stripe_object_id TEXT NOT NULL UNIQUE,
     institution_id BIGINT REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE CASCADE,
     course_instance_id BIGINT REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE CASCADE,

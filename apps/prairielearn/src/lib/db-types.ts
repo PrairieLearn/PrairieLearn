@@ -246,6 +246,6 @@ export const StripeCheckoutSessionSchema = z.object({
   institution_id: IdSchema.nullable(),
   plan_grants_created: z.boolean(),
   plan_names: z.array(z.enum(['basic', 'compute', 'everything'])),
-  session_id: z.string(),
+  stripe_object_id: z.string(),
   user_id: IdSchema,
 });

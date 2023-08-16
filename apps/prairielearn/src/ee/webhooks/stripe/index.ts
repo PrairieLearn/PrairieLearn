@@ -6,7 +6,7 @@ import error = require('@prairielearn/error');
 import { config } from '../../../lib/config';
 import { getStripeClient } from '../../lib/billing/stripe';
 import {
-  getStripeCheckoutSessionBySessionId,
+  getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
 } from '../../models/stripe-checkout-sessions';
 import { runInTransactionAsync } from '@prairielearn/postgres';
@@ -36,7 +36,7 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
   // already done this in the success page for the session, so we need to
   // gracefully handle duplicate plan grants.
   if (session.payment_status === 'paid') {
-    const localSession = await getStripeCheckoutSessionBySessionId(session.id);
+    const localSession = await getStripeCheckoutSessionByStripeObjectId(session.id);
 
     if (!localSession) {
       // We got a webhook for a session that we don't know about. It was likely

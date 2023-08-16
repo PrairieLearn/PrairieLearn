@@ -7,12 +7,12 @@ columns
     institution_id: bigint
     plan_grants_created: boolean not null default false
     plan_names: text[] not null
-    session_id: text not null
+    stripe_object_id: text not null
     user_id: bigint not null
 
 indexes
     stripe_checkout_sessions_pkey: PRIMARY KEY (id) USING btree (id)
-    stripe_checkout_sessions_session_id_key: UNIQUE (session_id) USING btree (session_id)
+    stripe_checkout_sessions_stripe_object_id_key: UNIQUE (stripe_object_id) USING btree (stripe_object_id)
     stripe_checkout_sessions_institution_course_instance_user_idx: USING btree (institution_id, course_instance_id, user_id)
     stripe_checkout_sessions_user_id_idx: USING btree (user_id)
 

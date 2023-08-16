@@ -28,7 +28,7 @@ import {
 } from '../../lib/billing/stripe';
 import { config } from '../../../lib/config';
 import {
-  getStripeCheckoutSessionBySessionId,
+  getStripeCheckoutSessionByStripeObjectId,
   insertStripeCheckoutSessionForUserInCourseInstance,
   markStripeCheckoutSessionCompleted,
 } from '../../models/stripe-checkout-sessions';
@@ -166,7 +166,7 @@ router.post(
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({
-        session_id: session.id,
+        stripe_object_id: session.id,
         institution_id: institution.id,
         course_instance_id: course_instance.id,
         user_id: user.user_id,
@@ -194,7 +194,7 @@ router.get(
 
     const stripeSessionId = z.string().parse(req.query.session_id);
 
-    const localSession = await getStripeCheckoutSessionBySessionId(stripeSessionId);
+    const localSession = await getStripeCheckoutSessionByStripeObjectId(stripeSessionId);
     if (!localSession) {
       throw new Error(`Unknown Stripe session: ${stripeSessionId}`);
     }
