@@ -23,6 +23,7 @@ const { copyQuestionBetweenCourses } = require('../../lib/copy-question');
 const { callbackify } = require('node:util');
 const { flash } = require('@prairielearn/flash');
 const { features } = require('../../lib/features/index');
+const { getCanonicalHost } = require('../../lib/url');
 
 router.post(
   '/test',
@@ -221,7 +222,8 @@ router.get('/', function (req, res, next) {
   // Construct the path of the question test route. We'll do this based on
   // `originalUrl` so that this router doesn't have to be aware of where it's
   // mounted.
-  let questionTestPath = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`).pathname;
+  const host = getCanonicalHost(req);
+  let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
   if (!questionTestPath.endsWith('/')) {
     questionTestPath += '/';
   }

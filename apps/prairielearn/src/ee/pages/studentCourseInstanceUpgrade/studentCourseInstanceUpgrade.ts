@@ -3,6 +3,7 @@ import asyncHandler = require('express-async-handler');
 import type Stripe from 'stripe';
 import { z } from 'zod';
 import error = require('@prairielearn/error');
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
   CourseInstanceStudentUpdateSuccess,
@@ -33,7 +34,7 @@ import {
   markStripeCheckoutSessionCompleted,
   updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions';
-import { runInTransactionAsync } from '@prairielearn/postgres';
+import { getCanonicalHost } from '../../../lib/url';
 
 const router = Router({ mergeParams: true });
 
@@ -137,9 +138,8 @@ router.post(
         throw error.make(400, 'Invalid plan selection.');
       }
 
-      const protocol = req.protocol;
-      const host = req.get('host');
-      const urlBase = `${protocol}://${host}/pl/course_instance/${course_instance.id}/upgrade`;
+      const host = getCanonicalHost(req);
+      const urlBase = `${host}/pl/course_instance/${course_instance.id}/upgrade`;
 
       const stripe = getStripeClient();
       const customerId = await getOrCreateStripeCustomerId(user.user_id, {
@@ -199,6 +199,18 @@ router.get(
     const localSession = await getStripeCheckoutSessionByStripeObjectId(stripeSessionId);
     if (!localSession) {
       throw new Error(`Unknown Stripe session: ${stripeSessionId}`);
+    }
+    if (localSession.completed_at) {
+      // We already processed this session; just show them the success page.
+      res.send(
+        CourseInstanceStudentUpdateSuccess({
+          course,
+          course_instance,
+          paid: true,
+          resLocals: res.locals,
+        }),
+      );
+      return;
     }
 
     const stripe = getStripeClient();
