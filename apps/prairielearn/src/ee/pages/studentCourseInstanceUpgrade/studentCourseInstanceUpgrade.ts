@@ -189,6 +189,7 @@ router.get(
     const institution = InstitutionSchema.parse(res.locals.institution);
     const course = CourseSchema.parse(res.locals.course);
     const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+    const authn_user = UserSchema.parse(res.locals.authn_user);
 
     if (!req.query.session_id) throw error.make(400, 'Missing session_id');
 
@@ -228,9 +229,9 @@ router.get(
                 type: 'stripe',
                 institution_id: institution.id,
                 course_instance_id: course_instance.id,
-                user_id: res.locals.authn_user.id,
+                user_id: authn_user.user_id,
               },
-              authn_user_id: res.locals.authn_user.id,
+              authn_user_id: authn_user.user_id,
             });
           }
 
