@@ -2,7 +2,6 @@ import { assert } from 'chai';
 import cheerio = require('cheerio');
 import fetch from 'node-fetch';
 import { config } from '../lib/config';
-import { z } from 'zod';
 
 import {
   queryAsync,
@@ -16,7 +15,7 @@ const sql = loadSqlEquiv(__filename);
 
 import helperServer = require('./helperServer');
 import { TEST_COURSE_PATH } from '../lib/paths';
-import { QuestionSchema, UserSchema } from '../lib/db-types';
+import { QuestionSchema, UserSchema, GroupRoleSchema } from '../lib/db-types';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -39,13 +38,6 @@ const StudentUserSchema = UserSchema.pick({
   uid: true,
   name: true,
   uin: true,
-});
-
-const GroupRoleSchema = z.object({
-  id: z.string(),
-  role_name: z.string(),
-  minimum: z.number().nullable(),
-  maximum: z.number().nullable(),
 });
 
 interface StudentUser {
@@ -443,7 +435,7 @@ describe('Assessment instance with group roles & permissions', function () {
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneFirstUserCsrfToken,
-          __variant_id: variantId!,
+          __variant_id: variantId as string,
         }),
       });
       assert.equal(
@@ -463,7 +455,7 @@ describe('Assessment instance with group roles & permissions', function () {
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneSecondtUserCsrfToken,
-          __variant_id: variantId!,
+          __variant_id: variantId as string,
         }),
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
@@ -564,7 +556,7 @@ describe('Assessment instance with group roles & permissions', function () {
       const form = {
         __action: 'grade',
         __csrf_token: questionCsrfToken as string,
-        __variant_id: variantId!,
+        __variant_id: variantId as string,
       };
       const questionSubmissionWithInvalidConfigResponse = await fetch(questionOneUrl, {
         method: 'POST',
