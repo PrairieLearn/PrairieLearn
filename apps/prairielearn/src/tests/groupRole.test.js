@@ -271,25 +271,25 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should not be able to update group roles for non-group-member user IDs', async function () {
-  // Generate fake user ID of user not in group and insert into form
-  const fakeCheckboxId = `user_role_${locals.manager.id}-${locals.studentUsers[1].user_id + 1}`;
-  const formData = {};
-  formData[fakeCheckboxId] = 'on';
+    // Generate fake user ID of user not in group and insert into form
+    const fakeCheckboxId = `user_role_${locals.manager.id}-${locals.studentUsers[1].user_id + 1}`;
+    const formData = {};
+    formData[fakeCheckboxId] = 'on';
 
-  const form = {
-    __action: 'update_group_roles',
-    __csrf_token: locals.__csrf_token,
-    ...formData,
-  };
-  const res = await fetch(locals.assessmentUrl, {
-    method: 'POST',
-    body: new URLSearchParams(form),
-  });
-  assert.equal(
-    res.status,
-    403,
-    'User cannot modify the group role of a user that is not in their group',
-  );
+    const form = {
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...formData,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.equal(
+      res.status,
+      403,
+      'User cannot modify the group role of a user that is not in their group',
+    );
   });
 
   step('contains four textboxes per table row', function () {

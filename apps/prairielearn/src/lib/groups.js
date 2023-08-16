@@ -490,7 +490,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
 
     const groupConfig = await module.exports.getGroupConfig(assessmentId);
     const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
-    const userIds = groupInfo.groupMembers.map(member => member.user_id);
+    const userIds = groupInfo.groupMembers.map((member) => member.user_id);
 
     // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
@@ -499,7 +499,10 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
 
       if (!userIds.includes(userId)) {
-        throw error.make(403, 'User cannot modify the group role of a user that is not in their group');
+        throw error.make(
+          403,
+          'User cannot modify the group role of a user that is not in their group',
+        );
       }
 
       roleAssignments.push({
