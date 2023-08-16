@@ -1,10 +1,11 @@
 import Stripe from 'stripe';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import * as cache from '../../../lib/cache';
 import { config } from '../../../lib/config';
-import { selectUserById } from '../../../models/user';
+import { selectAndLockUserById, selectUserById } from '../../../models/user';
 import { PlanName } from './plans-types';
+import { UserSchema } from '../../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -33,12 +34,29 @@ export async function getOrCreateStripeCustomerId(
     },
   });
 
-  await queryAsync(sql.update_user_stripe_customer_id, {
-    user_id,
-    stripe_customer_id: customer.id,
+  // We update the user in a transaction with a lock to ensure that we only
+  // ever use one Stripe customer ID for each user. Note that we might create
+  // multiple Stripe customers for the same user, but that's acceptable, as
+  // the alternative would require locking during a network operation.
+  await runInTransactionAsync(async () => {
+    await selectAndLockUserById(user_id);
+    await queryRow(
+      sql.maybe_update_user_stripe_customer_id,
+      {
+        user_id,
+        stripe_customer_id: customer.id,
+      },
+      UserSchema,
+    );
   });
 
-  return customer.id;
+  const updatedUser = await selectUserById(user_id);
+
+  if (updatedUser.stripe_customer_id == null) {
+    throw new Error('Failed to update user with Stripe customer ID');
+  }
+
+  return updatedUser.stripe_customer_id;
 }
 
 /**
