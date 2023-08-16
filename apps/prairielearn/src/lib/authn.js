@@ -21,6 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
@@ -35,7 +36,13 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
   if ('user_id' in authnParams) {
     user_id = authnParams.user_id;
   } else {
-    let params = [authnParams.uid, authnParams.name, authnParams.uin, authnParams.provider];
+    let params = [
+      authnParams.uid,
+      authnParams.name,
+      authnParams.uin,
+      authnParams.provider,
+      authnParams.institution_id,
+    ];
 
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
