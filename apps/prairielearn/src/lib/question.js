@@ -1556,6 +1556,7 @@ module.exports = {
 
     if (instance_question?.can_user_submit !== null && !instance_question?.can_user_submit) {
       locals.disableGradeButton = true;
+      locals.showSaveButton = false;
     }
 
     return locals;
