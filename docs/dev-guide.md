@@ -68,13 +68,13 @@ PrairieLearn
 - Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
 
 ```sh
-DEBUG=* node server
+DEBUG=* make dev
 ```
 
 - To just see debugging logs from PrairieLearn you can use:
 
 ```sh
-DEBUG=prairielearn:* node server
+DEBUG=prairielearn:* make dev
 ```
 
 - To insert more debugging output, import `debug` and use it like this:
