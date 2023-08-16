@@ -224,6 +224,61 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
+## Enabling custom group roles for collaborative assessments
+
+By default, students working in a collaborative group assessments can view and submit every question. However, instructors can define **custom group roles**, which can be assigned different permissions to facilitate role-based teamwork. Roles can receive the following permissions:
+
+- Submitting specific questions
+- Viewing specific questions
+- Assigning group roles before & during an assessment 
+
+Students are allowed to take on multiple roles. This may be necessary when users leave and join groups after assessments have started.
+
+To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
+
+```json
+{
+  "groupRoles": [
+      {
+          "name": "Manager",
+          "minimum": 1,
+          "maximum": 1,
+          "canAssignRolesAtStart": true,
+          "canAssignRolesDuringAssessment": true
+      },
+      {
+          "name": "Recorder",
+          "minimum": 1,
+          "maximum": 1
+      },
+      {
+          "name": "Reflector",
+          "minimum": 1,
+          "maximum": 1
+      },
+      {
+          "name": "Contributor"
+      }
+  ]
+}
+```
+
+| Attribute                          | Type    | Default | Description                                                                   |
+| ---------------------------------- | ------- | ------- | ----------------------------------------------------------------------------- |
+| `name`                             | string  | -       | The name of the role.                                                         |
+| `minimum`                          | integer | 0       | The minimum required number of this role in the assessment.                   |
+| `maximum`                          | integer | -       | The maximum required number of this role in the assessment.                   |
+| `canAssignRolesAtStart`            | boolean | false   | Allow students with this role to assign roles before starting the assessment. |
+| `canAssignRolesDuringAssessment`   | boolean | false   | Allow students with this role to assign roles during the assessment.          |
+
+Students select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents all question submissions if a group's role configuration does not meet the instructor's specification.
+
+TODO: talk about permissions schema
+
+TODO: show screenshots of permission enforcement
+
+TODO: show restrictions when role configuration is invalid
+
 ## Forcing students to complete questions in-order
 
 **WARNING:** We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
