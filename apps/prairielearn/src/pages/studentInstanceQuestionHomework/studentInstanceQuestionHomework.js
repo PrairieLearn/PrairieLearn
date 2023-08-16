@@ -146,68 +146,46 @@ router.post(
           variant_id,
       );
     } else if (req.body.__action === 'attach_file') {
-      util.callbackify(studentInstanceQuestion.processFileUpload)(
-        req,
-        res,
-        function (err, variant_id) {
-          if (ERR(err, next)) return;
-          res.redirect(
-            res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
-          );
-        },
+      const variant_id = await studentInstanceQuestion.processFileUpload(req, res);
+      res.redirect(
+        res.locals.urlPrefix +
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id,
       );
     } else if (req.body.__action === 'attach_text') {
-      util.callbackify(studentInstanceQuestion.processTextUpload)(
-        req,
-        res,
-        function (err, variant_id) {
-          if (ERR(err, next)) return;
-          res.redirect(
-            res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
-          );
-        },
+      const variant_id = await studentInstanceQuestion.processTextUpload(req, res);
+      res.redirect(
+        res.locals.urlPrefix +
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id,
       );
     } else if (req.body.__action === 'delete_file') {
-      util.callbackify(studentInstanceQuestion.processDeleteFile)(
-        req,
-        res,
-        function (err, variant_id) {
-          if (ERR(err, next)) return;
-          res.redirect(
-            res.locals.urlPrefix +
-              '/instance_question/' +
-              res.locals.instance_question.id +
-              '/?variant_id=' +
-              variant_id,
-          );
-        },
+      const variant_id = await studentInstanceQuestion.processDeleteFile(req, res);
+      res.redirect(
+        res.locals.urlPrefix +
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id,
       );
     } else if (req.body.__action === 'report_issue') {
-      util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      });
-    } else {
-      next(
-        error.make(400, 'unknown __action: ' + req.body.__action, {
-          locals: res.locals,
-          body: req.body,
-        }),
+      const variant_id = await studentInstanceQuestion.processIssue(req, res);
+      res.redirect(
+        res.locals.urlPrefix +
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id,
       );
+    } else {
+      throw error.make(400, 'unknown __action: ' + req.body.__action, {
+        locals: res.locals,
+        body: req.body,
+      });
     }
   }),
 );
