@@ -310,8 +310,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
 
         feedback = partial_score.get("feedback", None)
-        if feedback is not None:
-            html_params["feedback"] = feedback
+        html_params["feedback"] = feedback
 
         with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
