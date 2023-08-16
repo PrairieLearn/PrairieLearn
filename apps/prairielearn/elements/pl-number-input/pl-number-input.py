@@ -309,8 +309,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "missing_input", False
         )
 
-        feedback = partial_score.get("feedback", None)
-        html_params["feedback"] = feedback
+        html_params["feedback"] = partial_score.get("feedback", None)
 
         with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
