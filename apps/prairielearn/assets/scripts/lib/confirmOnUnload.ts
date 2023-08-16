@@ -29,9 +29,12 @@ export function confirmOnUnload(form: HTMLFormElement) {
     if (!isSameForm) {
       // event.preventDefault() is used in Safari/Firefox, but not supported by Chrome/Edge/etc.
       // Returning a string is supported in almost all browsers that support beforeunload.
+      // Newer versions of Chrome/Edge appear to no longer support returning a string,
+      // but they do seem to support setting `event.returnValue`.
       // Safari on iOS does not support confirmation on beforeunload at all.
       // https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event#compatibility_notes
       event.preventDefault();
+      event.returnValue = '';
       return '';
     }
   });
