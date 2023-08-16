@@ -114,19 +114,6 @@ router.post(
       if (res.locals.assessment.group_work) {
         const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
         if (groupConfig.has_roles) {
-          const result = await groupAssessmentHelper.getQuestionPermissions(
-            res.locals.assessment_question.id,
-            res.locals.user.user_id,
-          );
-          // Users without the correct roles cannot submit
-          if (!result.can_submit) {
-            throw error.make(
-              403,
-              "Your current group roles don't have permission to submit this question.",
-              res.locals,
-            );
-          }
-
           // Get group information
           const groupId = await groupAssessmentHelper.getGroupId(
             res.locals.assessment.id,
@@ -140,6 +127,19 @@ router.post(
             throw error.make(
               403,
               'The current group role configuration is invalid. Submissions are disabled.',
+              res.locals,
+            );
+          }
+
+          const result = await groupAssessmentHelper.getQuestionPermissions(
+            res.locals.assessment_question.id,
+            res.locals.user.user_id,
+          );
+          // Users without the correct roles cannot submit
+          if (!result.can_submit) {
+            throw error.make(
+              403,
+              "Your current group roles don't have permission to submit this question.",
               res.locals,
             );
           }
