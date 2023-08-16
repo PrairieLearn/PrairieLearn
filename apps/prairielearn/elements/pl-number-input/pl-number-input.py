@@ -119,6 +119,9 @@ def get_string_precision(number_string: str) -> float:
         return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
+# TODO: add precision calculation function for other grading methods
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
