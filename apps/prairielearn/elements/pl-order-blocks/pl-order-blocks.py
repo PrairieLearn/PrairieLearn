@@ -476,17 +476,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
+
             if submission_indent is not None:
+                if block_orientation is BlockOrientationType.HORIZONTAL:
+                    raise Exception(
+                        'When block-orientation is "horizontal" indentaion is not supported. Please remove "indent" attributes from all pl-answer blocks.'
+                    )
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
         dropzone_layout = pl.get_string_attrib(
             element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
         )
-        if block_orientation == "horizontal" and dropzone_layout != "bottom":
-            raise Exception(
-                'The block-orientation attribute may only be "horizontal" when solution-placement is "bottom".'
-            )
 
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
@@ -496,6 +497,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         help_text = (
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
         )
+
+        if block_orientation is BlockOrientationType.HORIZONTAL:
+            if dropzone_layout != "bottom":
+                raise Exception(
+                    'The block-orientation attribute may only be "horizontal" when solution-placement is "bottom".'
+                )
+            if check_indentation:
+                raise Exception(
+                    'The indentation attribute may not be used when block-orientation is "horizontal".'
+                )
+            if max_indent != MAX_INDENTION_DEFAULT:
+                raise Exception(
+                    'The max-indent attribute may not be used when block-orientation is "horizontal".'
+                )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
