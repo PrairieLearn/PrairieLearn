@@ -34,10 +34,6 @@ const QuestionIdSchema = QuestionSchema.pick({
   id: true,
 });
 
-const VariantIdSchema = z.object({
-  id: z.string(),
-});
-
 const StudentUserSchema = UserSchema.pick({
   user_id: true,
   uid: true,
@@ -429,17 +425,8 @@ describe('Assessment instance with group roles & permissions', function () {
       const questionForm = $('.question-form input[name="__variant_id"]');
       assert.lengthOf(questionForm, 1);
       assert.nestedProperty(questionForm[0], 'attribs.value');
-      const variantIdString = questionForm.first().attr('value');
-      assert.isDefined(variantIdString);
-      const variantId = Number.parseInt(variantIdString as string);
-
-      const variant = await queryValidatedOneRow(
-        sql.select_variant,
-        {
-          variant_id: variantId,
-        },
-        VariantIdSchema,
-      );
+      const variantId = questionForm.first().attr('value');
+      assert.isDefined(variantId);
 
       // Send request to save & grade question
       const questionSubmissionWithNoPermissionResponse = await fetch(questionOneUrl, {
@@ -447,7 +434,7 @@ describe('Assessment instance with group roles & permissions', function () {
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneFirstUserCsrfToken,
-          __variant_id: variant.id,
+          __variant_id: variantId!,
         }),
       });
       assert.equal(
@@ -467,7 +454,7 @@ describe('Assessment instance with group roles & permissions', function () {
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneSecondtUserCsrfToken,
-          __variant_id: variant.id,
+          __variant_id: variantId!,
         }),
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
@@ -561,23 +548,14 @@ describe('Assessment instance with group roles & permissions', function () {
       const questionForm = $('.question-form input[name="__variant_id"]');
       assert.lengthOf(questionForm, 1);
       assert.nestedProperty(questionForm[0], 'attribs.value');
-      const variantIdString = questionForm.first().attr('value');
-      assert.isDefined(variantIdString);
-      const variantId = Number.parseInt(variantIdString as string);
-
-      const variant = await queryValidatedOneRow(
-        sql.select_variant,
-        {
-          variant_id: variantId,
-        },
-        VariantIdSchema,
-      );
+      const variantId = questionForm.first().attr('value');
+      assert.isDefined(variantId);
 
       // Send request to save & grade question
       const form = {
         __action: 'grade',
         __csrf_token: questionCsrfToken as string,
-        __variant_id: variant.id,
+        __variant_id: variantId!,
       };
       const questionSubmissionWithInvalidConfigResponse = await fetch(questionOneUrl, {
         method: 'POST',
