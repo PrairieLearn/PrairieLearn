@@ -78,7 +78,9 @@ router.get(
 
 const UpgradeBodySchema = z.object({
   terms_agreement: z.literal('1').optional(),
-  unsafe_plan_names: z.string(),
+  unsafe_plan_names: z.union([z.string(), z.array(z.string())]).transform((val) => {
+    return Array.isArray(val) ? val : [val];
+  }),
 });
 
 // Only a subset of all plans are allowed to be paid for on this page.
@@ -99,8 +101,7 @@ router.post(
         throw error.make(400, 'You must agree to the terms and conditions.');
       }
 
-      const rawPlanNames = body.unsafe_plan_names.split(',');
-      const planNames = PlanNamesSchema.parse(rawPlanNames);
+      const planNames = PlanNamesSchema.parse(body.unsafe_plan_names);
 
       // TODO: should we use lookup keys instead? See
       // https://stripe.com/docs/products-prices/manage-prices#lookup-keys

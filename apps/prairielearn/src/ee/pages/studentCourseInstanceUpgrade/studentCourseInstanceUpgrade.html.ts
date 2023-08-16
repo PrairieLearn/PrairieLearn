@@ -77,7 +77,11 @@ export function StudentCourseInstanceUpgrade({
                   </div>
 
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <input type="hidden" name="unsafe_plan_names" value="${missingPlans.join(',')}" />
+                  ${missingPlans.map(
+                    (plan) => html`
+                      <input type="hidden" name="unsafe_plan_names" value="${plan}" />
+                    `,
+                  )}
                   <button
                     id="js-upgrade"
                     type="submit"
