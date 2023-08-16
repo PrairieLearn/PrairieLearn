@@ -110,7 +110,7 @@ router.post(
             return next(
               error.make(
                 403,
-                'Your current group roles don\'t have permission to submit this question.',
+                "Your current group roles don't have permission to submit this question.",
                 res.locals,
               ),
             );
