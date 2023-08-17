@@ -540,13 +540,7 @@ module.exports.initExpress = function () {
   // some pages don't need authorization
   app.use('/', require('./pages/home/home'));
   app.use('/pl', require('./pages/home/home'));
-  app.use('/pl/settings', [
-    function (req, res, next) {
-      res.locals.navPage = 'user_settings';
-      next();
-    },
-    require('./pages/userSettings/userSettings').default,
-  ]);
+  app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
     function (req, res, next) {

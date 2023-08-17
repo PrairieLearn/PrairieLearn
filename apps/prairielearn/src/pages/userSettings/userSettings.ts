@@ -2,9 +2,11 @@ import express = require('express');
 import asyncHandler = require('express-async-handler');
 import crypto = require('crypto');
 import { v4 as uuidv4 } from 'uuid';
-
 import error = require('@prairielearn/error');
 import sqldb = require('@prairielearn/postgres');
+
+import { AccessTokenSchema, UserSettings } from './userSettings.html';
+import { InstitutionSchema, UserSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -44,27 +46,43 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const params = {
-      user_id: res.locals.authn_user.user_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_access_tokens, params);
+    const authn_user = UserSchema.parse(res.locals.authn_user);
+    const authn_institution = InstitutionSchema.parse(res.locals.authn_institution);
+
+    const accessTokens = await sqldb.queryRows(
+      sql.select_access_tokens,
+      {
+        user_id: authn_user.user_id,
+      },
+      AccessTokenSchema,
+    );
 
     // If the raw tokens are present for any of these hashes, include them
     // in this response and then delete them from memory
     const newAccessTokens: string[] = [];
-    result.rows.forEach((row) => {
-      if (row.token) {
-        newAccessTokens.push(row.token);
+    accessTokens.forEach((accessToken) => {
+      if (accessToken.token) {
+        newAccessTokens.push(accessToken.token);
       }
     });
 
-    res.locals.accessTokens = result.rows;
-    res.locals.newAccessTokens = newAccessTokens;
-
     // Now that we've rendered these tokens, remove any tokens from the DB
-    await sqldb.queryAsync(sql.clear_tokens_for_user, params);
+    if (newAccessTokens.length > 0) {
+      await sqldb.queryAsync(sql.clear_tokens_for_user, {
+        user_id: authn_user.user_id,
+      });
+    }
 
-    res.render(__filename.replace(/\.[jt]s$/, '.ejs'), res.locals);
+    res.send(
+      UserSettings({
+        authn_user,
+        authn_institution,
+        authn_provider_name: res.locals.authn_provider_name,
+        accessTokens,
+        newAccessTokens,
+        resLocals: res.locals,
+      }),
+    );
   }),
 );
 
