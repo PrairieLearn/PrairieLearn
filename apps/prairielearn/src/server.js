@@ -545,7 +545,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'user_settings';
       next();
     },
-    require('./pages/userSettings/userSettings'),
+    require('./pages/userSettings/userSettings').default,
   ]);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
   app.use('/pl/logout', [
