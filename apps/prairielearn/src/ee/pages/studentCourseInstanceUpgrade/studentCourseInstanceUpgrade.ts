@@ -168,10 +168,11 @@ router.post(
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({
+        agent_user_id: user.user_id,
         stripe_object_id: session.id,
         institution_id: institution.id,
         course_instance_id: course_instance.id,
-        user_id: user.user_id,
+        subject_user_id: user.user_id,
         data: session,
         plan_names: planNames,
       });
@@ -222,7 +223,7 @@ router.get(
     // could try to replay a session ID from a different course instance or user.
     if (
       localSession.course_instance_id !== course_instance.id ||
-      localSession.user_id !== res.locals.authn_user.user_id
+      localSession.agent_user_id !== res.locals.authn_user.user_id
     ) {
       throw error.make(400, 'Invalid session');
     }

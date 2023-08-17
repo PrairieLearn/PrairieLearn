@@ -6,25 +6,28 @@ import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../l
 const sql = loadSqlEquiv(__filename);
 
 export async function insertStripeCheckoutSessionForUserInCourseInstance({
+  agent_user_id,
   stripe_object_id,
   institution_id,
   course_instance_id,
-  user_id,
+  subject_user_id,
   data,
   plan_names,
 }: {
+  agent_user_id: string;
   stripe_object_id: string;
   institution_id: string;
   course_instance_id: string;
-  user_id: string;
+  subject_user_id: string;
   data: any;
   plan_names: PlanName[];
 }) {
   await queryAsync(sql.insert_stripe_checkout_session_for_user_in_course_instance, {
+    agent_user_id,
     stripe_object_id,
     institution_id,
     course_instance_id,
-    user_id,
+    subject_user_id,
     data,
     plan_names,
   });

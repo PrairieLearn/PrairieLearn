@@ -1,17 +1,19 @@
 -- BLOCK insert_stripe_checkout_session_for_user_in_course_instance
 INSERT INTO
   stripe_checkout_sessions (
+    agent_user_id,
     stripe_object_id,
     course_instance_id,
-    user_id,
+    subject_user_id,
     data,
     plan_names
   )
 VALUES
   (
+    $agent_user_id,
     $stripe_object_id,
     $course_instance_id,
-    $user_id,
+    $subject_user_id,
     $data,
     $plan_names
   );

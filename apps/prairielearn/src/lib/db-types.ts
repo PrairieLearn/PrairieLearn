@@ -238,6 +238,7 @@ export const EnrollmentSchema = z.object({
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
 export const StripeCheckoutSessionSchema = z.object({
+  agent_user_id: IdSchema,
   completed_at: z.date().nullable(),
   course_instance_id: IdSchema.nullable(),
   created_at: z.date(),
@@ -246,6 +247,6 @@ export const StripeCheckoutSessionSchema = z.object({
   plan_grants_created: z.boolean(),
   plan_names: z.array(z.enum(['basic', 'compute', 'everything'])),
   stripe_object_id: z.string(),
-  user_id: IdSchema,
+  subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;

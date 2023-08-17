@@ -53,9 +53,13 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
     }
 
     const course_instance_id = localSession.course_instance_id;
-
     if (!course_instance_id) {
       throw new Error('Stripe checkout session missing course_instance_id');
+    }
+
+    const subject_user_id = localSession.subject_user_id;
+    if (!subject_user_id) {
+      throw new Error('Stripe checkout session missing subject_user_id');
     }
 
     const institution = await selectInstitutionForCourseInstance({ course_instance_id });
@@ -68,9 +72,9 @@ async function handleSessionUpdate(session: Stripe.Checkout.Session) {
             type: 'stripe',
             institution_id: institution.id,
             course_instance_id: course_instance_id,
-            user_id: localSession.user_id,
+            user_id: subject_user_id,
           },
-          authn_user_id: localSession.user_id,
+          authn_user_id: localSession.agent_user_id,
         });
       }
 
