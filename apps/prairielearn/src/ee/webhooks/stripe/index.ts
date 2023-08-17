@@ -5,7 +5,7 @@ import error = require('@prairielearn/error');
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config';
-import { getStripeClient } from '../../lib/billing/stripe';
+import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
@@ -99,6 +99,14 @@ router.post(
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
       await handleSessionUpdate(session);
+    } else if (event.type === 'product.updated') {
+      const product = event.data.object as Stripe.Product;
+      const productId = product.id;
+      await clearStripeProductCache(productId);
+    } else if (event.type === 'price.updated') {
+      const price = event.data.object as Stripe.Price;
+      const productId = typeof price.product === 'string' ? price.product : price.product.id;
+      await clearStripeProductCache(productId);
     }
 
     res.sendStatus(204);

@@ -54,12 +54,16 @@ export async function getOrCreateStripeCustomerId(
   return updatedUser.stripe_customer_id;
 }
 
+function stripeProductCacheKey(id: string): string {
+  return `v1:stripe:product:${id}`;
+}
+
 /**
  * Gets the Stripe product with the given ID. Products are cached for up to
  * 10 minutes.
  */
 export async function getStripeProduct(id: string): Promise<Stripe.Product> {
-  const cacheKey = `v1:stripe:product:${id}`;
+  const cacheKey = stripeProductCacheKey(id);
   let product: Stripe.Product = await cache.get(cacheKey);
   if (!product) {
     const stripe = getStripeClient();
@@ -67,6 +71,11 @@ export async function getStripeProduct(id: string): Promise<Stripe.Product> {
     cache.set(cacheKey, product, 1000 * 60 * 10);
   }
   return product;
+}
+
+export async function clearStripeProductCache(id: string) {
+  const cacheKey = stripeProductCacheKey(id);
+  await cache.del(cacheKey);
 }
 
 export async function getDefaultPriceForStripeProduct(id: string): Promise<Stripe.Price> {
