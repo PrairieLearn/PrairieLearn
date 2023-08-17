@@ -24,6 +24,7 @@ import {
 } from '../../../lib/db-types';
 import {
   getOrCreateStripeCustomerId,
+  getPriceForPlan,
   getPricesForPlans,
   getStripeClient,
 } from '../../lib/billing/stripe';
@@ -105,20 +106,20 @@ router.post(
 
       const planNames = PlanNamesSchema.parse(body.unsafe_plan_names);
 
-      // TODO: should we use lookup keys instead? See
-      // https://stripe.com/docs/products-prices/manage-prices#lookup-keys
-      // Unfortunately, these can't be set or modified from the Stripe console,
-      // so they aren't as useful as they could be.
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+
       if (planNames.includes('basic')) {
+        const price = await getPriceForPlan('basic');
         lineItems.push({
-          price: config.stripePriceIds.basic,
+          price: price.id,
           quantity: 1,
         });
       }
+
       if (planNames.includes('compute')) {
+        const price = await getPriceForPlan('compute');
         lineItems.push({
-          price: config.stripePriceIds.compute,
+          price: price.id,
           quantity: 1,
         });
       }

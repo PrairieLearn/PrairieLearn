@@ -485,9 +485,9 @@ const ConfigSchema = z.object({
    */
   stripeWebhookSigningSecret: z.string().nullable().default(null),
   /**
-   * Maps a plan name ("basic", "compute", etc.) to a Stripe price ID.
+   * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
-  stripePriceIds: z.record(z.string(), z.string()).default({}),
+  stripeProductIds: z.record(z.string(), z.string()).default({}),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

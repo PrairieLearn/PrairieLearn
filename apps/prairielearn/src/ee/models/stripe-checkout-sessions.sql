@@ -2,7 +2,6 @@
 INSERT INTO
   stripe_checkout_sessions (
     stripe_object_id,
-    institution_id,
     course_instance_id,
     user_id,
     data,
@@ -11,7 +10,6 @@ INSERT INTO
 VALUES
   (
     $stripe_object_id,
-    $institution_id,
     $course_instance_id,
     $user_id,
     $data,
@@ -39,4 +37,6 @@ UPDATE stripe_checkout_sessions
 SET
   data = $data
 WHERE
-  stripe_object_id = $stripe_object_id;
+  stripe_object_id = $stripe_object_id
+RETURNING
+  *;
