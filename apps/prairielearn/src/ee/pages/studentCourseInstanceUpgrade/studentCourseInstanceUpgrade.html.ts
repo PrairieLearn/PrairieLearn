@@ -177,7 +177,7 @@ function BillingLineItem({ planName, planPrice }: { planName: PlanName; planPric
         <small class="text-muted text-small">${description}</small>
       </div>
       <div>
-        <strong>${formattedPrice}</strong>
+        <strong class="text-nowrap">${formattedPrice} USD</strong>
       </div>
     </li>
   `;
@@ -198,7 +198,7 @@ function PriceTable({
       ${planNames.map((planName) => BillingLineItem({ planName, planPrice: planPrices[planName] }))}
       <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
         <strong>Total</strong>
-        <strong>${formattedTotalPrice}</strong>
+        <strong class="text-nowrap">${formattedTotalPrice} USD</strong>
       </li>
     </ul>
   `;
