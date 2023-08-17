@@ -4,15 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { PlanName } from '../../lib/billing/plans-types';
 import { compiledScriptTag } from '../../../lib/assets';
 import { Course, CourseInstance } from '../../../lib/db-types';
-
-const priceFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
-function formatStripePrice(price: number) {
-  return priceFormatter.format(price / 100);
-}
+import { formatStripePrice } from '../../lib/billing/stripe';
 
 export function StudentCourseInstanceUpgrade({
   course,

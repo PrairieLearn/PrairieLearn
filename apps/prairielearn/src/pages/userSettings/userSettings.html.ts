@@ -11,6 +11,7 @@ import {
   StripeCheckoutSessionSchema,
   User,
 } from '../../lib/db-types';
+import { formatStripePrice } from '../../ee/lib/billing/stripe';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -97,13 +98,13 @@ export function UserSettings({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Purchases</div>
 
-            <ul class="list-group list-group-flush">
-              ${purchases.length === 0
-                ? html`<li class="list-group-item">You do not have any purchases.</li>`
-                : purchases.map((purchase) => PurchaseItem({ purchase }))}
-            </ul>
-
-            <pre><code>${JSON.stringify(purchases, null, 2)}</code></pre>
+            ${purchases.length === 0
+              ? html`
+                  <div class="card-body text-muted">
+                    You don&apos;t currently have any purchases.
+                  </div>
+                `
+              : PurchaseTable({ purchases })}
           </div>
 
           <div class="card mb-4">
@@ -174,9 +175,9 @@ export function UserSettings({
               ${accessTokens.length === 0
                 ? html`
                     <li class="list-group-item">
-                      <span class="text-muted"
-                        >You don&apos;t currently have any access tokens</span
-                      >
+                      <span class="text-muted">
+                        You don&apos;t currently have any access tokens.
+                      </span>
                     </li>
                   `
                 : accessTokens.map(
@@ -221,27 +222,51 @@ export function UserSettings({
   `.toString();
 }
 
-function PurchaseItem({ purchase }: { purchase: PurchaseRow }) {
-  const courseName = purchase.course
-    ? `${purchase.course.short_name}: ${purchase.course.title}`
-    : 'Unknown course';
-
-  const courseInstanceName = purchase.course_instance?.long_name ?? 'Unknown course instance';
-
+function PurchaseTable({ purchases }: { purchases: PurchaseRow[] }) {
   return html`
-    <li class="list-group-item">
-      <a
-        ${purchase.course_instance == null
-          ? ''
-          : html`href="/pl/course_instance/${purchase.course_instance?.id}"`}
-      >
-        ${courseName} (${courseInstanceName})
-      </a>
-      ${StripeCheckoutSessionPaymentStatus({ session: purchase.stripe_checkout_session })}
-      <br />
-      ${purchase.stripe_checkout_session.id}
-      ${purchase.stripe_checkout_session.completed_at?.toString()}
-    </li>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Course</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${purchases.map((purchase) => {
+            const courseName = purchase.course
+              ? `${purchase.course.short_name}: ${purchase.course.title}`
+              : 'Unknown course';
+
+            const courseInstanceName =
+              purchase.course_instance?.long_name ?? 'Unknown course instance';
+
+            return html`<tr>
+              <td>${purchase.stripe_checkout_session.id}</td>
+              <td>
+                <a
+                  ${purchase.course_instance == null
+                    ? ''
+                    : html`href="/pl/course_instance/${purchase.course_instance?.id}"`}
+                >
+                  ${courseName} (${courseInstanceName})
+                </a>
+              </td>
+              <td>${purchase.stripe_checkout_session.created_at?.toString()}</td>
+              <td>${formatStripePrice(purchase.stripe_checkout_session.data.amount_total)} USD</td>
+              <td>
+                ${StripeCheckoutSessionPaymentStatus({
+                  session: purchase.stripe_checkout_session,
+                })}
+              </td>
+            </tr>`;
+          })}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 

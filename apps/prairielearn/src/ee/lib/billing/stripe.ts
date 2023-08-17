@@ -117,3 +117,12 @@ export async function getPricesForPlans(plans: PlanName[]): Promise<Record<strin
   }
   return prices;
 }
+
+const priceFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+});
+
+export function formatStripePrice(price: number) {
+  return priceFormatter.format(price / 100);
+}
