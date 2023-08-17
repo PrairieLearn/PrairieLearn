@@ -76,6 +76,7 @@ export async function del(key: string) {
 
     case 'redis': {
       await client.del(key);
+      break;
     }
   }
 }
