@@ -2952,6 +2952,7 @@ __metadata:
     socket.io-client: ^4.7.2
     streamifier: ^0.1.1
     strip-ansi: ^6.0.1
+    stripe: ^12.17.0
     tablesorter: ^2.31.3
     tar: ^6.1.15
     three: ^0.154.0
@@ -4495,7 +4496,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.17.4":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^18.17.4":
   version: 18.17.4
   resolution: "@types/node@npm:18.17.4"
   checksum: d4c458202d82c999f38d85ca9ae8a2d3e521645c7f1b908cd6a0303d0e13c7d5eb3f888c41f584ba029ecf802d0a0005b7816c149400371a3c035abc4bd9a4c5
@@ -13795,7 +13796,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:^6.11.2":
+"qs@npm:^6.11.0, qs@npm:^6.11.2":
   version: 6.11.2
   resolution: "qs@npm:6.11.2"
   dependencies:
@@ -15406,6 +15407,16 @@ __metadata:
   version: 3.1.1
   resolution: "strip-json-comments@npm:3.1.1"
   checksum: 492f73e27268f9b1c122733f28ecb0e7e8d8a531a6662efbd08e22cccb3f9475e90a1b82cab06a392f6afae6d2de636f977e231296400d0ec5304ba70f166443
+  languageName: node
+  linkType: hard
+
+"stripe@npm:^12.17.0":
+  version: 12.17.0
+  resolution: "stripe@npm:12.17.0"
+  dependencies:
+    "@types/node": ">=8.1.0"
+    qs: ^6.11.0
+  checksum: ecd003fd47a8d6adfc77ba882ec222213559da020709eb7100e2788f80d8da34e2b8d416cf11bdb6fc5424622ff99414eea264b53c312f176aed6d88598226e9
   languageName: node
   linkType: hard
 
