@@ -2,7 +2,15 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { IdSchema, Institution, User } from '../../lib/db-types';
+import {
+  CourseInstanceSchema,
+  CourseSchema,
+  IdSchema,
+  Institution,
+  StripeCheckoutSession,
+  StripeCheckoutSessionSchema,
+  User,
+} from '../../lib/db-types';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -14,12 +22,20 @@ export const AccessTokenSchema = z.object({
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
 
+export const PurchaseRowSchema = z.object({
+  stripe_checkout_session: StripeCheckoutSessionSchema,
+  course_instance: CourseInstanceSchema.nullable(),
+  course: CourseSchema.nullable(),
+});
+type PurchaseRow = z.infer<typeof PurchaseRowSchema>;
+
 export function UserSettings({
   authn_user,
   authn_institution,
   authn_provider_name,
   accessTokens,
   newAccessTokens,
+  purchases,
   resLocals,
 }: {
   authn_user: User;
@@ -27,6 +43,7 @@ export function UserSettings({
   authn_provider_name: string;
   accessTokens: AccessToken[];
   newAccessTokens: string[];
+  purchases: PurchaseRow[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -75,6 +92,18 @@ export function UserSettings({
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex">Purchases</div>
+
+            <ul class="list-group list-group-flush">
+              ${purchases.length === 0
+                ? html`<li class="list-group-item">You do not have any purchases.</li>`
+                : purchases.map((purchase) => PurchaseItem({ purchase }))}
+            </ul>
+
+            <pre><code>${JSON.stringify(purchases, null, 2)}</code></pre>
           </div>
 
           <div class="card mb-4">
@@ -190,6 +219,40 @@ export function UserSettings({
       </body>
     </html>
   `.toString();
+}
+
+function PurchaseItem({ purchase }: { purchase: PurchaseRow }) {
+  const courseName = purchase.course
+    ? `${purchase.course.short_name}: ${purchase.course.title}`
+    : 'Unknown course';
+
+  const courseInstanceName = purchase.course_instance?.long_name ?? 'Unknown course instance';
+
+  return html`
+    <li class="list-group-item">
+      <a
+        ${purchase.course_instance == null
+          ? ''
+          : html`href="/pl/course_instance/${purchase.course_instance?.id}"`}
+      >
+        ${courseName} (${courseInstanceName})
+      </a>
+      ${StripeCheckoutSessionPaymentStatus({ session: purchase.stripe_checkout_session })}
+      <br />
+      ${purchase.stripe_checkout_session.id}
+      ${purchase.stripe_checkout_session.completed_at?.toString()}
+    </li>
+  `;
+}
+
+function StripeCheckoutSessionPaymentStatus({ session }: { session: StripeCheckoutSession }) {
+  if (session.data.payment_status === 'paid') {
+    return html`<span class="badge badge-success">Payment received</span>`;
+  } else if (session.data.payment_status === 'unpaid') {
+    return html`<span class="badge badge-secondary">Pending</span>`;
+  } else {
+    return '';
+  }
 }
 
 function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string }) {
