@@ -18,4 +18,5 @@ UPDATE access_tokens
 SET
   token = NULL
 WHERE
-  user_id = $user_id;
+  user_id = $user_id
+  AND token IS NOT NULL;
