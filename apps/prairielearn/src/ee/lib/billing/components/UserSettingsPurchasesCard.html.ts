@@ -10,9 +10,7 @@ export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[]
       <div class="card-header bg-primary text-white d-flex">Purchases</div>
 
       ${purchases.length === 0
-        ? html`
-            <div class="card-body text-muted">You don&apos;t currently have any purchases.</div>
-          `
+        ? html` <div class="card-body text-muted">You don't currently have any purchases.</div> `
         : PurchaseTable({ purchases })}
     </div>
   `;

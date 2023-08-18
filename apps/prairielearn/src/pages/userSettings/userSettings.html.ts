@@ -135,8 +135,8 @@ export function UserSettings({
               ${newAccessTokens.length > 0
                 ? html`
                     <div class="alert alert-primary mt-3" role="alert">
-                      New access token created! Be sure to copy it now, as you won&apos;t be able to
-                      see it later.
+                      New access token created! Be sure to copy it now, as you won't be able to see
+                      it later.
                     </div>
                     ${newAccessTokens.map(
                       (token) => html`
@@ -152,9 +152,7 @@ export function UserSettings({
               ${accessTokens.length === 0
                 ? html`
                     <li class="list-group-item">
-                      <span class="text-muted">
-                        You don&apos;t currently have any access tokens.
-                      </span>
+                      <span class="text-muted"> You don't currently have any access tokens. </span>
                     </li>
                   `
                 : accessTokens.map(
