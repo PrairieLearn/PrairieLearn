@@ -60,6 +60,10 @@ function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
           })}
         </tbody>
       </table>
+      <div class="card-footer">
+        Contact <a href="mailto:support@prairielearn.com">support@prairielearn.com</a>
+        to request a refund or if you have any questions about your purchases.
+      </div>
     </div>
   `;
 }
