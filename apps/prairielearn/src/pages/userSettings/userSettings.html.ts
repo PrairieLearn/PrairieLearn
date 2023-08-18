@@ -2,16 +2,10 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import {
-  CourseInstanceSchema,
-  CourseSchema,
-  IdSchema,
-  Institution,
-  StripeCheckoutSession,
-  StripeCheckoutSessionSchema,
-  User,
-} from '../../lib/db-types';
-import { formatStripePrice } from '../../ee/lib/billing/stripe';
+import { IdSchema, Institution, User } from '../../lib/db-types';
+import { type Purchase } from '../../ee/lib/billing/purchases';
+import { isEnterprise } from '../../lib/license';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -22,13 +16,6 @@ export const AccessTokenSchema = z.object({
   token: z.string(),
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
-
-export const PurchaseRowSchema = z.object({
-  stripe_checkout_session: StripeCheckoutSessionSchema,
-  course_instance: CourseInstanceSchema.nullable(),
-  course: CourseSchema.nullable(),
-});
-type PurchaseRow = z.infer<typeof PurchaseRowSchema>;
 
 export function UserSettings({
   authn_user,
@@ -44,7 +31,7 @@ export function UserSettings({
   authn_provider_name: string;
   accessTokens: AccessToken[];
   newAccessTokens: string[];
-  purchases: PurchaseRow[];
+  purchases: Purchase[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -95,17 +82,7 @@ export function UserSettings({
             </table>
           </div>
 
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Purchases</div>
-
-            ${purchases.length === 0
-              ? html`
-                  <div class="card-body text-muted">
-                    You don&apos;t currently have any purchases.
-                  </div>
-                `
-              : PurchaseTable({ purchases })}
-          </div>
+          ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Browser configuration</div>
@@ -220,64 +197,6 @@ export function UserSettings({
       </body>
     </html>
   `.toString();
-}
-
-function PurchaseTable({ purchases }: { purchases: PurchaseRow[] }) {
-  return html`
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Course</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${purchases.map((purchase) => {
-            const courseName = purchase.course
-              ? `${purchase.course.short_name}: ${purchase.course.title}`
-              : 'Unknown course';
-
-            const courseInstanceName =
-              purchase.course_instance?.long_name ?? 'Unknown course instance';
-
-            return html`<tr>
-              <td>${purchase.stripe_checkout_session.id}</td>
-              <td>
-                <a
-                  ${purchase.course_instance == null
-                    ? ''
-                    : html`href="/pl/course_instance/${purchase.course_instance?.id}"`}
-                >
-                  ${courseName} (${courseInstanceName})
-                </a>
-              </td>
-              <td>${purchase.stripe_checkout_session.created_at?.toString()}</td>
-              <td>${formatStripePrice(purchase.stripe_checkout_session.data.amount_total)} USD</td>
-              <td>
-                ${StripeCheckoutSessionPaymentStatus({
-                  session: purchase.stripe_checkout_session,
-                })}
-              </td>
-            </tr>`;
-          })}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function StripeCheckoutSessionPaymentStatus({ session }: { session: StripeCheckoutSession }) {
-  if (session.data.payment_status === 'paid') {
-    return html`<span class="badge badge-success">Payment received</span>`;
-  } else if (session.data.payment_status === 'unpaid') {
-    return html`<span class="badge badge-secondary">Pending</span>`;
-  } else {
-    return '';
-  }
 }
 
 function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string }) {

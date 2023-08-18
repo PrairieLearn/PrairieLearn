@@ -5,8 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import error = require('@prairielearn/error');
 import sqldb = require('@prairielearn/postgres');
 
-import { AccessTokenSchema, PurchaseRowSchema, UserSettings } from './userSettings.html';
+import { AccessTokenSchema, UserSettings } from './userSettings.html';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types';
+import { isEnterprise } from '../../lib/license';
+import { getPurchasesForUser } from '../../ee/lib/billing/purchases';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -41,23 +43,7 @@ router.get(
       });
     }
 
-    // Get all purchases for this user.
-    const allPurchases = await sqldb.queryRows(
-      sql.select_purchases,
-      { user_id: authn_user.user_id },
-      PurchaseRowSchema,
-    );
-
-    // Only show completed checkout Sessions. If the user clicks through to
-    // Stripe but never actually fills in their payment info and completes
-    // the checkout, we'll still have a session in the database but we don't
-    // want to show it to the user.
-    //
-    // Note that the status we check for here is independent of if the payment
-    // has actually come through; that's stored in the `payment_status` field.
-    const completedPurchases = allPurchases.filter(
-      (purchase) => purchase.stripe_checkout_session.data.status === 'complete',
-    );
+    const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
 
     res.send(
       UserSettings({
@@ -66,7 +52,7 @@ router.get(
         authn_provider_name: res.locals.authn_provider_name,
         accessTokens,
         newAccessTokens,
-        purchases: completedPurchases,
+        purchases,
         resLocals: res.locals,
       }),
     );
