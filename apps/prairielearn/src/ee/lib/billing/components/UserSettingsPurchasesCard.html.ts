@@ -72,6 +72,6 @@ function StripeCheckoutSessionPaymentStatus({ session }: { session: StripeChecko
   } else if (session.data.payment_status === 'unpaid') {
     return html`<span class="badge badge-secondary">Pending</span>`;
   } else {
-    return '';
+    return html`<span class="badge badge-warning">Unknown</span>`;
   }
 }
