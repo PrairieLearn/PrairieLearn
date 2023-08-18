@@ -393,8 +393,14 @@ module.exports.initExpress = function () {
     workspaceProxy,
   ]);
 
-  // Limit to 5MB of JSON
-  app.use(bodyParser.json({ limit: 5 * 1024 * 1024 }));
+  app.use((req, res, next) => {
+    // Stripe webhook signature verification requires the raw body, so we avoid
+    // using the body parser for that route.
+    if (req.path === '/pl/webhooks/stripe') return next();
+
+    // Limit to 5MB of JSON
+    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+  });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
@@ -504,6 +510,10 @@ module.exports.initExpress = function () {
 
   // Must come before CSRF middleware; we do our own signature verification here.
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
+  app.use(
+    '/pl/webhooks/stripe',
+    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
+  );
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -624,9 +634,28 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // sets res.locals.course and res.locals.course_instance
+  app.use(
+    '/pl/course_instance/:course_instance_id',
+    require('./middlewares/authzCourseOrInstance'),
+  );
+
+  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+  // or `autoEnroll` middlewares so that we can render it even when the student
+  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
+  if (isEnterprise()) {
+    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
+    // below so that we can render it even when the student isn't enrolled in the
+    // course instance.
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+  }
+
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id', [
-    require('./middlewares/authzCourseOrInstance'), // sets res.locals.course and res.locals.courseInstance
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrants').default),
+    require('./middlewares/autoEnroll').default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -1334,20 +1363,6 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
-
-  if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id/upgrade', [
-      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
-    ]);
-
-    // Important: this middleware must come after the upgrade page. Otherwise,
-    // this middleware will always try to redirect before the upgrade page
-    // can be rendered.
-    app.use(
-      '/pl/course_instance/:course_instance_id',
-      require('./ee/middlewares/checkPlanGrants').default,
-    );
-  }
 
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
