@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/named-locks",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",

@@ -1,5 +1,16 @@
 # @prairielearn/migrations
 
+## 2.0.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+- Updated dependencies [10cc07dcc]
+  - @prairielearn/named-locks@1.5.2
+  - @prairielearn/postgres@1.7.4
+  - @prairielearn/logger@1.0.4
+  - @prairielearn/error@1.0.5
+
 ## 2.0.4
 
 ### Patch Changes

@@ -2,13 +2,13 @@ import { assert } from 'chai';
 
 import helperDb = require('../../tests/helperDb');
 import helperCourse = require('../../tests/helperCourse');
-import { insertEnrollment } from '../../models/enrollment';
+import { ensureEnrollment } from '../../models/enrollment';
 import {
   getEnrollmentCountsForCourseInstance,
   getEnrollmentCountsForInstitution,
 } from './enrollment';
 import { getOrCreateUser } from '../../tests/utils/auth';
-import { insertPlanGrant } from './plan-grants';
+import { ensurePlanGrant } from './plan-grants';
 import { queryRow } from '@prairielearn/postgres';
 import { CourseInstanceSchema } from '../../lib/db-types';
 
@@ -57,20 +57,20 @@ describe('getEnrollmentCountsForInstitution', () => {
       uin: 'paid2',
     });
 
-    await insertEnrollment({
+    await ensureEnrollment({
       course_instance_id: '1',
       user_id: freeUser.user_id,
     });
-    await insertEnrollment({
+    await ensureEnrollment({
       course_instance_id: '1',
       user_id: paidUser1.user_id,
     });
-    await insertEnrollment({
+    await ensureEnrollment({
       course_instance_id: courseInstance.id,
       user_id: paidUser2.user_id,
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -82,7 +82,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       authn_user_id: '1',
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -93,7 +93,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       authn_user_id: '1',
     });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: courseInstance.id,
@@ -137,7 +137,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       name: 'Example Student',
       uin: 'student',
     });
-    await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
 
@@ -152,9 +152,9 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
     });
 
-    await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
@@ -177,9 +177,9 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       uin: 'student',
     });
 
-    await insertEnrollment({ course_instance_id: '1', user_id: user.user_id });
+    await ensureEnrollment({ course_instance_id: '1', user_id: user.user_id });
 
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
