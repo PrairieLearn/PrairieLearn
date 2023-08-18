@@ -65,6 +65,22 @@ export function set(key: string, value: any, maxAgeMS?: number) {
   }
 }
 
+export async function del(key: string) {
+  if (!cacheEnabled) return;
+
+  switch (cacheType) {
+    case 'memory': {
+      cache.delete(key);
+      break;
+    }
+
+    case 'redis': {
+      await client.del(key);
+      break;
+    }
+  }
+}
+
 /**
  * Returns the value for the corresponding key if it exists in the cache; null otherwise.
  */

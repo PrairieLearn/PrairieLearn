@@ -56,8 +56,9 @@ export function StudentCourseInstanceUpgrade({
             requires an upgrade to support certain features selected by your instructor.
           </p>
 
-          ${planPrices !== null
-            ? html`
+          ${planPrices == null
+            ? html`<p>Please contact your instructor for more information.</p>`
+            : html`
                 ${PriceTable({ planNames: missingPlans, planPrices })}
 
                 <form method="POST">
@@ -93,8 +94,7 @@ export function StudentCourseInstanceUpgrade({
                     Upgrade
                   </button>
                 </form>
-              `
-            : ''}
+              `}
         </main>
       </body>
     </html>
