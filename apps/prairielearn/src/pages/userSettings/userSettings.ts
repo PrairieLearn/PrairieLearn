@@ -7,41 +7,11 @@ import sqldb = require('@prairielearn/postgres');
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types';
+import { isEnterprise } from '../../lib/license';
+import { getPurchasesForUser } from '../../ee/lib/billing/purchases';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
-    if (req.body.__action === 'token_generate') {
-      const name = req.body.token_name;
-      const token = uuidv4();
-      const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
-
-      await sqldb.callAsync('access_tokens_insert', [
-        res.locals.authn_user.user_id,
-        name,
-        // The token will only be persisted until the next page render.
-        // After that, we'll remove it from the database.
-        token,
-        tokenHash,
-      ]);
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'token_delete') {
-      await sqldb.callAsync('access_tokens_delete', [
-        req.body.token_id,
-        res.locals.authn_user.user_id,
-      ]);
-      res.redirect(req.originalUrl);
-    } else {
-      throw error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      });
-    }
-  }),
-);
 
 router.get(
   '/',
@@ -73,6 +43,8 @@ router.get(
       });
     }
 
+    const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
+
     res.send(
       UserSettings({
         authn_user,
@@ -80,9 +52,42 @@ router.get(
         authn_provider_name: res.locals.authn_provider_name,
         accessTokens,
         newAccessTokens,
+        purchases,
         resLocals: res.locals,
       }),
     );
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'token_generate') {
+      const name = req.body.token_name;
+      const token = uuidv4();
+      const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+
+      await sqldb.callAsync('access_tokens_insert', [
+        res.locals.authn_user.user_id,
+        name,
+        // The token will only be persisted until the next page render.
+        // After that, we'll remove it from the database.
+        token,
+        tokenHash,
+      ]);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'token_delete') {
+      await sqldb.callAsync('access_tokens_delete', [
+        req.body.token_id,
+        res.locals.authn_user.user_id,
+      ]);
+      res.redirect(req.originalUrl);
+    } else {
+      throw error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      });
+    }
   }),
 );
 

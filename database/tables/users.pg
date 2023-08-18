@@ -63,8 +63,6 @@ referenced by
     query_runs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     reservations: FOREIGN KEY (user_id) REFERENCES users(user_id)
-    stripe_checkout_sessions: FOREIGN KEY (agent_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    stripe_checkout_sessions: FOREIGN KEY (subject_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     submissions: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -3,6 +3,9 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { IdSchema, Institution, User } from '../../lib/db-types';
+import { type Purchase } from '../../ee/lib/billing/purchases';
+import { isEnterprise } from '../../lib/license';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -20,6 +23,7 @@ export function UserSettings({
   authn_provider_name,
   accessTokens,
   newAccessTokens,
+  purchases,
   resLocals,
 }: {
   authn_user: User;
@@ -27,6 +31,7 @@ export function UserSettings({
   authn_provider_name: string;
   accessTokens: AccessToken[];
   newAccessTokens: string[];
+  purchases: Purchase[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -76,6 +81,8 @@ export function UserSettings({
               </tbody>
             </table>
           </div>
+
+          ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Browser configuration</div>
@@ -128,8 +135,8 @@ export function UserSettings({
               ${newAccessTokens.length > 0
                 ? html`
                     <div class="alert alert-primary mt-3" role="alert">
-                      New access token created! Be sure to copy it now, as you won&apos;t be able to
-                      see it later.
+                      New access token created! Be sure to copy it now, as you won't be able to see
+                      it later.
                     </div>
                     ${newAccessTokens.map(
                       (token) => html`
@@ -145,9 +152,7 @@ export function UserSettings({
               ${accessTokens.length === 0
                 ? html`
                     <li class="list-group-item">
-                      <span class="text-muted"
-                        >You don&apos;t currently have any access tokens</span
-                      >
+                      <span class="text-muted"> You don't currently have any access tokens. </span>
                     </li>
                   `
                 : accessTokens.map(
