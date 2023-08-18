@@ -58,10 +58,10 @@ describe('API', function () {
       const page$ = cheerio.load(await res.text());
 
       const button = page$('#generateTokenButton').get(0);
+      assert(button);
 
       // Load the popover content
-      assert.isString(button?.attribs['data-content']);
-      if (!button) return;
+      assert.isString(button.attribs['data-content']);
 
       const data$ = cheerio.load(button.attribs['data-content']);
 
