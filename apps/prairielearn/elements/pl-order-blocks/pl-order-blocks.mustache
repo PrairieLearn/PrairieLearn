@@ -5,7 +5,8 @@ $(function() {
 
     new window.PLOrderBlocks(UUID, {
         maxIndent: {{max_indent}},
-        enableIndentation: {{check_indentation}}
+        enableIndentation: {{check_indentation}},
+        dropzoneLayout: "{{dropzone_layout}}"
     });
 });
 </script>
@@ -21,7 +22,9 @@ $(function() {
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         >
+                        <div class="inner-stuff">
                         {{{inner_html}}}
+                        </div>
                     </li>
                 {{/options}}
             </ul>
