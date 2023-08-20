@@ -447,8 +447,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     block_orientation = pl.get_enum_attrib(
         element, "block-orientation", BlockOrientationType, BlockOrientationType.DEFAULT
     )
-
-
+    dropzone_layout = pl.get_string_attrib(
+        element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
+    )
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
     )
@@ -485,9 +486,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
-        dropzone_layout = pl.get_string_attrib(
-            element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
-        )
 
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
@@ -576,6 +574,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
+            "orientation": "pl-block-horizontal" 
+            if block_orientation  is BlockOrientationType.HORIZONTAL 
+            else "",
+            "dropzone_layout": "pl-order-blocks-bottom"
+            if dropzone_layout == "bottom"
+            else "pl-order-blocks-right",
         }
 
         if score is not None:
@@ -647,6 +651,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
+            "orientation": "pl-block-horizontal" 
+            if block_orientation  is BlockOrientationType.HORIZONTAL 
+            else "",
+            "dropzone_layout": "pl-order-blocks-bottom"
+            if dropzone_layout == "bottom"
+            else "pl-order-blocks-right",
+
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)

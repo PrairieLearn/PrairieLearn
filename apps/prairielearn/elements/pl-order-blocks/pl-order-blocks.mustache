@@ -22,9 +22,7 @@ $(function() {
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         >
-                        <div class="inner-stuff">
                         {{{inner_html}}}
-                        </div>
                     </li>
                 {{/options}}
             </ul>
@@ -56,7 +54,7 @@ $(function() {
 
 {{#submission}}
     {{^parse-error}}
-    <div class="pl-order-blocks-answer-container">
+    <div class="pl-order-blocks-answer-container {{orientation}} {{dropzone_layout}}">
         <div class="card-header">
             Your answer:
         {{#correct}}
@@ -115,7 +113,7 @@ $(function() {
 {{/submission}}
 
 {{#true_answer}}
-    <div class="pl-order-blocks-answer-container">
+    <div class="pl-order-blocks-answer-container {{orientation}} {{dropzone_layout}}">
         <div class="card-header list-group-item-success">Correct answer ({{ordering_message}}{{indentation_message}}):</div>
         <ul class="card-body list-group">
         {{#question_solution}}
@@ -126,7 +124,7 @@ $(function() {
 
     {{#show_distractors}}
     <br><br>
-    <div class="pl-order-blocks-answer-container">
+    <div class="pl-order-blocks-answer-container  {{orientation}} {{dropzone_layout}}">
         <div class="card-header list-group-item-danger">Incorrect Blocks (these blocks should not be included in your solution):</div>
         <ul class="card-body list-group list-unstyled">
         {{#distractors}}

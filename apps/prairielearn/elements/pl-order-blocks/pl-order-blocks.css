@@ -10,6 +10,7 @@ div.pl-order-blocks-bottom {
   /* This particular style renders the dropzones in a single column vertically */
   width: 100%;
   margin: 8px;
+  min-height: 130px;
 }
 
 li.pl-order-blocks-code {
@@ -22,6 +23,7 @@ li.pl-order-blocks-code {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
 }
+
 
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
@@ -71,16 +73,17 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-order-blocks-container.pl-block-horizontal > .list-group{
-  overflow-y: auto;
-  overflow-x: auto;
+.pl-block-horizontal > .list-group{
+  overflow-x: scroll;
 }
 
-.pl-order-blocks-container.pl-block-horizontal > ul > li,
-.pl-order-blocks-container.pl-block-horizontal > .list-group {
+.pl-block-horizontal >  ul > li,
+.pl-block-horizontal > .list-group {
   display: inline-block !important;
   float: none !important;
   white-space: nowrap;
+  margin-right: 4px;
+  margin-left: 4px; 
 }
 
 .pl-order-blocks-answer-container > ul {
@@ -88,7 +91,8 @@ li.ui-state-highlight {
 }
 
 div.pl-order-blocks-answer-container {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #9e9e9e;
   border-radius: 4px;
   margin-bottom: 5px;
