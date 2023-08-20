@@ -4,6 +4,6 @@ SELECT
 FROM
   institutions AS i
   JOIN pl_courses AS c ON (c.institution_id = i.id)
-  JOIN pl_course_instances AS ci ON (ci.course_id = c.id)
+  JOIN course_instances AS ci ON (ci.course_id = c.id)
 WHERE
   ci.id = $course_instance_id;
