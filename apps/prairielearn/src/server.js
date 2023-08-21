@@ -1744,7 +1744,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/workspaces',
-    require('./pages/administratorWorkspaces/administratorWorkspaces'),
+    require('./pages/administratorWorkspaces/administratorWorkspaces').default,
   );
   app.use(
     '/pl/administrator/features',

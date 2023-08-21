@@ -1,9 +1,8 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
-const z = require('zod');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import z = require('zod');
 
-const { WorkspaceHostSchema, IdSchema } = require('../../lib/db-types');
+import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types';
 
 // TODO: upstream this into `lib/db-types`. We're skipping that for now since
 // we don't have a way to handle interval columns.
@@ -17,26 +16,22 @@ const WorkspaceWithContextSchema = z.object({
   institution_name: z.string(),
 });
 
-const WorkspaceHostRowSchema = z.object({
+export const WorkspaceHostRowSchema = z.object({
   workspace_host: WorkspaceHostSchema,
   workspace_host_time_in_state: z.string(),
   workspaces: z.array(WorkspaceWithContextSchema),
 });
+type WorkspaceHostRow = z.infer<typeof WorkspaceHostRowSchema>;
 
-/** @typedef {z.infer<typeof WorkspaceHostRowSchema>} WorkspaceHostRow */
-
-/**
- * @typedef {object} AdministratorWorkspacesProps
- * @property {WorkspaceHostRow[]} workspaceHostRows
- * @property {number} workspaceLoadHostCapacity
- * @property {Record<string, any>} resLocals
- */
-
-/**
- * @param {AdministratorWorkspacesProps} props
- * @returns {string}
- */
-function AdministratorWorkspaces({ workspaceHostRows, workspaceLoadHostCapacity, resLocals }) {
+export function AdministratorWorkspaces({
+  workspaceHostRows,
+  workspaceLoadHostCapacity,
+  resLocals,
+}: {
+  workspaceHostRows: WorkspaceHostRow[];
+  workspaceLoadHostCapacity: number;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -145,17 +140,7 @@ function AdministratorWorkspaces({ workspaceHostRows, workspaceLoadHostCapacity,
   `.toString();
 }
 
-/**
- * @typedef {Object} CapacityProps
- * @property {number} total
- * @property {number} current
- */
-
-/**
- * @param {CapacityProps} props
- * @returns {import('@prairielearn/html').HtmlSafeString}
- */
-function Capacity({ total, current }) {
+function Capacity({ total, current }: { total: number; current: number }) {
   const capacity = (current / total) * 100;
   return html`
     <div class="d-flex flex-row align-items-center">
@@ -196,8 +181,3 @@ function WorkspaceHostState({ state }) {
   }
   return html`<span class="badge badge-${color} mr-2">${state}</span>`;
 }
-
-module.exports = {
-  WorkspaceHostRowSchema,
-  AdministratorWorkspaces,
-};

@@ -1,13 +1,9 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { loadSqlEquiv, queryValidatedRows } = require('@prairielearn/postgres');
+import asyncHandler = require('express-async-handler');
+import express = require('express');
+import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
-const { config } = require('../../lib/config');
-const {
-  AdministratorWorkspaces,
-  WorkspaceHostRowSchema,
-} = require('./administratorWorkspaces.html');
+import { config } from '../../lib/config';
+import { AdministratorWorkspaces, WorkspaceHostRowSchema } from './administratorWorkspaces.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -30,4 +26,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;
