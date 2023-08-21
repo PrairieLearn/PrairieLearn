@@ -96,38 +96,48 @@ export function AdministratorWorkspaces({
                       })}
                     </div>
                     <div id="workspaces-${workspaceHost.id}" class="collapse">
-                      <div class="list-group list-group my-2">
-                        ${workspaces.map((workspace) => {
-                          const maybeCourseInstanceName = workspace.course_instance_name
-                            ? html`(<span title="Course instance"
-                                  >${workspace.course_instance_name}</span
-                                >)`
-                            : null;
-                          return html`
-                            <div class="list-group-item">
-                              <div class="d-flex align-items-center">
-                                <span class="mr-2" style="font-variant-numeric: tabular-nums;">
-                                  ${workspace.id}
-                                </span>
-                                <span> </span>
-                                ${WorkspaceState({ state: workspace.state })}
-                                <span class="badge badge-secondary">
-                                  ${workspace.time_in_state}
-                                </span>
-                              </div>
-                              <div class="text-muted text-small">
-                                <span class="text-monospace" title="Question"
-                                  >${workspace.question_name}</span
-                                >
-                                &bull;
-                                <span title="Course">${workspace.course_name}</span>
-                                ${maybeCourseInstanceName} &bull;
-                                <span title="Institution">${workspace.institution_name}</span>
-                              </div>
+                      ${workspaces.length === 0
+                        ? html`
+                            <div class="text-muted my-2">
+                              There are no workspaces running on this host.
                             </div>
-                          `;
-                        })}
-                      </div>
+                          `
+                        : html`
+                            <div class="list-group list-group my-2">
+                              ${workspaces.map((workspace) => {
+                                const maybeCourseInstanceName = workspace.course_instance_name
+                                  ? html`(<span title="Course instance"
+                                        >${workspace.course_instance_name}</span
+                                      >)`
+                                  : null;
+                                return html`
+                                  <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                      <span
+                                        class="mr-2"
+                                        style="font-variant-numeric: tabular-nums;"
+                                      >
+                                        ${workspace.id}
+                                      </span>
+                                      ${WorkspaceState({ state: workspace.state })}
+                                      <span class="badge badge-secondary">
+                                        ${workspace.time_in_state}
+                                      </span>
+                                    </div>
+                                    <div class="text-muted text-small">
+                                      <span class="text-monospace" title="Question"
+                                        >${workspace.question_name}</span
+                                      >
+                                      &bull;
+                                      <span title="Course">${workspace.course_name}</span>
+                                      ${maybeCourseInstanceName} &bull;
+                                      <span title="Institution">${workspace.institution_name}</span>
+                                    </div>
+                                  </div>
+                                `;
+                              })}
+                            </div>
+                          `}
                     </div>
                   </div>
                 `;
