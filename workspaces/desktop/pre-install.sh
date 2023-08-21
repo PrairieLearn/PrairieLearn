@@ -4,7 +4,7 @@ set -ex
 apt-get update && apt-get upgrade -y
 
 # bring back the missing manpages
-apt install -y man-db
+apt-get install -y man-db
 yes | unminimize
 
 # create base system
@@ -13,13 +13,13 @@ groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 
 # install needed apps
-apt install xfce4-terminal build-essential geany emacs-gtk vim-gtk nano gedit less -y
+apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk nano gedit less -y
 
 # install firefox without snap (https://askubuntu.com/a/1369163)
-apt purge firefox -y
-apt install software-properties-common -y
+apt-get purge firefox -y
+apt-get install software-properties-common -y
 add-apt-repository -y ppa:mozillateam/ppa
-apt install firefox-esr -y
+apt-get install firefox-esr -y
 
 # install vscode depending on what architecture we're building on
 arch=$(uname -m)
