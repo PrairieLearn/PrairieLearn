@@ -31,8 +31,6 @@ WITH
       jsonb_agg(to_jsonb(w.*)) AS workspaces
     FROM
       workspaces_with_context AS w
-    WHERE
-      w.state IN ('launching', 'running')
     GROUP BY
       w.workspace_host_id
   )
