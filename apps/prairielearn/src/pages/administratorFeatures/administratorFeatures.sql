@@ -29,7 +29,8 @@ SELECT
 FROM
   institutions
 ORDER BY
-  long_name ASC;
+  long_name,
+  id;
 
 -- BLOCK select_courses_for_institution
 SELECT
@@ -39,7 +40,8 @@ FROM
 WHERE
   institution_id = $institution_id
 ORDER BY
-  short_name ASC;
+  short_name,
+  id;
 
 -- BLOCK select_course_instances_for_course
 SELECT
@@ -49,4 +51,5 @@ FROM
 WHERE
   course_id = $course_id
 ORDER BY
-  long_name ASC;
+  long_name,
+  id;
