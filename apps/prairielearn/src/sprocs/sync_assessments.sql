@@ -566,11 +566,13 @@ BEGIN
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
 
-    -- Ensure all assessments have an assessment module, default number=0.
+    -- Ensure all assessments have an assessment module. We'll use the "Default"
+    -- module if one is not specified. The assessment module syncing code will
+    -- ensure that such a module exists.
     UPDATE assessments AS a
     SET
         assessment_module_id = COALESCE(a.assessment_module_id,
-            (SELECT id FROM assessment_modules WHERE number = 0 AND course_id = syncing_course_id))
+            (SELECT id FROM assessment_modules WHERE name = 'Default' AND course_id = syncing_course_id))
     WHERE a.deleted_at IS NULL
     AND a.course_instance_id = syncing_course_instance_id;
 
