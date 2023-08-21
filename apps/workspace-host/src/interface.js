@@ -490,13 +490,17 @@ async function _allocateContainerPort(workspace) {
  * @param {function} callback
  */
 function _checkServer(workspace, callback) {
-  const checkMilliseconds = 500;
-  const maxMilliseconds = 30000;
+  const startTimeout = config.workspaceStartTimeoutSec * 1000;
+  const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
+  const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = new Date().getTime();
   function checkWorkspace() {
     request(
-      `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+      {
+        url: `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+        timeout: healthCheckTimeout,
+      },
       function (err, res, _body) {
         if (err) {
           // Do nothing, because errors are expected while the container is launching.
@@ -508,7 +512,7 @@ function _checkServer(workspace, callback) {
           callback(null, workspace);
         } else {
           const endTime = new Date().getTime();
-          if (endTime - startTime > maxMilliseconds) {
+          if (endTime - startTime > startTimeout) {
             const { id, version, launch_uuid } = workspace;
             callback(
               new Error(
@@ -516,13 +520,13 @@ function _checkServer(workspace, callback) {
               ),
             );
           } else {
-            setTimeout(checkWorkspace, checkMilliseconds);
+            setTimeout(checkWorkspace, healthCheckInterval);
           }
         }
       },
     );
   }
-  setTimeout(checkWorkspace, checkMilliseconds);
+  checkWorkspace();
 }
 const _checkServerAsync = util.promisify(_checkServer);
 
