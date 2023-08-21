@@ -94,7 +94,7 @@ export function InstitutionAdminCourse({
             </div>
 
             <div class="form-group">
-              <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
+              <label for="yearly_enrollment_limit">Yearly enrollment limit for course</label>
               <input
                 type="number"
                 class="form-control"
