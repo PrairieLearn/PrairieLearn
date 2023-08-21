@@ -2483,7 +2483,7 @@ __metadata:
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "*"
     "@types/fs-extra": ^11.0.1
-    "@types/lodash": ^4.14.196
+    "@types/lodash": ^4.14.197
     "@types/mocha": ^10.0.1
     "@types/node": ^18.17.4
     fs-extra: ^11.1.1
@@ -2728,7 +2728,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/diff": ^5.0.3
     "@types/fs-extra": ^11.0.1
-    "@types/lodash": ^4.14.196
+    "@types/lodash": ^4.14.197
     "@types/node": ^18.17.4
     "@types/yargs": ^17.0.24
     chalk: ^4.1.2
@@ -2751,7 +2751,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.8
-    "@types/lodash": ^4.14.196
+    "@types/lodash": ^4.14.197
     "@types/mocha": ^10.0.1
     "@types/multipipe": ^3.0.1
     "@types/node": ^18.17.4
@@ -2819,7 +2819,7 @@ __metadata:
     "@types/jquery": ^3.5.16
     "@types/jsdom": ^21.1.1
     "@types/klaw": ^3.0.3
-    "@types/lodash": ^4.14.196
+    "@types/lodash": ^4.14.197
     "@types/loopbench": ^1.2.1
     "@types/memorystream": ^0.3.1
     "@types/mime": ^3.0.1
@@ -2880,7 +2880,7 @@ __metadata:
     fabric: ^4.6.0
     fast-glob: ^3.3.1
     file-type: ^16.5.4
-    filesize: ^10.0.8
+    filesize: ^10.0.11
     folder-hash: ^4.0.4
     form-data: ^4.0.0
     fs-extra: ^11.1.1
@@ -3078,7 +3078,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.17.4
     fast-glob: ^3.3.1
-    filesize: ^10.0.8
+    filesize: ^10.0.11
     typescript: ^5.1.6
     typescript-cp: ^0.1.9
   languageName: unknown
@@ -4365,10 +4365,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.14.196":
-  version: 4.14.196
-  resolution: "@types/lodash@npm:4.14.196"
-  checksum: 201d17c3e62ae02a93c99ec78e024b2be9bd75564dd8fd8c26f6ac51a985ab280d28ce2688c3bcdfe785b0991cd9814edff19ee000234c7b45d9a697f09feb6a
+"@types/lodash@npm:^4.14.197":
+  version: 4.14.197
+  resolution: "@types/lodash@npm:4.14.197"
+  checksum: 53d7567d1704de76cf33266c78062e0fd722d4b846e5b1417d0b6ef0ee41c0d9c451b92bc34f73d5f1fcc45c7d36511e92f6f47a9279b48157ba60a92ddaa078
   languageName: node
   linkType: hard
 
@@ -8675,10 +8675,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"filesize@npm:^10.0.8":
-  version: 10.0.8
-  resolution: "filesize@npm:10.0.8"
-  checksum: ee1a9dd56f0993eb0378fe78d7f3bcd6773dcc939bfc72d7c09ea10da338ad41dfb26767f6f4da31e6e093050406fd95b3a32f8ed6b45c0e5cebbb7afe87e0e0
+"filesize@npm:^10.0.11":
+  version: 10.0.11
+  resolution: "filesize@npm:10.0.11"
+  checksum: 8ce4939932acee9a65590fae8540b9c7edfffefb22c5b15fe63f1d601f5ec9adefec412fc5c33223f3ba9c30483a271a5cf286248a1c3db4ca2d049bd1e3e731
   languageName: node
   linkType: hard
 
