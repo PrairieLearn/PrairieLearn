@@ -19,3 +19,11 @@ WHERE
   AND ci.deleted_at IS NULL
   AND c.institution_id = $institution_id
   AND c.deleted_at IS NULL;
+
+-- BLOCK update_enrollment_limits
+UPDATE pl_courses AS c
+SET
+  yearly_enrollment_limit = $yearly_enrollment_limit,
+  course_instance_enrollment_limit = $course_instance_enrollment_limit
+WHERE
+  id = $course_id;
