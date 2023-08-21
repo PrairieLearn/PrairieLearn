@@ -66,7 +66,7 @@ const loadHomeworkQuestionUrl = async (user) => {
 /**
  * Gets the score text for the first submission panel on the page.
  *
- * @param {cheerio.Root} $
+ * @param {cheerio.CheerioAPI} $
  * @returns {string}
  */
 const getLatestSubmissionStatus = ($) => {
@@ -95,8 +95,8 @@ const submitGradeForm = async (method = 'rubric') => {
     body: new URLSearchParams([
       ...Object.entries({
         __action: 'add_manual_grade',
-        __csrf_token: form.find('input[name=__csrf_token]').val(),
-        modified_at: form.find('input[name=modified_at]').val(),
+        __csrf_token: form.find('input[name=__csrf_token]').attr('value'),
+        modified_at: form.find('input[name=modified_at]').attr('value'),
         score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
         score_manual_percent: (method === 'percentage'
           ? score_percent
@@ -467,9 +467,10 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
-        const token = $instancesBody('form[name=grade-all-form]')
-          .find('input[name=__csrf_token]')
-          .val();
+        const token =
+          $instancesBody('form[name=grade-all-form]')
+            .find('input[name=__csrf_token]')
+            .attr('value') || '';
         await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
@@ -533,9 +534,10 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
         const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-        const token = $manualGradingAQPage('form[name=grading-form]')
-          .find('input[name=__csrf_token]')
-          .val();
+        const token =
+          $manualGradingAQPage('form[name=grading-form]')
+            .find('input[name=__csrf_token]')
+            .attr('value') || '';
 
         await fetch(manualGradingAssessmentQuestionUrl, {
           method: 'POST',
@@ -704,9 +706,9 @@ describe('Manual Grading', function () {
             method: 'POST',
             headers: { 'Content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-              __action: form.find('input[name=__action]').val(),
-              __csrf_token: form.find('input[name=__csrf_token]').val(),
-              modified_at: form.find('input[name=modified_at]').val(),
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -746,9 +748,9 @@ describe('Manual Grading', function () {
             method: 'POST',
             headers: { 'Content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-              __action: form.find('input[name=__action]').val(),
-              __csrf_token: form.find('input[name=__csrf_token]').val(),
-              modified_at: form.find('input[name=modified_at]').val(),
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -815,9 +817,9 @@ describe('Manual Grading', function () {
             method: 'POST',
             headers: { 'Content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-              __action: form.find('input[name=__action]').val(),
-              __csrf_token: form.find('input[name=__csrf_token]').val(),
-              modified_at: form.find('input[name=modified_at]').val(),
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
@@ -888,9 +890,9 @@ describe('Manual Grading', function () {
             method: 'POST',
             headers: { 'Content-type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-              __action: form.find('input[name=__action]').val(),
-              __csrf_token: form.find('input[name=__csrf_token]').val(),
-              modified_at: form.find('input[name=modified_at]').val(),
+              __action: form.find('input[name=__action]').attr('value') || '',
+              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+              modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',
@@ -923,7 +925,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
-        const token = $instancesBody('input[name=__csrf_token]').val();
+        const token = $instancesBody('input[name=__csrf_token]').attr('value') || '';
         const response = await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },

@@ -191,3 +191,32 @@ module.exports.resetDatabase = async function resetDatabase() {
 module.exports.getDatabaseNameForCurrentWorker = function getDatabaseNameForCurrentWorker() {
   return postgresTestUtils.getDatabaseNameForCurrentMochaWorker();
 };
+
+class RollbackTransactionError extends Error {
+  constructor() {
+    super('Rollback transaction');
+    this.name = 'RollbackTransactionError';
+  }
+}
+
+/**
+ * Runs the provided function in the context of a transaction, then rolls the
+ * transaction back after the function completes.
+ *
+ * Note that this relies on AsyncLocalStorage to propagate the transaction.
+ * The current transaction will not be propagated across network calls, so
+ * use this carefully.
+ */
+module.exports.runInTransactionAndRollback = async function runInTransactionAndRollback(fn) {
+  await sqldb
+    .runInTransactionAsync(async () => {
+      await fn();
+      throw new RollbackTransactionError();
+    })
+    .catch((err) => {
+      if (err instanceof RollbackTransactionError) {
+        return;
+      }
+      throw err;
+    });
+};

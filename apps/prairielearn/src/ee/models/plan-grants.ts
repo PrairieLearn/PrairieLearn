@@ -24,7 +24,7 @@ type NewPlanGrant =
   | NewCourseInstanceUserPlanGrant
   | NewUserPlanGrant;
 
-export async function insertPlanGrant({
+export async function ensurePlanGrant({
   plan_grant,
   authn_user_id,
 }: {
@@ -32,7 +32,7 @@ export async function insertPlanGrant({
   authn_user_id: string;
 }): Promise<void> {
   const newPlanGrant = await queryRow(
-    sql.insert_plan_grant,
+    sql.ensure_plan_grant,
     {
       type: plan_grant.type,
       plan_name: plan_grant.plan_name,

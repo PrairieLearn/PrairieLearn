@@ -41,7 +41,7 @@ export async function init() {
   }
 }
 
-export function set(key: string, value: string | number | boolean, maxAgeMS?: number) {
+export function set(key: string, value: any, maxAgeMS?: number) {
   if (!cacheEnabled) return;
 
   switch (cacheType) {
@@ -60,6 +60,22 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
       client
         .set(key, JSON.stringify(value), { PX: maxAgeMS ?? undefined })
         .catch((_err) => logger.error('Cache set error', { key, maxAgeMS }));
+      break;
+    }
+  }
+}
+
+export async function del(key: string) {
+  if (!cacheEnabled) return;
+
+  switch (cacheType) {
+    case 'memory': {
+      cache.delete(key);
+      break;
+    }
+
+    case 'redis': {
+      await client.del(key);
       break;
     }
   }
