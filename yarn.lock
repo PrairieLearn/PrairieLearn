@@ -2880,7 +2880,7 @@ __metadata:
     fabric: ^4.6.0
     fast-glob: ^3.3.1
     file-type: ^16.5.4
-    filesize: ^10.0.8
+    filesize: ^10.0.11
     folder-hash: ^4.0.4
     form-data: ^4.0.0
     fs-extra: ^11.1.1
@@ -3078,7 +3078,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.17.4
     fast-glob: ^3.3.1
-    filesize: ^10.0.8
+    filesize: ^10.0.11
     typescript: ^5.1.6
     typescript-cp: ^0.1.9
   languageName: unknown
@@ -8675,10 +8675,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"filesize@npm:^10.0.8":
-  version: 10.0.8
-  resolution: "filesize@npm:10.0.8"
-  checksum: ee1a9dd56f0993eb0378fe78d7f3bcd6773dcc939bfc72d7c09ea10da338ad41dfb26767f6f4da31e6e093050406fd95b3a32f8ed6b45c0e5cebbb7afe87e0e0
+"filesize@npm:^10.0.11":
+  version: 10.0.11
+  resolution: "filesize@npm:10.0.11"
+  checksum: 8ce4939932acee9a65590fae8540b9c7edfffefb22c5b15fe63f1d601f5ec9adefec412fc5c33223f3ba9c30483a271a5cf286248a1c3db4ca2d049bd1e3e731
   languageName: node
   linkType: hard
 
