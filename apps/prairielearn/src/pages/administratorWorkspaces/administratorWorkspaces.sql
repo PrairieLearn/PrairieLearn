@@ -1,4 +1,4 @@
--- BLOCK select_workspaces_hosts
+-- BLOCK select_workspace_hosts
 WITH
   workspaces_with_context AS (
     SELECT
