@@ -29,6 +29,7 @@ export const DateFromISOString = z
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
+  course_instance_enrollment_limit: z.number().nullable(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
@@ -45,6 +46,7 @@ export const CourseSchema = z.object({
   sync_warnings: z.string().nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
+  yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
 

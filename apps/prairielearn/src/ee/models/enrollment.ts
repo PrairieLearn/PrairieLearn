@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { Institution, CourseInstance } from '../../lib/db-types';
+import { Institution, Course, CourseInstance } from '../../lib/db-types';
 import { checkPlanGrants } from '../lib/billing/plan-grants';
 
 const sql = loadSqlEquiv(__filename);
@@ -26,6 +26,28 @@ export async function getEnrollmentCountsForInstitution({
   const result = await queryOptionalRow(
     sql.select_enrollment_counts_for_institution,
     { institution_id, created_since },
+    EnrollmentCountsSchema,
+  );
+
+  return {
+    paid: result?.paid ?? 0,
+    free: result?.free ?? 0,
+  };
+}
+
+export async function getEnrollmentCountsForCourse({
+  course_id,
+  created_since,
+}: {
+  course_id: string;
+  created_since: string;
+}): Promise<EnrollmentCounts> {
+  const result = await queryOptionalRow(
+    sql.select_enrollment_counts_for_course,
+    {
+      course_id,
+      created_since,
+    },
     EnrollmentCountsSchema,
   );
 
@@ -69,10 +91,12 @@ export enum PotentialEnterpriseEnrollmentStatus {
  */
 export async function checkPotentialEnterpriseEnrollment({
   institution,
+  course,
   course_instance,
   authz_data,
 }: {
   institution: Institution;
+  course: Course;
   course_instance: CourseInstance;
   authz_data: any;
 }): Promise<PotentialEnterpriseEnrollmentStatus> {
@@ -97,19 +121,38 @@ export async function checkPotentialEnterpriseEnrollment({
     institution_id: institution.id,
     created_since: '1 year',
   });
+  const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
+    course_id: course_instance.course_id,
+    created_since: '1 year',
+  });
   const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
     course_instance.id,
   );
 
   const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
+  const freeCourseEnrollmentCount = courseEnrollmentCounts.free;
   const freeCourseInstanceEnrollmentCount = courseInstanceEnrollmentCounts.free;
 
-  const yearlyEnrollmentLimit = institution.yearly_enrollment_limit;
+  // If both an institutional and course yearly enrollment limit are defined, we'll
+  // always enforce both of them. That is, the institutional yearly enrollment limit
+  // always applies, and the course yearly enrollment can only serve as a tighter
+  // bound on that.
+  //
+  // If a course yearly enrollment limit is not defined, we'll use the institutional
+  // enrollment limit as the upper bound, as the number of enrollments in the course
+  // must by definition be less than or equal to the number of enrollments in the
+  // institution as a whole.
+  const institutionYearlyEnrollmentLimit = institution.yearly_enrollment_limit;
+  const courseYearlyEnrollmentLimit =
+    course.yearly_enrollment_limit ?? institutionYearlyEnrollmentLimit;
   const courseInstanceEnrollmentLimit =
-    course_instance.enrollment_limit ?? institution.course_instance_enrollment_limit;
+    course_instance.enrollment_limit ??
+    course.course_instance_enrollment_limit ??
+    institution.course_instance_enrollment_limit;
 
   if (
-    freeInstitutionEnrollmentCount + 1 > yearlyEnrollmentLimit ||
+    freeInstitutionEnrollmentCount + 1 > institutionYearlyEnrollmentLimit ||
+    freeCourseEnrollmentCount + 1 > courseYearlyEnrollmentLimit ||
     freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
   ) {
     return PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED;
