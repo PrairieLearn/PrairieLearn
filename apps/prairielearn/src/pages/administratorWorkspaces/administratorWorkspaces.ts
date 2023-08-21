@@ -12,7 +12,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const workspaceHostRows = await queryValidatedRows(
-      sql.select_workspaces_2,
+      sql.select_workspace_hosts,
       {},
       WorkspaceHostRowSchema,
     );
