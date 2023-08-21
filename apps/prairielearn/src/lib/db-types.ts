@@ -9,10 +9,27 @@ export const IdSchema = z
   .string({ coerce: true })
   .refine((val) => /^\d+$/.test(val), { message: 'ID is not an integer' });
 
+// Accepts either a string or a Date object. If a string is passed, it is
+// validated and parsed as an ISO date string.
+//
+// Useful for parsing dates from JSON, which are always strings.
+export const DateFromISOString = z
+  .union([z.string(), z.date()])
+  .refine(
+    (s) => {
+      const date = new Date(s);
+      return !Number.isNaN(date.getTime());
+    },
+    {
+      message: 'must be a valid ISO date string',
+    },
+  )
+  .transform((s) => new Date(s));
+
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
   id: IdSchema,
@@ -34,7 +51,7 @@ export type Course = z.infer<typeof CourseSchema>;
 export const CourseInstanceSchema = z.object({
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
@@ -84,8 +101,8 @@ export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 export const GroupConfigSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
-  date: z.date(),
-  deleted_at: z.date().nullable(),
+  date: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
   has_roles: z.boolean(),
   id: IdSchema,
   maximum: z.number().nullable(),
@@ -98,12 +115,13 @@ export const GroupConfigSchema = z.object({
 export type GroupConfig = z.infer<typeof GroupConfigSchema>;
 
 export const UserSchema = z.object({
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   institution_id: IdSchema,
   lti_context_id: z.string().nullable(),
   lti_course_instance_id: IdSchema.nullable(),
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
+  stripe_customer_id: z.string().nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,
@@ -113,7 +131,7 @@ export type User = z.infer<typeof UserSchema>;
 export const QuestionSchema = z.object({
   client_files: z.array(z.string()).nullable(),
   course_id: IdSchema,
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   dependencies: z.any(),
   directory: z.string().nullable(),
   external_grading_enable_networking: z.boolean().nullable(),
@@ -162,21 +180,21 @@ export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
   id: IdSchema,
   instance_id: z.string(),
-  launched_at: z.date().nullable(),
+  launched_at: DateFromISOString.nullable(),
   load_count: z.number().nullable(),
-  ready_at: z.date().nullable(),
+  ready_at: DateFromISOString.nullable(),
   state: z
     .enum(['launching', 'ready', 'draining', 'unhealthy', 'terminating', 'terminated'])
     .nullable(),
-  state_changed_at: z.date().nullable(),
-  terminated_at: z.date().nullable(),
-  unhealthy_at: z.date().nullable(),
+  state_changed_at: DateFromISOString.nullable(),
+  terminated_at: DateFromISOString.nullable(),
+  unhealthy_at: DateFromISOString.nullable(),
   unhealthy_reason: z.string().nullable(),
 });
 export type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
 
 export const WorkspaceLogSchema = z.object({
-  date: z.date().nullable(),
+  date: DateFromISOString.nullable(),
   id: IdSchema,
   message: z.string().nullable(),
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']).nullable(),
@@ -190,7 +208,7 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
 export const PlanGrantSchema = z.object({
   course_instance_id: IdSchema.nullable(),
-  created_at: z.date(),
+  created_at: DateFromISOString,
   id: IdSchema,
   institution_id: IdSchema.nullable(),
   plan_name: z.enum(['basic', 'compute', 'everything']),
@@ -205,7 +223,7 @@ export const AuditLogSchema = z.object({
   column_name: z.string().nullable(),
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
-  date: z.date().nullable(),
+  date: DateFromISOString.nullable(),
   group_id: IdSchema.nullable(),
   id: IdSchema,
   institution_id: IdSchema.nullable(),
@@ -227,7 +245,7 @@ export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPl
 
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
-  created_at: z.date(),
+  created_at: DateFromISOString,
   id: IdSchema,
   // Currently unused.
   // TODO: remove from schema entirely?
@@ -235,3 +253,17 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
+
+export const StripeCheckoutSessionSchema = z.object({
+  agent_user_id: IdSchema,
+  completed_at: DateFromISOString.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  data: z.any(),
+  id: IdSchema,
+  plan_grants_created: z.boolean(),
+  plan_names: z.array(z.enum(['basic', 'compute', 'everything'])),
+  stripe_object_id: z.string(),
+  subject_user_id: IdSchema.nullable(),
+});
+export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;

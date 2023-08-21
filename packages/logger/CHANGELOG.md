@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 1.0.4
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
 ## 1.0.3
 
 ### Patch Changes
