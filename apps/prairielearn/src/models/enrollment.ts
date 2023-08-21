@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 
-import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
+import { Course, CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
 import { isEnterprise } from '../lib/license';
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -37,11 +37,13 @@ export async function ensureEnrollment({
  */
 export async function ensureCheckedEnrollment({
   institution,
+  course,
   course_instance,
   authz_data,
   redirect,
 }: {
   institution: Institution;
+  course: Course;
   course_instance: CourseInstance;
   authz_data: any;
   redirect: Response['redirect'];
@@ -56,6 +58,7 @@ export async function ensureCheckedEnrollment({
   if (isEnterprise()) {
     const status = await checkPotentialEnterpriseEnrollment({
       institution,
+      course,
       course_instance,
       authz_data,
     });

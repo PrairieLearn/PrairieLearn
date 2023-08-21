@@ -17,6 +17,7 @@ export default asyncHandler(async (req, res, next) => {
   ) {
     const didEnroll = await ensureCheckedEnrollment({
       institution: res.locals.institution,
+      course: res.locals.course,
       course_instance: res.locals.course_instance,
       authz_data: res.locals.authz_data,
       redirect: res.redirect.bind(res),

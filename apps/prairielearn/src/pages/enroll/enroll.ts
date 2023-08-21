@@ -81,6 +81,7 @@ router.post(
 
       const didEnroll = await ensureCheckedEnrollment({
         institution,
+        course,
         course_instance,
         authz_data: res.locals.authz_data,
         redirect: res.redirect.bind(res),
