@@ -1,6 +1,7 @@
 columns
     branch: text default 'master'::text
     commit_hash: text
+    course_instance_enrollment_limit: integer
     deleted_at: timestamp with time zone
     display_timezone: text not null
     example_course: boolean not null default false
@@ -17,6 +18,7 @@ columns
     sync_warnings: text
     template_course: boolean not null default false
     title: text
+    yearly_enrollment_limit: integer
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
