@@ -291,7 +291,7 @@ The schema for permissions is defined as follows:
 
 Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. Setting either attribute to `null` means that **every role** can view/submit that part.
 
-Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Recorder"]`, then only the _Recorder_ can submit that particular question.
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Reflector"]`, then only the _Recorder_ can submit that particular question.
 
 ### Students joining assessments with custom group roles
 
