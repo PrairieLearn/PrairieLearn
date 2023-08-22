@@ -262,12 +262,12 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 }
 ```
 
-| Attribute                        | Type    | Default | Description                                                                   |
-| -------------------------------- | ------- | ------- | ----------------------------------------------------------------------------- |
-| `name`                           | string  | -       | The name of the role.                                                         |
-| `minimum`                        | integer | 0       | The minimum required number of this role in the assessment.                   |
-| `maximum`                        | integer | -       | The maximum required number of this role in the assessment.                   |
-| `canAssignRolesAtStart`          | boolean | false   | Allow students with this role to assign roles throughout the assessment. |
+| Attribute               | Type    | Default | Description                                                              |
+| ----------------------- | ------- | ------- | ------------------------------------------------------------------------ |
+| `name`                  | string  | -       | The name of the role.                                                    |
+| `minimum`               | integer | 0       | The minimum required number of this role in the assessment.              |
+| `maximum`               | integer | -       | The maximum required number of this role in the assessment.              |
+| `canAssignRolesAtStart` | boolean | false   | Allow students with this role to assign roles throughout the assessment. |
 
 Students select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents all question submissions if a group's role configuration does not meet the instructor's specification.
 
@@ -291,7 +291,7 @@ The schema for permissions is defined as follows:
 
 Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. Setting either attribute to `null` means that **every role** can view/submit that part.
 
-Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Reflector"]`, then only the _Recorder_ can submit that particular question.
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Reflector"]`, then only the _Reflector_ can submit that particular question.
 
 ### Students joining assessments with custom group roles
 
