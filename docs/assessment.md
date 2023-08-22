@@ -243,8 +243,7 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
       "name": "Manager",
       "minimum": 1,
       "maximum": 1,
-      "canAssignRolesAtStart": true,
-      "canAssignRolesDuringAssessment": true
+      "canAssignRolesAtStart": true
     },
     {
       "name": "Recorder",
@@ -268,8 +267,7 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 | `name`                           | string  | -       | The name of the role.                                                         |
 | `minimum`                        | integer | 0       | The minimum required number of this role in the assessment.                   |
 | `maximum`                        | integer | -       | The maximum required number of this role in the assessment.                   |
-| `canAssignRolesAtStart`          | boolean | false   | Allow students with this role to assign roles before starting the assessment. |
-| `canAssignRolesDuringAssessment` | boolean | false   | Allow students with this role to assign roles during the assessment.          |
+| `canAssignRolesAtStart`          | boolean | false   | Allow students with this role to assign roles throughout the assessment. |
 
 Students select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents all question submissions if a group's role configuration does not meet the instructor's specification.
 
