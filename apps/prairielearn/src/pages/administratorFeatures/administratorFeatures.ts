@@ -63,10 +63,15 @@ router.get(
   }),
 );
 
+const OptionalIdSchema = z
+  .union([z.literal(''), IdSchema])
+  .optional()
+  .transform((val) => val || undefined);
+
 const AddFeatureGrantModalParamsSchema = z.object({
-  institution_id: IdSchema.optional(),
-  course_id: IdSchema.optional(),
-  course_instance_id: IdSchema.optional(),
+  institution_id: OptionalIdSchema,
+  course_id: OptionalIdSchema,
+  course_instance_id: OptionalIdSchema,
 });
 type AddFeatureGrantModalParams = z.infer<typeof AddFeatureGrantModalParamsSchema>;
 

@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 
 import helperServer = require('../../../tests/helperServer');
+import helperDb = require('../../../tests/helperDb');
 import {
   getPlanGrantsForContext,
   getPlanGrantsForPartialContexts,
@@ -11,30 +12,7 @@ import {
   reconcilePlanGrantsForInstitution,
   updateRequiredPlansForCourseInstance,
 } from './plans';
-import { insertPlanGrant } from '../../models/plan-grants';
-import { runInTransactionAsync } from '@prairielearn/postgres';
-
-class RollbackTransactionError extends Error {
-  constructor() {
-    super('Rollback transaction');
-    this.name = 'RollbackTransactionError';
-  }
-}
-
-/**
- * Helper function to discard any database modifications made during a test.
- */
-async function runInTransactionAndRollback(fn: () => Promise<void>) {
-  await runInTransactionAsync(async () => {
-    await fn();
-    throw new RollbackTransactionError();
-  }).catch((err) => {
-    if (err instanceof RollbackTransactionError) {
-      return;
-    }
-    throw err;
-  });
-}
+import { ensurePlanGrant } from '../../models/plan-grants';
 
 describe('plans', () => {
   before(helperServer.before());
@@ -42,7 +20,7 @@ describe('plans', () => {
 
   describe('reconcilePlanGrantsForInstitution', () => {
     it('persists updates', async () => {
-      await runInTransactionAndRollback(async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
         await reconcilePlanGrantsForInstitution(
           '1',
           [{ plan: 'compute', grantType: 'invoice' }],
@@ -64,7 +42,7 @@ describe('plans', () => {
 
   describe('reconcilePlanGrantsForCourseInstance', () => {
     it('persists updates', async () => {
-      await runInTransactionAndRollback(async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
         await reconcilePlanGrantsForCourseInstance(
           '1',
           [{ plan: 'compute', grantType: 'invoice' }],
@@ -97,9 +75,9 @@ describe('plans', () => {
     });
 
     it('does not modify institution plan grants', async () => {
-      await runInTransactionAndRollback(async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
         // Manually insert an institution plan grant.
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'everything',
             type: 'gift',
@@ -123,7 +101,7 @@ describe('plans', () => {
 
   describe('updateRequiredPlansForCourseInstance', () => {
     it('persists updates', async () => {
-      await runInTransactionAndRollback(async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
         await updateRequiredPlansForCourseInstance('1', ['compute'], '1');
         let requiredPlans = await getRequiredPlansForCourseInstance('1');
         assert.sameDeepMembers(requiredPlans, ['compute']);
@@ -137,9 +115,9 @@ describe('plans', () => {
 
   describe('getPlanGrantsForCourseInstance', () => {
     it('only returns plan grants directly associated with the course instance', async () => {
-      await runInTransactionAndRollback(async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
         // Institution plan grant
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'everything',
             type: 'gift',
@@ -149,7 +127,7 @@ describe('plans', () => {
         });
 
         // Course instance plan grant
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'compute',
             type: 'invoice',
@@ -160,7 +138,7 @@ describe('plans', () => {
         });
 
         // Course instance user plan grant
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'basic',
             type: 'stripe',
@@ -183,8 +161,8 @@ describe('plans', () => {
 
   describe('getPlanGrantsForContext', () => {
     it('returns institution plan grants', async () => {
-      await runInTransactionAndRollback(async () => {
-        await insertPlanGrant({
+      await helperDb.runInTransactionAndRollback(async () => {
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'compute',
             type: 'invoice',
@@ -204,8 +182,8 @@ describe('plans', () => {
     });
 
     it('returns course instance plan grants', async () => {
-      await runInTransactionAndRollback(async () => {
-        await insertPlanGrant({
+      await helperDb.runInTransactionAndRollback(async () => {
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'basic',
             type: 'invoice',
@@ -213,7 +191,7 @@ describe('plans', () => {
           },
           authn_user_id: '1',
         });
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'compute',
             type: 'gift',
@@ -240,8 +218,8 @@ describe('plans', () => {
     });
 
     it('returns course instance user plan grants', async () => {
-      await runInTransactionAndRollback(async () => {
-        await insertPlanGrant({
+      await helperDb.runInTransactionAndRollback(async () => {
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'basic',
             type: 'invoice',
@@ -249,7 +227,7 @@ describe('plans', () => {
           },
           authn_user_id: '1',
         });
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'compute',
             type: 'gift',
@@ -258,7 +236,7 @@ describe('plans', () => {
           },
           authn_user_id: '1',
         });
-        await insertPlanGrant({
+        await ensurePlanGrant({
           plan_grant: {
             plan_name: 'everything',
             type: 'stripe',
