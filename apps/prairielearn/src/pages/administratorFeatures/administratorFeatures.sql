@@ -43,6 +43,7 @@ FROM
   pl_courses
 WHERE
   institution_id = $institution_id
+  AND deleted_at IS NULL
 ORDER BY
   short_name,
   id;
@@ -54,6 +55,7 @@ FROM
   course_instances
 WHERE
   course_id = $course_id
+  AND deleted_at IS NULL
 ORDER BY
   long_name,
   id;
