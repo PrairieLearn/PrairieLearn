@@ -149,7 +149,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       });
       assert.equal(
         form.find('input[name=score_manual_adjust_points]').val(),
-        (adjust_points ?? 0).toString(),
+        (adjust_points ?? '').toString(),
       );
     } else {
       assert.equal(form.find('.js-selectable-rubric-item').length, 0);
