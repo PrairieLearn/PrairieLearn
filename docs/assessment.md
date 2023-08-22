@@ -230,7 +230,7 @@ By default, students working in a collaborative group assessments can view and s
 
 - Submitting specific questions
 - Viewing specific questions
-- Assigning group roles before & during an assessment 
+- Assigning group roles before & during an assessment
 
 Students are allowed to take on multiple roles. This may be necessary when users leave and join groups after assessments have started.
 
@@ -239,45 +239,95 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
 ```json
 {
   "groupRoles": [
-      {
-          "name": "Manager",
-          "minimum": 1,
-          "maximum": 1,
-          "canAssignRolesAtStart": true,
-          "canAssignRolesDuringAssessment": true
-      },
-      {
-          "name": "Recorder",
-          "minimum": 1,
-          "maximum": 1
-      },
-      {
-          "name": "Reflector",
-          "minimum": 1,
-          "maximum": 1
-      },
-      {
-          "name": "Contributor"
-      }
+    {
+      "name": "Manager",
+      "minimum": 1,
+      "maximum": 1,
+      "canAssignRolesAtStart": true,
+      "canAssignRolesDuringAssessment": true
+    },
+    {
+      "name": "Recorder",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Reflector",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Contributor"
+    }
   ]
 }
 ```
 
-| Attribute                          | Type    | Default | Description                                                                   |
-| ---------------------------------- | ------- | ------- | ----------------------------------------------------------------------------- |
-| `name`                             | string  | -       | The name of the role.                                                         |
-| `minimum`                          | integer | 0       | The minimum required number of this role in the assessment.                   |
-| `maximum`                          | integer | -       | The maximum required number of this role in the assessment.                   |
-| `canAssignRolesAtStart`            | boolean | false   | Allow students with this role to assign roles before starting the assessment. |
-| `canAssignRolesDuringAssessment`   | boolean | false   | Allow students with this role to assign roles during the assessment.          |
+| Attribute                        | Type    | Default | Description                                                                   |
+| -------------------------------- | ------- | ------- | ----------------------------------------------------------------------------- |
+| `name`                           | string  | -       | The name of the role.                                                         |
+| `minimum`                        | integer | 0       | The minimum required number of this role in the assessment.                   |
+| `maximum`                        | integer | -       | The maximum required number of this role in the assessment.                   |
+| `canAssignRolesAtStart`          | boolean | false   | Allow students with this role to assign roles before starting the assessment. |
+| `canAssignRolesDuringAssessment` | boolean | false   | Allow students with this role to assign roles during the assessment.          |
 
 Students select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents all question submissions if a group's role configuration does not meet the instructor's specification.
 
-TODO: talk about permissions schema
+### Adding permissions for an assessment
 
-TODO: show screenshots of permission enforcement
+Permissions can be configured at the _assessment_, _zone_, or _question_ level.
 
-TODO: show restrictions when role configuration is invalid
+The schema for permissions is defined as follows:
+
+```json
+{
+  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+  "canSubmit": ["Recorder"]
+}
+```
+
+| Attribute   | Type            | Default | Description                                                     |
+| ----------- | --------------- | ------- | --------------------------------------------------------------- |
+| `canView`   | Array of string | -       | The names of roles that can view this part of the assessment.   |
+| `canSubmit` | Array of string | -       | The names of roles that can submit this part of the assessment. |
+
+Setting either attribute to `[]` (empty array) means that **no role** can view/submit that part. Setting either attribute to `null` means that **every role** can view/submit that part.
+
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example, if the permissions in the example above are configured for the assessment, but a question's permissions are configured to `canSubmit: ["Recorder"]`, then only the _Recorder_ can submit that particular question.
+
+### Students joining assessments with custom group roles
+
+When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. More information about the assessment's group roles can be expanded in the dropdown menu.
+
+![Joining a group assessment with custom group roles](grouproles_join.png)
+
+When expanded, the dropdown menu shows information about the roles, such as the min/max number of assignments and whether a role can assign other roles.
+
+![Group info from student perspective](grouproles_groupinfo.png)
+
+Any student with an assigner role can view additional controls to change the roles of other users in the group. Students with assigner roles can re-assign group roles both before and during an assessment.
+
+![Group role assignment controls](grouproles_assign_roles.png)
+
+### Permission enforcement during assessment
+
+When an instructor restricts the viewing of a question to certain roles, users without those roles will be unable to view that question.
+
+![Question cannot be viewed due to group role](grouproles_view_question.png)
+
+Additionally, when an instructor restricts the submitting of a question to certain roles, users without those roles will be unable to submit that question.
+
+![Question cannot be submitted due to group role](grouproles_submit_question.png)
+
+### Invalid role configurations
+
+When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, **question submissions are prevented** and users receive visual feedback on how to fix the role configuration.
+
+![Invalid group role configuration](grouproles_invalid_config.png)
+
+Users with both assigner and non-assigner roles can view these errors. For users with assigner roles, these errors appear right above the role assignment table, so they can easily reference what issues to fix.
+
+![Group configuration errors](grouproles_invalid_config_errors.png)
 
 ## Forcing students to complete questions in-order
 
