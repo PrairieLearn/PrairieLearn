@@ -251,7 +251,7 @@ class Editor {
   async getExistingShortNames(rootDirectory, infoFile) {
     let files = [];
     const walk = async (relativeDir) => {
-      const directories = fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
+      const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
         // If the directory doesn't exist, then we have nothing to load
         if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
           return [];
@@ -260,7 +260,7 @@ class Editor {
       });
 
       // For each subdirectory, try to find an Info file
-      async.each(directories, async (dir) => {
+      for (const dir of directories) {
         // Relative path to the current folder
         const subdirPath = path.join(relativeDir, dir);
         // Absolute path to the info file
@@ -273,7 +273,7 @@ class Editor {
           // No info file, let's try recursing
           await walk(subdirPath);
         }
-      });
+      }
     };
 
     await walk('');
