@@ -72,7 +72,6 @@ async function callFunction(func, question_course, question, inputData) {
       return { data: res.result, courseIssues: [] };
     });
   } catch (err) {
-    console.error('fatal error in code calling', err);
     err.fatal = true;
     return { data: {}, courseIssues: [err] };
   }
