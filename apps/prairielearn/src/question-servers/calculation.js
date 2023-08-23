@@ -104,12 +104,16 @@ function questionFunctionExperiment(name, control, candidate) {
           controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
-          console.log('Experiment results did not match', {
-            controlError,
-            controlResult,
-            candidateError,
-            candidateResult,
-          });
+          console.log('Experiment results did not match');
+          console.dir(
+            {
+              controlError,
+              controlResult,
+              candidateError,
+              candidateResult,
+            },
+            { depth: null },
+          );
           Sentry.captureException(new Error('Experiment results did not match'), {
             contexts: {
               experiment: {
