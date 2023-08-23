@@ -496,12 +496,9 @@ function _checkServer(workspace, callback) {
 
   const startTime = new Date().getTime();
   function checkWorkspace() {
-    const abortController = new AbortController();
-    const abortTimeout = setTimeout(() => abortController.abort(), healthCheckTimeout);
-
     fetch(
       `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-      { signal: abortController.signal },
+      { signal: AbortSignal.timeout(healthCheckTimeout) },
     )
       .then(() => {
         // We might get all sorts of strange status codes from the server.
@@ -522,8 +519,7 @@ function _checkServer(workspace, callback) {
         } else {
           setTimeout(checkWorkspace, healthCheckInterval);
         }
-      })
-      .finally(() => clearTimeout(abortTimeout));
+      });
   }
   checkWorkspace();
 }
