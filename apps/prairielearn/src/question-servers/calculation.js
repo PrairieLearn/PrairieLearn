@@ -89,8 +89,18 @@ function questionFunctionExperiment(name, control, candidate) {
         // but not for the control. To avoid false positives, we'll only compare
         // the "data" portion of the results. The "course issues" portion of the
         // results was already handled above.
-        const controlData = controlResult?.[1];
-        const candidateData = candidateResult?.[1];
+        //
+        // We round-trip both data objects through JSON to strip out anything that
+        // couldn't be natively represented in JSON. This is important because
+        // the control implementation will return values from within the same process,
+        // whereas the candidate implementation will always be serialized to and
+        // deserialized from JSON, which will lose information about properties
+        // that can't be represented in JSON.
+        //
+        // Losing this information is fine in practice, as this data is all
+        // ultimately persisted in the database as JSON.
+        const controlData = JSON.parse(JSON.stringify(controlResult?.[1]));
+        const candidateData = JSON.parse(JSON.stringify(candidateResult?.[1]));
         const controlHasData = !_.isEmpty(controlData);
         const candidateHasData = !_.isEmpty(candidateData);
 
