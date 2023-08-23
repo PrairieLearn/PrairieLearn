@@ -61,7 +61,7 @@ async function switchUserAndLoadAssessment(
   studentUser: StudentUser,
   assessmentUrl: string,
   formName: string,
-): Promise<{ $: cheerio.Root; csrfToken: string }> {
+): Promise<{ $: cheerio.CheerioAPI; csrfToken: string }> {
   // Load config
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
@@ -90,7 +90,7 @@ async function createGroup(
   groupName: string,
   csrfToken: string,
   assessmentUrl: string,
-): Promise<cheerio.Root> {
+): Promise<cheerio.CheerioAPI> {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
@@ -111,7 +111,7 @@ async function joinGroup(
   assessmentUrl: string,
   joinCode: string,
   csrfToken: string,
-): Promise<cheerio.Root> {
+): Promise<cheerio.CheerioAPI> {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
@@ -135,8 +135,8 @@ async function updateGroupRoles(
   studentUsers: StudentUser[],
   csrfToken: string,
   assessmentUrl: string,
-  $: cheerio.Root,
-): Promise<cheerio.Root> {
+  $: cheerio.CheerioAPI,
+): Promise<cheerio.CheerioAPI> {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
   const userIds = studentUsers.map((user) => user.user_id);
