@@ -118,6 +118,8 @@ function questionFunctionExperiment(name, control, candidate) {
               },
             },
           });
+        } else {
+          console.log('Experiment results matched!');
         }
       },
     },

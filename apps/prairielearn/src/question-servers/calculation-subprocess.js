@@ -39,28 +39,28 @@ async function prepareChunksIfNeeded(question, course) {
 async function callFunction(func, question_course, question, inputData) {
   await prepareChunksIfNeeded(question, question_course);
 
-  const coursePathHost = chunks.getRuntimeDirectoryForCourse(question_course);
-  const coursePath = config.workersExecutionMode === 'native' ? coursePathHost : '/course';
+  const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
+  const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
   const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
     'server.js',
     question.directory,
-    coursePathHost,
+    courseHostPath,
     question,
   );
 
   // The worker will use the non-host path, which may be different.
   // Rework the paths to be relative to the worker's filesystem.
-  const pathWithinCourse = path.relative(coursePathHost, questionServerPath);
-  const runtimePath = path.join(coursePath, pathWithinCourse);
+  const questionServerPathWithinCourse = path.relative(courseHostPath, questionServerPath);
+  const questionServerRuntimePath = path.join(courseRuntimePath, questionServerPathWithinCourse);
 
   try {
-    return await withCodeCaller(coursePathHost, async (codeCaller) => {
-      const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
+    return await withCodeCaller(courseHostPath, async (codeCaller) => {
+      const res = await codeCaller.call('v2-question', null, questionServerRuntimePath, null, [
         {
-          questionServerPath,
+          questionServerPath: questionServerRuntimePath,
           func: func,
-          coursePath,
+          coursePath: courseRuntimePath,
           question,
           ...inputData,
         },
