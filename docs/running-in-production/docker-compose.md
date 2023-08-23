@@ -21,7 +21,7 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
 - ./config.json:/PrairieLearn/config.json
 ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.js`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.js`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database. Note that PrairieLearn is configured to connect to postgress unencrypted (no SSL), so ensure that your postgres instance permits such connections from your PrairieLearn host.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.js`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.js`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database. Note that PrairieLearn is configured to connect to Postgres unencrypted (no SSL), so ensure that your Postgres instance permits such connections from your PrairieLearn host.
 
 ## Reverse Proxy
 
