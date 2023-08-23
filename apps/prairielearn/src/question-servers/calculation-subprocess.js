@@ -55,7 +55,7 @@ async function callFunction(func, question_course, question, inputData) {
   const runtimePath = path.join(coursePath, pathWithinCourse);
 
   try {
-    return withCodeCaller(coursePath, async (codeCaller) => {
+    return withCodeCaller(coursePathHost, async (codeCaller) => {
       const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
         {
           questionServerPath,
