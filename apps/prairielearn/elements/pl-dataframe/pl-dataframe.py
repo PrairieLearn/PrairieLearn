@@ -57,7 +57,9 @@ def get_pandas_dtype(s: pd.Series) -> str:
 
 
 def using_default_index(df: pd.DataFrame) -> bool:
-    return df.index.is_integer() and pd.Index(range(len(df))).equals(df.index)
+    return pd.api.types.is_integer_dtype(df.index) and pd.Index(range(len(df))).equals(
+        df.index
+    )
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

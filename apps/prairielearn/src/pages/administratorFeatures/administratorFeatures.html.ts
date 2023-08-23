@@ -162,7 +162,7 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
       ${
         hasCourse
           ? html`<li class="list-inline-item inline-flex">
-              ${featureGrant.course_title} (${featureGrant.course_short_name})
+              ${featureGrant.course_short_name}: ${featureGrant.course_title}
             </li>`
           : null
       }
@@ -176,7 +176,7 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
       ${
         hasUser
           ? html`<li class="list-inline-item inline-flex">
-              ${featureGrant.user_name} (${featureGrant.user_uid})
+              ${featureGrant.user_uid} (${featureGrant.user_name})
             </li>`
           : null
       }
@@ -255,7 +255,7 @@ export function AddFeatureGrantModalBody({
                 value="${institution.id}"
                 ${institution.id === institution_id ? 'selected' : ''}
               >
-                ${institution.long_name}
+                ${institution.long_name} (${institution.short_name})
               </option>
             `;
           })}
@@ -277,7 +277,7 @@ export function AddFeatureGrantModalBody({
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
-                ${course.title}
+                ${course.short_name}: ${course.title}
               </option>
             `;
           })}
@@ -302,7 +302,7 @@ export function AddFeatureGrantModalBody({
                 value="${course_instance.id}"
                 ${course_instance.id === course_instance_id ? 'selected' : ''}
               >
-                ${course_instance.long_name}
+                ${course_instance.long_name} (${course_instance.short_name})
               </option>
             `;
           })}
