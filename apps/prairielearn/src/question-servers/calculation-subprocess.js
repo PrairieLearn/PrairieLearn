@@ -88,7 +88,7 @@ module.exports.generate = (question, course, variant_seed, callback) => {
 module.exports.grade = (submission, variant, question, question_course, callback) => {
   callFunction('grade', question_course, question, { submission, variant }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => console.log(err),
+    (err) => callback(err),
   );
 };
 
