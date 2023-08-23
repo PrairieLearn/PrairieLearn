@@ -101,9 +101,16 @@ module.exports = {
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
       var options = question.options || {};
+      var questionData;
       try {
         var vid = variant_seed;
-        var questionData = server.getData(vid, options, questionDir);
+        questionData = server.getData(vid, options, questionDir);
+
+        // We require that all data returned by the question server is JSON-serializable.
+        // We'll round trip it through JSON here for two reasons:
+        // 1. To ensure that it is JSON-serializable.
+        // 2. To strip out data that is not JSON-serializable (e.g. `undefined`).
+        questionData = JSON.parse(JSON.stringify(questionData));
       } catch (err) {
         let data = {
           variant_seed: variant_seed,
@@ -188,6 +195,12 @@ module.exports = {
           options,
           questionDir,
         );
+
+        // We require that all data returned by the question server is JSON-serializable.
+        // We'll round trip it through JSON here for two reasons:
+        // 1. To ensure that it is JSON-serializable.
+        // 2. To strip out data that is not JSON-serializable (e.g. `undefined`).
+        grading = JSON.parse(JSON.stringify(grading));
       } catch (err) {
         const data = {
           submission: submission,
