@@ -21,8 +21,6 @@ router.get('/', function (req, res, _next) {
   const redirect = req.query.redirect;
   if (redirect && typeof redirect === 'string') {
     res.redirect(decodeURIComponent(redirect));
-  } else if (res.locals.authn_provider_name === 'Shibboleth') {
-    res.redirect('/Shibboleth.sso/Logout');
   } else {
     res.redirect('/');
   }
