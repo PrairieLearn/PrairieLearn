@@ -6,12 +6,11 @@ import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
 import { features } from '../lib/features/index';
-import helperServer = require('./helperServer');
-import helperClient = require('./helperClient');
-import sqldb = require('@prairielearn/postgres');
+import * as helperServer from './helperServer';
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-const { setUser, parseInstanceQuestionId, saveOrGrade } = helperClient;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -60,7 +59,7 @@ const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upl
  * @param user student or instructor user to load page by
  * @returns "Homework for Internal, External, Manual grading methods" page text
  */
-async function loadHomeworkPage(user: helperClient.User): Promise<string> {
+async function loadHomeworkPage(user: User): Promise<string> {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
   const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
@@ -76,7 +75,7 @@ async function loadHomeworkPage(user: helperClient.User): Promise<string> {
  * @param user student or instructor user to load page by
  * @returns student URL for manual grading question
  */
-async function loadHomeworkQuestionUrl(user: helperClient.User): Promise<string> {
+async function loadHomeworkQuestionUrl(user: User): Promise<string> {
   const hm1Body = await loadHomeworkPage(user);
   const $hm1Body = cheerio.load(hm1Body);
   return siteUrl + $hm1Body(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
