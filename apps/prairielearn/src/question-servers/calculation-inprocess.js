@@ -7,6 +7,13 @@ var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
 
+function jsonRoundTrip(data) {
+  // Special-case for undefined, which doesn't like being JSON-stringified.
+  if (data === undefined) return null;
+
+  return JSON.parse(JSON.stringify(data));
+}
+
 module.exports = {
   loadServer: function (question, question_course, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
@@ -100,17 +107,13 @@ module.exports = {
     var questionDir = path.join(coursePath, 'questions', question.directory);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
-      var options = question.options || {};
+
+      const vid = variant_seed;
+      const options = question.options || {};
+
       var questionData;
       try {
-        var vid = variant_seed;
         questionData = server.getData(vid, options, questionDir);
-
-        // We require that all data returned by the question server is JSON-serializable.
-        // We'll round trip it through JSON here for two reasons:
-        // 1. To ensure that it is JSON-serializable.
-        // 2. To strip out data that is not JSON-serializable (e.g. `undefined`).
-        questionData = JSON.parse(JSON.stringify(questionData));
       } catch (err) {
         let data = {
           variant_seed: variant_seed,
@@ -121,9 +124,9 @@ module.exports = {
         return ERR(error.addData(err, data), callback);
       }
       let data = {
-        params: questionData.params,
-        true_answer: questionData.trueAnswer,
-        options: questionData.options || question.options || {},
+        params: jsonRoundTrip(questionData.params),
+        true_answer: jsonRoundTrip(questionData.trueAnswer),
+        options: jsonRoundTrip(questionData.options || question.options || {}),
       };
       callback(null, [], data);
     });
@@ -142,13 +145,15 @@ module.exports = {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
+
+      const vid = variant.variant_seed;
+      const params = variant.params;
+      const trueAnswer = variant.true_answer;
+      const options = variant.options;
+      const questionDir = path.join(coursePath, 'questions', question.directory);
+
       var fileData;
       try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
         fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
       } catch (err) {
         var data = {
@@ -179,14 +184,16 @@ module.exports = {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
-      var grading;
+
+      const vid = variant.variant_seed;
+      const params = variant.params;
+      const trueAnswer = variant.true_answer;
+      const submittedAnswer = submission.submitted_answer;
+      const options = variant.options;
+      const questionDir = path.join(coursePath, 'questions', question.directory);
+
+      let grading;
       try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var submittedAnswer = submission.submitted_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
         grading = server.gradeAnswer(
           vid,
           params,
@@ -195,12 +202,6 @@ module.exports = {
           options,
           questionDir,
         );
-
-        // We require that all data returned by the question server is JSON-serializable.
-        // We'll round trip it through JSON here for two reasons:
-        // 1. To ensure that it is JSON-serializable.
-        // 2. To strip out data that is not JSON-serializable (e.g. `undefined`).
-        grading = JSON.parse(JSON.stringify(grading));
       } catch (err) {
         const data = {
           submission: submission,
@@ -220,13 +221,13 @@ module.exports = {
       const data = {
         score: score,
         v2_score: grading.score,
-        feedback: grading.feedback ?? null,
+        feedback: jsonRoundTrip(grading.feedback),
         partial_scores: {},
-        submitted_answer: submission.submitted_answer,
+        submitted_answer: jsonRoundTrip(submittedAnswer),
         format_errors: {},
         gradable: true,
-        params: variant.params,
-        true_answer: variant.true_answer,
+        params: jsonRoundTrip(params),
+        true_answer: jsonRoundTrip(trueAnswer),
       };
       callback(null, [], data);
     });
