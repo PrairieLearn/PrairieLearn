@@ -15,7 +15,7 @@ Then access PrairieLearn from port `3000`.
 PrairieLearn can be configured by a `config.json` in the root of the repository.
 
 - First make the file `config.json` in your root repository.
-- Add the following line to `docker-compose-production.yml` under `services:pl:volumes`:
+- Add the following line to `docker-compose-production.yml` under `services.pl.volumes`:
 
 ```sh
 - ./config.json:/PrairieLearn/config.json
