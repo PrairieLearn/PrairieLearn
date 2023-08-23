@@ -1,4 +1,5 @@
 import { contains } from '@prairielearn/path-utils';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths';
 
 // @ts-check
 const _ = require('lodash');
@@ -46,8 +47,15 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
     return path.join(courseRuntimePath, questionServerPathWithinCourse);
   }
 
-  console.log('core question server path', questionServerPath);
-  return questionServerPath;
+  if (config.workersExecutionMode === 'native') {
+    return questionServerPath;
+  } else {
+    const questionServerPathWithinRepo = path.relative(REPOSITORY_ROOT_PATH, questionServerPath);
+
+    // This is hardcoded to use the `/PrairieLearn` directory in our container
+    // image, which is where the repository files will be located.
+    return path.join('/PrairieLearn', questionServerPathWithinRepo);
+  }
 }
 
 async function callFunction(func, question_course, question, inputData) {
