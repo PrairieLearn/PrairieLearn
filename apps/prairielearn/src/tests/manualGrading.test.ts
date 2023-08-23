@@ -2,16 +2,16 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import * as _ from 'lodash';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
-import fetch from 'node-fetch';
+import { features } from '../lib/features/index';
 import helperServer = require('./helperServer');
 import helperClient = require('./helperClient');
 import sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = helperClient;
-import { features } from '../lib/features/index';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
