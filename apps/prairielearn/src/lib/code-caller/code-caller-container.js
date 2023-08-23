@@ -223,6 +223,9 @@ class CodeCallerContainer {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
     this.callCount += 1;
 
+    console.log('call');
+    console.dir([type, directory, file, fcn, args]);
+
     // Reset this so that we don't include old data if the checks below fail.
     this.lastCallData = null;
 

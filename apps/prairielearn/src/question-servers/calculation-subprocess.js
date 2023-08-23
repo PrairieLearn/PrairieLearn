@@ -1,6 +1,8 @@
 // @ts-check
 const _ = require('lodash');
+const path = require('node:path');
 
+const { config } = require('../lib/config');
 const chunks = require('../lib/chunks');
 const filePaths = require('../lib/file-paths');
 const { withCodeCaller } = require('../lib/code-caller');
@@ -36,13 +38,22 @@ async function prepareChunksIfNeeded(question, course) {
 
 async function callFunction(func, question_course, question, inputData) {
   await prepareChunksIfNeeded(question, question_course);
-  const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+
+  const coursePathHost = chunks.getRuntimeDirectoryForCourse(question_course);
+  const coursePath = config.workersExecutionMode === 'native' ? coursePathHost : '/course';
+
   const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
     'server.js',
     question.directory,
-    coursePath,
+    coursePathHost,
     question,
   );
+
+  // The worker will use the non-host path, which may be different.
+  // Rework the paths to be relative to the worker's filesystem.
+  const pathWithinCourse = path.relative(coursePathHost, questionServerPath);
+  const runtimePath = path.join(coursePath, pathWithinCourse);
+
   try {
     return withCodeCaller(coursePath, async (codeCaller) => {
       const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
