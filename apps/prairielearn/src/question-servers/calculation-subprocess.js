@@ -1,3 +1,5 @@
+import { contains } from '@prairielearn/path-utils';
+
 // @ts-check
 const _ = require('lodash');
 const path = require('node:path');
@@ -36,6 +38,18 @@ async function prepareChunksIfNeeded(question, course) {
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
+function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
+  const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
+
+  if (questionServerType === 'course') {
+    const questionServerPathWithinCourse = path.relative(courseHostPath, questionServerPath);
+    return path.join(courseRuntimePath, questionServerPathWithinCourse);
+  }
+
+  console.log('core question server path', questionServerPath);
+  return questionServerPath;
+}
+
 async function callFunction(func, question_course, question, inputData) {
   await prepareChunksIfNeeded(question, question_course);
 
@@ -49,10 +63,17 @@ async function callFunction(func, question_course, question, inputData) {
     question,
   );
 
-  // The worker will use the non-host path, which may be different.
-  // Rework the paths to be relative to the worker's filesystem.
-  const questionServerPathWithinCourse = path.relative(courseHostPath, questionServerPath);
-  const questionServerRuntimePath = path.join(courseRuntimePath, questionServerPathWithinCourse);
+  // `questionServerPath` may be one of two things:
+  //
+  // - A path to a file within the course directory
+  // - A path to a file in PrairieLearn's `v2-question-servers` directory
+  //
+  // We need to handle these differently.
+  const questionServerRuntimePath = getQuestionRuntimePath(
+    questionServerPath,
+    courseHostPath,
+    courseRuntimePath,
+  );
 
   try {
     return await withCodeCaller(courseHostPath, async (codeCaller) => {
