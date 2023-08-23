@@ -8,7 +8,7 @@ import {
   PlanGrantSchema,
 } from '../../../lib/db-types';
 import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types';
-import { insertPlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
+import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants';
 import {
   insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
@@ -197,7 +197,7 @@ async function reconcilePlanGrants(
   );
 
   for (const plan of newPlans) {
-    await insertPlanGrant({
+    await ensurePlanGrant({
       plan_grant: {
         ...context,
         plan_name: plan.plan,
@@ -245,6 +245,9 @@ function getPlansForPlanGrants(planGrants: PlanGrant[]): PlanName[] {
   return Array.from(plans);
 }
 
+/**
+ * Returns whether or not the given plan grants match all of the given features.
+ */
 export function planGrantsMatchFeatures(
   planGrants: PlanGrant[],
   features: PlanFeatureName[],
@@ -255,4 +258,13 @@ export function planGrantsMatchFeatures(
     grantedFeatures.length === features.length &&
     grantedFeatures.every((feature) => features.includes(feature))
   );
+}
+
+/**
+ * Given a list of existing plan grants and a list of required plans, returns
+ * a list of plans that are required but not granted.
+ */
+export function getMissingPlanGrants(existingPlanGrants: PlanGrant[], requiredPlans: PlanName[]) {
+  const existingPlans = getPlansForPlanGrants(existingPlanGrants);
+  return requiredPlans.filter((plan) => !existingPlans.includes(plan));
 }

@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { config } = require('../../lib/config');
 const QR = require('qrcode-svg');
 
 const sqldb = require('@prairielearn/postgres');
@@ -19,6 +18,7 @@ const {
   AssessmentDeleteEditor,
 } = require('../../lib/editors');
 const { encodePath } = require('../../lib/uri-util');
+const { getCanonicalHost } = require('../../lib/url');
 
 router.get('/', function (req, res, next) {
   debug('GET /');
@@ -39,7 +39,7 @@ router.get('/', function (req, res, next) {
     ],
     function (err) {
       if (ERR(err, next)) return;
-      const host = config.serverCanonicalHost || `${req.protocol}://${req.headers.host}`;
+      const host = getCanonicalHost(req);
       res.locals.studentLink = new URL(
         res.locals.plainUrlPrefix +
           '/course_instance/' +

@@ -2,6 +2,7 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const Sentry = require('@prairielearn/sentry');
+const { logger } = require('@prairielearn/logger');
 
 const { config } = require('../lib/config');
 const calculationInprocess = require('./calculation-inprocess');
@@ -104,6 +105,12 @@ function questionFunctionExperiment(name, control, candidate) {
           controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
+          logger.error('Experiment results did not match', {
+            controlError,
+            controlResult,
+            candidateError,
+            candidateResult,
+          });
           Sentry.captureException(new Error('Experiment results did not match'), {
             contexts: {
               experiment: {
