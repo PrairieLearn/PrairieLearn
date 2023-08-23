@@ -1,16 +1,16 @@
-// @ts-check
-const { assert } = require('chai');
-const cheerio = require('cheerio');
-const _ = require('lodash');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import * as _ from 'lodash';
+import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
-const { config } = require('../lib/config');
-const fetch = require('node-fetch').default;
-const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import { features } from '../lib/features/index';
+import * as helperServer from './helperServer';
+import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient';
+import * as sqldb from '@prairielearn/postgres';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
-const { features } = require('../lib/features/index');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -20,14 +20,32 @@ const defaultUser = {
   authUin: config.authUin,
 };
 
-const mockStudents = [
+interface MockUser {
+  authUid: string;
+  authName: string;
+  authUin: string;
+  user_id?: string;
+}
+
+interface RubricItem {
+  id?: string;
+  points: number;
+  description: string;
+  explanation?: string;
+  grader_note?: string;
+  description_render?: string;
+  explanation_render?: string;
+  grader_note_render?: string;
+}
+
+const mockStudents: MockUser[] = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
   { authUid: 'student2', authName: 'Student User 2', authUin: '00000002' },
   { authUid: 'student3', authName: 'Student User 3', authUin: '00000003' },
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-const mockStaff = [
+const mockStaff: MockUser[] = [
   { authUid: 'staff1', authName: 'Staff User 1', authUin: 'STAFF001' },
   { authUid: 'staff2', authName: 'Staff User 2', authUin: 'STAFF002' },
   { authUid: 'staff3', authName: 'Staff User 3', authUin: 'STAFF003' },
@@ -38,84 +56,80 @@ const assessmentTitle = 'Homework for Internal, External, Manual grading methods
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
 
 /**
- * @param {object} user student or instructor user to load page by
- * @returns {Promise<string>} Returns "Homework for Internal, External, Manual grading methods" page text
+ * @param user student or instructor user to load page by
+ * @returns "Homework for Internal, External, Manual grading methods" page text
  */
-const loadHomeworkPage = async (user) => {
+async function loadHomeworkPage(user: User): Promise<string> {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
   const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
   const $courseInstancePage = cheerio.load(courseInstanceBody);
   const hm9InternalExternalManualUrl =
     siteUrl + $courseInstancePage(`a:contains("${assessmentTitle}")`).attr('href');
-  let res = await fetch(hm9InternalExternalManualUrl);
+  const res = await fetch(hm9InternalExternalManualUrl);
   assert.equal(res.ok, true);
   return res.text();
-};
+}
 
 /**
- * @param {object} user student or instructor user to load page by
- * @returns {Promise<string>} student URL for manual grading question
+ * @param user student or instructor user to load page by
+ * @returns student URL for manual grading question
  */
-const loadHomeworkQuestionUrl = async (user) => {
+async function loadHomeworkQuestionUrl(user: User): Promise<string> {
   const hm1Body = await loadHomeworkPage(user);
   const $hm1Body = cheerio.load(hm1Body);
   return siteUrl + $hm1Body(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-};
+}
 
 /**
  * Gets the score text for the first submission panel on the page.
- *
- * @param {cheerio.CheerioAPI} $
- * @returns {string}
  */
-const getLatestSubmissionStatus = ($) => {
+function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text();
-};
+}
 
-let iqUrl, iqId;
-let instancesAssessmentUrl;
-let manualGradingAssessmentUrl;
-let manualGradingAssessmentQuestionUrl;
-let manualGradingIQUrl;
-let manualGradingNextUngradedUrl;
-let $manualGradingPage;
-let score_percent, score_points, adjust_points;
-let feedback_note;
-let rubric_items;
-let selected_rubric_items;
+let iqUrl: string, iqId: string | number;
+let instancesAssessmentUrl: string;
+let manualGradingAssessmentUrl: string;
+let manualGradingAssessmentQuestionUrl: string;
+let manualGradingIQUrl: string;
+let manualGradingNextUngradedUrl: string;
+let $manualGradingPage: cheerio.CheerioAPI;
+let score_percent: number, score_points: number, adjust_points: number | null;
+let feedback_note: string;
+let rubric_items: RubricItem[];
+let selected_rubric_items: number[];
 
-const submitGradeForm = async (method = 'rubric') => {
+async function submitGradeForm(
+  method: 'rubric' | 'points' | 'percentage' = 'rubric',
+): Promise<void> {
   const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
   const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
   const form = $manualGradingIQPage('form[name=manual-grading-form]');
+  const params = new URLSearchParams({
+    __action: 'add_manual_grade',
+    __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+    modified_at: form.find('input[name=modified_at]').attr('value') || '',
+    score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
+    score_manual_percent: (method === 'percentage' ? score_percent : score_percent - 10).toString(),
+    submission_note: feedback_note,
+  });
+  if (adjust_points) params.append('score_manual_adjust_points', adjust_points.toString());
+  (selected_rubric_items || [])
+    .map((index) => rubric_items[index].id)
+    .forEach((id) => {
+      assert(id);
+      params.append('rubric_item_selected_manual', id);
+    });
+  if (method === 'percentage') params.append('use_score_perc', 'on');
   await fetch(manualGradingIQUrl, {
     method: 'POST',
     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams([
-      ...Object.entries({
-        __action: 'add_manual_grade',
-        __csrf_token: form.find('input[name=__csrf_token]').attr('value'),
-        modified_at: form.find('input[name=modified_at]').attr('value'),
-        score_manual_points: (method === 'points' ? score_points : score_points - 1).toString(),
-        score_manual_percent: (method === 'percentage'
-          ? score_percent
-          : score_percent - 10
-        ).toString(),
-        submission_note: feedback_note,
-      }),
-      ...(adjust_points ? [['score_manual_adjust_points', adjust_points]] : []),
-      ...(method === 'percentage' ? [['use_score_perc', 'on']] : []),
-      // Uses array since it requires the same key multiple times
-      ...(selected_rubric_items || []).map((index) => [
-        'rubric_item_selected_manual',
-        rubric_items[index].id,
-      ]),
-    ]).toString(),
+    body: params,
   });
-};
+}
 
-const checkGradingResults = (assigned_grader, grader) => {
+function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void {
   step('manual grading page for instance question lists updated values', async () => {
     setUser(defaultUser);
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
@@ -123,7 +137,7 @@ const checkGradingResults = (assigned_grader, grader) => {
     const form = $manualGradingIQPage('form[name=manual-grading-form]');
     // The percentage input is not checked because its value is updated via client-side JS, which is
     // currently not supported by the test suite
-    assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
+    assert.equal(form.find('input[name=score_manual_points]').val(), score_points.toString());
     assert.equal(form.find('textarea').text(), feedback_note);
 
     if (rubric_items) {
@@ -132,7 +146,10 @@ const checkGradingResults = (assigned_grader, grader) => {
         assert.equal(checkbox.length, 1);
         assert.equal(checkbox.is(':checked'), selected_rubric_items.includes(index));
       });
-      assert.equal(form.find('input[name=score_manual_adjust_points]').val(), adjust_points || 0);
+      assert.equal(
+        form.find('input[name=score_manual_adjust_points]').val(),
+        (adjust_points ?? '').toString(),
+      );
     } else {
       assert.equal(form.find('.js-selectable-rubric-item').length, 0);
       assert.equal(form.find('input[name=score_manual_adjust_points]').length, 0);
@@ -244,9 +261,13 @@ const checkGradingResults = (assigned_grader, grader) => {
       assert.equal(feedbackBlock.find('[data-testid="rubric-adjust-points"]').length, 0);
     }
   });
-};
+}
 
-const checkSettingsResults = (starting_points, min_points, max_extra_points) => {
+function checkSettingsResults(
+  starting_points: number,
+  min_points: number,
+  max_extra_points: number,
+): void {
   step('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
@@ -265,12 +286,12 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
       const idField = $manualGradingIQPage(idFields.get(index));
       assert.equal(idField.length, 1);
       if (!item.id) {
-        item.id = idField.val();
+        item.id = idField.attr('value');
       }
       assert.equal(idField.val(), item.id);
       assert.equal(idField.attr('name'), `rubric_item[cur${item.id}][id]`);
       const points = form.find(`[name="rubric_item[cur${item.id}][points]"]`);
-      assert.equal(points.val(), item.points);
+      assert.equal(points.val(), item.points.toString());
       const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
       const explanation = form.find(
@@ -312,10 +333,10 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
       );
     });
   });
-};
+}
 
-const buildRubricItemFields = (items) =>
-  _.fromPairs(
+function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
+  return _.fromPairs(
     _.flatMap(
       _.toPairs(_.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`))),
       ([key, item], order) =>
@@ -325,6 +346,7 @@ const buildRubricItemFields = (items) =>
         ]),
     ),
   );
+}
 
 describe('Manual Grading', function () {
   this.timeout(80000);
@@ -546,7 +568,7 @@ describe('Manual Grading', function () {
             __action: 'batch_action',
             __csrf_token: token,
             batch_action_data: JSON.stringify({ assigned_grader: mockStaff[0].user_id }),
-            instance_question_id: iqId,
+            instance_question_id: iqId.toString(),
           }).toString(),
         });
       });
