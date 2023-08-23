@@ -1,13 +1,12 @@
-import { contains } from '@prairielearn/path-utils';
-import { REPOSITORY_ROOT_PATH } from '../lib/paths';
-
 // @ts-check
 const _ = require('lodash');
 const path = require('node:path');
+const { contains } = require('@prairielearn/path-utils');
 
 const { config } = require('../lib/config');
 const chunks = require('../lib/chunks');
 const filePaths = require('../lib/file-paths');
+const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
 const { withCodeCaller } = require('../lib/code-caller');
 
 /** @typedef {import('../lib/chunks').Chunk} Chunk */
