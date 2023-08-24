@@ -41,7 +41,7 @@ export async function init() {
   }
 }
 
-export function set(key: string, value: any, maxAgeMS?: number) {
+export function set(key: string, value: any, maxAgeMS: number) {
   if (!cacheEnabled) return;
 
   switch (cacheType) {
