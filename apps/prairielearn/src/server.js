@@ -275,6 +275,7 @@ module.exports.initExpress = function () {
       return (
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'connect.sid' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
