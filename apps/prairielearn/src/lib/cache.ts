@@ -46,7 +46,7 @@ export function set(key: string, value: any, maxAgeMS: number) {
 
   switch (cacheType) {
     case 'memory': {
-      cache.set(key, JSON.stringify(value), { ttl: maxAgeMS ?? undefined });
+      cache.set(key, JSON.stringify(value), { ttl: maxAgeMS });
       break;
     }
 
@@ -58,7 +58,7 @@ export function set(key: string, value: any, maxAgeMS: number) {
       // We don't log the error because it contains the cached value,
       // which can be huge and which fills up the logs.
       client
-        .set(key, JSON.stringify(value), { PX: maxAgeMS ?? undefined })
+        .set(key, JSON.stringify(value), { PX: maxAgeMS })
         .catch((_err) => logger.error('Cache set error', { key, maxAgeMS }));
       break;
     }
