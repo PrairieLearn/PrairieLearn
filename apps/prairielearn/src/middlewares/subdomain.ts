@@ -28,39 +28,42 @@ const SUBDOMAINS = [
     patternPrefix: 'q',
     pattern: /^q\d+$/,
     routes: [
-      /^\/pl\/course\/\d+\/question\/(\d+)\/preview/,
-      /^\/pl\/course\/\d+\/question\/(\d+)\/clientFilesQuestion/,
-      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/preview/,
-      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/clientFilesQuestion/,
+      /^\/pl\/course\/\d+\/question\/(\d+)\/preview/i,
+      /^\/pl\/course\/\d+\/question\/(\d+)\/clientFilesQuestion/i,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/preview/i,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/clientFilesQuestion/i,
     ],
   },
   {
     // Instance question pages.
     patternPrefix: 'iq',
     pattern: /^iq\d+$/,
-    routes: [/^\/pl\/course_instance\/\d+\/instance_question\/(\d+)/],
+    routes: [
+      /^\/pl\/course_instance\/\d+\/instance_question\/(\d+)/i,
+      /^\/pl\/course_instance\/\d+\/instructor\/assessment\/\d+\/manual_grading\/instance_question\/(\d+)/i,
+    ],
   },
   {
     // Workspace pages.
     patternPrefix: 'w',
-    pattern: /^w\d+$/,
-    routes: [/^\/pl\/workspace\/(\d+)/],
+    pattern: /^w\d+$/i,
+    routes: [/^\/pl\/workspace\/(\d+)/i],
   },
   {
     // Course pages serving user-generated content.
     patternPrefix: 'c',
     pattern: /^c\d+$/,
-    routes: [/^\/pl\/course\/(\d+)\/clientFilesCourse/],
+    routes: [/^\/pl\/course\/(\d+)\/clientFilesCourse/i],
   },
   {
     // Course instance pages serving user-generated content.
     patternPrefix: 'ci',
     pattern: /^ci\d+$/,
     routes: [
-      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourse/,
-      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourseInstance/,
-      /^\/pl\/course_instance\/(\d+)\/clientFilesCourse/,
-      /^\/pl\/course_instance\/(\d+)\/clientFilesCourseInstance/,
+      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourse/i,
+      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourseInstance/i,
+      /^\/pl\/course_instance\/(\d+)\/clientFilesCourse/i,
+      /^\/pl\/course_instance\/(\d+)\/clientFilesCourseInstance/i,
     ],
   },
   {
@@ -68,17 +71,28 @@ const SUBDOMAINS = [
     patternPrefix: 'a',
     pattern: /^a\d+$/,
     routes: [
-      /^\/pl\/course_instance\/\d+\/instructor\/assessment\/(\d+)\/clientFilesAssessment/,
-      /^\/pl\/course_instance\/\d+\/assessment\/(\d+)\/clientFilesAssessment/,
+      /^\/pl\/course_instance\/\d+\/instructor\/assessment\/(\d+)\/clientFilesAssessment/i,
+      /^\/pl\/course_instance\/\d+\/assessment\/(\d+)\/clientFilesAssessment/i,
     ],
   },
   {
     // Assessment instance pages serving user-generated content.
     patternPrefix: 'ai',
     pattern: /^ai\d+/,
-    routes: [/^\/pl\/course_instance\/\d+\/assessment_instance\/(\d+)/],
+    routes: [/^\/pl\/course_instance\/\d+\/assessment_instance\/(\d+)/i],
   },
 ];
+
+// All route regular expressions must use case-insensitive matching since that
+// matches how Express routes thing by default. We'll programmatically enforce
+// that here.
+for (const subdomain of SUBDOMAINS) {
+  for (const route of subdomain.routes) {
+    if (!route.ignoreCase) {
+      throw new Error(`Route ${route} must use case-insensitive matching`);
+    }
+  }
+}
 
 /**
  * Returns whether or not the server is configured to serve untrusted content
@@ -251,7 +265,6 @@ export function assertSubdomainOrRedirect(
       canonicalHostUrl.hostname = `${expectedSubdomain}.${canonicalHostUrl.hostname}`;
       const redirectUrl = new URL(req.originalUrl, canonicalHostUrl);
       redirectUrl.protocol = req.protocol;
-      console.log(`redirecting ${req.originalUrl} to ${redirectUrl}`);
       res.redirect(redirectUrl.toString());
       return;
     }
