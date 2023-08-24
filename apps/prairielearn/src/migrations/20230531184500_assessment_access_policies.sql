@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS assessment_access_policies (
     credit INTEGER NOT NULL,
     note TEXT,
     created_by TEXT REFERENCES users(uid) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     -- CHECK (
     --     (student_uid IS NOT NULL AND group_id IS NULL)
     --     OR (student_uid IS NULL AND group_id IS NOT NULL)

@@ -7,7 +7,6 @@ CREATE FUNCTION
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when will access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT end_date timestamptz,
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
         OUT password text,           -- The password (if any) for this assessment.
@@ -87,7 +86,6 @@ BEGIN
     exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;
     credit_date_string := user_result.credit_date_string;
-    end_date := user_result.end_date;
     time_limit_min := user_result.time_limit_min;
     password := user_result.password;
     access_rules := user_result.access_rules;

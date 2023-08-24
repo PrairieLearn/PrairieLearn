@@ -25,7 +25,6 @@ AS $$
 DECLARE
     assessment_instance assessment_instances;
     assessment_result record;
-   
 BEGIN
     SELECT ai.*
     INTO assessment_instance

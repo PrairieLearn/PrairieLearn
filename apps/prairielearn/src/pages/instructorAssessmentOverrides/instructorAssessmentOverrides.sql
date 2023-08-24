@@ -14,25 +14,30 @@ WHERE assessment_id = $assessment_id
 ORDER BY
   aap.created_at;
 
--- BLOCK check_group_in_course_instance
+-- BLOCK select_group_in_assessment
 SELECT
-  COUNT(*) AS count
+  groups.id, groups.name, groups.group_config_id
 FROM
   groups
+JOIN group_configs ON groups.group_config_id = group_configs.id
 WHERE
-  course_instance_id = $course_instance_id AND id = (SELECT id from groups where name = $group_name)
+  groups.course_instance_id = $course_instance_id
+  AND groups.name = $group_name
+  AND group_configs.assessment_id = $assessment_id;
+
+
 
 -- BLOCK insert_assessment_access_policy
 INSERT INTO assessment_access_policies
-  (assessment_id, created_at, created_by, credit, end_date, group_id, note, start_date,user_id)
+  (assessment_id, created_at , created_by, credit, end_date, group_id, note, start_date,user_id)
 VALUES
-  ($assessment_id, $created_at, $created_by, $credit, $end_date, (SELECT id from groups where name = $group_name), $note, $start_date, (SELECT user_id FROM users WHERE uid = $student_uid));
+  ($assessment_id, NOW() ,$created_by, $credit, $end_date, (SELECT id from groups where name = $group_name), $note, $start_date, (SELECT user_id FROM users WHERE uid = $student_uid));
 
 
 -- BLOCK update_assessment_access_policy
 UPDATE assessment_access_policies
 SET
-  created_at = $created_at,
+  created_at = NOW(),
   created_by = $created_by,
   credit = $credit,
   end_date = $end_date,
