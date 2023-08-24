@@ -1984,7 +1984,7 @@ module.exports = {
     try {
       const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-      return `${commitHash}-${dataHash}`;
+      return `question:${commitHash}-${dataHash}`;
     } catch (err) {
       return null;
     }
