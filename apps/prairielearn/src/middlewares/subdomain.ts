@@ -279,6 +279,12 @@ export function autoAssertSubdomainOrRedirect(req, res, next) {
       const match = req.originalUrl.match(route);
       if (match) {
         const subdomainId = match[1];
+
+        if (!subdomainId) {
+          next(new Error(`Could not find subdomain ID in ${req.originalUrl}`));
+          return;
+        }
+
         const expectedSubdomain = `${subdomain.patternPrefix}${subdomainId}`;
         return assertSubdomainOrRedirect(() => expectedSubdomain, true)(req, res, next);
       }
