@@ -30,8 +30,10 @@ const SUBDOMAINS = [
     routes: [
       /^\/pl\/course\/\d+\/question\/(\d+)\/preview/i,
       /^\/pl\/course\/\d+\/question\/(\d+)\/clientFilesQuestion/i,
+      /^\/pl\/course\/\d+\/question\/(\d+)\/submission/i,
       /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/preview/i,
       /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/clientFilesQuestion/i,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/submission/i,
     ],
   },
   {
@@ -274,6 +276,7 @@ export function assertSubdomainOrRedirect(
 }
 
 export function autoAssertSubdomainOrRedirect(req, res, next) {
+  console.log(`Checking ${req.originalUrl} for subdomain`);
   for (const subdomain of SUBDOMAINS) {
     for (const route of subdomain.routes) {
       const match = req.originalUrl.match(route);
@@ -286,11 +289,13 @@ export function autoAssertSubdomainOrRedirect(req, res, next) {
         }
 
         const expectedSubdomain = `${subdomain.patternPrefix}${subdomainId}`;
+        console.log(`Redirecting ${req.originalUrl} to ${expectedSubdomain}`);
         return assertSubdomainOrRedirect(() => expectedSubdomain, true)(req, res, next);
       }
     }
   }
 
+  console.log(`Not redirecting ${req.originalUrl}`);
   return next();
 }
 

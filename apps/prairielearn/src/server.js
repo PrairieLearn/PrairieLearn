@@ -175,6 +175,9 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // Redirect as early as possible for the best performance.
+  app.use(require('./middlewares/subdomain').autoAssertSubdomainOrRedirect);
+
   // Together, these two middlewares help to implement our client-side security
   // feature that ensures that code executing on question pages can't interact
   // with other parts of the site.
@@ -399,9 +402,6 @@ module.exports.initExpress = function () {
     workspaceAuthRouter,
     workspaceProxy,
   ]);
-
-  // Redirect as early as possible for the best performance.
-  app.use(require('./middlewares/subdomain').autoAssertSubdomainOrRedirect);
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
