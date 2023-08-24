@@ -53,7 +53,7 @@ async function loadServer(questionServerPath, coursePath) {
           e.stack = err.originalError.stack + '\n\n' + err.stack;
         }
         reject(e);
-      }
+      },
     );
   });
 }
@@ -102,7 +102,7 @@ function grade(server, coursePath, submission, variant, question) {
     trueAnswer,
     submittedAnswer,
     options,
-    questionDir
+    questionDir,
   );
 
   let score = grading.score;
@@ -114,7 +114,7 @@ function grade(server, coursePath, submission, variant, question) {
   return {
     score: score,
     v2_score: grading.score,
-    feedback: grading.feedback,
+    feedback: grading.feedback ?? null,
     partial_scores: {},
     submitted_answer: submission.submitted_answer,
     format_errors: {},

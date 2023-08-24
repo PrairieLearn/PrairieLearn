@@ -111,5 +111,5 @@ app.ws('/', (ws, req) => {
 });
 
 app.listen(options.port, () =>
-  console.log(`XTerm server listening at http://localhost:${options.port}`)
+  console.log(`XTerm server listening at http://localhost:${options.port}`),
 );

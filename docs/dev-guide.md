@@ -68,13 +68,13 @@ PrairieLearn
 - Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
 
 ```sh
-DEBUG=* node server
+DEBUG=* make dev
 ```
 
 - To just see debugging logs from PrairieLearn you can use:
 
 ```sh
-DEBUG=prairielearn:* node server
+DEBUG=prairielearn:* make dev
 ```
 
 - To insert more debugging output, import `debug` and use it like this:
@@ -141,7 +141,7 @@ pages/instructorGradebook
 ```javascript
 app.use(
   '/instructor/:courseInstanceId/gradebook',
-  require('./pages/instructorGradebook/instructorGradebook')
+  require('./pages/instructorGradebook/instructorGradebook'),
 );
 ```
 
@@ -579,7 +579,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, next) => {
     // can use "await" here
-  })
+  }),
 );
 ```
 
@@ -801,7 +801,7 @@ router.post('/', function (req, res, next) {
   if (req.body.__action == 'enroll') {
     var params = {
       course_instance_id: req.body.course_instance_id,
-      user_id: res.locals.authn_user.id,
+      user_id: res.locals.authn_user.user_id,
     };
     sqldb.queryOneRow(sql.enroll, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -812,7 +812,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         body: req.body,
         locals: res.locals,
-      })
+      }),
     );
   }
 });

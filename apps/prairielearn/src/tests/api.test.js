@@ -58,14 +58,16 @@ describe('API', function () {
       const page$ = cheerio.load(await res.text());
 
       const button = page$('#generateTokenButton').get(0);
+      assert(button);
 
       // Load the popover content
       assert.isString(button.attribs['data-content']);
+
       const data$ = cheerio.load(button.attribs['data-content']);
 
       // Validate that the CSRF token is present
       const csrfInput = data$('form input[name="__csrf_token"]').get(0);
-      const csrfToken = csrfInput.attribs.value;
+      const csrfToken = csrfInput?.attribs.value;
       assert.isString(csrfToken);
 
       // Store CSRF token for later requests
@@ -73,7 +75,7 @@ describe('API', function () {
 
       // Validate the action input
       const actionInput = data$('form input[name="__action"]').get(0);
-      const action = actionInput.attribs.value;
+      const action = actionInput?.attribs.value;
       assert.equal(action, 'token_generate');
 
       // Persist the action for later
@@ -107,7 +109,7 @@ describe('API', function () {
 
       // Check that the token has the correct format
       assert.ok(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token)
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token),
       );
     });
   });

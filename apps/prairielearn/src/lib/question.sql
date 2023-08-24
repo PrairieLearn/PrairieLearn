@@ -65,6 +65,7 @@ SELECT
   s.sid,
   s.v2_score,
   s.variant_id,
+  s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
   -- These are separate for historical reasons
   gj.id AS grading_job_id,
@@ -85,7 +86,7 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN pl_courses AS c ON (c.id = v.course_id)
   LEFT JOIN LATERAL (
     SELECT
       *
@@ -194,7 +195,7 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(ci) AS course_instance,
-  to_jsonb(c) AS course,
+  to_jsonb(qc) AS question_course,
   to_jsonb(ci) AS course_instance,
   lgj.id AS grading_job_id,
   grading_job_status (lgj.id) AS grading_job_status,
@@ -230,7 +231,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN pl_courses AS c ON (c.id = v.course_id)
+  JOIN pl_courses AS qc ON (qc.id = q.course_id)
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
@@ -263,3 +265,11 @@ FROM
   JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE
   v.id = $variant_id;
+
+-- BLOCK select_question_course
+SELECT
+  to_jsonb(c.*) AS course
+FROM
+  pl_courses AS c
+WHERE
+  c.id = $question_course_id;

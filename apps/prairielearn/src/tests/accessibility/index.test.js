@@ -18,6 +18,7 @@ const server = require('../../server');
 const news_items = require('../../news_items');
 const { config } = require('../../lib/config');
 const helperServer = require('../helperServer');
+const { features } = require('../../lib/features/index');
 const { EXAMPLE_COURSE_PATH } = require('../../lib/paths');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
@@ -218,6 +219,7 @@ const SKIP_ROUTES = [
   // Admin page; we aren't guaranteed to have subpages to navigate to.
   '/pl/administrator/batchedMigrations/:batched_migration_id',
   '/pl/administrator/features/:feature',
+  '/pl/administrator/features/:feature/modal',
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
@@ -237,9 +239,12 @@ const SKIP_ROUTES = [
   // TODO: create an assessment instance and create an instance question so we can test these pages.
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file/:filename',
+  '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/grading_rubric_panels',
 
   // TODO: submit an answer to a question so we can test this page.
   '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
@@ -275,22 +280,24 @@ describe('accessibility', () => {
 
     const firstNewsItemResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {}
+      {},
     );
 
     const questionGalleryAssessmentResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM assessments WHERE tid = $tid',
       {
         tid: 'gallery/elements',
-      }
+      },
     );
 
     const codeElementQuestionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
         qid: 'element/code',
-      }
+      },
     );
+
+    await features.enable('question-sharing');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

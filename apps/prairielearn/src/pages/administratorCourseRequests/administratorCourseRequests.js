@@ -85,7 +85,7 @@ router.post('/', (req, res, next) => {
             ERR(err, () => {
               logger.error(err);
             });
-          }
+          },
         );
       });
     });
@@ -94,7 +94,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

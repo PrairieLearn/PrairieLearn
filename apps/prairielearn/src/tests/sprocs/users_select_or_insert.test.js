@@ -178,7 +178,7 @@ describe('sproc users_select_or_insert tests', () => {
         // The user should still have the same UIN.
         uin: '444444444',
       },
-      fromdb
+      fromdb,
     );
   });
 
@@ -192,7 +192,7 @@ describe('sproc users_select_or_insert tests', () => {
 
     await assert.isRejected(
       usersSelectOrInsert(user, 'Azure'),
-      /authentication provider is not allowed for institution/
+      /authentication provider is not allowed for institution/,
     );
   });
 
@@ -247,7 +247,7 @@ describe('sproc users_select_or_insert tests', () => {
         // The user should still have the same UIN.
         uin: '555566665',
       },
-      fromdb
+      fromdb,
     );
   });
 
@@ -292,7 +292,10 @@ describe('sproc users_select_or_insert tests', () => {
       uin: '666666666',
     };
 
-    await assert.isRejected(usersSelectOrInsert(user, 'Shibboleth', '200'), /Institution mismatch/);
+    await assert.isRejected(
+      usersSelectOrInsert(user, 'Shibboleth', '200'),
+      /does not match policy/,
+    );
   });
 
   // This test ensures that users in separate institutions can have the same UIN.

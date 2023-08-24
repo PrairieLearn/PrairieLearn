@@ -27,12 +27,39 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-type ExecutionJob = Omit<ServerJob, 'execute' | 'executeInBackground'>;
-type ExecutionFunction = (job: ExecutionJob) => Promise<void>;
+export interface ServerJob {
+  fail(msg: string): never;
+  error(msg: string): void;
+  warn(msg: string): void;
+  info(msg: string): void;
+  verbose(msg: string): void;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  data: Record<string, unknown>;
+}
 
-class ServerJob {
+export interface ServerJobExecutor {
+  jobSequenceId: string;
+  execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
+  executeInBackground(fn: ServerJobExecutionFunction): void;
+}
+
+export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+
+/**
+ * Internal error subclass so we can identify when `fail()` is called.
+ */
+class ServerJobAbortError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerJobAbortError';
+  }
+}
+
+class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
+  public data: Record<string, unknown> = {};
   private started = false;
   private finished = false;
   public output = '';
@@ -40,6 +67,11 @@ class ServerJob {
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
     this.jobId = jobId;
+  }
+
+  fail(msg: string): never {
+    this.error(msg);
+    throw new ServerJobAbortError(msg);
   }
 
   error(msg: string) {
@@ -83,12 +115,21 @@ class ServerJob {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
-   * sequence has completed. The returned promise will not reject if the job
+   * sequence has completed, even if an error is encountered.
+   */
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+    this.checkAndMarkStarted();
+    await this.executeInternal(fn, false);
+  }
+
+  /**
+   * Runs the job sequence and returns a Promise that resolves when the job
+   * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async execute(fn: ExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
-    await this.executeInternal(fn);
+    await this.executeInternal(fn, true);
   }
 
   /**
@@ -97,9 +138,9 @@ class ServerJob {
    * to finish. Useful for tools like TypeScript and ESLint that ensure that
    * promises are awaited.
    */
-  executeInBackground(fn: ExecutionFunction): void {
+  executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn);
+    this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {
@@ -109,7 +150,10 @@ class ServerJob {
     this.started = true;
   }
 
-  private async executeInternal(fn: ExecutionFunction): Promise<void> {
+  private async executeInternal(
+    fn: ServerJobExecutionFunction,
+    shouldThrow: boolean,
+  ): Promise<void> {
     try {
       await fn(this);
       await this.finish();
@@ -119,6 +163,12 @@ class ServerJob {
       } catch (err) {
         logger.error(`Error failing job ${this.jobId}`, err);
         Sentry.captureException(err);
+        if (shouldThrow) {
+          throw err;
+        }
+      }
+      if (shouldThrow) {
+        throw err;
       }
     }
   }
@@ -137,7 +187,10 @@ class ServerJob {
     if (this.finished) return;
     this.finished = true;
 
-    if (err) {
+    // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
+    // any details about the error object itself, as `fail` will have already
+    // printed the message. This error is just used as a form of control flow.
+    if (err && !(err instanceof ServerJobAbortError)) {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
@@ -157,6 +210,7 @@ class ServerJob {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
+      data: this.data,
       status: err ? 'Error' : 'Success',
     });
 
@@ -169,7 +223,7 @@ class ServerJob {
 /**
  * Creates a job sequence with a single job.
  */
-export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJob> {
+export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
   const { job_sequence_id, job_id } = await queryValidatedOneRow(
     sql.insert_job_sequence,
     {
@@ -185,10 +239,10 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     z.object({
       job_sequence_id: z.string(),
       job_id: z.string(),
-    })
+    }),
   );
 
-  const serverJob = new ServerJob(job_sequence_id, job_id);
+  const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
   return serverJob;
 }

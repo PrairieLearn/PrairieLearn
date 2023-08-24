@@ -5,14 +5,14 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - postgres:/var/postgres      
+      - postgres:/var/postgres
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
-      
+
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
       - NODE_ENV=production
-      
+
 volumes:
   postgres:

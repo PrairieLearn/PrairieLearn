@@ -47,15 +47,15 @@ const ConfigSchema = z.object({
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
-  /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
-  /** Overrides the user UID in development with `authType: 'none'` */
+  /** Sets the default user UID in development. */
   authUid: z.string().nullable().default('dev@illinois.edu'),
-  /** Overrides the user name in development with `authType: 'none'` */
+  /** Sets the default user name in development. */
   authName: z.string().nullable().default('Dev User'),
-  /** Overrides the user UIN in development with `authType: 'none'` */
+  /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
+  sessionStoreExpireSeconds: z.number().default(86400),
+  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
@@ -264,8 +264,6 @@ const ConfigSchema = z.object({
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  questionRenderCacheMaxItems: z.number().default(100_000),
-  questionRenderCacheMaxAgeMilliseconds: z.number().default(6 * 60 * 60 * 1000),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   filesRoot: z.string().default('/files'),
@@ -389,10 +387,6 @@ const ConfigSchema = z.object({
   sentryEnvironment: z.string().default('development'),
   sentryTracesSampleRate: z.number().nullable().default(null),
   sentryProfilesSampleRate: z.number().nullable().default(null),
-  pyroscopeEnabled: z.boolean().default(false),
-  pyroscopeServerAddress: z.string().default('https://ingest.pyroscope.cloud'),
-  pyroscopeAuthToken: z.string().nullable().default(null),
-  pyroscopeTags: z.record(z.string()).default({}),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
@@ -455,7 +449,7 @@ const ConfigSchema = z.object({
       z.object({
         key: z.string().length(32),
         iv: z.string().length(12),
-      })
+      }),
     )
     .default([]),
   azureLoggingLevel: z.enum(['error', 'warn', 'info']).default('warn'),
@@ -472,9 +466,29 @@ const ConfigSchema = z.object({
     .string()
     .nullable()
     .default(
-      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000'
+      'https://login.microsoftonline.com/common/oauth2/logout?post_logout_redirect_uri=http://localhost:3000',
     ),
   features: z.record(z.string(), z.boolean()).default({}),
+  /**
+   * Determines if QIDs of shared questions being imported should be validated.
+   * Turn off in dev mode to enable successful syncs when you don't have access
+   * to imported questions. Must be true in production for data integrity.
+   */
+  checkSharingOnSync: z.boolean().default(false),
+  /**
+   * A Stripe secret key to be used for billing. Only useful for enterprise
+   * installations. See https://stripe.com/docs/keys.
+   */
+  stripeSecretKey: z.string().nullable().default(null),
+  /**
+   * A secret key used to sign Stripe webhook events. Only useful for enterprise
+   * installations. See https://stripe.com/docs/webhooks.
+   */
+  stripeWebhookSigningSecret: z.string().nullable().default(null),
+  /**
+   * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
+   */
+  stripeProductIds: z.record(z.string(), z.string()).default({}),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */

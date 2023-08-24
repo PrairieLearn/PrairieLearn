@@ -5,6 +5,8 @@ const sqldb = require('@prairielearn/postgres');
 const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
+const { features } = require('../../lib/features/index');
+const { z } = require('zod');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -77,6 +79,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
+    has_roles: !!assessment.groupRoles,
   };
 
   // It used to be the case that assessment access rules could be associated with a
@@ -118,16 +121,22 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
+  let assessmentCanView = assessment?.canView ?? [];
+  let assessmentCanSubmit = assessment?.canSubmit ?? [];
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
+    let zoneCanView = zone?.canView ?? assessmentCanView;
+    let zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
       /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
       let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
+      let questionCanView = question.canView ?? zoneCanView;
+      let questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
@@ -151,8 +160,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
-            canView: alternative?.canView ?? question?.canView ?? null,
-            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
+            canView: alternative?.canView ?? questionCanView,
+            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
         });
       } else if (question.id) {
@@ -168,8 +177,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: question.canView,
-            canSubmit: question.canSubmit,
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
           },
         ];
       }
@@ -244,7 +253,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               assessment.advanceScorePerc ??
               0,
           };
-        }
+        },
       );
 
       return alternativeGroupParams;
@@ -265,6 +274,22 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;
 
   return assessmentParams;
+}
+
+function parseSharedQuestionReference(qid) {
+  const firstSlash = qid.indexOf('/');
+  if (firstSlash === -1) {
+    // No QID, invalid question reference. An error will be recorded when trying to locate this question
+    return {
+      sharing_name: qid.substring(1, qid.length),
+      qid: '',
+    };
+  }
+
+  return {
+    sharing_name: qid.substring(1, firstSlash),
+    qid: qid.substring(firstSlash + 1, qid.length),
+  };
 }
 
 /**
@@ -308,12 +333,86 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
         uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
-            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
+            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`,
           );
         });
       }
     });
   }
+
+  /** @type {Set<string>} */
+  const importedQids = new Set();
+  /** @type {Map<string, string[]>} */
+  const importedQidAssessmentMap = new Map();
+  Object.entries(assessments).forEach(([tid, assessment]) => {
+    if (!assessment.data) return;
+    (assessment.data.zones || []).forEach((zone) => {
+      (zone.questions || []).forEach((question) => {
+        let qids = question.alternatives
+          ? question.alternatives.map((alternative) => alternative.id)
+          : [];
+        if (question.id) {
+          qids.push(question.id);
+        }
+        qids.forEach((qid) => {
+          if (qid[0] === '@') {
+            importedQids.add(qid);
+            let tids = importedQidAssessmentMap.get(qid);
+            if (!tids) {
+              tids = [];
+              importedQidAssessmentMap.set(qid, tids);
+            }
+            tids.push(tid);
+          }
+        });
+      });
+    });
+  });
+
+  if (importedQids.size > 0) {
+    let institutionId = await sqldb.queryRow(
+      sql.get_institution_id,
+      { course_id: courseId },
+      z.string(),
+    );
+    let questionSharingEnabled = await features.enabled('question-sharing', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!questionSharingEnabled && config.checkSharingOnSync) {
+      for (let qid of importedQids) {
+        importedQidAssessmentMap.get(qid)?.forEach((tid) => {
+          infofile.addError(
+            assessments[tid],
+            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+          );
+        });
+      }
+    }
+  }
+
+  const importedQuestions = await sqldb.queryAsync(sql.get_imported_questions, {
+    course_id: courseId,
+    imported_question_info: JSON.stringify(Array.from(importedQids, parseSharedQuestionReference)),
+  });
+  for (let row of importedQuestions.rows) {
+    questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+  }
+  let missingQids = Array.from(importedQids).filter((qid) => !(qid in questionIds));
+  if (config.checkSharingOnSync) {
+    missingQids.forEach((qid) => {
+      importedQidAssessmentMap.get(qid)?.forEach((tid) => {
+        infofile.addError(
+          assessments[tid],
+          `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
+            ...missingQids,
+          ].join(', ')}`,
+        );
+      });
+    });
+  }
+
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
       tid,
@@ -324,7 +423,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     ]);
   });
 
-  const params = [assessmentParams, courseId, courseInstanceId];
+  const params = [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync];
   perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');

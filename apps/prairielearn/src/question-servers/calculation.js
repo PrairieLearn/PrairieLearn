@@ -2,6 +2,7 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const Sentry = require('@prairielearn/sentry');
+const { logger } = require('@prairielearn/logger');
 
 const { config } = require('../lib/config');
 const calculationInprocess = require('./calculation-inprocess');
@@ -104,6 +105,12 @@ function questionFunctionExperiment(name, control, candidate) {
           controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
+          logger.error('Experiment results did not match', {
+            controlError,
+            controlResult,
+            candidateError,
+            candidateResult,
+          });
           Sentry.captureException(new Error('Experiment results did not match'), {
             contexts: {
               experiment: {
@@ -140,35 +147,35 @@ function questionFunctionExperiment(name, control, candidate) {
 module.exports.generate = questionFunctionExperiment(
   'calculation-question-generate',
   calculationInprocess.generate,
-  calculationSubprocess.generate
+  calculationSubprocess.generate,
 );
 
 module.exports.prepare = questionFunctionExperiment(
   'calculation-question-prepare',
   calculationInprocess.prepare,
-  calculationSubprocess.prepare
+  calculationSubprocess.prepare,
 );
 
 module.exports.render = questionFunctionExperiment(
   'calculation-question-render',
   calculationInprocess.render,
-  calculationSubprocess.render
+  calculationSubprocess.render,
 );
 
 module.exports.getFile = questionFunctionExperiment(
   'calculation-question-getFile',
   calculationInprocess.getFile,
-  calculationSubprocess.getFile
+  calculationSubprocess.getFile,
 );
 
 module.exports.parse = questionFunctionExperiment(
   'calculation-question-parse',
   calculationInprocess.parse,
-  calculationSubprocess.parse
+  calculationSubprocess.parse,
 );
 
 module.exports.grade = questionFunctionExperiment(
   'calculation-question-grade',
   calculationInprocess.grade,
-  calculationSubprocess.grade
+  calculationSubprocess.grade,
 );

@@ -8,7 +8,10 @@ const stringify = require('rehype-stringify');
 const sanitize = require('rehype-sanitize');
 const visit = require('unist-util-visit');
 
-const regex = /<markdown>(.+?)<\/markdown>/gms;
+// The ? symbol is used to make the match non-greedy (i.e., match the shortest
+// possible string that fulfills the regex). See
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Quantifiers#types
+const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
@@ -38,6 +41,21 @@ const visitCodeBlock = (ast, _vFile) => {
 
     parent.children.splice(index, 1, html);
 
+    return node;
+  });
+};
+
+/**
+ * This visitor is used for inline markdown processing, particularly for cases where the result is
+ * expected to be shown in a single line without a block. In essence, if the result of the
+ * conversion contains a single paragraph (`p`) with some content, it replaces the paragraph itself
+ * with the content of the paragraph.
+ */
+const visitCheckSingleParagraph = (ast, _vFile) => {
+  return visit(ast, 'root', (node, _index, _parent) => {
+    if (node.children.length === 1 && node.children[0].tagName === 'p') {
+      node.children = node.children[0].children;
+    }
     return node;
   });
 };
@@ -86,6 +104,17 @@ const defaultProcessor = unified()
   .use(sanitize)
   .use(stringify);
 
+const inlineProcessor = unified()
+  .use(markdown)
+  .use(math)
+  .use(handleMath)
+  .use(gfm)
+  .use(remark2rehype, { allowDangerousHtml: true })
+  .use(raw)
+  .use(sanitize)
+  .use(makeHandler(visitCheckSingleParagraph))
+  .use(stringify);
+
 // The question processor also includes the use of pl-code instead of pre,
 // and does not sanitize scripts
 const questionProcessor = unified()
@@ -111,4 +140,12 @@ module.exports.processQuestion = function (html) {
 
 module.exports.processContent = async function (original) {
   return (await defaultProcessor.process(original)).contents;
+};
+
+/**
+ * This function is similar to `processContent`, except that if the content fits a single line
+ * (paragrah) it will return the content without a `p` tag.
+ */
+module.exports.processContentInline = async function (original) {
+  return (await inlineProcessor.process(original)).contents;
 };

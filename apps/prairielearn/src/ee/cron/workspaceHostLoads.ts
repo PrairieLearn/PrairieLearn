@@ -1,8 +1,11 @@
-import * as AWS from 'aws-sdk';
+import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
+import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgres';
 
+import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
-import { loadSqlEquiv, queryAsync, callAsync, callOneRowAsync } from '@prairielearn/postgres';
+import workspaceHostUtils = require('../../lib/workspaceHost');
 
 const sql = loadSqlEquiv(__filename);
 
@@ -112,7 +115,7 @@ const cloudwatch_definitions = {
 };
 
 async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
-  const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
   const entries = Object.entries(stats).filter(([key, _value]) => {
@@ -128,13 +131,13 @@ async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
       return {
         MetricName: def.name,
         Dimensions: dimensions,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: new Date(stats.timestamp_formatted),
         Unit: def.unit,
         Value: value,
         StorageResolution: 1,
       };
     });
-    await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' }).promise();
+    await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' });
   }
 }
 
@@ -148,27 +151,23 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
     let needed = desired_hosts - (ready_hosts + launching_hosts);
     // First thing we can try is to "re-capture" draining hosts to be ready.
     // This is very cheap to do because we don't need to call out to AWS.
-    const recaptured_hosts =
-      (await callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts ||
-      0;
-    needed -= recaptured_hosts;
+    const recapturedHostCount = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(needed);
+    needed -= recapturedHostCount;
     if (needed > 0) {
       // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
-      const ec2 = new AWS.EC2();
-      const data = await ec2
-        .runInstances({
-          MaxCount: needed,
-          MinCount: 1,
-          LaunchTemplate: {
-            LaunchTemplateId: config.workspaceLoadLaunchTemplateId,
-          },
-        })
-        .promise();
+      const ec2 = new EC2(makeAwsClientConfig());
+      const data = await ec2.runInstances({
+        MaxCount: needed,
+        MinCount: 1,
+        LaunchTemplate: {
+          LaunchTemplateId: config.workspaceLoadLaunchTemplateId,
+        },
+      });
       const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
       await queryAsync(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;
-    await callAsync('workspace_hosts_drain_extra', [surplus]);
+    await workspaceHostUtils.drainExtraWorkspaceHosts(surplus);
   }
 }

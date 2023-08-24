@@ -1,5 +1,35 @@
 # @prairielearn/postgres
 
+## 1.7.4
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 1.7.3
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
+## 1.7.2
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
+## 1.7.1
+
+### Patch Changes
+
+- 8fd47d928: Upgrade all dependencies
+
+## 1.7.0
+
+### Minor Changes
+
+- 16d0068d8: Introduce improved query functions: `queryRows`, `queryRow`, and `queryOptionalRow`
+
 ## 1.6.1
 
 ### Patch Changes

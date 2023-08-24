@@ -1,16 +1,16 @@
 // @ts-check
 const express = require('express');
-const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const AWS = require('aws-sdk');
-
-const { config } = require('../../lib/config');
+const fetch = require('node-fetch').default;
+const { S3 } = require('@aws-sdk/client-s3');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
+const { makeS3ClientConfig } = require('../../lib/aws');
+const { config } = require('../../lib/config');
 const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
-const fetch = require('node-fetch').default;
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -55,20 +55,19 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   });
   const workspace = workspaceRes.rows[0];
 
+  /** @type {string[]} */
   const logParts = [];
 
   // Load the logs from S3. When workspaces are rebooted, we write the logs to
   // an object before shutting down the container. This means that we may have
   // multiple objects for each container. Load all of them. The objects are keyed
   // such that they are sorted by date, so we can just load them in order.
-  const s3Client = new AWS.S3({ maxRetries: 3 });
-  const logItems = await s3Client
-    .listObjectsV2({
-      Bucket: config.workspaceLogsS3Bucket,
-      Prefix: `${workspaceId}/${version}/`,
-      MaxKeys: 1000,
-    })
-    .promise();
+  const s3Client = new S3(makeS3ClientConfig({ maxAttempts: 3 }));
+  const logItems = await s3Client.listObjectsV2({
+    Bucket: config.workspaceLogsS3Bucket,
+    Prefix: `${workspaceId}/${version}/`,
+    MaxKeys: 1000,
+  });
 
   // Load all parts serially to avoid hitting S3 rate limits.
   for (const item of logItems.Contents ?? []) {
@@ -76,17 +75,14 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
     // possible undefined.
     if (!item.Key) continue;
 
-    const res = await s3Client
-      .getObject({
-        Bucket: config.workspaceLogsS3Bucket,
-        Key: item.Key,
-      })
-      .promise();
+    const res = await s3Client.getObject({
+      Bucket: config.workspaceLogsS3Bucket,
+      Key: item.Key,
+    });
 
-    // Once again, the AWS SDK types aren't narrow enough. This should never be
-    // falsy in practice.
-    if (res.Body) {
-      res.Body.toString('utf-8');
+    const body = await res.Body?.transformToString();
+    if (body) {
+      logParts.push(body);
     }
   }
 
@@ -132,7 +128,7 @@ router.get(
         res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
     });
     res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
-  })
+  }),
 );
 
 // All state transitions for a single workspace version, as well as the container
@@ -153,7 +149,7 @@ router.get(
     if (containerLogsEnabled && !containerLogsExpired) {
       containerLogs = await loadLogsForWorkspaceVersion(
         res.locals.workspace_id,
-        req.params.version
+        req.params.version,
       );
     }
 
@@ -164,9 +160,9 @@ router.get(
         containerLogsEnabled,
         containerLogsExpired,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 module.exports = router;

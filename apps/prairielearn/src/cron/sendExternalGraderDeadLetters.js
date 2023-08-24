@@ -9,6 +9,7 @@ const {
 } = require('@aws-sdk/client-sqs');
 const { logger } = require('@prairielearn/logger');
 
+const { makeAwsClientConfig } = require('../lib/aws');
 const { config } = require('../lib/config');
 const opsbot = require('../lib/opsbot');
 
@@ -24,10 +25,7 @@ module.exports.run = (callback) => {
     return callback(null);
   }
 
-  const sqs = new SQSClient({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const sqs = new SQSClient(makeAwsClientConfig());
 
   let msg;
   async.series(
@@ -45,7 +43,7 @@ module.exports.run = (callback) => {
           if (res.statusCode !== 200) {
             logger.error(
               `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
-              body
+              body,
             );
           }
           callback(null);
@@ -55,7 +53,7 @@ module.exports.run = (callback) => {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 };
 
@@ -103,7 +101,7 @@ async function drainQueue(sqs, queueName) {
           MaxNumberOfMessages: 10,
           QueueUrl: QUEUE_URLS[queueName],
           WaitTimeSeconds: 20,
-        })
+        }),
       );
       if (!data.Messages) {
         // stop with message collection
@@ -118,14 +116,14 @@ async function drainQueue(sqs, queueName) {
           new DeleteMessageCommand({
             QueueUrl: QUEUE_URLS[queueName],
             ReceiptHandle: receiptHandle,
-          })
+          }),
         );
       });
 
       // keep getting messages if we got some this time
       return true;
     },
-    async (keepGoing) => keepGoing
+    async (keepGoing) => keepGoing,
   );
   return messages;
 }

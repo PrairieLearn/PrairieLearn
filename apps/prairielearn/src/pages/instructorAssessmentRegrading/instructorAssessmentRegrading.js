@@ -35,18 +35,18 @@ router.post('/', function (req, res, next) {
     regrading.regradeAllAssessmentInstances(
       res.locals.assessment.id,
       res.locals.user.user_id,
-      res.locals.authn_user.id,
+      res.locals.authn_user.user_id,
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
+      },
     );
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

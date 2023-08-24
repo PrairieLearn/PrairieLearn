@@ -1,8 +1,6 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-const async = require('async');
 const { SQSClient, GetQueueUrlCommand } = require('@aws-sdk/client-sqs');
-const AWS = require('aws-sdk');
+const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 const { z } = require('zod');
 const {
   ConfigLoader,
@@ -17,16 +15,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
-  useDatabase: z.boolean().default(false),
   useEc2MetadataService: z.boolean().default(true),
-  useCloudWatchLogging: z.boolean().default(false),
   useConsoleLoggingForJobs: z.boolean().default(true),
   useImagePreloading: z.boolean().default(false),
   useHealthCheck: z.boolean().default(true),
   cacheImageRegistry: z.string().nullable().default(null),
   parallelInitPulls: z.number().default(5),
   lifecycleHeartbeatIntervalMS: z.number().default(300000),
-  globalLogGroup: z.string().default('grading-instances-debug'),
   jobLogGroup: z.string().default('grading-jobs-debug'),
   reportLoad: z.boolean().default(false),
   reportIntervalSec: z.number().default(10),
@@ -48,7 +43,6 @@ const ConfigSchema = z.object({
   instanceId: z.string().nullable().default(null),
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().nullable().default(null),
-  awsConfig: z.any().default(null),
   awsRegion: z.string().default('us-east-2'),
 });
 
@@ -57,9 +51,7 @@ function makeProductionConfigSource() {
     async load() {
       if (!isProduction) return {};
       return {
-        useDatabase: true,
         useEc2MetadataService: true,
-        useCloudWatchLogging: true,
         useConsoleLoggingForJobs: false,
         useImagePreloading: true,
         reportLoad: true,
@@ -74,9 +66,9 @@ function makeAutoScalingGroupConfigSource() {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
 
       logger.info('Detecting AutoScalingGroup...');
-      var autoscaling = new AWS.AutoScaling({ region: existingConfig.awsRegion });
+      var autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
       var params = { InstanceIds: [existingConfig.instanceId] };
-      const data = await autoscaling.describeAutoScalingInstances(params).promise();
+      const data = await autoscaling.describeAutoScalingInstances(params);
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
         logger.info('Not running inside an AutoScalingGroup');
         return {};
@@ -92,37 +84,16 @@ function makeAutoScalingGroupConfigSource() {
 const loader = new ConfigLoader(ConfigSchema);
 module.exports.config = loader.config;
 
-module.exports.loadConfig = function (callback) {
-  async.series(
-    [
-      async () => {
-        await loader.loadAndValidate([
-          makeProductionConfigSource(),
-          makeImdsConfigSource(),
-          makeSecretsManagerConfigSource('ConfSecret'),
-          makeAutoScalingGroupConfigSource(),
-        ]);
+module.exports.loadConfig = async function () {
+  await loader.loadAndValidate([
+    makeProductionConfigSource(),
+    makeImdsConfigSource(),
+    makeSecretsManagerConfigSource('ConfSecret'),
+    makeAutoScalingGroupConfigSource(),
+  ]);
 
-        AWS.config.update({ region: loader.config.awsRegion });
-
-        // Initialize CloudWatch logging if it's enabled
-        if (module.exports.config.useCloudWatchLogging) {
-          const groupName = module.exports.config.globalLogGroup;
-          const streamName = module.exports.config.instanceId;
-          // @ts-expect-error -- Need to type this better in the future.
-          logger.initCloudWatchLogging(groupName, streamName);
-          logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
-        }
-
-        await getQueueUrl('jobs');
-        await getQueueUrl('results');
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    }
-  );
+  await getQueueUrl('jobs');
+  await getQueueUrl('results');
 };
 
 /**

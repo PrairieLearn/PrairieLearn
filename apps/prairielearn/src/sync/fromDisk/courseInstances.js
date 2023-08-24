@@ -8,9 +8,8 @@ const perf = require('../performance')('question');
 /**
  *
  * @param {import('../course-db').CourseInstance | null | undefined} courseInstance
- * @param {string | null} courseTimezone
  */
-function getParamsForCourseInstance(courseInstance, courseTimezone) {
+function getParamsForCourseInstance(courseInstance) {
   if (!courseInstance) return null;
 
   // It used to be the case that instance access rules could be associated with a
@@ -31,7 +30,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
     long_name: courseInstance.longName,
     number: courseInstance.number,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
+    display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
   };
@@ -43,7 +42,6 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
  * @returns {Promise<{ [ciid: string]: any }>}
  */
 module.exports.sync = async function (courseId, courseData) {
-  const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseIntanceData]) => {
       const { courseInstance } = courseIntanceData;
@@ -52,9 +50,9 @@ module.exports.sync = async function (courseId, courseData) {
         courseInstance.uuid,
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
-        getParamsForCourseInstance(courseInstance.data, courseTimezone),
+        getParamsForCourseInstance(courseInstance.data),
       ]);
-    }
+    },
   );
 
   const params = [courseInstanceParams, courseId];

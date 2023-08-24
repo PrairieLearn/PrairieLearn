@@ -1,0 +1,28 @@
+{
+  "uuid": "d1959584-48c6-477a-8a4a-d50e1a4a95c8",
+  "type": "Exam",
+  "title": "Group Activity Exam Example",
+  "set": "Exam",
+  "number": "14",
+  "groupWork": true,
+  "groupMaxSize": 2,
+  "groupMinSize": 2,
+  "studentGroupCreate": true,
+  "studentGroupJoin": true,
+  "studentGroupLeave": true,
+  "allowAccess": [
+    {
+      "mode": "Public",
+      "credit": 100
+    }
+  ],
+  "zones": [
+    {
+      "title": "Hard questions",
+      "questions": [
+        { "id": "addVectors", "points": [10, 5, 1] },
+        { "id": "positionTimeGraph", "points": [10] }
+      ]
+    }
+  ]
+}

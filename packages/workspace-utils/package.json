@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/workspace-utils",
-  "version": "1.0.3",
+  "version": "1.0.8",
   "private": true,
   "main": "./dist/index.js",
   "repository": {
@@ -14,14 +14,14 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.16.3",
-    "typescript": "^5.0.4",
-    "typescript-cp": "^0.1.8"
+    "@types/node": "^18.17.4",
+    "typescript": "^5.1.6",
+    "typescript-cp": "^0.1.9"
   },
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
-    "fast-glob": "^3.2.12",
-    "filesize": "^10.0.7"
+    "fast-glob": "^3.3.1",
+    "filesize": "^10.0.11"
   }
 }

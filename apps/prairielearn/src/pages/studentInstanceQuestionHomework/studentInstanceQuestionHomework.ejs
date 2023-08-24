@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <%- include('../partials/mathjax'); %>
-    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <%- compiled_script_tag('question.ts') %>
+    <script src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -49,7 +49,5 @@
         </div>
       </div>
     </main>
-    <!-- Needs to be located below element scripts -->
-    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>

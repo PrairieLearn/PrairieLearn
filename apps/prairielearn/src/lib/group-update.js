@@ -28,7 +28,7 @@ module.exports = {
     let params = { assessment_id };
     sqldb.queryOneRow(sql.select_assessment_info, params, function (err, result) {
       if (ERR(err, callback)) return;
-      const assessmentLabel = result.rows[0].assessmentLabel;
+      const assessmentLabel = result.rows[0].assessment_label;
       const course_instance_id = result.rows[0].course_instance_id;
       const course_id = result.rows[0].course_id;
       const options = {
@@ -68,14 +68,14 @@ module.exports = {
             if (err || lock == null) {
               job.verbose(`Did not acquire lock ${lockName}`);
               job.fail(
-                `Another user is already modifying group setting for this assessment. Please try again later.`
+                `Another user is already modifying group setting for this assessment. Please try again later.`,
               );
               return;
             } else {
               job.verbose(`Acquired lock ${lockName}`);
               job.verbose('Uploading group settings for ' + assessmentLabel);
               job.verbose(
-                `Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`
+                `Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`,
               );
               job.verbose(`----------------------------------------`);
               job.verbose(`Processing group updates...`);
@@ -115,7 +115,7 @@ module.exports = {
                       if (notExist) {
                         job.verbose(`----------------------------------------`);
                         job.verbose(
-                          `ERROR: The following users do not exist. Please check their uids first.`
+                          `ERROR: The following users do not exist. Please check their uids first.`,
                         );
                         notExist.forEach((user) => {
                           job.verbose(user);
@@ -142,7 +142,7 @@ module.exports = {
                     job.verbose(`Released lock ${lockName}`);
                     if (errorCount === 0) {
                       job.verbose(
-                        `Successfully updated groups for ${successCount} students, with no errors`
+                        `Successfully updated groups for ${successCount} students, with no errors`,
                       );
                       job.succeed();
                     } else {
@@ -179,7 +179,7 @@ module.exports = {
     max_group_size,
     min_group_size,
     option,
-    callback
+    callback,
   ) {
     if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
       return callback(new Error('Group Setting Requirements: max > 1; min > 0; max >= min'));
@@ -187,7 +187,7 @@ module.exports = {
     let params = { assessment_id };
     sqldb.queryOneRow(sql.select_assessment_info, params, function (err, result) {
       if (ERR(err, callback)) return;
-      const assessmentLabel = result.rows[0].assessmentLabel;
+      const assessmentLabel = result.rows[0].assessment_label;
       const course_instance_id = result.rows[0].course_instance_id;
       const course_id = result.rows[0].course_id;
 
@@ -227,7 +227,7 @@ module.exports = {
             if (err || lock == null) {
               job.verbose(`Did not acquire lock ${lockName}`);
               job.fail(
-                `Another user is already modifying group setting for this assessment. Please try again later.`
+                `Another user is already modifying group setting for this assessment. Please try again later.`,
               );
               return;
             }
@@ -259,7 +259,7 @@ module.exports = {
                 `Processing creating groups - max of ` +
                   max_group_size +
                   ' and min of ' +
-                  min_group_size
+                  min_group_size,
               );
               let numGroup = Math.ceil(numStudents / max_group_size);
               let updateList = [];
@@ -287,7 +287,7 @@ module.exports = {
                 if (notExist) {
                   job.verbose(`----------------------------------------`);
                   job.verbose(
-                    `ERROR: The following users do not exist. Please check their uids first.`
+                    `ERROR: The following users do not exist. Please check their uids first.`,
                   );
                   notExist.forEach((user) => {
                     job.verbose(user);
@@ -307,7 +307,7 @@ module.exports = {
               job.verbose(`----------------------------------------`);
               if (errorCount === 0) {
                 job.verbose(
-                  `Successfully updated groups for ${successCount} students, with no errors`
+                  `Successfully updated groups for ${successCount} students, with no errors`,
                 );
                 job.succeed();
               } else {

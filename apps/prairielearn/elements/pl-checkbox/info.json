@@ -1,8 +1,6 @@
 {
-    "controller": "pl-checkbox.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-checkbox.css"
-        ]
-    }
+  "controller": "pl-checkbox.py",
+  "dependencies": {
+    "elementStyles": ["pl-checkbox.css"]
+  }
 }

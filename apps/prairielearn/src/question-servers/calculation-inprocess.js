@@ -7,9 +7,16 @@ var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
 
+function jsonRoundTrip(data) {
+  // Special-case for undefined, which doesn't like being JSON-stringified.
+  if (data === undefined) return null;
+
+  return JSON.parse(JSON.stringify(data));
+}
+
 module.exports = {
-  loadServer: function (question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+  loadServer: function (question, question_course, callback) {
+    const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
 
     chunks.getTemplateQuestionIds(question, (err, questionIds) => {
       if (ERR(err, callback)) return;
@@ -30,7 +37,7 @@ module.exports = {
           type: 'serverFilesCourse',
         },
       ].concat(templateQuestionChunks);
-      chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
+      chunks.ensureChunksForCourse(question_course.id, chunksToLoad, (err) => {
         if (ERR(err, callback)) return;
         filePaths.questionFilePath(
           'server.js',
@@ -61,15 +68,15 @@ module.exports = {
               (err) => {
                 const e = error.makeWithData(
                   `Error loading server.js for QID ${question.qid}`,
-                  err
+                  err,
                 );
                 if (err.originalError != null) {
                   e.stack = err.originalError.stack + '\n\n' + err.stack;
                 }
                 return callback(e);
-              }
+              },
             );
-          }
+          },
         );
       });
     });
@@ -84,7 +91,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback
+    callback,
   ) {
     const htmls = {
       extraHeadersHtml: '',
@@ -100,10 +107,13 @@ module.exports = {
     var questionDir = path.join(coursePath, 'questions', question.directory);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
-      var options = question.options || {};
+
+      const vid = variant_seed;
+      const options = question.options || {};
+
+      var questionData;
       try {
-        var vid = variant_seed;
-        var questionData = server.getData(vid, options, questionDir);
+        questionData = server.getData(vid, options, questionDir);
       } catch (err) {
         let data = {
           variant_seed: variant_seed,
@@ -114,9 +124,9 @@ module.exports = {
         return ERR(error.addData(err, data), callback);
       }
       let data = {
-        params: questionData.params,
-        true_answer: questionData.trueAnswer,
-        options: questionData.options || question.options || {},
+        params: jsonRoundTrip(questionData.params),
+        true_answer: jsonRoundTrip(questionData.trueAnswer),
+        options: jsonRoundTrip(questionData.options || question.options || {}),
       };
       callback(null, [], data);
     });
@@ -135,13 +145,15 @@ module.exports = {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
+
+      const vid = variant.variant_seed;
+      const params = variant.params;
+      const trueAnswer = variant.true_answer;
+      const options = variant.options;
+      const questionDir = path.join(coursePath, 'questions', question.directory);
+
       var fileData;
       try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
         fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
       } catch (err) {
         var data = {
@@ -172,21 +184,23 @@ module.exports = {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     module.exports.loadServer(question, course, function (err, server) {
       if (ERR(err, callback)) return;
-      var grading;
+
+      const vid = variant.variant_seed;
+      const params = variant.params;
+      const trueAnswer = variant.true_answer;
+      const submittedAnswer = submission.submitted_answer;
+      const options = variant.options;
+      const questionDir = path.join(coursePath, 'questions', question.directory);
+
+      let grading;
       try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var submittedAnswer = submission.submitted_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
         grading = server.gradeAnswer(
           vid,
           params,
           trueAnswer,
           submittedAnswer,
           options,
-          questionDir
+          questionDir,
         );
       } catch (err) {
         const data = {
@@ -207,13 +221,13 @@ module.exports = {
       const data = {
         score: score,
         v2_score: grading.score,
-        feedback: grading.feedback,
+        feedback: jsonRoundTrip(grading.feedback),
         partial_scores: {},
-        submitted_answer: submission.submitted_answer,
+        submitted_answer: jsonRoundTrip(submittedAnswer),
         format_errors: {},
         gradable: true,
-        params: variant.params,
-        true_answer: variant.true_answer,
+        params: jsonRoundTrip(params),
+        true_answer: jsonRoundTrip(trueAnswer),
       };
       callback(null, [], data);
     });

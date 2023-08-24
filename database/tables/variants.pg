@@ -1,7 +1,7 @@
 columns
     authn_user_id: bigint
     broken: boolean default false
-    course_id: bigint
+    course_id: bigint not null
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval

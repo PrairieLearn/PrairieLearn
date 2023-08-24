@@ -42,7 +42,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
       const tags = await ec2Client.send(
         new DescribeTagsCommand({
           Filters: [{ Name: 'resource-id', Values: [identity.instanceId] }],
-        })
+        }),
       );
 
       const secretId = tags.Tags?.find((tag) => tag.Key === tagKey)?.Value;
@@ -50,7 +50,7 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
 
       const secretsManagerClient = new SecretsManagerClient({ region: identity.region });
       const secretValue = await secretsManagerClient.send(
-        new GetSecretValueCommand({ SecretId: secretId })
+        new GetSecretValueCommand({ SecretId: secretId }),
       );
       if (!secretValue.SecretString) return {};
 
@@ -94,13 +94,15 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
 
   async loadAndValidate(sources: ConfigSource[] = []) {
     let config = this.schema.parse({});
+    // If the config setting is an array, override instead of merge
+    const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
     for (const source of sources) {
-      config = _.merge(config, await source.load(config));
+      config = _.mergeWith(config, await source.load(config), mergeRule);
     }
 
     const parsedConfig = this.schema.parse(config);
-    _.merge(this.resolvedConfig, parsedConfig);
+    _.mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
   }
 
   get config() {

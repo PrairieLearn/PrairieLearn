@@ -95,7 +95,7 @@ class CodeCallerNative {
       // logger, which will only write to stdout. So, we allow a different
       // logging function to be provided.
       errorLogger: logger.error,
-    }
+    },
   ) {
     /** @type {CodeCallerState} */
     this.state = CREATED;
@@ -257,7 +257,7 @@ class CodeCallerNative {
         // Before reporting the restart as successful, we need to wait
         // for a confirmation message to ensure that control has actually
         // been returned to the Zygote. There's a potential race condition
-        // where we recieve this confirmation before we actually enter the
+        // where we receive this confirmation before we actually enter the
         // official RESTARTING stage. To account for this, we check if
         // there was a correct restart confirmation delivered at this point.
         // If there was, we can immediately report the restart as successful.
@@ -415,7 +415,7 @@ class CodeCallerNative {
         'CodeCallerNative child process exited while in state = WAITING, code = ' +
           String(code) +
           ', signal = ' +
-          String(signal)
+          String(signal),
       );
       this.child = null;
       this.state = EXITED;
@@ -428,8 +428,8 @@ class CodeCallerNative {
           'CodeCallerNative child process exited unexpectedly, code = ' +
             String(code) +
             ', signal = ' +
-            String(signal)
-        )
+            String(signal),
+        ),
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -445,14 +445,14 @@ class CodeCallerNative {
     if (this.state === WAITING) {
       this._logError(
         'CodeCallerNative child process raised error while in state = WAITING, message = ' +
-          String(error)
+          String(error),
       );
       this.state = EXITING;
       this.child?.kill('SIGTERM');
     } else if (this.state === IN_CALL) {
       this._logError(
         'CodeCallerNative child process raised error while in state = IN_CALL, message = ' +
-          String(error)
+          String(error),
       );
       this._clearTimeout();
       this.state = EXITING;
@@ -462,7 +462,7 @@ class CodeCallerNative {
     } else if (this.state === EXITING) {
       this._logError(
         'CodeCallerNative child process raised error while in state = EXITING, message = ' +
-          String(error)
+          String(error),
       );
     }
     this._checkState();
@@ -614,7 +614,7 @@ class CodeCallerNative {
         'Expected CodeCallerNative states ' +
           allowedStatesList +
           ' but actually have state ' +
-          String(this.state)
+          String(this.state),
       );
     }
 
@@ -650,36 +650,36 @@ class CodeCallerNative {
     if (childNull != null) {
       if (childNull && this.child != null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should be null'
+          'CodeCallerNative state "' + String(this.state) + '": child should be null',
         );
       }
       if (!childNull && this.child == null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should not be null'
+          'CodeCallerNative state "' + String(this.state) + '": child should not be null',
         );
       }
     }
     if (callbackNull != null) {
       if (callbackNull && this.callback != null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should be null'
+          'CodeCallerNative state "' + String(this.state) + '": callback should be null',
         );
       }
       if (!callbackNull && this.callback == null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should not be null'
+          'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
         );
       }
     }
     if (timeoutIDNull != null) {
       if (timeoutIDNull && this.timeoutID != null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null'
+          'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
         );
       }
       if (!timeoutIDNull && this.timeoutID == null) {
         return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null'
+          'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
         );
       }
     }
