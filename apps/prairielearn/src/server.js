@@ -400,6 +400,9 @@ module.exports.initExpress = function () {
     workspaceProxy,
   ]);
 
+  // Redirect as early as possible for the best performance.
+  app.use(require('./middlewares/subdomain').autoAssertSubdomainOrRedirect);
+
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
     // using the body parser for that route.
@@ -980,6 +983,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
       require('./pages/clientFilesQuestion/clientFilesQuestion'),
     ],
   );
@@ -988,6 +992,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ],
   );
@@ -1068,12 +1073,12 @@ module.exports.initExpress = function () {
     require('./pages/instructorQuestionSettings/instructorQuestionSettings'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview', [
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     function (req, res, next) {
       res.locals.navSubPage = 'preview';
       next();
     },
     require('./pages/shared/floatFormatters'),
-    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
@@ -1308,16 +1313,18 @@ module.exports.initExpress = function () {
   // clientFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse',
+    require('./middlewares/subdomain').assertCourseInstanceSubdomainOrRedirect,
     require('./pages/clientFilesCourse/clientFilesCourse'),
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance',
+  app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance', [
+    require('./middlewares/subdomain').assertCourseInstanceSubdomainOrRedirect,
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
-  );
+  ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/subdomain').assertAssessmentSubdomainOrRedirect,
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
   );
@@ -1325,6 +1332,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
       require('./pages/clientFilesQuestion/clientFilesQuestion'),
     ],
   );
@@ -1334,6 +1342,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ],
   );
@@ -1417,6 +1426,7 @@ module.exports.initExpress = function () {
   );
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/subdomain').assertAssessmentInstanceSubdomainOrRedirect,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
@@ -1425,9 +1435,9 @@ module.exports.initExpress = function () {
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
-    require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
@@ -1445,10 +1455,12 @@ module.exports.initExpress = function () {
 
   // clientFiles
   app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
+    require('./middlewares/subdomain').assertCourseInstanceSubdomainOrRedirect,
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourse/clientFilesCourse'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
+    require('./middlewares/subdomain').assertCourseInstanceSubdomainOrRedirect,
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
   ]);
@@ -1456,19 +1468,26 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/subdomain').assertAssessmentSubdomainOrRedirect,
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    [
+      require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
+      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    ],
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    [
+      require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ],
   );
 
   // Submission files
@@ -1534,12 +1553,12 @@ module.exports.initExpress = function () {
     require('./pages/instructorQuestionSettings/instructorQuestionSettings'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/preview', [
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     function (req, res, next) {
       res.locals.navSubPage = 'preview';
       next();
     },
     require('./pages/shared/floatFormatters'),
-    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [
@@ -1694,18 +1713,20 @@ module.exports.initExpress = function () {
   );
 
   // clientFiles
-  app.use(
-    '/pl/course/:course_id/clientFilesCourse',
+  app.use('/pl/course/:course_id/clientFilesCourse', [
+    require('./middlewares/subdomain').assertCourseSubdomainOrRedirect,
     require('./pages/clientFilesCourse/clientFilesCourse'),
-  );
+  ]);
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
   ]);
 
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 

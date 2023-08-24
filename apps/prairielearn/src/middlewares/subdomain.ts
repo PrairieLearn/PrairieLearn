@@ -5,7 +5,18 @@ import { config } from '../lib/config';
 /**
  * Specifies all routes that should always be accessible from any subdomain.
  */
-const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/, /^\/favicon.ico/];
+const ALLOWED_FROM_ANY_SUBDOMAIN = [
+  /^\/assets/,
+  /^\/cacheable_node_modules/,
+  /^\/favicon.ico/,
+  // Legacy `node_modules` assets.
+  /^\/node_modules/,
+  // Legacy assets - corresponds to paths in `/public`.
+  /^\/images/,
+  /^\/javascripts/,
+  /^\/localscripts/,
+  /^\/stylesheets/,
+];
 
 /**
  * Specifies a list of subdomain patterns and the routes that pages served from
@@ -14,21 +25,58 @@ const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/, /^
 const SUBDOMAINS = [
   {
     // Instructor question pages.
+    patternPrefix: 'q',
     pattern: /^q\d+$/,
     routes: [
-      /^\/pl\/course\/\d+\/question\/\d+\/preview/,
-      /^\/pl\/course_instance\/\d+\/instructor\/question\/\d+\/preview/,
+      /^\/pl\/course\/\d+\/question\/(\d+)\/preview/,
+      /^\/pl\/course\/\d+\/question\/(\d+)\/clientFilesQuestion/,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/preview/,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/(\d+)\/clientFilesQuestion/,
     ],
   },
   {
     // Instance question pages.
+    patternPrefix: 'iq',
     pattern: /^iq\d+$/,
-    routes: [/^\/pl\/course_instance\/\d+\/instance_question\/\d+/],
+    routes: [/^\/pl\/course_instance\/\d+\/instance_question\/(\d+)/],
   },
   {
     // Workspace pages.
+    patternPrefix: 'w',
     pattern: /^w\d+$/,
-    routes: [/^\/pl\/workspace\/\d+/],
+    routes: [/^\/pl\/workspace\/(\d+)/],
+  },
+  {
+    // Course pages serving user-generated content.
+    patternPrefix: 'c',
+    pattern: /^c\d+$/,
+    routes: [/^\/pl\/course\/(\d+)\/clientFilesCourse/],
+  },
+  {
+    // Course instance pages serving user-generated content.
+    patternPrefix: 'ci',
+    pattern: /^ci\d+$/,
+    routes: [
+      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourse/,
+      /^\/pl\/course_instance\/(\d+)\/instructor\/clientFilesCourseInstance/,
+      /^\/pl\/course_instance\/(\d+)\/clientFilesCourse/,
+      /^\/pl\/course_instance\/(\d+)\/clientFilesCourseInstance/,
+    ],
+  },
+  {
+    // Assessment pages serving user-generated content.
+    patternPrefix: 'a',
+    pattern: /^a\d+$/,
+    routes: [
+      /^\/pl\/course_instance\/\d+\/instructor\/assessment\/(\d+)\/clientFilesAssessment/,
+      /^\/pl\/course_instance\/\d+\/assessment\/(\d+)\/clientFilesAssessment/,
+    ],
+  },
+  {
+    // Assessment instance pages serving user-generated content.
+    patternPrefix: 'ai',
+    pattern: /^ai\d+/,
+    routes: [/^\/pl\/course_instance\/\d+\/assessment_instance\/(\d+)/],
   },
 ];
 
@@ -44,7 +92,7 @@ function shouldUseSubdomains() {
 export function allowAccess(
   requestHostname: string,
   requestOrigin: string | null | undefined,
-  originalUrl: string
+  originalUrl: string,
 ): boolean {
   const requestSubdomain = requestHostname.split('.')[0];
 
@@ -125,7 +173,7 @@ export function allowAccess(
 export function validateSubdomainRequest(
   req: express.Request,
   res: express.Response,
-  next: express.NextFunction
+  next: express.NextFunction,
 ) {
   if (!shouldUseSubdomains()) {
     next();
@@ -145,7 +193,7 @@ export function validateSubdomainRequest(
 export function subdomainRedirect(
   req: express.Request,
   res: express.Response,
-  next: express.NextFunction
+  next: express.NextFunction,
 ) {
   if (!shouldUseSubdomains()) {
     next();
@@ -182,10 +230,11 @@ export function subdomainRedirect(
 }
 
 export function assertSubdomainOrRedirect(
-  getExpectedSubdomain: (req: express.Request, res: express.Response) => string
+  getExpectedSubdomain: (req: express.Request, res: express.Response) => string,
+  active: boolean,
 ): express.RequestHandler {
   return function (req, res, next) {
-    if (!shouldUseSubdomains()) {
+    if (!shouldUseSubdomains() || !active) {
       next();
       return;
     }
@@ -202,6 +251,7 @@ export function assertSubdomainOrRedirect(
       canonicalHostUrl.hostname = `${expectedSubdomain}.${canonicalHostUrl.hostname}`;
       const redirectUrl = new URL(req.originalUrl, canonicalHostUrl);
       redirectUrl.protocol = req.protocol;
+      console.log(`redirecting ${req.originalUrl} to ${redirectUrl}`);
       res.redirect(redirectUrl.toString());
       return;
     }
@@ -210,14 +260,55 @@ export function assertSubdomainOrRedirect(
   };
 }
 
+export function autoAssertSubdomainOrRedirect(req, res, next) {
+  for (const subdomain of SUBDOMAINS) {
+    for (const route of subdomain.routes) {
+      const match = req.originalUrl.match(route);
+      if (match) {
+        const subdomainId = match[1];
+        const expectedSubdomain = `${subdomain.patternPrefix}${subdomainId}`;
+        return assertSubdomainOrRedirect(() => expectedSubdomain, true)(req, res, next);
+      }
+    }
+  }
+
+  return next();
+}
+
+// These are likely not necessary anymore if the above `autoAssertSubdomainOrRedirect`
+// function is working correctly.
+
+export const assertCourseSubdomainOrRedirect = assertSubdomainOrRedirect(
+  (req, res) => `c${res.locals.course.id}`,
+  false,
+);
+
+export const assertCourseInstanceSubdomainOrRedirect = assertSubdomainOrRedirect(
+  (req, res) => `ci${res.locals.course_instance.id}`,
+  false,
+);
+
+export const assertAssessmentSubdomainOrRedirect = assertSubdomainOrRedirect(
+  (req, res) => `a${res.locals.assessment.id}`,
+  false,
+);
+
+export const assertAssessmentInstanceSubdomainOrRedirect = assertSubdomainOrRedirect(
+  (req, res) => `ai${res.locals.assessment_instance.id}`,
+  false,
+);
+
 export const assertQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
-  (req, res) => `q${res.locals.question.id}`
+  (req, res) => `q${res.locals.question.id}`,
+  false,
 );
 
 export const assertInstanceQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
-  (req, res) => `iq${res.locals.instance_question.id}`
+  (req, res) => `iq${res.locals.instance_question.id}`,
+  false,
 );
 
 export const assertWorkspaceSubdomainOrRedirect = assertSubdomainOrRedirect(
-  (req, res) => `w${res.locals.workspace_id}`
+  (req, res) => `w${res.locals.workspace_id}`,
+  false,
 );
