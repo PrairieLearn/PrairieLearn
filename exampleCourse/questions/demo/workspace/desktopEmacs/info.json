@@ -1,0 +1,22 @@
+{
+    "uuid": "b39c1f28-ee87-40ad-8ab6-22a7672158ea",
+    "title": "Workspace demo: Linux application",
+    "topic": "Workspace",
+    "tags": [
+        "jonatan"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-desktop",
+        "port": 8080,
+        "home": "/home/prairielearner",
+        "environment": {
+             "DESKTOP_ENVIRONMENT": "/usr/bin/emacs --no-splash /home/prairielearner/starter_code.c"
+        },
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ]
+    }
+}
