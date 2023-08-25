@@ -18,15 +18,15 @@ router.get(
         body: req.body,
       });
     }
-    const course = await getQuestionCourse(res.locals.question, res.locals.course);
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+    const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+    const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
 
     /** @type {chunks.QuestionChunk} */
     const chunk = {
       type: 'question',
       questionId: res.locals.question.id,
     };
-    await chunks.ensureChunksForCourseAsync(res.locals.course.id, chunk);
+    await chunks.ensureChunksForCourseAsync(question_course.id, chunk);
 
     const clientFilesDir = path.join(
       coursePath,
