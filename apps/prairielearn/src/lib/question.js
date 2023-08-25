@@ -149,32 +149,37 @@ module.exports = {
   getFile(filename, variant, question, variant_course, authn_user_id, callback) {
     questionServers.getModule(question.type, (err, questionModule) => {
       if (ERR(err, callback)) return;
-      module.exports._getQuestionCourse(question, variant_course).then((question_course) => {
-        questionModule.file(
-          filename,
-          variant,
-          question,
-          question_course,
-          (err, courseIssues, fileData) => {
-            if (ERR(err, callback)) return;
+      util.callbackify(module.exports._getQuestionCourse)(
+        question,
+        variant_course,
+        (err, question_course) => {
+          if (ERR(err, callback)) return;
+          questionModule.file(
+            filename,
+            variant,
+            question,
+            question_course,
+            (err, courseIssues, fileData) => {
+              if (ERR(err, callback)) return;
 
-            const studentMessage = 'Error creating file: ' + filename;
-            const courseData = { variant, question, course: variant_course };
-            module.exports._writeCourseIssues(
-              courseIssues,
-              variant,
-              authn_user_id,
-              studentMessage,
-              courseData,
-              (err) => {
-                if (ERR(err, callback)) return;
+              const studentMessage = 'Error creating file: ' + filename;
+              const courseData = { variant, question, course: variant_course };
+              module.exports._writeCourseIssues(
+                courseIssues,
+                variant,
+                authn_user_id,
+                studentMessage,
+                courseData,
+                (err) => {
+                  if (ERR(err, callback)) return;
 
-                return callback(null, fileData);
-              },
-            );
-          },
-        );
-      });
+                  return callback(null, fileData);
+                },
+              );
+            },
+          );
+        },
+      );
     });
   },
 
