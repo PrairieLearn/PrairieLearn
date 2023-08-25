@@ -1,0 +1,50 @@
+<div class="pl-sketch" id="pl-sketch-{{uuid}}">
+    <div class="pl-sketch-controls" style="width: {{width}}px">
+        <div class="pl-sketch-control-group">
+            <div class="pl-sketch-control" id="undo"><div class="fa fa-undo fa-2x"></div></div>
+            <div class="pl-sketch-control" id="redo"><div class="fa fa-redo fa-2x"></div></div>
+            <div class="pl-sketch-control" id="pen"><div class="fa fa-pen fa-2x"></div></div>
+            <div class="pl-sketch-control" id="eraser"><div class="fa fa-eraser fa-2x"></div></div>
+        </div>
+        <div class="pl-sketch-control-group">
+            <div class="pl-sketch-setting" id="color-picker-{{uuid}}">
+                <div class="pl-sketch-control pl-sketch-color-icon" id="color" style="background-color: #000000"></div>
+                <div class="pl-sketch-popup pl-sketch-hidden" id="color-popup-{{uuid}}">
+                    <div class="pl-sketch-circle" style="background-color: #FFEB3B"></div>
+                    <div class="pl-sketch-circle" style="background-color: #FF9800"></div>
+                    <div class="pl-sketch-circle" style="background-color: #F44336"></div>
+                    <div class="pl-sketch-circle" style="background-color: #E91E63"></div>
+                    <div class="pl-sketch-circle" style="background-color: #9C27B0"></div>
+                    <div class="pl-sketch-circle" style="background-color: #3F51B5"></div><br>
+                    <div class="pl-sketch-circle" style="background-color: #00BCD4"></div>
+                    <div class="pl-sketch-circle" style="background-color: #4CAF50"></div>
+                    <div class="pl-sketch-circle" style="background-color: #795548"></div>
+                    <div class="pl-sketch-circle" style="background-color: #E0E0E0"></div>
+                    <div class="pl-sketch-circle" style="background-color: #616161"></div>
+                    <div class="pl-sketch-circle" style="background-color: #000000"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas class="pl-sketch-canvas" id="pl-sketch-canvas-{{uuid}}" data-width="80%" data-height="80%"></canvas>
+    <input type="hidden" id="pl-sketch-input-{{uuid}}" name="sketches" value="" />
+
+    <script>
+        let sketches = {};
+        let strokes = {};
+        let sketches_string = `{{{sketchpad_json}}}`;
+        if (sketches_string.length != 0) {
+            sketches_string = sketches_string.replace(/'/g, '!@#$%');
+            sketches_string = sketches_string.replace(/"/g, '\'');
+            sketches_string = sketches_string.replace(/!@#\$%/g, '"');
+            sketches = JSON.parse(sketches_string);
+            strokes = sketches['sketches'];
+            strokes = strokes.replace(/'/g, '"');
+            strokes = JSON.parse(strokes);
+        }
+
+        $(function() {
+            window.PLSketchApi.setupSketchpad({{width}}, {{height}}, strokes, '{{uuid}}');
+        });
+    </script>
+</div>

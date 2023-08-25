@@ -2946,6 +2946,7 @@ __metadata:
     search-string: ^3.1.0
     serve-favicon: ^2.5.0
     showdown: ^2.1.0
+    sketchpad: ^0.1.0,
     sinon: ^15.2.0
     socket.io: ^4.7.2
     socket.io-client: ^4.7.2
