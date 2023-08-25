@@ -1452,6 +1452,7 @@ Freely draw a sketch of whatever you want.
 <br />
 
 **question.html**
+
 ```html
 <pl-sketch width="500" height="600"></pl-sketch>
 ```
@@ -1459,7 +1460,7 @@ Freely draw a sketch of whatever you want.
 #### Customizations
 
 | Attribute | Type    | Default | Description                  |
-|-----------|---------|---------|------------------------------|
+| --------- | ------- | ------- | ---------------------------- |
 | `width`   | integer | 500     | Width of sketchpad element.  |
 | `height`  | integer | 600     | Height of sketchpad element. |
 
@@ -1470,8 +1471,8 @@ Any submission will be marked correct, as there is no way to automatically grade
 #### Example Implementations
 
 - [element/sketch]
------
 
+---
 
 ### `pl-figure` element
 

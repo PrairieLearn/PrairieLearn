@@ -1,14 +1,8 @@
 {
-    "controller": "pl-sketch.py",
-    "dependencies": {
-        "nodeModulesScripts": [
-            "sketchpad/scripts/sketchpad.js"
-        ],
-        "elementScripts": [
-            "pl-sketch.js"
-        ],
-        "elementStyles": [
-            "pl-sketch.css"
-        ]
-    }
+  "controller": "pl-sketch.py",
+  "dependencies": {
+    "nodeModulesScripts": ["sketchpad/scripts/sketchpad.js"],
+    "elementScripts": ["pl-sketch.js"],
+    "elementStyles": ["pl-sketch.css"]
+  }
 }
