@@ -32,7 +32,7 @@ const argument_option_defs = [
   {
     name: 'de',
     type: String,
-    defaultValue: '/usr/bin/xfce4-session',
+    defaultValue: process.env.DESKTOP_ENVIRONMENT || '/usr/bin/xfce4-session',
     description: 'Binary for the desktop environment to run',
   },
 ];
@@ -114,6 +114,9 @@ const spawn_gui = async (width, height) => {
   // Now finally, create the window manager. We don't need to kill this.
   // For some reason it gets mad if we _do_ try to kill it.  So, I'm not touching it.
   wm_proc = child_process.spawn(options.de, [], {
+    // This option allows the DESKTOP_ENVIRONMENT setting to include arguments,
+    // e.g., `/usr/bin/firefox --kiosk www.example.com`.
+    shell: true,
     env: {
       DISPLAY: ':1',
     },
