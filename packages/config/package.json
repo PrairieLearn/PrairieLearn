@@ -17,7 +17,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/fs-extra": "^11.0.1",
-    "@types/lodash": "^4.14.196",
+    "@types/lodash": "^4.14.197",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.17.4",
     "mocha": "^10.2.0",
