@@ -633,7 +633,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-block-horizontal" if inline else "",
-            "inline": inline,
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
