@@ -20,7 +20,6 @@ def render(element_html, data):
         html_params = {
             "uuid": pl.get_uuid(),
             "sketchpad_json": skp_json,
-            "test_elem": "hello world",
             "width": width,
             "height": height,
         }
