@@ -6,6 +6,7 @@ import prairielearn as pl
 def prepare(element_html, data):
     return data
 
+
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     width = pl.get_integer_attrib(element, "width", 600)
