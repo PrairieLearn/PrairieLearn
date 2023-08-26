@@ -45,11 +45,6 @@ class FormatType(Enum):
     CODE = "code"
 
 
-class BlockOrientationType(Enum):
-    DEFAULT = "default"
-    HORIZONTAL = "horizontal"
-
-
 class GroupInfo(TypedDict):
     tag: Optional[str]
     depends: Optional[list[str]]
@@ -80,6 +75,7 @@ PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
+INLINE_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
@@ -162,7 +158,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "format",
         "code-language",
         "allow-blank",
-        "block-orientation",
     ]
 
     pl.check_attribs(
@@ -444,8 +439,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-    block_orientation = pl.get_enum_attrib(
-        element, "block-orientation", BlockOrientationType, BlockOrientationType.DEFAULT
+    inline = pl.get_boolean_attrib(
+        element, "inline", INLINE_DEFAULT
     )
     dropzone_layout = pl.get_string_attrib(
         element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
@@ -492,11 +487,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
         )
 
-        if block_orientation is BlockOrientationType.HORIZONTAL:
-            if check_indentation:
-                raise Exception(
-                    'The indentation attribute may not be used when block-orientation is "horizontal".'
-                )
+        if inline and check_indentation:
+            raise Exception(
+                'The indentation attribute may not be used when block-orientation is "horizontal".'
+            )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
@@ -519,13 +513,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
+            "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
             "max_indent": max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
-            "orientation": "pl-block-horizontal" if block_orientation  is BlockOrientationType.HORIZONTAL else "",
+            "block_layout": "pl-block-horizontal" if inline else "",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
@@ -562,9 +557,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
-            "orientation": "pl-block-horizontal" 
-            if block_orientation  is BlockOrientationType.HORIZONTAL 
-            else "",
+            "block_layout": "pl-block-horizontal"  if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
@@ -639,9 +632,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
-            "orientation": "pl-block-horizontal" 
-            if block_orientation  is BlockOrientationType.HORIZONTAL 
-            else "",
+            "block_layout": "pl-block-horizontal" if inline else "",
+            "inline": inline,
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",

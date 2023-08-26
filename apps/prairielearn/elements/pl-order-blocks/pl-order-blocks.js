@@ -154,7 +154,7 @@ window.PLOrderBlocks = function (uuid, options) {
       placeholder[0].style.height = ui.item[0].style.height;
 
       //enable width if using horizontal block blacement
-      if (options.orientation === 'pl-block-horizontal') {
+      if (options.inline) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
     },
