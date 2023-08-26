@@ -493,10 +493,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
 
         if block_orientation is BlockOrientationType.HORIZONTAL:
-            if dropzone_layout != "bottom":
-                raise Exception(
-                    'The block-orientation attribute may only be "horizontal" when solution-placement is "bottom".'
-                )
             if check_indentation:
                 raise Exception(
                     'The indentation attribute may not be used when block-orientation is "horizontal".'
