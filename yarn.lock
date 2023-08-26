@@ -2947,6 +2947,7 @@ __metadata:
     serve-favicon: ^2.5.0
     showdown: ^2.1.0
     sinon: ^15.2.0
+    sketchpad: ^0.1.0
     socket.io: ^4.7.2
     socket.io-client: ^4.7.2
     streamifier: ^0.1.1
@@ -13493,7 +13494,6 @@ __metadata:
     prettier: 3.0.1
     pyright: ^1.1.321
     s3rver: ^3.7.1
-    sketchpad: ^0.1.0
     turbo: ^1.10.12
     typescript: ^5.1.6
   languageName: unknown
