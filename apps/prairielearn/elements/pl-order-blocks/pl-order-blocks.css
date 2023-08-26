@@ -73,12 +73,12 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-block-horizontal > .list-group{
-  overflow-x: scroll;
+.pl-block-horizontal {
+  overflow-x: scroll !important;
 }
 
-.pl-block-horizontal >  ul > li,
-.pl-block-horizontal > .list-group {
+.pl-block-horizontal > .list-group,
+.pl-block-horizontal >  ul > li{
   display: block;
   float: left;
   white-space: nowrap;
