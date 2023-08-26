@@ -55,7 +55,6 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
-- [`pl-sketch`](#pl-sketch-element): Freely draw anything using a sketchpad.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
@@ -68,6 +67,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
 - [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
   code form for supported programming languages.
+- [`pl-sketch`](#pl-sketch-element): Freely draw anything using a sketchpad.
 - [`pl-template`](#pl-template-element): Displays content from mustache templates.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
