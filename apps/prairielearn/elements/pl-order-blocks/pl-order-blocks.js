@@ -153,11 +153,10 @@ window.PLOrderBlocks = function (uuid, options) {
       placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
 
-      //enable width if the dropzone isn't bottom
-      if (options.dropzoneLayout === 'pl-order-blocks-bottom'){
+      //enable width if using horizontal block blacement
+      if (options.orientation === 'pl-block-horizontal') {
         placeholder[0].style.width = ui.item[0].style.width;
       }
-
     },
     stop: function (event, ui) {
       // when the user stops interacting with the list
