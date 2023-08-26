@@ -479,10 +479,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             submission_indent = option.get("indent", None)
 
             if submission_indent is not None:
-                if block_orientation is BlockOrientationType.HORIZONTAL:
-                    raise Exception(
-                        'When block-orientation is "horizontal" indentaion is not supported. Please remove "indent" attributes from all pl-answer blocks.'
-                    )
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
