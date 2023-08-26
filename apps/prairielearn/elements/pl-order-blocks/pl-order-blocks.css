@@ -10,7 +10,7 @@ div.pl-order-blocks-bottom {
   /* This particular style renders the dropzones in a single column vertically */
   width: 100%;
   margin: 8px;
-  min-height: 130px;
+  min-height: 8rem;
 }
 
 li.pl-order-blocks-code {
@@ -73,17 +73,20 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-block-horizontal {
-  overflow-x: scroll !important;
+.pl-block-horizontal > .list-group{
+  overflow-x: scroll;
+}
+
+.pl-block-horizontal > ul {
+  letter-spacing: -1em !important; /* a hacky way to remove the space between inline-block elements */
 }
 
 .pl-block-horizontal > .list-group,
-.pl-block-horizontal >  ul > li{
-  display: block;
-  float: left;
-  white-space: nowrap;
-  margin-right: 4px;
-  margin-left: 4px; 
+.pl-block-horizontal > ul > li{
+  letter-spacing: normal;
+  display: inline-block;
+  vertical-align: top;
+  white-space: nowrap;  
 }
 
 .pl-order-blocks-answer-container > ul {
