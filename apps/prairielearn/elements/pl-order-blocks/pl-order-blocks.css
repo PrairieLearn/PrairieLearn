@@ -79,8 +79,8 @@ li.ui-state-highlight {
 
 .pl-block-horizontal >  ul > li,
 .pl-block-horizontal > .list-group {
-  display: inline-block !important;
-  float: none !important;
+  display: block;
+  float: left;
   white-space: nowrap;
   margin-right: 4px;
   margin-left: 4px; 
