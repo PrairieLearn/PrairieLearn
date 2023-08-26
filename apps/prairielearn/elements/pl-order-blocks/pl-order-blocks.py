@@ -501,10 +501,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 raise Exception(
                     'The indentation attribute may not be used when block-orientation is "horizontal".'
                 )
-            if max_indent != MAX_INDENTION_DEFAULT:
-                raise Exception(
-                    'The max-indent attribute may not be used when block-orientation is "horizontal".'
-                )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
