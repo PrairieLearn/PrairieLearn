@@ -50,7 +50,6 @@ class GroupInfo(TypedDict):
     depends: Optional[list[str]]
 
 
-
 class OrderBlocksAnswerData(TypedDict):
     inner_html: str
     indent: Optional[int]
@@ -439,9 +438,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-    inline = pl.get_boolean_attrib(
-        element, "inline", INLINE_DEFAULT
-    )
+    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     dropzone_layout = pl.get_string_attrib(
         element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
     )
@@ -476,7 +473,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
-
 
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
@@ -557,7 +553,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
-            "block_layout": "pl-block-horizontal"  if inline else "",
+            "block_layout": "pl-block-horizontal" if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
@@ -636,7 +632,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout == "bottom"
             else "pl-order-blocks-right",
-
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
