@@ -142,7 +142,7 @@ to display the input area above the output area.</p>
   </p>
 
   <p>
-    This example uses the attributes <code>selection-placement="bottom"</code>
+    This example uses the attributes <code>solution-placement="bottom"</code>
     and <code>block_orientation="horizontal"</code> to create horizontal arrangement 
     of the source blocks.
   </p>
@@ -152,8 +152,20 @@ to display the input area above the output area.</p>
 
 </pl-question-panel>
 
-<pl-order-blocks answers-name="sql-query" format="code" code-language="sql" solution-placement="bottom" block-orientation="horizontal">
+<pl-order-blocks answers-name="sql-query" format="code" code-language="sql" solution-placement="bottom" inline="true">
   <pl-answer correct="true">SELECT</pl-answer>
+  <pl-answer correct="true">students</pl-answer>
+  <pl-answer correct="true">FROM</pl-answer>
+  <pl-answer correct="true">enrollments</pl-answer>
+  <pl-answer correct="true">WHERE</pl-answer>
+  <pl-answer correct="true">major</pl-answer>
+  <pl-answer correct="true">=</pl-answer>
+  <pl-answer correct="true">"computer science"</pl-answer>
+</pl-order-blocks>
+
+
+<pl-order-blocks answers-name="mathstuff" solution-placement="bottom" inline="true">
+  <pl-answer correct="true">$\Large\Sigma^{4^{5^{5^5}}}$</pl-answer>
   <pl-answer correct="true">students</pl-answer>
   <pl-answer correct="true">FROM</pl-answer>
   <pl-answer correct="true">enrollments</pl-answer>
