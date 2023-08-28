@@ -1398,7 +1398,6 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = questionUrl + 'file';
 
-      // FIXME: broken?
       urls.calculationQuestionGeneratedFileUrl =
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
@@ -1418,7 +1417,6 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = iqUrl + 'file';
 
-      // FIXME: broken?
       urls.calculationQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
