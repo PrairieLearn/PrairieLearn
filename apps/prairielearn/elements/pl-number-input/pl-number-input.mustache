@@ -17,16 +17,16 @@
         </span>
         {{/label}}
         <input
-          id="pl-number-input-textfield-{{uuid}}" 
+          id="pl-number-input-textfield-{{uuid}}"
           name="{{name}}"
-          type="text" 
+          type="text"
           inputmode="text"
-          autocomplete="off" 
-          class="form-control pl-number-input-input" 
-          size="{{size}}" 
-          {{^editable}}disabled{{/editable}} 
-          {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} 
-          aria-describedby="pl-integer-input-{{uuid}}-label pl-number-input-{{uuid}}-suffix" 
+          autocomplete="off"
+          class="form-control pl-number-input-input"
+          size="{{size}}"
+          {{^editable}}disabled{{/editable}}
+          {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+          aria-describedby="pl-integer-input-{{uuid}}-label pl-number-input-{{uuid}}-suffix"
           placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
@@ -35,10 +35,8 @@
             {{/suffix}}
             {{#show_info}}
               <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-              <i class="fa fa-question-circle" aria-hidden="true"></i>
-            {{/show_info}}
-            {{^show_info}}
-              <span class="d-flex align-items-center">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+              </a>
             {{/show_info}}
             {{#parse_error}}
                  <a role="button"
@@ -54,16 +52,22 @@
                 </a>
             {{/parse_error}}
             {{#show_score}}
-              {{#correct}}<span class="badge badge-success ml-1"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-              {{#partial}}<span class="badge badge-warning ml-1"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-              {{#incorrect}}<span class="badge badge-danger ml-1"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+                {{#correct}}
+                    <span class="input-group-text">
+                        <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                    </span>
+                {{/correct}}
+                {{#partial}}
+                    <span class="input-group-text">
+                        <span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+                    </span>
+                {{/partial}}
+                {{#incorrect}}
+                    <span class="input-group-text">
+                        <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                    </span>
+                {{/incorrect}}
             {{/show_score}}
-            {{#show_info}}
-              </a>
-            {{/show_info}}
-            {{^show_info}}
-              </span>
-            {{/show_info}}
           </span>
 
     </span>
