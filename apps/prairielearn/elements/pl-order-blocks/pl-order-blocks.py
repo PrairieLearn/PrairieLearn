@@ -28,6 +28,9 @@ class SourceBlocksOrderType(Enum):
     ALPHABETIZED = "alphabetized"
     ORDERED = "ordered"
 
+class SolutionPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
 
 class FeedbackType(Enum):
     NONE = "none"
@@ -79,7 +82,6 @@ MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
-SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
@@ -439,8 +441,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
-    dropzone_layout = pl.get_string_attrib(
-        element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
+    dropzone_layout = pl.get_enum_attrib(
+        element, "solution-placement", SolutionPlacementType, SolutionPlacementType.RIGHT
     )
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
@@ -480,12 +482,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
         help_text = (
-            "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
+            "Drag answer tiles into the answer area to the " + dropzone_layout.value + ". "
         )
 
         if inline and check_indentation:
             raise Exception(
-                'The indentation attribute may not be used when block-orientation is "horizontal".'
+                'The indentation attribute may not be used when inline is true.'
             )
 
         if grading_method is GradingMethodType.UNORDERED:
@@ -507,7 +509,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "options": source_blocks,
             "submission_dict": student_previous_submission,
             "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout == "bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",
             "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
@@ -555,7 +557,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "block_layout": "pl-block-horizontal" if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout == "bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",
         }
 
@@ -630,7 +632,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_distractors": (len(distractors) > 0),
             "block_layout": "pl-block-horizontal" if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout == "bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
