@@ -164,7 +164,7 @@ module.exports = {
         err.status = 500;
         return ERR(error.addData(err, data), callback);
       }
-      callback(null, fileData);
+      callback(null, [], fileData);
     });
   },
 
