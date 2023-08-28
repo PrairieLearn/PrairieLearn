@@ -27,7 +27,7 @@
           {{^editable}}disabled{{/editable}}
           {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
           aria-describedby="pl-integer-input-{{uuid}}-label pl-number-input-{{uuid}}-suffix"
-          placeholder="{{shortinfo}}" />
+          placeholder="{{placeholder}}" />
 
           <span class="input-group-append">
             {{#suffix}}
@@ -112,24 +112,27 @@
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{#feedback}}
-<div class="d-inline-flex pl-number-input-feedback">
-  {{feedback}}
-</div>
-{{/feedback}}
+
+{{#show_score}}
+    {{#feedback}}
+    <div class="d-inline-flex pl-number-input-feedback">
+    {{feedback}}
+    </div>
+    {{/feedback}}
 
 
-{{#correct}}
-<span id="pl-number-input-correct-{{uuid}}">
-    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-</span>
-{{/correct}}
-{{#partial}}
-<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
-{{/partial}}
-{{#incorrect}}
-<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-{{/incorrect}}
+    {{#correct}}
+    <span id="pl-number-input-correct-{{uuid}}">
+        <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+    </span>
+    {{/correct}}
+    {{#partial}}
+    <span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+    {{/partial}}
+    {{#incorrect}}
+    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+    {{/incorrect}}
+{{/show_score}}
 
 {{/error}}
 {{#inline}}</span>{{/inline}}

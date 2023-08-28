@@ -41,6 +41,8 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
 
+NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -229,22 +231,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if ans_true is not None:
             info_params["a_tru"] = ans_true
 
-        with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
+        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
+        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info_params.pop("format", None)
-            # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
+            # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
             # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
             if pl.has_attrib(element, "placeholder"):
                 # 'placeholder' attribute is set, override the placeholder text
-                html_params["shortinfo"] = pl.get_string_attrib(element, "placeholder")
+                html_params["placeholder"] = pl.get_string_attrib(
+                    element, "placeholder"
+                )
             else:
-                # 'placeholder' attribute not set, use default shortinfo as placeholder text
+                # 'placeholder' attribute not set, use default shortformat as placeholder text
                 info_params["shortformat"] = pl.get_boolean_attrib(
                     element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
                 )
-                html_params["shortinfo"] = chevron.render(f, info_params).strip()
+                html_params["placeholder"] = chevron.render(f, info_params).strip()
 
         html_params["info"] = info
 
@@ -260,8 +264,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -270,6 +274,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
+            "show_score": show_score,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -311,8 +316,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params["feedback"] = partial_score.get("feedback", None)
 
-        with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
     elif data["panel"] == "answer":
         ans_true = None
         if pl.get_boolean_attrib(
@@ -327,14 +333,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "a_tru": ans_true,
                 "suffix": suffix,
             }
-            with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+            with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+                return chevron.render(f, html_params).strip()
         else:
-            html = ""
-    else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+            return ""
 
-    return html
+    assert_never(data["panel"])
 
 
 def get_format_string(
@@ -348,7 +352,7 @@ def get_format_string(
         "allow_fractions": allow_fractions,
         "format_error_message": message,
     }
-    with open("pl-number-input.mustache", "r", encoding="utf-8") as f:
+    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 
