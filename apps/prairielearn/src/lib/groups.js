@@ -1,5 +1,4 @@
 //@ts-check
-const ERR = require('async-stacktrace');
 const error = require('@prairielearn/error');
 const { flash } = require('@prairielearn/flash');
 const z = require('zod');
@@ -241,7 +240,7 @@ module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, a
   } catch (err) {
     flash(
       'error',
-      `Failed to join the group with join code ${req.body.join_code}. It is already full or does not exist. Please try to join another one.`,
+      `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
     );
   }
 };

@@ -7,7 +7,6 @@ const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessment
 const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/postgres');
-const { flash } = require('@prairielearn/flash');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const groupAssessmentHelper = require('../../lib/groups');
