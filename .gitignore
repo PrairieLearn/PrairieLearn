@@ -39,6 +39,8 @@ docker-compose.override.yml
 ## Config
 /config.json
 /apps/prairielearn/config.json
+/apps/workspace-host/config.json
+/apps/grader-host/config.json
 
 ## Generated HTML
 
