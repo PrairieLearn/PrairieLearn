@@ -44,7 +44,7 @@ li.ui-state-highlight {
   list-style-type: none;
   background-color: #90a4ae !important;
   min-width: 3em !important;
-  margin-bottom: 5px !important;
+  margin-bottom: 5px;
 }
 
 .pl-order-blocks-container > ul {
