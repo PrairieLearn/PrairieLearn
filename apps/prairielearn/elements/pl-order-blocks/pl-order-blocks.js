@@ -153,7 +153,7 @@ window.PLOrderBlocks = function (uuid, options) {
       placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
 
-      //enable width if using horizontal block blacement
+      // Sets the width of the placeholder to match the width of the block being dragged
       if (options.inline) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
