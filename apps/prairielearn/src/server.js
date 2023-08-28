@@ -1722,9 +1722,15 @@ module.exports.initExpress = function () {
       .default,
   );
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course/:course_id/question/:question_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
