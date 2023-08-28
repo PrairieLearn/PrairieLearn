@@ -28,9 +28,11 @@ class SourceBlocksOrderType(Enum):
     ALPHABETIZED = "alphabetized"
     ORDERED = "ordered"
 
+
 class SolutionPlacementType(Enum):
     RIGHT = "right"
     BOTTOM = "bottom"
+
 
 class FeedbackType(Enum):
     NONE = "none"
@@ -442,7 +444,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     dropzone_layout = pl.get_enum_attrib(
-        element, "solution-placement", SolutionPlacementType, SolutionPlacementType.RIGHT
+        element,
+        "solution-placement",
+        SolutionPlacementType,
+        SolutionPlacementType.RIGHT,
     )
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
@@ -482,12 +487,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
         help_text = (
-            "Drag answer tiles into the answer area to the " + dropzone_layout.value + ". "
+            "Drag answer tiles into the answer area to the "
+            + dropzone_layout.value
+            + ". "
         )
 
         if inline and check_indentation:
             raise Exception(
-                'The indentation attribute may not be used when inline is true.'
+                "The indentation attribute may not be used when inline is true."
             )
 
         if grading_method is GradingMethodType.UNORDERED:
