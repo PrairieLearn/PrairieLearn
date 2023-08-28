@@ -20,7 +20,7 @@ BEGIN
     FROM users
     WHERE
         users.uin = users_select_or_insert.uin
-        AND (users_select_or_insert.institution_id IS NULL OR u.institution_id = users_select_or_insert.institution_id);
+        AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
     IF u.user_id IS NULL THEN
