@@ -117,8 +117,8 @@ def format_true_ans(
 def get_string_precision(number_string: str) -> float:
     if "." in number_string:
         return 10 ** -len(number_string.partition(".")[2])
-    else:
-        return 10 ** (len(number_string) - len(number_string.rstrip("0")))
+
+    return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
 # TODO: add precision calculation function for other grading methods
@@ -326,17 +326,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ):
             ans_true = format_true_ans(element, data, name)
 
-        if ans_true is not None:
-            html_params = {
-                "answer": True,
-                "label": label,
-                "a_tru": ans_true,
-                "suffix": suffix,
-            }
-            with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                return chevron.render(f, html_params).strip()
-        else:
+        if ans_true is None:
             return ""
+
+        html_params = {
+            "answer": True,
+            "label": label,
+            "a_tru": ans_true,
+            "suffix": suffix,
+        }
+        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
 
