@@ -1,5 +1,13 @@
 # @prairielearn/config
 
+## 2.0.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+- Updated dependencies [10cc07dcc]
+  - @prairielearn/aws-imds@1.0.5
+
 ## 2.0.4
 
 ### Patch Changes

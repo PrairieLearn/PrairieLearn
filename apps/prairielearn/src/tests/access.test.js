@@ -4,7 +4,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
-const { insertEnrollment } = require('../models/enrollment');
+const { ensureEnrollment } = require('../models/enrollment');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
@@ -136,7 +136,7 @@ describe('Access control', function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
-      await insertEnrollment({ user_id: user.user_id, course_instance_id: 1 });
+      await ensureEnrollment({ user_id: user.user_id, course_instance_id: 1 });
     });
   });
 

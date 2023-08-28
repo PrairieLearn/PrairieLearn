@@ -292,7 +292,10 @@ describe('sproc users_select_or_insert tests', () => {
       uin: '666666666',
     };
 
-    await assert.isRejected(usersSelectOrInsert(user, 'Shibboleth', '200'), /Institution mismatch/);
+    await assert.isRejected(
+      usersSelectOrInsert(user, 'Shibboleth', '200'),
+      /does not match policy/,
+    );
   });
 
   // This test ensures that users in separate institutions can have the same UIN.
