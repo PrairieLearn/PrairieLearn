@@ -252,11 +252,14 @@ module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, a
  * @param {string} authnUserId
  */
 module.exports.createGroup = async function (groupName, assessmentId, userId, authnUserId) {
-  //alphanumeric characters only
-  if (groupName.length > 30 || !groupName.match(/^[0-9a-zA-Z]+$/)) {
+  if (groupName.length > 30) {
+    flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
+    return;
+  }
+  if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
     flash(
       'error',
-      'The group name is invalid. Alpha and numeric characters only. ([0-9] [a-z] [A-Z]), with maximum length of 30 characters.',
+      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
     );
     return;
   }
