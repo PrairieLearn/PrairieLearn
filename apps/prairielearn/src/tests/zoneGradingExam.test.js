@@ -155,9 +155,9 @@ describe('Zone grading exam assessment', function () {
 
     describe('startExam-4. GET to assessments URL', function () {
       it('should load successfully', async () => {
-        const response = await fetch(locals.assessmentsUrl);
-        assert.equal(response.status, 200);
-        const page = await response.text();
+        const res = await fetch(locals.assessmentsUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       it('should contain the correct link for E5', function () {
@@ -174,9 +174,9 @@ describe('Zone grading exam assessment', function () {
 
     describe('startExam-5. GET to assessment URL', function () {
       it('should load successfully', async () => {
-        const response = await fetch(locals.assessmentUrl);
-        assert.equal(response.status, 200);
-        const page = await response.text();
+        const res = await fetch(locals.assessmentUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       it('should contain "Exam 5"', function () {
@@ -200,19 +200,19 @@ describe('Zone grading exam assessment', function () {
       it('should load successfully', async () => {
         locals.preStartTime = Date.now();
 
-        const response = await fetch(locals.assessmentUrl, {
+        const res = await fetch(locals.assessmentUrl, {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'new_instance',
             __csrf_token: locals.__csrf_token,
           }),
         });
-        assert.equal(response.status, 200);
-        const page = await response.text();
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
 
         // Check that we redirected to the correct URL
-        const url = new URL(response.url);
+        const url = new URL(res.url);
         locals.assessmentInstanceUrl = locals.siteUrl + url.pathname;
         assert.equal(url.pathname, '/pl/course_instance/1/assessment_instance/1');
 
@@ -255,9 +255,9 @@ describe('Zone grading exam assessment', function () {
 
     describe('startExam-7. GET to assessment_instance URL', function () {
       it('should load successfully', async () => {
-        const response = await fetch(locals.assessmentInstanceUrl);
-        assert.equal(response.status, 200);
-        const page = await response.text();
+        const res = await fetch(locals.assessmentInstanceUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       questionsArray.forEach(function (question) {
