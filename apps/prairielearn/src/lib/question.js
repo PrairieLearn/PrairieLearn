@@ -149,7 +149,7 @@ module.exports = {
   getFile(filename, variant, question, variant_course, authn_user_id, callback) {
     questionServers.getModule(question.type, (err, questionModule) => {
       if (ERR(err, callback)) return;
-      util.callbackify(module.exports._getQuestionCourse)(
+      util.callbackify(module.exports.getQuestionCourse)(
         question,
         variant_course,
         (err, question_course) => {
