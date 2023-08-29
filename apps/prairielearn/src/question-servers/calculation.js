@@ -95,7 +95,7 @@ function questionFunctionExperiment(name, control, candidate) {
         const controlHasData = !_.isEmpty(controlData);
         const candidateHasData = !_.isEmpty(candidateData);
 
-        // Lodash is clever enough to understand Buffers, so we don't event need to
+        // Lodash is clever enough to understand Buffers, so we don't need to
         // special-case `getFile`, which can sometimes return a Buffer.
         //
         // We only assert that `controlData` and `candidateData` are equal if
@@ -162,7 +162,10 @@ module.exports.render = questionFunctionExperiment(
   calculationSubprocess.render,
 );
 
-module.exports.getFile = questionFunctionExperiment(
+// Note that the difference in naming between `file` and `getFile` is intentional.
+// The external interface of questions uses `file`, but the internal interface
+// uses `getFile`.
+module.exports.file = questionFunctionExperiment(
   'calculation-question-getFile',
   calculationInprocess.getFile,
   calculationSubprocess.getFile,

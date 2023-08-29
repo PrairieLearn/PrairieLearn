@@ -515,7 +515,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} variant_course - The course for the variant.
    */
-  async _getQuestionCourse(question, variant_course) {
+  async getQuestionCourse(question, variant_course) {
     if (question.course_id === variant_course.id) {
       return variant_course;
     } else {
@@ -551,7 +551,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           var params = [variant.id, check_submission_id];
@@ -1104,7 +1104,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           const instance_question_id = null;
@@ -1411,8 +1411,8 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = questionUrl + 'file';
 
-      // FIXME: broken?
-      urls.calculationQuestionGeneratedFileUrl = questionUrl + 'generatedFilesQuestion';
+      urls.calculationQuestionGeneratedFileUrl =
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
       urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
       urls.clientFilesQuestionGeneratedFileUrl =
@@ -1430,7 +1430,6 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = iqUrl + 'file';
 
-      // FIXME: broken?
       urls.calculationQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
@@ -1582,7 +1581,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          locals.question_course = await module.exports._getQuestionCourse(
+          locals.question_course = await module.exports.getQuestionCourse(
             locals.question,
             locals.course,
           );
