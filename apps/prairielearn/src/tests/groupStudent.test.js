@@ -14,7 +14,6 @@ var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 const { TEST_COURSE_PATH } = require('../lib/paths');
 
-let page, elemList;
 const locals = {};
 locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -64,13 +63,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load successfully', async () => {
       const response = await fetch(locals.instructorAssessmentsUrlGroupTab);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 5);
       // there are 6 occurrences of the same csrf, we will pick the first one
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -99,13 +96,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load successfully', async () => {
       const response = await fetch(locals.instructorAssessmentsUrlGroupTab_2);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 5);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -154,13 +149,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -177,29 +170,27 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
   });
 
   describe('8. the group information after 1 user join the group', function () {
     it('should contain the correct group name', function () {
-      elemList = locals.$('#group-name');
+      const elemList = locals.$('#group-name');
       assert.equal(elemList.text(), locals.group_name);
     });
     it('should contain the 4-character join code', function () {
-      elemList = locals.$('#join-code');
+      const elemList = locals.$('#join-code');
       locals.joinCode = elemList.text();
       assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
     });
     it('should not be able to start assessment', function () {
-      elemList = locals.$('#start-assessment');
+      const elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
     it('should be missing 2 more group members to start', function () {
-      elemList = locals.$('.text-center:contains(2 more)');
+      const elemList = locals.$('.text-center:contains(2 more)');
       assert.lengthOf(elemList, 1);
     });
   });
@@ -215,13 +206,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -237,28 +226,26 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
   });
 
   describe('10. the group information after 2 users join the group', function () {
     it('should contain the correct group name', function () {
-      elemList = locals.$('#group-name');
+      const elemList = locals.$('#group-name');
       assert.equal(elemList.text(), locals.group_name);
     });
     it('should contain the 4-character join code', function () {
-      elemList = locals.$('#join-code');
+      const elemList = locals.$('#join-code');
       assert.equal(locals.joinCode, elemList.text());
     });
     it('should not be able to start assessment', function () {
-      elemList = locals.$('#start-assessment');
+      const elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
     it('should be missing 1 more group members to start', function () {
-      elemList = locals.$('.text-center:contains(1 more)');
+      const elemList = locals.$('.text-center:contains(1 more)');
       assert.lengthOf(elemList, 1);
     });
   });
@@ -274,13 +261,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -296,7 +281,8 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
+      const page = await response.text();
+      locals.$ = cheerio.load(page);
     });
     it('should have 3 students in group 1 in db', function (callback) {
       sqldb.query(sql.select_all_user_in_group, [], function (err, result) {
@@ -305,18 +291,15 @@ describe('Group based homework assess control on student side', function () {
         callback(null);
       });
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
   });
 
   describe('12. the group information after 3 users join the group', function () {
     it('should contain the correct group name', function () {
-      elemList = locals.$('#group-name');
+      const elemList = locals.$('#group-name');
       assert.equal(elemList.text(), locals.group_name);
     });
     it('should contain the 4-character join code', function () {
-      elemList = locals.$('#join-code');
+      const elemList = locals.$('#join-code');
       assert.equal(locals.joinCode, elemList.text());
     });
   });
@@ -331,13 +314,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -353,13 +334,11 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is full', function () {
-      elemList = locals.$('.alert:contains(It is already full)');
+      const elemList = locals.$('.alert:contains(It is already full)');
       assert.lengthOf(elemList, 1);
     });
   });
@@ -375,24 +354,22 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[1], 'attribs.value');
       locals.__csrf_token = elemList[1].attribs.value;
       assert.isString(locals.__csrf_token);
     });
     it('should have a non-disabled "start assessment" button', function () {
-      elemList = locals.$('#start-assessment');
+      const elemList = locals.$('#start-assessment');
       assert.isNotTrue(elemList.is(':disabled'));
     });
     it('should have three rows under group members list', function () {
-      elemList = locals.$('.col-sm li');
+      const elemList = locals.$('.col-sm li');
       assert.lengthOf(elemList, 3);
     });
     it('should have 0 assessment instance in db', function (callback) {
@@ -411,7 +388,6 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
     });
     it('should have 1 assessment instance in db', function (callback) {
       sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
@@ -430,9 +406,7 @@ describe('Group based homework assess control on student side', function () {
     it('should be able to access the assessment instance 1 as the 1st group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should be able to switch to 2nd group member', function (callback) {
@@ -445,9 +419,7 @@ describe('Group based homework assess control on student side', function () {
     it('should be able to access the assessment instance 1 as the 2nd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should be able to switch to 3rd group member', function (callback) {
@@ -460,16 +432,14 @@ describe('Group based homework assess control on student side', function () {
     it('should be able to access the assessment instance 1 as the 3rd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
   });
 
   describe('16. access control of student who used to be in group 1 but not in any group now', function () {
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 3);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -484,9 +454,7 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should NOT be able to access the assessment instance 1 as a ungrouped student', async () => {
@@ -496,7 +464,7 @@ describe('Group based homework assess control on student side', function () {
   });
   describe('17. access control of student who used to be in group 1 but in a different group now', function () {
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -513,7 +481,6 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
     });
     it('should NOT be able to access the assessment instance 1 as a student from a different group', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -546,13 +513,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -569,7 +534,6 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
     });
     it('should NOT be able to access the assessment instance 1 as a student from a different group', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -589,13 +553,11 @@ describe('Group based homework assess control on student side', function () {
     it('should load the second assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl_2);
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
+      const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -611,13 +573,11 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      page = await response.text();
-    });
-    it('should parse', function () {
+      const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is full', function () {
-      elemList = locals.$('.alert:contains(It is already full)');
+      const elemList = locals.$('.alert:contains(It is already full)');
       assert.lengthOf(elemList, 1);
     });
   });
