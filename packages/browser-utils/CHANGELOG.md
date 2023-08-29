@@ -1,5 +1,13 @@
 # @prairielearn/browser-utils
 
+## 1.1.3
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+- Updated dependencies [6cad75197]
+  - @prairielearn/html@3.0.6
+
 ## 1.1.2
 
 ### Patch Changes
