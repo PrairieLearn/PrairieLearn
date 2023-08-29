@@ -134,7 +134,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     } else {
       // we aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page
       // first set the preAuthUrl cookie for redirection after authn
-      res.cookie('preAuthUrl', req.originalUrl);
+      res.cookie('preAuthUrl', req.originalUrl, { domain: config.cookieDomain });
 
       // If we're in the middle of a PrairieTest login flow, propagate that to
       // the login page so we can show a message to the user.

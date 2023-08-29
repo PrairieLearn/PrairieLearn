@@ -102,7 +102,9 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
-  res.cookie('pl_pw_origUrl', req.originalUrl);
+  res.cookie('pl_pw_origUrl', req.originalUrl, {
+    domain: config.cookieDomain,
+  });
   res.redirect('/pl/password');
 }
 

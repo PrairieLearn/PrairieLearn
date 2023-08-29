@@ -75,6 +75,7 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
       secure: shouldSecureCookie(req),
+      domain: config.cookieDomain,
     });
 
     // After explicitly authenticating, clear the cookie that disables

@@ -19,6 +19,7 @@ router.post('/', function (req, res) {
     maxAge,
     httpOnly: true,
     secure: shouldSecureCookie(req),
+    domain: config.cookieDomain,
   });
   res.clearCookie('pl_pw_origUrl');
   return res.redirect(redirectUrl);

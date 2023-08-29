@@ -133,6 +133,7 @@ router.post('/', function (req, res, next) {
           maxAge: config.authnCookieMaxAgeMilliseconds,
           httpOnly: true,
           secure: shouldSecureCookie(req),
+          domain: config.cookieDomain,
         });
 
         const params = {

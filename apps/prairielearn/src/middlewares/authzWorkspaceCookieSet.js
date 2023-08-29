@@ -19,6 +19,7 @@ module.exports = (req, res, next) => {
     maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
     httpOnly: true,
     secure: shouldSecureCookie(req),
+    domain: config.cookieDomain,
   });
   next();
 };

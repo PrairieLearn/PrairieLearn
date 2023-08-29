@@ -15,7 +15,9 @@ router.get('/', function (req, res, _next) {
     // However, folks who want to specifically test authentication behavior can
     // click "Log out". In this case, we want to disable the automatic login
     // until the next time the user authenticates.
-    res.cookie('pl_disable_auto_authn', '1');
+    res.cookie('pl_disable_auto_authn', '1', {
+      domain: config.cookieDomain,
+    });
   }
 
   const redirect = req.query.redirect;

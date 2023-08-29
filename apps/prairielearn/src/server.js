@@ -161,6 +161,7 @@ module.exports.initExpress = function () {
         httpOnly: true,
         secure: 'auto', // uses Express "trust proxy"
         sameSite: config.sessionCookieSameSite,
+        domain: config.cookieDomain,
       },
     }),
   );
