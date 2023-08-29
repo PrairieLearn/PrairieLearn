@@ -71,6 +71,7 @@ const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  serveUntrustedContentFromSubdomains: z.boolean().default(false),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
