@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^18.17.4",
-    "typescript": "^5.1.6"
+    "@types/node": "^18.17.12",
+    "typescript": "^5.2.2"
   },
   "dependencies": {
-    "node-fetch": "^2.6.12",
-    "zod": "^3.21.4"
+    "node-fetch": "^2.7.0",
+    "zod": "^3.22.2"
   }
 }
