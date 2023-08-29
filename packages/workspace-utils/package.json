@@ -14,14 +14,14 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.17.4",
-    "typescript": "^5.1.6",
+    "@types/node": "^18.17.12",
+    "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "fast-glob": "^3.3.1",
-    "filesize": "^10.0.11"
+    "filesize": "^10.0.12"
   }
 }

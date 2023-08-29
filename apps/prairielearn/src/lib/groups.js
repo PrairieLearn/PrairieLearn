@@ -1,7 +1,7 @@
 //@ts-check
 const error = require('@prairielearn/error');
 const { flash } = require('@prairielearn/flash');
-const z = require('zod');
+const { z } = require('zod');
 const _ = require('lodash');
 
 const sqldb = require('@prairielearn/postgres');
