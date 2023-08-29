@@ -1,7 +1,7 @@
 //@ts-check
 const ERR = require('async-stacktrace');
 const error = require('@prairielearn/error');
-const z = require('zod');
+const { z } = require('zod');
 const _ = require('lodash');
 
 const sqldb = require('@prairielearn/postgres');
