@@ -16,7 +16,7 @@ nltk==3.8.1
 numpy==1.25.2
 openpyxl==3.1.2
 pandas-stubs==2.0.3.230814
-pandas==2.1.0
+pandas==2.0.3
 Pint==0.22
 psutil==5.9.5
 PuLP==2.7.0
