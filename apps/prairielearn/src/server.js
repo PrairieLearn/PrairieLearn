@@ -275,6 +275,7 @@ module.exports.initExpress = function () {
       return (
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'connect.sid' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
@@ -485,6 +486,13 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
+  app.use('/pl/logout', [
+    function (req, res, next) {
+      res.locals.navPage = 'logout';
+      next();
+    },
+    require('./pages/authLogout/authLogout'),
+  ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -542,13 +550,6 @@ module.exports.initExpress = function () {
   app.use('/pl', require('./pages/home/home'));
   app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
-  app.use('/pl/logout', [
-    function (req, res, next) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    require('./pages/authLogout/authLogout'),
-  ]);
   app.use('/pl/password', [
     function (req, res, next) {
       res.locals.navPage = 'password';
@@ -1364,7 +1365,6 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentGradebook'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/assessments', [
@@ -1373,7 +1373,6 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
@@ -1430,14 +1429,14 @@ module.exports.initExpress = function () {
   }
 
   // clientFiles
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
-    require('./middlewares/studentAssessmentAccess'),
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
-    require('./middlewares/studentAssessmentAccess'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [

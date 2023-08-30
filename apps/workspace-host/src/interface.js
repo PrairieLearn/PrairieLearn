@@ -4,7 +4,7 @@ const _ = require('lodash');
 const util = require('util');
 const express = require('express');
 const http = require('http');
-const request = require('request');
+const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
@@ -496,35 +496,30 @@ function _checkServer(workspace, callback) {
 
   const startTime = new Date().getTime();
   function checkWorkspace() {
-    request(
-      {
-        url: `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-        timeout: healthCheckTimeout,
-      },
-      function (err, res, _body) {
-        if (err) {
-          // Do nothing, because errors are expected while the container is launching.
-        }
-        if (res && res.statusCode) {
-          // We might get all sorts of strange status codes from the server.
-          // This is okay since it still means the server is running and we're
-          // getting responses.
-          callback(null, workspace);
+    fetch(
+      `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+      { signal: AbortSignal.timeout(healthCheckTimeout) },
+    )
+      .then(() => {
+        // We might get all sorts of strange status codes from the server.
+        // This is okay since it still means the server is running and we're
+        // getting responses. So we don't need to check the response status.
+        callback(null, workspace);
+      })
+      .catch(() => {
+        // Do nothing, because errors are expected while the container is launching.
+        const endTime = new Date().getTime();
+        if (endTime - startTime > startTimeout) {
+          const { id, version, launch_uuid } = workspace;
+          callback(
+            new Error(
+              `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
+            ),
+          );
         } else {
-          const endTime = new Date().getTime();
-          if (endTime - startTime > startTimeout) {
-            const { id, version, launch_uuid } = workspace;
-            callback(
-              new Error(
-                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
-              ),
-            );
-          } else {
-            setTimeout(checkWorkspace, healthCheckInterval);
-          }
+          setTimeout(checkWorkspace, healthCheckInterval);
         }
-      },
-    );
+      });
   }
   checkWorkspace();
 }

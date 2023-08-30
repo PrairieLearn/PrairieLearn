@@ -109,7 +109,7 @@ interface ClientFilesAssessmentChunk {
   assessmentId: string | number;
 }
 
-interface QuestionChunk {
+export interface QuestionChunk {
   type: 'question';
   questionId: string | number;
 }

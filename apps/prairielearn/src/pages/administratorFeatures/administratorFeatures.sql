@@ -18,9 +18,13 @@ FROM
 WHERE
   fg.name = $name
 ORDER BY
+  i.long_name ASC NULLS FIRST,
   i.id ASC NULLS FIRST,
+  c.short_name ASC NULLS FIRST,
   c.id ASC NULLS FIRST,
+  ci.long_name ASC NULLS FIRST,
   ci.id ASC NULLS FIRST,
+  u.uid ASC NULLS FIRST,
   u.user_id ASC NULLS FIRST;
 
 -- BLOCK select_institutions
@@ -39,6 +43,7 @@ FROM
   pl_courses
 WHERE
   institution_id = $institution_id
+  AND deleted_at IS NULL
 ORDER BY
   short_name,
   id;
@@ -50,6 +55,7 @@ FROM
   course_instances
 WHERE
   course_id = $course_id
+  AND deleted_at IS NULL
 ORDER BY
   long_name,
   id;
