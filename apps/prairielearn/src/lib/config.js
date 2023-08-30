@@ -263,6 +263,7 @@ const ConfigSchema = z.object({
   ptHost: z.string().default('http://localhost:4000'),
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   filesRoot: z.string().default('/files'),

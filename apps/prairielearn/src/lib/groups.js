@@ -1,7 +1,7 @@
 //@ts-check
-const ERR = require('async-stacktrace');
 const error = require('@prairielearn/error');
-const z = require('zod');
+const { flash } = require('@prairielearn/flash');
+const { z } = require('zod');
 const _ = require('lodash');
 
 const sqldb = require('@prairielearn/postgres');
@@ -221,48 +221,33 @@ async function getRolesInfo(groupId, groupMembers) {
 }
 
 /**
- * @param {string} joinCode
+ * @param {string} fullJoinCode
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
- * @param {Function} callback
  */
-module.exports.joinGroup = function (joinCode, assessmentId, userId, authnUserId, callback) {
-  var splitJoinCode = joinCode.split('-');
-  const validJoinCode = splitJoinCode.length === 2;
-  if (validJoinCode) {
-    const group_name = splitJoinCode[0];
-    const join_code = splitJoinCode[1].toUpperCase();
-    if (join_code.length !== 4) {
-      callback(new Error('invalid length of join code'));
-      return;
-    }
-    let params = [assessmentId, userId, authnUserId, group_name, join_code];
-    sqldb.call('group_users_insert', params, function (err, _result) {
-      if (err) {
-        let params = {
-          assessment_id: assessmentId,
-        };
-        sqldb.query(sql.get_group_config, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const permissions = result.rows[0];
-          callback(null, false, permissions);
-          return;
-        });
-      } else {
-        callback(null, true);
-      }
-    });
-  } else {
+module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, authnUserId) {
+  var splitJoinCode = fullJoinCode.split('-');
+  if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
-    let params = {
-      assessment_id: assessmentId,
-    };
-    sqldb.query(sql.get_group_config, params, function (err, result) {
-      if (ERR(err, callback)) return;
-      const groupConfig = result.rows[0];
-      callback(null, false, groupConfig);
-    });
+    flash('error', 'The join code has an incorrect format');
+    return;
+  }
+  const groupName = splitJoinCode[0];
+  const joinCode = splitJoinCode[1].toUpperCase();
+  try {
+    await sqldb.callAsync('group_users_insert', [
+      assessmentId,
+      userId,
+      authnUserId,
+      groupName,
+      joinCode,
+    ]);
+  } catch (err) {
+    flash(
+      'error',
+      `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
+    );
   }
 };
 
@@ -271,40 +256,31 @@ module.exports.joinGroup = function (joinCode, assessmentId, userId, authnUserId
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
- * @param {Function} callback
  */
-module.exports.createGroup = function (groupName, assessmentId, userId, authnUserId, callback) {
-  let params = {
-    assessment_id: assessmentId,
-    user_id: userId,
-    authn_user_id: authnUserId,
-    group_name: groupName,
-  };
-  //alphanumeric characters only
-  let invalidGroupName = true;
-  const letters = /^[0-9a-zA-Z]+$/;
-  if (groupName.length <= 30 && groupName.match(letters)) {
-    invalidGroupName = false;
-    sqldb.query(sql.create_group, params, function (err, _result) {
-      if (!err) {
-        callback(null, true);
-      } else {
-        sqldb.query(sql.get_group_config, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const groupConfig = result.rows[0];
-          const uniqueGroupName = true;
-          callback(null, false, uniqueGroupName, null, groupConfig);
-        });
-      }
-    });
+module.exports.createGroup = async function (groupName, assessmentId, userId, authnUserId) {
+  if (groupName.length > 30) {
+    flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
+    return;
   }
-  if (invalidGroupName) {
-    sqldb.query(sql.get_group_config, params, function (err, result) {
-      if (ERR(err, callback)) return;
-      const groupConfig = result.rows[0];
-      const invalidGroupName = true;
-      callback(null, false, null, invalidGroupName, groupConfig);
+  if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
+    flash(
+      'error',
+      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+    );
+    return;
+  }
+  try {
+    await sqldb.queryAsync(sql.create_group, {
+      assessment_id: assessmentId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      group_name: groupName,
     });
+  } catch (err) {
+    flash(
+      'error',
+      `Failed to create the group ${groupName}. It is already taken. Please try another one.`,
+    );
   }
 };
 

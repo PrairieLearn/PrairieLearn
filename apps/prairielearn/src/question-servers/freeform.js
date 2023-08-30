@@ -1984,7 +1984,7 @@ module.exports = {
     try {
       const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-      return `${commitHash}-${dataHash}`;
+      return `question:${commitHash}-${dataHash}`;
     } catch (err) {
       return null;
     }
@@ -2010,7 +2010,7 @@ module.exports = {
       // tl;dr: don't cache any results that would create course issues.
       const hasCourseIssues = computedData?.courseIssues?.length > 0;
       if (cacheKey && !hasCourseIssues) {
-        cache.set(cacheKey, computedData);
+        cache.set(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
       }
 
       return {
