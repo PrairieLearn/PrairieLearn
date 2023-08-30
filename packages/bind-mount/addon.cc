@@ -48,7 +48,7 @@ public:
       argv[0] = Nan::ErrnoException(this->context->error, syscall, "", this->context->target.c_str());
     }
 
-    this->callback->Call(2, argv, this->async_resource);
+    this->callback->Call(1, argv, this->async_resource);
 
     delete this->context;
   }

@@ -55,24 +55,6 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
--- BLOCK enroll
-INSERT INTO
-  enrollments AS e (user_id, course_instance_id)
-SELECT
-  u.user_id,
-  $course_instance_id
-FROM
-  users AS u
-WHERE
-  u.user_id = $user_id
-  AND check_course_instance_access (
-    $course_instance_id,
-    u.uid,
-    u.institution_id,
-    $req_date
-  )
-ON CONFLICT DO NOTHING;
-
 -- BLOCK unenroll
 DELETE FROM enrollments AS e USING users AS u
 WHERE

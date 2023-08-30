@@ -251,16 +251,16 @@ class Editor {
   async getExistingShortNames(rootDirectory, infoFile) {
     let files = [];
     const walk = async (relativeDir) => {
-      const directories = fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
+      const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
         // If the directory doesn't exist, then we have nothing to load
         if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return [];
+          return /** @type {string[]} */ ([]);
         }
         throw err;
       });
 
       // For each subdirectory, try to find an Info file
-      async.each(directories, async (dir) => {
+      await async.each(directories, async (dir) => {
         // Relative path to the current folder
         const subdirPath = path.join(relativeDir, dir);
         // Absolute path to the info file
