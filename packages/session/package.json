@@ -10,22 +10,32 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
+    "test": "mocha --no-config --require ts-node/register --watch-files src/ src/index.test.ts"
   },
   "dependencies": {
-    "on-headers": "^1.0.2"
+    "cookie": "^0.5.0",
+    "cookie-signature": "^1.2.1",
+    "express-async-handler": "^1.2.0",
+    "on-headers": "^1.0.2",
+    "uid-safe": "^2.1.5"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^4.3.5",
+    "@types/cookie": "^0.5.1",
+    "@types/cookie-signature": "^1.1.0",
     "@types/express": "^4.17.17",
     "@types/node": "^18.17.12",
     "@types/node-fetch": "^2.6.4",
     "@types/on-headers": "^1.0.0",
+    "@types/set-cookie-parser": "^2.4.3",
+    "@types/uid-safe": "^2.1.2",
     "chai": "^4.3.8",
     "express": "^4.18.2",
+    "fetch-cookie": "^2.1.0",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
+    "set-cookie-parser": "^2.6.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

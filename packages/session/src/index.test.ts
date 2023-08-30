@@ -2,13 +2,18 @@ import express from 'express';
 import { assert } from 'chai';
 import { Server } from 'node:http';
 import fetch from 'node-fetch';
+import fetchCookie from 'fetch-cookie';
+import { parse as parseSetCookie } from 'set-cookie-parser';
 
 import { createSessionMiddleware } from './index';
+import { MemoryStore } from './memory-store';
+
+const TEST_SECRET = 'test-secret';
 
 describe('session middleware', () => {
   it('sets a session cookie', async () => {
     const app = express();
-    app.use(createSessionMiddleware());
+    app.use(createSessionMiddleware({ secret: TEST_SECRET, store: new MemoryStore() }));
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
@@ -16,7 +21,10 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'session=test; Path=/');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
     });
   });
 
@@ -24,6 +32,8 @@ describe('session middleware', () => {
     const app = express();
     app.use(
       createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
         cookie: {
           name: 'prairielearn_session',
         },
@@ -36,7 +46,10 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'prairielearn_session=test; Path=/');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'prairielearn_session');
+      assert.equal(cookies[0].path, '/');
     });
   });
 
@@ -44,6 +57,8 @@ describe('session middleware', () => {
     const app = express();
     app.use(
       createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
         cookie: {
           secure: true,
         },
@@ -56,7 +71,11 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'session=test; Path=/; Secure');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.isTrue(cookies[0].secure);
     });
   });
 
@@ -65,6 +84,8 @@ describe('session middleware', () => {
     app.enable('trust proxy');
     app.use(
       createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
         cookie: {
           secure: 'auto',
         },
@@ -81,7 +102,11 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'session=test; Path=/; Secure');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.isTrue(cookies[0].secure);
     });
   });
 
@@ -90,6 +115,8 @@ describe('session middleware', () => {
     app.enable('trust proxy');
     app.use(
       createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
         cookie: {
           secure: 'auto',
         },
@@ -106,7 +133,11 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'session=test; Path=/');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.isUndefined(cookies[0].secure);
     });
   });
 
@@ -114,6 +145,8 @@ describe('session middleware', () => {
     const app = express();
     app.use(
       createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
         cookie: {
           secure: () => true,
         },
@@ -126,7 +159,41 @@ describe('session middleware', () => {
       assert.equal(res.status, 200);
 
       const header = res.headers.get('set-cookie');
-      assert.equal(header, 'session=test; Path=/; Secure');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.isTrue(cookies[0].secure);
+    });
+  });
+
+  it('commits the session before sending a redirect', async () => {
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store: new MemoryStore({
+          delay: 200,
+        }),
+        secret: TEST_SECRET,
+      }),
+    );
+    app.post('/', (req, res) => {
+      req.session.test = 'test';
+      res.redirect(req.originalUrl);
+    });
+    app.get('/', (req, res) => {
+      res.send(req.session.test ?? 'NO VALUE');
+    });
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetchCookie(fetch)(url, {
+        method: 'POST',
+      });
+      assert.equal(res.status, 200);
+      console.log('got response');
+
+      const body = await res.text();
+      assert.equal(body, 'test');
     });
   });
 });

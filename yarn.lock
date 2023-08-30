@@ -3005,17 +3005,27 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.5
+    "@types/cookie": ^0.5.1
+    "@types/cookie-signature": ^1.1.0
     "@types/express": ^4.17.17
     "@types/node": ^18.17.12
     "@types/node-fetch": ^2.6.4
     "@types/on-headers": ^1.0.0
+    "@types/set-cookie-parser": ^2.4.3
+    "@types/uid-safe": ^2.1.2
     chai: ^4.3.8
+    cookie: ^0.5.0
+    cookie-signature: ^1.2.1
     express: ^4.18.2
+    express-async-handler: ^1.2.0
+    fetch-cookie: ^2.1.0
     mocha: ^10.2.0
     node-fetch: ^2.7.0
     on-headers: ^1.0.2
+    set-cookie-parser: ^2.6.0
     ts-node: ^10.9.1
     typescript: ^5.2.2
+    uid-safe: ^2.1.5
   languageName: unknown
   linkType: soft
 
@@ -4150,10 +4160,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/cookie-signature@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@types/cookie-signature@npm:1.1.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: e0322dc81b2831e9ebc1a68b58f39912095083beb9c07238bfa0f9b941635e0062a0eacd395404d8b8e272834dee73c4d43801dc0e541a85e8450de0d737c0f3
+  languageName: node
+  linkType: hard
+
 "@types/cookie@npm:^0.4.1":
   version: 0.4.1
   resolution: "@types/cookie@npm:0.4.1"
   checksum: 3275534ed69a76c68eb1a77d547d75f99fedc80befb75a3d1d03662fb08d697e6f8b1274e12af1a74c6896071b11510631ba891f64d30c78528d0ec45a9c1a18
+  languageName: node
+  linkType: hard
+
+"@types/cookie@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "@types/cookie@npm:0.5.1"
+  checksum: 9a8d60fc84797122bc399d6bd330fe5780dc7aab032321de705049ea925339f74658bfa418de483a625d51858770efef58df633ff2e20f1bdf7fbd74a52847e2
   languageName: node
   linkType: hard
 
@@ -4611,6 +4637,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/set-cookie-parser@npm:^2.4.3":
+  version: 2.4.3
+  resolution: "@types/set-cookie-parser@npm:2.4.3"
+  dependencies:
+    "@types/node": "*"
+  checksum: 8c0ded364c5a53598dc58f6c668d6fdbefa3bb78fcb1181202b92f4d8495ca33b4317f54ac0fe42824278e789d730ee5cbd2f7f864466e708589ff4eab2bf457
+  languageName: node
+  linkType: hard
+
 "@types/shimmer@npm:^1.0.2":
   version: 1.0.2
   resolution: "@types/shimmer@npm:1.0.2"
@@ -4662,6 +4697,13 @@ __metadata:
   version: 1.3.2
   resolution: "@types/triple-beam@npm:1.3.2"
   checksum: dd7b4a563fb710abc992e5d59eac481bed9e303fada2e276e37b00be31c392e03300ee468e57761e616512872e77935f92472877d0704a19688d15a726cee17b
+  languageName: node
+  linkType: hard
+
+"@types/uid-safe@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "@types/uid-safe@npm:2.1.2"
+  checksum: d41f8e4d6efa2666c5093f12d8b7b98b47b0dafadde085a5378c50402b556adad894cb64c18abfb9f0c3d1338d3150023fb226300137409b2112d0fa55c59a43
   languageName: node
   linkType: hard
 
@@ -6555,6 +6597,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cookie-signature@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "cookie-signature@npm:1.2.1"
+  checksum: bb464aacac390b5d7d8ead2d6fff7c1c3b7378c7d0250921f48923fe889688e081ab33950448929db5f24d4f9f1506589a7ee1c685de8f12a3fdb30c49667ec5
+  languageName: node
+  linkType: hard
+
 "cookie@npm:0.4.1":
   version: 0.4.1
   resolution: "cookie@npm:0.4.1"
@@ -6569,7 +6618,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie@npm:0.5.0":
+"cookie@npm:0.5.0, cookie@npm:^0.5.0":
   version: 0.5.0
   resolution: "cookie@npm:0.5.0"
   checksum: 1f4bd2ca5765f8c9689a7e8954183f5332139eb72b6ff783d8947032ec1fdf43109852c178e21a953a30c0dd42257828185be01b49d1eb1a67fd054ca588a180
@@ -14562,7 +14611,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"set-cookie-parser@npm:^2.4.8":
+"set-cookie-parser@npm:^2.4.8, set-cookie-parser@npm:^2.6.0":
   version: 2.6.0
   resolution: "set-cookie-parser@npm:2.6.0"
   checksum: bf11ebc594c53d84588f1b4c04f1b8ce14e0498b1c011b3d76b5c6d5aac481bbc3f7c5260ec4ce99bdc1d9aed19f9fc315e73166a36ca74d0f12349a73f6bdc9
@@ -16104,7 +16153,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uid-safe@npm:~2.1.5":
+"uid-safe@npm:^2.1.5, uid-safe@npm:~2.1.5":
   version: 2.1.5
   resolution: "uid-safe@npm:2.1.5"
   dependencies:
