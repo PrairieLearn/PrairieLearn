@@ -57,11 +57,3 @@ FROM
 WHERE
   assessment_instance_id = $assessment_instance_id
   AND q.qid = $question_id;
-
--- BLOCK select_variant
-SELECT
-  v.id
-FROM
-  variants AS v
-WHERE
-  v.id = $variant_id;
