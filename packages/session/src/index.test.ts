@@ -4,6 +4,7 @@ import { Server } from 'node:http';
 import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
 import { parse as parseSetCookie } from 'set-cookie-parser';
+import asyncHandler from 'express-async-handler';
 
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
@@ -167,6 +168,33 @@ describe('session middleware', () => {
     });
   });
 
+  it('persists session data across requests', async () => {
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store: new MemoryStore(),
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (req, res) => {
+      req.session.count ??= 0;
+      req.session.count += 1;
+      res.send(req.session.count.toString());
+    });
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      assert.equal(await res.text(), '1');
+
+      res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      assert.equal(await res.text(), '2');
+    });
+  });
+
   it('commits the session before sending a redirect', async () => {
     const app = express();
     app.use(
@@ -190,10 +218,98 @@ describe('session middleware', () => {
         method: 'POST',
       });
       assert.equal(res.status, 200);
-      console.log('got response');
 
       const body = await res.text();
       assert.equal(body, 'test');
+    });
+  });
+
+  it('destroys session', async () => {
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store: new MemoryStore(),
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+    app.use(
+      '/destroy',
+      asyncHandler(async (req, res) => {
+        await req.session.destroy();
+        res.sendStatus(200);
+      }),
+    );
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      // Generate a new session.
+      await fetchWithCookies(url);
+
+      // Destroy the session.
+      const destroyRes = await fetchWithCookies(`${url}/destroy`);
+      assert.equal(destroyRes.status, 200);
+
+      // Ensure the session cookie was cleared in the response.
+      const header = destroyRes.headers.get('set-cookie');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.equal(cookies[0].expires?.getTime(), 0);
+    });
+  });
+
+  it('regenerates session', async () => {
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store: new MemoryStore(),
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (req, res) => {
+      res.send(req.session.regenerated ? 'true' : 'false');
+    });
+    app.get(
+      '/regenerate',
+      asyncHandler(async (req, res) => {
+        await req.session.regenerate();
+        req.session.regenerated = true;
+        res.sendStatus(200);
+      }),
+    );
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      // Generate a new session.
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      assert.equal(await res.text(), 'false');
+
+      // Extract the original cookie value.
+      let header = res.headers.get('set-cookie');
+      let cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      const originalCookieValue = cookies[0].value;
+
+      // Regenerate the session.
+      res = await fetchWithCookies(`${url}/regenerate`);
+      assert.equal(res.status, 200);
+
+      // Ensure that the session cookie was changed.
+      header = res.headers.get('set-cookie');
+      cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      const newCookieValue = cookies[0].value;
+      assert.notEqual(newCookieValue, originalCookieValue);
+
+      // Ensure that the regenerated session data was persisted.
+      res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      assert.equal(await res.text(), 'true');
     });
   });
 });

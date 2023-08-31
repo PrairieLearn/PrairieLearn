@@ -1,24 +1,21 @@
 import type { Request, Response, NextFunction } from 'express';
 import onHeaders from 'on-headers';
-import cookie from 'cookie';
 import signature from 'cookie-signature';
-import { sync as uidSync } from 'uid-safe';
 import asyncHandler from 'express-async-handler';
 
 import { SessionStore } from './store';
 import { beforeEnd } from './before-end';
+import { getSessionIdFromCookie, type CookieSecure, shouldSecureCookie } from './cookie';
+import { type Session, generateSessionId, loadSession } from './session';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      // TODO: more precise type
-      session: any;
+      session: Session;
     }
   }
 }
-
-type CookieSecure = boolean | 'auto' | ((req: Request) => boolean);
 
 export interface SessionOptions {
   secret: string | string[];
@@ -39,60 +36,46 @@ export function createSessionMiddleware(options: SessionOptions) {
     res: Response,
     next: NextFunction,
   ) {
-    req.session = {};
-
-    const sessionId = getSessionIdFromCookie(req, cookieName, secrets) ?? uidSync(24);
-    console.log('sessionId', sessionId);
-    req.session = (await store.get(sessionId)) ?? {};
+    const cookieSessionId = getSessionIdFromCookie(req, cookieName, secrets);
+    const sessionId = cookieSessionId ?? generateSessionId();
+    req.session = await loadSession(sessionId, req, store);
 
     onHeaders(res, () => {
-      console.log('headers sessionId', sessionId);
-      const signedSessionId = signSessionId(sessionId, secrets[0]);
-      console.log('signedSessionId', signedSessionId);
+      if (!req.session) {
+        if (cookieSessionId) {
+          // If the request arrived with a session cookie but the session was
+          // destroyed, clear the cookie.
+          res.clearCookie(cookieName);
+          return;
+        }
+
+        // There is no session to do anything with.
+        return;
+      }
+
+      const shouldClearCookie = false;
+      if (shouldClearCookie) {
+        res.clearCookie(cookieName);
+        return;
+      }
+
+      console.log('setting cookie', req.session.id);
+      const signedSessionId = signSessionId(req.session.id, secrets[0]);
       res.cookie(cookieName, signedSessionId, {
         secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
       });
     });
 
     beforeEnd(res, next, async () => {
-      await store.set(sessionId, req.session);
+      // TODO: only save it if something actually changed.
+      // TODO: implement touching. Does that have to be separate from saving though?
+      if (req.session) {
+        await store.set(req.session.id, req.session);
+      }
     });
 
     next();
   });
-}
-
-function shouldSecureCookie(req: Request, secure: CookieSecure): boolean {
-  if (typeof secure === 'function') {
-    return secure(req);
-  }
-
-  if (secure === 'auto') {
-    return req.protocol === 'https';
-  }
-
-  return secure;
-}
-
-function getSessionIdFromCookie(
-  req: Request,
-  cookieName: string,
-  secrets: string[],
-): string | null {
-  const cookies = cookie.parse(req.headers.cookie ?? '');
-  const sessionCookie = cookies[cookieName];
-
-  if (!sessionCookie) return null;
-
-  // Try each secret until we find one that works.
-  for (const secret of secrets) {
-    const value = signature.unsign(sessionCookie, secret);
-    if (value !== false) {
-      return value;
-    }
-  }
-
-  return null;
 }
 
 function signSessionId(sessionId: string, secret: string): string {

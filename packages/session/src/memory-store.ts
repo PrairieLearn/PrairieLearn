@@ -19,7 +19,7 @@ export class MemoryStore implements SessionStore {
       await sleep(this.options.delay);
     }
 
-    this.sessions.set(id, session);
+    this.sessions.set(id, JSON.stringify(session));
   }
 
   async get(id: string): Promise<any> {
@@ -27,6 +27,15 @@ export class MemoryStore implements SessionStore {
       await sleep(this.options.delay);
     }
 
-    return this.sessions.get(id);
+    const value = this.sessions.get(id);
+    return value ? JSON.parse(value) : null;
+  }
+
+  async destroy(id: string): Promise<void> {
+    if (this.options.delay) {
+      await sleep(this.options.delay);
+    }
+
+    this.sessions.delete(id);
   }
 }
