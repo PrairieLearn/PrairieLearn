@@ -10,12 +10,13 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register --watch-files src/ src/index.test.ts"
+    "test": "nyc --reporter=html --reporter=text mocha --no-config --require ts-node/register --watch-files src/ --parallel src/**/*.test.ts"
   },
   "dependencies": {
     "cookie": "^0.5.0",
     "cookie-signature": "^1.2.1",
     "express-async-handler": "^1.2.0",
+    "nyc": "^15.1.0",
     "on-headers": "^1.0.2",
     "uid-safe": "^2.1.5"
   },
@@ -36,6 +37,7 @@
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
     "set-cookie-parser": "^2.6.0",
+    "source-map-support": "^0.5.21",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

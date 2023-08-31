@@ -1,6 +1,5 @@
 import express from 'express';
 import { assert } from 'chai';
-import { Server } from 'node:http';
 import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
 import { parse as parseSetCookie } from 'set-cookie-parser';
@@ -8,6 +7,7 @@ import asyncHandler from 'express-async-handler';
 
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
+import { withServer } from './test-utils';
 
 const TEST_SECRET = 'test-secret';
 
@@ -225,10 +225,12 @@ describe('session middleware', () => {
   });
 
   it('destroys session', async () => {
+    const store = new MemoryStore();
+
     const app = express();
     app.use(
       createSessionMiddleware({
-        store: new MemoryStore(),
+        store,
         secret: TEST_SECRET,
       }),
     );
@@ -258,14 +260,20 @@ describe('session middleware', () => {
       assert.equal(cookies[0].name, 'session');
       assert.equal(cookies[0].path, '/');
       assert.equal(cookies[0].expires?.getTime(), 0);
+
+      // Ensure the session was destroyed in the session store.
+      const sessionId = cookies[0].value.split('.')[0];
+      assert.isNull(await store.get(sessionId));
     });
   });
 
   it('regenerates session', async () => {
+    const store = new MemoryStore();
+
     const app = express();
     app.use(
       createSessionMiddleware({
-        store: new MemoryStore(),
+        store,
         secret: TEST_SECRET,
       }),
     );
@@ -306,42 +314,53 @@ describe('session middleware', () => {
       const newCookieValue = cookies[0].value;
       assert.notEqual(newCookieValue, originalCookieValue);
 
+      // Ensure the original session is no longer present in the session store.
+      const originalSessionId = originalCookieValue.split('.')[0];
+      assert.isNull(await store.get(originalSessionId));
+
       // Ensure that the regenerated session data was persisted.
       res = await fetchWithCookies(url);
       assert.equal(res.status, 200);
       assert.equal(await res.text(), 'true');
     });
   });
-});
 
-interface WithServerContext {
-  server: Server;
-  port: number;
-  url: string;
-}
+  it('creates a new session if signature checks fail', async () => {
+    const store = new MemoryStore();
 
-async function withServer(app: express.Express, fn: (ctx: WithServerContext) => Promise<void>) {
-  const server = app.listen();
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (req, res) => res.send(req.session.id));
 
-  await new Promise<void>((resolve, reject) => {
-    server.on('listening', () => resolve());
-    server.on('error', (err) => reject(err));
-  });
+    await withServer(app, async ({ url }) => {
+      const cookieJar = new fetchCookie.toughCookie.CookieJar();
+      const fetchWithCookies = fetchCookie(fetch, cookieJar);
 
-  try {
-    await fn({
-      server,
-      port: getServerPort(server),
-      url: `http://localhost:${getServerPort(server)}`,
+      // Generate a new session.
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      const originalSessionId = await res.text();
+
+      // Tamper with the session cookie.
+      const cookie = cookieJar.getCookiesSync(url)[0];
+      cookie.value = 'tampered';
+      cookieJar.setCookieSync(cookie, url);
+
+      // Make sure we get a new session.
+      res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+      const newSessionId = await res.text();
+      assert.notEqual(newSessionId, originalSessionId);
+
+      // Make sure the existing session is still present in the store. We don't
+      // want someone to be able to evict other sessions by submitting invalid
+      // cookies.
+      assert.isNotNull(await store.get(originalSessionId));
     });
-  } finally {
-    server.close();
-  }
-}
-
-function getServerPort(server: Server): number {
-  const address = server.address();
-  if (!address) throw new Error('Server is not listening');
-  if (typeof address === 'string') throw new Error('Server is listening on a pipe');
-  return address.port;
-}
+  });
+});

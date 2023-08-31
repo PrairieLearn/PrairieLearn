@@ -23,7 +23,7 @@ export async function loadSession(
 
   // Copy session data into the session object.
   const sessionData = await store.get(sessionId);
-  if (typeof sessionData === 'object' || sessionData != null) {
+  if (typeof sessionData === 'object' && sessionData != null) {
     for (const prop in sessionData) {
       if (!(prop in session)) {
         session[prop] = sessionData[prop];
@@ -40,7 +40,7 @@ export function makeSession(sessionId: string, req: Request, store: SessionStore
   defineStaticProperty<Session['id']>(session, 'id', sessionId);
 
   defineStaticProperty<Session['destroy']>(session, 'destroy', async () => {
-    delete req.session;
+    delete (req as any).session;
     await store.destroy(sessionId);
   });
 

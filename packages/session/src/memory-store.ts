@@ -32,10 +32,6 @@ export class MemoryStore implements SessionStore {
   }
 
   async destroy(id: string): Promise<void> {
-    if (this.options.delay) {
-      await sleep(this.options.delay);
-    }
-
     this.sessions.delete(id);
   }
 }
