@@ -7,8 +7,6 @@ $(function() {
         maxIndent: {{max_indent}},
         inline: {{inline}},
         enableIndentation: {{check_indentation}},
-        dropzoneLayout: "{{dropzone_layout}}",
-        blockLayout: "{{block_layout}}",
     });
 });
 </script>
@@ -23,8 +21,7 @@ $(function() {
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
-                        >
-                        {{{inner_html}}}
+                        >{{{inner_html}}}
                     </li>
                 {{/options}}
             </ul>
