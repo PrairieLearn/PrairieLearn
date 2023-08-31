@@ -31,7 +31,12 @@ export async function withServer(
 
 function getServerPort(server: Server): number {
   const address = server.address();
+
+  // istanbul ignore next
   if (!address) throw new Error('Server is not listening');
+
+  // istanbul ignore next
   if (typeof address === 'string') throw new Error('Server is listening on a pipe');
+
   return address.port;
 }

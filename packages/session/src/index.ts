@@ -20,6 +20,7 @@ declare global {
 export interface SessionOptions {
   secret: string | string[];
   store: SessionStore;
+  canSetCookie?: (req: Request) => boolean;
   cookie?: {
     name?: string;
     secure?: CookieSecure;
@@ -40,6 +41,8 @@ export function createSessionMiddleware(options: SessionOptions) {
     const sessionId = cookieSessionId ?? generateSessionId();
     req.session = await loadSession(sessionId, req, store);
 
+    const canSetCookie = options.canSetCookie?.(req) ?? true;
+
     onHeaders(res, () => {
       if (!req.session) {
         if (cookieSessionId) {
@@ -53,16 +56,31 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
-      const signedSessionId = signSessionId(req.session.id, secrets[0]);
-      res.cookie(cookieName, signedSessionId, {
-        secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
-      });
+      // TODO: only write the cookie if something about the cookie changed, e.g. the expiration date.
+      //
+      // TODO: implement ability to control which requests get an updated cookie. This will
+      // be necessary to ensure cookies are only written for specific domains.
+      const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
+      if (canSetCookie && isNewSession) {
+        const signedSessionId = signSessionId(req.session.id, secrets[0]);
+        res.cookie(cookieName, signedSessionId, {
+          secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
+        });
+      }
     });
 
     beforeEnd(res, next, async () => {
+      if (!req.session) {
+        // There is no session to do anything with.
+        return;
+      }
+
       // TODO: only save it if something actually changed.
       // TODO: implement touching. Does that have to be separate from saving though?
-      if (req.session) {
+      //
+      // TODO: even if `canSetCookie` is false, we should still save the session if
+      // it previously existed *and* if it was modified.
+      if (req.session && canSetCookie) {
         await store.set(req.session.id, req.session);
       }
     });

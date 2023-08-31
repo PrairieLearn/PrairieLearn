@@ -1,7 +1,7 @@
 import type { NextFunction } from 'express';
 
 /**
- * The following code comes from `express-session`:
+ * The following function is based on code from `express-session`:
  *
  * https://github.com/expressjs/session/blob/1010fadc2f071ddf2add94235d72224cf65159c6/index.js#L246-L360
  *
@@ -24,7 +24,6 @@ import type { NextFunction } from 'express';
  * to implement that, though.
  */
 export function beforeEnd(res: any, next: NextFunction, fn: () => Promise<void>) {
-  // proxy end() to commit the session
   const _end = res.end as any;
   const _write = res.write as any;
   let ended = false;
@@ -66,7 +65,6 @@ export function beforeEnd(res: any, next: NextFunction, fn: () => Promise<void>)
       const contentLength = Number(res.getHeader('Content-Length'));
 
       if (!isNaN(contentLength) && contentLength > 0) {
-        // measure chunk
         chunk = !Buffer.isBuffer(chunk) ? Buffer.from(chunk, encoding) : chunk;
         encoding = undefined;
 

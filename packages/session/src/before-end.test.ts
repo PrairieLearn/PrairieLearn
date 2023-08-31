@@ -8,7 +8,7 @@ import { withServer } from './test-utils';
 describe('beforeEnd', () => {
   it('handles errors correctly', async () => {
     const app = express();
-    app.use((req, res, next) => {
+    app.use((_req, res, next) => {
       beforeEnd(res, next, async () => {
         throw new Error('oops');
       });

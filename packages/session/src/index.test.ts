@@ -200,7 +200,8 @@ describe('session middleware', () => {
     app.use(
       createSessionMiddleware({
         store: new MemoryStore({
-          delay: 200,
+          // TODO: is the delay actually useful?
+          delay: 50,
         }),
         secret: TEST_SECRET,
       }),
@@ -361,6 +362,103 @@ describe('session middleware', () => {
       // want someone to be able to evict other sessions by submitting invalid
       // cookies.
       assert.isNotNull(await store.get(originalSessionId));
+    });
+  });
+
+  it('does not re-set the cookie on subsequent requests', async () => {
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store: new MemoryStore(),
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      // Generate a new session.
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      // Make another request with the same session.
+      res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      // Ensure that the cookie wasn't set again.
+      const header = res.headers.get('set-cookie');
+      assert.isNull(header);
+    });
+  });
+
+  it('does not set the cookie if it is not supposed to', async () => {
+    const store = new MemoryStore();
+
+    const app = express();
+    app.enable('trust proxy');
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        canSetCookie: (req) => {
+          console.log('can send?', req.hostname);
+          return req.hostname === 'example.com';
+        },
+      }),
+    );
+    app.get('/', (req, res) => res.send(req.session.id));
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      // Fetch from a subdomain.
+      let res = await fetchWithCookies(url, {
+        headers: {
+          'X-Forwarded-Host': 'subdomain.example.com',
+        },
+      });
+      assert.equal(res.status, 200);
+
+      // There should not be a cookie.
+      assert.isNull(res.headers.get('set-cookie'));
+
+      // Since the cookie wasn't set, the session should not have been persisted
+      // to the store.
+      const originalSessionId = await res.text();
+      assert.isNull(await store.get(originalSessionId));
+
+      // Now fetch from the correct domain.
+      res = await fetchWithCookies(url, {
+        headers: {
+          'X-Forwarded-Host': 'example.com',
+        },
+      });
+      assert.equal(res.status, 200);
+
+      // There should be a cookie for this request.
+      const header = res.headers.get('set-cookie');
+      assert.isNotNull(header);
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+
+      // The session should have been persisted.
+      const newSessionId = await res.text();
+      assert.isNotNull(await store.get(newSessionId));
+
+      // Now, fetch from the subdomain again. This time, the session should
+      // work as normal.
+      res = await fetchWithCookies(url, {
+        headers: {
+          'X-Forwarded-Host': 'subdomain.example.com',
+        },
+      });
+      assert.equal(res.status, 200);
+      assert.equal(await res.text(), newSessionId);
+
+      // Ensure that there was still no Set-Cookie header.
+      assert.isNull(res.headers.get('set-cookie'));
     });
   });
 });
