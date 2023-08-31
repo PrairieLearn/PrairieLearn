@@ -1,8 +1,8 @@
-const assert = require('assert');
-const request = require('request');
+import { assert } from 'chai';
+import fetch from 'node-fetch';
 
-const { config } = require('../lib/config');
-const helperServer = require('./helperServer');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -32,22 +32,18 @@ describe('Redirects', function () {
   after('shut down testing server', helperServer.after);
 
   redirects.forEach((redirect) => {
-    it(`redirects ${redirect.original}`, function (done) {
-      request(
-        {
-          url: `${siteUrl}${redirect.original}`,
-          // No need to actually request the redirected page; we just
-          // want to assert that the response is a redirect and that
-          // it will redirect to the right place.
-          followRedirect: false,
-        },
-        (err, response) => {
-          assert.ifError(err);
-          assert.equal(response.statusCode, 302);
-          assert.equal(response.headers.location, redirect.redirect);
-          done();
-        },
-      );
+    it(`redirects ${redirect.original}`, async () => {
+      const response = await fetch(`${siteUrl}${redirect.original}`, {
+        // No need to actually request the redirected page; we just
+        // want to assert that the response is a redirect and that
+        // it will redirect to the right place.
+        redirect: 'manual',
+      });
+      assert.equal(response.status, 302);
+      const locationHeader = response.headers.get('location');
+      assert(locationHeader);
+      const location = new URL(locationHeader, siteUrl);
+      assert.equal(location.pathname + location.search, redirect.redirect);
     });
   });
 });
