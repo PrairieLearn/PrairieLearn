@@ -525,7 +525,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
-            "block_layout": "pl-block-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
@@ -562,7 +562,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
-            "block_layout": "pl-block-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",
@@ -637,7 +637,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
-            "block_layout": "pl-block-horizontal" if inline else "",
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
             "dropzone_layout": "pl-order-blocks-bottom"
             if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",

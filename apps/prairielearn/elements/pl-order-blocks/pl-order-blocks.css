@@ -72,16 +72,16 @@ li.ui-state-highlight {
   margin-bottom: 5px;
 }
 
-.pl-block-horizontal > .list-group {
+.pl-order-blocks-horizontal > .list-group {
   overflow-x: scroll;
 }
 
-.pl-block-horizontal > ul {
+.pl-order-blocks-horizontal > ul {
   letter-spacing: -1em !important; /* a hacky way to remove the space between inline-block elements */
 }
 
-.pl-block-horizontal > .list-group,
-.pl-block-horizontal > ul > li {
+.pl-order-blocks-horizontal > .list-group,
+.pl-order-blocks-horizontal > ul > li {
   letter-spacing: normal;
   display: inline-block;
   vertical-align: middle;
