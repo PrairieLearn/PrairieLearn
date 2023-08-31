@@ -1,4 +1,4 @@
-import * as assert from 'assert';
+import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
@@ -13,14 +13,11 @@ describe('GET /', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let $: cheerio.CheerioAPI;
-  it('should load successfully', async () => {
+  it('should load and contain QA 101', async () => {
     const response = await fetch(baseUrl);
     assert.equal(response.status, 200);
     const page = await response.text();
-    $ = cheerio.load(page);
-  });
-  it('should contain QA 101', () => {
+    const $ = cheerio.load(page);
     assert.ok($('td a:contains("QA 101")').length);
   });
 });

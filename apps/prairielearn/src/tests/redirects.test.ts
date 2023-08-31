@@ -1,4 +1,4 @@
-import * as assert from 'assert';
+import { assert } from 'chai';
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
@@ -41,7 +41,7 @@ describe('Redirects', function () {
       });
       assert.equal(response.status, 302);
       const locationHeader = response.headers.get('location');
-      assert.ok(locationHeader);
+      assert(locationHeader);
       const location = new URL(locationHeader, siteUrl);
       assert.equal(location.pathname + location.search, redirect.redirect);
     });
