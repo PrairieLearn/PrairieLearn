@@ -47,8 +47,6 @@ export function makeSession(sessionId: string, req: Request, store: SessionStore
   defineStaticProperty<Session['regenerate']>(session, 'regenerate', async () => {
     await store.destroy(sessionId);
     req.session = makeSession(generateSessionId(), req, store);
-    console.log('created new session', req.session.id);
-    console.log('replaced old session', sessionId);
   });
 
   return session as Session;

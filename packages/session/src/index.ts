@@ -53,13 +53,6 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
-      const shouldClearCookie = false;
-      if (shouldClearCookie) {
-        res.clearCookie(cookieName);
-        return;
-      }
-
-      console.log('setting cookie', req.session.id);
       const signedSessionId = signSessionId(req.session.id, secrets[0]);
       res.cookie(cookieName, signedSessionId, {
         secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
