@@ -407,7 +407,12 @@ describe('session middleware', () => {
         },
       }),
     );
-    app.get('/', (req, res) => res.send(req.session.id));
+    app.get('/', (req, res) => {
+      req.session.count ??= 0;
+      req.session.count += 1;
+
+      res.send(req.session.id);
+    });
 
     await withServer(app, async ({ url }) => {
       const fetchWithCookies = fetchCookie(fetch);
@@ -445,7 +450,9 @@ describe('session middleware', () => {
 
       // The session should have been persisted.
       const newSessionId = await res.text();
-      assert.isNotNull(await store.get(newSessionId));
+      let session = await store.get(newSessionId);
+      assert.isNotNull(session);
+      assert.equal(session.count, 1);
 
       // Now, fetch from the subdomain again. This time, the session should
       // work as normal.
@@ -459,6 +466,11 @@ describe('session middleware', () => {
 
       // Ensure that there was still no Set-Cookie header.
       assert.isNull(res.headers.get('set-cookie'));
+
+      // Ensure that the session was persisted.
+      session = await store.get(newSessionId);
+      assert.isNotNull(session);
+      assert.equal(session.count, 2);
     });
   });
 });

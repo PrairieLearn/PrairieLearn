@@ -1,5 +1,6 @@
 import type { Request } from 'express';
 import { sync as uidSync } from 'uid-safe';
+import crypto from 'node:crypto';
 
 import type { SessionStore } from './store';
 
@@ -50,6 +51,20 @@ export function makeSession(sessionId: string, req: Request, store: SessionStore
   });
 
   return session as Session;
+}
+
+export function hashSession(session: Session): string {
+  const str = JSON.stringify(session, function (key, val) {
+    // ignore cookie property on the root object
+    if (this === session && key === 'cookie') {
+      return;
+    }
+
+    return val;
+  });
+
+  // hash
+  return crypto.createHash('sha1').update(str, 'utf8').digest('hex');
 }
 
 function defineStaticProperty<T>(obj: object, name: string, fn: T) {
