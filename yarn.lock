@@ -2826,7 +2826,7 @@ __metadata:
     ace-builds: ^1.24.1
     ace-code: ^1.24.1
     ajv: ^8.12.0
-    ansi_up: ^5.2.1
+    ansi_up: ^6.0.2
     archiver: ^5.3.2
     async: ^3.2.4
     async-mutex: ^0.4.0
@@ -5023,10 +5023,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi_up@npm:^5.2.1":
-  version: 5.2.1
-  resolution: "ansi_up@npm:5.2.1"
-  checksum: c5a232dc99691e98f782bdd86913aa8001526a9e5776c3c383282f49d46b0641c00e1e6aaebfb19fabb336025bf83d8778f3b5541875648e8b9af5b54f1e7a42
+"ansi_up@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "ansi_up@npm:6.0.2"
+  checksum: 03e22c78f174dc77e82b27d679261d997c367346a63fa9969bc83d26ed90d7e323d81da7ad5e3ac616eb79948f5f7ab45831be7e15cc6e96d455988046c4ffa3
   languageName: node
   linkType: hard
 
