@@ -76,7 +76,7 @@
 	<main id="content" class="container-fluid">
 		<div class="card mb-4">
 			<div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-				Access Overrides - <%= current_assessment_title %>
+				Access Overrides - <%= assessment.title %>
 				<button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal">
 					Add <i class="fas fa-plus"></i>
 				</button>
@@ -96,10 +96,7 @@
 							<form id="add-new-override" method="POST">
 								<input type="hidden" name="__action" value="add_new_override">
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-								<div class="form-group">
-									<!-- <label for="assessment_id">Assessment ID</label> -->
-									<input type="hidden" class="form-control" id="assessment_id" name="assessment_id" value="<%= assessment_id %>" required readonly>
-								</div>
+								<input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= user.uid %>" required readonly>
 								<div class="form-group">
 									<label for="student_uid">Student UID</label>
 									<input type="text" class="form-control" id="student_uid" name="student_uid">
@@ -108,9 +105,6 @@
 									<label for="group_id">Group Name</label>
 									<input type="text" class="form-control" id="group_name" name="group_name">
 									<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
-								</div>
-								<div class="form-group">
-									<input type="hidden" class="form-control" id="created_at" name="created_at" required readonly>
 								</div>
 								<div class="form-group">
 									<label for="start_date">Start Date</label>
@@ -122,10 +116,6 @@
 									<div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
 								</div>
 								<div class="form-group">
-									<!-- <label for="created_by">Created By</label> -->
-									<input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= current_student_uid %>" required readonly>
-								</div>
-								<div class="form-group">
 									<label for="credit">Credit</label>
 									<input type="number" class="form-control" id="credit" name="credit">
 								</div>
@@ -133,7 +123,6 @@
 									<label for="note">Note</label>
 									<textarea class="form-control" id="note" name="note"></textarea>
 								</div>
-
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -156,7 +145,6 @@
 							<form id="edit-override-form" method="POST">
 								<input type="hidden" name="__action" value="edit_override">
 								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-								<input type="hidden" id="edit-assessment_id" name="assessment_id">
 								<div class="form-group">
 									<label for="student_uid">Student UID</label>
 									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
@@ -169,9 +157,6 @@
 								<div class="form-group">
 									<label for="edit-credit">Credit</label>
 									<input type="number" class="form-control" id="edit-credit" name="credit">
-								</div>
-								<div class="form-group">
-									<input type="hidden" class="form-control" id="edit-created_at" name="created_at" required readonly>
 								</div>
 								<div class="form-group">
 									<label for="edit-start_date">Start Date</label>
