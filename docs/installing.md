@@ -46,7 +46,7 @@ To use your own course, use the `-v` flag to bind the Docker `/course` directory
 docker run -it --rm -p 3000:3000 -v $HOME/pl-tam212:/course prairielearn/prairielearn
 ```
 
-Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
+Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:/course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
 
 If you are running on Windows, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt.
 

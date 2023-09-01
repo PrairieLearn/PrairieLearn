@@ -8,6 +8,7 @@ require('@sentry/tracing');
 const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
@@ -68,7 +69,8 @@ const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { featuresMiddleware } = require('./lib/features');
+const { features, featuresMiddleware } = require('./lib/features');
+const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -85,10 +87,18 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
 `;
 
   console.log(msg);
   process.exit(0);
+}
+
+function enterpriseOnlyMiddleware(load) {
+  if (isEnterprise()) {
+    return load();
+  }
+  return (req, res, next) => next();
 }
 
 /**
@@ -265,6 +275,7 @@ module.exports.initExpress = function () {
       return (
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'connect.sid' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
@@ -383,8 +394,14 @@ module.exports.initExpress = function () {
     workspaceProxy,
   ]);
 
-  // Limit to 5MB of JSON
-  app.use(bodyParser.json({ limit: 5 * 1024 * 1024 }));
+  app.use((req, res, next) => {
+    // Stripe webhook signature verification requires the raw body, so we avoid
+    // using the body parser for that route.
+    if (req.path === '/pl/webhooks/stripe') return next();
+
+    // Limit to 5MB of JSON
+    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+  });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
@@ -469,6 +486,13 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
+  app.use('/pl/logout', [
+    function (req, res, next) {
+      res.locals.navPage = 'logout';
+      next();
+    },
+    require('./pages/authLogout/authLogout'),
+  ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -487,6 +511,10 @@ module.exports.initExpress = function () {
 
   // Must come before CSRF middleware; we do our own signature verification here.
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
+  app.use(
+    '/pl/webhooks/stripe',
+    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
+  );
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -520,21 +548,8 @@ module.exports.initExpress = function () {
   // some pages don't need authorization
   app.use('/', require('./pages/home/home'));
   app.use('/pl', require('./pages/home/home'));
-  app.use('/pl/settings', [
-    function (req, res, next) {
-      res.locals.navPage = 'user_settings';
-      next();
-    },
-    require('./pages/userSettings/userSettings'),
-  ]);
+  app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
-  app.use('/pl/logout', [
-    function (req, res, next) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    require('./pages/authLogout/authLogout'),
-  ]);
   app.use('/pl/password', [
     function (req, res, next) {
       res.locals.navPage = 'password';
@@ -614,9 +629,28 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // sets res.locals.course and res.locals.course_instance
+  app.use(
+    '/pl/course_instance/:course_instance_id',
+    require('./middlewares/authzCourseOrInstance'),
+  );
+
+  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+  // or `autoEnroll` middlewares so that we can render it even when the student
+  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
+  if (isEnterprise()) {
+    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
+    // below so that we can render it even when the student isn't enrolled in the
+    // course instance.
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+  }
+
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id', [
-    require('./middlewares/authzCourseOrInstance'), // sets res.locals.course and res.locals.courseInstance
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrants').default),
+    require('./middlewares/autoEnroll').default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -1093,6 +1127,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
   ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+  ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
     function (req, res, next) {
       res.locals.navSubPage = 'staff';
@@ -1178,6 +1219,16 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'instance_admin';
       next();
     },
+    asyncHandler(async (req, res, next) => {
+      // The navigation tabs rely on this value to know when to show/hide the
+      // billing tab, so we need to load it for all instance admin pages.
+      const hasCourseInstanceBilling = await features.enabledFromLocals(
+        'course-instance-billing',
+        res.locals,
+      );
+      res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+      next();
+    }),
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', [
     function (req, res, next) {
@@ -1232,6 +1283,15 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload'),
   );
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/billing', [
+      function (req, res, next) {
+        res.locals.navSubPage = 'billing';
+        next();
+      },
+      require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
+    ]);
+  }
 
   // clientFiles
   app.use(
@@ -1299,15 +1359,12 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
     require('./middlewares/logPageView')('studentGradebook'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/assessments', [
@@ -1316,9 +1373,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
+  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
@@ -1355,6 +1413,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
@@ -1370,14 +1429,14 @@ module.exports.initExpress = function () {
   }
 
   // clientFiles
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
-    require('./middlewares/studentAssessmentAccess'),
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
-    require('./middlewares/studentAssessmentAccess'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [
@@ -1514,6 +1573,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
@@ -2006,6 +2072,19 @@ if (require.main === module && config.startServer) {
         });
 
         logger.verbose('Successfully connected to database');
+      },
+      async () => {
+        if (argv['refresh-workspace-hosts-and-exit']) {
+          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+          const hosts = await markAllWorkspaceHostsUnhealthy();
+
+          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+          process.exit(0);
+        }
       },
       async () => {
         // We need to do this before we run migrations, as some migrations will

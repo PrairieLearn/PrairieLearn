@@ -4,6 +4,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
+const { ensureEnrollment } = require('../models/enrollment');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
@@ -134,12 +135,8 @@ describe('Access control', function () {
   });
 
   describe('3. Enroll student user into testCourse', function () {
-    it('should succeed', function (callback) {
-      var params = { user_id: user.user_id };
-      sqldb.query(sql.insert_enrollment, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await ensureEnrollment({ user_id: user.user_id, course_instance_id: 1 });
     });
   });
 

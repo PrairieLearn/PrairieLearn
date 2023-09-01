@@ -41,12 +41,12 @@ export async function init() {
   }
 }
 
-export function set(key: string, value: string | number | boolean, maxAgeMS?: number) {
+export function set(key: string, value: any, maxAgeMS: number) {
   if (!cacheEnabled) return;
 
   switch (cacheType) {
     case 'memory': {
-      cache.set(key, JSON.stringify(value), { ttl: maxAgeMS ?? undefined });
+      cache.set(key, JSON.stringify(value), { ttl: maxAgeMS });
       break;
     }
 
@@ -58,8 +58,24 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
       // We don't log the error because it contains the cached value,
       // which can be huge and which fills up the logs.
       client
-        .set(key, JSON.stringify(value), { PX: maxAgeMS ?? undefined })
+        .set(key, JSON.stringify(value), { PX: maxAgeMS })
         .catch((_err) => logger.error('Cache set error', { key, maxAgeMS }));
+      break;
+    }
+  }
+}
+
+export async function del(key: string) {
+  if (!cacheEnabled) return;
+
+  switch (cacheType) {
+    case 'memory': {
+      cache.delete(key);
+      break;
+    }
+
+    case 'redis': {
+      await client.del(key);
       break;
     }
   }

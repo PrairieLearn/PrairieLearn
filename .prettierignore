@@ -52,3 +52,14 @@ docs/code-docs/
 
 # prettier-plugin-sql does not properly support sprocs, so ignoring those
 apps/prairielearn/src/sprocs/*.sql
+
+# exampleCourse and testCourse contain info.json files with different formatting on purpose, ignore
+exampleCourse/**/*.json
+testCourse/**/*.json
+
+# exampleCourse and testCourse contain question.html files that are actually Mustache files, ignore
+exampleCourse/**/*.html
+testCourse/**/*.html
+
+# JSON files in tests are formatted explicitly to check for loading behaviour, so should not be formatted automatically
+apps/prairielearn/src/tests/*/**/*.json

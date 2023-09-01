@@ -13,6 +13,11 @@ migrate:
 migrate-dev:
 	@yarn migrate-dev
 
+refresh-workspace-hosts:
+	@yarn refresh-workspace-hosts
+refresh-workspace-hosts-dev:
+	@yarn refresh-workspace-hosts-dev
+
 dev: start-support
 	@yarn dev
 dev-workspace-host: start-support
@@ -50,7 +55,7 @@ test-prairielearn: start-support
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
-	@yarn prettier --check "**/*.{js,ts,md,sql}"
+	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
@@ -61,7 +66,7 @@ lint-links:
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
-	@yarn prettier --write "**/*.{js,ts,md,sql}"
+	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 format-python:
 	@python3 -m isort ./
 	@python3 -m black ./

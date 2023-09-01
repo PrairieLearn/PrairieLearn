@@ -6,6 +6,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -53,7 +54,7 @@ describe('effective user', function () {
       'Editor',
       2,
     ]);
-    await sqldb.queryAsync(sql.insert_enrollment, {
+    await ensureEnrollment({
       user_id: 4,
       course_instance_id: 1,
     });
@@ -97,7 +98,7 @@ describe('effective user', function () {
     assert.equal(response.status, 403);
   });
 
-  step('instructor can override date (and becomes enrolled)', async () => {
+  step('instructor can override date and does not become enrolled', async () => {
     let result = await sqldb.queryAsync(sql.select_enrollment, {
       user_id: 2,
       course_instance_id: 1,
@@ -114,7 +115,7 @@ describe('effective user', function () {
       user_id: 2,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 1);
+    assert.lengthOf(result.rows, 0);
   });
 
   step('instructor can access course instance', async () => {

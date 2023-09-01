@@ -2,6 +2,11 @@
   "recommendations": [
     "Tobermory.es6-string-html",
     "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint"
+    "dbaeumer.vscode-eslint",
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort",
+    "ms-python.python",
+    "ms-python.vscode-pylance"
   ]
 }

@@ -150,47 +150,21 @@ router.post(
         }
       });
     } else if (req.body.__action === 'join_group') {
-      groupAssessmentHelper.joinGroup(
+      await groupAssessmentHelper.joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, groupConfig) {
-          if (ERR(err, next)) return err;
-          if (succeeded) {
-            res.redirect(req.originalUrl);
-          } else {
-            res.locals.groupConfig = groupConfig;
-            res.locals.groupSize = 0;
-            res.locals.used_join_code = req.body.join_code;
-            res.locals.notInGroup = true;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        },
       );
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
-      groupAssessmentHelper.createGroup(
+      await groupAssessmentHelper.createGroup(
         req.body.groupName,
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, uniqueGroupName, invalidGroupName, groupConfig) {
-          if (ERR(err, next)) return;
-          if (succeeded) {
-            res.redirect(req.originalUrl);
-          } else {
-            if (invalidGroupName) {
-              res.locals.invalidGroupName = true;
-            } else {
-              res.locals.uniqueGroupName = uniqueGroupName;
-            }
-            res.locals.notInGroup = true;
-            res.locals.groupConfig = groupConfig;
-            res.locals.groupSize = 0;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        },
       );
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       await groupAssessmentHelper.updateGroupRoles(
         req.body,

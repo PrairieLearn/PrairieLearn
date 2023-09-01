@@ -4,6 +4,7 @@ const sqldb = require('@prairielearn/postgres');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
+const { shouldSecureCookie } = require('../lib/cookie');
 const { InstitutionSchema, UserSchema } = require('./db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -20,6 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
@@ -34,7 +36,13 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
   if ('user_id' in authnParams) {
     user_id = authnParams.user_id;
   } else {
-    let params = [authnParams.uid, authnParams.name, authnParams.uin, authnParams.provider];
+    let params = [
+      authnParams.uid,
+      authnParams.name,
+      authnParams.uin,
+      authnParams.provider,
+      authnParams.institution_id,
+    ];
 
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
@@ -66,8 +74,12 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
-      secure: true,
+      secure: shouldSecureCookie(req),
     });
+
+    // After explicitly authenticating, clear the cookie that disables
+    // automatic authentication.
+    res.clearCookie('pl_disable_auto_authn');
   }
 
   if (options.redirect) {
