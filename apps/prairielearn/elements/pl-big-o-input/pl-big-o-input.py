@@ -184,7 +184,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
             "parse_error": parse_error,
-            "display_append_span": show_info or parse_error,
         }
 
         if show_score and score is not None:
