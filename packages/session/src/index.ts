@@ -24,6 +24,8 @@ export interface SessionOptions {
   cookie?: {
     name?: string;
     secure?: CookieSecure;
+    httpOnly?: boolean;
+    sameSite?: boolean | 'none' | 'lax' | 'strict';
   };
 }
 
@@ -58,12 +60,22 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
+      // TODO: `express-session` uses `req.session.cookie` to determine if it
+      // should be secure or not. Should we do the same?
+      if (options.cookie?.secure && req.protocol !== 'https') {
+        // Avoid sending cookie over insecure connection.
+        return;
+      }
+
       // TODO: only write the cookie if something about the cookie changed, e.g. the expiration date.
+
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       if (canSetCookie && isNewSession) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
         res.cookie(cookieName, signedSessionId, {
           secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
+          httpOnly: options.cookie?.httpOnly ?? true,
+          sameSite: options.cookie?.sameSite ?? false,
         });
       }
     });

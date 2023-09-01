@@ -142,6 +142,33 @@ describe('session middleware', () => {
     });
   });
 
+  it('does not set a secure cookie for proxied HTTP request', async () => {
+    const app = express();
+    app.enable('trust proxy');
+    app.use(
+      createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
+        cookie: {
+          secure: true,
+        },
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetch(url, {
+        headers: {
+          'X-Forwarded-Proto': 'http',
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const header = res.headers.get('set-cookie');
+      assert.isNull(header);
+    });
+  });
+
   it('sets a secure cookie based on a custom function', async () => {
     const app = express();
     app.use(
@@ -153,18 +180,28 @@ describe('session middleware', () => {
         },
       }),
     );
-    app.get('/', (_req, res) => res.sendStatus(200));
+    app.get('/secure', (_req, res) => res.sendStatus(200));
+    app.get('/insecure', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      const res = await fetch(url);
+      // Secure request.
+      let res = await fetch(`${url}/secure`);
       assert.equal(res.status, 200);
 
-      const header = res.headers.get('set-cookie');
-      const cookies = parseSetCookie(header ?? '');
+      let header = res.headers.get('set-cookie');
+      let cookies = parseSetCookie(header ?? '');
       assert.equal(cookies.length, 1);
       assert.equal(cookies[0].name, 'session');
       assert.equal(cookies[0].path, '/');
       assert.isTrue(cookies[0].secure);
+
+      // Insecure request.
+      res = await fetch(`${url}/insecure`);
+      assert.equal(res.status, 200);
+
+      header = res.headers.get('set-cookie');
+      cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 0);
     });
   });
 
