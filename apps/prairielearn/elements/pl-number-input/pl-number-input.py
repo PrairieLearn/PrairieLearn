@@ -122,6 +122,14 @@ def get_string_precision(number_string: str) -> float:
 
 
 # TODO: add precision calculation function for other grading methods
+def get_string_significant_digits(number_string: str) -> int:
+    if "." in number_string:
+        number_string_partition = number_string.partition(".")
+        integer_part = len(number_string_partition[0])
+        decimal_part = len(number_string_partition[2].lstrip("0"))
+        return integer_part + decimal_part
+    else:
+        return len(number_string.rstrip("0"))
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -447,9 +455,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
+
+            a_sub_precision = get_string_significant_digits(str(a_sub))
             is_correct = pl.is_correct_scalar_sf(
                 a_sub_converted, a_tru_converted, digits
             )
+            if not is_correct and (a_sub_precision < digits):
+                feedback += ANSWER_INSUFFICIENT_PRECISION_WARNING
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             is_correct = pl.is_correct_scalar_dd(
