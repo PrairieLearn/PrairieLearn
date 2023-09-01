@@ -1906,7 +1906,7 @@ Displays boilerplate HTML from templates in a reusable way.
 #### Sample element
 
 ```html
-<pl-template file-name="outer_template.mustache" subdirectory="templates">
+<pl-template file-name="templates/outer_template.mustache" directory="serverFilesCourse">
   <pl-variable name="is-open">True</pl-variable>
   <pl-variable
     name="problem-statement"
