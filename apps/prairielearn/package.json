@@ -185,7 +185,7 @@
     "@types/jsdom": "^21.1.2",
     "@types/klaw": "^3.0.3",
     "@types/lodash": "^4.14.197",
-    "@types/loopbench": "^1.2.1",
+    "@types/loopbench": "^1.2.2",
     "@types/memorystream": "^0.3.1",
     "@types/mime": "^3.0.1",
     "@types/mocha": "^10.0.1",

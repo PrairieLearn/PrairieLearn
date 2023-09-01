@@ -2808,7 +2808,7 @@ __metadata:
     "@types/jsdom": ^21.1.2
     "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.197
-    "@types/loopbench": ^1.2.1
+    "@types/loopbench": ^1.2.2
     "@types/memorystream": ^0.3.1
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
@@ -4330,12 +4330,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/loopbench@npm:^1.2.1":
-  version: 1.2.1
-  resolution: "@types/loopbench@npm:1.2.1"
+"@types/loopbench@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "@types/loopbench@npm:1.2.2"
   dependencies:
     "@types/node": "*"
-  checksum: 3710aedfd6701ca6992af644873c7e239b72d3b2d8683e749b2b1a7dce56ac50c84df2b42fd9cf75cddcfaf8138273fe57facfdbe8edff5d9c18225ac7bfdd6d
+  checksum: 20faf1ac58aed7ccbec7472135c6c0bf1281729bb20a277d49c597c60d9ec634495e9d81780daaf6e995871185b8432d2ad7fa209516622afc3da136f412b2d0
   languageName: node
   linkType: hard
 
