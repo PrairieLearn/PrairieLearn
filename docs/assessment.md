@@ -295,11 +295,11 @@ Permissions defined at a higher level are propagated down the assessment hierarc
 
 ### Students joining assessments with custom group roles
 
-When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. More information about the assessment's group roles can be expanded in the dropdown menu.
+When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. Students can click "View role info" to see more information about the assessment's group roles.
 
 ![Joining a group assessment with custom group roles](grouproles_join.png)
 
-When expanded, the dropdown menu shows information about the roles, such as the min/max number of assignments and whether a role can assign other roles.
+When expanded, group assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
 
 ![Group info from student perspective](grouproles_groupinfo.png)
 
