@@ -1917,8 +1917,6 @@ Along with the sample usage of the element, we include a sample template file. T
 `templates/outer_template.mustache`:
 
 ```html
-<!-- Note that the id "#" CSS selector does not work for ids that start with a number, so must prefix uuids. -->
-
 <div class="card mb-1 mt-1">
   <div class="card-header" style="cursor: pointer">
     <div
