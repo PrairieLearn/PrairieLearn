@@ -1901,20 +1901,46 @@ Printing Pandas DataFrames with this element is deprecated. Please use the new [
 
 ### `pl-template` element
 
-Displays boilerplate HTML from templates in a reusable way.
+Displays boilerplate HTML from mustache templates in a reusable way.
 
 #### Sample element
 
 ```html
-<pl-template file-name="templates/outer_template.mustache" directory="serverFilesCourse">
-  <pl-variable name="is-open">True</pl-variable>
-  <pl-variable
-    name="problem-statement"
-    directory="question"
-    file-name="serverFilesQuestion/statement.html"
-  ></pl-variable>
+<pl-template file-name="templates/outer_template.mustache">
+  <pl-variable name="show">True</pl-variable>
+  <pl-variable name="section_header">This is the section header.</pl-variable>
+  <pl-variable name="section_body">This is the section body.</pl-variable>
 </pl-template>
 ```
+
+Along with the sample usage of the element, we include a sample template file. This is the file
+`templates/outer_template.mustache`:
+
+```html
+<!-- Note that the id "#" CSS selector does not work for ids that start with a number, so must prefix uuids. -->
+
+<div class="card mb-1 mt-1">
+  <div class="card-header" style="cursor: pointer">
+    <div
+      class="card-title d-flex justify-content-between"
+      data-toggle="collapse"
+      data-target="#collapse-{{uuid}}"
+    >
+      <div>{{section_header}}</div>
+      <div class="fa fa-angle-down"></div>
+    </div>
+  </div>
+
+  <div class="collapse{{#show}} show{{/show}}" id="collapse-{{uuid}}">
+    <div class="card-body">
+      <div class="card-text">{{{section_body}}}</div>
+    </div>
+  </div>
+</div>
+```
+
+_Note:_ The sample element did not define the `uuid` variable, as each `pl-template` element
+has a unique one defined internally.
 
 #### Customizations
 
