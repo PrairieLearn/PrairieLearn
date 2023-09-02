@@ -1914,7 +1914,7 @@ Displays boilerplate HTML from mustache templates in a reusable way.
 ```
 
 Along with the sample usage of the element, we include a sample template file. This is the file
-`templates/outer_template.mustache`:
+`templates/outer_template.mustache`, stored in the course's `serverFilesCourse` directory:
 
 ```html
 <!-- Note that the id "#" CSS selector does not work for ids that start with a number, so must prefix uuids. -->
