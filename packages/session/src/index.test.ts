@@ -54,32 +54,6 @@ describe('session middleware', () => {
     });
   });
 
-  it('sets a secure cookie', async () => {
-    const app = express();
-    app.use(
-      createSessionMiddleware({
-        secret: TEST_SECRET,
-        store: new MemoryStore(),
-        cookie: {
-          secure: true,
-        },
-      }),
-    );
-    app.get('/', (_req, res) => res.sendStatus(200));
-
-    await withServer(app, async ({ url }) => {
-      const res = await fetch(url);
-      assert.equal(res.status, 200);
-
-      const header = res.headers.get('set-cookie');
-      const cookies = parseSetCookie(header ?? '');
-      assert.equal(cookies.length, 1);
-      assert.equal(cookies[0].name, 'session');
-      assert.equal(cookies[0].path, '/');
-      assert.isTrue(cookies[0].secure);
-    });
-  });
-
   it('sets a secure cookie for proxied HTTPS request', async () => {
     const app = express();
     app.enable('trust proxy');
@@ -88,7 +62,7 @@ describe('session middleware', () => {
         secret: TEST_SECRET,
         store: new MemoryStore(),
         cookie: {
-          secure: 'auto',
+          secure: true,
         },
       }),
     );
@@ -108,37 +82,6 @@ describe('session middleware', () => {
       assert.equal(cookies[0].name, 'session');
       assert.equal(cookies[0].path, '/');
       assert.isTrue(cookies[0].secure);
-    });
-  });
-
-  it('sets a non-secure cookie for proxied HTTP request', async () => {
-    const app = express();
-    app.enable('trust proxy');
-    app.use(
-      createSessionMiddleware({
-        secret: TEST_SECRET,
-        store: new MemoryStore(),
-        cookie: {
-          secure: 'auto',
-        },
-      }),
-    );
-    app.get('/', (_req, res) => res.sendStatus(200));
-
-    await withServer(app, async ({ url }) => {
-      const res = await fetch(url, {
-        headers: {
-          'X-Forwarded-Proto': 'http',
-        },
-      });
-      assert.equal(res.status, 200);
-
-      const header = res.headers.get('set-cookie');
-      const cookies = parseSetCookie(header ?? '');
-      assert.equal(cookies.length, 1);
-      assert.equal(cookies[0].name, 'session');
-      assert.equal(cookies[0].path, '/');
-      assert.isUndefined(cookies[0].secure);
     });
   });
 
@@ -169,39 +112,65 @@ describe('session middleware', () => {
     });
   });
 
-  it('sets a secure cookie based on a custom function', async () => {
+  it('automatically sets secure for proxied HTTPS request', async () => {
     const app = express();
+    app.enable('trust proxy');
     app.use(
       createSessionMiddleware({
         secret: TEST_SECRET,
         store: new MemoryStore(),
         cookie: {
-          secure: () => true,
+          secure: 'auto',
         },
       }),
     );
-    app.get('/secure', (_req, res) => res.sendStatus(200));
-    app.get('/insecure', (_req, res) => res.sendStatus(200));
+    app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
-      // Secure request.
-      let res = await fetch(`${url}/secure`);
+      const res = await fetch(url, {
+        headers: {
+          'X-Forwarded-Proto': 'https',
+        },
+      });
       assert.equal(res.status, 200);
 
-      let header = res.headers.get('set-cookie');
-      let cookies = parseSetCookie(header ?? '');
+      const header = res.headers.get('set-cookie');
+      const cookies = parseSetCookie(header ?? '');
       assert.equal(cookies.length, 1);
       assert.equal(cookies[0].name, 'session');
       assert.equal(cookies[0].path, '/');
       assert.isTrue(cookies[0].secure);
+    });
+  });
 
-      // Insecure request.
-      res = await fetch(`${url}/insecure`);
+  it('automatically sets secure for proxied HTTP request', async () => {
+    const app = express();
+    app.enable('trust proxy');
+    app.use(
+      createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
+        cookie: {
+          secure: 'auto',
+        },
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetch(url, {
+        headers: {
+          'X-Forwarded-Proto': 'http',
+        },
+      });
       assert.equal(res.status, 200);
 
-      header = res.headers.get('set-cookie');
-      cookies = parseSetCookie(header ?? '');
-      assert.equal(cookies.length, 0);
+      const header = res.headers.get('set-cookie');
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+      assert.equal(cookies[0].path, '/');
+      assert.isUndefined(cookies[0].secure);
     });
   });
 
@@ -438,10 +407,7 @@ describe('session middleware', () => {
       createSessionMiddleware({
         store,
         secret: TEST_SECRET,
-        canSetCookie: (req) => {
-          console.log('can send?', req.hostname);
-          return req.hostname === 'example.com';
-        },
+        canSetCookie: (req) => req.hostname === 'example.com',
       }),
     );
     app.get('/', (req, res) => {
@@ -489,7 +455,7 @@ describe('session middleware', () => {
       const newSessionId = await res.text();
       let session = await store.get(newSessionId);
       assert.isNotNull(session);
-      assert.equal(session.count, 1);
+      assert.equal(session?.data.count, 1);
 
       // Now, fetch from the subdomain again. This time, the session should
       // work as normal.
@@ -507,7 +473,112 @@ describe('session middleware', () => {
       // Ensure that the session was persisted.
       session = await store.get(newSessionId);
       assert.isNotNull(session);
-      assert.equal(session.count, 2);
+      assert.equal(session?.data.count, 2);
+    });
+  });
+
+  it('extends the expiration date of the cookie', async () => {
+    const store = new MemoryStore();
+
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        cookie: {
+          maxAge: 1000,
+        },
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+    app.get('/extend', (req, res) => {
+      req.session.setExpiration(Date.now() + 10000);
+      res.sendStatus(200);
+    });
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      // Generate a new session.
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      // Grab the original expiration date.
+      let header = res.headers.get('set-cookie');
+      let cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.isUndefined(cookies[0].maxAge);
+      const originalExpirationDate = cookies[0].expires;
+      assert(originalExpirationDate);
+
+      // Also grab the expiration date from the store.
+      const sessionId = cookies[0].value.split('.')[0];
+      const session = await store.get(sessionId);
+      assert(session);
+      const originalStoreExpirationDate = session.expiresAt;
+
+      // Ensure that the expiration dates are consistent.
+      assert.equal(originalExpirationDate.getTime(), originalStoreExpirationDate.getTime());
+
+      // Make another request with the same session.
+      res = await fetchWithCookies(`${url}/extend`);
+      assert.equal(res.status, 200);
+
+      // Ensure that the cookie was set again.
+      header = res.headers.get('set-cookie');
+      cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.isUndefined(cookies[0].maxAge);
+      const newExpirationDate = cookies[0].expires;
+      assert(newExpirationDate);
+
+      // Ensure that the expiration date was extended.
+      assert.notEqual(newExpirationDate.getTime(), originalExpirationDate.getTime());
+
+      // Also grab the new expiration date from the store.
+      const newSession = await store.get(sessionId);
+      assert(newSession);
+      const newStoreExpirationDate = newSession.expiresAt;
+
+      // Ensure that the expiration dates are consistent.
+      assert.equal(newExpirationDate.getTime(), newStoreExpirationDate.getTime());
+    });
+  });
+
+  it('does not persist session data if the session did not change', async () => {
+    const store = new MemoryStore();
+
+    let setCount = 0;
+    const originalStoreSet = store.set.bind(store);
+    store.set = async (...args) => {
+      setCount += 1;
+      await originalStoreSet(...args);
+    };
+
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+      // Generate a new session.
+      let res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      // Ensure the session was persisted.
+      assert.equal(setCount, 1);
+
+      // Make another request with the same session.
+      res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      // Ensure the session was not persisted.
+      assert.equal(setCount, 1);
     });
   });
 });

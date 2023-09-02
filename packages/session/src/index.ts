@@ -26,12 +26,15 @@ export interface SessionOptions {
     secure?: CookieSecure;
     httpOnly?: boolean;
     sameSite?: boolean | 'none' | 'lax' | 'strict';
+    maxAge?: number;
   };
 }
 
 export function createSessionMiddleware(options: SessionOptions) {
   const secrets = Array.isArray(options.secret) ? options.secret : [options.secret];
   const cookieName = options.cookie?.name ?? 'session';
+  // Default to 1 day.
+  const cookieMaxAge = options.cookie?.maxAge ?? 86400000;
   const store = options.store;
 
   return asyncHandler(async function sessionMiddleware(
@@ -41,9 +44,10 @@ export function createSessionMiddleware(options: SessionOptions) {
   ) {
     const cookieSessionId = getSessionIdFromCookie(req, cookieName, secrets);
     const sessionId = cookieSessionId ?? generateSessionId();
-    req.session = await loadSession(sessionId, req, store);
+    req.session = await loadSession(sessionId, req, store, cookieMaxAge);
 
     const originalHash = hashSession(req.session);
+    const originalExpirationDate = req.session.getExpirationDate();
 
     const canSetCookie = options.canSetCookie?.(req) ?? true;
 
@@ -62,7 +66,7 @@ export function createSessionMiddleware(options: SessionOptions) {
 
       // TODO: `express-session` uses `req.session.cookie` to determine if it
       // should be secure or not. Should we do the same?
-      if (options.cookie?.secure && req.protocol !== 'https') {
+      if (options.cookie?.secure === true && req.protocol !== 'https') {
         // Avoid sending cookie over insecure connection.
         return;
       }
@@ -70,12 +74,15 @@ export function createSessionMiddleware(options: SessionOptions) {
       // TODO: only write the cookie if something about the cookie changed, e.g. the expiration date.
 
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
-      if (canSetCookie && isNewSession) {
+      const didExpirationChange =
+        originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
+      if (canSetCookie && (isNewSession || didExpirationChange)) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
         res.cookie(cookieName, signedSessionId, {
           secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
           httpOnly: options.cookie?.httpOnly ?? true,
           sameSite: options.cookie?.sameSite ?? false,
+          expires: req.session.getExpirationDate(),
         });
       }
     });
@@ -86,12 +93,29 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
-      // TODO: implement touching. Does that have to be separate from saving though?
-      // TODO: also re-persist the session is the cookie expiration date changed.
       const isExistingSession = cookieSessionId && cookieSessionId === req.session.id;
       const hashChanged = hashSession(req.session) !== originalHash;
-      if (canSetCookie || (!canSetCookie && isExistingSession && hashChanged)) {
-        await store.set(req.session.id, req.session);
+      const didExpirationChange =
+        originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
+      if (
+        (canSetCookie && !isExistingSession) ||
+        (isExistingSession && hashChanged) ||
+        (canSetCookie && didExpirationChange)
+      ) {
+        // Only update the expiration date in the store if we were actually
+        // able to update the cookie too.
+        const expirationDate = canSetCookie
+          ? req.session.getExpirationDate()
+          : originalExpirationDate;
+
+        await store.set(
+          req.session.id,
+          req.session,
+          // Cookies only support second-level resolution. To ensure consistency
+          // between the cookie and the store, truncate the expiration date to
+          // the nearest second.
+          truncateExpirationDate(expirationDate),
+        );
       }
     });
 
@@ -101,4 +125,10 @@ export function createSessionMiddleware(options: SessionOptions) {
 
 function signSessionId(sessionId: string, secret: string): string {
   return signature.sign(sessionId, secret);
+}
+
+function truncateExpirationDate(date: Date) {
+  const time = date.getTime();
+  const truncatedTime = Math.floor(time / 1000) * 1000;
+  return new Date(truncatedTime);
 }

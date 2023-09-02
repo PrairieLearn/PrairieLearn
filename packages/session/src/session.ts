@@ -8,6 +8,8 @@ export interface Session {
   id: string;
   destroy(): Promise<void>;
   regenerate(): Promise<void>;
+  setExpiration(expiry: Date | number): void;
+  getExpirationDate(): Date;
   [key: string]: any;
 }
 
@@ -19,15 +21,19 @@ export async function loadSession(
   sessionId: string,
   req: Request,
   store: SessionStore,
+  maxAge: number,
 ): Promise<Session> {
-  const session = makeSession(sessionId, req, store);
+  const sessionStoreData = await store.get(sessionId);
+  const expiresAt = sessionStoreData?.expiresAt ?? null;
+
+  const session = makeSession(sessionId, req, store, expiresAt, maxAge);
 
   // Copy session data into the session object.
-  const sessionData = await store.get(sessionId);
-  if (typeof sessionData === 'object' && sessionData != null) {
-    for (const prop in sessionData) {
+  if (sessionStoreData != null) {
+    const { data } = sessionStoreData;
+    for (const prop in data) {
       if (!(prop in session)) {
-        session[prop] = sessionData[prop];
+        session[prop] = data[prop];
       }
     }
   }
@@ -35,8 +41,16 @@ export async function loadSession(
   return session;
 }
 
-export function makeSession(sessionId: string, req: Request, store: SessionStore): Session {
+export function makeSession(
+  sessionId: string,
+  req: Request,
+  store: SessionStore,
+  expirationDate: Date | null,
+  maxAge: number,
+): Session {
   const session = {};
+
+  let expiresAt = expirationDate;
 
   defineStaticProperty<Session['id']>(session, 'id', sessionId);
 
@@ -47,7 +61,22 @@ export function makeSession(sessionId: string, req: Request, store: SessionStore
 
   defineStaticProperty<Session['regenerate']>(session, 'regenerate', async () => {
     await store.destroy(sessionId);
-    req.session = makeSession(generateSessionId(), req, store);
+    req.session = makeSession(generateSessionId(), req, store, null, maxAge);
+  });
+
+  defineStaticProperty<Session['getExpirationDate']>(session, 'getExpirationDate', () => {
+    if (expiresAt == null) {
+      expiresAt = new Date(Date.now() + maxAge);
+    }
+    return expiresAt;
+  });
+
+  defineStaticProperty<Session['setExpiration']>(session, 'setExpiration', (expiration) => {
+    if (typeof expiration === 'number') {
+      expiresAt = new Date(Date.now() + expiration);
+    } else {
+      expiresAt = expiration;
+    }
   });
 
   return session as Session;
