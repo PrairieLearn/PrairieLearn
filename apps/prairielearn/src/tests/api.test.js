@@ -112,6 +112,13 @@ describe('API', function () {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token),
       );
     });
+
+    it('settings page does not show token again after reloading', async function () {
+      const res = await fetch(settingsUrl);
+      assert.isTrue(res.ok);
+      const pageContent = await res.text();
+      assert.isFalse(pageContent.includes(locals.api_token));
+    });
   });
 
   describe('API endpoints', function () {
