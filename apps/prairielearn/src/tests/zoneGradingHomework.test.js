@@ -269,19 +269,13 @@ describe('Zone grading homework assessment', function () {
   zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 

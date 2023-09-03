@@ -10,7 +10,6 @@ const axe = require('axe-core');
 const jsdom = require('jsdom');
 const fetch = require('node-fetch').default;
 const { A11yError } = require('@sa11y/format');
-const util = require('util');
 const expressListEndpoints = require('express-list-endpoints');
 const sqldb = require('@prairielearn/postgres');
 
@@ -267,7 +266,7 @@ describe('accessibility', () => {
   let routeParams = {};
   before('set up testing server', async function () {
     config.cronActive = false;
-    await util.promisify(helperServer.before(EXAMPLE_COURSE_PATH).bind(this))();
+    await helperServer.before(EXAMPLE_COURSE_PATH).call(this);
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
