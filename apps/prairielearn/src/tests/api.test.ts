@@ -1,15 +1,13 @@
-// @ts-check
-const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const fetch = require('node-fetch').default;
-const { URLSearchParams } = require('url');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import { step } from 'mocha-steps';
 
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
@@ -49,10 +47,9 @@ describe('API', function () {
   });
 
   describe('settings page', function () {
-    let settingsUrl;
+    const settingsUrl = locals.baseUrl + '/settings';
 
     it('loads successfully', async function () {
-      settingsUrl = locals.baseUrl + '/settings';
       const res = await fetch(settingsUrl);
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
