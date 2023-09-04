@@ -1,4 +1,4 @@
-import * as util from 'util';
+import { promisify, callbackify } from 'util';
 import * as tmp from 'tmp-promise';
 import * as path from 'path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -53,7 +53,7 @@ export function before(courseDir?: string): () => Promise<void> {
       cron.init();
 
       debug('before(): inserting dev user');
-      await util.promisify(server.insertDevUser)();
+      await promisify(server.insertDevUser)();
 
       debug('before(): sync from disk');
       await helperCourse.syncCourse(courseDir ?? TEST_COURSE_PATH);
@@ -82,8 +82,8 @@ export function before(courseDir?: string): () => Promise<void> {
       debug('before(): initialize freeform server');
       await freeformServer.init();
 
-      await util.promisify(externalGrader.init)();
-      await util.promisify(externalGradingSocket.init)();
+      await promisify(externalGrader.init)();
+      await promisify(externalGradingSocket.init)();
     } finally {
       debug('before(): completed');
     }
@@ -101,7 +101,7 @@ export async function after(): Promise<void> {
     await codeCaller.finish();
 
     debug('after(): stop server');
-    await util.promisify(server.stopServer)();
+    await promisify(server.stopServer)();
 
     debug('after(): close load estimators');
     load.close();
@@ -137,7 +137,7 @@ export async function getLastJobSequenceIdAsync() {
   return job_sequence_id;
 }
 
-export const getLastJobSequenceId = util.callbackify(getLastJobSequenceIdAsync);
+export const getLastJobSequenceId = callbackify(getLastJobSequenceIdAsync);
 
 export async function waitForJobSequenceAsync(job_sequence_id) {
   let job_sequence;
@@ -153,7 +153,7 @@ export async function waitForJobSequenceAsync(job_sequence_id) {
   return job_sequence;
 }
 
-export const waitForJobSequence = util.callbackify(waitForJobSequenceAsync);
+export const waitForJobSequence = callbackify(waitForJobSequenceAsync);
 
 export async function waitForJobSequenceSuccessAsync(job_sequence_id) {
   const job_sequence = await waitForJobSequenceAsync(job_sequence_id);
@@ -168,4 +168,4 @@ export async function waitForJobSequenceSuccessAsync(job_sequence_id) {
   assert.equal(job_sequence.status, 'Success');
 }
 
-export const waitForJobSequenceSuccess = util.callbackify(waitForJobSequenceSuccessAsync);
+export const waitForJobSequenceSuccess = callbackify(waitForJobSequenceSuccessAsync);
