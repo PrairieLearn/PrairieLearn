@@ -47,10 +47,9 @@ describe('API', function () {
   });
 
   describe('settings page', function () {
-    const settingsUrl = locals.baseUrl + '/settings';
-
     it('loads successfully', async function () {
-      const res = await fetch(settingsUrl);
+      locals.settingsUrl = locals.baseUrl + '/settings';
+      const res = await fetch(locals.settingsUrl);
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
@@ -87,7 +86,7 @@ describe('API', function () {
     });
 
     it('generates a token', async function () {
-      const res = await fetch(settingsUrl, {
+      const res = await fetch(locals.settingsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: locals.__action,
@@ -111,7 +110,7 @@ describe('API', function () {
     });
 
     it('settings page does not show token again after reloading', async function () {
-      const res = await fetch(settingsUrl);
+      const res = await fetch(locals.settingsUrl);
       assert.isTrue(res.ok);
       const pageContent = await res.text();
       assert.isFalse(pageContent.includes(locals.api_token));
