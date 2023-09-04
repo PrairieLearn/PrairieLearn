@@ -17,13 +17,12 @@ import { config } from '../lib/config';
 export async function fetchCheerio(
   url: string | URL,
   options: RequestInit & { form?: Record<string, any> } = {},
-): Promise<{
-  ok: boolean;
-  status: number;
-  url: string;
-  text: () => string;
-  $: cheerio.CheerioAPI;
-}> {
+): Promise<
+  Omit<Response, 'text'> & {
+    text: () => string;
+    $: cheerio.CheerioAPI;
+  }
+> {
   if (options.form) {
     options.body = JSON.stringify(options.form);
     options.headers = {
@@ -34,17 +33,15 @@ export async function fetchCheerio(
   }
   const response = await fetch(url, options);
   const text = await response.text();
-  return {
-    ok: response.ok,
-    status: response.status,
-    url: response.url,
+  // Create a new object with the same properties (via accessors) but additional/changed fields
+  return Object.create(response, {
     // response.text() can only be called once, which we already did. A previous
     // version of this code patched this so consumers can use it as "normal",
     // but the new function was created as not async. This behaviour is kept for
     // backwards compatibility.
-    text: () => text,
-    $: cheerio.load(text),
-  };
+    text: { value: () => text },
+    $: { value: cheerio.load(text) },
+  });
 }
 
 /**
