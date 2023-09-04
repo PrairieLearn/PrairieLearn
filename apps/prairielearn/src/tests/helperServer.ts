@@ -34,7 +34,7 @@ config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
-export function before(courseDir?: string): () => Promise<void> {
+export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
     debug('before()');
     try {
@@ -56,7 +56,7 @@ export function before(courseDir?: string): () => Promise<void> {
       await promisify(server.insertDevUser)();
 
       debug('before(): sync from disk');
-      await helperCourse.syncCourse(courseDir ?? TEST_COURSE_PATH);
+      await helperCourse.syncCourse(courseDir);
 
       debug('before(): set up load estimators');
       load.initEstimator('request', 1);
