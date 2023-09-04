@@ -66,8 +66,6 @@ export async function sendSlackMessage(
 /**
  * Send a message to the secret course requests channel on Slack.
  * @param msg String message to send.
- * @param callback Function that is called after the message is sent.
- * Called with callback(err, response, body)
  */
 export async function sendCourseRequestMessage(msg: string): Promise<Response | null> {
   return sendSlackMessage(msg, config.secretSlackCourseRequestChannel);
