@@ -35,16 +35,11 @@ config.startServer = false;
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
 export function before(courseDir?: string): () => Promise<void> {
-  courseDir ??= TEST_COURSE_PATH;
   return async () => {
     debug('before()');
     try {
       // We (currently) don't ever want tracing to run during tests.
-      await opentelemetry.init({
-        openTelemetryEnabled: false,
-        openTelemetryExporter: 'console',
-        openTelemetrySamplerType: 'always-off',
-      });
+      await opentelemetry.init({ openTelemetryEnabled: false });
 
       debug('before(): initializing DB');
       // pass "this" explicitly to enable this.timeout() calls
@@ -61,7 +56,7 @@ export function before(courseDir?: string): () => Promise<void> {
       await util.promisify(server.insertDevUser)();
 
       debug('before(): sync from disk');
-      await helperCourse.syncCourse(courseDir);
+      await helperCourse.syncCourse(courseDir ?? TEST_COURSE_PATH);
 
       debug('before(): set up load estimators');
       load.initEstimator('request', 1);
