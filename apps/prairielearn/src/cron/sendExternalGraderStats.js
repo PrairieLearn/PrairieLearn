@@ -48,15 +48,17 @@ module.exports.run = (callback) => {
     msg += `    Maximum time to execute: *${Number(max_finished_at).toFixed(2)} s*\n`;
     msg += `    Maximum time to report: *${Number(max_final).toFixed(2)} s*\n`;
 
-    opsbot.sendMessage(msg, (err, res, body) => {
-      if (ERR(err, callback)) return;
-      if (res.statusCode !== 200) {
-        logger.error(
-          `Error posting external grading stats to slack [status code ${res.statusCode}]`,
-          body,
-        );
-      }
-      callback(null);
-    });
+    opsbot.sendMessage(msg).then(
+      async (res) => {
+        if (res && res.status !== 200) {
+          logger.error(
+            `Error posting external grading stats to slack [status code ${res.status}]`,
+            await res.text(),
+          );
+        }
+        callback(null);
+      },
+      (err) => ERR(err, callback),
+    );
   });
 };

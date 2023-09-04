@@ -20,11 +20,11 @@ module.exports.run = (callback) => {
       logger.error('cron:sendUnfinishedCronJobs job not finished', row);
     }
 
-    const { res, body } = await opsbot.sendMessageAsync(msg);
-    if (res.statusCode !== 200) {
-      logger.error(`Error posting unfinished cron jobs to slack [status code ${res.statusCode}]`, {
+    const res = await opsbot.sendMessageAsync(msg);
+    if (res.status !== 200) {
+      logger.error(`Error posting unfinished cron jobs to slack [status code ${res.status}]`, {
         res,
-        body,
+        body: await res.text(),
       });
     }
   })(callback);
