@@ -69,6 +69,6 @@ export async function sendSlackMessage(
  * @param callback Function that is called after the message is sent.
  * Called with callback(err, response, body)
  */
-export async function sendCourseRequestMessage(msg) {
+export async function sendCourseRequestMessage(msg: string): Promise<Response | null> {
   return sendSlackMessage(msg, config.secretSlackCourseRequestChannel);
 }
