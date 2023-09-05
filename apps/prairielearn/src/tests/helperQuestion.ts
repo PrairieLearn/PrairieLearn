@@ -10,10 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function waitForJobSequence(locals: {
-  job_sequence_id?: string;
-  job_sequence?: { status: 'Running' | 'Success' };
-}) {
+export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
@@ -42,19 +39,7 @@ export function waitForJobSequence(locals: {
   });
 }
 
-export function getInstanceQuestion(locals: {
-  questionBaseUrl: string;
-  questionPreviewTabUrl?: string;
-  question?: { id: string; type: 'Calculation' | 'Freeform' };
-  shouldHaveButtons?: ('save' | 'grade' | 'newVariant' | 'tryAgain')[];
-  isStudentPage: boolean;
-
-  questionData?: { variant: { id: string } };
-  variant_id?: string;
-  $?: cheerio.CheerioAPI;
-  variant?: { id: string; instance_question_id: string; question_id: string; broken: false };
-  __csrf_token?: string;
-}) {
+export function getInstanceQuestion(locals: Record<string, any>) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
@@ -197,36 +182,15 @@ export function getInstanceQuestion(locals: {
   });
 }
 
-export function postInstanceQuestion(locals: {
-  questionBaseUrl: string;
-  questionPreviewTabUrl: string;
-  getSubmittedAnswer: (variant: {
-    id: string;
-    true_answer: Record<string, any>;
-  }) => Record<string, any>;
-  variant: { id: string; true_answer: Record<string, any> };
-  postAction: string;
-  question: { id: string; type: 'Calculation' | 'Freeform' };
-  __csrf_token: string;
-  isStudentPage: boolean;
-  assessment_instance_duration: number;
-  preStartTime: number;
-  postStartTime: number;
-
-  submittedAnswer?: Record<string, any>;
-  preEndTime?: number;
-  postEndTime?: number;
-  submission: { variant_id: string; broken: boolean };
-
-  $?: cheerio.CheerioAPI;
-}) {
+export function postInstanceQuestion(locals: Record<string, any>) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
+      assert(locals.getSubmittedAnswer);
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
     });
     it('should load successfully', async function () {
       let form;
-      if (locals.question.type === 'Calculation') {
+      if (locals.question?.type === 'Calculation') {
         form = {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
@@ -235,15 +199,15 @@ export function postInstanceQuestion(locals: {
             submittedAnswer: locals.submittedAnswer,
           }),
         };
-      } else if (locals.question.type === 'Freeform') {
+      } else if (locals.question?.type === 'Freeform') {
         form = {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
-          __variant_id: locals.variant.id,
+          __variant_id: locals.variant?.id,
         };
         _.assign(form, locals.submittedAnswer);
       } else {
-        assert.fail('bad question.type:' + locals.question.type);
+        assert.fail('bad question.type:' + locals.question?.type);
       }
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
@@ -259,17 +223,17 @@ export function postInstanceQuestion(locals: {
     });
     it('should create a submission', async function () {
       const result = await sqldb.queryAsync(sql.select_last_submission, {
-        variant_id: locals.variant.id,
+        variant_id: locals.variant?.id,
       });
       assert.equal(result.rowCount, 1);
       locals.submission = result.rows[0];
     });
     it('should have the correct submission.variant_id', function () {
-      assert.equal(locals.submission.variant_id, locals.variant.id);
+      assert.equal(locals.submission?.variant_id, locals.variant?.id);
     });
     it('should not be broken if Freeform', function () {
-      if (locals.question.type === 'Freeform') {
-        assert.equal(locals.submission.broken, false);
+      if (locals.question?.type === 'Freeform') {
+        assert.equal(locals.submission?.broken, false);
       }
     });
     it('should select the assessment_instance duration from the DB if student page', async function () {
@@ -283,6 +247,9 @@ export function postInstanceQuestion(locals: {
       if (locals.isStudentPage) {
         assert(locals.preEndTime);
         assert(locals.postEndTime);
+        assert(locals.preStartTime);
+        assert(locals.postStartTime);
+        assert(locals.assessment_instance_duration);
         const min_duration = (locals.preEndTime - locals.postStartTime) / 1000;
         const max_duration = (locals.postEndTime - locals.preStartTime) / 1000;
         assert.isAbove(locals.assessment_instance_duration, min_duration);
@@ -292,27 +259,15 @@ export function postInstanceQuestion(locals: {
   });
 }
 
-export function postInstanceQuestionAndFail(locals: {
-  getSubmittedAnswer: (variant: {
-    id: string;
-    true_answer: Record<string, any>;
-  }) => Record<string, any>;
-  variant: { id: string; true_answer: Record<string, any> };
-  question: { id: string; type: 'Freeform' | 'Calculation' };
-  postAction: string;
-  __csrf_token: string;
-  questionBaseUrl: string;
-  questionPreviewTabUrl?: string;
-
-  submittedAnswer?: Record<string, any>;
-}) {
+export function postInstanceQuestionAndFail(locals: Record<string, any>) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
+      assert(locals.getSubmittedAnswer);
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
     });
     it('should error', async function () {
       let form;
-      if (locals.question.type === 'Calculation') {
+      if (locals.question?.type === 'Calculation') {
         form = {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
@@ -321,15 +276,15 @@ export function postInstanceQuestionAndFail(locals: {
             submittedAnswer: locals.submittedAnswer,
           }),
         };
-      } else if (locals.question.type === 'Freeform') {
+      } else if (locals.question?.type === 'Freeform') {
         form = {
           __action: locals.postAction,
           __csrf_token: locals.__csrf_token,
-          variant_id: locals.variant.id,
+          variant_id: locals.variant?.id,
         };
         _.assign(form, locals.submittedAnswer);
       } else {
-        assert.fail('bad question.type:' + locals.question.type);
+        assert.fail('bad question.type:' + locals.question?.type);
       }
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
@@ -342,55 +297,31 @@ export function postInstanceQuestionAndFail(locals: {
   });
 }
 
-export function checkSubmissionScore(locals: {
-  question: {
-    id: string;
-  };
-  expectedResult: { submission_score: number; submission_correct: boolean };
-  submission?: { score: number; correct: boolean };
-}) {
+export function checkSubmissionScore(locals: Record<string, any>) {
   describe('check submission score', function () {
     it('should have the submission', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_submission_for_question, {
-        question_id: locals.question.id,
+        question_id: locals.question?.id,
       });
       locals.submission = result.rows[0];
     });
     it('should be graded with expected score', function () {
-      assert.equal(locals.submission?.score, locals.expectedResult.submission_score);
+      assert.equal(locals.submission?.score, locals.expectedResult?.submission_score);
     });
     it('should be graded with expected correctness', function () {
-      assert.equal(locals.submission?.correct, locals.expectedResult.submission_correct);
+      assert.equal(locals.submission?.correct, locals.expectedResult?.submission_correct);
     });
   });
 }
 
-export function checkQuestionScore(locals: {
-  question: { id: string };
-  expectedResult: {
-    submission_score?: number;
-    submission_correct?: boolean;
-    instance_question_points: number;
-    instance_question_score_perc: number;
-    instance_question_auto_points?: number;
-    instance_question_manual_points?: number;
-  };
-
-  submission?: { score: number; correct: boolean };
-  instance_question?: {
-    points: number;
-    score_perc: number;
-    auto_points: number;
-    manual_points: number;
-  };
-}) {
+export function checkQuestionScore(locals: Record<string, any>) {
   describe('check question score', function () {
     it('should have the submission', async function () {
       if (_.has(locals.expectedResult, 'submission_score')) {
         const result = await sqldb.queryOneRowAsync(
           sql.select_last_submission_for_instance_question,
           {
-            instance_question_id: locals.question.id,
+            instance_question_id: locals.question?.id,
           },
         );
         locals.submission = result.rows[0];
@@ -398,23 +329,24 @@ export function checkQuestionScore(locals: {
     });
     it('should be graded with expected score', function () {
       if (_.has(locals.expectedResult, 'submission_score')) {
-        assert.equal(locals.submission?.score, locals.expectedResult.submission_score);
+        assert.equal(locals.submission?.score, locals.expectedResult?.submission_score);
       }
     });
     it('should be graded with expected correctness', function () {
       if (_.has(locals.expectedResult, 'submission_correct')) {
-        assert.equal(locals.submission?.correct, locals.expectedResult.submission_correct);
+        assert.equal(locals.submission?.correct, locals.expectedResult?.submission_correct);
       }
     });
 
     it('should still have the instance_question', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_instance_question, {
-        instance_question_id: locals.question.id,
+        instance_question_id: locals.question?.id,
       });
       locals.instance_question = result.rows[0];
     });
     it('should have the correct instance_question points', function () {
       assert(locals.instance_question);
+      assert(locals.expectedResult);
       assert.approximately(
         locals.instance_question?.points,
         locals.expectedResult.instance_question_points,
@@ -423,6 +355,7 @@ export function checkQuestionScore(locals: {
     });
     it('should have the correct instance_question score_perc', function () {
       assert(locals.instance_question);
+      assert(locals.expectedResult);
       assert.approximately(
         locals.instance_question?.score_perc,
         locals.expectedResult.instance_question_score_perc,
@@ -430,7 +363,7 @@ export function checkQuestionScore(locals: {
       );
     });
     it('should have the correct instance_question auto_points', function () {
-      if (typeof locals.expectedResult.instance_question_auto_points !== 'undefined') {
+      if (typeof locals.expectedResult?.instance_question_auto_points !== 'undefined') {
         assert(locals.instance_question);
         assert.approximately(
           locals.instance_question?.auto_points,
@@ -440,7 +373,7 @@ export function checkQuestionScore(locals: {
       }
     });
     it('should have the correct instance_question manual_points', function () {
-      if (typeof locals.expectedResult.instance_question_manual_points !== 'undefined') {
+      if (typeof locals.expectedResult?.instance_question_manual_points !== 'undefined') {
         assert(locals.instance_question);
         assert.approximately(
           locals.instance_question?.manual_points,
@@ -452,18 +385,17 @@ export function checkQuestionScore(locals: {
   });
 }
 
-export function checkAssessmentScore(locals: {
-  assessment_instance: { id: string; points: number; score_perc: number };
-  expectedResult: { assessment_instance_points: number; assessment_instance_score_perc: number };
-}) {
+export function checkAssessmentScore(locals: Record<string, any>) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {
-        assessment_instance_id: locals.assessment_instance.id,
+        assessment_instance_id: locals.assessment_instance?.id,
       });
       locals.assessment_instance = result.rows[0];
     });
     it('should have the correct assessment_instance points', function () {
+      assert(locals.assessment_instance);
+      assert(locals.expectedResult);
       assert.approximately(
         locals.assessment_instance.points,
         locals.expectedResult.assessment_instance_points,
@@ -471,6 +403,8 @@ export function checkAssessmentScore(locals: {
       );
     });
     it('should have the correct assessment_instance score_perc', function () {
+      assert(locals.assessment_instance);
+      assert(locals.expectedResult);
       assert.approximately(
         locals.assessment_instance.score_perc,
         locals.expectedResult.assessment_instance_score_perc,
@@ -480,12 +414,7 @@ export function checkAssessmentScore(locals: {
   });
 }
 
-export function checkQuestionFeedback(locals: {
-  assessment_instance: { id: string };
-  expectedFeedback: { qid: string; submission_id?: string; feedback: Record<string, any> };
-
-  question_feedback?: { feedback: Record<string, any> };
-}) {
+export function checkQuestionFeedback(locals: Record<string, any>) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_question_feedback, {
@@ -506,15 +435,7 @@ export function checkQuestionFeedback(locals: {
   });
 }
 
-export function regradeAssessment(locals: {
-  courseInstanceBaseUrl: string;
-  assessment_id: string;
-  __csrf_token: string;
-  instructorAssessmentRegradingUrl?: string;
-  $?: cheerio.CheerioAPI;
-  job_sequence_id?: string;
-  job_sequence?: { status: 'Running' | 'Success' };
-}) {
+export function regradeAssessment(locals: Record<string, any>) {
   describe('GET to instructorAssessmentRegrading URL', async function () {
     it('should succeed', async function () {
       locals.instructorAssessmentRegradingUrl =
@@ -552,16 +473,7 @@ export function regradeAssessment(locals: {
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals: {
-  courseInstanceBaseUrl: string;
-  assessment_id: string;
-  csvData: string | Uint8Array;
-  instructorAssessmentUploadsUrl?: string;
-  __csrf_token?: string;
-  $?: cheerio.CheerioAPI;
-  job_sequence_id?: string;
-  job_sequence?: { status: 'Running' | 'Success' };
-}) {
+export function uploadInstanceQuestionScores(locals: Record<string, any>) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -605,16 +517,7 @@ export function uploadInstanceQuestionScores(locals: {
   waitForJobSequence(locals);
 }
 
-export function uploadAssessmentInstanceScores(locals: {
-  courseInstanceBaseUrl: string;
-  assessment_id: string;
-  csvData: string | Uint8Array;
-  instructorAssessmentUploadsUrl?: string;
-  __csrf_token: string;
-  $?: cheerio.CheerioAPI;
-  job_sequence_id?: string;
-  job_sequence?: { status: 'Running' | 'Success' };
-}) {
+export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -658,20 +561,7 @@ export function uploadAssessmentInstanceScores(locals: {
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(
-  locals: {
-    questionBaseUrl: string;
-    isStudentPage: boolean;
-    question?: { id: string; type: 'Freeform' | 'Calculation' };
-    shouldHaveButtons?: ['grade', 'save', 'newVariant'];
-    postAction?: string;
-    $?: cheerio.CheerioAPI;
-    __csrf_token?: string;
-    job_sequence_id?: string;
-    job_sequence?: { status: 'Running' | 'Success' };
-  },
-  qid: string,
-) {
+export function autoTestQuestion(locals: Record<string, any>, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
