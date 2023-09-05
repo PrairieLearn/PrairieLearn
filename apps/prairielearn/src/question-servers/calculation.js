@@ -106,6 +106,7 @@ function questionFunctionExperiment(name, control, candidate) {
 
         if (errorsMismatched || dataMismatched) {
           logger.error('Experiment results did not match', {
+            name,
             controlError,
             controlResult,
             candidateError,
@@ -114,6 +115,7 @@ function questionFunctionExperiment(name, control, candidate) {
           Sentry.captureException(new Error('Experiment results did not match'), {
             contexts: {
               experiment: {
+                name,
                 control: observationPayload(controlError, controlResult),
                 candidate: observationPayload(candidateError, candidateResult),
               },

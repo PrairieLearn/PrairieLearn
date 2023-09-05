@@ -1,7 +1,7 @@
-const fetch = require('node-fetch');
-const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const { config } = require('../lib/config');
+import fetch, { RequestInit, Response } from 'node-fetch';
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import { config } from '../lib/config';
 
 /**
  * A wrapper around node-fetch that provides a few features:
@@ -14,7 +14,15 @@ const { config } = require('../lib/config');
  * options.headers = {cookie: 'pl_access_as_administrator=active'};
  * ```
  */
-module.exports.fetchCheerio = async (url, options = {}) => {
+export async function fetchCheerio(
+  url: string | URL,
+  options: RequestInit & { form?: Record<string, any> } = {},
+): Promise<
+  Omit<Response, 'text'> & {
+    text: () => string;
+    $: cheerio.CheerioAPI;
+  }
+> {
   if (options.form) {
     options.body = JSON.stringify(options.form);
     options.headers = {
@@ -25,117 +33,140 @@ module.exports.fetchCheerio = async (url, options = {}) => {
   }
   const response = await fetch(url, options);
   const text = await response.text();
-  response.$ = cheerio.load(text);
-  // response.text() can only be called once, which we already did.
-  // patch this so consumers can use it as normal.
-  response.text = () => text;
-  return response;
-};
+  // Create a new object with the same properties (via accessors) but additional/changed fields
+  return Object.create(response, {
+    // response.text() can only be called once, which we already did. A previous
+    // version of this code patched this so consumers can use it as "normal",
+    // but the new function was created as not async. This behaviour is kept for
+    // backwards compatibility.
+    text: { value: () => text },
+    $: { value: cheerio.load(text) },
+  });
+}
 
 /**
  * Utility function that extracts a CSRF token from a `__csrf_token` input
  * that is a descendent of the `parentSelector`, if one is specified.
  * The token will also be persisted to `context.__csrf_token`.
  */
-module.exports.extractAndSaveCSRFToken = (context, $, parentSelector = '') => {
+export function extractAndSaveCSRFToken(
+  context: Record<string, any>,
+  $: cheerio.CheerioAPI,
+  parentSelector = '',
+): string {
   const csrfTokenInput = $(`${parentSelector} input[name="__csrf_token"]`);
   assert.lengthOf(csrfTokenInput, 1);
   const csrfToken = csrfTokenInput.val();
   assert.isString(csrfToken);
   context.__csrf_token = csrfToken;
-  return csrfToken;
-};
+  return csrfToken as string;
+}
 
 /**
  * Utility function that extracts a CSRF token from a `__csrf_token` input
  * that is inside the data-content attribute of the parentSelector.
  * The token will also be persisted to `context.__csrf_token`.
  */
-module.exports.extractAndSaveCSRFTokenFromDataContent = (context, $, parentSelector) => {
+export function extractAndSaveCSRFTokenFromDataContent(
+  context: Record<string, any>,
+  $: cheerio.CheerioAPI,
+  parentSelector: string,
+): string {
   const parent = $(parentSelector);
   assert.lengthOf(parent, 1);
-  const inner$ = cheerio.load(parent[0].attribs['data-content']);
+  const content = parent.attr('data-content');
+  assert(content);
+  const inner$ = cheerio.load(content);
   const csrfTokenInput = inner$('input[name="__csrf_token"]');
   assert.lengthOf(csrfTokenInput, 1);
   const csrfToken = csrfTokenInput.val();
   assert.isString(csrfToken);
   context.__csrf_token = csrfToken;
-  return csrfToken;
-};
+  return csrfToken as string;
+}
 
 /**
  * Utility function that extracts a variant ID from a `__variant_id` input
  * that is a descendent of the `parentSelector`, if one is specified.
  * The token will also be persisted to `context.__variant_id`.
  */
-module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
+export function extractAndSaveVariantId(
+  context: Record<string, any>,
+  $: cheerio.CheerioAPI,
+  parentSelector = '',
+): string {
   const variantIdInput = $(`${parentSelector} input[name="__variant_id"]`);
   assert.lengthOf(variantIdInput, 1);
   const variantId = variantIdInput.val();
   assert.isString(variantId);
   context.__variant_id = variantId;
-  return variantId;
-};
+  return variantId as string;
+}
 
-/**
- * @typedef {Object} User
- * @property {string | null} authUid
- * @property {string | null} authName
- * @property {string | null} authUin
- */
+export interface User {
+  authUid: string | null;
+  authName: string | null;
+  authUin: string | null;
+}
 
 /**
  * Set the current user in the config.
- *
- * @param {User} user
  */
-module.exports.setUser = (user) => {
+export function setUser(user: User): void {
   config.authUid = user.authUid;
   config.authName = user.authName;
   config.authUin = user.authUin;
-};
+}
 
 /**
  * Get instance question id from URL params.
- *
- * @param {string} url
- * @returns number
  */
-module.exports.parseInstanceQuestionId = (url) => {
-  const iqId = parseInt(url.match(/instance_question\/(\d+)/)[1]);
+export function parseInstanceQuestionId(url: string): number {
+  const match = url.match(/instance_question\/(\d+)/);
+  assert(match);
+  const iqId = parseInt(match[1]);
   assert.isNumber(iqId);
   return iqId;
-};
+}
 
 /**
  * Acts as 'save' or 'save and grade' button click on student instance question page.
  *
- * @param {string} instanceQuestionUrl The instance question url the student is answering the question on.
- * @param {Record<string, any>} payload JSON data structure type formed on the basis of the question
- * @param {'save' | 'grade'} action The action to take
- * @param {{ name: string, contents: string }[]} [fileData] File data to submit to the question
+ * @param instanceQuestionUrl The instance question url the student is answering the question on.
+ * @param payload JSON data structure type formed on the basis of the question
+ * @param action The action to take
+ * @param [fileData] File data to submit to the question
  */
-module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
+export async function saveOrGrade(
+  instanceQuestionUrl: string,
+  payload: Record<string, string>,
+  action: 'save' | 'grade',
+  fileData: { name: string; contents: string }[] | null = null,
+): Promise<Response> {
   const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
   const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
   const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
   const fileUploadInputName = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
   const fileEditorInputName = $instanceQuestionPage('input[name^=_file_editor]').attr('name');
 
+  assert(typeof token === 'string');
+  assert(typeof variantId === 'string');
+
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
   if (payload && payload.postData) {
-    payload.postData = JSON.parse(payload.postData);
-    payload.postData.variant.id = variantId;
-    payload.postData = JSON.stringify(payload.postData);
+    const postData = JSON.parse(payload.postData);
+    postData.variant.id = variantId;
+    payload.postData = JSON.stringify(postData);
   }
 
   // Hacky: if this question is using `pl-file-editor` and not `pl-file-upload`,
   // assume a single file and massage `fileData` to match the expected format.
+  const fileDataRaw: Record<string, string> = {};
   if (fileData) {
-    if (fileEditorInputName && !fileUploadInputName) {
-      fileData = fileData[0].contents;
-    } else {
-      fileData = JSON.stringify(fileData);
+    if (fileUploadInputName) {
+      fileDataRaw[fileUploadInputName] = JSON.stringify(fileData);
+    } else if (fileEditorInputName) {
+      fileDataRaw[fileEditorInputName] = fileData[0].contents;
     }
   }
 
@@ -146,8 +177,8 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
       __variant_id: variantId,
       __action: action,
       __csrf_token: token,
-      ...(fileData ? { [fileUploadInputName ?? fileEditorInputName]: fileData } : {}),
+      ...fileDataRaw,
       ...payload,
     }).toString(),
   });
-};
+}
