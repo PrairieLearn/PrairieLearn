@@ -50,101 +50,113 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    if (locals.question.type === 'Calculation') {
-      it('should contain parsable question data if Calculation', function () {
-        const elemList = locals.$('.question-data');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'children.0.data');
-        assert.lengthOf(elemList[0].children, 1);
-        assert.property(elemList[0].children[0], 'data');
-        locals.questionData = JSON.parse(
-          decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
-        );
-      });
-      it('should have a variant_id in the questionData if Calculation', function () {
-        assert.nestedProperty(locals.questionData, 'variant.id');
-        locals.variant_id = locals.questionData.variant.id;
-      });
-    }
-    if (locals.question.type === 'Freeform') {
-      it('should have a variant_id input if Freeform with grade or save buttons', function () {
-        if (
-          !locals.shouldHaveButtons.includes('grade') &&
-          !locals.shouldHaveButtons.includes('save')
-        ) {
-          return;
-        }
-        const elemList = locals.$('.question-form input[name="__variant_id"]');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.variant_id = elemList[0].attribs.value;
-        locals.variant_id = Number.parseInt(locals.variant_id);
-      });
-    }
-    if (locals.shouldHaveButtons.includes('grade') || locals.shouldHaveButtons.includes('save')) {
-      it('should have the variant in the DB if has grade or save button', async function () {
-        const result = await sqldb.queryOneRowAsync(sql.select_variant, {
-          variant_id: locals.variant_id,
-        });
-        locals.variant = result.rows[0];
-      });
-      if (locals.isStudentPage) {
-        it('should have the correct variant.instance_question.id if has grade or save button and is student page', function () {
-          assert.equal(locals.variant.instance_question_id, locals.question.id);
-        });
-      } else {
-        it('should have the correct variant.question.id if has grade or save button and is instructor page', function () {
-          if (locals.isStudentPage) return;
-          assert.equal(locals.variant.question_id, locals.question.id);
-        });
+    it('should contain parsable question data if Calculation', function () {
+      if (locals.question.type !== 'Calculation') return;
+      const elemList = locals.$('.question-data');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'children.0.data');
+      assert.lengthOf(elemList[0].children, 1);
+      assert.property(elemList[0].children[0], 'data');
+      locals.questionData = JSON.parse(
+        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
+      );
+    });
+    it('should have a variant_id in the questionData if Calculation', function () {
+      if (locals.question.type !== 'Calculation') return;
+      assert.nestedProperty(locals.questionData, 'variant.id');
+      locals.variant_id = locals.questionData.variant.id;
+    });
+    it('should have a variant_id input if Freeform with grade or save buttons', function () {
+      if (locals.question.type !== 'Freeform') return;
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
       }
-
-      if (locals.question.type === 'Freeform') {
-        it('should not be a broken variant if Freeform with grade or save button', function () {
-          assert.equal(locals.variant.broken, false);
-        });
+      const elemList = locals.$('.question-form input[name="__variant_id"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.variant_id = elemList[0].attribs.value;
+      locals.variant_id = Number.parseInt(locals.variant_id);
+    });
+    it('should have the variant in the DB if has grade or save button', async function () {
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
       }
-
-      it('should have a CSRF token if has grade or save button', function () {
-        const elemList = locals.$('.question-form input[name="__csrf_token"]');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
+      const result = await sqldb.queryOneRowAsync(sql.select_variant, {
+        variant_id: locals.variant_id,
       });
-    }
+      locals.variant = result.rows[0];
+    });
+    it('should have the correct variant.instance_question.id if has grade or save button and is student page', function () {
+      if (!locals.isStudentPage) return;
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
+      }
+      assert.equal(locals.variant.instance_question_id, locals.question.id);
+    });
+    it('should have the correct variant.question.id if has grade or save button and is instructor page', function () {
+      if (locals.isStudentPage) return;
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
+      }
+      assert.equal(locals.variant.question_id, locals.question.id);
+    });
+
+    it('should not be a broken variant if Freeform with grade or save button', function () {
+      if (locals.question.type !== 'Freeform') return;
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
+      }
+      assert.equal(locals.variant.broken, false);
+    });
+
+    it('should have a CSRF token if has grade or save button', function () {
+      if (
+        !locals.shouldHaveButtons.includes('grade') &&
+        !locals.shouldHaveButtons.includes('save')
+      ) {
+        return;
+      }
+      const elemList = locals.$('.question-form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
     it('should have or not have grade button', function () {
-      if (locals.question.type === 'Freeform') {
-        const elemList = locals.$('button[name="__action"][value="grade"]');
-        if (locals.shouldHaveButtons.includes('grade')) {
-          assert.lengthOf(elemList, 1);
-        } else {
-          assert.lengthOf(elemList, 0);
-        }
+      const elemList =
+        locals.question.type === 'Freeform'
+          ? locals.$('button[name="__action"][value="grade"]')
+          : locals.$('button.question-grade');
+      if (locals.shouldHaveButtons.includes('grade')) {
+        assert.lengthOf(elemList, 1);
       } else {
-        const elemList = locals.$('button.question-grade');
-        if (locals.shouldHaveButtons.includes('grade')) {
-          assert.lengthOf(elemList, 1);
-        } else {
-          assert.lengthOf(elemList, 0);
-        }
+        assert.lengthOf(elemList, 0);
       }
     });
     it('should have or not have save button', function () {
-      if (locals.question.type === 'Freeform') {
-        const elemList = locals.$('button[name="__action"][value="save"]');
-        if (locals.shouldHaveButtons.includes('save')) {
-          assert.lengthOf(elemList, 1);
-        } else {
-          assert.lengthOf(elemList, 0);
-        }
+      const elemList =
+        locals.question.type === 'Freeform'
+          ? locals.$('button[name="__action"][value="save"]')
+          : locals.$('button.question-save');
+      if (locals.shouldHaveButtons.includes('save')) {
+        assert.lengthOf(elemList, 1);
       } else {
-        const elemList = locals.$('button.question-save');
-        if (locals.shouldHaveButtons.includes('save')) {
-          assert.lengthOf(elemList, 1);
-        } else {
-          assert.lengthOf(elemList, 0);
-        }
+        assert.lengthOf(elemList, 0);
       }
     });
     it('should have or not have newVariant button', function () {
@@ -214,24 +226,26 @@ export function postInstanceQuestion(locals) {
     it('should have the correct submission.variant_id', function () {
       assert.equal(locals.submission.variant_id, locals.variant.id);
     });
-    if (locals.question.type === 'Freeform') {
-      it('should not be broken if Freeform', function () {
+    it('should not be broken if Freeform', function () {
+      if (locals.question.type === 'Freeform') {
         assert.equal(locals.submission.broken, false);
-      });
-    }
-    if (locals.isStudentPage) {
-      it('should select the assessment_instance duration from the DB if student page', async function () {
+      }
+    });
+    it('should select the assessment_instance duration from the DB if student page', async function () {
+      if (locals.isStudentPage) {
         const result = await sqldb.queryAsync(sql.select_assessment_instance_durations, []);
         assert.equal(result.rowCount, 1);
         locals.assessment_instance_duration = result.rows[0].duration;
-      });
-      it('should have the correct assessment_instance duration if student page', function () {
+      }
+    });
+    it('should have the correct assessment_instance duration if student page', function () {
+      if (locals.isStudentPage) {
         const min_duration = (locals.preEndTime - locals.postStartTime) / 1000;
         const max_duration = (locals.postEndTime - locals.preStartTime) / 1000;
         assert.isAbove(locals.assessment_instance_duration, min_duration);
         assert.isBelow(locals.assessment_instance_duration, max_duration);
-      });
-    }
+      }
+    });
   });
 }
 
@@ -291,8 +305,8 @@ export function checkSubmissionScore(locals: LocalsQuestion) {
 
 export function checkQuestionScore(locals: LocalsQuestion) {
   describe('check question score', function () {
-    if (_.has(locals.expectedResult, 'submission_score')) {
-      it('should have the submission', async function () {
+    it('should have the submission', async function () {
+      if (_.has(locals.expectedResult, 'submission_score')) {
         const result = await sqldb.queryOneRowAsync(
           sql.select_last_submission_for_instance_question,
           {
@@ -300,14 +314,19 @@ export function checkQuestionScore(locals: LocalsQuestion) {
           },
         );
         locals.submission = result.rows[0];
-      });
-      it('should be graded with expected score', function () {
+      }
+    });
+    it('should be graded with expected score', function () {
+      if (_.has(locals.expectedResult, 'submission_score')) {
         assert.equal(locals.submission.score, locals.expectedResult.submission_score);
-      });
-      it('should be graded with expected correctness', function () {
+      }
+    });
+    it('should be graded with expected correctness', function () {
+      if (_.has(locals.expectedResult, 'submission_score')) {
         assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
-      });
-    }
+      }
+    });
+
     it('should still have the instance_question', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_instance_question, {
         instance_question_id: locals.question.id,
@@ -328,24 +347,24 @@ export function checkQuestionScore(locals: LocalsQuestion) {
         1e-6,
       );
     });
-    if (_.has(locals.expectedResult, 'instance_question_auto_points')) {
-      it('should have the correct instance_question auto_points', function () {
+    it('should have the correct instance_question auto_points', function () {
+      if (_.has(locals.expectedResult, 'instance_question_auto_points')) {
         assert.approximately(
           locals.instance_question.auto_points,
           locals.expectedResult.instance_question_auto_points,
           1e-6,
         );
-      });
-    }
-    if (_.has(locals.expectedResult, 'instance_question_manual_points')) {
-      it('should have the correct instance_question manual_points', function () {
+      }
+    });
+    it('should have the correct instance_question manual_points', function () {
+      if (_.has(locals.expectedResult, 'instance_question_manual_points')) {
         assert.approximately(
           locals.instance_question.manual_points,
           locals.expectedResult.instance_question_manual_points,
           1e-6,
         );
-      });
-    }
+      }
+    });
   });
 }
 
