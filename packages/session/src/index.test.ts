@@ -192,6 +192,7 @@ describe('session middleware', () => {
       const insecureRes = await fetch(url, {
         headers: {
           'X-Forwarded-Host': 'subdomain.example.com',
+          'X-Forwarded-Proto': 'http',
         },
       });
       assert.equal(insecureRes.status, 200);
@@ -206,6 +207,7 @@ describe('session middleware', () => {
       const secureRes = await fetch(url, {
         headers: {
           'X-Forwarded-Host': 'example.com',
+          'X-Forwarded-Proto': 'https',
         },
       });
       assert.equal(secureRes.status, 200);
@@ -250,10 +252,7 @@ describe('session middleware', () => {
     const app = express();
     app.use(
       createSessionMiddleware({
-        store: new MemoryStore({
-          // TODO: is the delay actually useful?
-          delay: 50,
-        }),
+        store: new MemoryStore(),
         secret: TEST_SECRET,
       }),
     );

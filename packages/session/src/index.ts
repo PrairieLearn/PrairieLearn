@@ -64,14 +64,11 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
-      // TODO: `express-session` uses `req.session.cookie` to determine if it
-      // should be secure or not. Should we do the same?
-      if (options.cookie?.secure === true && req.protocol !== 'https') {
+      const secureCookie = shouldSecureCookie(req, options.cookie?.secure ?? 'auto');
+      if (secureCookie && req.protocol !== 'https') {
         // Avoid sending cookie over insecure connection.
         return;
       }
-
-      // TODO: only write the cookie if something about the cookie changed, e.g. the expiration date.
 
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
@@ -79,7 +76,7 @@ export function createSessionMiddleware(options: SessionOptions) {
       if (canSetCookie && (isNewSession || didExpirationChange)) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
         res.cookie(cookieName, signedSessionId, {
-          secure: shouldSecureCookie(req, options.cookie?.secure ?? 'auto'),
+          secure: secureCookie,
           httpOnly: options.cookie?.httpOnly ?? true,
           sameSite: options.cookie?.sameSite ?? false,
           expires: req.session.getExpirationDate(),
@@ -98,9 +95,8 @@ export function createSessionMiddleware(options: SessionOptions) {
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
       if (
-        (canSetCookie && !isExistingSession) ||
-        (isExistingSession && hashChanged) ||
-        (canSetCookie && didExpirationChange)
+        (hashChanged && isExistingSession) ||
+        (canSetCookie && (!isExistingSession || didExpirationChange))
       ) {
         // Only update the expiration date in the store if we were actually
         // able to update the cookie too.
