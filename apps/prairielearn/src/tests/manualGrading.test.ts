@@ -14,18 +14,15 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const defaultUser = {
+const defaultUser: User = {
   authUid: config.authUid,
   authName: config.authName,
   authUin: config.authUin,
 };
 
-interface MockUser {
-  authUid: string;
-  authName: string;
-  authUin: string;
+type MockUser = User & {
   user_id?: string;
-}
+};
 
 interface RubricItem {
   id?: string;

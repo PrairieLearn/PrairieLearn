@@ -814,9 +814,10 @@ def generate(data):
 | `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
 | `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
+| `show-score`          | boolean                         | true     | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `show-placeholder`    | boolean                         | true     | Show the placeholder text that shows the default comparison.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `placeholder`         | string                          | -        | Custom placeholder text. By default, the placeholder text shown is the default comparison. comparison.                                                                                                                                                                                                                                                                                                                                                                                  |
 | `size`                | integer                         | 35       | Size of the input box.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `show-correct-answer` | boolean                         | true     | Whether to show the correct answer in the submitted answers panel.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `allow-fractions`     | boolean                         | true     | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -875,6 +876,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) |
 | `format`              | "code" or "default"                             | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                                                                           |
 | `code-language`       | string                                          | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                                                                                |
+| `inline`              | boolean                                         | false                          | `false` sets the blocks to be stacked vertically whereas `true` requires blocks to be placed horizontally.                                                                                                                                                                                                                                                                                                                                                     |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -1899,20 +1901,44 @@ Printing Pandas DataFrames with this element is deprecated. Please use the new [
 
 ### `pl-template` element
 
-Displays boilerplate HTML from templates in a reusable way.
+Displays boilerplate HTML from mustache templates in a reusable way.
 
 #### Sample element
 
 ```html
-<pl-template file-name="outer_template.mustache" subdirectory="templates">
-  <pl-variable name="is-open">True</pl-variable>
-  <pl-variable
-    name="problem-statement"
-    directory="question"
-    file-name="serverFilesQuestion/statement.html"
-  ></pl-variable>
+<pl-template file-name="templates/outer_template.mustache">
+  <pl-variable name="show">True</pl-variable>
+  <pl-variable name="section_header">This is the section header.</pl-variable>
+  <pl-variable name="section_body">This is the section body.</pl-variable>
 </pl-template>
 ```
+
+Along with the sample usage of the element, we include a sample template file. This is the file
+`templates/outer_template.mustache`, stored in the course's `serverFilesCourse` directory:
+
+```html
+<div class="card mb-1 mt-1">
+  <div class="card-header" style="cursor: pointer">
+    <div
+      class="card-title d-flex justify-content-between"
+      data-toggle="collapse"
+      data-target="#collapse-{{uuid}}"
+    >
+      <div>{{section_header}}</div>
+      <div class="fa fa-angle-down"></div>
+    </div>
+  </div>
+
+  <div class="collapse{{#show}} show{{/show}}" id="collapse-{{uuid}}">
+    <div class="card-body">
+      <div class="card-text">{{{section_body}}}</div>
+    </div>
+  </div>
+</div>
+```
+
+_Note:_ The sample element did not define the `uuid` variable, as each `pl-template` element
+has a unique one defined internally.
 
 #### Customizations
 

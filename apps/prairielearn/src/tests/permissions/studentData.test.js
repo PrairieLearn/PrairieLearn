@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');
@@ -19,7 +18,7 @@ describe('student data access', function () {
   context.userIdStudent = 2;
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     let result = await sqldb.queryOneRowAsync(sql.select_homework1, []);
     context.homeworkAssessmentId = result.rows[0].id;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;

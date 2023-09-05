@@ -5,7 +5,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');
-const util = require('util');
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
@@ -1108,7 +1107,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       overwrite: true,
     });
 
-    await util.promisify(helperServer.before(tempTestCourseDir.path).bind(this))();
+    await helperServer.before(tempTestCourseDir.path).call(this);
 
     // Find the ID of an assessment that has group roles
     const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -1124,7 +1123,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     } catch (err) {
       console.error(err);
     }
-    await util.promisify(helperServer.after.bind(this))();
+    await helperServer.after.call(this);
   });
 
   after('unset authenticated user', function () {
