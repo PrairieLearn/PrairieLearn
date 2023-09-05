@@ -1,5 +1,4 @@
-// @ts-check
-import { createTemplate, dropTemplate } from './helperDb.js';
+import { createTemplate, dropTemplate } from './helperDb';
 
 export async function mochaGlobalSetup() {
   // Create a global instance of our template database, dropping the existing

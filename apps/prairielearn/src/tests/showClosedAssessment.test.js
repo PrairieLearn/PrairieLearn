@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
@@ -27,7 +26,7 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
   };
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
