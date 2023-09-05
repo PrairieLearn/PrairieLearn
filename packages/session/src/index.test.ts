@@ -174,6 +174,51 @@ describe('session middleware', () => {
     });
   });
 
+  it('sets secure cookie based on a function', async () => {
+    const app = express();
+    app.enable('trust proxy');
+    app.use(
+      createSessionMiddleware({
+        secret: TEST_SECRET,
+        store: new MemoryStore(),
+        cookie: {
+          secure: (req) => req.hostname === 'example.com',
+        },
+      }),
+    );
+    app.get('/', (_req, res) => res.sendStatus(200));
+
+    await withServer(app, async ({ url }) => {
+      const insecureRes = await fetch(url, {
+        headers: {
+          'X-Forwarded-Host': 'subdomain.example.com',
+        },
+      });
+      assert.equal(insecureRes.status, 200);
+
+      const insecureHeader = insecureRes.headers.get('set-cookie');
+      const insecureCookie = parseSetCookie(insecureHeader ?? '');
+      assert.equal(insecureCookie.length, 1);
+      assert.equal(insecureCookie[0].name, 'session');
+      assert.equal(insecureCookie[0].path, '/');
+      assert.isUndefined(insecureCookie[0].secure);
+
+      const secureRes = await fetch(url, {
+        headers: {
+          'X-Forwarded-Host': 'example.com',
+        },
+      });
+      assert.equal(secureRes.status, 200);
+
+      const secureHeader = secureRes.headers.get('set-cookie');
+      const secureCookies = parseSetCookie(secureHeader ?? '');
+      assert.equal(secureCookies.length, 1);
+      assert.equal(secureCookies[0].name, 'session');
+      assert.equal(secureCookies[0].path, '/');
+      assert.isTrue(secureCookies[0].secure);
+    });
+  });
+
   it('persists session data across requests', async () => {
     const app = express();
     app.use(
