@@ -1,35 +1,27 @@
-// @ts-check
-const session = require('express-session');
-const util = require('util');
+import session = require('express-session');
+import util = require('util');
+import sqldb = require('@prairielearn/postgres');
 
-const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- * @typedef {Object} SessionStoreOptions
- * @property {number} [expireSeconds]
- */
+interface SessionStoreOptions {
+  expireSeconds?: number;
+}
 
 /**
  * A {@link session.Store} implementation that uses the PrairieLearn
  * Postgres database as a session store.
  */
 class SessionStore extends session.Store {
-  /**
-   * @param {SessionStoreOptions} options
-   */
-  constructor(options = {}) {
+  private expireSeconds: number;
+
+  constructor(options: SessionStoreOptions = {}) {
     super();
 
-    /** @type {number} */
     this.expireSeconds = options.expireSeconds || 86400;
   }
 
-  /**
-   * @param {string} sid
-   * @param {import('express-session').SessionData} session
-   */
-  async setAsync(sid, session) {
+  async setAsync(sid: string, session: session.SessionData) {
     await sqldb.queryOneRowAsync(sql.upsert, {
       sid,
       session: JSON.stringify(session),
@@ -37,10 +29,7 @@ class SessionStore extends session.Store {
   }
   set = util.callbackify(this.setAsync).bind(this);
 
-  /**
-   * @param {string} sid
-   */
-  async getAsync(sid) {
+  async getAsync(sid: string): Promise<session.SessionData> {
     const results = await sqldb.queryZeroOrOneRowAsync(sql.get, {
       sid,
       expirationInSeconds: this.expireSeconds,
@@ -49,25 +38,17 @@ class SessionStore extends session.Store {
   }
   get = util.callbackify(this.getAsync).bind(this);
 
-  /**
-   * @param {string} sid
-   */
-  async destroyAsync(sid) {
+  async destroyAsync(sid: string) {
     await sqldb.queryZeroOrOneRowAsync(sql.destroy, { sid });
   }
   destroy = util.callbackify(this.destroyAsync).bind(this);
 
-  /**
-   * @param {string} sid
-   * @param {import('express-session').SessionData} session
-   * @param {() => void} callback
-   */
-  touch = (sid, session, callback) => {
+  touch = (sid: string, session: session.SessionData, callback: any) => {
     // Does the same thing as set() in our implementation
     this.set(sid, session, callback);
   };
 
-  async lengthAsync() {
+  async lengthAsync(): Promise<number> {
     const result = await sqldb.queryOneRowAsync(sql.length, {
       expirationInSeconds: this.expireSeconds,
     });
@@ -80,7 +61,7 @@ class SessionStore extends session.Store {
   }
   clear = util.callbackify(this.clearAsync).bind(this);
 
-  async allAsync() {
+  async allAsync(): Promise<session.SessionData[]> {
     const result = await sqldb.queryAsync(sql.all_sessions, {
       expirationInSeconds: this.expireSeconds,
     });
