@@ -126,7 +126,7 @@ instrumentations.forEach((i) => {
 let tracerProvider: NodeTracerProvider | null;
 
 export interface OpenTelemetryConfigEnabled {
-  openTelemetryEnabled: boolean;
+  openTelemetryEnabled: true;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
