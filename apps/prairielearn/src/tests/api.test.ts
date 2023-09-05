@@ -1,15 +1,13 @@
-// @ts-check
-const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const fetch = require('node-fetch').default;
-const { URLSearchParams } = require('url');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import { step } from 'mocha-steps';
 
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
@@ -49,11 +47,9 @@ describe('API', function () {
   });
 
   describe('settings page', function () {
-    let settingsUrl;
-
     it('loads successfully', async function () {
-      settingsUrl = locals.baseUrl + '/settings';
-      const res = await fetch(settingsUrl);
+      locals.settingsUrl = locals.baseUrl + '/settings';
+      const res = await fetch(locals.settingsUrl);
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
@@ -90,7 +86,7 @@ describe('API', function () {
     });
 
     it('generates a token', async function () {
-      const res = await fetch(settingsUrl, {
+      const res = await fetch(locals.settingsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: locals.__action,
@@ -111,6 +107,13 @@ describe('API', function () {
       assert.ok(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token),
       );
+    });
+
+    it('settings page does not show token again after reloading', async function () {
+      const res = await fetch(locals.settingsUrl);
+      assert.isTrue(res.ok);
+      const pageContent = await res.text();
+      assert.isFalse(pageContent.includes(locals.api_token));
     });
   });
 
