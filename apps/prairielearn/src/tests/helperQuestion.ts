@@ -10,10 +10,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-// TODO Do something more specific
-export type LocalsQuestion = Record<string, any>;
-
-export function waitForJobSequence(locals: LocalsQuestion) {
+export function waitForJobSequence(locals: {
+  job_sequence_id?: string;
+  job_sequence?: { status: 'Running' | 'Success' };
+}) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
@@ -26,9 +26,11 @@ export function waitForJobSequence(locals: LocalsQuestion) {
           job_sequence_id: locals.job_sequence_id,
         });
         locals.job_sequence = result.rows[0];
+        assert(locals.job_sequence);
       } while (locals.job_sequence.status === 'Running');
     });
     it('should be successful', async () => {
+      assert(locals.job_sequence);
       if (locals.job_sequence.status !== 'Success') {
         console.log(locals.job_sequence);
         const params = { job_sequence_id: locals.job_sequence_id };
@@ -40,7 +42,19 @@ export function waitForJobSequence(locals: LocalsQuestion) {
   });
 }
 
-export function getInstanceQuestion(locals: LocalsQuestion) {
+export function getInstanceQuestion(locals: {
+  questionBaseUrl: string;
+  questionPreviewTabUrl?: string;
+  question: { id: string; type: 'Calculation' | 'Freeform' };
+  shouldHaveButtons: ('save' | 'grade' | 'newVariant' | 'tryAgain')[];
+  isStudentPage: boolean;
+
+  questionData?: { variant: { id: string } };
+  variant_id?: string;
+  $?: cheerio.CheerioAPI;
+  variant?: { id: string; instance_question_id: string; question_id: string; broken: false };
+  __csrf_token?: string;
+}) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       const questionUrl =
@@ -52,19 +66,18 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
     });
     it('should contain parsable question data if Calculation', function () {
       if (locals.question.type !== 'Calculation') return;
+      assert(locals.$);
       const elemList = locals.$('.question-data');
       assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'children.0.data');
-      assert.lengthOf(elemList[0].children, 1);
-      assert.property(elemList[0].children[0], 'data');
+      assert(elemList.text());
       locals.questionData = JSON.parse(
-        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
+        decodeURIComponent(Buffer.from(elemList.text(), 'base64').toString()),
       );
     });
     it('should have a variant_id in the questionData if Calculation', function () {
       if (locals.question.type !== 'Calculation') return;
       assert.nestedProperty(locals.questionData, 'variant.id');
-      locals.variant_id = locals.questionData.variant.id;
+      locals.variant_id = locals.questionData?.variant.id;
     });
     it('should have a variant_id input if Freeform with grade or save buttons', function () {
       if (locals.question.type !== 'Freeform') return;
@@ -74,11 +87,11 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       ) {
         return;
       }
+      assert(locals.$);
       const elemList = locals.$('.question-form input[name="__variant_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.variant_id = elemList[0].attribs.value;
-      locals.variant_id = Number.parseInt(locals.variant_id);
     });
     it('should have the variant in the DB if has grade or save button', async function () {
       if (
@@ -100,7 +113,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       ) {
         return;
       }
-      assert.equal(locals.variant.instance_question_id, locals.question.id);
+      assert.equal(locals.variant?.instance_question_id, locals.question.id);
     });
     it('should have the correct variant.question.id if has grade or save button and is instructor page', function () {
       if (locals.isStudentPage) return;
@@ -110,7 +123,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       ) {
         return;
       }
-      assert.equal(locals.variant.question_id, locals.question.id);
+      assert.equal(locals.variant?.question_id, locals.question.id);
     });
 
     it('should not be a broken variant if Freeform with grade or save button', function () {
@@ -121,7 +134,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       ) {
         return;
       }
-      assert.equal(locals.variant.broken, false);
+      assert.equal(locals.variant?.broken, false);
     });
 
     it('should have a CSRF token if has grade or save button', function () {
@@ -131,6 +144,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       ) {
         return;
       }
+      assert(locals.$);
       const elemList = locals.$('.question-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -138,6 +152,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       assert.isString(locals.__csrf_token);
     });
     it('should have or not have grade button', function () {
+      assert(locals.$);
       const elemList =
         locals.question.type === 'Freeform'
           ? locals.$('button[name="__action"][value="grade"]')
@@ -149,6 +164,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       }
     });
     it('should have or not have save button', function () {
+      assert(locals.$);
       const elemList =
         locals.question.type === 'Freeform'
           ? locals.$('button[name="__action"][value="save"]')
@@ -160,6 +176,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       }
     });
     it('should have or not have newVariant button', function () {
+      assert(locals.$);
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
@@ -168,6 +185,7 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
       }
     });
     it('should have or not have tryAgain button', function () {
+      assert(locals.$);
       const elemList = locals.$('a:contains(Try a new variant)');
       if (locals.shouldHaveButtons.includes('tryAgain')) {
         assert.lengthOf(elemList, 1);
@@ -178,7 +196,29 @@ export function getInstanceQuestion(locals: LocalsQuestion) {
   });
 }
 
-export function postInstanceQuestion(locals) {
+export function postInstanceQuestion(locals: {
+  questionBaseUrl: string;
+  questionPreviewTabUrl: string;
+  getSubmittedAnswer: (variant: {
+    id: string;
+    true_answer: Record<string, any>;
+  }) => Record<string, any>;
+  variant: { id: string; true_answer: Record<string, any> };
+  postAction: string;
+  question: { id: string; type: 'Calculation' | 'Freeform' };
+  __csrf_token: string;
+  isStudentPage: boolean;
+  assessment_instance_duration: number;
+  preStartTime: number;
+  postStartTime: number;
+
+  submittedAnswer?: Record<string, any>;
+  preEndTime?: number;
+  postEndTime?: number;
+  submission: { variant_id: string; broken: boolean };
+
+  $?: cheerio.CheerioAPI;
+}) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
@@ -240,6 +280,8 @@ export function postInstanceQuestion(locals) {
     });
     it('should have the correct assessment_instance duration if student page', function () {
       if (locals.isStudentPage) {
+        assert(locals.preEndTime);
+        assert(locals.postEndTime);
         const min_duration = (locals.preEndTime - locals.postStartTime) / 1000;
         const max_duration = (locals.postEndTime - locals.preStartTime) / 1000;
         assert.isAbove(locals.assessment_instance_duration, min_duration);
@@ -249,7 +291,20 @@ export function postInstanceQuestion(locals) {
   });
 }
 
-export function postInstanceQuestionAndFail(locals: LocalsQuestion) {
+export function postInstanceQuestionAndFail(locals: {
+  getSubmittedAnswer: (variant: {
+    id: string;
+    true_answer: Record<string, any>;
+  }) => Record<string, any>;
+  variant: { id: string; true_answer: Record<string, any> };
+  question: { id: string; type: 'Freeform' | 'Calculation' };
+  postAction: string;
+  __csrf_token: string;
+  questionBaseUrl: string;
+  questionPreviewTabUrl?: string;
+
+  submittedAnswer?: Record<string, any>;
+}) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
@@ -286,7 +341,13 @@ export function postInstanceQuestionAndFail(locals: LocalsQuestion) {
   });
 }
 
-export function checkSubmissionScore(locals: LocalsQuestion) {
+export function checkSubmissionScore(locals: {
+  question: {
+    id: string;
+  };
+  expectedResult: { submission_score: number; submission_correct: boolean };
+  submission?: { score: number; correct: boolean };
+}) {
   describe('check submission score', function () {
     it('should have the submission', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_submission_for_question, {
@@ -295,15 +356,33 @@ export function checkSubmissionScore(locals: LocalsQuestion) {
       locals.submission = result.rows[0];
     });
     it('should be graded with expected score', function () {
-      assert.equal(locals.submission.score, locals.expectedResult.submission_score);
+      assert.equal(locals.submission?.score, locals.expectedResult.submission_score);
     });
     it('should be graded with expected correctness', function () {
-      assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
+      assert.equal(locals.submission?.correct, locals.expectedResult.submission_correct);
     });
   });
 }
 
-export function checkQuestionScore(locals: LocalsQuestion) {
+export function checkQuestionScore(locals: {
+  question: { id: string };
+  expectedResult: {
+    submission_score?: number;
+    submission_correct?: boolean;
+    instance_question_points: number;
+    instance_question_score_perc: number;
+    instance_question_auto_points?: number;
+    instance_question_manual_points?: number;
+  };
+
+  submission?: { score: number; correct: boolean };
+  instance_question?: {
+    points: number;
+    score_perc: number;
+    auto_points: number;
+    manual_points: number;
+  };
+}) {
   describe('check question score', function () {
     it('should have the submission', async function () {
       if (_.has(locals.expectedResult, 'submission_score')) {
@@ -318,12 +397,12 @@ export function checkQuestionScore(locals: LocalsQuestion) {
     });
     it('should be graded with expected score', function () {
       if (_.has(locals.expectedResult, 'submission_score')) {
-        assert.equal(locals.submission.score, locals.expectedResult.submission_score);
+        assert.equal(locals.submission?.score, locals.expectedResult.submission_score);
       }
     });
     it('should be graded with expected correctness', function () {
-      if (_.has(locals.expectedResult, 'submission_score')) {
-        assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
+      if (_.has(locals.expectedResult, 'submission_correct')) {
+        assert.equal(locals.submission?.correct, locals.expectedResult.submission_correct);
       }
     });
 
@@ -334,32 +413,36 @@ export function checkQuestionScore(locals: LocalsQuestion) {
       locals.instance_question = result.rows[0];
     });
     it('should have the correct instance_question points', function () {
+      assert(locals.instance_question);
       assert.approximately(
-        locals.instance_question.points,
+        locals.instance_question?.points,
         locals.expectedResult.instance_question_points,
         1e-6,
       );
     });
     it('should have the correct instance_question score_perc', function () {
+      assert(locals.instance_question);
       assert.approximately(
-        locals.instance_question.score_perc,
+        locals.instance_question?.score_perc,
         locals.expectedResult.instance_question_score_perc,
         1e-6,
       );
     });
     it('should have the correct instance_question auto_points', function () {
-      if (_.has(locals.expectedResult, 'instance_question_auto_points')) {
+      if (typeof locals.expectedResult.instance_question_auto_points !== 'undefined') {
+        assert(locals.instance_question);
         assert.approximately(
-          locals.instance_question.auto_points,
+          locals.instance_question?.auto_points,
           locals.expectedResult.instance_question_auto_points,
           1e-6,
         );
       }
     });
     it('should have the correct instance_question manual_points', function () {
-      if (_.has(locals.expectedResult, 'instance_question_manual_points')) {
+      if (typeof locals.expectedResult.instance_question_manual_points !== 'undefined') {
+        assert(locals.instance_question);
         assert.approximately(
-          locals.instance_question.manual_points,
+          locals.instance_question?.manual_points,
           locals.expectedResult.instance_question_manual_points,
           1e-6,
         );
@@ -368,7 +451,10 @@ export function checkQuestionScore(locals: LocalsQuestion) {
   });
 }
 
-export function checkAssessmentScore(locals: LocalsQuestion) {
+export function checkAssessmentScore(locals: {
+  assessment_instance: { id: string; points: number; score_perc: number };
+  expectedResult: { assessment_instance_points: number; assessment_instance_score_perc: number };
+}) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {
@@ -393,7 +479,12 @@ export function checkAssessmentScore(locals: LocalsQuestion) {
   });
 }
 
-export function checkQuestionFeedback(locals: LocalsQuestion) {
+export function checkQuestionFeedback(locals: {
+  assessment_instance: { id: string };
+  expectedFeedback: { qid: string; submission_id?: string; feedback: Record<string, any> };
+
+  question_feedback?: { feedback: Record<string, any> };
+}) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_question_feedback, {
@@ -405,13 +496,24 @@ export function checkQuestionFeedback(locals: LocalsQuestion) {
     });
     it('should have the correct feedback', function () {
       for (const p in locals.expectedFeedback.feedback) {
-        assert.deepEqual(locals.question_feedback.feedback[p], locals.expectedFeedback.feedback[p]);
+        assert.deepEqual(
+          locals.question_feedback?.feedback[p],
+          locals.expectedFeedback.feedback[p],
+        );
       }
     });
   });
 }
 
-export function regradeAssessment(locals: LocalsQuestion) {
+export function regradeAssessment(locals: {
+  courseInstanceBaseUrl: string;
+  assessment_id: string;
+  __csrf_token: string;
+  instructorAssessmentRegradingUrl?: string;
+  $?: cheerio.CheerioAPI;
+  job_sequence_id?: string;
+  job_sequence?: { status: 'Running' | 'Success' };
+}) {
   describe('GET to instructorAssessmentRegrading URL', async function () {
     it('should succeed', async function () {
       locals.instructorAssessmentRegradingUrl =
@@ -425,6 +527,7 @@ export function regradeAssessment(locals: LocalsQuestion) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
+      assert(locals.$);
       const elemList = locals.$('form[name="regrade-all-form"] input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -434,6 +537,7 @@ export function regradeAssessment(locals: LocalsQuestion) {
   });
   describe('POST to instructorAssessmentRegrading URL for regrading', function () {
     it('should succeed', async function () {
+      assert(locals.instructorAssessmentRegradingUrl);
       const response = await fetch(locals.instructorAssessmentRegradingUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -447,7 +551,16 @@ export function regradeAssessment(locals: LocalsQuestion) {
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals) {
+export function uploadInstanceQuestionScores(locals: {
+  courseInstanceBaseUrl: string;
+  assessment_id: string;
+  csvData: string | Uint8Array;
+  instructorAssessmentUploadsUrl?: string;
+  __csrf_token?: string;
+  $?: cheerio.CheerioAPI;
+  job_sequence_id?: string;
+  job_sequence?: { status: 'Running' | 'Success' };
+}) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -461,6 +574,7 @@ export function uploadInstanceQuestionScores(locals) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
+      assert(locals.$);
       const elemList = locals.$(
         'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]',
       );
@@ -479,6 +593,7 @@ export function uploadInstanceQuestionScores(locals) {
         filename: 'data.csv',
         contentType: 'text/csv',
       });
+      assert(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
@@ -489,7 +604,16 @@ export function uploadInstanceQuestionScores(locals) {
   waitForJobSequence(locals);
 }
 
-export function uploadAssessmentInstanceScores(locals) {
+export function uploadAssessmentInstanceScores(locals: {
+  courseInstanceBaseUrl: string;
+  assessment_id: string;
+  csvData: string | Uint8Array;
+  instructorAssessmentUploadsUrl?: string;
+  __csrf_token: string;
+  $?: cheerio.CheerioAPI;
+  job_sequence_id?: string;
+  job_sequence?: { status: 'Running' | 'Success' };
+}) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -503,6 +627,7 @@ export function uploadAssessmentInstanceScores(locals) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
+      assert(locals.$);
       const elemList = locals.$(
         'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]',
       );
@@ -521,6 +646,7 @@ export function uploadAssessmentInstanceScores(locals) {
         filename: 'data.csv',
         contentType: 'text/csv',
       });
+      assert(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
@@ -531,7 +657,7 @@ export function uploadAssessmentInstanceScores(locals) {
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(locals, qid) {
+export function autoTestQuestion(locals, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
@@ -540,7 +666,7 @@ export function autoTestQuestion(locals, qid) {
         locals.question = result.rows[0];
       });
       it('should be a Freeform question', function () {
-        assert.equal(locals.question.type, 'Freeform');
+        assert.equal(locals.question?.type, 'Freeform');
       });
       it('should have submission data', function () {
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
