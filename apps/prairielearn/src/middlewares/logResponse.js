@@ -1,6 +1,4 @@
-const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
-const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {
   // Capture the path at the start of the request; it may have been rewritten
@@ -9,12 +7,6 @@ module.exports = function (req, res, next) {
 
   if (req.method !== 'OPTIONS') {
     res.once('close', function () {
-      // Attach information to the Sentry scope so that we can more easily
-      // debug errors. No PII is added.
-      if (config.sentryDsn) {
-        enrichSentryScope(req, res);
-      }
-
       var access = {
         response_id: res.locals.response_id,
         ip: req.ip,
