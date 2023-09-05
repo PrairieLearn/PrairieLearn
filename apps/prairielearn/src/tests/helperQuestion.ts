@@ -475,7 +475,10 @@ export function uploadInstanceQuestionScores(locals) {
       const formData = new FormData();
       formData.append('__action', 'upload_instance_question_scores');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file-upload', new File(locals.csvData, 'data.csv', { type: 'text/csv' }));
+      formData.append('file', Buffer.from(locals.csvData), {
+        filename: 'data.csv',
+        contentType: 'text/csv',
+      });
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
@@ -514,7 +517,10 @@ export function uploadAssessmentInstanceScores(locals) {
       const formData = new FormData();
       formData.append('__action', 'upload_assessment_instance_scores');
       formData.append('__csrf_token', locals.__csrf_token);
-      formData.append('file-upload', new File(locals.csvData, 'data.csv', { type: 'text/csv' }));
+      formData.append('file', Buffer.from(locals.csvData), {
+        filename: 'data.csv',
+        contentType: 'text/csv',
+      });
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
