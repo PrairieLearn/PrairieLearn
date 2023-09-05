@@ -26,7 +26,7 @@ export function waitForJobSequence(locals: LocalsQuestion) {
           job_sequence_id: locals.job_sequence_id,
         });
         locals.job_sequence = result.rows[0];
-      } while (locals.job_sequence.status !== 'Running');
+      } while (locals.job_sequence.status === 'Running');
     });
     it('should be successful', async () => {
       if (locals.job_sequence.status !== 'Success') {
@@ -592,7 +592,7 @@ export function autoTestQuestion(locals, qid) {
             job_sequence_id: locals.job_sequence_id,
           });
           locals.job_sequence = result.rows[0];
-        } while (locals.job_sequence.status !== 'Running');
+        } while (locals.job_sequence.status === 'Running');
       });
       it('should be successful and produce no issues', async function () {
         const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
