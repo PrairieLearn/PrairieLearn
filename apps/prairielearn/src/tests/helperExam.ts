@@ -31,32 +31,30 @@ export const questions = _.keyBy(questionsArray, 'qid');
 // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
 export const assessmentMaxPoints = 94;
 
-export interface ExamLocals {
-  siteUrl: string;
-  baseUrl: string;
-  courseInstanceBaseUrl: string;
-  instructorBaseUrl: string;
-  instructorAssessmentsUrl: string;
-  instructorGradebookUrl: string;
-  questionBaseUrl: string;
-  assessmentsUrl: string;
-  assessmentUrl: string;
-  assessmentInstanceUrl: string;
+export function startExam(locals: {
+  siteUrl?: string;
+  baseUrl?: string;
+  courseInstanceBaseUrl?: string;
+  instructorBaseUrl?: string;
+  instructorAssessmentsUrl?: string;
+  instructorGradebookUrl?: string;
+  questionBaseUrl?: string;
+  assessmentsUrl?: string;
+  isStudentPage?: boolean;
+  totalPoints?: number;
+  assessmentUrl?: string;
+  assessmentInstanceUrl?: string;
 
-  isStudentPage: boolean;
-  totalPoints: number;
-  assessment_id: string;
-  $: cheerio.CheerioAPI;
-  __csrf_token: string;
-  preStartTime: number;
-  postStartTime: number;
-  assessment_instance: {
+  assessment_id?: string;
+  $?: cheerio.CheerioAPI;
+  __csrf_token?: string;
+  preStartTime?: number;
+  postStartTime?: number;
+  assessment_instance?: {
     assessment_id: string;
   };
-  instance_questions: { id: string; qid: string }[];
-}
-
-export function startExam(locals: ExamLocals) {
+  instance_questions?: { id: string; qid: string }[];
+}) {
   describe('startExam-1. the locals object', function () {
     it('should be cleared', function () {
       for (const prop in locals) {
@@ -99,12 +97,14 @@ export function startExam(locals: ExamLocals) {
 
   describe('startExam-4. GET to assessments URL', function () {
     it('should load successfully', async function () {
+      assert(locals.assessmentsUrl);
       const response = await fetch(locals.assessmentsUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain E1 and have the correct link', function () {
+      assert(locals.$);
       const elemList = locals.$('td a:contains("Exam for automatic test suite")');
       assert.lengthOf(elemList, 1);
       locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
@@ -117,20 +117,24 @@ export function startExam(locals: ExamLocals) {
 
   describe('startExam-5. GET to assessment URL', function () {
     it('should load successfully', async function () {
+      assert(locals.assessmentUrl);
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain "Exam 1"', function () {
+      assert(locals.$);
       const elemList = locals.$('p.lead strong:contains("Exam 1")');
       assert.lengthOf(elemList, 1);
     });
     it('should contain "QA 101"', function () {
+      assert(locals.$);
       const elemList = locals.$('p.lead strong:contains("QA 101")');
       assert.lengthOf(elemList, 1);
     });
     it('should have a CSRF token', function () {
+      assert(locals.$);
       const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -141,6 +145,8 @@ export function startExam(locals: ExamLocals) {
 
   describe('startExam-6. POST to assessment URL', function () {
     it('should load successfully', async function () {
+      assert(locals.assessmentUrl);
+      assert(locals.__csrf_token);
       const form = {
         __action: 'new_instance',
         __csrf_token: locals.__csrf_token,
@@ -163,7 +169,7 @@ export function startExam(locals: ExamLocals) {
       locals.assessment_instance = result.rows[0];
     });
     it('should have the correct assessment_instance.assessment_id', function () {
-      assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
+      assert.equal(locals.assessment_instance?.assessment_id, locals.assessment_id);
     });
     it(`should create ${questionsArray.length} instance_questions`, async function () {
       const result = await sqldb.queryAsync(sql.select_instance_questions, []);
@@ -172,6 +178,7 @@ export function startExam(locals: ExamLocals) {
     });
     questionsArray.forEach(function (question, i) {
       it(`should have question #${i + 1} as QID ${question.qid}`, function () {
+        assert(locals.instance_questions);
         question.id = locals.instance_questions[i].id;
         assert.equal(locals.instance_questions[i].qid, question.qid);
       });
@@ -180,6 +187,7 @@ export function startExam(locals: ExamLocals) {
 
   describe('startExam-7. GET to assessment_instance URL', function () {
     it('should load successfully', async function () {
+      assert(locals.assessmentInstanceUrl);
       const response = await fetch(locals.assessmentInstanceUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
@@ -187,6 +195,7 @@ export function startExam(locals: ExamLocals) {
     });
     questionsArray.forEach(function (question) {
       it(`should link to ${question.qid} question`, function () {
+        assert(locals.$);
         const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
         question.url = locals.siteUrl + urlTail;
         const elemList = locals.$(`td a[href="${urlTail}"]`);
