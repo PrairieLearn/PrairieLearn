@@ -30,11 +30,13 @@ export interface SessionOptions {
   };
 }
 
+const DEFAULT_COOKIE_NAME = 'session';
+const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day
+
 export function createSessionMiddleware(options: SessionOptions) {
   const secrets = Array.isArray(options.secret) ? options.secret : [options.secret];
-  const cookieName = options.cookie?.name ?? 'session';
-  // Default to 1 day.
-  const cookieMaxAge = options.cookie?.maxAge ?? 86400000;
+  const cookieName = options.cookie?.name ?? DEFAULT_COOKIE_NAME;
+  const cookieMaxAge = options.cookie?.maxAge ?? DEFAULT_COOKIE_MAX_AGE;
   const store = options.store;
 
   return asyncHandler(async function sessionMiddleware(
