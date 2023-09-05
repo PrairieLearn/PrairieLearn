@@ -32,6 +32,7 @@ async function usersSelectOrInsert(user, authn_provider_name = null, institution
   ]);
 }
 
+/*
 async function showAuditLog(all = false) {
   let querysql = 'SELECT * FROM audit_logs;';
   if (!all) {
@@ -41,6 +42,7 @@ async function showAuditLog(all = false) {
   const result = await sqldb.queryAsync(querysql, {});
   console.log(result.rows);
 }
+*/
 
 const baseUser = {
   uid: 'user@host.com',
@@ -77,8 +79,7 @@ describe('sproc users_select_or_insert tests', () => {
       name: 'J.R. User',
     };
 
-    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -97,7 +98,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -113,7 +114,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -129,7 +130,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -146,7 +147,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -162,7 +163,6 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
-    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
@@ -228,7 +228,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  step('user 3 logs in via Shibboleth', async () => {
+  step('user 3 logs in via SAML', async () => {
     const user = {
       uid: 'sally@illinois.edu',
       name: 'Sally Ann',
@@ -236,7 +236,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '200');
+    const result = await usersSelectOrInsert(user, 'SAML', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -275,7 +275,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth', '200');
+    const result = await usersSelectOrInsert(user, 'SAML', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
 
@@ -291,7 +291,6 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
-    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
@@ -310,7 +309,7 @@ describe('sproc users_select_or_insert tests', () => {
     };
 
     await assert.isRejected(
-      usersSelectOrInsert(user, 'Shibboleth', '200'),
+      usersSelectOrInsert(user, 'SAML', '200'),
       /does not match policy/,
     );
   });
@@ -331,9 +330,9 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const firstResult = await usersSelectOrInsert(firstUser, 'Shibboleth', '100');
+    const firstResult = await usersSelectOrInsert(firstUser, 'SAML', '100');
     const firstUserId = firstResult.rows[0].user_id;
-    const secondResult = await usersSelectOrInsert(secondUser, 'Shibboleth', '200');
+    const secondResult = await usersSelectOrInsert(secondUser, 'SAML', '200');
     const secondUserId = secondResult.rows[0].user_id;
 
     // Ensure two distinct users were created.
