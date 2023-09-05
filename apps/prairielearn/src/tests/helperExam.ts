@@ -31,8 +31,30 @@ export const questions = _.keyBy(questionsArray, 'qid');
 // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
 export const assessmentMaxPoints = 94;
 
-// TODO Be more explicit
-export type ExamLocals = Record<string, any>;
+export interface ExamLocals {
+  siteUrl: string;
+  baseUrl: string;
+  courseInstanceBaseUrl: string;
+  instructorBaseUrl: string;
+  instructorAssessmentsUrl: string;
+  instructorGradebookUrl: string;
+  questionBaseUrl: string;
+  assessmentsUrl: string;
+  assessmentUrl: string;
+  assessmentInstanceUrl: string;
+
+  isStudentPage: boolean;
+  totalPoints: number;
+  assessment_id: string;
+  $: cheerio.CheerioAPI;
+  __csrf_token: string;
+  preStartTime: number;
+  postStartTime: number;
+  assessment_instance: {
+    assessment_id: string;
+  };
+  instance_questions: { id: string; qid: string }[];
+}
 
 export function startExam(locals: ExamLocals) {
   describe('startExam-1. the locals object', function () {
