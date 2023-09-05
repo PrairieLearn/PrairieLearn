@@ -31,30 +31,7 @@ export const questions = _.keyBy(questionsArray, 'qid');
 // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
 export const assessmentMaxPoints = 94;
 
-export function startExam(locals: {
-  siteUrl?: string;
-  baseUrl?: string;
-  courseInstanceBaseUrl?: string;
-  instructorBaseUrl?: string;
-  instructorAssessmentsUrl?: string;
-  instructorGradebookUrl?: string;
-  questionBaseUrl?: string;
-  assessmentsUrl?: string;
-  isStudentPage?: boolean;
-  totalPoints?: number;
-  assessmentUrl?: string;
-  assessmentInstanceUrl?: string;
-
-  assessment_id?: string;
-  $?: cheerio.CheerioAPI;
-  __csrf_token?: string;
-  preStartTime?: number;
-  postStartTime?: number;
-  assessment_instance?: {
-    assessment_id: string;
-  };
-  instance_questions?: { id: string; qid: string }[];
-}) {
+export function startExam(locals: Record<string, any>) {
   describe('startExam-1. the locals object', function () {
     it('should be cleared', function () {
       for (const prop in locals) {
