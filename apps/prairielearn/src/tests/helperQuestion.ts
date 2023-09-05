@@ -45,8 +45,8 @@ export function waitForJobSequence(locals: {
 export function getInstanceQuestion(locals: {
   questionBaseUrl: string;
   questionPreviewTabUrl?: string;
-  question: { id: string; type: 'Calculation' | 'Freeform' };
-  shouldHaveButtons: ('save' | 'grade' | 'newVariant' | 'tryAgain')[];
+  question?: { id: string; type: 'Calculation' | 'Freeform' };
+  shouldHaveButtons?: ('save' | 'grade' | 'newVariant' | 'tryAgain')[];
   isStudentPage: boolean;
 
   questionData?: { variant: { id: string } };
@@ -57,6 +57,7 @@ export function getInstanceQuestion(locals: {
 }) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
+      assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await fetch(questionUrl);
@@ -65,7 +66,7 @@ export function getInstanceQuestion(locals: {
       locals.$ = cheerio.load(page);
     });
     it('should contain parsable question data if Calculation', function () {
-      if (locals.question.type !== 'Calculation') return;
+      if (locals.question?.type !== 'Calculation') return;
       assert(locals.$);
       const elemList = locals.$('.question-data');
       assert.lengthOf(elemList, 1);
@@ -75,15 +76,15 @@ export function getInstanceQuestion(locals: {
       );
     });
     it('should have a variant_id in the questionData if Calculation', function () {
-      if (locals.question.type !== 'Calculation') return;
+      if (locals.question?.type !== 'Calculation') return;
       assert.nestedProperty(locals.questionData, 'variant.id');
       locals.variant_id = locals.questionData?.variant.id;
     });
     it('should have a variant_id input if Freeform with grade or save buttons', function () {
-      if (locals.question.type !== 'Freeform') return;
+      if (locals.question?.type !== 'Freeform') return;
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
@@ -95,8 +96,8 @@ export function getInstanceQuestion(locals: {
     });
     it('should have the variant in the DB if has grade or save button', async function () {
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
@@ -108,29 +109,29 @@ export function getInstanceQuestion(locals: {
     it('should have the correct variant.instance_question.id if has grade or save button and is student page', function () {
       if (!locals.isStudentPage) return;
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
-      assert.equal(locals.variant?.instance_question_id, locals.question.id);
+      assert.equal(locals.variant?.instance_question_id, locals.question?.id);
     });
     it('should have the correct variant.question.id if has grade or save button and is instructor page', function () {
       if (locals.isStudentPage) return;
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
-      assert.equal(locals.variant?.question_id, locals.question.id);
+      assert.equal(locals.variant?.question_id, locals.question?.id);
     });
 
     it('should not be a broken variant if Freeform with grade or save button', function () {
-      if (locals.question.type !== 'Freeform') return;
+      if (locals.question?.type !== 'Freeform') return;
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
@@ -139,8 +140,8 @@ export function getInstanceQuestion(locals: {
 
     it('should have a CSRF token if has grade or save button', function () {
       if (
-        !locals.shouldHaveButtons.includes('grade') &&
-        !locals.shouldHaveButtons.includes('save')
+        !locals.shouldHaveButtons?.includes('grade') &&
+        !locals.shouldHaveButtons?.includes('save')
       ) {
         return;
       }
@@ -154,10 +155,10 @@ export function getInstanceQuestion(locals: {
     it('should have or not have grade button', function () {
       assert(locals.$);
       const elemList =
-        locals.question.type === 'Freeform'
+        locals.question?.type === 'Freeform'
           ? locals.$('button[name="__action"][value="grade"]')
           : locals.$('button.question-grade');
-      if (locals.shouldHaveButtons.includes('grade')) {
+      if (locals.shouldHaveButtons?.includes('grade')) {
         assert.lengthOf(elemList, 1);
       } else {
         assert.lengthOf(elemList, 0);
@@ -166,10 +167,10 @@ export function getInstanceQuestion(locals: {
     it('should have or not have save button', function () {
       assert(locals.$);
       const elemList =
-        locals.question.type === 'Freeform'
+        locals.question?.type === 'Freeform'
           ? locals.$('button[name="__action"][value="save"]')
           : locals.$('button.question-save');
-      if (locals.shouldHaveButtons.includes('save')) {
+      if (locals.shouldHaveButtons?.includes('save')) {
         assert.lengthOf(elemList, 1);
       } else {
         assert.lengthOf(elemList, 0);
@@ -178,7 +179,7 @@ export function getInstanceQuestion(locals: {
     it('should have or not have newVariant button', function () {
       assert(locals.$);
       const elemList = locals.$('a:contains(New variant)');
-      if (locals.shouldHaveButtons.includes('newVariant')) {
+      if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
       } else {
         assert.lengthOf(elemList, 0);
@@ -187,7 +188,7 @@ export function getInstanceQuestion(locals: {
     it('should have or not have tryAgain button', function () {
       assert(locals.$);
       const elemList = locals.$('a:contains(Try a new variant)');
-      if (locals.shouldHaveButtons.includes('tryAgain')) {
+      if (locals.shouldHaveButtons?.includes('tryAgain')) {
         assert.lengthOf(elemList, 1);
       } else {
         assert.lengthOf(elemList, 0);
@@ -657,7 +658,20 @@ export function uploadAssessmentInstanceScores(locals: {
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(locals, qid: string) {
+export function autoTestQuestion(
+  locals: {
+    questionBaseUrl: string;
+    isStudentPage: boolean;
+    question?: { id: string; type: 'Freeform' | 'Calculation' };
+    shouldHaveButtons?: ['grade', 'save', 'newVariant'];
+    postAction?: string;
+    $?: cheerio.CheerioAPI;
+    __csrf_token?: string;
+    job_sequence_id?: string;
+    job_sequence?: { status: 'Running' | 'Success' };
+  },
+  qid: string,
+) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
@@ -687,6 +701,7 @@ export function autoTestQuestion(locals, qid: string) {
     });
     describe('GET to instructor question settings URL', function () {
       it('should load successfully', async function () {
+        assert(locals.question);
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
         const response = await fetch(questionUrl);
         assert.equal(response.status, 200);
@@ -694,6 +709,7 @@ export function autoTestQuestion(locals, qid: string) {
         locals.$ = cheerio.load(page);
       });
       it('should have a CSRF token', function () {
+        assert(locals.$);
         const elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -703,6 +719,8 @@ export function autoTestQuestion(locals, qid: string) {
     });
     describe('the test job sequence', function () {
       it('should start with POST to instructor question settings URL for test_once', async function () {
+        assert(locals.question);
+        assert(locals.__csrf_token);
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
         const response = await fetch(questionUrl, {
           method: 'POST',
@@ -724,9 +742,11 @@ export function autoTestQuestion(locals, qid: string) {
             job_sequence_id: locals.job_sequence_id,
           });
           locals.job_sequence = result.rows[0];
+          assert(locals.job_sequence);
         } while (locals.job_sequence.status === 'Running');
       });
       it('should be successful and produce no issues', async function () {
+        assert(locals.job_sequence);
         const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
 
         // To aid in debugging, if the job failed, we'll fetch the logs from
