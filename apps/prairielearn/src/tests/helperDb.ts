@@ -12,6 +12,7 @@ import {
 } from '@prairielearn/migrations';
 import * as sprocs from '../sprocs';
 import * as namedLocks from '@prairielearn/named-locks';
+import { Context } from 'mocha';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
@@ -120,10 +121,7 @@ async function setupDatabases(): Promise<void> {
   });
 }
 
-/**
- * @this {import('mocha').Context}
- */
-export async function before(): Promise<void> {
+export async function before(this: Context): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   this.timeout?.(20000);
@@ -135,10 +133,8 @@ export async function before(): Promise<void> {
  * then close the connection in sqldb. This is necessary for database
  * schema verification, where databaseDiff will set up a connection to the
  * desired database.
- *
- * @this {import('mocha').Context}
  */
-export async function beforeOnlyCreate(): Promise<void> {
+export async function beforeOnlyCreate(this: Context): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   this.timeout?.(20000);
@@ -146,10 +142,7 @@ export async function beforeOnlyCreate(): Promise<void> {
   await closeSql();
 }
 
-/**
- * @this {import('mocha').Context}
- */
-export async function after(): Promise<void> {
+export async function after(this: Context): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   this.timeout?.(20000);
