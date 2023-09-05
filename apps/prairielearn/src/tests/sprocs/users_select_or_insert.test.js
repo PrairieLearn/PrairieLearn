@@ -32,6 +32,16 @@ async function usersSelectOrInsert(user, authn_provider_name = null, institution
   ]);
 }
 
+async function showAuditLog(all = false) {
+  let querysql = 'SELECT * FROM audit_logs;';
+  if (!all) {
+    querysql = 'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 1;';
+  }
+
+  const result = await sqldb.queryAsync(querysql, {});
+  console.log(result.rows);
+}
+
 const baseUser = {
   uid: 'user@host.com',
   name: 'Joe User',
@@ -67,6 +77,7 @@ describe('sproc users_select_or_insert tests', () => {
       name: 'J.R. User',
     };
 
+    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
@@ -82,10 +93,11 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates institution_id', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -96,11 +108,12 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uin when uin was null', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uin: '111122223',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -111,11 +124,12 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uin when uin was value', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uin: '111122224',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -126,12 +140,13 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uid with already present uin', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uid: 'newuid@host.com',
       uin: '111122224',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -147,6 +162,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
+    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
@@ -167,7 +183,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
 
@@ -204,7 +220,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -220,7 +236,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -236,7 +252,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -259,7 +275,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'Shibboleth', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
 
@@ -275,6 +291,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
+    // Errors if passed in institution_id '1', does not match policy -- do we need another test?
     const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
