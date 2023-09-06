@@ -12,7 +12,7 @@ interface SessionStoreOptions {
  * A {@link session.Store} implementation that uses the PrairieLearn
  * Postgres database as a session store.
  */
-class SessionStore extends session.Store {
+export class SessionStore extends session.Store {
   private expireSeconds: number;
 
   constructor(options: SessionStoreOptions = {}) {
@@ -69,5 +69,3 @@ class SessionStore extends session.Store {
   }
   all = util.callbackify(this.allAsync).bind(this);
 }
-
-module.exports = SessionStore;
