@@ -64,7 +64,7 @@ module.exports.abandonLaunch = async () => {
     lifecycleState = 'AbandoningLaunch';
     logger.info(`lifecycle.abandonLaunch(): changing to state ${lifecycleState}`);
 
-    const autoscaling = new AutoScaling();
+    const autoscaling = new AutoScaling({ region: config.awsRegion });
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleActionResult: 'ABANDON',
@@ -86,7 +86,7 @@ module.exports.abandonLaunch = async () => {
 function heartbeat() {
   if (lifecycleState === 'Launching') {
     logger.info('lifecycle.heartbeat(): sending heartbeat...');
-    const autoscaling = new AutoScaling();
+    const autoscaling = new AutoScaling({ region: config.awsRegion });
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleHookName: 'launching',

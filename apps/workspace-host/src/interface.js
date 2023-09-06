@@ -1,5 +1,3 @@
-import { ECRClient } from '@aws-sdk/client-ecr';
-
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
@@ -9,6 +7,7 @@ const http = require('http');
 const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');

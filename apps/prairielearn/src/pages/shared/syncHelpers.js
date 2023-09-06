@@ -1,5 +1,5 @@
 // @ts-check
-const { ECR } = require('@aws-sdk/client-ecr');
+const { ECR, ECRClient } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
@@ -327,7 +327,7 @@ module.exports.ecrUpdate = async function (images, locals) {
     throw new Error('cacheImageRegistry not defined');
   }
 
-  const ecr = new ECR(makeAwsClientConfig());
+  const ecr = new ECRClient(makeAwsClientConfig());
   const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({

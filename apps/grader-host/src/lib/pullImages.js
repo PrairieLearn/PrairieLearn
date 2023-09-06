@@ -1,9 +1,8 @@
-import { ECRClient } from '@aws-sdk/client-ecr';
-
 // @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const sqldb = require('@prairielearn/postgres');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
