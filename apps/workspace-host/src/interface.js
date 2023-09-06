@@ -7,6 +7,7 @@ const http = require('http');
 const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');
@@ -20,7 +21,7 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
@@ -575,7 +576,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient({ region: config.awsRegion });
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;
