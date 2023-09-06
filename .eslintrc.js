@@ -11,7 +11,7 @@ module.exports = {
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha'],
+  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -61,6 +61,8 @@ module.exports = {
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
+
+    '@prairielearn/no-aws-direct-construction': 'error',
 
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [

@@ -2530,6 +2530,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": ^18.17.12
+    typescript: ^5.2.2
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/flash@workspace:^, @prairielearn/flash@workspace:packages/flash":
   version: 0.0.0-use.local
   resolution: "@prairielearn/flash@workspace:packages/flash"
