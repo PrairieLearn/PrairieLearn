@@ -1,5 +1,7 @@
-import noAwsDirectConstruction from './rules/no-aws-direct-construction';
+import awsClientConfig from './rules/aws-client-config';
+import awsClientSharedConfig from './rules/aws-client-shared-config';
 
 export const rules = {
-  'no-aws-direct-construction': noAwsDirectConstruction,
+  'aws-client-mandatory-config': awsClientConfig,
+  'aws-client-shared-config': awsClientSharedConfig,
 };

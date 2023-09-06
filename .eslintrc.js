@@ -62,7 +62,9 @@ module.exports = {
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
 
-    '@prairielearn/no-aws-direct-construction': 'error',
+    // These rules are implemented in `packages/eslint-plugin-prairielearn`.
+    '@prairielearn/aws-client-mandatory-config': 'error',
+    '@prairielearn/aws-client-shared-config': 'error',
 
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [

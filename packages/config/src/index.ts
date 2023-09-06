@@ -38,6 +38,8 @@ export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
 
       const identity = await fetchInstanceIdentity();
 
+      // We disable the ESLint rule here because
+      // eslint-disable-next-line @prairielearn/aws-client-config
       const ec2Client = new EC2Client({ region: identity.region });
       const tags = await ec2Client.send(
         new DescribeTagsCommand({

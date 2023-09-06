@@ -5,31 +5,58 @@ const fs = require('fs-extra');
 const util = require('util');
 const async = require('async');
 const path = require('path');
+const { memoize } = require('@smithy/property-provider');
+const { fromNodeProviderChain } = require('@aws-sdk/credential-providers');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { pipeline } = require('node:stream/promises');
 
 const { logger } = require('@prairielearn/logger');
 const { config } = require('./config');
 
+// Attempt to refresh credentials 5 minutes before they actually expire.
+// This value is the same value that the AWS SDK uses internally:
+// https://github.com/aws/aws-sdk-js-v3/blob/3f8b581af7c0c8146c5b111f92ba6a024310c525/packages/middleware-signing/src/awsAuthConfiguration.ts#L18
+const CREDENTIAL_EXPIRE_WINDOW = 300000;
+
+// Clients don't share credentials by default, which means that we'll flood
+// the IMDS with requests for credentials if we construct and use a lot of
+// clients in quick succession. IMDS has rate-limiting, so we'll end up failing
+// to get credentials.
+//
+// To work around this, we'll share a single credential provider chain across
+// all clients we create. We'll also memoize the credential provider chain so
+// that we don't end up making unnecessarily many requests to the IMDS.
+//
+// Memoization is based on the following:
+// https://github.com/aws/aws-sdk-js-v3/blob/3f8b581af7c0c8146c5b111f92ba6a024310c525/packages/middleware-signing/src/awsAuthConfiguration.ts#L257
+const memoizedCredentialProvider = memoize(
+  fromNodeProviderChain(),
+  (credentials) =>
+    credentials.expiration !== undefined &&
+    credentials.expiration.getTime() - Date.now() < CREDENTIAL_EXPIRE_WINDOW,
+  (credentials) => credentials.expiration !== undefined,
+);
+
 /**
  * @param {import('@aws-sdk/client-s3').S3ClientConfig} extraConfig
  * @returns {import('@aws-sdk/client-s3').S3ClientConfig}
  */
 module.exports.makeS3ClientConfig = function (extraConfig = {}) {
-  const newConfig = module.exports.makeAwsClientConfig(extraConfig);
-
-  if (!config.runningInEc2) {
-    // If we're not running in EC2, assume we're running with a local s3rver instance.
-    // See https://github.com/jamhall/s3rver for more details.
-    newConfig.forcePathStyle = true;
-    newConfig.credentials = {
-      accessKeyId: 'S3RVER',
-      secretAccessKey: 'S3RVER',
-    };
-    newConfig.endpoint = 'http://localhost:5000';
-  }
-
-  return newConfig;
+  return module.exports.makeAwsClientConfig({
+    ...(!config.runningInEc2
+      ? {
+          // If we're not running in EC2, assume we're running with a local s3rver instance.
+          // See https://github.com/jamhall/s3rver for more details.
+          forcePathStyle: true,
+          credentials: {
+            accessKeyId: 'S3RVER',
+            secretAccessKey: 'S3RVER',
+          },
+          endpoint: 'http://localhost:5000',
+        }
+      : {}),
+    ...extraConfig,
+  });
 };
 
 /**
@@ -40,6 +67,7 @@ module.exports.makeAwsClientConfig = (extraConfig = /** @type {T} */ ({})) => {
   return {
     region: config.awsRegion,
     endpoint: process.env.AWS_ENDPOINT,
+    credentials: memoizedCredentialProvider,
     ...config.awsServiceGlobalOptions,
     ...extraConfig,
   };

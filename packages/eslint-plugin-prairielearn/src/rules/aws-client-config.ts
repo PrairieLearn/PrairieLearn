@@ -1,18 +1,4 @@
-function isIdentifierClient(identifierName: string, packageName: string): boolean {
-  // If the identifier ends with "Client", include it in the set.
-  if (identifierName.endsWith('Client')) {
-    return true;
-  }
-
-  // If the identifier matches the package name directly, include it in the set.
-  const clientName = packageName.replace('@aws-sdk/client-', '');
-  const packageIdentifier = clientName.replace(/-/g, '').toLowerCase();
-  if (identifierName.toLowerCase() === packageIdentifier) {
-    return true;
-  }
-
-  return false;
-}
+import { isIdentifierClient } from '../utils';
 
 export default {
   create(context: any) {
@@ -61,10 +47,16 @@ export default {
       },
       NewExpression(node: any) {
         if (node.callee.type === 'Identifier' && awsClientImports.has(node.callee.name)) {
-          context.report({
-            node,
-            message: 'Do not construct AWS client directly.',
-          });
+          // We're constructing an AWS client. Ensure that the first argument
+          // comes from one of our config providers.
+
+          if (node.arguments.length === 0) {
+            context.report({
+              node,
+              message: `${node.callee.name} must be constructed with a config object.`,
+            });
+            return;
+          }
         }
       },
     };
