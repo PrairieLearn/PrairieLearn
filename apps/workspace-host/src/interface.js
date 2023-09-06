@@ -29,7 +29,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig } = require('./lib/aws');
+const { makeS3ClientConfig, getAwsClient } = require('./lib/aws');
 const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -1055,7 +1055,7 @@ async function flushLogsToS3(container) {
     InstitutionId: institutionId,
   };
 
-  const s3 = new S3(makeS3ClientConfig({ maxAttempts: 3 }));
+  const s3 = getAwsClient(S3, makeS3ClientConfig({ maxAttempts: 3 }));
   await new Upload({
     client: s3,
     params: {
