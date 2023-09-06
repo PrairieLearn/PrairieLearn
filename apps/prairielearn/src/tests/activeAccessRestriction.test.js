@@ -1,4 +1,3 @@
-const util = require('util');
 const { config } = require('../lib/config');
 const assert = require('chai').assert;
 
@@ -32,7 +31,7 @@ describe('Exam and homework assessment with active access restriction', function
     callback(null);
   });
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const resultsExam = await sqldb.queryOneRowAsync(sql.select_exam11, []);
     context.examId = resultsExam.rows[0].id;
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;

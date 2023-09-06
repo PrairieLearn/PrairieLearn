@@ -63,7 +63,6 @@ const namedLocks = require('@prairielearn/named-locks');
 const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
-const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
 const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
@@ -118,6 +117,8 @@ module.exports.initExpress = function () {
     if (config.sentryTracesSampleRate) {
       app.use(Sentry.Handlers.tracingHandler());
     }
+
+    app.use(require('./lib/sentry').enrichSentryEventMiddleware);
   }
 
   // This should come before the session middleware so that we don't
@@ -1812,15 +1813,6 @@ module.exports.initExpress = function () {
     next(err);
   });
 
-  // We need to add our own handler here to ensure that we add the appropriate
-  // information to the current Sentry scope.
-  //
-  // Note that this is typically done by our `logResponse` middleware, but
-  // that doesn't run soon enough for the Sentry error handler to pick up.
-  app.use((err, req, res, next) => {
-    enrichSentryScope(req, res);
-    next(err);
-  });
   app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
