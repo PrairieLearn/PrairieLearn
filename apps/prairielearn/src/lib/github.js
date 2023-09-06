@@ -520,7 +520,7 @@ module.exports = {
             status: 'failed',
             course_request_id: options.course_request_id,
           });
-          await opsbot
+          opsbot
             .sendCourseRequestMessage(
               `*Failed to create course "${options.short_name}"*\n\n` +
                 '```\n' +
