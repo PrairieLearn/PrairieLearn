@@ -6,6 +6,7 @@ const tmp = require('tmp');
 const Docker = require('dockerode');
 const { S3 } = require('@aws-sdk/client-s3');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { exec } = require('child_process');
 const path = require('path');
@@ -14,7 +15,7 @@ const { pipeline } = require('node:stream/promises');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -286,7 +287,8 @@ function initDocker(info, callback) {
       async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
+          const ecr = new ECRClient({ region: config.awsRegion });
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       async () => {
