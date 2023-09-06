@@ -4,6 +4,7 @@ Custom colors for the PrarieLearn project based on Coloraide.
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
 import re
+from typing import cast
 
 from coloraide import Color as PLColor
 from coloraide import algebra as alg
@@ -113,7 +114,7 @@ class PrarieLearnColor(sRGB):
             coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
 
             # See if the color value is a match, if so, return the string
-            value = tuple(alg.round_half_up(c * 255) for c in coords)
+            value = cast(ColorTuple, tuple(alg.round_half_up(c * 255) for c in coords))
 
             result = PL_COLORS_VALUE_MAP.get(value)
             if result is not None:
