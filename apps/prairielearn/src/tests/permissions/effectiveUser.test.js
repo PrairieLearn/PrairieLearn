@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');
@@ -19,9 +18,7 @@ describe('effective user', function () {
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
   context.userId = 2;
 
-  before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
-  });
+  before('set up testing server', helperServer.before().bind(this));
 
   before('insert users', async function () {
     await sqldb.callAsync('users_select_or_insert', [

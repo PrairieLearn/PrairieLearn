@@ -29,6 +29,11 @@ class SourceBlocksOrderType(Enum):
     ORDERED = "ordered"
 
 
+class SolutionPlacementType(Enum):
+    RIGHT = "right"
+    BOTTOM = "bottom"
+
+
 class FeedbackType(Enum):
     NONE = "none"
     FIRST_WRONG = "first-wrong"
@@ -74,11 +79,11 @@ PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
+INLINE_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
-SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
@@ -437,7 +442,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-
+    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
+    dropzone_layout = pl.get_enum_attrib(
+        element,
+        "solution-placement",
+        SolutionPlacementType,
+        SolutionPlacementType.RIGHT,
+    )
     block_formatting = (
         "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
     )
@@ -465,21 +476,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
+
             if submission_indent is not None:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
-        dropzone_layout = pl.get_string_attrib(
-            element, "solution-placement", SOLUTION_PLACEMENT_DEFAULT
-        )
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
         help_text = (
-            "Drag answer tiles into the answer area to the " + dropzone_layout + ". "
+            "Drag answer tiles into the answer area to the "
+            + dropzone_layout.value
+            + ". "
         )
+
+        if inline and check_indentation:
+            raise Exception(
+                "The indentation attribute may not be used when inline is true."
+            )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<br>Your answer ordering does not matter. "
@@ -500,14 +516,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "options": source_blocks,
             "submission_dict": student_previous_submission,
             "dropzone_layout": "pl-order-blocks-bottom"
-            if dropzone_layout == "bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
             else "pl-order-blocks-right",
+            "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
             "max_indent": max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
@@ -544,6 +562,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_feedback_badges": not all(
                 block.get("badge_type", "") == "" for block in student_submission
             ),
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "dropzone_layout": "pl-order-blocks-bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
+            else "pl-order-blocks-right",
         }
 
         if score is not None:
@@ -615,6 +637,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_formatting": block_formatting,
             "distractors": distractors,
             "show_distractors": (len(distractors) > 0),
+            "block_layout": "pl-order-blocks-horizontal" if inline else "",
+            "dropzone_layout": "pl-order-blocks-bottom"
+            if dropzone_layout is SolutionPlacementType.BOTTOM
+            else "pl-order-blocks-right",
         }
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
