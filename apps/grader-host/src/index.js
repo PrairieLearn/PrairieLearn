@@ -15,7 +15,7 @@ const { pipeline } = require('node:stream/promises');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -288,7 +288,7 @@ function initDocker(info, callback) {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
           const ecr = new ECRClient({ region: config.awsRegion });
-          dockerAuth = await setupDockerAuthAsync(ecr);
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       async () => {
