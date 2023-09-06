@@ -1,3 +1,6 @@
+import { ECRClient } from '@aws-sdk/client-ecr';
+
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
@@ -24,7 +27,8 @@ module.exports = function (callback) {
       async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
+          const ecr = new ECRClient({ region: config.awsRegion });
+          dockerAuth = await setupDockerAuthAsync(ecr);
         }
       },
       (callback) => {

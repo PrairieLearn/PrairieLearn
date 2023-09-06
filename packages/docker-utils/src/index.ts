@@ -1,4 +1,8 @@
-import { ECRClient, AuthorizationData, GetAuthorizationTokenCommand } from '@aws-sdk/client-ecr';
+import {
+  type ECRClient,
+  type AuthorizationData,
+  GetAuthorizationTokenCommand,
+} from '@aws-sdk/client-ecr';
 import { subHours, isFuture } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
@@ -26,7 +30,7 @@ function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   };
 }
 
-export async function setupDockerAuthAsync(region: string): Promise<DockerAuth> {
+export async function setupDockerAuthAsync(ecr: ECRClient): Promise<DockerAuth> {
   // If we have cached data that's not within an hour of expiring, use it.
   if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
@@ -34,7 +38,6 @@ export async function setupDockerAuthAsync(region: string): Promise<DockerAuth> 
   }
 
   logger.info('Getting ECR authorization token');
-  const ecr = new ECRClient({ region });
   const data = await ecr.send(new GetAuthorizationTokenCommand({}));
   const authorizationData = data.authorizationData;
   if (!authorizationData) {

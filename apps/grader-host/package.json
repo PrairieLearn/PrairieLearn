@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.398.0",
+    "@aws-sdk/client-ecr": "^3.405.0",
     "@aws-sdk/client-s3": "^3.400.0",
     "@aws-sdk/client-sqs": "^3.398.0",
     "@aws-sdk/lib-storage": "^3.400.0",

@@ -1,3 +1,5 @@
+import { ECRClient } from '@aws-sdk/client-ecr';
+
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
@@ -29,7 +31,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig, getAwsClient } = require('./lib/aws');
+const { makeS3ClientConfig, getAwsClient, makeAwsClientConfig } = require('./lib/aws');
 const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -575,7 +577,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(ecr) : null;
 
   let percentDisplayed = false;
   let stream;

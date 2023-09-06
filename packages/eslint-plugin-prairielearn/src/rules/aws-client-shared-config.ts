@@ -26,6 +26,7 @@ export default {
           if (node.arguments.length === 0) {
             // There is no argument to check. If the `aws-client-mandatory-config`
             // rule is enabled, it will catch this case.
+            return;
           }
 
           let desiredConfigFunctionName = 'makeAwsClientConfig';
@@ -36,7 +37,6 @@ export default {
           }
 
           const configArgument = node.arguments[0];
-          console.log(configArgument);
           if (configArgument.type !== 'CallExpression') {
             context.report({
               node,

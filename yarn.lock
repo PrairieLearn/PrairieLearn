@@ -334,6 +334,51 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-ecr@npm:^3.405.0":
+  version: 3.405.0
+  resolution: "@aws-sdk/client-ecr@npm:3.405.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": 3.0.0
+    "@aws-crypto/sha256-js": 3.0.0
+    "@aws-sdk/client-sts": 3.405.0
+    "@aws-sdk/credential-provider-node": 3.405.0
+    "@aws-sdk/middleware-host-header": 3.398.0
+    "@aws-sdk/middleware-logger": 3.398.0
+    "@aws-sdk/middleware-recursion-detection": 3.398.0
+    "@aws-sdk/middleware-signing": 3.398.0
+    "@aws-sdk/middleware-user-agent": 3.398.0
+    "@aws-sdk/types": 3.398.0
+    "@aws-sdk/util-endpoints": 3.398.0
+    "@aws-sdk/util-user-agent-browser": 3.398.0
+    "@aws-sdk/util-user-agent-node": 3.405.0
+    "@smithy/config-resolver": ^2.0.5
+    "@smithy/fetch-http-handler": ^2.0.5
+    "@smithy/hash-node": ^2.0.5
+    "@smithy/invalid-dependency": ^2.0.5
+    "@smithy/middleware-content-length": ^2.0.5
+    "@smithy/middleware-endpoint": ^2.0.5
+    "@smithy/middleware-retry": ^2.0.5
+    "@smithy/middleware-serde": ^2.0.5
+    "@smithy/middleware-stack": ^2.0.0
+    "@smithy/node-config-provider": ^2.0.6
+    "@smithy/node-http-handler": ^2.0.5
+    "@smithy/protocol-http": ^2.0.5
+    "@smithy/smithy-client": ^2.0.5
+    "@smithy/types": ^2.2.2
+    "@smithy/url-parser": ^2.0.5
+    "@smithy/util-base64": ^2.0.0
+    "@smithy/util-body-length-browser": ^2.0.0
+    "@smithy/util-body-length-node": ^2.1.0
+    "@smithy/util-defaults-mode-browser": ^2.0.6
+    "@smithy/util-defaults-mode-node": ^2.0.6
+    "@smithy/util-retry": ^2.0.0
+    "@smithy/util-utf8": ^2.0.0
+    "@smithy/util-waiter": ^2.0.5
+    tslib: ^2.5.0
+  checksum: 5965b3929704e83f1754631586347fc29a9b642049959369e345db1092876bdec7cdcb166293778cdc9b5920c072b67e9e6c6f644dad8b811f1bdcd0effcfab6
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-s3@npm:^3.289.0, @aws-sdk/client-s3@npm:^3.400.0":
   version: 3.400.0
   resolution: "@aws-sdk/client-s3@npm:3.400.0"
@@ -2850,6 +2895,7 @@ __metadata:
   resolution: "@prairielearn/grader-host@workspace:apps/grader-host"
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.398.0
+    "@aws-sdk/client-ecr": ^3.405.0
     "@aws-sdk/client-s3": ^3.400.0
     "@aws-sdk/client-sqs": ^3.398.0
     "@aws-sdk/lib-storage": ^3.400.0
@@ -3063,6 +3109,7 @@ __metadata:
     "@aws-sdk/client-auto-scaling": ^3.398.0
     "@aws-sdk/client-cloudwatch": ^3.400.0
     "@aws-sdk/client-ec2": ^3.399.0
+    "@aws-sdk/client-ecr": ^3.405.0
     "@aws-sdk/client-s3": ^3.400.0
     "@aws-sdk/client-sqs": ^3.398.0
     "@aws-sdk/credential-providers": ^3.405.0
@@ -3327,6 +3374,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/workspace-host@workspace:apps/workspace-host"
   dependencies:
+    "@aws-sdk/client-ecr": ^3.405.0
     "@aws-sdk/client-s3": ^3.400.0
     "@aws-sdk/lib-storage": ^3.400.0
     "@prairielearn/config": "workspace:^"
