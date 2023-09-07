@@ -32,18 +32,6 @@ async function usersSelectOrInsert(user, authn_provider_name = null, institution
   ]);
 }
 
-/*
-async function showAuditLog(all = false) {
-  let querysql = 'SELECT * FROM audit_logs;';
-  if (!all) {
-    querysql = 'SELECT * FROM audit_logs ORDER BY id DESC LIMIT 1;';
-  }
-
-  const result = await sqldb.queryAsync(querysql, {});
-  console.log(result.rows);
-}
-*/
-
 const baseUser = {
   uid: 'user@host.com',
   name: 'Joe User',
