@@ -456,14 +456,14 @@ function runJob(info, callback) {
             NetworkDisabled: !jobEnableNetworking,
             HostConfig: {
               Binds: [`${tempDir}:/grade`],
-              Memory: 1 << 30, // 1 GiB
-              MemorySwap: 1 << 30, // same as Memory, so no access to swap
-              KernelMemory: 1 << 29, // 512 MiB
-              DiskQuota: 1 << 30, // 1 GiB
+              Memory: config.graderDockerMemory,
+              MemorySwap: config.graderDockerMemorySwap,
+              KernelMemory: config.graderDockerKernelMemory,
+              DiskQuota: config.graderDockerDiskQuota,
               IpcMode: 'private',
-              CpuPeriod: 100000, // microseconds
-              CpuQuota: 90000, // portion of the CpuPeriod for this container
-              PidsLimit: 1024,
+              CpuPeriod: config.graderDockerCpuPeriod,
+              CpuQuota: config.graderDockerCpuQuota,
+              PidsLimit: config.graderDockerPidsLimit,
             },
             Entrypoint: entrypoint.split(' '),
           },
