@@ -1,8 +1,9 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const sqldb = require('@prairielearn/postgres');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const logger = require('./logger');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -24,7 +25,8 @@ module.exports = function (callback) {
       async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
+          const ecr = new ECRClient({ region: config.awsRegion });
+          dockerAuth = await setupDockerAuth(ecr);
         }
       },
       (callback) => {

@@ -13,7 +13,7 @@ export const AccessTokenSchema = z.object({
   last_used_at: z.string().nullable(),
   name: z.string(),
   token_hash: z.string(),
-  token: z.string(),
+  token: z.string().nullable(),
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
 
