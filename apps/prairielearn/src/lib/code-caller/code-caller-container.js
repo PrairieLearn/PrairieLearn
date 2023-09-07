@@ -13,11 +13,12 @@ const { ECRClient } = require('@aws-sdk/client-ecr');
 const bindMount = require('@prairielearn/bind-mount');
 const { instrumented } = require('@prairielearn/opentelemetry');
 const { setupDockerAuth } = require('@prairielearn/docker-utils');
+const { logger } = require('@prairielearn/logger');
 
 const { config } = require('../config');
-const { logger } = require('@prairielearn/logger');
 const { FunctionMissingError } = require('./code-caller-shared');
 const { deferredPromise } = require('../deferred');
+const { makeAwsClientConfig } = require('../aws');
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -79,7 +80,7 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const ecr = new ECRClient({ region: config.awsRegion });
+      const ecr = new ECRClient(makeAwsClientConfig());
       const dockerAuth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {

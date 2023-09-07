@@ -327,7 +327,7 @@ module.exports.ecrUpdate = async function (images, locals) {
     throw new Error('cacheImageRegistry not defined');
   }
 
-  const ecr = new ECRClient({ region: config.awsRegion });
+  const ecr = new ECRClient(makeAwsClientConfig());
   const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({
