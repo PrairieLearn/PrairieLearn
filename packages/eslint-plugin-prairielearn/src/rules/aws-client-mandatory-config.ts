@@ -3,6 +3,13 @@ import {
   getAwsClientNamesFromVariableDeclarator,
 } from '../utils';
 
+/**
+ * This rule enforces that we always explicitly provide a config to AWS clients.
+ * This helps ensure that we always construct a client with a specific region.
+ *
+ * This rules works in tandem with `aws-client-shared-config` to ensure that
+ * we're properly configuring AWS SDK clients.
+ */
 export default {
   create(context: any) {
     const awsClientImports = new Set();
