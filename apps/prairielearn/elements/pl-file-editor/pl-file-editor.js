@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, showdown, MathJax, filterXSS */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -8,7 +8,7 @@ window.PLFileEditor = function (uuid, options) {
     throw new Error('File upload element ' + elementId + ' was not found!');
   }
   this.originalContents = options.originalContents || '';
-
+  
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
   this.settingsButton = this.element.find('.settings-button');
@@ -25,6 +25,94 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.setShowPrintMargin(false);
   this.editor.setReadOnly(options.readOnly);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
+
+  this.session = this.editor.getSession();
+  this.doc = this.session.getDocument();
+  this.hasRanges = options.hasRanges;
+  this.rangeList = [];
+  
+
+  let editor = this.editor,
+      session = this.session,
+      doc = this.doc;
+
+function before(obj, method, wrapper) {
+  var orig = obj[method];
+  obj[method] = function() {
+    var args = Array.prototype.slice.call(arguments);
+    return wrapper.call(this, function(){
+      return orig.apply(obj, args);
+    }, args);
+  }
+
+  return obj[method];
+}
+
+function intersects(range) {
+  var cursor = editor.selection.getCursor();
+  return (
+    cursor.row >= range.start.row && cursor.row <= range.end.row &&
+    cursor.column >= range.start.column && cursor.column <= range.end.column
+  );
+}
+
+ preventReadonly = (next, args) => {
+  if (this.rangeList.ranges.some(intersects)) return;
+  next();
+}
+before(editor, 'onPaste', preventReadonly);
+before(editor, 'onCut',   preventReadonly);
+
+  applyGutterStyles = () => {
+  var lines = editor.session.getLength();
+  for (var i = 0; i < lines; i++) {
+    if (this.rangeList.some(range =>
+      i >= range.start.row && i <= range.end.row
+    )) {
+      editor.session.addGutterDecoration(i, 'readonly-gutter');
+    } else {
+      editor.session.addGutterDecoration(i, 'editable-gutter');
+    }
+  }
+}
+
+ updateGutter = () => {
+  editor.session.$decorations = [];
+  setTimeout(() => {
+    applyGutterStyles();
+  }, 0);
+}
+
+editor.on("change", updateGutter);
+editor.on("changeSelection", updateGutter);
+
+applyGutterStyles();
+  if (this.hasRanges) {
+    editor.keyBinding.addKeyboardHandler({
+      handleKeyboard: (data, hash, keyString, keyCode, event) => {
+        if (hash === -1 || (keyCode <= 40 && keyCode >= 37)) return false;
+        if (this.rangeList.some(range => intersects(range))) {
+          return { command: "null", passEvent: false };
+        }
+  
+        var cursor = editor.selection.getCursor();
+        var inRange = this.rangeList.some(range =>
+          cursor.row >= range.start.row && cursor.row <= range.end.row
+        );
+    
+        if (inRange) {
+          return { command: "null", passEvent: false };
+        }
+    
+        if (cursor.row == this.rangeList[0].end.row + 1 && cursor.column == 0 && keyCode == 8 && editor.selection.isEmpty()) {
+          event.preventDefault();
+          return { command: "null", passEvent: false };
+        }
+    
+        return null;
+      }
+    });
+  }
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
@@ -46,7 +134,9 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(12);
   }
 
-  this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  if (!(options.hasRanges)) {
+    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  }
 
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
@@ -94,8 +184,27 @@ window.PLFileEditor = function (uuid, options) {
   this.initSettingsButton(uuid);
 
   this.initRestoreOriginalButton();
-};
 
+  addAnchor = (range) => {
+    let anchor = new ace.Range();
+    
+    anchor.start = doc.createAnchor(range.start.row, range.start.column);
+    anchor.end = doc.createAnchor(range.end.row, range.end.column);
+    this.rangeList.push(anchor);     // Add the new range to the rangeList
+  }
+
+  if (this.hasRanges) {
+    let ranges = options.ranges;
+    this.nested_ranges = JSON.parse(ranges);
+
+    this.nested_ranges.forEach(range => {
+      const [startRow, endRow] = range;
+      anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+      addAnchor(anchor_range);
+    })
+  }
+};
+//next section
 window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('storage', (event) => {
     if (event.key === 'pl-file-editor-theme') {
@@ -112,7 +221,10 @@ window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    if (this.hasRanges == false) {
+      this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+    }
   });
 };
 
@@ -122,7 +234,7 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
+    let sanitized_contents = filterXSS(html_contents);
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
@@ -220,7 +332,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+    if (!this.hasRanges) {
+      this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    }
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     this.modal.modal('hide');
@@ -229,10 +344,11 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(() => {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    this.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
-    );
-
+    if (!this.hasRanges) {
+      this.editor.setKeyboardHandler(
+        sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
+      );
+    }
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
     sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
@@ -249,6 +365,7 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
+    this.setAnchors();
   });
 
   this.restoreOriginalCancel.click(() => {
@@ -257,6 +374,27 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   });
 };
 
+window.PLFileEditor.prototype.setAnchors = function () {
+  let doc = this.session.getDocument(); 
+
+  newRangeList = [];
+
+  function addAnchor(range) {
+    let anchor = new ace.Range();
+    
+    anchor.start = doc.createAnchor(range.start.row, range.start.column);
+    anchor.end = doc.createAnchor(range.end.row, range.end.column);
+    newRangeList.push(anchor);
+  }
+
+  this.nested_ranges.forEach(range => {
+    const [startRow, endRow] = range;
+    anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+    addAnchor(anchor_range);
+  })
+  this.rangeList = newRangeList;
+  
+};
 window.PLFileEditor.prototype.setEditorContents = function (contents) {
   this.editor.setValue(contents);
   this.editor.gotoLine(1, 0);

@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import os
-
+import xml.etree.ElementTree as ET
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -20,6 +20,35 @@ FOCUS_DEFAULT = False
 DIRECTORY_DEFAULT = "."
 NORMALIZE_TO_ASCII_DEFAULT = False
 
+range_default = "false" #flag for editor
+
+def categorize_options(element, data):
+    file_contents = ""
+    range_list = []
+    line = 0 # keeps track of what line in the editor we are in
+
+    for child in element:
+        child_html = pl.inner_html(child)
+        if child_html[-1] != "\n":
+            child_html += "\n"
+        file_contents += child_html
+        new_lines = child_html.count("\n")    
+        
+        if child.tag in ["static"]:
+            startRow = line 
+            endRow = line + max(0, new_lines - 1)
+            range_list.append([startRow, endRow])
+
+        if child_html[-1] != "\n":
+           line += 1    
+
+        line += new_lines
+    
+    if len(range_list) != 0:
+        global range_default
+        range_default = "true"
+
+    return range_list, file_contents
 
 def get_answer_name(file_name):
     return "_file_editor_{0}".format(
@@ -63,7 +92,7 @@ def prepare(element_html, data):
     data["params"]["_required_file_names"].append(file_name)
 
     if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
+        if (element.text is not None and not str(element.text).isspace()) or ("<static>" in element_html or "<editable" in element_html):
             raise Exception(
                 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
             )
@@ -120,6 +149,8 @@ def render(element_html, data):
         "focus": focus,
     }
 
+    ranges = []
+
     if source_file_name is not None:
         if directory == "serverFilesCourse":
             directory = data["options"]["server_files_course_path"]
@@ -129,12 +160,21 @@ def render(element_html, data):
             directory = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(directory, source_file_name)
         text_display = open(file_path).read()
+
+        #check if the file provided should be a static editor
+        if "<static>" in text_display:
+            ranges, text_display = categorize_options(ET.fromstring("<html>" + text_display + "</html>"), data)             #allows us to parse as XML with <html> as root node
     else:
-        if element.text is not None:
-            text_display = str(element.text)
+        if element_html is not None:
+            if "<static>" in element_html:
+                ranges, text_display = categorize_options(element, data)
+            else:
+                text_display = str(element.text)
         else:
             text_display = ""
 
+    html_params["range_flag"] = range_default
+    html_params["ranges"] = ranges
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8").strip()
     ).decode()
@@ -152,7 +192,7 @@ def render(element_html, data):
 
     if data["panel"] == "question":
         html_params["question"] = True
-        with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
+        with open("pl-ace-static.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
         html = ""
