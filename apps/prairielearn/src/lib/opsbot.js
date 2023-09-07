@@ -19,11 +19,20 @@ export async function sendMessage(msg) {
     return null;
   }
 
-  return fetch(config.secretSlackOpsBotEndpoint, {
+  const response = await fetch(config.secretSlackOpsBotEndpoint, {
     method: 'POST',
     body: JSON.stringify({ text: msg }),
     headers: { 'Content-Type': 'application/json' },
   });
+
+  if (!response.ok) {
+    throw error.makeWithData('Error sending message', {
+      responseCode: response.status,
+      responseText: await response.text(),
+    });
+  }
+
+  return response;
 }
 
 /**

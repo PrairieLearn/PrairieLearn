@@ -38,13 +38,11 @@ module.exports.run = (callback) => {
         msg = jobsMessages + resultsMessages;
       },
       async () => {
-        const res = await opsbot.sendMessage(msg);
-        if (res && res.status !== 200) {
-          logger.error(
-            `Error posting external grading dead letters to slack [status code ${res.status}]`,
-            await res.text(),
+        await opsbot
+          .sendMessage(msg)
+          .catch(async (err) =>
+            logger.error(`Error posting external grading dead letters to slack`, err.data),
           );
-        }
       },
     ],
     (err) => {
