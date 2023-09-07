@@ -1,6 +1,6 @@
 import detectMocha from 'detect-mocha';
 
-import { makeWithData } from '@prairielearn/error';
+import * as error from '@prairielearn/error';
 import { config } from './config';
 import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
@@ -55,7 +55,9 @@ export async function sendSlackMessage(msg, channel) {
   });
 
   if (!response.ok) {
-    throw makeWithData(`Error sending message to ${channel}`, { body: await response.json() });
+    throw error.makeWithData(`Error sending message to ${channel}`, {
+      body: await response.json(),
+    });
   }
   return response;
 }
