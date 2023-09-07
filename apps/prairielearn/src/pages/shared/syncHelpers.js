@@ -1,11 +1,11 @@
 // @ts-check
-const { ECR } = require('@aws-sdk/client-ecr');
+const { ECR, ECRClient } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
 const async = require('async');
 const Docker = require('dockerode');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const namedLocks = require('@prairielearn/named-locks');
 
 const { makeAwsClientConfig } = require('../../lib/aws');
@@ -327,7 +327,8 @@ module.exports.ecrUpdate = async function (images, locals) {
     throw new Error('cacheImageRegistry not defined');
   }
 
-  const auth = await setupDockerAuthAsync(config.awsRegion);
+  const ecr = new ECRClient({ region: config.awsRegion });
+  const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({
     courseId: locals.course.id,
