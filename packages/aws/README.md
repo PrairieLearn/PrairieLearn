@@ -2,6 +2,10 @@
 
 This package contains utilities that help us correctly configure AWS SDK clients.
 
+Specifically, it's meant to address the fact that clients from the v3 AWS SDK don't share resolved credentials with each other. This means that, by default, every time a new client is created, it has to independently resolve credentials for itself. In production, this is problematic, as that requires talking to the IMDS, which will throttle requests if we make a ton of them in rapid succession. This results in clients being unable to obtain credentials, and thus the AWS API operations fail.
+
+We resolve this with this package, which helps ensure that all AWS SDk clients are constructed with a shared and memoized credential provider.
+
 ## Usage
 
 Create a config provider with `makeAwsConfigProvider`:
