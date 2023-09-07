@@ -9,7 +9,7 @@ export function canSendMessages() {
   return detectMocha() || !!config.secretSlackOpsBotEndpoint;
 }
 
-export async function sendMessage(msg: string): Promise<Response | null> {
+export async function sendMessage(msg) {
   if (detectMocha()) {
     return new Response('Dummy test body', { status: 200, statusText: 'OK' });
   }
@@ -31,10 +31,7 @@ export async function sendMessage(msg: string): Promise<Response | null> {
  * @param msg String message to send.
  * @param channel Channel to send to.  Private channels must have the bot added.
  */
-export async function sendSlackMessage(
-  msg: string,
-  channel?: string | null | undefined,
-): Promise<Response | null> {
+export async function sendSlackMessage(msg, channel) {
   const token = config.secretSlackToken;
 
   // Log the message if there's no token specified
@@ -67,6 +64,6 @@ export async function sendSlackMessage(
  * Send a message to the secret course requests channel on Slack.
  * @param msg String message to send.
  */
-export async function sendCourseRequestMessage(msg: string): Promise<Response | null> {
+export async function sendCourseRequestMessage(msg) {
   return sendSlackMessage(msg, config.secretSlackCourseRequestChannel);
 }
