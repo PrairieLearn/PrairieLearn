@@ -4,9 +4,10 @@ const _ = require('lodash');
 const util = require('util');
 const express = require('express');
 const http = require('http');
-const request = require('request');
+const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');
@@ -20,7 +21,7 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
@@ -490,39 +491,38 @@ async function _allocateContainerPort(workspace) {
  * @param {function} callback
  */
 function _checkServer(workspace, callback) {
-  const checkMilliseconds = 500;
-  const maxMilliseconds = 30000;
+  const startTimeout = config.workspaceStartTimeoutSec * 1000;
+  const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
+  const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = new Date().getTime();
   function checkWorkspace() {
-    request(
+    fetch(
       `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-      function (err, res, _body) {
-        if (err) {
-          // Do nothing, because errors are expected while the container is launching.
-        }
-        if (res && res.statusCode) {
-          // We might get all sorts of strange status codes from the server.
-          // This is okay since it still means the server is running and we're
-          // getting responses.
-          callback(null, workspace);
+      { signal: AbortSignal.timeout(healthCheckTimeout) },
+    )
+      .then(() => {
+        // We might get all sorts of strange status codes from the server.
+        // This is okay since it still means the server is running and we're
+        // getting responses. So we don't need to check the response status.
+        callback(null, workspace);
+      })
+      .catch(() => {
+        // Do nothing, because errors are expected while the container is launching.
+        const endTime = new Date().getTime();
+        if (endTime - startTime > startTimeout) {
+          const { id, version, launch_uuid } = workspace;
+          callback(
+            new Error(
+              `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
+            ),
+          );
         } else {
-          const endTime = new Date().getTime();
-          if (endTime - startTime > maxMilliseconds) {
-            const { id, version, launch_uuid } = workspace;
-            callback(
-              new Error(
-                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
-              ),
-            );
-          } else {
-            setTimeout(checkWorkspace, checkMilliseconds);
-          }
+          setTimeout(checkWorkspace, healthCheckInterval);
         }
-      },
-    );
+      });
   }
-  setTimeout(checkWorkspace, checkMilliseconds);
+  checkWorkspace();
 }
 const _checkServerAsync = util.promisify(_checkServer);
 
@@ -576,7 +576,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient({ region: config.awsRegion });
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;

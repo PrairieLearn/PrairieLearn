@@ -2,6 +2,7 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const Sentry = require('@prairielearn/sentry');
+const { logger } = require('@prairielearn/logger');
 
 const { config } = require('../lib/config');
 const calculationInprocess = require('./calculation-inprocess');
@@ -94,7 +95,7 @@ function questionFunctionExperiment(name, control, candidate) {
         const controlHasData = !_.isEmpty(controlData);
         const candidateHasData = !_.isEmpty(candidateData);
 
-        // Lodash is clever enough to understand Buffers, so we don't event need to
+        // Lodash is clever enough to understand Buffers, so we don't need to
         // special-case `getFile`, which can sometimes return a Buffer.
         //
         // We only assert that `controlData` and `candidateData` are equal if
@@ -104,9 +105,17 @@ function questionFunctionExperiment(name, control, candidate) {
           controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
+          logger.error('Experiment results did not match', {
+            name,
+            controlError,
+            controlResult,
+            candidateError,
+            candidateResult,
+          });
           Sentry.captureException(new Error('Experiment results did not match'), {
             contexts: {
               experiment: {
+                name,
                 control: observationPayload(controlError, controlResult),
                 candidate: observationPayload(candidateError, candidateResult),
               },
@@ -155,7 +164,10 @@ module.exports.render = questionFunctionExperiment(
   calculationSubprocess.render,
 );
 
-module.exports.getFile = questionFunctionExperiment(
+// Note that the difference in naming between `file` and `getFile` is intentional.
+// The external interface of questions uses `file`, but the internal interface
+// uses `getFile`.
+module.exports.file = questionFunctionExperiment(
   'calculation-question-getFile',
   calculationInprocess.getFile,
   calculationSubprocess.getFile,

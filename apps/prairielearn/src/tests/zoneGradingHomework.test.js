@@ -1,7 +1,7 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
+const { assert } = require('chai');
+const fetch = require('node-fetch').default;
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
@@ -24,10 +24,10 @@ const questions = _.keyBy(questionsArray, 'qid');
 
 const assessmentMaxPoints = 57;
 
-//     action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
-//     score: value to submit, will be the percentage score for the submission
-//     sub_points: additional awarded points for this submission
-//     sub_total_points: additional total points for this submission
+// action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
+// score: value to submit, will be the percentage score for the submission
+// sub_points: additional awarded points for this submission
+// sub_total_points: additional total points for this submission
 const zoneGradingTests = [
   [
     {
@@ -137,8 +137,6 @@ describe('Zone grading homework assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var res, page, elemList;
-
   var startAssessment = function () {
     describe('the locals object', function () {
       it('should be cleared', function () {
@@ -181,27 +179,16 @@ describe('Zone grading homework assessment', function () {
     });
 
     describe('GET ' + locals.assessmentsUrl, function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentsUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should parse', function () {
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentsUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
-      it('should contain "Homework to test per-zone grading"', function () {
-        elemList = locals.$('td a:contains("Homework to test per-zone grading")');
+      it('should have correct link for "Homework to test per-zone grading"', function () {
+        const elemList = locals.$('td a:contains("Homework to test per-zone grading")');
         assert.lengthOf(elemList, 1);
-      });
-      it('should have the correct link for HW4', function () {
+
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
@@ -211,24 +198,20 @@ describe('Zone grading homework assessment', function () {
     });
 
     describe('GET to assessment URL', function () {
-      it('should load successfully', function (callback) {
+      it('should load successfully', async () => {
         locals.preStartTime = Date.now();
-        request(locals.assessmentUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postStartTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should redirect to the correct path', function () {
-        locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+
+        const res = await fetch(locals.assessmentUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
+        locals.$ = cheerio.load(page);
+
+        // Check that we redirected to the correct URL
+        const url = new URL(res.url);
+        locals.assessmentInstanceUrl = locals.siteUrl + url.pathname;
+        assert.equal(url.pathname, '/pl/course_instance/1/assessment_instance/1');
+
+        locals.postStartTime = Date.now();
       });
       it('should create one assessment_instance', function (callback) {
         sqldb.query(sql.select_assessment_instances, [], function (err, result) {
@@ -266,27 +249,17 @@ describe('Zone grading homework assessment', function () {
     });
 
     describe('GET to assessment_instance URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentInstanceUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should parse', function () {
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentInstanceUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
           const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
           question.url = locals.siteUrl + urlTail;
-          elemList = locals.$(`td a[href="${urlTail}"]`);
+          const elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);
         });
       });
@@ -296,19 +269,13 @@ describe('Zone grading homework assessment', function () {
   zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 

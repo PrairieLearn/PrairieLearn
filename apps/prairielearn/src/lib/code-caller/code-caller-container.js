@@ -9,9 +9,10 @@ const { Mutex } = require('async-mutex');
 const os = require('os');
 const fs = require('fs-extra');
 const execa = require('execa');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const bindMount = require('@prairielearn/bind-mount');
 const { instrumented } = require('@prairielearn/opentelemetry');
-const { setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const { config } = require('../config');
 const { logger } = require('@prairielearn/logger');
@@ -78,9 +79,8 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const dockerAuth = config.cacheImageRegistry
-        ? await setupDockerAuthAsync(config.awsRegion)
-        : null;
+      const ecr = new ECRClient({ region: config.awsRegion });
+      const dockerAuth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {
         docker.modem.followProgress(

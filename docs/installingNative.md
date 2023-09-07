@@ -91,6 +91,6 @@ This page describes the procedure to install and run PrairieLearn without any us
   make start
   ```
 
-  This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
-
 - In a web-browser go to [http://localhost:3000](http://localhost:3000).
+
+- To stop the server, use `Ctrl-C`. If you want the server to automatically restart when changes are detected, you can run `make dev` instead of `make start`.

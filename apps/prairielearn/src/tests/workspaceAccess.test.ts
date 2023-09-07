@@ -1,34 +1,40 @@
-const request = require('request');
-const { promisify } = require('util');
-const cheerio = require('cheerio');
-const assert = require('chai').assert;
+import * as cheerio from 'cheerio';
+import { assert } from 'chai';
+import fetch from 'node-fetch';
 
-const sqldb = require('@prairielearn/postgres');
+import { Config, config } from '../lib/config';
+import * as helperServer from './helperServer';
+
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
-const { config } = require('../lib/config');
-const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const storedConfig = {};
+const storedConfig: Partial<Config> = {};
 
-const studentOne = {
+interface UserConfig {
+  uid: string;
+  uin: string;
+  name: string;
+}
+
+const studentOne: UserConfig = {
   uid: 'student1@illinois.edu',
   uin: '000000001',
   name: 'Student One',
 };
-const studentTwo = {
+const studentTwo: UserConfig = {
   uid: 'student2@illinois.edu',
   uin: '000000002',
   name: 'Student Two',
 };
-const studentNotEnrolled = {
+const studentNotEnrolled: UserConfig = {
   uid: 'student_not_enrolled@illinois.edu',
   uin: '000000003',
   name: 'Not Enrolled',
 };
 
-function setStudent(student) {
+function setStudent(student: UserConfig) {
   config.authUid = student.uid;
   config.authUin = student.uin;
   config.authName = student.name;
@@ -36,8 +42,6 @@ function setStudent(student) {
 function restoreUser() {
   Object.assign(config, storedConfig);
 }
-
-const requestAsync = promisify(request);
 
 describe('Test workspace authorization access', function () {
   this.timeout(20000);
@@ -66,25 +70,25 @@ describe('Test workspace authorization access', function () {
   });
 
   describe('workspaces created by instructors in a course instance', function () {
-    let workspace_id;
+    let workspace_id: string | undefined;
     it('create instructor workspace', async function () {
       const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
       const workspace_url =
         baseUrl + `/course_instance/1/instructor/question/${result.question_id}/preview`;
-      const response = await requestAsync(workspace_url);
+      const response = await fetch(workspace_url);
 
-      const $ = cheerio.load(response.body);
+      const $ = cheerio.load(await response.text());
       const workspace_btns = $('a:contains("Open workspace")');
       assert.equal(workspace_btns.length, 1);
 
-      workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
+      workspace_id = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
       assert.isDefined(workspace_id);
     });
     describe('can be accessed by the instructor', function () {
       it('try to access with the instructor', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 200);
+        const response = await fetch(url);
+        assert.equal(response.status, 200);
       });
     });
     describe("can't be accessed by enrolled student one", function () {
@@ -96,8 +100,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
     describe("can't be accessed by enrolled student two", function () {
@@ -109,8 +113,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
     describe("can't be accessed by an unenrolled user", function () {
@@ -122,8 +126,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
   });
@@ -138,24 +142,24 @@ describe('Test workspace authorization access', function () {
       await sqldb.queryAsync(sql.revoke_owner_access, {});
     });
 
-    let workspace_id;
+    let workspace_id: string | undefined;
     it('create instructor workspace', async function () {
       const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
       const workspace_url = baseUrl + `/course/1/question/${result.question_id}/preview`;
-      const response = await requestAsync(workspace_url);
+      const response = await fetch(workspace_url);
 
-      const $ = cheerio.load(response.body);
+      const $ = cheerio.load(await response.text());
       const workspace_btns = $('a:contains("Open workspace")');
       assert.equal(workspace_btns.length, 1);
 
-      workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
+      workspace_id = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
       assert.isDefined(workspace_id);
     });
     describe('can be accessed by the instructor', function () {
       it('try to access with the instructor', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 200);
+        const response = await fetch(url);
+        assert.equal(response.status, 200);
       });
     });
     describe("can't be accessed by enrolled student one", function () {
@@ -167,8 +171,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
     describe("can't be accessed by enrolled student two", function () {
@@ -180,8 +184,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
     describe("can't be accessed by an unenrolled user", function () {
@@ -193,14 +197,14 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
   });
 
   describe('workspaces created by students', function () {
-    let workspace_id;
+    let workspace_id: string | undefined;
     describe('create student workspace', function () {
       before('set student role', async function () {
         setStudent(studentOne);
@@ -210,28 +214,28 @@ describe('Test workspace authorization access', function () {
       });
       it('create the workspace', async function () {
         const assessments_url = baseUrl + '/course_instance/1/assessments';
-        let response = await requestAsync(assessments_url);
-        let $ = cheerio.load(response.body);
+        const assessments_response = await fetch(assessments_url);
+        const $assessments = cheerio.load(await assessments_response.text());
 
-        const hw2_url = siteUrl + $('a:contains("Miscellaneous homework")')[0].attribs.href;
-        response = await requestAsync(hw2_url);
-        $ = cheerio.load(response.body);
+        const hw2_url = siteUrl + $assessments('a:contains("Miscellaneous homework")').attr('href');
+        const hw2_response = await fetch(hw2_url);
+        const $hw2 = cheerio.load(await hw2_response.text());
 
-        const workspace_question_url = siteUrl + $('a:contains("Workspace test")')[0].attribs.href;
-        response = await requestAsync(workspace_question_url);
-        $ = cheerio.load(response.body);
+        const workspace_question_url = siteUrl + $hw2('a:contains("Workspace test")').attr('href');
+        const question_response = await fetch(workspace_question_url);
+        const $question = cheerio.load(await question_response.text());
 
-        const workspace_btns = $('a:contains("Open workspace")');
+        const workspace_btns = $question('a:contains("Open workspace")');
         assert.equal(workspace_btns.length, 1);
-        workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
+        workspace_id = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
         assert.isDefined(workspace_id);
       });
     });
     describe('can be accessed by the instructor', function () {
       it('try to access with the instructor', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 200);
+        const response = await fetch(url);
+        assert.equal(response.status, 200);
       });
     });
     describe('can be accessed by the student owner', function () {
@@ -243,8 +247,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 200);
+        const response = await fetch(url);
+        assert.equal(response.status, 200);
       });
     });
     describe("can't be accessed by another enrolled student", function () {
@@ -256,8 +260,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
     describe("can't be accessed by an unenrolled user", function () {
@@ -269,8 +273,8 @@ describe('Test workspace authorization access', function () {
       });
       it('try to access with the student', async function () {
         const url = baseUrl + `/workspace/${workspace_id}`;
-        const response = await requestAsync(url);
-        assert.equal(response.statusCode, 403);
+        const response = await fetch(url);
+        assert.equal(response.status, 403);
       });
     });
   });

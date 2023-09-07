@@ -57,6 +57,21 @@ const ConfigSchema = z.object({
   /** Controls the maximum size of all graded files in bytes. */
   workspaceMaxGradedFilesSize: z.number().default(100 * 1024 * 1024),
   workspaceLogsS3Bucket: z.string().nullable().default(null),
+  /**
+   * How long to wait for a workspace container to start. If the container
+   * doesn't complete a health check within this period, it is marked as
+   * unhealthy and killed.
+   */
+  workspaceStartTimeoutSec: z.number().default(30),
+  /**
+   * How long to wait between the end of one health check and the start of
+   * the next one.
+   */
+  workspaceHealthCheckIntervalSec: z.number().default(1),
+  /**
+   * How long a single run of the health check is allowed to take.
+   */
+  workspaceHealthCheckTimeoutSec: z.number().default(10),
 });
 
 const loader = new ConfigLoader(ConfigSchema);
