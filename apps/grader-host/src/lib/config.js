@@ -9,6 +9,7 @@ const {
 } = require('@prairielearn/config');
 
 const logger = require('./logger');
+const { makeAwsClientConfig } = require('./aws');
 
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
@@ -66,6 +67,16 @@ function makeAutoScalingGroupConfigSource() {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
 
       logger.info('Detecting AutoScalingGroup...');
+      // We disable this rule because we can't reliably use `makeAwsClientConfig`
+      // as a part of the config loading process. This is because it relies on
+      // reading the region from the config, which at this point hasn't been
+      // loaded yet.
+      //
+      // This rule is designed to enforce that we share credentials between
+      // clients to avoid spamming the IMDS API when creating lots of clients,
+      // but this client will really only be used once, typically at application
+      // startup.
+      // eslint-disable-next-line @prairielearn/aws-client-shared-config
       var autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
       var params = { InstanceIds: [existingConfig.instanceId] };
       const data = await autoscaling.describeAutoScalingInstances(params);
@@ -110,7 +121,7 @@ async function getQueueUrl(prefix) {
 
   const queueName = module.exports.config[queueNameKey];
   logger.info(`Loading url for queue "${queueName}"`);
-  const sqs = new SQSClient({ region: module.exports.config.awsRegion });
+  const sqs = new SQSClient(makeAwsClientConfig());
   try {
     const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
     module.exports.config[queueUrlKey] = data.QueueUrl;

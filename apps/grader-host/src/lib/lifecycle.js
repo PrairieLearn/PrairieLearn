@@ -3,6 +3,7 @@ const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 
 const logger = require('./logger');
 const { config } = require('./config');
+const { makeAwsClientConfig } = require('./aws');
 
 /**
  * Stores our current state. We do one-way transitions:
@@ -38,7 +39,7 @@ module.exports.inService = async () => {
   lifecycleState = 'InService';
   logger.info(`lifecycle.inService(): changing to state ${lifecycleState}`);
 
-  const autoscaling = new AutoScaling({ region: config.awsRegion });
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
   const params = {
     AutoScalingGroupName: config.autoScalingGroupName,
     LifecycleActionResult: 'CONTINUE',
@@ -64,7 +65,7 @@ module.exports.abandonLaunch = async () => {
     lifecycleState = 'AbandoningLaunch';
     logger.info(`lifecycle.abandonLaunch(): changing to state ${lifecycleState}`);
 
-    const autoscaling = new AutoScaling({ region: config.awsRegion });
+    const autoscaling = new AutoScaling(makeAwsClientConfig());
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleActionResult: 'ABANDON',
@@ -86,7 +87,7 @@ module.exports.abandonLaunch = async () => {
 function heartbeat() {
   if (lifecycleState === 'Launching') {
     logger.info('lifecycle.heartbeat(): sending heartbeat...');
-    const autoscaling = new AutoScaling({ region: config.awsRegion });
+    const autoscaling = new AutoScaling(makeAwsClientConfig());
     const params = {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleHookName: 'launching',
