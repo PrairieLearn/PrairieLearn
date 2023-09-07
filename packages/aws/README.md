@@ -23,18 +23,18 @@ const awsConfigProvider = makeAwsConfigProvider({
   }),
 });
 
-export const getAwsClientConfig = awsConfigProvider.getAwsClientConfig;
-export const getS3ClientConfig = awsConfigProvider.getS3ClientConfig;
+export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
+export const makeS3ClientConfig = awsConfigProvider.makeS3ClientConfig;
 ```
 
-Then, use the `getAwsClientConfig` and `getS3ClientConfig` functions to configure AWS clients:
+Then, use the `makeAwsClientConfig` and `makeS3ClientConfig` functions to configure AWS clients:
 
 ```ts
 import { EC2Client } from '@aws-sdk/client-ec2';
 import { S3Client } from '@aws-sdk/client-s3';
 
-const ec2 = new EC2Client(getAwsClientConfig());
-const s3 = new S3Client(getS3ClientConfig());
+const ec2 = new EC2Client(makeAwsClientConfig());
+const s3 = new S3Client(makeS3ClientConfig());
 ```
 
 ### Providing extra config
@@ -43,8 +43,8 @@ The `get...` functions support passing in extra config. If this extra config con
 
 ```ts
 const s3 = new S3Client(
-  getS3ClientConfig({
-    retries: 3,
+  makeS3ClientConfig({
+    maxAttempts: 3,
   }),
 );
 ```
@@ -61,7 +61,7 @@ const awsConfigProvider = makeAwsConfigProvider({
   getClientConfig: () => ({
     region: config.awsRegion,
   }),
-  getS3ClientConfig: () => {
+  makeS3ClientConfig: () => {
     if (process.env.NODE_ENV !== 'production') {
       return {
         forcePathStyle: true,
