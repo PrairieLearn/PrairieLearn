@@ -492,7 +492,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'logout';
       next();
     },
-    require('./pages/authLogout/authLogout').default,
+    require('./pages/authLogout/authLogout'),
   ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));

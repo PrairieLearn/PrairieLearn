@@ -1,9 +1,11 @@
-import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import util = require('util');
-import { config } from '../../lib/config';
+// @ts-check
+const util = require('util');
+const express = require('express');
+const asyncHandler = require('express-async-handler');
 
-const router = Router();
+const { config } = require('../../lib/config');
+
+const router = express.Router();
 
 router.get(
   '/',
@@ -34,4 +36,4 @@ router.get(
   }),
 );
 
-export default router;
+module.exports = router;
