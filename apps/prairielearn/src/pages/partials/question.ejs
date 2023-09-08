@@ -238,11 +238,12 @@
                 Select one of your courses to copy this question.
               </p>
               <select class="form-control" name="to_course_id" required>
-                <% question_copy_targets.forEach(function(course) { %>
+                <% question_copy_targets.forEach(function(course, index) { %>
                   <option
                     value="<%= course.id %>"
                     data-csrf-token="<%= course.__csrf_token %>"
                     data-copy-url="<%= course.copy_url %>"
+                    <%= index === 0 ? 'selected' : '' %>
                   >
                     <%= course.short_name %>
                   </option>
