@@ -5,7 +5,7 @@ const async = require('async');
 const ejs = require('ejs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const z = require('zod');
+const { z } = require('zod');
 
 const error = require('@prairielearn/error');
 const question = require('../lib/question');

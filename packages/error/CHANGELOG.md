@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.0.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
 ## 1.0.5
 
 ### Patch Changes

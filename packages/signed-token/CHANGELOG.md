@@ -1,5 +1,11 @@
 # @prairielearn/signed-token
 
+## 1.0.5
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
 ## 1.0.4
 
 ### Patch Changes

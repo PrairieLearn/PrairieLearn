@@ -1,98 +1,81 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const request = require('request');
-const util = require('util');
-const detectMocha = require('detect-mocha');
-const _ = require('lodash');
+import detectMocha from 'detect-mocha';
 
-const error = require('@prairielearn/error');
-const { config } = require('./config');
-const { logger } = require('@prairielearn/logger');
+import * as error from '@prairielearn/error';
+import { config } from './config';
+import { logger } from '@prairielearn/logger';
+import fetch, { Response } from 'node-fetch';
 
-module.exports = {};
+export function canSendMessages() {
+  return detectMocha() || !!config.secretSlackOpsBotEndpoint;
+}
 
-module.exports.canSendMessages = () => {
-  if (detectMocha()) return true;
-  return !!config.secretSlackOpsBotEndpoint;
-};
-
-module.exports.sendMessage = (msg, callback) => {
-  // No-op if there's no url specified
-  if (!module.exports.canSendMessages()) {
-    return callback(null);
+export async function sendMessage(msg) {
+  if (detectMocha()) {
+    return new Response('Dummy test body', { status: 200, statusText: 'OK' });
   }
 
-  const options = {
-    uri: config.secretSlackOpsBotEndpoint,
-    method: 'POST',
-    json: {
-      text: msg,
-    },
-  };
-  if (detectMocha()) return callback(null, { statusCode: 200 }, 'Dummy test body');
-  request(options, (err, res, body) => {
-    if (ERR(err, callback)) return;
-    callback(null, res, body);
-  });
-};
+  // No-op if there's no url specified
+  if (!config.secretSlackOpsBotEndpoint) {
+    return null;
+  }
 
-module.exports.sendMessageAsync = util.promisify((msg, callback) =>
-  module.exports.sendMessage(msg, (err, res, body) => callback(err, { res, body })),
-);
+  const response = await fetch(config.secretSlackOpsBotEndpoint, {
+    method: 'POST',
+    body: JSON.stringify({ text: msg }),
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw error.makeWithData('Error sending message', {
+      responseCode: response.status,
+      responseText: await response.text(),
+    });
+  }
+
+  return response;
+}
 
 /**
  * General interface to send a message from PrairieLearn to Slack.
  * @param msg String message to send.
  * @param channel Channel to send to.  Private channels must have the bot added.
- * @param options Any extra options to send in the request, pass in an empty object ({}) for none.
- * @param callback Function that is called after the message is sent.
- * Called with callback(err, response, body)
  */
-module.exports.sendSlackMessage = (msg, channel, options, callback) => {
+export async function sendSlackMessage(msg, channel) {
   const token = config.secretSlackToken;
 
   // Log the message if there's no token specified
   if (!token || !channel) {
     logger.info(`Slack message:\n${msg}`);
-    return callback(null);
+    return null;
   }
 
-  let default_options = {
-    uri: 'https://slack.com/api/chat.postMessage',
+  if (detectMocha()) {
+    return new Response('Dummy test body', { status: 200, statusText: 'OK' });
+  }
+
+  const response = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    json: {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
       text: msg,
       channel: channel,
       as_user: true,
-    },
-  };
-  _.defaultsDeep(default_options, options);
-
-  if (detectMocha()) return callback(null, { statusCode: '200' }, 'Dummy test body');
-  request(default_options, (err, res, body) => {
-    if (ERR(err, callback)) return;
-    if (!body.ok) {
-      callback(
-        error.makeWithData(`Error sending message to ${default_options.json.channel}`, { body }),
-      );
-      return;
-    }
-    callback(null, res, body);
+    }),
   });
-};
+
+  if (!response.ok) {
+    throw error.makeWithData(`Error sending message to ${channel}`, {
+      responseCode: response.status,
+      responseText: await response.text(),
+    });
+  }
+  return response;
+}
 
 /**
  * Send a message to the secret course requests channel on Slack.
  * @param msg String message to send.
- * @param callback Function that is called after the message is sent.
- * Called with callback(err, response, body)
  */
-module.exports.sendCourseRequestMessage = (msg, callback) => {
-  module.exports.sendSlackMessage(msg, config.secretSlackCourseRequestChannel, {}, (err, res) => {
-    if (ERR(err, callback)) return;
-    callback(null, res);
-  });
-};
+export async function sendCourseRequestMessage(msg) {
+  return sendSlackMessage(msg, config.secretSlackCourseRequestChannel);
+}

@@ -10,10 +10,13 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.388.0",
-    "@aws-sdk/client-s3": "^3.388.0",
-    "@aws-sdk/client-sqs": "^3.388.0",
-    "@aws-sdk/lib-storage": "^3.388.0",
+    "@aws-sdk/client-auto-scaling": "^3.405.0",
+    "@aws-sdk/client-ecr": "^3.405.0",
+    "@aws-sdk/client-s3": "^3.405.0",
+    "@aws-sdk/client-sqs": "^3.405.0",
+    "@aws-sdk/credential-providers": "^3.405.0",
+    "@aws-sdk/lib-storage": "^3.405.0",
+    "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
@@ -23,27 +26,27 @@
     "async": "^3.2.4",
     "async-stacktrace": "^0.0.2",
     "byline": "^5.0.0",
-    "chai": "^4.3.7",
+    "chai": "^4.3.8",
     "dockerode": "^3.3.5",
     "fs-extra": "^11.1.1",
     "logform": "^2.5.1",
     "s3-streamlogger": "^1.9.0",
     "tmp": "^0.2.1",
     "winston": "^3.10.0",
-    "zod": "^3.21.4"
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",
-    "@types/chai": "^4.3.5",
+    "@types/chai": "^4.3.6",
     "@types/dockerode": "^3.3.19",
     "@types/fs-extra": "^11.0.1",
-    "@types/node": "^18.17.4",
+    "@types/node": "^18.17.14",
     "@types/tmp": "^0.2.3",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.1",
     "sinon": "^15.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.6",
+    "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   }
 }

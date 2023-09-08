@@ -63,11 +63,11 @@
     <pl-question-panel>
       <p>This example shows the use of the attribute <code>size</code> to control the width of the input box. Enter below the coefficients
         for a function $y = a x + b$ that has a slope equal to $2$ and intercepts the $y$-axis at $5$. Here
-        we also use <code>show-placeholder="false"</code> for both input boxes and <code>show-help-text="false"</code>
+        we also use <code>placeholder=""</code> for both input boxes and <code>show-help-text="false"</code>
         for the first input box.</p>
     </pl-question-panel>
-    $f = $<pl-number-input answers-name="c_m" show-placeholder="false" show-help-text="false" size="10"></pl-number-input> $ x \, +$
-    <pl-number-input answers-name="c_b" show-placeholder="false" size="10"></pl-number-input>
+    $f = $<pl-number-input answers-name="c_m" placeholder="" show-help-text="false" size="10"></pl-number-input> $ x \, +$
+    <pl-number-input answers-name="c_b" placeholder="" size="10"></pl-number-input>
   </div>
 </div>
 
@@ -85,9 +85,14 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>This question modifies the default format used to print the correct answer and submitted answer. This option can be used, for example, to set the number of decimal places, force (or avoid) scientific notation, or to include a sign in the result.</p>
+      <p>
+        This question modifies the default format used to print the correct answer and submitted answer.
+        This option can be used, for example, to set the number of decimal places, force (or avoid)
+        scientific notation, or to include a sign in the result. We also set
+        <code>show-score="False"</code> to hide the score badge.
+      </p>
       <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
     </pl-question-panel>
-    <pl-number-input answers-name="c_7" custom-format="+.5f"></pl-number-input>
+    <pl-number-input answers-name="c_7" custom-format="+.5f" show-score="false"></pl-number-input>
   </div>
 </div>

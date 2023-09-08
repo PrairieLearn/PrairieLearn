@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/csv",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -16,14 +16,14 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.1",
     "@types/multipipe": "^3.0.1",
-    "@types/node": "^18.17.4",
+    "@types/node": "^18.17.14",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.2"
   },
   "dependencies": {
-    "csv-stringify": "^6.4.0",
+    "csv-stringify": "^6.4.2",
     "multipipe": "^4.0.0",
-    "stream-transform": "^3.2.6"
+    "stream-transform": "^3.2.8"
   }
 }

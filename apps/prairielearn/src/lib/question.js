@@ -142,31 +142,44 @@ module.exports = {
    * @param {String} filename
    * @param {Object} variant - The variant.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, fileData) function.
    */
-  getFile(filename, variant, question, course, authn_user_id, callback) {
+  getFile(filename, variant, question, variant_course, authn_user_id, callback) {
     questionServers.getModule(question.type, (err, questionModule) => {
       if (ERR(err, callback)) return;
-      questionModule.file(filename, variant, question, course, (err, courseIssues, fileData) => {
-        if (ERR(err, callback)) return;
+      util.callbackify(module.exports.getQuestionCourse)(
+        question,
+        variant_course,
+        (err, question_course) => {
+          if (ERR(err, callback)) return;
+          questionModule.file(
+            filename,
+            variant,
+            question,
+            question_course,
+            (err, courseIssues, fileData) => {
+              if (ERR(err, callback)) return;
 
-        const studentMessage = 'Error creating file: ' + filename;
-        const courseData = { variant, question, course };
-        module.exports._writeCourseIssues(
-          courseIssues,
-          variant,
-          authn_user_id,
-          studentMessage,
-          courseData,
-          (err) => {
-            if (ERR(err, callback)) return;
+              const studentMessage = 'Error creating file: ' + filename;
+              const courseData = { variant, question, course: variant_course };
+              module.exports._writeCourseIssues(
+                courseIssues,
+                variant,
+                authn_user_id,
+                studentMessage,
+                courseData,
+                (err) => {
+                  if (ERR(err, callback)) return;
 
-            return callback(null, fileData);
-          },
-        );
-      });
+                  return callback(null, fileData);
+                },
+              );
+            },
+          );
+        },
+      );
     });
   },
 
@@ -502,7 +515,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} variant_course - The course for the variant.
    */
-  async _getQuestionCourse(question, variant_course) {
+  async getQuestionCourse(question, variant_course) {
     if (question.course_id === variant_course.id) {
       return variant_course;
     } else {
@@ -538,7 +551,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           var params = [variant.id, check_submission_id];
@@ -1091,7 +1104,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           const instance_question_id = null;
@@ -1568,7 +1581,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          locals.question_course = await module.exports._getQuestionCourse(
+          locals.question_course = await module.exports.getQuestionCourse(
             locals.question,
             locals.course,
           );

@@ -124,8 +124,8 @@ module.exports = {
         return ERR(error.addData(err, data), callback);
       }
       let data = {
-        params: jsonRoundTrip(questionData.params),
-        true_answer: jsonRoundTrip(questionData.trueAnswer),
+        params: jsonRoundTrip(questionData.params ?? null),
+        true_answer: jsonRoundTrip(questionData.trueAnswer ?? null),
         options: jsonRoundTrip(questionData.options || question.options || {}),
       };
       callback(null, [], data);
@@ -221,13 +221,13 @@ module.exports = {
       const data = {
         score: score,
         v2_score: grading.score,
-        feedback: jsonRoundTrip(grading.feedback),
+        feedback: jsonRoundTrip(grading.feedback ?? null),
         partial_scores: {},
-        submitted_answer: jsonRoundTrip(submittedAnswer),
+        submitted_answer: jsonRoundTrip(submittedAnswer ?? null),
         format_errors: {},
         gradable: true,
-        params: jsonRoundTrip(params),
-        true_answer: jsonRoundTrip(trueAnswer),
+        params: jsonRoundTrip(params ?? null),
+        true_answer: jsonRoundTrip(trueAnswer ?? null),
       };
       callback(null, [], data);
     });

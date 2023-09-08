@@ -1,5 +1,4 @@
 // @ts-check
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { v4: uuid } = require('uuid');
@@ -110,7 +109,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   before('set up testing server', async function () {
     courseDir = await writeCourseToTempDirectory(course);
-    await util.promisify(helperServer.before(courseDir).bind(this))();
+    await helperServer.before(courseDir).call(this);
     const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
     courseInstanceId = courseInstanceResult.rows[0].id;
   });
