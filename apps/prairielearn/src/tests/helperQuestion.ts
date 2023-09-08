@@ -3,14 +3,14 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { setTimeout as sleep } from 'timers/promises';
-const _ = require('lodash');
-const FormData = require('form-data');
+import * as _ from 'lodash';
+import FormData = require('form-data');
 
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function waitForJobSequence(locals) {
+export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
@@ -39,7 +39,7 @@ export function waitForJobSequence(locals) {
   });
 }
 
-export function getInstanceQuestion(locals) {
+export function getInstanceQuestion(locals: Record<string, any>) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
@@ -182,7 +182,7 @@ export function getInstanceQuestion(locals) {
   });
 }
 
-export function postInstanceQuestion(locals) {
+export function postInstanceQuestion(locals: Record<string, any>) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
       assert(locals.getSubmittedAnswer);
@@ -259,7 +259,7 @@ export function postInstanceQuestion(locals) {
   });
 }
 
-export function postInstanceQuestionAndFail(locals) {
+export function postInstanceQuestionAndFail(locals: Record<string, any>) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
       assert(locals.getSubmittedAnswer);
@@ -297,7 +297,7 @@ export function postInstanceQuestionAndFail(locals) {
   });
 }
 
-export function checkSubmissionScore(locals) {
+export function checkSubmissionScore(locals: Record<string, any>) {
   describe('check submission score', function () {
     it('should have the submission', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_last_submission_for_question, {
@@ -314,7 +314,7 @@ export function checkSubmissionScore(locals) {
   });
 }
 
-export function checkQuestionScore(locals) {
+export function checkQuestionScore(locals: Record<string, any>) {
   describe('check question score', function () {
     it('should have the submission', async function () {
       if (_.has(locals.expectedResult, 'submission_score')) {
@@ -385,7 +385,7 @@ export function checkQuestionScore(locals) {
   });
 }
 
-export function checkAssessmentScore(locals) {
+export function checkAssessmentScore(locals: Record<string, any>) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {
@@ -414,7 +414,7 @@ export function checkAssessmentScore(locals) {
   });
 }
 
-export function checkQuestionFeedback(locals) {
+export function checkQuestionFeedback(locals: Record<string, any>) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
       const result = await sqldb.queryOneRowAsync(sql.select_question_feedback, {
@@ -435,7 +435,7 @@ export function checkQuestionFeedback(locals) {
   });
 }
 
-export function regradeAssessment(locals) {
+export function regradeAssessment(locals: Record<string, any>) {
   describe('GET to instructorAssessmentRegrading URL', async function () {
     it('should succeed', async function () {
       locals.instructorAssessmentRegradingUrl =
@@ -473,7 +473,7 @@ export function regradeAssessment(locals) {
   waitForJobSequence(locals);
 }
 
-export function uploadInstanceQuestionScores(locals) {
+export function uploadInstanceQuestionScores(locals: Record<string, any>) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -517,7 +517,7 @@ export function uploadInstanceQuestionScores(locals) {
   waitForJobSequence(locals);
 }
 
-export function uploadAssessmentInstanceScores(locals) {
+export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
   describe('GET to instructorAssessmentUploads URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentUploadsUrl =
@@ -561,7 +561,7 @@ export function uploadAssessmentInstanceScores(locals) {
   waitForJobSequence(locals);
 }
 
-export function autoTestQuestion(locals, qid) {
+export function autoTestQuestion(locals: Record<string, any>, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
