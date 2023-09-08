@@ -10,7 +10,7 @@ def assert_all_integers_within_limits(item: Any) -> None:
     while item_stack:
         next_item = item_stack.pop()
 
-        if isinstance(next_item, int):
+        if type(next_item) == int:
             if not pl.is_int_json_serializable(next_item):
                 raise ValueError(
                     f"Data structure contains oversized integer: {next_item}"
