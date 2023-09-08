@@ -5,11 +5,11 @@ import { config } from './config';
 import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
 
-export function canSendMessages() {
+export function canSendMessages(): boolean {
   return detectMocha() || !!config.secretSlackOpsBotEndpoint;
 }
 
-export async function sendMessage(msg) {
+export async function sendMessage(msg: string): Promise<null | Response> {
   if (detectMocha()) {
     return new Response('Dummy test body', { status: 200, statusText: 'OK' });
   }
@@ -40,7 +40,10 @@ export async function sendMessage(msg) {
  * @param msg String message to send.
  * @param channel Channel to send to.  Private channels must have the bot added.
  */
-export async function sendSlackMessage(msg, channel) {
+export async function sendSlackMessage(
+  msg: string,
+  channel: string | null,
+): Promise<null | Response> {
   const token = config.secretSlackToken;
 
   // Log the message if there's no token specified
@@ -76,6 +79,6 @@ export async function sendSlackMessage(msg, channel) {
  * Send a message to the secret course requests channel on Slack.
  * @param msg String message to send.
  */
-export async function sendCourseRequestMessage(msg) {
+export async function sendCourseRequestMessage(msg: string): Promise<null | Response> {
   return sendSlackMessage(msg, config.secretSlackCourseRequestChannel);
 }
