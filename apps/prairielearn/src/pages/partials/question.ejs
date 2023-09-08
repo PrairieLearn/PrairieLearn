@@ -218,7 +218,7 @@
   <div id="copyQuestionModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
-        <form method="POST" action="<%= question_copy_targets[0].copy_url %>">
+        <form method="POST" action="<%= question_copy_targets[0]?.copy_url ?? '' %>">
           <div class="modal-header">
             <h5 class="modal-title">Copy question</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -268,7 +268,7 @@
             <% } %>
           </div>
           <div class="modal-footer">
-            <input type="hidden" name="__csrf_token" value="<%= question_copy_targets[0].__csrf_token %>" />
+            <input type="hidden" name="__csrf_token" value="<%= question_copy_targets[0]?.__csrf_token ?? '' %>" />
             <input type="hidden" name="question_id" value="<%= question.id %>" />
             <input type="hidden" name="course_id" value="<%= course.id %>" /> 
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
