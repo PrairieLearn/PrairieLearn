@@ -11,7 +11,7 @@ import zygote_utils as zu
         [1, 2, [3, 4, {"thing": 5}]],
         [1, 2, "999999999999999999999"],
         [{"stuff": 999999}, {"other stuff": "key"}],
-        [{"big_float": 2e30}],
+        [{"big_float": 2.8e30}],
     ],
 )
 def test_all_integers_within_limits_no_exception(item: Any) -> None:
