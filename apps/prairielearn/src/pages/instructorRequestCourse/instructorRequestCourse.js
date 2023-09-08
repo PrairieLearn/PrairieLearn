@@ -168,19 +168,16 @@ router.post(
       });
     } else {
       // Not automatically created
-      opsbot.sendCourseRequestMessage(
-        `*Incoming course request*\n` +
-          `Course rubric: ${short_name}\n` +
-          `Course title: ${title}\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-          `GitHub username: ${github_user || 'not provided'}`,
-        (err) => {
-          ERR(err, () => {
-            logger.error(err);
-          });
-        },
-      );
+      opsbot
+        .sendCourseRequestMessage(
+          `*Incoming course request*\n` +
+            `Course rubric: ${short_name}\n` +
+            `Course title: ${title}\n` +
+            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+            `GitHub username: ${github_user || 'not provided'}`,
+        )
+        .catch((err) => logger.error(err));
       res.redirect(req.originalUrl);
     }
   }),
