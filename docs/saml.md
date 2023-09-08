@@ -22,7 +22,7 @@ Note that this will often look like an email, but does not currently need to be 
 
 An **immutable** identifier for a given user. A student/staff ID number is typically a good fit, although this varies from institution to institution.
 
-This attribute's value _must never change_ for a given individual, even if they change their name or email.  To be more precise, this value _must_ be **persistent** (stable across multiple login sessions) and **non-reassignable** (must never be reassigned from one individual to another).
+This attribute's value _must never change_ for a given individual, even if they change their name or email. To be more precise, this value _must_ be **persistent** (stable across multiple login sessions) and **non-reassignable** (must never be reassigned from one individual to another).
 
 This value will be visible to instructors and included in gradebook downloads, so it _should_ be a value with a useful meaning to instructors and across other campus services.
 
