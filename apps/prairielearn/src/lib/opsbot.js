@@ -65,7 +65,8 @@ export async function sendSlackMessage(msg, channel) {
 
   if (!response.ok) {
     throw error.makeWithData(`Error sending message to ${channel}`, {
-      body: await response.json(),
+      responseCode: response.status,
+      responseText: await response.text(),
     });
   }
   return response;
