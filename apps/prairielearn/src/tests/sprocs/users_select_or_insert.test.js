@@ -67,7 +67,7 @@ describe('sproc users_select_or_insert tests', () => {
       name: 'J.R. User',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML');
+    const result = await usersSelectOrInsert(user);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
