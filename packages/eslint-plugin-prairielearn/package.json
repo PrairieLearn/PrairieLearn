@@ -1,11 +1,11 @@
 {
-  "name": "@prairielearn/prettier-plugin-sql",
-  "version": "1.0.5",
+  "name": "@prairielearn/eslint-plugin",
+  "version": "1.0.0",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/prettier-plugin-sql"
+    "directory": "packages/eslint-plugin"
   },
   "scripts": {
     "build": "tsc",
@@ -13,11 +13,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.17.14",
-    "prettier": "3.0.3",
+    "@types/node": "^18.17.12",
     "typescript": "^5.2.2"
-  },
-  "dependencies": {
-    "sql-formatter": "^13.0.0"
   }
 }

@@ -26,6 +26,7 @@ const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
 const load = require('./lib/load');
+const { makeAwsClientConfig, makeS3ClientConfig } = require('./lib/aws');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -107,7 +108,7 @@ async.series(
     },
     () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
-      const sqs = new SQSClient({ region: config.awsRegion });
+      const sqs = new SQSClient(makeAwsClientConfig());
       for (let i = 0; i < config.maxConcurrentJobs; i++) {
         async.forever((next) => {
           if (!healthCheck.isHealthy() || processTerminating) return;
@@ -186,7 +187,7 @@ function handleJob(job, done) {
 
   const info = {
     docker: new Docker(),
-    s3: new S3({ region: config.awsRegion }),
+    s3: new S3(makeS3ClientConfig()),
     logger,
     job,
   };
@@ -250,7 +251,7 @@ async function reportReceived(info) {
       receivedTime: receivedTime,
     },
   };
-  const sqs = new SQSClient({ region: config.awsRegion });
+  const sqs = new SQSClient(makeAwsClientConfig());
   try {
     await sqs.send(
       new SendMessageCommand({
@@ -287,7 +288,7 @@ function initDocker(info, callback) {
       async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          const ecr = new ECRClient({ region: config.awsRegion });
+          const ecr = new ECRClient(makeAwsClientConfig());
           dockerAuth = await setupDockerAuth(ecr);
         }
       },
@@ -455,14 +456,14 @@ function runJob(info, callback) {
             NetworkDisabled: !jobEnableNetworking,
             HostConfig: {
               Binds: [`${tempDir}:/grade`],
-              Memory: 1 << 30, // 1 GiB
-              MemorySwap: 1 << 30, // same as Memory, so no access to swap
-              KernelMemory: 1 << 29, // 512 MiB
-              DiskQuota: 1 << 30, // 1 GiB
+              Memory: config.graderDockerMemory,
+              MemorySwap: config.graderDockerMemorySwap,
+              KernelMemory: config.graderDockerKernelMemory,
+              DiskQuota: config.graderDockerDiskQuota,
               IpcMode: 'private',
-              CpuPeriod: 100000, // microseconds
-              CpuQuota: 90000, // portion of the CpuPeriod for this container
-              PidsLimit: 1024,
+              CpuPeriod: config.graderDockerCpuPeriod,
+              CpuQuota: config.graderDockerCpuQuota,
+              PidsLimit: config.graderDockerPidsLimit,
             },
             Entrypoint: entrypoint.split(' '),
           },
@@ -661,7 +662,7 @@ function uploadResults(info, callback) {
           messageBody.data = results;
         }
 
-        const sqs = new SQSClient({ region: config.awsRegion });
+        const sqs = new SQSClient(makeAwsClientConfig());
         await sqs.send(
           new SendMessageCommand({
             QueueUrl: config.resultsQueueUrl,

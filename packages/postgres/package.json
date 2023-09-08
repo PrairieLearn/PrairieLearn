@@ -16,14 +16,14 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.1",
     "@types/multipipe": "^3.0.1",
-    "@types/node": "^18.17.12",
+    "@types/node": "^18.17.14",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
   "dependencies": {
     "@types/debug": "^4.1.8",
-    "@types/lodash": "^4.14.197",
+    "@types/lodash": "^4.14.198",
     "@types/pg-cursor": "^2.7.0",
     "multipipe": "^4.0.0",
     "pg": "^8.11.3",
