@@ -16,7 +16,7 @@ An identifier with an institution-specific suffix, e.g. "jsmith@example.edu". Th
 
 This attribute is allowed to change. For instance, at many institutions, someone who changes their name will receive an updated identifier. The next time they log in to PrairieLearn, their UID will be updated to reflect the latest value from the IdP.
 
-Note that this will often look like an email, but does not currently need to be routable as such.
+Note that this will often look like an email, but does not need to be routable as such.
 
 ### UIN
 
