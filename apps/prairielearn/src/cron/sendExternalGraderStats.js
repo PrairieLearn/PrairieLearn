@@ -50,7 +50,7 @@ module.exports.run = (callback) => {
 
     opsbot
       .sendMessage(msg)
-      .catch(async (err) => logger.error(`Error posting external grading stats to slack`, err.data))
+      .catch((err) => logger.error(`Error posting external grading stats to slack`, err.data))
       .finally(() => callback(null));
   });
 };

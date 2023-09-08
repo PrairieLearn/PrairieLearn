@@ -40,7 +40,7 @@ module.exports.run = (callback) => {
       async () => {
         await opsbot
           .sendMessage(msg)
-          .catch(async (err) =>
+          .catch((err) =>
             logger.error(`Error posting external grading dead letters to slack`, err.data),
           );
       },
