@@ -5,7 +5,7 @@ import { config } from './config';
 import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
 
-export function canSendMessages() {
+export function canSendMessages(): boolean {
   return detectMocha() || !!config.secretSlackOpsBotEndpoint;
 }
 
