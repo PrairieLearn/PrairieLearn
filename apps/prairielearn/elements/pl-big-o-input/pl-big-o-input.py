@@ -1,6 +1,5 @@
 import random
 from enum import Enum
-from html import escape
 from typing import Optional
 
 import big_o_utils as bou
