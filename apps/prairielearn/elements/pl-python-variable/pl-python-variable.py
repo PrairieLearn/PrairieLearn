@@ -69,6 +69,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     depth = pl.get_integer_attrib(element, "depth", DEPTH_DEFAULT)
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
+    # Using a passthrough for "compact", as the attribute had to be renamed
     compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
     compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
 
