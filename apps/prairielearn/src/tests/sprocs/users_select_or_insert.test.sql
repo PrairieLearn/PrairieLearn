@@ -10,7 +10,8 @@ INSERT INTO
   institution_authn_providers (institution_id, authn_provider_id)
 VALUES
   (100, 1),
-  (100, 3);
+  (100, 3),
+  (100, 5);
 
 -- BLOCK insert_illinois_edu
 WITH
@@ -29,4 +30,5 @@ INSERT INTO
   institution_authn_providers (institution_id, authn_provider_id)
 VALUES
   (200, 1),
-  (200, 2);
+  (200, 2),
+  (200, 5);
