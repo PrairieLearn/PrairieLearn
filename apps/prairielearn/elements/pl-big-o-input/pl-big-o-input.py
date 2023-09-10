@@ -122,13 +122,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     score = data["partial_scores"].get(name, {}).get("score")
 
-    # Prepare parse error
+    # First, prepare the parse error since this gets used in multiple panels
     parse_error: Optional[str] = data["format_errors"].get(name)
     missing_input = False
-    feedback = None
+    feedback = data["partial_scores"].get(name, {}).get("feedback")
     a_sub = None
-    a_sub_raw = None
-    raw_submitted_answer = None
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = sympy.latex(
@@ -139,10 +137,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_trig_functions=False,
             )
         )
-        a_sub_raw = data["raw_submitted_answers"].get(name, None)
-
-        if name in data["partial_scores"]:
-            feedback = data["partial_scores"][name].get("feedback")
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -152,24 +146,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info = chevron.render(f, info_params).strip()
 
         # Render invalid popup
-        raw_submitted_answer = data["raw_submitted_answers"].get(name)
         if isinstance(parse_error, str):
             with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 parse_error += chevron.render(
                     f, {"format_error": True, "format_string": info}
                 ).strip()
-        if raw_submitted_answer is not None:
-            raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
 
+    # Next, get the raw submitted answer
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+
+    if raw_submitted_answer is not None:
+        raw_submitted_answer = escape(raw_submitted_answer)
+
+    # Finally, render each panel
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
         with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-
-        if raw_submitted_answer is not None:
-            raw_submitted_answer = escape(raw_submitted_answer)
 
         html_params = {
             "question": True,
@@ -202,7 +196,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
-            "a_sub_raw": a_sub_raw,
             "raw_submitted_answer": raw_submitted_answer,
         }
 
