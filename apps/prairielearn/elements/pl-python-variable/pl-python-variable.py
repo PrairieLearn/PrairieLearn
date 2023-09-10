@@ -70,7 +70,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
     # Using a passthrough for "compact", as the attribute had to be renamed
-    compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
+    try:
+        compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
+    except Exception:
+        raise Exception(
+            'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
+        )
+
     compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
 
     sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
