@@ -2936,6 +2936,7 @@ __metadata:
     serve-favicon: ^2.5.0
     showdown: ^2.1.0
     sinon: ^15.2.0
+    sketchpad: ^0.1.0
     socket.io: ^4.7.2
     socket.io-adapter: ^2.5.2
     socket.io-client: ^4.7.2
@@ -14688,6 +14689,13 @@ __metadata:
     nise: ^5.1.4
     supports-color: ^7.2.0
   checksum: 1641b9af8a73ba57c73c9b6fd955a2d062a5d78cce719887869eca45faf33b0fd20cabfeffdfd856bb35bfbd3d49debb2d954ff6ae5e9825a3da5ff4f604ab6c
+  languageName: node
+  linkType: hard
+
+"sketchpad@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "sketchpad@npm:0.1.0"
+  checksum: 486b2c8ec71589eb70106518be39df0ca38054f008c65d82966b9ae6fdec188bc8b6ef3f717ebb9db0536cfbd98b8750ad26cedd9692b2aa0019ff0bf899aede
   languageName: node
   linkType: hard
 

@@ -67,6 +67,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
 - [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
   code form for supported programming languages.
+- [`pl-sketch`](#pl-sketch-element): Freely draw anything using a sketchpad.
 - [`pl-template`](#pl-template-element): Displays content from mustache templates.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
@@ -1442,6 +1443,38 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
 
+## `pl-sketch` element
+
+Freely draw a sketch of whatever you want.
+
+#### Sample Element
+
+<img src="elements/pl-sketch.png" width="300" />
+<br />
+
+**question.html**
+
+```html
+<pl-sketch width="500" height="600"></pl-sketch>
+```
+
+#### Customizations
+
+| Attribute | Type    | Default | Description                  |
+| --------- | ------- | ------- | ---------------------------- |
+| `width`   | integer | 500     | Width of sketchpad element.  |
+| `height`  | integer | 600     | Height of sketchpad element. |
+
+#### Details
+
+Any submission will be marked correct, as there is no way to automatically grade a sketch.
+
+#### Example Implementations
+
+- [element/sketch]
+
+---
+
 ### `pl-figure` element
 
 Display a statically or dynamically generated image.
@@ -2482,6 +2515,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
 [element/pythonvariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
+[element/sketch]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/sketch
 [element/dataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dataframe
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput

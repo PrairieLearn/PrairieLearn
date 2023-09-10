@@ -80,6 +80,7 @@ include = [
     "./apps/prairielearn/elements/pl-order-blocks",
     "./apps/prairielearn/elements/pl-python-variable",
     "./apps/prairielearn/elements/pl-question-panel",
+    "./apps/prairielearn/elements/pl-sketch",
     "./apps/prairielearn/elements/pl-submission-panel",
     "./apps/prairielearn/elements/pl-symbolic-input",
     "./apps/prairielearn/elements/pl-template",
