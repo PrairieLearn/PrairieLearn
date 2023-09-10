@@ -113,6 +113,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants = list(constants_class.variables.keys())
 
+    # Get the info string using these parameters
     info_params = {
         "format": True,
         "variables": variables,
@@ -120,12 +121,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "constants": constants,
     }
 
-    score = data["partial_scores"].get(name, {}).get("score")
+    with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        info = chevron.render(f, info_params).strip()
 
     # First, prepare the parse error since this gets used in multiple panels
     parse_error: Optional[str] = data["format_errors"].get(name)
     missing_input = False
-    feedback = data["partial_scores"].get(name, {}).get("feedback")
     a_sub = None
 
     if parse_error is None and name in data["submitted_answers"]:
@@ -141,30 +142,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         missing_input = True
         parse_error = None
     else:
-        # Use the existing format text in the invalid popup.
-        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
-
-        # Render invalid popup
-        if isinstance(parse_error, str):
+        # Use the existing format text in the invalid popup and render it
+        if parse_error is not None:
             with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 parse_error += chevron.render(
                     f, {"format_error": True, "format_string": info}
                 ).strip()
 
-    # Next, get the raw submitted answer
+    # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
-
-    if raw_submitted_answer is not None:
-        raw_submitted_answer = escape(raw_submitted_answer)
+    score = data["partial_scores"].get(name, {}).get("score")
 
     # Finally, render each panel
     if data["panel"] == "question":
         editable = data["editable"]
-
-        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
-
         html_params = {
             "question": True,
             "name": name,
@@ -188,6 +179,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
+        # No need to escape the raw_submitted_answer,
+        # this gets done automatically by mustache
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -202,7 +195,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-            html_params["feedback"] = feedback
+            html_params["feedback"] = (
+                data["partial_scores"].get(name, {}).get("feedback")
+            )
 
         with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
