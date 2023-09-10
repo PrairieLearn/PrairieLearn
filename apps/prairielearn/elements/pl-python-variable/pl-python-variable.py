@@ -43,7 +43,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "indent",
             "depth",
             "width",
+            # "compact" included for backwards compatibility.
             "compact",
+            "compact-sequences",
             "sort-dicts",
             # Legacy dataframe parameters
             "text",
@@ -66,7 +68,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     indent = pl.get_integer_attrib(element, "indent", INDENT_DEFAULT)
     depth = pl.get_integer_attrib(element, "depth", DEPTH_DEFAULT)
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
-    compact = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
+
+    compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
+    compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
+
     sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
 
     # Legacy dataframe parameters
