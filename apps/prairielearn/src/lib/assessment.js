@@ -69,12 +69,10 @@ module.exports = {
   renderText(assessment, urlPrefix) {
     if (!assessment.text) return null;
 
-    const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
-
     var context = {
-      clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
-      clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-      clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
+      clientFilesCourse: urlPrefix + '/clientFilesCourse',
+      clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
+      clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessment',
     };
     return ejs.render(assessment.text, context);
   },
