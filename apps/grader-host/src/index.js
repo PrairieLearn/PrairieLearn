@@ -464,6 +464,14 @@ function runJob(info, callback) {
               CpuPeriod: config.graderDockerCpuPeriod,
               CpuQuota: config.graderDockerCpuQuota,
               PidsLimit: config.graderDockerPidsLimit,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Entrypoint: entrypoint.split(' '),
           },

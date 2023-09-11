@@ -795,6 +795,14 @@ function _createContainer(workspace, callback) {
               PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
