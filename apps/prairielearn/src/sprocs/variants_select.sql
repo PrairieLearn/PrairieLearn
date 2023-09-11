@@ -31,7 +31,7 @@ BEGIN
             OR v.instance_question_id = variants_select.instance_question_id
         );
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id for this question: %', variant_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id for this question: %', variant_id USING ERROCDE = 'ST404'; END IF;
 
     IF variant_with_id.course_instance_id IS NOT NULL THEN
         SELECT ci.display_timezone
