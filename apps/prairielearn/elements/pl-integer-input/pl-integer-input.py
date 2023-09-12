@@ -68,7 +68,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
     # Test conversion, but leave as string so proper value is shown on answer panel
-    if correct_answer is not None:
+    if correct_answer is not None and not isinstance(correct_answer, int):
         try:
             int(str(correct_answer), base)
         except Exception:
