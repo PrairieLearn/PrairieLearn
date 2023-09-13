@@ -56,7 +56,7 @@ export default makeBatchedMigration({
 
       if (course.created_at != null) {
         // The course already has a date; don't overwrite it.
-        return;
+        continue;
       }
 
       const earliestCommitDate = await getEarliestCommitDateForCourse(course.path);
