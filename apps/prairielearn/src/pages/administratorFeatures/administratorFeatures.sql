@@ -17,6 +17,10 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = fg.user_id)
 WHERE
   fg.name = $name
+  AND (
+    $id::bigint IS NULL
+    OR fg.id = $id::bigint
+  )
 ORDER BY
   i.long_name ASC NULLS FIRST,
   i.id ASC NULLS FIRST,

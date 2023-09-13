@@ -102,6 +102,7 @@ export function AdministratorFeature({
           navSubPage: 'features',
         })}
         ${AddFeatureGrantModal({ feature, institutions, csrfToken: resLocals.__csrf_token })}
+        ${DeleteFeatureGrantModal({ csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -187,8 +188,17 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
 
 function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
   return html`
-    <div class="list-group-item d-flex flex-row align-items-center">
+    <div class="list-group-item d-flex flex-row align-items-center justify-content-between">
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-danger js-delete-feature-grant"
+        data-toggle="modal"
+        data-target="#delete-feature-grant-modal"
+        data-feature-grant-id="${featureGrant.id}"
+      >
+        Delete
+      </button>
     </div>
   `;
 }
@@ -210,6 +220,7 @@ function AddFeatureGrantModal(props: FeatureGrantModalProps) {
     id: 'add-feature-grant-modal',
     body: AddFeatureGrantModalBody(props),
     footer: html`
+      <input type="hidden" name="__action" value="add" />
       <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Grant feature</button>
@@ -310,4 +321,19 @@ export function AddFeatureGrantModalBody({
       </div>
     </fieldset>
   `;
+}
+
+function DeleteFeatureGrantModal(props: { csrfToken: string }) {
+  return Modal({
+    title: 'Delete feature grant',
+    id: 'delete-feature-grant-modal',
+    body: html`Are you sure you want to delete this feature grant?`,
+    footer: html`
+      <input type="hidden" name="feature_grant_id" class="js-feature-grant-id" />
+      <input type="hidden" name="__action" value="delete" />
+      <input type="hidden" name="__csrf_token" value="${props.csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete feature grant</button>
+    `,
+  });
 }

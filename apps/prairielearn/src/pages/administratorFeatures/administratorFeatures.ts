@@ -1,8 +1,9 @@
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import { loadSqlEquiv, queryValidatedRows, queryRows } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
 import { z } from 'zod';
+import error = require('@prairielearn/error');
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryValidatedRows, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { FeatureName, features } from '../../lib/features';
 import {
@@ -28,6 +29,14 @@ function validateFeature(feature: string): FeatureName {
   return feature;
 }
 
+async function selectFeatureGrants(name: FeatureName) {
+  return await queryRows(sql.select_feature_grants, { name, id: null }, FeatureGrantRowSchema);
+}
+
+async function selectFeatureGrant(name: FeatureName, id: string) {
+  return await queryRow(sql.select_feature_grants, { name, id }, FeatureGrantRowSchema);
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -45,11 +54,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const feature = validateFeature(req.params.feature);
 
-    const featureGrants = await queryRows(
-      sql.select_feature_grants,
-      { name: feature },
-      FeatureGrantRowSchema,
-    );
+    const featureGrants = await selectFeatureGrants(feature);
     const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
 
     res.send(
@@ -143,19 +148,37 @@ router.post(
   asyncHandler(async (req, res) => {
     const feature = validateFeature(req.params.feature);
 
-    const params = AddFeatureGrantModalParamsSchema.parse(req.body);
-    const { institution, course, course_instance } = await getEntitiesFromParams(params);
+    if (req.body.__action === 'add') {
+      const params = AddFeatureGrantModalParamsSchema.parse(req.body);
+      const { institution, course, course_instance } = await getEntitiesFromParams(params);
 
-    await features.enable(
-      feature,
-      features.validateContext({
-        institution_id: institution?.id ?? null,
-        course_id: course?.id ?? null,
-        course_instance_id: course_instance?.id ?? null,
-      }),
-    );
+      await features.enable(
+        feature,
+        features.validateContext({
+          institution_id: institution?.id ?? null,
+          course_id: course?.id ?? null,
+          course_instance_id: course_instance?.id ?? null,
+        }),
+      );
 
-    res.redirect(req.originalUrl);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete') {
+      const featureGrant = await selectFeatureGrant(feature, req.body.feature_grant_id);
+      await features.disable(
+        feature,
+        features.validateContext({
+          institution_id: featureGrant.institution_id ?? null,
+          course_id: featureGrant.course_id ?? null,
+          course_instance_id: featureGrant.course_instance_id ?? null,
+        }),
+      );
+
+      flash('success', 'Feature grant deleted.');
+
+      res.redirect(req.originalUrl);
+    } else {
+      throw error.make(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 

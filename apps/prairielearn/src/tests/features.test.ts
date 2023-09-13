@@ -103,4 +103,40 @@ describe('features', () => {
     // @ts-expect-error -- Invalid feature flag name.
     await assert.isRejected(features.enable('invalid'));
   });
+
+  it('only disables the desired feature flag', async () => {
+    const features = new FeatureManager(['test:example-feature-flag']);
+
+    await features.enable('test:example-feature-flag', {});
+    await features.enable('test:example-feature-flag', { institution_id: '1' });
+    await features.enable('test:example-feature-flag', { institution_id: '1', course_id: '1' });
+    await features.enable('test:example-feature-flag', {
+      institution_id: '1',
+      course_id: '1',
+      course_instance_id: '1',
+    });
+
+    await features.disable('test:example-feature-flag', {
+      institution_id: '1',
+      course_id: '1',
+      course_instance_id: '1',
+    });
+
+    assert.isTrue(await features.enabled('test:example-feature-flag', {}));
+    assert.isTrue(await features.enabled('test:example-feature-flag', { institution_id: '1' }));
+    assert.isTrue(
+      await features.enabled('test:example-feature-flag', { institution_id: '1', course_id: '1' }),
+    );
+
+    // Despite removing the course-instance-specific feature grant, the grants
+    // from the parent contexts are still in effect, so this feature should
+    // still be enabled.
+    assert.isTrue(
+      await features.enabled('test:example-feature-flag', {
+        institution_id: '1',
+        course_id: '1',
+        course_instance_id: '1',
+      }),
+    );
+  });
 });

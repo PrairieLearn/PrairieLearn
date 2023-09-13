@@ -48,19 +48,7 @@ ON CONFLICT DO NOTHING;
 DELETE FROM feature_grants
 WHERE
   name = $name
-  AND (
-    institution_id IS NULL
-    OR $institution_id = institution_id
-  )
-  AND (
-    course_id IS NULL
-    OR $course_id = course_id
-  )
-  AND (
-    course_instance_id IS NULL
-    OR $course_instance_id = course_instance_id
-  )
-  AND (
-    user_id IS NULL
-    OR $user_id = user_id
-  );
+  AND $institution_id IS NOT DISTINCT FROM institution_id
+  AND $course_id IS NOT DISTINCT FROM course_id
+  AND $course_instance_id IS NOT DISTINCT FROM course_instance_id
+  AND $user_id IS NOT DISTINCT FROM user_id;
