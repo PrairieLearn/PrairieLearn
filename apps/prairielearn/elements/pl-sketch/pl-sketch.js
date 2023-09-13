@@ -9,6 +9,8 @@ window.PLSketchApi = {
     if (toolName === this.tool) {
       return;
     }
+    console.log(toolName);
+    
     if (toolName === 'pen') {
       size = 5;
       this.tool = 'pen';
@@ -34,29 +36,44 @@ window.PLSketchApi = {
     }
   },
 
-  setupSketchpad: function (width, height, past_sketches, uuid) {
+  setupSketchpad: function (width, height, uuid) {
+    console.log('#undo-'+uuid);
     let element = '#pl-sketch-canvas-' + uuid;
     var sketchpadObject = {};
     sketchpadObject['width'] = width;
     sketchpadObject['height'] = height;
     sketchpadObject['element'] = element;
-    if (!jQuery.isEmptyObject(past_sketches)) {
-      sketchpadObject['strokes'] = past_sketches['strokes'];
-      sketchpadObject['undoHistory'] = past_sketches['undoHistory'];
-      console.log(past_sketches);
+    let sketches_string = $('#pl-sketch-input-' + uuid).val();
+    console.log(sketches_string.length);
+    if (sketches_string.length != 0) {
+        sketches_string = sketches_string.replace(/'/g, '!@#$%');
+        sketches_string = sketches_string.replace(/"/g, '\'');
+        sketches_string = sketches_string.replace(/!@#\$%/g, '"');
+        let sketches = JSON.parse(sketches_string);
+        let strokes = sketches['sketches'];
+        strokes = strokes.replace(/'/g, '"');
+        strokes = JSON.parse(strokes);
+
+        sketchpadObject['strokes'] = strokes;
+        sketchpadObject['undoHistory'] = sketches['undoHistory'];
     }
     this.sketchpad = new Sketchpad(sketchpadObject);
 
-    $('#pen').on('click', () => {
+    $('#pen-' + uuid).on('click', () => {
+      console.log("Pen with UUID: " + uuid + " was clicked");
       this.changeTool('pen');
     });
-    $('#eraser').on('click', () => {
+    $('#eraser-' + uuid).on('click', () => {
+      console.log("Eraser with UUID: " + uuid + " was clicked");
+      
       this.changeTool('eraser');
     });
-    $('#undo').on('click', () => {
+    
+    $('#undo-'+uuid).on('click', () => {
       this.sketchpad.undo();
+      console.log("Undoing!");
     });
-    $('#redo').on('click', () => {
+    $('#redo-' + uuid).on('click', () => {
       this.sketchpad.redo();
     });
     this.changeTool('pen');
