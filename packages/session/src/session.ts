@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import { sync as uidSync } from 'uid-safe';
+import uid from 'uid-safe';
 import crypto from 'node:crypto';
 
 import type { SessionStore } from './store';
@@ -13,8 +13,8 @@ export interface Session {
   [key: string]: any;
 }
 
-export function generateSessionId(): string {
-  return uidSync(24);
+export async function generateSessionId(): Promise<string> {
+  return await uid(24);
 }
 
 export async function loadSession(
@@ -61,7 +61,7 @@ export function makeSession(
 
   defineStaticProperty<Session['regenerate']>(session, 'regenerate', async () => {
     await store.destroy(sessionId);
-    req.session = makeSession(generateSessionId(), req, store, null, maxAge);
+    req.session = makeSession(await generateSessionId(), req, store, null, maxAge);
   });
 
   defineStaticProperty<Session['getExpirationDate']>(session, 'getExpirationDate', () => {

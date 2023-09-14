@@ -45,7 +45,7 @@ export function createSessionMiddleware(options: SessionOptions) {
     next: NextFunction,
   ) {
     const cookieSessionId = getSessionIdFromCookie(req, cookieName, secrets);
-    const sessionId = cookieSessionId ?? generateSessionId();
+    const sessionId = cookieSessionId ?? (await generateSessionId());
     req.session = await loadSession(sessionId, req, store, cookieMaxAge);
 
     const originalHash = hashSession(req.session);
