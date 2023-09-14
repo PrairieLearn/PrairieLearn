@@ -1,5 +1,17 @@
 # @prairielearn/opentelemetry
 
+## 1.9.0
+
+### Minor Changes
+
+- e88f7457b: Export `TraceFlags` from `@opentelemetry/api`
+
+## 1.8.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
 ## 1.8.6
 
 ### Patch Changes

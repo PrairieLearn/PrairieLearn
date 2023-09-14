@@ -7,6 +7,7 @@ const http = require('http');
 const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');
@@ -20,7 +21,7 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
@@ -29,7 +30,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig } = require('./lib/aws');
+const { makeS3ClientConfig, makeAwsClientConfig } = require('./lib/aws');
 const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -575,7 +576,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;
@@ -793,6 +795,14 @@ function _createContainer(workspace, callback) {
               PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
@@ -938,7 +948,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         'stopped',
         `Error starting container. Click "Reboot" to try again.`,
       );
-      return; // don't set host to unhealthy
+
+      // Immediately kill and remove the container, which will flush any
+      // logs to S3 for better debugging.
+      await dockerAttemptKillAndRemove(workspace.container);
+
+      // Don't set host to unhealthy.
+      return;
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);

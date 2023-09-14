@@ -98,6 +98,14 @@ class Grader {
           CpuPeriod: 100000, // microseconds
           CpuQuota: 90000, // portion of the CpuPeriod for this container
           PidsLimit: 1024,
+          Ulimits: [
+            {
+              // Disable core dumps, which can get very large and bloat our storage.
+              Name: 'core',
+              Soft: 0,
+              Hard: 0,
+            },
+          ],
         },
         Entrypoint: question.external_grading_entrypoint.split(' '),
       });

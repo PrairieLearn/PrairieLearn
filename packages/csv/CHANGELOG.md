@@ -1,5 +1,11 @@
 # @prairielearn/csv
 
+## 1.0.6
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
 ## 1.0.5
 
 ### Patch Changes
