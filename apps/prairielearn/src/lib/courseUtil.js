@@ -14,7 +14,8 @@ function getCommitHash(coursePath, callback) {
     cwd: coursePath,
     env: process.env,
   };
-  exec('git rev-parse HEAD', execOptions, (err, stdout) => {
+  exec('git rev-parse HEAD', execOptions, (err, stdout, stderr) => {
+    console.log({ err, stdout, stderr });
     if (err) {
       callback(new Error(`Could not get git status; exited with code ${err.code}`));
     } else {
