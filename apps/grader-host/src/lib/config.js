@@ -26,7 +26,7 @@ const ConfigSchema = z.object({
   jobLogGroup: z.string().default('grading-jobs-debug'),
   reportLoad: z.boolean().default(false),
   reportIntervalSec: z.number().default(10),
-  graderDockerMemory: z.number().default(1 << 30), // 1GiB
+  graderDockerMemory: z.number().default(2 << 30), // 2GiB
   graderDockerMemorySwap: z.number().default(1 << 30), // Same as memory, so no access to swap.
   graderDockerKernelMemory: z.number().default(1 << 29), // 512 MiB
   graderDockerDiskQuota: z.number().default(1 << 30), // 1 GiB
