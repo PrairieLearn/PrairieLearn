@@ -3,15 +3,14 @@ const { S3StreamLogger } = require('s3-streamlogger');
 
 const globalLogger = require('./logger');
 const { config } = require('./config');
+const { makeS3ClientConfig } = require('./aws');
 
 module.exports = function (options) {
   const { bucket, rootKey } = options;
 
   const s3StreamLoggerTransport = new winston.transports.Stream({
     stream: new S3StreamLogger({
-      config: {
-        region: config.awsRegion,
-      },
+      config: makeS3ClientConfig(),
       bucket,
       folder: rootKey,
       name_format: 'output.log', // No need to rotate, all logs go to same file
