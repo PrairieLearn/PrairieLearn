@@ -39,7 +39,12 @@ export function makeJobLogger(): WinstonBufferedLogger {
     );
   }
 
-  transports.push(new winston.transports.Stream({ stream: bufferedStream }));
+  transports.push(
+    new winston.transports.Stream({
+      stream: bufferedStream,
+      format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+    }),
+  );
 
   const logger = winston.createLogger({ transports });
 
