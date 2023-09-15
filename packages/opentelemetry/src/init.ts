@@ -21,14 +21,19 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { detectResources, processDetector, envDetector, Resource } from '@opentelemetry/resources';
+import {
+  processDetector,
+  envDetector,
+  Resource,
+  detectResourcesSync,
+} from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+import { OTLPTraceExporter as GRPCTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as HTTPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 
 // Instrumentations go here.
@@ -124,13 +129,18 @@ instrumentations.forEach((i) => {
 });
 
 let tracerProvider: NodeTracerProvider | null;
+let meterProvider: MeterProvider | null;
 
 export interface OpenTelemetryConfigEnabled {
   openTelemetryEnabled: true;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
-  openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
+  /**
+   * @deprecated Use `openTelemetrySampler` instead.
+   */
+  openTelemetrySamplerType?: 'always-on' | 'always-off' | 'trace-id-ratio';
+  openTelemetrySampler?: 'always-on' | 'always-off' | 'trace-id-ratio' | Sampler;
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple';
   honeycombApiKey?: string;
@@ -165,21 +175,13 @@ function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
     case 'console':
       return new ConsoleSpanExporter();
     case 'honeycomb':
-      return new OTLPTraceExporter({
+      return new GRPCTraceExporter({
         url: 'grpc://api.honeycomb.io:443/',
         credentials: credentials.createSsl(),
         metadata: getHoneycombMetadata(config),
       });
-      break;
     case 'jaeger':
-      return new JaegerExporter({
-        // By default, the UDP sender will be used, but that causes issues
-        // with packet sizes when Jaeger is running in Docker. We'll instead
-        // configure it to use the HTTP sender, which shouldn't face those
-        // same issues. We'll still allow the endpoint to be overridden via
-        // environment variable if needed.
-        endpoint: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
-      });
+      return new HTTPTraceExporter();
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
@@ -213,6 +215,27 @@ function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExport
       );
   }
 }
+function getSampler(config: OpenTelemetryConfigEnabled): Sampler {
+  if (typeof config.openTelemetrySampler === 'object') {
+    return config.openTelemetrySampler;
+  }
+
+  switch (config.openTelemetrySamplerType ?? 'always-on') {
+    case 'always-on': {
+      return new AlwaysOnSampler();
+    }
+    case 'always-off': {
+      return new AlwaysOffSampler();
+    }
+    case 'trace-id-ratio': {
+      return new ParentBasedSampler({
+        root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
+      });
+    }
+    default:
+      throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
+  }
+}
 
 /**
  * Should be called once we've loaded our config; this will allow us to set up
@@ -233,26 +256,7 @@ export async function init(config: OpenTelemetryConfig) {
 
   const traceExporter = getTraceExporter(config);
   const metricExporter = getMetricExporter(config);
-
-  let sampler: Sampler;
-  switch (config.openTelemetrySamplerType ?? 'always-on') {
-    case 'always-on': {
-      sampler = new AlwaysOnSampler();
-      break;
-    }
-    case 'always-off': {
-      sampler = new AlwaysOffSampler();
-      break;
-    }
-    case 'trace-id-ratio': {
-      sampler = new ParentBasedSampler({
-        root: new TraceIdRatioBasedSampler(config.openTelemetrySampleRate),
-      });
-      break;
-    }
-    default:
-      throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
-  }
+  const sampler = getSampler(config);
 
   let spanProcessor: SpanProcessor;
   switch (config.openTelemetrySpanProcessor ?? 'batch') {
@@ -275,7 +279,7 @@ export async function init(config: OpenTelemetryConfig) {
   // then can we actually start requiring all of our code that loads our config
   // and ultimately tells us how to configure OpenTelemetry.
 
-  let resource = await detectResources({
+  let resource = detectResourcesSync({
     detectors: [awsEc2Detector, processDetector, envDetector],
   });
 
@@ -299,7 +303,7 @@ export async function init(config: OpenTelemetryConfig) {
 
   // Set up metrics instrumentation if it's enabled.
   if (metricExporter) {
-    const meterProvider = new MeterProvider({ resource });
+    meterProvider = new MeterProvider({ resource });
     metrics.setGlobalMeterProvider(meterProvider);
     const metricReader = new PeriodicExportingMetricReader({
       exporter: metricExporter,
@@ -317,6 +321,11 @@ export async function shutdown(): Promise<void> {
   if (tracerProvider) {
     await tracerProvider.shutdown();
     tracerProvider = null;
+  }
+
+  if (meterProvider) {
+    await meterProvider.shutdown();
+    meterProvider = null;
   }
 }
 

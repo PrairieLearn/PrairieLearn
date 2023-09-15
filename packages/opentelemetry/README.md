@@ -16,7 +16,7 @@ await init({
   openTelemetryExporter: 'honeycomb',
   openTelemetryMetricExporter: 'honeycomb',
   openTelemetryMetricExportIntervalMillis: 30_000,
-  openTelemetrySamplerType: 'always-on',
+  openTelemetrySampler: 'always-on',
   openTelemetrySampleRate: 0.1,
   honeycombApiKey: 'KEY',
   honeycombDataset: 'DATASET',
