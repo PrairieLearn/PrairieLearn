@@ -3,13 +3,12 @@
 PrairieLearn currently has a few ways to do user authentication.
 
 - [Google OAuth 2](#google-oauth-2)
-- [Azure](#azure)
 - [Shibboleth](#shibboleth)
-- [LTI](./courseInstance.md#lti-overview)
+- [LTI](../courseInstance.md#lti-overview)
 
 ## Google OAuth 2
 
-Take a look in `pages/authLoginOAuth2/authLoginOAuth2.js` and `pages/authCallbackOAuth2/authCallbackOAuth2.js` to get an idea of what variables you need to modify.
+Take a look in `apps/prairielearn/src/pages/authLoginOAuth2/authLoginOAuth2.js` and `apps/prairielearn/src/pages/authCallbackOAuth2/authCallbackOAuth2.js` to get an idea of what variables you need to modify.
 
 To start create a [Google Cloud account](https://cloud.google.com/) and then:
 
@@ -29,21 +28,16 @@ Now add the keys to `config.json`:
   "googleClientId": "Your Client ID key",
   "googleClientSecret": "Your Client Secret key",
   "googleRedirectUrl": "https://yourdomain/pl/oauth2callback",
-  "hasOauth": true,
-  "authType": "x-auth"
+  "hasOauth": true
 }
 ```
 
 That's it, you should be up and running with Google OAuth 2!
 
-## Azure
-
-Take a look in `pages/authLoginAzure/authLoginAzure.js` and `pages/authCallbackAzure/authCallbackAzure.js` to get an idea of what variables you need to modify.
-
 ## Shibboleth
 
-Take a look in `pages/authCallbackShib/authCallbackShib.js` to get a sense of what headers you will need your reverse proxy to pass.
+Take a look in `apps/prairielearn/src/pages/authCallbackShib/authCallbackShib.js` to get a sense of what headers you will need your reverse proxy to pass.
 
 ## LTI
 
-Check out the [course instance LTI docs](./courseInstance.md#lti-overview) to learn more about LTI.
+Check out the [course instance LTI docs](../courseInstance.md#lti-overview) to learn more about LTI.

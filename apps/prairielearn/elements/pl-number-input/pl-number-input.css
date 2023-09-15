@@ -1,0 +1,17 @@
+.pl-number-input-feedback {
+  border-left: 0.25rem solid rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 0.25rem 0.5rem;
+  margin-left: 0.75rem;
+  margin-right: 0.5rem;
+  border-radius: 0.2rem;
+}
+
+.pl-number-input-popover {
+  width: 400px;
+  max-width: 100%;
+}
+
+.pl-number-input-input {
+  height: auto;
+}

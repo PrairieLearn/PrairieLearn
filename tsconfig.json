@@ -1,22 +1,11 @@
 {
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "allowJs": true,
-    "esModuleInterop": true,
     "noEmit": true,
-    // Allow spreading Maps/Sets into arrays
-    "downlevelIteration": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
-  // We don't actually use any TypeScript; we just use it to validate our
-  // standard JavaScript with JSDoc comments.
-  // Adding new code? Consider opting in to type checking!
-  "include": [
-    "tests/**/*",
-    "sync/**/*",
-    "lib/**/*",
-    "tools/**/*",
-    "ee/**/*",
-    "api/**/*",
-  ],
+  // Individual apps/packages have their own `tsconfig.json` files. This
+  // top-level one is only used to typecheck the `tools/` directory.
+  "include": ["tools/**/*"]
 }

@@ -32,6 +32,9 @@ indexes
     assessment_instances_modified_at_key: USING btree (modified_at)
     assessment_instances_user_id_idx: USING btree (user_id)
 
+check constraints
+    user_group_xor: CHECK (user_id IS NOT NULL AND group_id IS NULL OR group_id IS NOT NULL AND user_id IS NULL)
+
 foreign-key constraints
     assessment_instances_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

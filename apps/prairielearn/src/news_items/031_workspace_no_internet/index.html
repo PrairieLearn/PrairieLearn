@@ -1,0 +1,60 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .code-block {
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+  .code-block div {
+    padding: 0.5rem;
+    display: block;
+    line-height: 125%;
+  }
+</style>
+
+<p>
+  <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">PrairieLearn workspaces</a>
+  now default to blocking internet access from inside the workspace. This allows workspaces to be
+  used inside the Computer-Based Testing Facility (CBTF) for secure access to Python notebooks, VS
+  Code with compilers, and other programming environments.
+</p>
+
+<p>
+  We strongly recommend leaving the default in place for exam questions to avoid students using
+  network access for cheating. However, you might want to allow students to access the internet from
+  within a workspace on homework questions. To allow this, you can add the
+  <code>enableNetworking</code> option to the question's <code>info.json</code> file, like this:
+</p>
+
+<div class="rounded code-block">
+  <pre><code>{
+    "uuid": "...",
+    "title": "...",
+    "workspaceOptions": {
+        "image": "...",
+        <span class="text-danger">"enableNetworking": true</span>
+    }
+}
+</code></pre>
+</div>
+
+<p>
+  See
+  <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/#setting-up"
+    >the documentation</a
+  >
+  for more information.
+</p>

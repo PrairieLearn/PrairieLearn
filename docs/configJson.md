@@ -12,7 +12,7 @@ The file is structured as a JSON dictionary with the following syntax:
 }
 ```
 
-A full list of properties can be found in the [schema](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/serverConfig.json).
+A full list of properties can be found in [`lib/config.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.js).
 
 ## Setting Course Directories
 

@@ -1,9 +1,0 @@
-{
-    "description": "Terminate a running query (hard kill).",
-    "params": [
-        {
-            "name": "pid",
-            "description": "PID of the backend process to terminate."
-        }
-    ]
-}

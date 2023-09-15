@@ -21,9 +21,8 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { detectResources, Resource } from '@opentelemetry/resources';
+import { detectResources, processDetector, envDetector, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
@@ -36,14 +35,13 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 
 // Resource detectors go here.
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
-import { processDetector, envDetector } from '@opentelemetry/resources';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -127,8 +125,8 @@ instrumentations.forEach((i) => {
 
 let tracerProvider: NodeTracerProvider | null;
 
-export interface OpenTelemetryConfig {
-  openTelemetryEnabled: boolean;
+export interface OpenTelemetryConfigEnabled {
+  openTelemetryEnabled: true;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
@@ -140,7 +138,13 @@ export interface OpenTelemetryConfig {
   serviceName?: string;
 }
 
-function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
+export type OpenTelemetryConfig =
+  | OpenTelemetryConfigEnabled
+  | {
+      openTelemetryEnabled: false;
+    };
+
+function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
@@ -152,7 +156,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
+function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
@@ -181,7 +185,7 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
   }
 }
 
-function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
+function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExporter | null {
   if (!config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
@@ -205,7 +209,7 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
       });
     default:
       throw new Error(
-        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
+        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`,
       );
   }
 }
@@ -277,7 +281,7 @@ export async function init(config: OpenTelemetryConfig) {
 
   if (config.serviceName) {
     resource = resource.merge(
-      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName })
+      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName }),
     );
   }
 
@@ -314,4 +318,12 @@ export async function shutdown(): Promise<void> {
     await tracerProvider.shutdown();
     tracerProvider = null;
   }
+}
+
+/**
+ * Disables all OpenTelemetry instrumentations. This is useful for tests that
+ * need to access the unwrapped modules.
+ */
+export function disableInstrumentations() {
+  instrumentations.forEach((i) => i.disable());
 }

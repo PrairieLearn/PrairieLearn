@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
+  </head>
+  <script>
+    $(() => {
+        $('[data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            html: true,
+            trigger: 'hover',
+        }).on("show.bs.popover", function() {
+            $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
+        });;
+    });
+  </script>
+  <body>
+    <%- include('../partials/navbar'); %>
+    <main id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Questions
+        </div>
+
+        <div class="table-responsive">
+          <%
+          var nTableCols = 9;
+
+          // If at least one question has a nonzero unlock score, display the Advance Score column
+          const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
+          if (showAdvanceScorePercCol) nTableCols++;
+          %>
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th><span class="sr-only">Name</span></th>
+                <th>QID</th>
+                <th>Topic</th>
+                <th>Tags</th>
+                <th>Auto Points</th>
+                <th>Manual Points</th>
+                <% if (showAdvanceScorePercCol) { %>
+                  <th>Advance Score</th>
+                <% } %>
+                <th width="100">Mean score</th>
+                <th width="100">Question score</th>
+                <th>Num. Submissions Histogram</th>
+                <th>Other Assessments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% questions.forEach(function(question, i) { %>
+              <% if (question.start_new_zone) { %>
+              <tr>
+                <th colspan="<%= nTableCols %>">
+                  Zone <%= question.zone_number %>. <%= question.zone_title %>
+                  <% if (question.zone_number_choose == null) { %>
+                  (Choose all questions)
+                  <% } else if (question.zone_number_choose == 1) { %>
+                  (Choose 1 question)
+                  <% } else { %>
+                  (Choose <%= question.zone_number_choose %> questions)
+                  <% } %>
+                  <% if (question.zone_has_max_points) { %>
+                      (maximum <%= question.zone_max_points %> points)
+                  <% } %>
+                  <% if (question.zone_has_best_questions) { %>
+                      (best <%= question.zone_best_questions %> questions)
+                  <% } %>
+                </th>
+              </tr>
+              <% } %>
+              <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
+              <tr>
+                <td colspan="<%= nTableCols %>">
+                  <%= question.alternative_group_number %>.
+                  <% if (question.alternative_group_number_choose == null) { %>
+                  Choose all questions from:
+                  <% } else if (question.alternative_group_number_choose == 1) { %>
+                  Choose 1 question from:
+                  <% } else { %>
+                  Choose <%= question.alternative_group_number_choose %> questions from:
+                  <% } %>
+                </td>
+              </tr>
+              <% } %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">
+                    <% if (question.alternative_group_size == 1) { %>
+                    <%= question.alternative_group_number %>.
+                    <% } else { %>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
+                    <% } %>
+                    <%= question.title %>
+                    <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
+                  </a>
+                </td>
+                <td>
+                  <% if (question.sync_errors) { %>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_errors_ansified %></pre>">
+                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                  </button>
+                  <% } else if (question.sync_warnings) { %>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_warnings_ansified %></pre>">
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                  </button>
+                  <% } %>
+                  <%= question.display_name %>
+                </td>
+                <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+                <td><%- include('../partials/tags', {tags: question.tags}); %></td>
+                <td>
+                  <% if (question.max_auto_points || !question.max_manual_points) { %>
+                  <% if (assessment.type == "Exam") { %><%= (question.points_list || [question.max_manual_points]).map((p) => p - question.max_manual_points) %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points - question.max_manual_points %>/<%= question.max_auto_points %><% } %>
+                  <% } else { %>—<% } %>
+                </td>
+                <td><%= question.max_manual_points || '—' %></td>
+                <% if (showAdvanceScorePercCol) { %>
+                  <td class="<% if (question.assessment_question_advance_score_perc == 0) { %>text-muted<% } %>" data-testid="advance-score-perc">
+                    <%= question.assessment_question_advance_score_perc %>%
+                  </td>
+                <% } %>
+                <td>
+                  <% if (question.mean_question_score) { %>
+                    <%= question.mean_question_score.toFixed(3) %>
+                  <% } %>
+                </td>
+                <td>
+                    <% if (question.avg_question_score_perc) { %>
+                    <%= question.avg_question_score_perc.toFixed(3) %> %
+                    <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (question.number_submissions_hist) { %>
+                    <div id="attemptsHist<%= i %>" class="miniHist">
+
+                    </div>
+                  <% } %>
+                </td>
+                <script>
+                  $(function() {
+                    var data = [<%= question.number_submissions_hist %>];
+                    var options = {
+                      width: 60,
+                      height: 20,
+                    };
+                    histmini("#attemptsHist<%= i %>", data, options);
+                  });
+                </script>
+                <td>
+                  <% if (question.other_assessments) { %>
+                  <% question.other_assessments.forEach(function(assessment) { %>
+                  <%- include('../partials/assessment', {assessment: assessment}); %>
+                  <% }); %>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </body>
+</html>

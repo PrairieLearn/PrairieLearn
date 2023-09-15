@@ -1,0 +1,264 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Question Info",
+  "description": "Info files for questions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uuid", "type", "title", "topic"],
+  "properties": {
+    "comment": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+    },
+    "uuid": {
+      "description": "Unique identifier (UUID v4).",
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "type": {
+      "description": "Type of the question.",
+      "enum": [
+        "Calculation",
+        "ShortAnswer",
+        "MultipleChoice",
+        "Checkbox",
+        "File",
+        "MultipleTrueFalse",
+        "v3"
+      ]
+    },
+    "title": {
+      "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
+      "type": "string"
+    },
+    "topic": {
+      "description": "The category of question (e.g., 'Vectors', 'Energy').",
+      "type": "string"
+    },
+    "tags": {
+      "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
+      "type": "array",
+      "items": {
+        "description": "A tag associated with a question.",
+        "type": "string"
+      }
+    },
+    "clientFiles": {
+      "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
+      "type": "array",
+      "items": {
+        "description": "A single file accessible by the client.",
+        "type": "string"
+      }
+    },
+    "clientTemplates": {
+      "description": "List of client-accessible templates to render server-side.",
+      "type": "array",
+      "items": {
+        "description": "A single template file accessible by the client.",
+        "type": "string"
+      }
+    },
+    "template": {
+      "description": "The QID of a question that serves at the template for this question.",
+      "type": "string"
+    },
+    "gradingMethod": {
+      "description": "The grading method used for this question.",
+      "enum": ["Internal", "External", "Manual"]
+    },
+    "singleVariant": {
+      "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
+      "type": "boolean"
+    },
+    "showCorrectAnswer": {
+      "description": "Whether to show the correct answer panel (defaults to \"true\").",
+      "type": "boolean"
+    },
+    "partialCredit": {
+      "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
+      "type": "boolean"
+    },
+    "options": {
+      "description": "Options that define how the question will work, specific to the individual question type.",
+      "type": "object"
+    },
+    "externalGradingOptions": {
+      "description": "Options for externally graded questions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image", "entrypoint"],
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+        },
+        "enabled": {
+          "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
+          "type": "boolean"
+        },
+        "image": {
+          "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
+          "type": "string"
+        },
+        "entrypoint": {
+          "description": "Program to run as the entrypoint to your grader. Must be runnable as 'chmod +x script && ./script'.",
+          "type": "string"
+        },
+        "serverFilesCourse": {
+          "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
+          "type": "array",
+          "items": {
+            "description": "A single file or directory that will be copied to the external grader.",
+            "type": "string"
+          }
+        },
+        "timeout": {
+          "description": "The number of seconds after which the grading job will timeout.",
+          "type": "integer"
+        },
+        "enableNetworking": {
+          "description": "Whether the grading containers should have network access. Access is disabled by default.",
+          "type": "boolean"
+        },
+        "environment": {
+          "description": "Environment variables to set inside the grading container.",
+          "type": "object"
+        }
+      }
+    },
+    "dependencies": {
+      "description": "The question's client-side dependencies.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+        },
+        "coreStyles": {
+          "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
+          "deprecated": true,
+          "type": "array",
+          "items": {
+            "description": "A .css file located in /public/stylesheets.",
+            "type": "string"
+          }
+        },
+        "coreScripts": {
+          "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
+          "deprecated": true,
+          "type": "array",
+          "items": {
+            "description": "A .js file located in /public/javascripts.",
+            "type": "string"
+          }
+        },
+        "nodeModulesStyles": {
+          "description": "The styles required by this question from /node_modules.",
+          "type": "array",
+          "items": {
+            "description": "A .css file located in /node_modules.",
+            "type": "string"
+          }
+        },
+        "nodeModulesScripts": {
+          "description": "The scripts required by this question from /node_modules.",
+          "type": "array",
+          "items": {
+            "description": "A .js file located in /node_modules.",
+            "type": "string"
+          }
+        },
+        "clientFilesCourseStyles": {
+          "description": "The styles required by this question from clientFilesCourse.",
+          "type": "array",
+          "items": {
+            "description": "A .css file located in clientFilesCourse.",
+            "type": "string"
+          }
+        },
+        "clientFilesCourseScripts": {
+          "description": "The styles required by this question from clientFilesCourse.",
+          "type": "array",
+          "items": {
+            "description": "A .js file located in clientFilesCourse.",
+            "type": "string"
+          }
+        },
+        "clientFilesQuestionStyles": {
+          "description": "The styles required by this question from clientFilesQuestion.",
+          "type": "array",
+          "items": {
+            "description": "A .css file located in the clientFilesQuestion.",
+            "type": "string"
+          }
+        },
+        "clientFilesQuestionScripts": {
+          "description": "The scripts required by this question from clientFilesQuestion.",
+          "type": "array",
+          "items": {
+            "description": "A .js file located in the clientFilesQuestion.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "workspaceOptions": {
+      "description": "Options for workspace questions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image", "port", "home"],
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+        },
+        "image": {
+          "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The port number used in the Docker image.",
+          "type": "integer"
+        },
+        "home": {
+          "description": "The home directory of the workspace container.",
+          "type": "string"
+        },
+        "args": {
+          "description": "Command line arguments to pass to the Docker.",
+          "type": "string"
+        },
+        "rewriteUrl": {
+          "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
+          "type": "boolean"
+        },
+        "gradedFiles": {
+          "description": "The list of files or directories that will be copied for grading.",
+          "type": "array",
+          "items": {
+            "description": "A single file or directory that will be copied for grading.",
+            "type": "string"
+          }
+        },
+        "enableNetworking": {
+          "description": "Whether the workspace should have network access. Access is disabled by default.",
+          "type": "boolean"
+        },
+        "environment": {
+          "description": "Environment variables to set inside the workspace container.",
+          "type": "object"
+        },
+        "syncIgnore": {
+          "description": "(deprecated) The list of files or directories that will be excluded from sync.",
+          "type": "array",
+          "items": {
+            "description": "A single file or directory that will be excluded from sync.",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

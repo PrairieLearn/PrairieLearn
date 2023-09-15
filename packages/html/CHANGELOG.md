@@ -1,5 +1,59 @@
 # @prairielearn/html
 
+## 3.0.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 3.0.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 3.0.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 3.0.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
+## 3.0.2
+
+### Patch Changes
+
+- 2c5504f1f: Mark package as free from side effects
+
+## 3.0.1
+
+### Patch Changes
+
+- 8fd47d928: Upgrade all dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 638d27585: Render booleans in templates
+
+## 2.2.0
+
+### Minor Changes
+
+- 915320e1f: Support interpolating BigInt values
+
 ## 2.1.1
 
 ### Patch Changes

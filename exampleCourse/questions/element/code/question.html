@@ -31,8 +31,7 @@ Another useful feature of `pl-code` is the ability to highlight specific lines. 
 `highlight-lines="low-high"` attribute. Moreover, one can disable selecting the code region by
 adding `prevent-select="true"`.
 </markdown>
-<pl-code language="python" highlight-lines="5-6" prevent-select="true">
-# Here's a version that highlights specific lines of code and disables selection
+<pl-code language="python" highlight-lines="4-5" prevent-select="true">
 def foo():
     return 'foo'
 
@@ -51,7 +50,7 @@ def bar(x):
 <pl-question-panel>
 <markdown>
 The `pl-code` element also provides the ability to have code included from an external file.
-This can be achieved with `source-file-name="my_code_file.py"` attribute.
+This can be achieved with `source-file-name="myCode.py"` attribute.
 </markdown>
 <pl-code language="python" source-file-name="myCode.py"></pl-code>
 <pl-code language="html" source-file-name="sample-cd-data.xml"></pl-code>
@@ -79,6 +78,22 @@ To change the style in use for a particular code block, the attribute `style` ca
 The `pl-code` element can also be used to show output of a terminal command using ANSI colors, by setting the language attribute to `ansi-color`.
 </markdown>
 <pl-code language="ansi-color" source-file-name="ansiOutput.txt"></pl-code>
+</pl-question-panel>
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+Combined with the Python `pprint` module, the `pl-code` element can be used to display complex Python objects that cannot be JSON serialized
+easily. In particular, we used the `pprint.pformat()` function to generate the string to display below. We also enabled line numbers by setting
+`show-line-numbers="True"`.
+</markdown>
+<pl-code language="python" show-line-numbers="True" copy-code-button="True">
+my_object = \
+{{params.my_object_string}}
+</pl-code>
 </pl-question-panel>
 </div>
 </div>

@@ -6,7 +6,7 @@ import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
 
 describe('instrumented', () => {
   let contextManager: AsyncHooksContextManager;
-  let exporter = new tracing.InMemorySpanExporter();
+  const exporter = new tracing.InMemorySpanExporter();
 
   before(async () => {
     await init({

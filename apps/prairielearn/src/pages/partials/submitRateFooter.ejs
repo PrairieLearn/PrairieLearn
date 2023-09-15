@@ -1,0 +1,21 @@
+<% if (showGradeButton && typeof assessment_question !== "undefined" && assessment_question && assessment_question.grade_rate_minutes) { %>
+<div class="row">
+  <div class="col d-flex justify-content-between">
+  <span class="d-flex">
+  <% if (disableGradeButton) { %>
+    <small class="font-italic ml-2 mt-1 submission-suspended-msg">Grading possible in <span id='submission-suspended-display'></span> <div id='submission-suspended-progress' class='border border-info'></div> </small>
+    <%- encoded_data({
+         serverTimeLimitMS: assessment_question.grade_rate_minutes * 60 * 1000,
+         serverRemainingMS: instance_question.allow_grade_left_ms,
+    }, 'submission-suspended-data') %>
+  <% } %>
+  </span>
+  <span class="d-flex align-self-center">
+    <small class="font-italic">Can only be graded once every <%= assessment_question.grade_rate_minutes %> minute<% if (assessment_question.grade_rate_minutes > 1) { %>s<% } %></small>
+    <a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<p>Once you have clicked <strong>Save &amp; Grade</strong>, you will need to wait <%= assessment_question.grade_rate_minutes %> minute<% if (assessment_question.grade_rate_minutes > 1) { %>s<% } %> before you can grade again.</p><p>You can still save your answer as frequently as you like. <% if (question_context == "student_exam") { %>If your assessment ends before your last saved answer is graded, it will be automatically graded for you.<% } %></p>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+  </span>
+  </div>
+</div>
+<% } %>

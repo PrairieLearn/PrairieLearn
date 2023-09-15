@@ -1,6 +1,5 @@
 columns
     group_id: bigint not null
-    group_role_id: bigint
     user_id: bigint not null
 
 indexes
@@ -10,5 +9,4 @@ indexes
 
 foreign-key constraints
     group_users_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users_group_role_id_fkey: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
     group_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

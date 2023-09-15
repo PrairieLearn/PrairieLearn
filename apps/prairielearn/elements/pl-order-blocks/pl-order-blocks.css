@@ -1,0 +1,148 @@
+div.pl-order-blocks-right {
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single row horizontally */
+  width: calc(50% - 16px);
+  margin: 8px;
+}
+
+div.pl-order-blocks-bottom {
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single column vertically */
+  width: 100%;
+  margin: 8px;
+  min-height: 8rem;
+}
+
+li.pl-order-blocks-code {
+  list-style-type: none;
+  padding: 0px !important;
+}
+
+.pl-order-blocks-code > .pl-code,
+.pl-order-blocks-code > .pl-code div {
+  /* override margins on code block to ensure code is centered properly */
+  margin-bottom: 0px !important;
+}
+
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
+  cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+  outline: 2px solid blue;
+  outline-offset: -2px;
+}
+
+ul.pl-order-blocks-connected-sortable li.nodrag {
+  opacity: 0.6;
+}
+
+ul.pl-order-blocks-connected-sortable li.nodrag:hover {
+  cursor: not-allowed;
+}
+
+li.ui-state-highlight {
+  /* This styling applies to the placeholder answer tile created by jquery-ui when the user is dragging */
+  border: none !important;
+  list-style-type: none;
+  background-color: #90a4ae !important;
+  min-width: 3em !important;
+  margin-bottom: 5px;
+}
+
+.pl-order-blocks-container > ul {
+  padding: 14px;
+  height: 100%;
+  margin-bottom: 0px;
+}
+
+.pl-order-blocks-container .pl-order-block,
+.pl-order-blocks-pairing-indicator .pl-order-block {
+  margin-bottom: 5px;
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
+  line-height: 1.2em;
+  color: black;
+}
+
+.pl-order-blocks-answer-container .pl-order-block {
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
+  line-height: 1.2em;
+}
+
+.pl-order-blocks-answer-container > .list-group > .pl-order-block {
+  margin-bottom: 5px;
+}
+
+.pl-order-blocks-horizontal > .list-group {
+  overflow-x: scroll;
+}
+
+.pl-order-blocks-horizontal > ul {
+  letter-spacing: -1em !important; /* a hacky way to remove the space between inline-block elements */
+}
+
+.pl-order-blocks-horizontal > .list-group,
+.pl-order-blocks-horizontal > ul > li {
+  letter-spacing: normal;
+  display: inline-block;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.pl-order-blocks-answer-container > ul {
+  padding: 14px;
+}
+
+div.pl-order-blocks-answer-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #9e9e9e;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+div.pl-order-blocks-container {
+  box-shadow: 2px #888888;
+  border-radius: 4px;
+  background-color: #eeeeee;
+  border: 1px solid #9e9e9e;
+  display: flex;
+  flex-direction: column;
+}
+
+div.pl-order-blocks-header {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+}
+
+.pl-order-blocks-feedback-icon {
+  margin-right: 10px;
+}
+
+.pl-order-blocks-correctness-badge-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.pl-order-blocks-correctness-badge {
+  margin: 4px;
+  width: 19px;
+  height: 19px;
+}
+
+.pl-order-blocks-pairing-indicator {
+  border-radius: 10px;
+  border: 0px !important;
+  list-style: none;
+  margin-left: -6px;
+  margin-right: -6px;
+  padding: 6px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  overflow: hidden;
+}
+
+.pl-order-blocks-pairing-indicator li:last-child {
+  margin-bottom: 0px !important;
+}

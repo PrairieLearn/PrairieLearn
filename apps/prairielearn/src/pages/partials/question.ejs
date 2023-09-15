@@ -1,0 +1,284 @@
+<div id="question-0" class="question-container"
+     data-grading-method="<%= question.grading_method %>"
+     data-variant-id="<%= variant.id %>"
+     data-question-id="<%= question.id %>"
+     data-instance-question-id="<%= locals.instance_question?.id ?? '' %>"
+     data-variant-token="<%= variantToken %>"
+     data-url-prefix="<%= urlPrefix %>"
+     data-question-context="<%= question_context %>"
+     data-csrf-token="<%= __csrf_token %>"
+     data-authorized-edit="<%= !locals.authz_result || locals.authz_result.authorized_edit %>">
+  <% if (question.type != 'Freeform') { %>
+  <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
+  <% } %>
+
+  <% issues.forEach(function(issue, iIssue) { %>
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <% if (issue.manually_reported) { %>
+      Manually reported issue
+      <% } else { %>
+      Issue
+      <% } %>
+    </div>
+
+    <table class="table table-sm table-hover two-column-description">
+      <tbody>
+        <% if (
+                (!issue.course_instance_id) ||
+                (
+                  locals.course_instance &&
+                  (course_instance.id == issue.course_instance_id) &&
+                  authz_data.has_course_instance_permission_view
+                )
+              ) {
+
+          // There are three situations in which the issue need not be anonymized:
+          //
+          //  1) The issue is not associated with a course instance. The only way
+          //     for a user to generate an issue that is not associated with a course
+          //     instance is if they are an instructor, so there are no student data
+          //     to be protected in this case.
+          //
+          //  2) We are accessing this page through a course instance, the issue is
+          //     associated with the same course instance, and the user has student
+          //     data view access.
+          //
+          // Otherwise, all issues must be anonymized.
+
+        %>
+        <% let body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
+        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
+        <% } else if (authz_data.has_course_permission_preview) { %>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
+        <% } else { %>
+        <tr><th>Message:</th><td><%= issue.student_message %></td></tr>
+        <% } %>
+        <tr><th>ID:</th><td><%= issue.id %></td></tr>
+        <tr><th>Date:</th><td><%= issue.formatted_date %></td></tr>
+      </tbody>
+    </table>
+
+    <% if (devMode || authz_data.has_course_permission_view) { %>
+    <div class="card-body border border-bottom-0 border-left-0 border-right-0">
+      <% if (issue.system_data.courseErrData) { %>
+        <p><strong>Console log:</strong>
+        <pre class="bg-dark text-white rounded p-3"><%= issue.system_data.courseErrData.outputBoth %></pre>
+      <% } %>
+      <p><strong>Associated data:</strong>
+        <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="issue-course-data-<%= iIssue %>">
+        <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
+      </div>
+      <% if (is_administrator) { %>
+      <p><strong>System data:</strong>
+        <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-system-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-system-data-<%= iIssue %>">
+          Show/hide
+        </button>
+      </p>
+      <div class="collapse" id="issue-system-data-<%= iIssue %>">
+        <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.system_data, null, '    ') %></pre>
+      </div>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+  <% }); %>
+
+
+  <% if (question.type == 'Freeform') { %>
+  <form class="question-form" name="question-form" method="POST" autocomplete="off">
+    <div class="card mb-4 question-block">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <% if (question_context == 'student_homework') { %>
+          <%= instance_question_info.question_number %>. <%= question.title %>
+        <% } else if (question_context == 'student_exam') { %>
+          Question <%= instance_question_info.question_number %>: <%= question.title %>
+        <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
+          <%= question.title %>
+        <% } else { %>
+            <% throw Error('unknown question_context: ' + question_context); %>
+        <% } %>
+        <% // Show even when question_copy_targets is empty. %>
+        <% // We'll show a CTA to request a course if the user isn't an editor of any course. %>
+        <% if (course.template_course && question_context != 'manual_grading') { %>
+          <button class="btn btn-light btn-sm ml-auto" type="button" data-toggle="modal" data-target="#copyQuestionModal">
+            <i class="fa fa-clone"></i>
+            Copy question
+          </button>
+        <% } %>
+      </div>
+      <div class="card-body question-body">
+        <%- questionHtml %>
+      </div>
+      <%- include('questionFooter'); %>
+    </div>
+  </form>
+  <% } %>
+
+
+  <% if (question.type != 'Freeform') { %>
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <% if (question_context == 'student_homework') { %>
+        <%= instance_question_info.question_number %>. <%= question.title %>
+      <% } else if (question_context == 'student_exam') { %>
+            <!-- FIXME: insert question number properly -->
+            Question <%= instance_question_info.question_number %>: <%= question.title %>
+      <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
+        <%= question.title %>
+      <% } else { %>
+        <% throw Error('unknown question_context: ' + question_context); %>
+      <% } %>
+    </div>
+    <div class="card-body question-body">
+      <%- questionHtml %>
+    </div>
+    <%- include('questionFooter'); %>
+  </div>
+  <% } %>
+
+  <div class="card mb-4 grading-block<%= showTrueAnswer ? '' : ' d-none' %>">
+    <div class="card-header bg-secondary text-white">Correct answer</div>
+    <div class="card-body answer-body">
+      <%- showTrueAnswer ? answerHtml : '' %>
+    </div>
+  </div>
+
+  <%# Submissions section %>
+  <% if (showSubmissions) { %>
+
+    <%# Only shows this many recent submissions by default %>
+    <% const MAX_TOP_RECENTS = 3; %>
+
+    <%# Show the top submissions %>
+    <% submissions.slice(0, MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
+    <% }); %>
+
+    <%# Optionally show the older submissions %>
+    <% if (submissions.length > MAX_TOP_RECENTS) { %>
+
+      <div class="mb-4 d-flex justify-content-center">
+        <button class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed" type="button" data-toggle="collapse" data-target="#more-submissions-collapser" aria-expanded="false" aria-controls="more-submissions-collapser">
+          Show/hide older submissions
+          <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+        </button>
+      </div>
+
+      <div id="more-submissions-collapser" class="collapse">
+        <% submissions.slice(MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
+        <% }); %>
+      </div>
+
+      <script>
+        $(function() {
+          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
+            const submissionId = $(this).data('submission-id');
+            // <% if (question_context === 'instructor') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else if (question_context === 'manual_grading') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else { %>
+            const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } %>
+            const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
+            $(`#submissionInfoModal-${submissionId}`).modal('hide');
+            $.get(submissionContentUrl, 'json')
+              .done((data) => {
+                $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
+                MathJax.typesetPromise();
+              })
+              .fail(() => {
+                $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
+              })
+              .always(() => {
+                // Restore modal state if need be
+                if (wasModalOpen) {
+                  $(`#submissionInfoModal-${submissionId}`).modal('show');
+                }
+              });
+          });
+        });
+        </script>
+    <% } %>
+
+  <% } %> <%# endif showSubmissions %>
+
+</div>
+
+<% if (typeof question_copy_targets !== 'undefined') { %>
+  <div id="copyQuestionModal" class="modal fade" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="<%= question_copy_targets[0]?.copy_url ?? '' %>">
+          <div class="modal-header">
+            <h5 class="modal-title">Copy question</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <% if (question_copy_targets.length === 0) { %>
+              <p>
+                You can&apos;t copy this question because you don&apos;t have editor permissions in any courses.
+                <a href="/pl/request_course">Request a course</a> if you don&apos;t have one already.
+                Otherwise, contact the owner of the course you expected to have access to.
+              </p>
+            <% } else { %>
+              <p>
+                This question can be copied to any course for which you have editor permissions.
+                Select one of your courses to copy this question.
+              </p>
+              <select class="form-control" name="to_course_id" required>
+                <% question_copy_targets.forEach(function(course, index) { %>
+                  <option
+                    value="<%= course.id %>"
+                    data-csrf-token="<%= course.__csrf_token %>"
+                    data-copy-url="<%= course.copy_url %>"
+                    <%= index === 0 ? 'selected' : '' %>
+                  >
+                    <%= course.short_name %>
+                  </option>
+                <% }); %>
+              </select>
+              <script>
+                $(() => {
+                  const form = document.querySelector('#copyQuestionModal form');
+                  const csrfTokenInput = form.querySelector('input[name="__csrf_token"]');
+                  const courseSelect = document.querySelector('#copyQuestionModal select[name="to_course_id"]');
+
+                  function updateFormValues() {
+                    const value = courseSelect.value;
+                    const option = courseSelect.querySelector(`option[value="${value}"]`);
+
+                    form.action = option.dataset.copyUrl;
+                    csrfTokenInput.value = option.dataset.csrfToken;
+                  }
+
+                  courseSelect.addEventListener('change', updateFormValues);
+                });
+              </script>
+            <% } %>
+          </div>
+          <div class="modal-footer">
+            <input type="hidden" name="__csrf_token" value="<%= question_copy_targets[0]?.__csrf_token ?? '' %>" />
+            <input type="hidden" name="question_id" value="<%= question.id %>" />
+            <input type="hidden" name="course_id" value="<%= course.id %>" /> 
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <% if (question_copy_targets?.length > 0) { %>
+              <button type="submit" name="__action" value="copy_question" class="btn btn-primary">Copy question</button>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } %>

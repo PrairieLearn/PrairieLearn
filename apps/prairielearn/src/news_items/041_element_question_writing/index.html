@@ -1,0 +1,190 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+
+  pre {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    padding: 1em;
+    padding-bottom: 0em;
+  }
+</style>
+
+<p>
+  Various new features and quality of life improvements for question creation have been recently
+  deployed. These include new elements, additional features for existing elements, and more utility
+  code to improve the experience of question writing.
+</p>
+<hr />
+
+<h3>New Elements</h3>
+<br />
+<div>
+  <div>
+    <h4>pl-hidden-hints</h4>
+    <div>
+      <p>
+        The <code class="user-output">pl-hidden-hints</code> element allows course content
+        developers to progressively reveal hints for a given question variant as more submissions
+        are received. In the example below, the first two hints are available to the student
+        immediately, while the third is only shown after three valid submissions.
+      </p>
+
+      <img class="border rounded" src="pl-hidden-hints.png" width="800px" />
+
+      <p>
+        For more information and examples, see the
+        <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"
+          >pl-hidden-hints documentation</a
+        >.
+      </p>
+    </div>
+  </div>
+  <br />
+  <div>
+    <h4>pl-big-o-input</h4>
+    <div>
+      <p>
+        The <code class="user-output">pl-big-o-input</code> element allows instructors to easily
+        write questions asking for big-O family asymptotic notation. This is especially useful for
+        asking students about algorithmic runtime. Of note is that this element gives partial credit
+        for technically correct but non-optimal answers.
+      </p>
+
+      <img class="border rounded" src="pl-big-o-question.png" width="600px" />
+      <img class="border rounded" src="pl-big-o-incorrect.png" width="600px" />
+      <img class="border rounded" src="pl-big-o-correct.png" width="600px" />
+
+      <p>
+        For more information and examples, see the
+        <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-big-o-input-element"
+          >pl-big-o-input documentation</a
+        >.
+      </p>
+    </div>
+  </div>
+  <br />
+  <div>
+    <h4>pl-dataframe</h4>
+    <div>
+      <p>
+        The <code class="user-output">pl-dataframe</code> element allows for displaying Pandas
+        DataFrames using customizable display options. This functionality was previously included in
+        the the <code class="user-output">pl-python-variable</code> element, but that has been
+        deprecated in favor of the new <code class="user-output">pl-dataframe</code> element while
+        expanding the available features. This accompanies greater support for Pandas DataFrame
+        serialization.
+      </p>
+
+      <img class="border rounded" src="pl-dataframe.png" width="600px" />
+
+      <p>
+        For more information and examples, see the
+        <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-dataframe-element"
+          >pl-dataframe documentation</a
+        >.
+      </p>
+    </div>
+  </div>
+</div>
+<hr />
+<h3>New Element Features</h3>
+<br />
+<div>
+  <h4>pl-python-variable</h4>
+  <div>
+    <p>
+      As mentioned above, the <code class="user-output">pl-python-variable</code> element has had
+      DataFrame display functionality deprecated in favor of the
+      <code class="user-output">pl-dataframe</code> element. However, the
+      <code class="user-output">pl-python-variable</code> element has received support for
+      displaying complex objects by way of the Python
+      <a href="https://docs.python.org/3/library/pprint.html">pprint</a> module. This makes it much
+      easier to print complex dictionaries and other nested data types.
+    </p>
+
+    <img class="border rounded" src="pl-python-variable.png" width="800px" />
+
+    <p>
+      For more information and examples, see the
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element"
+        >pl-python-variable documentation</a
+      >.
+    </p>
+  </div>
+</div>
+<br />
+<div>
+  <h4>pl-external-grader-variables</h4>
+  <div>
+    <p>
+      Previously, available variables for externally graded questions in Python had to be defined in
+      a <code>server.py</code> file. Now, the
+      <code class="user-output">pl-external-grader-variables</code> element has support for defining
+      these variables directly in the <code>question.html</code> file. This means that
+      <code>server.py</code> files defining just these variables can be removed, thus decreasing the
+      maintenance burden for courses.
+    </p>
+
+    <p>
+      For more information and examples, see the
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-external-grader-variables-element"
+        >pl-external-grader-variables documentation</a
+      >.
+    </p>
+  </div>
+</div>
+<br />
+<div>
+  <h4>pl-graph</h4>
+  <div>
+    <p>
+      The <code class="user-output">pl-graph</code> element has expanded functionality for
+      displaying adjacency matrices (being able to handle negative weights and undirected graphs),
+      and now has support for displaying <a href="https://networkx.org/">NetworkX</a> graphs.
+    </p>
+
+    <img class="border rounded" src="pl-graph.png" width="800px" />
+
+    <p>
+      For more information and examples, see the
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-graph-element"
+        >pl-graph documentation</a
+      >.
+    </p>
+  </div>
+</div>
+<hr />
+<h3>Utility Code Improvements</h3>
+<p>
+  There have been substantial improvements to utility code available to instructors in the
+  <code>prairielearn.py</code> Python library, including greater support for JSON serialization and
+  more utility functions usable in writing questions. These changes have primarily been to
+  facilitate writing generation and grader code for questions and to support the new elements and
+  features discussed above. This has all been detailed in
+  <a href="https://prairielearn.readthedocs.io/en/latest/question/#questions"
+    >updated and expanded documentation on question writing</a
+  >.
+</p>
+<hr />
+<p>
+  If you have any questions, concerns, or suggestions, you can submit them at
+  <a href="https://github.com/PrairieLearn/PrairieLearn/discussions" target="_blank"
+    >https://github.com/PrairieLearn/PrairieLearn/discussions</a
+  >. These changes were a combined effort by multiple people, including
+  <a href="https://github.com/eliotwrobson" target="_blank">Eliot Robson</a> and
+  <a href="https://github.com/coatless" target="_blank"> James J Balamuta</a>
+  from UIUC.
+</p>

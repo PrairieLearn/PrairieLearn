@@ -1,0 +1,7 @@
+{
+  "uuid": "73dab6c2-5988-4324-a5b4-01728cde7d26",
+  "title": "Comment keys in JSON files",
+  "comment": ["Of course, the comment news item needs a comment", "testing array comments, also"],
+  "author": "<a href=\"https://github.com/mwest1066\">Matt West</a>",
+  "visible_to_students": false
+}
