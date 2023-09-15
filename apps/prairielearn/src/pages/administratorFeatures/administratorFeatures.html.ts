@@ -248,7 +248,7 @@ export function AddFeatureGrantModalBody({
           id="feature-grant-institution"
           name="institution_id"
         >
-          <option value="">None</option>
+          <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
               <option
@@ -273,7 +273,7 @@ export function AddFeatureGrantModalBody({
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses in this institution</option>
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
@@ -295,7 +295,7 @@ export function AddFeatureGrantModalBody({
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses instances in this course</option>
           ${(course_instances ?? []).map((course_instance) => {
             return html`
               <option

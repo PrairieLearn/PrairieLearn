@@ -795,6 +795,14 @@ function _createContainer(workspace, callback) {
               PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
@@ -940,7 +948,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         'stopped',
         `Error starting container. Click "Reboot" to try again.`,
       );
-      return; // don't set host to unhealthy
+
+      // Immediately kill and remove the container, which will flush any
+      // logs to S3 for better debugging.
+      await dockerAttemptKillAndRemove(workspace.container);
+
+      // Don't set host to unhealthy.
+      return;
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
