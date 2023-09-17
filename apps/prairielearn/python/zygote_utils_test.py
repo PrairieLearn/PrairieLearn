@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import pytest
@@ -32,3 +33,10 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
     with pytest.raises(ValueError):
         zu.assert_all_integers_within_limits(item)
+
+
+def test_custom_decoder() -> None:
+    json_str = r'{"thing" : 280000000000000000000}'
+    output = json.loads(json_str, parse_int=zu.int_parse_fn)
+    assert type(output["thing"]) is float
+    assert output["thing"] == 280000000000000000000

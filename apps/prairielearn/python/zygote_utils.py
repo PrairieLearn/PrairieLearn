@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import prairielearn as pl
@@ -22,3 +23,11 @@ def assert_all_integers_within_limits(item: Any) -> None:
         elif isinstance(next_item, dict):
             item_stack.extend(next_item.keys())
             item_stack.extend(next_item.values())
+
+
+def int_parse_fn(int_str: str) -> int | float:
+    equiv_int = int(int_str)
+    if pl.is_int_json_serializable(equiv_int):
+        return equiv_int
+
+    return float(int_str)
