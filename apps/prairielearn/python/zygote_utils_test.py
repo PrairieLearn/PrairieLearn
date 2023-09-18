@@ -8,7 +8,7 @@ import zygote_utils as zu
 @pytest.mark.parametrize(
     "item", ["-9007199254740991", "-1", "0", "1", "9007199254740991"]
 )
-def test_load_json_small_ints(item: str) -> None:
+def test_safe_parse_int_small_ints(item: str) -> None:
     loaded_item = json.loads(item, parse_int=zu.safe_parse_int)
     assert isinstance(loaded_item, int)
     assert int(item) == loaded_item
@@ -25,7 +25,7 @@ def test_load_json_small_ints(item: str) -> None:
         "2.8e16",
     ],
 )
-def test_load_json_large_ints(item: str) -> None:
+def test_safe_parse_int_large_ints(item: str) -> None:
     loaded_item = json.loads(item, parse_int=zu.safe_parse_int)
     assert isinstance(loaded_item, float)
     assert float(item) == loaded_item
