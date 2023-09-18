@@ -6,6 +6,32 @@ import zygote_utils as zu
 
 
 @pytest.mark.parametrize(
+    "item", ["-9007199254740991", "-1", "0", "1", "9007199254740991"]
+)
+def test_load_json_small_ints(item: str) -> None:
+    loaded_item = json.loads(item, parse_int=zu.safe_parse_int)
+    assert isinstance(loaded_item, int)
+    assert int(item) == loaded_item
+
+
+@pytest.mark.parametrize(
+    "item",
+    [
+        "-2.8e16",
+        "28000000000000000",
+        "-9007199254740992",
+        "9007199254740992",
+        "28000000000000000",
+        "2.8e16",
+    ],
+)
+def test_load_json_large_ints(item: str) -> None:
+    loaded_item = json.loads(item, parse_int=zu.safe_parse_int)
+    assert isinstance(loaded_item, float)
+    assert float(item) == loaded_item
+
+
+@pytest.mark.parametrize(
     "item",
     [
         1,
@@ -33,10 +59,3 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
     with pytest.raises(ValueError):
         zu.assert_all_integers_within_limits(item)
-
-
-def test_custom_decoder() -> None:
-    json_str = r'{"thing" : 280000000000000000000}'
-    output = json.loads(json_str, parse_int=zu.int_parse_fn)
-    assert type(output["thing"]) is float
-    assert output["thing"] == 280000000000000000000
