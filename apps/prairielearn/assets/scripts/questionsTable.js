@@ -44,6 +44,7 @@ onDocumentReady(() => {
         },
       };
     }
+
     $('#questionsTable').bootstrapTable(tableSettings);
 
     $(document).keydown((event) => {
@@ -106,11 +107,11 @@ onDocumentReady(() => {
             <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
             </button>`;
     }
-    text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(
+    text += `<a class="formatter-data" href="${window.urlPrefix}/question/${question.id}/">${_.escape(
       question.qid,
     )}</a>`;
     if (question.open_issue_count > 0) {
-      text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(
+      text += `<a class="badge badge-pill badge-danger ml-1" href="${window.urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(
         question.qid,
       )}">${question.open_issue_count}</a>`;
     }
@@ -147,7 +148,7 @@ onDocumentReady(() => {
     return _.map(
       ci_assessments,
       (assessment) =>
-        `<a href="<%= plainUrlPrefix %>/course_instance/${ci_id}/instructor/assessment/${
+        `<a href="${window.plainUrlPrefix}>/course_instance/${ci_id}/instructor/assessment/${
           assessment.assessment_id
         }" class="badge color-${
           assessment.color

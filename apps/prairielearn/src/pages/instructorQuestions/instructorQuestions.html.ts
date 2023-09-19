@@ -46,6 +46,10 @@ export const QuestionsPage = ({ resLocals }) => {
               (course_instance) => course_instance.id,
             ),
           )};
+
+          window.urlPrefix = ${JSON.stringify(resLocals.urlPrefix)}
+          window.plainUrlPrefix = ${JSON.stringify(resLocals.plainUrlPrefix)}
+
         </script>
       </head>
 
