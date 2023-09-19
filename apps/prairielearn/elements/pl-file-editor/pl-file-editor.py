@@ -20,10 +20,9 @@ FOCUS_DEFAULT = False
 DIRECTORY_DEFAULT = "."
 NORMALIZE_TO_ASCII_DEFAULT = False
 
-range_default = "false" #flag for editor
-
-def categorize_options(element, data):
-    file_contents = ""
+def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) -> tuple[str, list, str]:
+    hasRange = "false"
+    file_contents = []
     range_list = []
     line = 0 # keeps track of what line in the editor we are in
 
@@ -31,7 +30,7 @@ def categorize_options(element, data):
         child_html = pl.inner_html(child)
         if child_html[-1] != "\n":
             child_html += "\n"
-        file_contents += child_html
+        file_contents.append(child_html)
         new_lines = child_html.count("\n")    
         
         if child.tag in ["static"]:
@@ -45,24 +44,23 @@ def categorize_options(element, data):
         line += new_lines
     
     if len(range_list) != 0:
-        global range_default
-        range_default = "true"
+        hasRange = "true"
 
-    return range_list, file_contents
+    return hasRange, range_list, "".join(file_contents)
 
-def get_answer_name(file_name):
+def get_answer_name(file_name: str) -> None:
     return "_file_editor_{0}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def add_format_error(data, error_string):
+def add_format_error(data: pl.QuestionData, error_string: str) -> None:
     if "_files" not in data["format_errors"]:
         data["format_errors"]["_files"] = []
     data["format_errors"]["_files"].append(error_string)
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
     optional_attribs = [
@@ -98,7 +96,7 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
@@ -150,6 +148,7 @@ def render(element_html, data):
     }
 
     ranges = []
+    hasRanges = "false"
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
@@ -163,17 +162,17 @@ def render(element_html, data):
 
         #check if the file provided should be a static editor
         if "<static>" in text_display:
-            ranges, text_display = categorize_options(ET.fromstring("<html>" + text_display + "</html>"), data)             #allows us to parse as XML with <html> as root node
+            hasRanges, ranges, text_display = categorize_options(ET.fromstring("<html>" + text_display + "</html>"), data)             #allows us to parse as XML with <html> as root node
     else:
         if element_html is not None:
             if "<static>" in element_html:
-                ranges, text_display = categorize_options(element, data)
+                hasRanges, ranges, text_display = categorize_options(element, data)
             else:
                 text_display = str(element.text)
         else:
             text_display = ""
 
-    html_params["range_flag"] = range_default
+    html_params["range_flag"] = hasRanges
     html_params["ranges"] = ranges
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8").strip()
@@ -192,7 +191,7 @@ def render(element_html, data):
 
     if data["panel"] == "question":
         html_params["question"] = True
-        with open("pl-ace-static.mustache", "r", encoding="utf-8") as f:
+        with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
         html = ""
@@ -200,7 +199,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)

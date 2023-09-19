@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, filterXSS */
+/* global ace, showdown, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -204,7 +204,7 @@ applyGutterStyles();
     })
   }
 };
-//next section
+
 window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('storage', (event) => {
     if (event.key === 'pl-file-editor-theme') {
