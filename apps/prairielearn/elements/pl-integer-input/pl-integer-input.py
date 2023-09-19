@@ -26,6 +26,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 BASE_DEFAULT = 10
 SHOW_SCORE_DEFAULT = True
+STORE_AS_STRING_DEFAULT = False
 
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
@@ -46,6 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "blank-value",
         "placeholder",
         "show-score",
+        "store-as-string",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -70,10 +72,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Test conversion, but leave as string so proper value is shown on answer panel
     if correct_answer is not None and not isinstance(correct_answer, int):
         try:
-            int(str(correct_answer), base)
+            correct_ans_parsed = int(str(correct_answer), base)
         except Exception:
             raise ValueError(
                 f"Correct answer is not a valid base {base} integer: {correct_answer}"
+            )
+
+        store_as_string = pl.get_boolean_attrib(
+            element, "store-as-string", STORE_AS_STRING_DEFAULT
+        )
+        if not store_as_string and not pl.is_int_json_serializable(correct_ans_parsed):
+            raise ValueError(
+                f'Correct answer "{correct_answer}" for "{name}" too large,'
+                'set "store-as-string" flag to true.'
             )
 
 
@@ -218,6 +229,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
+    store_as_string = pl.get_boolean_attrib(
+        element, "store-as-string", STORE_AS_STRING_DEFAULT
+    )
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
@@ -250,6 +264,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
+
+    if not store_as_string and not pl.is_int_json_serializable(a_sub_parsed):
+        data["format_errors"][
+            name
+        ] = "Correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
+        data["submitted_answers"][name] = a_sub
+        return
+
     if a_sub_parsed is None:
         with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             format_str = chevron.render(
@@ -263,7 +285,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             ).strip()
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
-    elif not pl.is_int_json_serializable(a_sub_parsed):
+    elif store_as_string:
         data["submitted_answers"][name] = a_sub
     else:
         data["submitted_answers"][name] = a_sub_parsed
