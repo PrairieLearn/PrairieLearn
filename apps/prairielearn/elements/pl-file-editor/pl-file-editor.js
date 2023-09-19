@@ -33,7 +33,6 @@ window.PLFileEditor = function (uuid, options) {
   
 
   let editor = this.editor,
-      session = this.session,
       doc = this.doc;
 
 function before(obj, method, wrapper) {
@@ -56,14 +55,14 @@ function intersects(range) {
   );
 }
 
- preventReadonly = (next, args) => {
+const preventReadonly = (next) => {
   if (this.rangeList.ranges.some(intersects)) return;
   next();
 }
 before(editor, 'onPaste', preventReadonly);
 before(editor, 'onCut',   preventReadonly);
 
-  applyGutterStyles = () => {
+const applyGutterStyles = () => {
   var lines = editor.session.getLength();
   for (var i = 0; i < lines; i++) {
     if (this.rangeList.some(range =>
@@ -76,7 +75,7 @@ before(editor, 'onCut',   preventReadonly);
   }
 }
 
- updateGutter = () => {
+const updateGutter = () => {
   editor.session.$decorations = [];
   setTimeout(() => {
     applyGutterStyles();
@@ -104,10 +103,10 @@ applyGutterStyles();
           return { command: "null", passEvent: false };
         }
     
-        if (cursor.row == this.rangeList[0].end.row + 1 && cursor.column == 0 && keyCode == 8 && editor.selection.isEmpty()) {
+        if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && keyCode === 8 && editor.selection.isEmpty()) {
           event.preventDefault();
           return { command: "null", passEvent: false };
-        }
+        }s
     
         return null;
       }
@@ -185,7 +184,7 @@ applyGutterStyles();
 
   this.initRestoreOriginalButton();
 
-  addAnchor = (range) => {
+const addAnchor = (range) => {
     let anchor = new ace.Range();
     
     anchor.start = doc.createAnchor(range.start.row, range.start.column);
@@ -199,7 +198,7 @@ applyGutterStyles();
 
     this.nested_ranges.forEach(range => {
       const [startRow, endRow] = range;
-      anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+      let anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
       addAnchor(anchor_range);
     })
   }
@@ -221,7 +220,7 @@ window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    if (this.hasRanges == false) {
+    if (this.hasRanges === false) {
       this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
 
     }
@@ -234,7 +233,7 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = filterXSS(html_contents);
+    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
@@ -377,7 +376,7 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
 window.PLFileEditor.prototype.setAnchors = function () {
   let doc = this.session.getDocument(); 
 
-  newRangeList = [];
+  let newRangeList = [];
 
   function addAnchor(range) {
     let anchor = new ace.Range();
@@ -389,7 +388,7 @@ window.PLFileEditor.prototype.setAnchors = function () {
 
   this.nested_ranges.forEach(range => {
     const [startRow, endRow] = range;
-    anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
+    let anchor_range = new ace.Range(startRow, 0, endRow, Infinity);
     addAnchor(anchor_range);
   })
   this.rangeList = newRangeList;
