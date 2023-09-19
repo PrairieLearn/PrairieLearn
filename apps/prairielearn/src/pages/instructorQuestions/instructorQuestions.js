@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
@@ -11,6 +12,7 @@ const { QuestionAddEditor } = require('../../lib/editors');
 const fs = require('fs-extra');
 const async = require('async');
 const _ = require('lodash');
+const { QuestionsPage } = require('./instructorQuestions.html');
 const { default: AnsiUp } = require('ansi_up');
 const ansiUp = new AnsiUp();
 
@@ -53,8 +55,11 @@ router.get('/', function (req, res, next) {
     ],
     (err) => {
       if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+      res.send(
+        QuestionsPage({
+          resLocals: res.locals,
+        }),
+      );    },
   );
 });
 
