@@ -424,21 +424,22 @@ def generate(data):
 
 #### Customizations
 
-| Attribute        | Type                | Default  | Description                                                                                                                                                          |
-| ---------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
-| `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
-| `blank-value`    | integer             | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
-| `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
-| `suffix`         | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
-| `base`           | integer             | 10       | The base used to parse and represent the answer, or the special value 0 (see below).                                                                                 |
-| `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                      |
-| `size`           | integer             | 35       | Size of the input box.                                                                                                                                               |
-| `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
-| `placeholder`    | string              | -        | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base `base`".                                                      |
-| `show-score`     | boolean             | true     | Whether to show the score badge next to this element.                                                                                                                |
+| Attribute         | Type                | Default  | Description                                                                                                                                                          |
+| ----------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`    | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`          | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `correct-answer`  | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
+| `allow-blank`     | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
+| `blank-value`     | integer             | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
+| `label`           | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
+| `suffix`          | text                | —        | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
+| `base`            | integer             | 10       | The base used to parse and represent the answer, or the special value 0 (see below).                                                                                 |
+| `display`         | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                      |
+| `size`            | integer             | 35       | Size of the input box.                                                                                                                                               |
+| `show-help-text`  | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
+| `placeholder`     | string              | -        | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base `base`".                                                      |
+| `show-score`      | boolean             | true     | Whether to show the score badge next to this element.                                                                                                                |
+| `store-as-string` | boolean             | false    | If set to `true`, will store submitted answers as strings. Otherwise, stores them as integers.                                                                       |
 
 #### Specifying a non-trivial base
 
@@ -452,7 +453,11 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 #### Integer range
 
-pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string. This distinction is important in `server.py` scripts for `parse()` and `grade()`, as well as downloaded assessment results.
+pl-integer-input can accept integers of unbounded size only if the `store-as-string` attribute is set to true, which will cause the
+student submitted answer to be stored as a string. Otherwise, the submitted answer will be stored as a Python `int`, and the element
+will only accept answers between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)).
+This distinction is important in `server.py` scripts for `parse()` and `grade()`, as well as downloaded assessment results, and was
+done for backwards compatibility reasons.
 
 Note that answers can include underscores which are ignored (i.e., `1_000` will be parsed as `1000`).
 

@@ -283,7 +283,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     elif not store_as_string and not pl.is_int_json_serializable(a_sub_parsed):
         data["format_errors"][
             name
-        ] = "Correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
+        ] = "Submitted answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
         data["submitted_answers"][name] = a_sub
         return
 
