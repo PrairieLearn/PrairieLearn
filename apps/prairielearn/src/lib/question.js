@@ -1338,7 +1338,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} submission - The current submission to the variant.
    * @param {Array} submissions - The full list of submissions to the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} course - The course for the question.
    * @param {Object} course_instance - The course_instance for the variant.
    * @param {Object} locals - The current locals for the page response.
    * @param {function} callback - A callback(err, courseIssues, htmls) function.
