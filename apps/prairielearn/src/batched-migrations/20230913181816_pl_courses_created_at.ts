@@ -1,7 +1,7 @@
 import execa = require('execa');
 import * as fs from 'fs-extra';
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { CourseSchema, DateFromISOString } from '../lib/db-types';
 
@@ -52,10 +52,10 @@ export default makeBatchedMigration({
 
   async execute(start: bigint, end: bigint): Promise<void> {
     for (let id = start; id <= end; id++) {
-      const course = await queryRow(sql.select_course, { course_id: id }, CourseSchema);
+      const course = await queryOptionalRow(sql.select_course, { course_id: id }, CourseSchema);
 
-      if (course.created_at != null) {
-        // The course already has a date; don't overwrite it.
+      if (course == null || course.created_at != null) {
+        // This course does not exist, or it already has a created_at date.
         continue;
       }
 
