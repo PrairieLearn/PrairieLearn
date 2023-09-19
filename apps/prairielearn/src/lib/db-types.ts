@@ -29,6 +29,7 @@ export const DateFromISOString = z
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
+  created_at: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
