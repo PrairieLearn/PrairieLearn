@@ -1422,7 +1422,7 @@ module.exports = {
       urls.calculationQuestionGeneratedFileUrl =
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      urls.clientFilesCourseUrl = questionUrl + 'clientFilesCourse';
       urls.clientFilesQuestionGeneratedFileUrl =
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
@@ -1441,7 +1441,7 @@ module.exports = {
       urls.calculationQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      urls.clientFilesCourseUrl = iqUrl + 'clientFilesCourse';
       urls.clientFilesQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
