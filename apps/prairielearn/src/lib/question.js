@@ -375,14 +375,14 @@ module.exports = {
    * @param {Object} submission - The submission to save (should not have an id property yet).
    * @param {Object} variant - The variant to submit to.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {function} callback - A callback(err, submission_id) function.
    */
-  saveSubmission(submission, variant, question, course, callback) {
+  saveSubmission(submission, variant, question, variant_course, callback) {
     debug('saveSubmission()');
     submission.raw_submitted_answer = submission.submitted_answer;
     submission.gradable = true;
-    let questionModule, courseIssues, data, submission_id, workspace_id, zipPath;
+    let questionModule, question_course, courseIssues, data, submission_id, workspace_id, zipPath;
     async.series(
       [
         (callback) => {
@@ -443,12 +443,15 @@ module.exports = {
             callback(null);
           });
         },
+        async () => {
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
+        },
         (callback) => {
           questionModule.parse(
             submission,
             variant,
             question,
-            course,
+            question_course,
             (err, ret_courseIssues, ret_data) => {
               if (ERR(err, callback)) return;
               courseIssues = ret_courseIssues;
@@ -461,7 +464,7 @@ module.exports = {
         },
         (callback) => {
           const studentMessage = 'Error parsing submission';
-          const courseData = { variant, question, submission, course };
+          const courseData = { variant, question, submission, course: variant_course };
           module.exports._writeCourseIssues(
             courseIssues,
             variant,
