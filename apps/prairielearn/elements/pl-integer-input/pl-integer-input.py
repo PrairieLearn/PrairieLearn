@@ -265,13 +265,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
 
-    if not store_as_string and not pl.is_int_json_serializable(a_sub_parsed):
-        data["format_errors"][
-            name
-        ] = "Correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
-        data["submitted_answers"][name] = a_sub
-        return
-
+    # Error cases if parsing failed or integer was too large
     if a_sub_parsed is None:
         with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             format_str = chevron.render(
@@ -285,7 +279,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             ).strip()
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
-    elif store_as_string:
+        return
+    elif not store_as_string and not pl.is_int_json_serializable(a_sub_parsed):
+        data["format_errors"][
+            name
+        ] = "Correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
+        data["submitted_answers"][name] = a_sub
+        return
+
+    if store_as_string:
         data["submitted_answers"][name] = a_sub
     else:
         data["submitted_answers"][name] = a_sub_parsed
@@ -328,6 +330,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
+    store_as_string = pl.get_boolean_attrib(
+        element, "store-as-string", STORE_AS_STRING_DEFAULT
+    )
 
     # Get correct answer
     a_tru = data["correct_answers"][name]
@@ -360,6 +365,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "invalid":
         invalid_chr = chr(ord("a") + (base - BASE_DEFAULT) + 1)
         incorrect_answers = ["1 + 2", "3.4", invalid_chr, "pi"]
+
+        if not store_as_string:
+            incorrect_answers.append("9007199254740991999")
 
         data["raw_submitted_answers"][name] = random.choice(incorrect_answers)
         data["format_errors"][name] = "invalid"
