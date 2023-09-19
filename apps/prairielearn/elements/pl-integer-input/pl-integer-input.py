@@ -83,7 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
         if not store_as_string and not pl.is_int_json_serializable(correct_ans_parsed):
             raise ValueError(
-                f'Correct answer "{correct_answer}" for "{name}" too large,'
+                f'Correct answer "{correct_answer}" for "{name}" too large, '
                 'set "store-as-string" flag to true.'
             )
 
