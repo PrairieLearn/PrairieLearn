@@ -222,7 +222,7 @@ async function prepareGroup() {
       id: true,
       role_name: true,
       minimum: true,
-      maximum: true
+      maximum: true,
     }),
   );
   assert.lengthOf(groupRoles, 4);
