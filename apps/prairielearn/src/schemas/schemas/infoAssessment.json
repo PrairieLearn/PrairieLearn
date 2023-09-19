@@ -324,6 +324,11 @@
         "advanceScorePerc": {
           "$ref": "#/definitions/advanceScorePerc"
         },
+        "gradeRateMinutes": {
+          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+          "type": "number",
+          "minimum": 0
+        },
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
@@ -341,11 +346,6 @@
           },
           "uniqueItems": true,
           "default": []
-        },
-        "gradeRateMinutes": {
-          "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
-          "type": "number",
-          "minimum": 0
         }
       },
       "required": ["questions"]

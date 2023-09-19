@@ -89,8 +89,8 @@ SELECT DISTINCT
   g.join_code
 FROM
   group_users AS gu
-  JOIN users as u ON u.user_id = gu.user_id
-  JOIN groups as g ON gu.group_id = g.id
+  JOIN users AS u ON u.user_id = gu.user_id
+  JOIN groups AS g ON gu.group_id = g.id
 WHERE
   g.id = $group_id;
 
@@ -141,8 +141,8 @@ SELECT
   bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
   bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
-  group_roles as gr
-  JOIN group_user_roles as gu ON gr.id = gu.group_role_id
+  group_roles AS gr
+  JOIN group_user_roles AS gu ON gr.id = gu.group_role_id
 WHERE
   gr.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
@@ -152,11 +152,11 @@ SELECT
   gu.user_id,
   u.uid,
   gr.role_name,
-  gr.id as group_role_id
+  gr.id AS group_role_id
 FROM
-  users u
-  JOIN group_user_roles gu ON u.user_id = gu.user_id
-  JOIN group_roles gr ON gu.group_role_id = gr.id
+  users AS u
+  JOIN group_user_roles AS gu ON u.user_id = gu.user_id
+  JOIN group_roles AS gr ON gu.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
 
@@ -164,7 +164,7 @@ WHERE
 SELECT
   g.id
 FROM
-  groups as g
+  groups AS g
   JOIN group_configs AS gc ON g.group_config_id = gc.id
   JOIN group_users AS gu ON gu.group_id = g.id
 WHERE
@@ -176,16 +176,16 @@ SELECT
   bool_or(aqrp.can_submit) as can_submit,
   bool_or(aqrp.can_view) as can_view
 FROM
-  users u
-  JOIN group_user_roles gu ON u.user_id = gu.user_id
-  JOIN group_roles gr ON gu.group_role_id = gr.id
-  JOIN assessment_question_role_permissions aqrp on aqrp.group_role_id = gu.group_role_id
+  users AS u
+  JOIN group_user_roles AS gu ON u.user_id = gu.user_id
+  JOIN group_roles AS gr ON gu.group_role_id = gr.id
+  JOIN assessment_question_role_permissions AS aqrp on aqrp.group_role_id = gu.group_role_id
 WHERE
   aqrp.assessment_question_id = $assessment_question_id
   AND gu.user_id = $user_id;
 
 -- BLOCK delete_non_required_roles
-DELETE FROM group_user_roles gur
+DELETE FROM group_user_roles AS gur
 WHERE
   group_id = $group_id
   AND group_role_id IN (
@@ -259,7 +259,7 @@ WITH
       (role_assignment ->> 'user_id')::bigint,
       (role_assignment ->> 'group_role_id')::bigint
     FROM
-      JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
+      JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
     ON CONFLICT (group_id, user_id, group_role_id) DO
     UPDATE
     SET

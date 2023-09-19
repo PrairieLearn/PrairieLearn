@@ -218,7 +218,12 @@ async function prepareGroup() {
     {
       assessment_id: assessmentId,
     },
-    GroupRoleSchema,
+    GroupRoleSchema.pick({
+      id: true,
+      role_name: true,
+      minimum: true,
+      maximum: true
+    }),
   );
   assert.lengthOf(groupRoles, 4);
 

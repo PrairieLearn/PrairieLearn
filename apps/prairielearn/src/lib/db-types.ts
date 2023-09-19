@@ -273,5 +273,9 @@ export const GroupRoleSchema = z.object({
   role_name: z.string(),
   minimum: z.number().nullable(),
   maximum: z.number().nullable(),
+  assessment_id: z.number(),
+  can_assign_roles_at_start: z.boolean(),
+  can_assign_roles_during_assessment: z.boolean(),
+  can_submit_assessment: z.boolean(),
 });
 export type GroupRole = z.infer<typeof GroupRoleSchema>;
