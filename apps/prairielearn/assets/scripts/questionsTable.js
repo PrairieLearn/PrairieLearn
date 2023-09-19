@@ -18,16 +18,6 @@ onDocumentReady(() => {
             $('#questionsTable').bootstrapTable('clearFilterControl');
           },
         },
-        //<% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
-        addQuestion: {
-          text: 'Add Question',
-          icon: 'fa-plus',
-          attributes: { title: 'Create a new question' },
-          event: () => {
-            $('form[name=add-question-form]').submit();
-          },
-        },
-        //<% } %>
       },
       onPreBody: function () {},
       onResetView: function () {
@@ -44,6 +34,16 @@ onDocumentReady(() => {
       },
     };
 
+    if (window.showAddQuestionButton) {
+      tableSettings.buttons.addQuestion = {
+        text: 'Add Question',
+        icon: 'fa-plus',
+        attributes: { title: 'Create a new question' },
+        event: () => {
+          $('form[name=add-question-form]').submit();
+        },
+      };
+    }
     $('#questionsTable').bootstrapTable(tableSettings);
 
     $(document).keydown((event) => {
@@ -79,8 +79,7 @@ onDocumentReady(() => {
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  window.assessmentsByCourseInstanceList = function (ci_id) {
+  let assessmentsByCourseInstanceList = function (ci_id) {
     var data = $('#questionsTable').bootstrapTable('getData');
     var assessments = _.filter(
       _.flatten(_.map(data, (row) => row.assessments)),
@@ -140,8 +139,7 @@ onDocumentReady(() => {
     }">${_.escape(question.display_type)}</span>`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  window.assessmentsByCourseInstanceFormatter = function (ci_id, question) {
+  let assessmentsByCourseInstanceFormatter = function (ci_id, question) {
     var ci_assessments = _.filter(
       question.assessments ?? [],
       (assessment) => assessment.course_instance_id === ci_id,
@@ -186,13 +184,13 @@ onDocumentReady(() => {
     return !!values;
   };
 
-  //<% (authz_data.course_instances || []).forEach(course_instance => { %>
-  // window.assessments = function<%= course_instance.id %>List() {
-  //     return assessmentsByCourseInstanceList(<%= course_instance.id %>);
-  // }
+  window.courseInstanceIds.forEach((courseInstanceId) => {
+    window[`assessments${courseInstanceId}List`] = function () {
+      return assessmentsByCourseInstanceList(courseInstanceId);
+    };
 
-  // window.assessments = function<%= course_instance.id %>Formatter(_, question) {
-  //     return assessmentsByCourseInstanceFormatter(<%= course_instance.id %>, question);
-  // }
-  //<% }); %>
+    window[`assessments${courseInstanceId}Formatter`] = function (_, question) {
+      return assessmentsByCourseInstanceFormatter(courseInstanceId, question);
+    };
+  });
 });

@@ -35,6 +35,18 @@ export const QuestionsPage = ({ resLocals }) => {
           )}"
           rel="stylesheet"
         />
+
+        <script>
+          window.showAddQuestionButton = ${resLocals.authz_data.has_course_permission_edit &&
+          !resLocals.course.example_course &&
+          !resLocals.needToSync};
+
+          window.courseInstanceIds = ${JSON.stringify(
+            (resLocals.authz_data.course_instances || []).map(
+              (course_instance) => course_instance.id,
+            ),
+          )};
+        </script>
       </head>
 
       <body>

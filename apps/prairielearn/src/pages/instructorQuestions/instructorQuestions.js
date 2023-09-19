@@ -59,7 +59,8 @@ router.get('/', function (req, res, next) {
         QuestionsPage({
           resLocals: res.locals,
         }),
-      );    },
+      );
+    },
   );
 });
 
