@@ -106,7 +106,7 @@ applyGutterStyles();
         if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && keyCode === 8 && editor.selection.isEmpty()) {
           event.preventDefault();
           return { command: "null", passEvent: false };
-        }s
+        }
     
         return null;
       }
