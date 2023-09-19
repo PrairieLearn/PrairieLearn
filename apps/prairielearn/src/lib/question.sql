@@ -195,6 +195,7 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(ci) AS course_instance,
+  to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
   to_jsonb(ci) AS course_instance,
   lgj.id AS grading_job_id,

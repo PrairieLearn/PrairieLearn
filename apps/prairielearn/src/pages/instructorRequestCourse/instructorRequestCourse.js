@@ -149,41 +149,35 @@ router.post(
           return;
         }
 
-        // Ignore the callback, we don't actually care if the
+        // Do not await, we don't actually care if the
         // message gets sent before we render the page
-        opsbot.sendCourseRequestMessage(
-          `*Automatically creating course*\n` +
-            `Course repo: ${repo_short_name}\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-          (err) => {
-            ERR(err, () => {
-              logger.error(err);
-            });
-          },
-        );
+        opsbot
+          .sendCourseRequestMessage(
+            `*Automatically creating course*\n` +
+              `Course repo: ${repo_short_name}\n` +
+              `Course rubric: ${short_name}\n` +
+              `Course title: ${title}\n` +
+              `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+              `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+              `GitHub username: ${github_user || 'not provided'}`,
+          )
+          .catch((err) => logger.error(err));
 
         // Redirect on success so that refreshing doesn't create another request
         res.redirect(req.originalUrl);
       });
     } else {
       // Not automatically created
-      opsbot.sendCourseRequestMessage(
-        `*Incoming course request*\n` +
-          `Course rubric: ${short_name}\n` +
-          `Course title: ${title}\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-          `GitHub username: ${github_user || 'not provided'}`,
-        (err) => {
-          ERR(err, () => {
-            logger.error(err);
-          });
-        },
-      );
+      opsbot
+        .sendCourseRequestMessage(
+          `*Incoming course request*\n` +
+            `Course rubric: ${short_name}\n` +
+            `Course title: ${title}\n` +
+            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+            `GitHub username: ${github_user || 'not provided'}`,
+        )
+        .catch((err) => logger.error(err));
       res.redirect(req.originalUrl);
     }
   }),

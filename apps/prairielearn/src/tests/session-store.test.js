@@ -2,7 +2,7 @@ const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { promisify } = require('util');
 
-const SessionStore = require('../lib/session-store');
+const { SessionStore } = require('../lib/session-store');
 const sessionStoreExpire = require('../cron/sessionStoreExpire');
 const helperDb = require('./helperDb');
 const sqldb = require('@prairielearn/postgres');

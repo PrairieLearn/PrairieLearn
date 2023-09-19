@@ -37,17 +37,12 @@ module.exports.run = (callback) => {
         const resultsMessages = await getDeadLetterMsg(sqs, resultsDeadLetterQueueName);
         msg = jobsMessages + resultsMessages;
       },
-      (callback) => {
-        opsbot.sendMessage(msg, (err, res, body) => {
-          if (ERR(err, callback)) return;
-          if (res.statusCode !== 200) {
-            logger.error(
-              `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
-              body,
-            );
-          }
-          callback(null);
-        });
+      async () => {
+        await opsbot
+          .sendMessage(msg)
+          .catch((err) =>
+            logger.error(`Error posting external grading dead letters to slack`, err.data),
+          );
       },
     ],
     (err) => {
