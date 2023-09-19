@@ -524,3 +524,8 @@ Similarly, for grading functions involving floating point numbers, _avoid exact 
 - `is_correct_scalar_dd` compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
+
+_Note:_ Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
+element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
+code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
+[PrairieLearn elements documentation](elements.md) for more detailed discussion related to specific elements.
