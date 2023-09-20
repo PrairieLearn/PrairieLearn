@@ -103,6 +103,19 @@ if (this.hasRanges) {
       e.stopPropagation();
       return;
     }
+
+    var isBeforeReadonlyRange = this.rangeList.some(range => {
+      var startOfRange = editor.session.getLine(range.start.row);
+      return (cursor.row === range.start.row && cursor.column === 0 && e.command.name === "del" && editor.selection.isEmpty()) ||
+             (cursor.row === range.start.row - 1 && cursor.column === editor.session.getLine(cursor.row).length && e.command.name === "del" && editor.selection.isEmpty());
+    });
+
+    if (isBeforeReadonlyRange) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
   }.bind(this));
 }
 
