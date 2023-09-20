@@ -49,10 +49,8 @@ function before(obj, method, wrapper) {
 
 function intersects(range) {
   var cursor = editor.selection.getCursor();
-  return (
-    cursor.row >= range.start.row && cursor.row <= range.end.row &&
-    cursor.column >= range.start.column && cursor.column <= range.end.column
-  );
+  var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
+  return range.intersects(cursorRange);
 }
 
 const preventReadonly = (next) => {
@@ -112,6 +110,11 @@ applyGutterStyles();
       }
     });
   }
+  /////////////////////////////////
+  // END OF CODE STAY ABOVE HERE //
+  /////////////////////////////////
+  // TODO: Remove these comments //
+  /////////////////////////////////
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
