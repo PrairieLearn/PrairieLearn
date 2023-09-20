@@ -1,6 +1,5 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import assets from './lib/assets';
 
 const addSharingSetPopover = (resLocals) => {
   return html`
