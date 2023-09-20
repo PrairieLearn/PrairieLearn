@@ -1,6 +1,5 @@
 import random
 from enum import Enum
-from html import escape
 
 import chevron
 import lxml.html
@@ -78,13 +77,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
         space_hint_pair = (remove_leading_trailing, remove_spaces)
         match space_hint_pair:
@@ -123,6 +123,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "uuid": pl.get_uuid(),
             display.value: True,
+            "raw_submitted_answer": raw_submitted_answer,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
@@ -146,9 +147,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         #        raise ValueError("invalid score" + score)
 
         html_params["display_append_span"] = html_params["show_info"] or suffix
-
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
 
         return chevron.render(template, html_params).strip()
 
@@ -178,11 +176,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+            html_params["raw_submitted_answer"] = raw_submitted_answer
+            # if raw_submitted_answer is not None:
+            #    html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+            #        raw_submitted_answer
+            #    )
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
