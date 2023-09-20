@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
+import { EncodedData } from '@prairielearn/browser-utils';
 
 export const QuestionsPage = ({ questions, resLocals }) => {
   return html`
@@ -8,23 +9,24 @@ export const QuestionsPage = ({ questions, resLocals }) => {
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
-        <script>
-          window.showAddQuestionButton = ${resLocals.authz_data.has_course_permission_edit &&
-          !resLocals.course.example_course &&
-          !resLocals.needToSync};
-
-          window.courseInstanceIds = ${JSON.stringify(
-            (resLocals.authz_data.course_instances || []).map(
-              (course_instance) => course_instance.id,
-            ),
-          )};
-
-          window.urlPrefix = '${resLocals.urlPrefix}';
-          window.plainUrlPrefix = '${resLocals.plainUrlPrefix}';
-        </script>
       </head>
 
       <body>
+        ${EncodedData(
+          resLocals.authz_data.has_course_permission_edit &&
+            !resLocals.course.example_course &&
+            !resLocals.needToSync,
+          'show-add-question-button',
+        )}
+        ${EncodedData(
+          (resLocals.authz_data.course_instances || []).map(
+            (course_instance) => course_instance.id,
+          ),
+          'course-instance-ids',
+        )};
+        ${EncodedData(resLocals.urlPrefix, 'url-prefix')}
+        ${EncodedData(resLocals.plainUrlPrefix, 'plain-url-prefix')}
+
         <form class="ml-1 btn-group" name="add-question-form" method="POST">
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="add_question" />
