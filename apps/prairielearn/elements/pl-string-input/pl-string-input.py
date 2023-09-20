@@ -22,6 +22,8 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 
+STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -70,11 +72,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
+    # Get template
+    with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
+
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
-        match (remove_leading_trailing, remove_spaces):
+        space_hint_pair = (remove_leading_trailing, remove_spaces)
+        match space_hint_pair:
             case (True, True):
                 space_hint = "All spaces will be removed from your answer."
             case (True, False):
@@ -87,15 +94,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 space_hint = (
                     "Leading and trailing spaces will be left as part of your answer."
                 )
-            case impossible_pair:
-                assert_never(impossible_pair)
+            case _:
+                raise Exception("Should never reach here.")
 
-        # Get info strings
         info_params = {"format": True, "space_hint": space_hint}
-        with open("pl-string-input.mustache", "r", encoding="utf-8") as f:
-            template = f.read()
-            info = chevron.render(template, info_params).strip()
-            info_params.pop("format", None)
+        info = chevron.render(template, info_params).strip()
+        info_params.pop("format", None)
 
         html_params = {
             "question": True,
@@ -120,9 +124,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        #partial_score = data["partial_scores"].get(name, {"score": None})
-        #score = partial_score.get("score", None)
-        #if score is not None:
+        # partial_score = data["partial_scores"].get(name, {"score": None})
+        # score = partial_score.get("score", None)
+        # if score is not None:
         #    try:
         #        score = float(score)
         #        if score >= 1:
@@ -147,8 +151,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open("pl-string-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -182,50 +186,55 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     raw_submitted_answer
                 )
 
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
+        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        # partial_score = data["partial_scores"].get(name, {"score": None})
+        # score = partial_score.get("score", None)
+        # if score is not None:
+        #    try:
+        #        score = float(score)
+        #        if score >= 1:
+        #            html_params["correct"] = True
+        #        elif score > 0:
+        #            html_params["partial"] = math.floor(score * 100)
+        #        else:
+        #            html_params["incorrect"] = True
+        #    except Exception:
+        #        raise ValueError("invalid score" + score)
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
 
-        with open("pl-string-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
+
     elif data["panel"] == "answer":
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
-        if a_tru is not None:
-            html_params = {
-                "answer": True,
-                "label": label,
-                "a_tru": a_tru,
-                "suffix": suffix,
-            }
-            with open("pl-string-input.mustache", "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
-        else:
-            html = ""
-    else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        if a_tru is None:
+            return ""
 
-    return html
+        html_params = {
+            "answer": True,
+            "label": label,
+            "a_tru": a_tru,
+            "suffix": suffix,
+        }
+
+        return chevron.render(template, html_params).strip()
+
+    assert_never(data["panel"])
+    # raise Exception("Invalid panel type: %s" % data["panel"])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     # Get allow-blank option
-    allow_blank = pl.get_string_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     normalize_to_ascii = pl.get_boolean_attrib(
         element, "normalize-to-ascii", NORMALIZE_TO_ASCII_DEFAULT
     )
@@ -258,17 +267,17 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get remove-spaces option
-    remove_spaces = pl.get_string_attrib(
+    remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
 
     # Get remove-leading-trailing option
-    remove_leading_trailing = pl.get_string_attrib(
+    remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
 
     # Get string case sensitivity option
-    ignore_case = pl.get_string_attrib(element, "ignore-case", IGNORE_CASE_DEFAULT)
+    ignore_case = pl.get_boolean_attrib(element, "ignore-case", IGNORE_CASE_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -317,7 +326,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    allow_blank = pl.get_string_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
     # Get correct answer
     a_tru = data["correct_answers"][name]
