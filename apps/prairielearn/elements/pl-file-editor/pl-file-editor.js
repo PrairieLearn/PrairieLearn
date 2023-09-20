@@ -57,6 +57,7 @@ const preventReadonly = (next) => {
   if (this.rangeList.ranges.some(intersects)) return;
   next();
 }
+
 before(editor, 'onPaste', preventReadonly);
 before(editor, 'onCut',   preventReadonly);
 
@@ -84,37 +85,34 @@ editor.on("change", updateGutter);
 editor.on("changeSelection", updateGutter);
 
 applyGutterStyles();
-  if (this.hasRanges) {
-    editor.keyBinding.addKeyboardHandler({
-      handleKeyboard: (data, hash, keyString, keyCode, event) => {
-        if (hash === -1 || (keyCode <= 40 && keyCode >= 37)) return false;
-        if (this.rangeList.some(range => intersects(range))) {
-          return { command: "null", passEvent: false };
-        }
-  
-        var cursor = editor.selection.getCursor();
-        var inRange = this.rangeList.some(range =>
-          cursor.row >= range.start.row && cursor.row <= range.end.row
-        );
+
+if (this.hasRanges) {
+  editor.commands.on("exec", function(e) { 
+    var cursor = editor.selection.getCursor();
     
-        if (inRange) {
-          return { command: "null", passEvent: false };
-        }
+    var inRange = this.rangeList.some(range => 
+      cursor.row >= range.start.row && cursor.row <= range.end.row
+    );
     
-        if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && keyCode === 8 && editor.selection.isEmpty()) {
-          event.preventDefault();
-          return { command: "null", passEvent: false };
-        }
+    if (inRange) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     
-        return null;
-      }
-    });
-  }
-  /////////////////////////////////
-  // END OF CODE STAY ABOVE HERE //
-  /////////////////////////////////
-  // TODO: Remove these comments //
-  /////////////////////////////////
+    if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && e.command.name === "backspace" && editor.selection.isEmpty()) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }.bind(this));
+}
+
+/////////////////////////////////
+// END OF CODE STAY ABOVE HERE //
+/////////////////////////////////
+// TODO: Remove these comments //
+/////////////////////////////////
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
