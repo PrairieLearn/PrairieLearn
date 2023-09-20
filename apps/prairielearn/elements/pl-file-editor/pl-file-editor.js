@@ -90,9 +90,7 @@ if (this.hasRanges) {
   editor.commands.on("exec", function(e) { 
     var cursor = editor.selection.getCursor();
     
-    var inRange = this.rangeList.some(range => 
-      cursor.row >= range.start.row && cursor.row <= range.end.row
-    );
+    var inRange = this.rangeList.some(intersects);
     
     if (inRange) {
       e.preventDefault();
