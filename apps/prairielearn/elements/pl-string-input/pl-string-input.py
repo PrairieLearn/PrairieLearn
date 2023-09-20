@@ -112,8 +112,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "name": name,
             "label": label,
             "suffix": suffix,
-            "remove-leading-trailing": remove_leading_trailing,
-            "remove-spaces": remove_spaces,
             "editable": editable,
             "info": info,
             "placeholder": placeholder,
