@@ -62,26 +62,22 @@ onDocumentReady(() => {
     });
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.tagsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.versionList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
   const urlPrefix = decodeData('url-prefix');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.qidFormatter = function (qid, question) {
     var text = '';
     if (question.sync_errors) {
@@ -110,14 +106,12 @@ onDocumentReady(() => {
     return text;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.topicFormatter = function (topic, question) {
     return `<span class="badge color-${question.topic.color}">${_.escape(
       question.topic.name,
     )}</span>`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.tagsFormatter = function (tags, question) {
     return _.map(
       question.tags ?? [],
@@ -125,19 +119,16 @@ onDocumentReady(() => {
     ).join(' ');
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.versionFormatter = function (version, question) {
     return `<span class="badge color-${
       question.display_type === 'v3' ? 'green1' : 'red1'
     }">${_.escape(question.display_type)}</span>`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.topicSorter = function (topicA, topicB) {
     return topicA.name.localeCompare(topicB.name);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.genericFilterSearch = function (search, value) {
     return $('<div>')
       .html(value)
@@ -147,7 +138,6 @@ onDocumentReady(() => {
       .includes(search.toUpperCase());
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.badgeFilterSearch = function (search, value) {
     if (search === '(none)') {
       return value === '';
