@@ -6,6 +6,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from text_unidecode import unidecode
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
@@ -22,7 +23,7 @@ SHOW_HELP_TEXT_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -51,20 +52,20 @@ def prepare(element_html, data):
 
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            raise Exception("duplicate correct_answers variable name: %s" % name)
+            raise Exception(f'Duplicate correct_answers variable name: "{name}"')
         data["correct_answers"][name] = correct_answer
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, "display", DISPLAY_DEFAULT)
-    remove_leading_trailing = pl.get_string_attrib(
+    remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
-    remove_spaces = pl.get_string_attrib(
+    remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
@@ -73,20 +74,21 @@ def render(element_html, data):
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
-        if remove_leading_trailing:
-            if remove_spaces:
+        match (remove_leading_trailing, remove_spaces):
+            case (True, True):
                 space_hint = "All spaces will be removed from your answer."
-            else:
+            case (True, False):
                 space_hint = (
                     "Leading and trailing spaces will be removed from your answer."
                 )
-        else:
-            if remove_spaces:
+            case (False, True):
                 space_hint = "All spaces between text will be removed but leading and trailing spaces will be left as part of your answer."
-            else:
+            case (False, False):
                 space_hint = (
                     "Leading and trailing spaces will be left as part of your answer."
                 )
+            case impossible_pair:
+                assert_never(impossible_pair)
 
         # Get info strings
         info_params = {"format": True, "space_hint": space_hint}
@@ -112,19 +114,25 @@ def render(element_html, data):
             "uuid": pl.get_uuid(),
         }
 
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
+        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        #partial_score = data["partial_scores"].get(name, {"score": None})
+        #score = partial_score.get("score", None)
+        #if score is not None:
+        #    try:
+        #        score = float(score)
+        #        if score >= 1:
+        #            html_params["correct"] = True
+        #        elif score > 0:
+        #            html_params["partial"] = math.floor(score * 100)
+        #        else:
+        #            html_params["incorrect"] = True
+        #    except Exception:
+        #        raise ValueError("invalid score" + score)
 
         html_params["display_append_span"] = html_params["show_info"] or suffix
 
@@ -213,7 +221,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     # Get allow-blank option
@@ -242,7 +250,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = pl.to_json(a_sub)
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -305,7 +313,7 @@ def grade(element_html, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -335,4 +343,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = ""
         data["format_errors"][name] = "invalid"
     else:
-        raise Exception("invalid result: %s" % result)
+        assert_never(result)
