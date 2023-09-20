@@ -1,5 +1,5 @@
-import math
 import random
+from enum import Enum
 from html import escape
 
 import chevron
@@ -8,11 +8,17 @@ import prairielearn as pl
 from text_unidecode import unidecode
 from typing_extensions import assert_never
 
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
-DISPLAY_DEFAULT = "inline"
+DISPLAY_DEFAULT = DisplayType.INLINE
 REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
@@ -63,7 +69,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    display = pl.get_string_attrib(element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
@@ -116,6 +122,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
             ),
             "uuid": pl.get_uuid(),
+            display.value: True,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
@@ -140,15 +147,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params["display_append_span"] = html_params["show_info"] or suffix
 
-        if display == "inline":
-            html_params["inline"] = True
-        elif display == "block":
-            html_params["block"] = True
-        else:
-            raise ValueError(
-                'method of display "%s" is not valid (must be "inline" or "block")'
-                % display
-            )
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
 
