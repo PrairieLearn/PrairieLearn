@@ -5,9 +5,9 @@ export function QuestionsTable(
   questions,
   current_course_instance,
   course_instances,
-  has_legacy_questions,
   errorMessage,
 ): HtmlSafeString {
+  const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   return html`
     <style>
       .sticky-column {

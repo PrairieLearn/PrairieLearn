@@ -1,21 +1,19 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const error = require('@prairielearn/error');
-const path = require('path');
-const { logger } = require('@prairielearn/logger');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const sqldb = require('@prairielearn/postgres');
+import ERR from 'async-stacktrace';
+import { Router } from 'express';
+import error = require('@prairielearn/error');
+import { logger } from '@prairielearn/logger';
+import sqldb = require('@prairielearn/postgres');
+import { QuestionAddEditor } from '../../lib/editors';
+import fs = require('fs-extra');
+import async = require('async');
+import { QuestionsPage } from './instructorQuestions.html';
+import { getQuestions } from '../../models/questions';
+
+const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
-const { QuestionAddEditor } = require('../../lib/editors');
-const fs = require('fs-extra');
-const async = require('async');
-const { QuestionsPage } = require('./instructorQuestions.html');
-const { getQuestions } = require('../../models/questions');
 
 router.get('/', function (req, res, next) {
-  let questions
+  let questions;
   async.series(
     [
       (callback) => {
@@ -31,8 +29,10 @@ router.get('/', function (req, res, next) {
         });
       },
       async () => {
-        questions = await getQuestions(res.locals.course.id, res.locals.authz_data.course_instances);
-        res.locals.has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
+        questions = await getQuestions(
+          res.locals.course.id,
+          res.locals.authz_data.course_instances,
+        );
       },
     ],
     (err) => {
@@ -40,7 +40,7 @@ router.get('/', function (req, res, next) {
       res.send(
         QuestionsPage({
           questions: questions,
-          resLocals: res.locals
+          resLocals: res.locals,
         }),
       );
     },
@@ -48,9 +48,7 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', (req, res, next) => {
-  debug(`Responding to post with action ${req.body.__action}`);
   if (req.body.__action === 'add_question') {
-    debug(`Responding to action add_question`);
     const editor = new QuestionAddEditor({
       locals: res.locals,
     });
@@ -60,7 +58,6 @@ router.post('/', (req, res, next) => {
         if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
-          debug(`Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);
           sqldb.queryOneRow(
             sql.select_question_id_from_uuid,
             { uuid: editor.uuid, course_id: res.locals.course.id },
@@ -84,4 +81,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-module.exports = router;
+export = router;
