@@ -29,14 +29,17 @@ SELECT
   c.sharing_name
 FROM
   questions AS q
-  JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
-  JOIN sharing_sets AS ss ON ssq.sharing_set_id = ss.id
-  JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
-  JOIN pl_courses AS c ON c.id = ss.course_id
-  JOIN jsonb_to_recordset($imported_question_info::JSONB) AS iqi (sharing_name text, qid text) ON iqi.sharing_name = c.sharing_name
-  AND iqi.qid = q.qid
+  LEFT JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
+  LEFT JOIN sharing_sets AS ss ON ssq.sharing_set_id = ss.id
+  LEFT JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
+  LEFT JOIN pl_courses AS c ON c.id = ss.course_id
+  LEFT JOIN jsonb_to_recordset($imported_question_info::JSONB) AS iqi (sharing_name text, qid text) ON (
+    iqi.sharing_name = c.sharing_name
+    AND iqi.qid = q.qid
+  )
 WHERE
-  ssc.course_id = $course_id;
+  ssc.course_id = $course_id
+  OR q.shared_publicly;
 
 -- BLOCK get_institution_id
 SELECT

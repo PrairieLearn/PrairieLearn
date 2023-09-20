@@ -91,3 +91,11 @@ WHERE
   ss.course_id = $course_id
   AND ss.id = $unsafe_sharing_set_id
   AND q.id = $question_id;
+
+-- BLOCK share_publicly
+UPDATE questions
+SET
+  shared_publicly = TRUE
+WHERE
+  id = $question_id
+  AND course_id = $course_id;

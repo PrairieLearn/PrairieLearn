@@ -84,32 +84,51 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
+            <% if (sharing_enabled) { %>
             <tr>
-              <th class="align-middle">Sharing Sets</th>
+              <th class="align-middle">Sharing</th>
               <td>
-                <% sharing_sets_in.forEach(function(sharing_set) { %>
-                  <span class="badge color-gray1"><%= sharing_set.name %></span>
-                <% }); %>
-                <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && sharing_sets_other.length > 0) { %>
-                  <form name="sharing-set-add" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="sharing_set_add">
-                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <div class="btn-group btn-group-sm" role="group">
-                      <button id="addSharingSet" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Add...
-                      </button>
-                      <div class="dropdown-menu" aria-labelledby="addSharingSet">
-                          <% sharing_sets_other.forEach(function(sharing_set) { %>
-                            <button class="dropdown-item" type="submit" name="unsafe_sharing_set_id" value="<%= sharing_set.id %>">
-                              <%= sharing_set.name %>
-                            </button>
-                        <% }); %>
+                <% if (question.shared_publicly) { %>
+                  <span class="badge color-green3">Public</span>
+                  This Question is publicly shared.
+                <% } else { %>
+                  Shared With:
+                  <% sharing_sets_in.forEach(function(sharing_set) { %>
+                    <span class="badge color-gray1"><%= sharing_set.name %></span>
+                  <% }); %>
+                  <% if (authz_data.has_course_permission_edit && !course.example_course) { %>
+                    <% if (sharing_sets_other.length > 0) { %>
+                    <form name="sharing-set-add" method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="sharing_set_add">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button id="addSharingSet" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Add...
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="addSharingSet">
+                            <% sharing_sets_other.forEach(function(sharing_set) { %>
+                              <button class="dropdown-item" type="submit" name="unsafe_sharing_set_id" value="<%= sharing_set.id %>">
+                                <%= sharing_set.name %>
+                              </button>
+                          <% }); %>
+                        </div>
                       </div>
-                    </div>
-                  </form>
+                    </form>
+                    <% } %>
+                    <form name="share-publicly" method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="share_publicly">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <button class="btn btn-sm btn-outline-primary" type="submit">
+                        Share Publicly
+                      </button>
+                        </div>
+                      </div>
+                    </form>
+                  <% } %>
                 <% } %>
               </td>
             </tr>
+            <% } %>
             <% if (question.type == 'Freeform' && question.grading_method != 'External' && authz_data.has_course_permission_view) { %>
             <tr>
               <th class="align-middle">Tests</th>
