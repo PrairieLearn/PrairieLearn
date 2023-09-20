@@ -34,7 +34,7 @@ onDocumentReady(() => {
       },
     };
 
-    if (window.showAddQuestionButton) {
+    if (decodeData('show-add-question-button')) {
       tableSettings.buttons.addQuestion = {
         text: 'Add Question',
         icon: 'fa-plus',
@@ -132,7 +132,7 @@ onDocumentReady(() => {
     }">${_.escape(question.display_type)}</span>`;
   };
 
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   window.topicSorter = function (topicA, topicB) {
     return topicA.name.localeCompare(topicB.name);
   };
@@ -167,7 +167,9 @@ onDocumentReady(() => {
     return _.map(
       ci_assessments,
       (assessment) =>
-        `<a href="${decodeData('plain-url-prefix')}/course_instance/${ci_id}/instructor/assessment/${
+        `<a href="${decodeData(
+          'plain-url-prefix',
+        )}/course_instance/${ci_id}/instructor/assessment/${
           assessment.assessment_id
         }" class="badge color-${
           assessment.color

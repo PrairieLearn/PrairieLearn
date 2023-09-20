@@ -1,14 +1,22 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { nodeModulesAssetPath, compiledScriptTag } from '../lib/assets';
+import { EncodedData } from '@prairielearn/browser-utils';
 
 export function QuestionsTable(
   questions,
+  showAddQuestionButton,
   current_course_instance,
   course_instances,
+  urlPrefix,
+  plainUrlPrefix,
   errorMessage,
 ): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
+  const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
+    ${EncodedData(course_instance_ids, 'course-instance-ids')};
+    ${EncodedData(showAddQuestionButton, 'show-add-question-button')}
+    ${EncodedData(urlPrefix, 'url-prefix')} ${EncodedData(plainUrlPrefix, 'plain-url-prefix')}
     <style>
       .sticky-column {
         position: sticky;
