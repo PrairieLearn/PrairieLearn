@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
 
-export const QuestionsPage = ({ resLocals }) => {
+export const QuestionsPage = ({ questions, resLocals }) => {
   return html`
     <!doctype html>
     <html lang="en">
@@ -32,7 +32,7 @@ export const QuestionsPage = ({ resLocals }) => {
 
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         ${QuestionsTable(
-          resLocals.questions,
+          questions,
           resLocals.course_instance,
           resLocals.authz_data.course_instances,
           resLocals.has_legacy_questions,

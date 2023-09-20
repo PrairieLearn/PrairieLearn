@@ -11,12 +11,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const { QuestionAddEditor } = require('../../lib/editors');
 const fs = require('fs-extra');
 const async = require('async');
-const _ = require('lodash');
 const { QuestionsPage } = require('./instructorQuestions.html');
-const { default: AnsiUp } = require('ansi_up');
-const ansiUp = new AnsiUp();
+const { getQuestions } = require('../../models/questions');
 
 router.get('/', function (req, res, next) {
+  let questions
   async.series(
     [
       (callback) => {
@@ -31,33 +30,17 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
-      (callback) => {
-        const params = {
-          course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.questions, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const ci_ids = _.map(res.locals.authz_data.course_instances, (ci) => ci.id);
-          res.locals.questions = _.map(result.rows, (row) => {
-            if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-            if (row.sync_warnings) {
-              row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-            }
-            row.assessments = _.filter(row.assessments, (assessment) =>
-              ci_ids.includes(assessment.course_instance_id),
-            );
-            return row;
-          });
-          res.locals.has_legacy_questions = _.some(result.rows, (row) => row.display_type !== 'v3');
-          callback(null);
-        });
+      async () => {
+        questions = await getQuestions(res.locals.course.id, res.locals.authz_data.course_instances);
+        res.locals.has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
       res.send(
         QuestionsPage({
-          resLocals: res.locals,
+          questions: questions,
+          resLocals: res.locals
         }),
       );
     },
