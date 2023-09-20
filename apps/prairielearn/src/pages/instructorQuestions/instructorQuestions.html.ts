@@ -3,9 +3,10 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
 
 export const QuestionsPage = ({ questions, resLocals }) => {
-  const showAddQuestionButton = resLocals.authz_data.has_course_permission_edit &&
-  !resLocals.course.example_course &&
-  !resLocals.needToSync;
+  const showAddQuestionButton =
+    resLocals.authz_data.has_course_permission_edit &&
+    !resLocals.course.example_course &&
+    !resLocals.needToSync;
   return html`
     <!doctype html>
     <html lang="en">
