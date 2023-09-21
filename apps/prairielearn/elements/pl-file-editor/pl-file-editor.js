@@ -86,8 +86,6 @@ if (this.hasRanges) {
       e.preventDefault();
       return;
     }
-
-
     
     if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && e.command.name === "backspace" && editor.selection.isEmpty()) {
       e.stopPropagation();
@@ -107,10 +105,7 @@ if (this.hasRanges) {
       return;
     }
   }.bind(this));
-}
-
-
-if (this.hasRanges) {
+  
   let contentBeforeDrop;
   let cursorBeforeDrop;
 
@@ -118,6 +113,19 @@ if (this.hasRanges) {
       contentBeforeDrop = editor.getValue();
       cursorBeforeDrop = editor.getCursorPosition();
   }.bind(this));
+
+  function isCursorBeforeOrInReadOnly(range) {
+    var cursor = editor.selection.getCursor();
+
+    var extendedRange = new ace.Range(
+        range.start.row, range.start.column - 1,
+        range.end.row, range.end.column
+    );
+
+    var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
+    return extendedRange.intersects(cursorRange);
+  }
+
 
   editor.container.addEventListener('drop', function(e) {
       var position = editor.renderer.screenToTextCoordinates(e.clientX, e.clientY);
@@ -127,7 +135,9 @@ if (this.hasRanges) {
           return range.intersects(cursorRange);
       });
 
-      if (inRange) {
+      var inExtendedRange = this.rangeList.some(isCursorBeforeOrInReadOnly);
+
+      if (inRange || inExtendedRange) {
           setTimeout(function() {
               const contentAfterDrop = editor.getValue();
               const addedContentLength = contentAfterDrop.length - contentBeforeDrop.length;
@@ -142,12 +152,12 @@ if (this.hasRanges) {
               };
 
               let endRemovingPosition;
-              if (addedLinesCount === 0) {  // Single line
+              if (addedLinesCount === 0) {  
                   endRemovingPosition = {
                       row: cursorBeforeDrop.row,
                       column: cursorBeforeDrop.column + addedContentLength
                   };
-              } else {  // Multiple lines
+              } else {  
                   endRemovingPosition = {
                       row: cursorBeforeDrop.row + addedLinesCount,
                       column: linesAfterDrop[cursorBeforeDrop.row + addedLinesCount].length - (linesBeforeDrop[cursorBeforeDrop.row].length - cursorBeforeDrop.column)
@@ -158,7 +168,7 @@ if (this.hasRanges) {
                   startRemovingPosition.row, startRemovingPosition.column,
                   endRemovingPosition.row, endRemovingPosition.column
               ), '');
-              editor.clearSelection(); // Clear any selection that might have been created
+              editor.clearSelection(); 
           }, 0);
       }
   }.bind(this));
