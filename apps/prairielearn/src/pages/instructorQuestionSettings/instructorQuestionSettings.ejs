@@ -115,16 +115,50 @@
                       </div>
                     </form>
                     <% } %>
-                    <form name="share-publicly" method="POST" class="d-inline">
-                      <input type="hidden" name="__action" value="share_publicly">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <button class="btn btn-sm btn-outline-primary" type="submit">
-                        Share Publicly
-                      </button>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-toggle="modal" data-target="#publiclyShareModal">
+                      Share Publicly
+                    </button>
+                    <div class="modal fade" id="publiclyShareModal" tabindex="-1" role="dialog" aria-labelledby="publiclyShareModalTitle" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered" role="document" >
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="publiclyShareModalTitle">
+                              Confirm Publicly Share Question
+                            </h5>
+                            <button
+                              type="button"
+                              class="close"
+                              data-dismiss="modal"
+                              aria-label="Close"
+                            >
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                            <p>
+                              Are you sure you want to publicly share this question?
+                            </p>
+                            <p>
+                              Once this question is publicly shared, anyone will be able to view it
+                              or use it as a part of their course. This operation cannot be undone.
+                            </p>
+                          </div>
+                          <div class="modal-footer">
+                            <form name="share-publicly" method="POST">
+                              <input type="hidden" name="__action" value="share_publicly">
+                              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                              <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                Cancel
+                              </button>
+                              <button class="btn btn-outline-primary" type="submit">
+                                Publicly Share "<%= question.qid %>"
+                              </button>
+                            </form>
+                          </div>
                         </div>
                       </div>
-                    </form>
-                  <% } %>
+                    </div>
+                    <% } %>
                 <% } %>
               </td>
             </tr>
