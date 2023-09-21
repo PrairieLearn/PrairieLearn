@@ -109,6 +109,62 @@ if (this.hasRanges) {
   }.bind(this));
 }
 
+
+if (this.hasRanges) {
+  let contentBeforeDrop;
+  let cursorBeforeDrop;
+
+  editor.container.addEventListener('dragover', function(e) {
+      contentBeforeDrop = editor.getValue();
+      cursorBeforeDrop = editor.getCursorPosition();
+  }.bind(this));
+
+  editor.container.addEventListener('drop', function(e) {
+      var position = editor.renderer.screenToTextCoordinates(e.clientX, e.clientY);
+      var cursorRange = new ace.Range(position.row, position.column, position.row, position.column);
+
+      var inRange = this.rangeList.some(function(range) {
+          return range.intersects(cursorRange);
+      });
+
+      if (inRange) {
+          setTimeout(function() {
+              const contentAfterDrop = editor.getValue();
+              const addedContentLength = contentAfterDrop.length - contentBeforeDrop.length;
+              
+              const linesAfterDrop = contentAfterDrop.split('\n');
+              const linesBeforeDrop = contentBeforeDrop.split('\n');
+              const addedLinesCount = linesAfterDrop.length - linesBeforeDrop.length;
+
+              const startRemovingPosition = {
+                  row: cursorBeforeDrop.row,
+                  column: cursorBeforeDrop.column
+              };
+
+              let endRemovingPosition;
+              if (addedLinesCount === 0) {  // Single line
+                  endRemovingPosition = {
+                      row: cursorBeforeDrop.row,
+                      column: cursorBeforeDrop.column + addedContentLength
+                  };
+              } else {  // Multiple lines
+                  endRemovingPosition = {
+                      row: cursorBeforeDrop.row + addedLinesCount,
+                      column: linesAfterDrop[cursorBeforeDrop.row + addedLinesCount].length - (linesBeforeDrop[cursorBeforeDrop.row].length - cursorBeforeDrop.column)
+                  };
+              }
+
+              editor.session.replace(new ace.Range(
+                  startRemovingPosition.row, startRemovingPosition.column,
+                  endRemovingPosition.row, endRemovingPosition.column
+              ), '');
+              editor.clearSelection(); // Clear any selection that might have been created
+          }, 0);
+      }
+  }.bind(this));
+}
+
+
 /////////////////////////////////
 // END OF CODE STAY ABOVE HERE //
 /////////////////////////////////
