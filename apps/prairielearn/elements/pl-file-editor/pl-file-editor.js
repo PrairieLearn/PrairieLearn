@@ -35,31 +35,11 @@ window.PLFileEditor = function (uuid, options) {
   let editor = this.editor,
       doc = this.doc;
 
-function before(obj, method, wrapper) {
-  var orig = obj[method];
-  obj[method] = function() {
-    var args = Array.prototype.slice.call(arguments);
-    return wrapper.call(this, function(){
-      return orig.apply(obj, args);
-    }, args);
-  }
-
-  return obj[method];
-}
-
 function intersects(range) {
   var cursor = editor.selection.getCursor();
   var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
   return range.intersects(cursorRange);
 }
-
-const preventReadonly = (next) => {
-  if (this.rangeList.ranges.some(intersects)) return;
-  next();
-}
-
-before(editor, 'onPaste', preventReadonly);
-before(editor, 'onCut',   preventReadonly);
 
 const applyGutterStyles = () => {
   var lines = editor.session.getLength();
@@ -86,21 +66,32 @@ editor.on("changeSelection", updateGutter);
 
 applyGutterStyles();
 
+
+// Remove this
+function logExecCommand(e) {
+  console.log('Executed command:', e.command.name);  
+}
+
+
 if (this.hasRanges) {
+  editor.commands.on("exec", logExecCommand);
+
   editor.commands.on("exec", function(e) { 
     var cursor = editor.selection.getCursor();
     
     var inRange = this.rangeList.some(intersects);
     
     if (inRange) {
-      e.preventDefault();
       e.stopPropagation();
+      e.preventDefault();
       return;
     }
+
+
     
     if (cursor.row === this.rangeList[0].end.row + 1 && cursor.column === 0 && e.command.name === "backspace" && editor.selection.isEmpty()) {
-      e.preventDefault();
       e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -111,11 +102,10 @@ if (this.hasRanges) {
     });
 
     if (isBeforeReadonlyRange) {
-      e.preventDefault();
       e.stopPropagation();
+      e.preventDefault();
       return;
     }
-
   }.bind(this));
 }
 
