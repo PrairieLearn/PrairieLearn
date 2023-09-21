@@ -52,7 +52,7 @@ async function accessSharedQuestionAssessment() {
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
     siteUrl +
-    assessmentsPage.$(`a:contains("Test of Importing Questions From Another Course")`).attr('href');
+    assessmentsPage.$(`a:contains("Test of Consuming Questions From Another Course")`).attr('href');
   const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
@@ -305,30 +305,6 @@ describe('Question Sharing', function () {
     });
   });
 
-  describe('Test syncing code succeeding once question is added to sharing set', function () {
-    before('alter config to check sharing on sync', () => {
-      config.checkSharingOnSync = true;
-    });
-    after('reset config', () => {
-      config.checkSharingOnSync = false;
-    });
-    step('Re-sync test course, validating shared questions', async () => {
-      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
-      if (result === undefined || result.hadJsonErrorsOrWarnings) {
-        throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
-      }
-    });
-
-    step('Successfully access shared question', async () => {
-      let res = await accessSharedQuestionAssessment();
-      const sharedQuestionUrl =
-        siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
-
-      res = await helperClient.fetchCheerio(sharedQuestionUrl);
-      assert(res.ok);
-    });
-  });
-
   describe('Test Sharing a Question Publicly', function () {
     before('Get id for publicly shared question', async () => {
       publiclySharedQuestionId = (
@@ -368,6 +344,35 @@ describe('Question Sharing', function () {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
       assert(sharedQuestionSharedPage.ok);
+    });
+  });
+
+  describe('Test syncing code succeeding once questions have been shared', function () {
+    before('alter config to check sharing on sync', () => {
+      config.checkSharingOnSync = true;
+    });
+    after('reset config', () => {
+      config.checkSharingOnSync = false;
+    });
+    step('Re-sync test course, validating shared questions', async () => {
+      const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(TEST_COURSE_PATH, logger);
+      if (result === undefined || result.hadJsonErrorsOrWarnings) {
+        throw new Error(`Errors or warnings found during sync of ${TEST_COURSE_PATH}`);
+      }
+    });
+
+    step('Successfully access shared question', async () => {
+      const res = await accessSharedQuestionAssessment();
+      const sharedQuestionUrl =
+        siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
+      const sharedQuestionRes = await helperClient.fetchCheerio(sharedQuestionUrl);
+      assert(sharedQuestionRes.ok);
+
+      const publiclySharedQuestionUrl =
+        siteUrl +
+        res.$(`a:contains("Dragging blocks to form the solution of a problem")`).attr('href');
+      const publiclySharedQuestionRes = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      assert(publiclySharedQuestionRes.ok);
     });
   });
 });

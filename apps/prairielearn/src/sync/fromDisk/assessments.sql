@@ -26,15 +26,15 @@ FROM
 SELECT
   q.qid,
   q.id,
-  c.sharing_name
+  qc.sharing_name
 FROM
   questions AS q
+  LEFT JOIN pl_courses AS qc on qc.id = q.course_id
   LEFT JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
   LEFT JOIN sharing_sets AS ss ON ssq.sharing_set_id = ss.id
   LEFT JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
-  LEFT JOIN pl_courses AS c ON c.id = ss.course_id
   LEFT JOIN jsonb_to_recordset($imported_question_info::JSONB) AS iqi (sharing_name text, qid text) ON (
-    iqi.sharing_name = c.sharing_name
+    iqi.sharing_name = qc.sharing_name
     AND iqi.qid = q.qid
   )
 WHERE
