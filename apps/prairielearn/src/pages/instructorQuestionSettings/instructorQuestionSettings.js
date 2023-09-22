@@ -189,41 +189,47 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'sharing_set_add') {
     debug('Add question to sharing set');
-    features.enabledFromLocals('question-sharing', res.locals).then((questionSharingEnabled) => {
-      if (!questionSharingEnabled) {
-        next(error.make(403, 'Access denied (feature not available)'));
-      }
-      sqldb.queryZeroOrOneRow(
-        sql.sharing_set_add,
-        {
-          course_id: res.locals.course.id,
-          question_id: res.locals.question.id,
-          unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
-        },
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
-    });
+    features
+      .enabledFromLocals('question-sharing', res.locals)
+      .then((questionSharingEnabled) => {
+        if (!questionSharingEnabled) {
+          next(error.make(403, 'Access denied (feature not available)'));
+        }
+        sqldb.queryZeroOrOneRow(
+          sql.sharing_set_add,
+          {
+            course_id: res.locals.course.id,
+            question_id: res.locals.question.id,
+            unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+          },
+          (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+          },
+        );
+      })
+      .catch((err) => next(err));
   } else if (req.body.__action === 'share_publicly') {
     debug('Add question to sharing set');
-    features.enabledFromLocals('question-sharing', res.locals).then((questionSharingEnabled) => {
-      if (!questionSharingEnabled) {
-        next(error.make(403, 'Access denied (feature not available)'));
-      }
-      sqldb.queryZeroOrOneRow(
-        sql.share_publicly,
-        {
-          course_id: res.locals.course.id,
-          question_id: res.locals.question.id,
-        },
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
-    });
+    features
+      .enabledFromLocals('question-sharing', res.locals)
+      .then((questionSharingEnabled) => {
+        if (!questionSharingEnabled) {
+          next(error.make(403, 'Access denied (feature not available)'));
+        }
+        sqldb.queryZeroOrOneRow(
+          sql.share_publicly,
+          {
+            course_id: res.locals.course.id,
+            question_id: res.locals.question.id,
+          },
+          (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+          },
+        );
+      })
+      .catch((err) => next(err));
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
