@@ -237,7 +237,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
 
   const repository = new DockerName(image);
   const params = {
-    fromImage: repository.getRepository(),
+    fromImage: repository.getRegistryRepo(),
     tag: repository.getTag() || 'latest',
   };
   job.info(`Pulling ${repository.getCombined()}`);
