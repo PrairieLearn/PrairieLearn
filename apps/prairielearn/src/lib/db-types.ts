@@ -268,3 +268,34 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const TopicSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Topic = z.infer<typeof TopicSchema>;
+
+export const TagsForQuestionSchema = z
+  .array(
+    z.object({
+      name: z.string().nullable(),
+      id: IdSchema,
+      color: z.string().nullable(),
+    }),
+  )
+  .nullable();
+
+export const AssessmentsFormatForQuestionSchema = z
+  .array(
+    z.object({
+      label: z.string().nullable(),
+      assessment_id: IdSchema,
+      course_instance_id: IdSchema,
+      color: z.string().nullable(),
+    }),
+  )
+  .nullable();
