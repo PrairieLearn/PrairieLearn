@@ -19,7 +19,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -64,12 +63,13 @@ const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const { SessionStore } = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
+const { createSessionMiddleware } = require('@prairielearn/session');
+const { NewSessionStore } = require('./lib/new-session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -150,17 +150,13 @@ module.exports.initExpress = function () {
   });
 
   app.use(
-    session({
+    createSessionMiddleware({
       secret: config.secretKey,
-      store: new SessionStore({
-        expireSeconds: config.sessionStoreExpireSeconds,
-      }),
-      resave: false,
-      saveUninitialized: true,
+      store: new NewSessionStore(),
       cookie: {
         maxAge: config.sessionStoreExpireSeconds * 1000,
-        httpOnly: true,
-        secure: 'auto', // uses Express "trust proxy"
+        name: 'prairielearn_session',
+        secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
       },
     }),
