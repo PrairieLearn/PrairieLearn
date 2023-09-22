@@ -90,8 +90,8 @@ class Grader {
         NetworkDisabled: !question.external_grading_enable_networking,
         HostConfig: {
           Binds: [`${hostDir}:/grade`],
-          Memory: 1 << 30, // 1 GiB
-          MemorySwap: 1 << 30, // same as Memory, so no access to swap
+          Memory: (1 << 30) * 2, // 2 GiB
+          MemorySwap: (1 << 30) * 2, // same as Memory, so no access to swap
           KernelMemory: 1 << 29, // 512 MiB
           DiskQuota: 1 << 30, // 1 GiB
           IpcMode: 'private',
