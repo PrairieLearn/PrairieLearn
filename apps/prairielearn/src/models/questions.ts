@@ -22,6 +22,7 @@ const QuestionsTableDataSchema = z.object({
   tags: TagsForQuestionSchema,
   assessments: AssessmentsFormatForQuestionSchema,
 });
+export type QuestionsTableData = z.infer<typeof QuestionsTableDataSchema>;
 
 const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -29,7 +30,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 export async function selectQuestionsForCourse(
   course_id: string | number,
   course_instances: CourseInstance[],
-) {
+): Promise<QuestionsTableData[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
     {
