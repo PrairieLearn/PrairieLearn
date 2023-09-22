@@ -1172,7 +1172,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/syncs', [
     function (req, res, next) {
@@ -1656,7 +1656,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/syncs', [
     function (req, res, next) {

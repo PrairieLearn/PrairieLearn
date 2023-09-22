@@ -1,11 +1,13 @@
 /* eslint-env browser, jquery */
 
-import _ from 'lodash'
+import _ from 'lodash';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 onDocumentReady(() => {
-     window.topicList = function () {
+  const { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix } =
+    decodeData('questions-table-data');
+  window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
@@ -20,52 +22,60 @@ onDocumentReady(() => {
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
-  const urlPrefix = decodeData('url-prefix');
   window.qidFormatter = function (qid, question) {
     var text = '';
     if (question.sync_errors) {
-      text += html`<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                        data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(
-                          question.sync_errors_ansified,
-                        )}</pre>">
-            <i class="fa fa-times text-danger" aria-hidden="true"></i>
-            </button>`;
+      text += html`<button
+        class="btn btn-xs mr-1"
+        data-toggle="popover"
+        data-title="Sync Errors"
+        data-content='<pre style="background-color: black" class="text-white rounded p-3">${_.escape(
+          question.sync_errors_ansified,
+        )}</pre>'
+      >
+        <i class="fa fa-times text-danger" aria-hidden="true"></i>
+      </button>`;
     } else if (question.sync_warnings) {
-      text += html`<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                    data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(
-                      question.sync_warnings_ansified,
-                    )}</pre>">
-            <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-            </button>`;
+      text += html`<button
+        class="btn btn-xs mr-1"
+        data-toggle="popover"
+        data-title="Sync Warnings"
+        data-content='<pre style="background-color: black" class="text-white rounded p-3">${_.escape(
+          question.sync_warnings_ansified,
+        )}</pre>'
+      >
+        <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+      </button>`;
     }
-    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/">${_.escape(
-      question.qid,
-    )}</a>`;
+    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
+      >${_.escape(question.qid)}</a
+    >`;
     if (question.open_issue_count > 0) {
-      text += html`<a class="badge badge-pill badge-danger ml-1" href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(
-        question.qid,
-      )}">${question.open_issue_count}</a>`;
+      text += html`<a
+        class="badge badge-pill badge-danger ml-1"
+        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(question.qid)}"
+        >${question.open_issue_count}</a
+      >`;
     }
     return text.toString();
   };
 
   window.topicFormatter = function (topic, question) {
-    return html`<span class="badge color-${question.topic.color}">${_.escape(
-      question.topic.name,
-    )}</span>`.toString();
+    return html`<span class="badge color-${question.topic.color}"
+      >${_.escape(question.topic.name)}</span
+    >`.toString();
   };
 
   window.tagsFormatter = function (tags, question) {
-    return _.map(
-      question.tags ?? [],
-      (tag) => html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
+    return _.map(question.tags ?? [], (tag) =>
+      html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
     ).join(' ');
   };
 
   window.versionFormatter = function (version, question) {
-    return html`<span class="badge color-${
-      question.display_type === 'v3' ? 'green1' : 'red1'
-    }">${_.escape(question.display_type)}</span>`.toString();
+    return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
+      >${_.escape(question.display_type)}</span
+    >`.toString();
   };
 
   window.topicSorter = function (topicA, topicB) {
@@ -97,18 +107,13 @@ onDocumentReady(() => {
       question.assessments ?? [],
       (assessment) => assessment.course_instance_id === ci_id,
     );
-    return _.map(
-      ci_assessments,
-      (assessment) =>
-        html`<a href="${decodeData(
-          'plain-url-prefix',
-        )}/course_instance/${ci_id}/instructor/assessment/${
-          assessment.assessment_id
-        }" class="badge color-${
-          assessment.color
-        } color-hover" onclick="event.stopPropagation();"><span>${_.escape(
-          assessment.label,
-        )}</span></a>`.toString(),
+    return _.map(ci_assessments, (assessment) =>
+      html`<a
+        href="${plainUrlPrefix}/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}"
+        class="badge color-${assessment.color} color-hover"
+        onclick="event.stopPropagation();"
+        ><span>${_.escape(assessment.label)}</span></a
+      >`.toString(),
     ).join(' ');
   };
 
@@ -121,7 +126,7 @@ onDocumentReady(() => {
     return _.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
   };
 
-  decodeData('course-instance-ids').forEach((courseInstanceId) => {
+  course_instance_ids.forEach((courseInstanceId) => {
     window[`assessments${courseInstanceId}List`] = function () {
       return assessmentsByCourseInstanceList(courseInstanceId);
     };
@@ -160,7 +165,7 @@ onDocumentReady(() => {
     },
   };
 
-  if (decodeData('show-add-question-button')) {
+  if (showAddQuestionButton) {
     tableSettings.buttons.addQuestion = {
       text: 'Add Question',
       icon: 'fa-plus',
@@ -186,5 +191,4 @@ onDocumentReady(() => {
       event.preventDefault();
     }
   });
-
 });

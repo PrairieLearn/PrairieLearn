@@ -13,14 +13,15 @@ const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  let questions;
+  let questions,
+    needToSync = false;
   async.series(
     [
       (callback) => {
         fs.access(res.locals.course.path, (err) => {
           if (err) {
             if (err.code === 'ENOENT') {
-              res.locals.needToSync = true;
+              needToSync = true;
             } else {
               return ERR(err, callback);
             }
@@ -40,6 +41,10 @@ router.get('/', function (req, res, next) {
       res.send(
         QuestionsPage({
           questions: questions,
+          showAddQuestionButton:
+            res.locals.authz_data.has_course_permission_edit &&
+            !res.locals.course.example_course &&
+            !needToSync,
           resLocals: res.locals,
         }),
       );
@@ -81,4 +86,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-export = router;
+export default router;

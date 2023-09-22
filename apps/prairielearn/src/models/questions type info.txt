@@ -1,0 +1,55 @@
+
+z.object({
+id: z.string(),
+    qid: z.string(),
+    title: z.string(),
+    sync_errors: z.string(),
+    sync_warnings: z.string(),
+    grading_method: z.string(),
+    external_grading_image: z.string(),
+    display_type: z.string(),
+    open_issue_count: z.string(),
+    topic: {
+      id: ,
+      name: 'Element',
+      number: 18,
+      color: 'gray1',
+      description: 'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
+      course_id: 3
+    },
+    tags: [ [Object], [Object], [Object] ],
+    assessments: null
+}),
+
+
+// id: '355',
+//     qid: 'prairieDrawFigure',
+//     title: 'Element pl-prairiedraw-figure: Display of dynamic figures',
+//     sync_errors: null,
+//     sync_warnings: '',
+//     grading_method: 'Internal',
+//     external_grading_image: null,
+//     display_type: 'v3',
+//     open_issue_count: '0',
+//     topic: {
+//       id: 72,
+//       name: 'Element',
+//       number: 18,
+//       color: 'gray1',
+//       description: 'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
+//       course_id: 3
+//     },
+//     tags: [ [Object], [Object], [Object] ],
+//     assessments: null
+//   }
+
+
+
+  for (const row of result.rows) {
+    if (row.tags) {
+      console.log(row.tags)
+    }
+    if (row.assessments) {
+      console.log(row.assessments)
+    }
+  }

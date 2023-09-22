@@ -1,12 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
+import { compiledScriptTag } from '../../lib/assets';
 
-export const QuestionsPage = ({ questions, resLocals }) => {
-  const showAddQuestionButton =
-    resLocals.authz_data.has_course_permission_edit &&
-    !resLocals.course.example_course &&
-    !resLocals.needToSync;
+export const QuestionsPage = ({ questions, showAddQuestionButton, resLocals }) => {
   return html`
     <!doctype html>
     <html lang="en">
@@ -16,25 +13,23 @@ export const QuestionsPage = ({ questions, resLocals }) => {
 
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
-
-        <form class="ml-1 btn-group" name="add-question-form" method="POST">
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <input type="hidden" name="__action" value="add_question" />
-        </form>
-
-        ${QuestionsTable(
-          questions,
-          showAddQuestionButton,
-          resLocals.course_instance,
-          resLocals.authz_data.course_instances,
-          resLocals.urlPrefix,
-          resLocals.plainUrlPrefix,
-          renderEjs(
-            __filename,
-            " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          ),
-        )}
+        ${compiledScriptTag('instructorQuestionsClient.ts')}
+        <main id="content" class="container-fluid">
+          ${QuestionsTable({
+            questions,
+            showAddQuestionButton,
+            current_course_instance: resLocals.course_instance,
+            course_instances: resLocals.authz_data.course_instances,
+            urlPrefix: resLocals.urlPrefix,
+            plainUrlPrefix: resLocals.plainUrlPrefix,
+            __csrf_token: resLocals.__csrf_token,
+            errorMessage: renderEjs(
+              __filename,
+              " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
+              resLocals,
+            ),
+          })}
+        </main>
       </body>
     </html>
   `.toString();
