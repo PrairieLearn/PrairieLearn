@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import helperDb = require('../tests/helperDb');
-import { NewSessionStore } from './new-session-store';
+import { NewSessionStore } from './session-store';
 import { UserSchema, UserSessionSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);

@@ -69,7 +69,7 @@ const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
-const { NewSessionStore } = require('./lib/new-session-store');
+const { NewSessionStore } = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -154,8 +154,9 @@ module.exports.initExpress = function () {
       secret: config.secretKey,
       store: new NewSessionStore(),
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds * 1000,
         name: 'prairielearn_session',
+        httpOnly: true,
+        maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
       },

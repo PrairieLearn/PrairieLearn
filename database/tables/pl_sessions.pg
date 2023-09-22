@@ -1,5 +1,4 @@
 columns
-    expires_at: timestamp with time zone
     session: jsonb
     sid: text not null
     updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
