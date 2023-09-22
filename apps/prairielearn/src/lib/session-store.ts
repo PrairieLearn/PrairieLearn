@@ -1,6 +1,7 @@
 import session = require('express-session');
 import util = require('util');
 import sqldb = require('@prairielearn/postgres');
+import * as opentelemetry from '@prairielearn/opentelemetry';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -14,14 +15,29 @@ interface SessionStoreOptions {
  */
 export class SessionStore extends session.Store {
   private expireSeconds: number;
+  private meter: opentelemetry.Meter;
+  private setCounter: opentelemetry.Counter;
+  private getCounter: opentelemetry.Counter;
+  private destroyCounter: opentelemetry.Counter;
 
   constructor(options: SessionStoreOptions = {}) {
     super();
 
     this.expireSeconds = options.expireSeconds || 86400;
+    this.meter = opentelemetry.metrics.getMeter('prairielearn');
+    this.setCounter = opentelemetry.getCounter(this.meter, 'session_store.set', {
+      valueType: opentelemetry.ValueType.INT,
+    });
+    this.getCounter = opentelemetry.getCounter(this.meter, 'session_store.get', {
+      valueType: opentelemetry.ValueType.INT,
+    });
+    this.destroyCounter = opentelemetry.getCounter(this.meter, 'session_store.destroy', {
+      valueType: opentelemetry.ValueType.INT,
+    });
   }
 
   async setAsync(sid: string, session: session.SessionData) {
+    this.setCounter.add(1);
     await sqldb.queryOneRowAsync(sql.upsert, {
       sid,
       session: JSON.stringify(session),
@@ -30,6 +46,7 @@ export class SessionStore extends session.Store {
   set = util.callbackify(this.setAsync).bind(this);
 
   async getAsync(sid: string): Promise<session.SessionData> {
+    this.getCounter.add(1);
     const results = await sqldb.queryZeroOrOneRowAsync(sql.get, {
       sid,
       expirationInSeconds: this.expireSeconds,
@@ -39,6 +56,7 @@ export class SessionStore extends session.Store {
   get = util.callbackify(this.getAsync).bind(this);
 
   async destroyAsync(sid: string) {
+    this.destroyCounter.add(1);
     await sqldb.queryZeroOrOneRowAsync(sql.destroy, { sid });
   }
   destroy = util.callbackify(this.destroyAsync).bind(this);
