@@ -69,7 +69,7 @@ const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
-const { NewSessionStore } = require('./lib/session-store');
+const { PostgresSessionStore } = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -152,7 +152,7 @@ module.exports.initExpress = function () {
   app.use(
     createSessionMiddleware({
       secret: config.secretKey,
-      store: new NewSessionStore(),
+      store: new PostgresSessionStore(),
       cookie: {
         name: 'prairielearn_session',
         httpOnly: true,

@@ -5,7 +5,7 @@ import { UserSessionSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-export class NewSessionStore implements SessionStore {
+export class PostgresSessionStore implements SessionStore {
   async set(session_id: string, data: any, expires_at: Date) {
     await queryAsync(sql.set_session, {
       session_id,

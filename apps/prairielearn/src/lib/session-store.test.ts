@@ -2,18 +2,18 @@ import { assert } from 'chai';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import helperDb = require('../tests/helperDb');
-import { NewSessionStore } from './session-store';
+import { PostgresSessionStore } from './session-store';
 import { UserSchema, UserSessionSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-describe('new-session-store', () => {
+describe('PostgresSessionStore', () => {
   before(helperDb.before);
   after(helperDb.after);
 
   it('creates, updates, and destroys a session', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const store = new NewSessionStore();
+      const store = new PostgresSessionStore();
       let expiresAt = new Date(Date.now() + 10_000);
 
       await store.set('1', { foo: 'bar' }, expiresAt);
@@ -44,7 +44,7 @@ describe('new-session-store', () => {
 
   it('does not return expired sessions', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const store = new NewSessionStore();
+      const store = new PostgresSessionStore();
       const expiresAt = new Date(Date.now() - 10_000);
 
       await store.set('1', { foo: 'bar' }, expiresAt);
@@ -57,7 +57,7 @@ describe('new-session-store', () => {
 
   it('persists user_id when present', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
-      const store = new NewSessionStore();
+      const store = new PostgresSessionStore();
       const expiresAt = new Date(Date.now() + 10_000);
 
       const user = await queryRow(sql.insert_user, { uid: 'test@example.com' }, UserSchema);
