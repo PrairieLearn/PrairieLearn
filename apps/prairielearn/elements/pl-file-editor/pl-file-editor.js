@@ -24,6 +24,7 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
   this.editor.setReadOnly(options.readOnly);
+  this.editor.setOption("dragEnabled", false);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   this.session = this.editor.getSession();
@@ -66,15 +67,7 @@ editor.on("changeSelection", updateGutter);
 
 applyGutterStyles();
 
-
-// Remove this
-function logExecCommand(e) {
-  console.log('Executed command:', e.command.name);  
-}
-
-
 if (this.hasRanges) {
-  editor.commands.on("exec", logExecCommand);
 
   editor.commands.on("exec", function(e) { 
     var cursor = editor.selection.getCursor();
@@ -105,7 +98,7 @@ if (this.hasRanges) {
       return;
     }
   }.bind(this));
-  
+
   let contentBeforeDrop;
   let cursorBeforeDrop;
 
@@ -125,7 +118,6 @@ if (this.hasRanges) {
     var cursorRange = new ace.Range(cursor.row, cursor.column, cursor.row, cursor.column);
     return extendedRange.intersects(cursorRange);
   }
-
 
   editor.container.addEventListener('drop', function(e) {
       var position = editor.renderer.screenToTextCoordinates(e.clientX, e.clientY);
@@ -173,7 +165,6 @@ if (this.hasRanges) {
       }
   }.bind(this));
 }
-
 
 /////////////////////////////////
 // END OF CODE STAY ABOVE HERE //
