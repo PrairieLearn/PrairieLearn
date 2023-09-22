@@ -26,10 +26,10 @@ To get started, ensure you have access to your course's repository. You may need
 
 We recommend the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow): users should clone the course repository, check out a new branch, push their changes to the branch, and open a pull request. Once their changes have been reviewed, approved, and merged, an instructor with "Editor" permissions in the course can navigate to the "Sync" page of the course and sync the changes into PrairieLearn with the "Pull from remote git repository" button. Note that your must have "Editor" or "Owner" permissions in the course to edit files.
 
-If you're new to Git, the following resources can help get you started
+If you're new to Git, the following resources can help get you started:
 
 - [Git book](https://git-scm.com/book/en/v2)
 - [Software Carpentry's git course](https://swcarpentry.github.io/git-novice/)
 - [tryGit tutorial](https://try.github.io/)
 
-You can use any git client you like on your local machine. The [commandline git interface](https://git-scm.com/downloads) is available on all platforms. Some popular graphical clients are [GitHub Desktop](https://desktop.github.com), [TortoiseGit](https://tortoisegit.org), and [SourceTree](https://www.sourcetreeapp.com).
+You can use any Git client you like on your computer. The [`git` CLI](https://git-scm.com/downloads) is available on all platforms. Some popular graphical clients are [GitHub Desktop](https://desktop.github.com) and [SourceTree](https://www.sourcetreeapp.com).
