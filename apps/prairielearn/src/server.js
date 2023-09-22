@@ -162,6 +162,18 @@ module.exports.initExpress = function () {
     }),
   );
 
+  app.use((req, res, next) => {
+    // If the session is going to expire in the near future, we'll extend it
+    // automatically for the user.
+    //
+    // TODO: make this configurable?
+    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+      req.session.setExpiration(config.sessionStoreExpireSeconds);
+    }
+
+    next();
+  });
+
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
@@ -273,6 +285,7 @@ module.exports.initExpress = function () {
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
         name !== 'connect.sid' &&
+        name !== 'prairielearn_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')

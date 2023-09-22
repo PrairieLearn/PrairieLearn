@@ -1,19 +1,9 @@
-import { z } from 'zod';
 import { SessionStore } from '@prairielearn/session';
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { DateFromISOString, IdSchema } from './db-types';
+import { UserSessionSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
-
-const SessionSchema = z.object({
-  id: IdSchema,
-  session_id: z.string(),
-  created_at: DateFromISOString,
-  updated_at: DateFromISOString,
-  expires_at: DateFromISOString,
-  data: z.any(),
-});
 
 export class NewSessionStore implements SessionStore {
   async set(session_id: string, data: any, expires_at: Date) {
@@ -21,11 +11,12 @@ export class NewSessionStore implements SessionStore {
       session_id,
       data: JSON.stringify(data),
       expires_at,
+      user_id: data?.user_id ?? null,
     });
   }
 
   async get(session_id: string) {
-    const session = await queryOptionalRow(sql.get_session, { session_id }, SessionSchema);
+    const session = await queryOptionalRow(sql.get_session, { session_id }, UserSessionSchema);
 
     if (!session) {
       return null;

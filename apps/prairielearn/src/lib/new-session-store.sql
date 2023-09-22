@@ -9,9 +9,15 @@ WHERE
 
 -- BLOCK set_session
 INSERT INTO
-  user_sessions (session_id, data, updated_at, expires_at)
+  user_sessions (session_id, user_id, data, updated_at, expires_at)
 VALUES
-  ($session_id, $data::jsonb, now(), $expires_at)
+  (
+    $session_id,
+    $user_id,
+    $data::jsonb,
+    now(),
+    $expires_at
+  )
 ON CONFLICT (session_id) DO
 UPDATE
 SET
