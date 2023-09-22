@@ -2,24 +2,24 @@
 SELECT
   *
 FROM
-  pl_sessions
+  user_sessions
 WHERE
-  sid = $sid
+  session_id = $session_id
   AND expires_at > now();
 
 -- BLOCK set_session
 INSERT INTO
-  pl_sessions (sid, session, updated_at, expires_at)
+  user_sessions (session_id, data, updated_at, expires_at)
 VALUES
-  ($sid, $session::jsonb, now(), $expires_at)
-ON CONFLICT (sid) DO
+  ($session_id, $data::jsonb, now(), $expires_at)
+ON CONFLICT (session_id) DO
 UPDATE
 SET
-  session = $session::jsonb,
+  data = $data::jsonb,
   updated_at = now(),
   expires_at = $expires_at;
 
--- BLOCK delete_session
-DELETE FROM pl_sessions
+-- BLOCK destroy_session
+DELETE FROM user_sessions
 WHERE
-  sid = $sid;
+  session_id = $session_id;

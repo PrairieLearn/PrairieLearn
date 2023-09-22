@@ -1,0 +1,10 @@
+CREATE TABLE
+  user_sessions (
+    id BIGSERIAL PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    data JSONB NOT NULL,
+    UNIQUE (session_id)
+  );
