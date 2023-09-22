@@ -1,4 +1,4 @@
--- BLOCK questions
+-- BLOCK select_questions_for_course
 WITH
   issue_count AS (
     SELECT

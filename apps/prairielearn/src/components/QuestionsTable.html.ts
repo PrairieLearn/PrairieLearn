@@ -14,7 +14,7 @@ export function QuestionsTable(
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
-    ${EncodedData(course_instance_ids, 'course-instance-ids')};
+    ${EncodedData(course_instance_ids, 'course-instance-ids')}
     ${EncodedData(showAddQuestionButton, 'show-add-question-button')}
     ${EncodedData(urlPrefix, 'url-prefix')} ${EncodedData(plainUrlPrefix, 'plain-url-prefix')}
     <style>
@@ -38,7 +38,6 @@ export function QuestionsTable(
       }
     </style>
 
-    <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',

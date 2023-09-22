@@ -1,14 +1,18 @@
 import sqldb = require('@prairielearn/postgres');
 import AnsiUp from 'ansi_up';
+import { CourseInstance } from '../lib/db-types';
 
 const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export async function getQuestions(course_id, course_instances) {
-  const params = {
+export async function selectQuestionsForCourse(
+  course_id: string | number,
+  course_instances: CourseInstance[],
+) {
+  const result = await sqldb.queryAsync(sql.select_questions_for_course, {
     course_id: course_id,
-  };
-  const result = await sqldb.queryAsync(sql.questions, params);
+  });
+
   const ci_ids = course_instances.map((ci) => ci.id);
   const questions = result.rows.map((row) => {
     if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
