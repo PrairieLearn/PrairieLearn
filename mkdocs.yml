@@ -30,7 +30,7 @@ nav:
       - 'Workshop': 'workshop/index.md'
   - User Guide:
       - 'Installing and running locally': 'installing.md'
-      - 'Syncing course content': 'sync.md'
+      - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
       - 'Course instance configuration': 'courseInstance.md'
       - 'Assessment configuration': 'assessment.md'
