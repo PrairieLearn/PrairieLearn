@@ -1,68 +1,11 @@
 /* eslint-env browser, jquery */
-/* global _ */
 
-const { onDocumentReady, decodeData } = require('@prairielearn/browser-utils');
+import _ from 'lodash'
+import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 onDocumentReady(() => {
-  $(function () {
-    let tableSettings = {
-      icons: {
-        columns: 'fa-th-list',
-      },
-      buttons: {
-        clearFilters: {
-          text: 'Clear filters',
-          icon: 'fa-times',
-          attributes: { title: 'Clear all set question filters' },
-          event: () => {
-            $('#questionsTable').bootstrapTable('clearFilterControl');
-          },
-        },
-      },
-      onPreBody: function () {},
-      onResetView: function () {
-        $('[data-toggle="popover"]')
-          .popover({
-            sanitize: false,
-            container: 'body',
-            html: true,
-            trigger: 'hover',
-          })
-          .on('show.bs.popover', function () {
-            $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-          });
-      },
-    };
-
-    if (decodeData('show-add-question-button')) {
-      tableSettings.buttons.addQuestion = {
-        text: 'Add Question',
-        icon: 'fa-plus',
-        attributes: { title: 'Create a new question' },
-        event: () => {
-          $('form[name=add-question-form]').submit();
-        },
-      };
-    }
-
-    $('#questionsTable').bootstrapTable(tableSettings);
-
-    $(document).keydown((event) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        String.fromCharCode(event.which).toLowerCase() === 'f'
-      ) {
-        if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length) {
-          $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
-        } else {
-          $('input.bootstrap-table-filter-control-qid').focus();
-        }
-        event.preventDefault();
-      }
-    });
-  });
-
-  window.topicList = function () {
+     window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
@@ -81,48 +24,48 @@ onDocumentReady(() => {
   window.qidFormatter = function (qid, question) {
     var text = '';
     if (question.sync_errors) {
-      text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+      text += html`<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
                         data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(
                           question.sync_errors_ansified,
                         )}</pre>">
             <i class="fa fa-times text-danger" aria-hidden="true"></i>
             </button>`;
     } else if (question.sync_warnings) {
-      text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+      text += html`<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
                     data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(
                       question.sync_warnings_ansified,
                     )}</pre>">
             <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
             </button>`;
     }
-    text += `<a class="formatter-data" href="${urlPrefix}/question/${question.id}/">${_.escape(
+    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/">${_.escape(
       question.qid,
     )}</a>`;
     if (question.open_issue_count > 0) {
-      text += `<a class="badge badge-pill badge-danger ml-1" href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(
+      text += html`<a class="badge badge-pill badge-danger ml-1" href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(
         question.qid,
       )}">${question.open_issue_count}</a>`;
     }
-    return text;
+    return text.toString();
   };
 
   window.topicFormatter = function (topic, question) {
-    return `<span class="badge color-${question.topic.color}">${_.escape(
+    return html`<span class="badge color-${question.topic.color}">${_.escape(
       question.topic.name,
-    )}</span>`;
+    )}</span>`.toString();
   };
 
   window.tagsFormatter = function (tags, question) {
     return _.map(
       question.tags ?? [],
-      (tag) => `<span class="badge color-${tag.color}">${tag.name}</span>`,
+      (tag) => html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
     ).join(' ');
   };
 
   window.versionFormatter = function (version, question) {
-    return `<span class="badge color-${
+    return html`<span class="badge color-${
       question.display_type === 'v3' ? 'green1' : 'red1'
-    }">${_.escape(question.display_type)}</span>`;
+    }">${_.escape(question.display_type)}</span>`.toString();
   };
 
   window.topicSorter = function (topicA, topicB) {
@@ -157,7 +100,7 @@ onDocumentReady(() => {
     return _.map(
       ci_assessments,
       (assessment) =>
-        `<a href="${decodeData(
+        html`<a href="${decodeData(
           'plain-url-prefix',
         )}/course_instance/${ci_id}/instructor/assessment/${
           assessment.assessment_id
@@ -165,7 +108,7 @@ onDocumentReady(() => {
           assessment.color
         } color-hover" onclick="event.stopPropagation();"><span>${_.escape(
           assessment.label,
-        )}</span></a>`,
+        )}</span></a>`.toString(),
     ).join(' ');
   };
 
@@ -187,4 +130,61 @@ onDocumentReady(() => {
       return assessmentsByCourseInstanceFormatter(courseInstanceId, question);
     };
   });
+
+  let tableSettings = {
+    icons: {
+      columns: 'fa-th-list',
+    },
+    buttons: {
+      clearFilters: {
+        text: 'Clear filters',
+        icon: 'fa-times',
+        attributes: { title: 'Clear all set question filters' },
+        event: () => {
+          $('#questionsTable').bootstrapTable('clearFilterControl');
+        },
+      },
+    },
+    onPreBody: function () {},
+    onResetView: function () {
+      $('[data-toggle="popover"]')
+        .popover({
+          sanitize: false,
+          container: 'body',
+          html: true,
+          trigger: 'hover',
+        })
+        .on('show.bs.popover', function () {
+          $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+        });
+    },
+  };
+
+  if (decodeData('show-add-question-button')) {
+    tableSettings.buttons.addQuestion = {
+      text: 'Add Question',
+      icon: 'fa-plus',
+      attributes: { title: 'Create a new question' },
+      event: () => {
+        $('form[name=add-question-form]').submit();
+      },
+    };
+  }
+
+  $('#questionsTable').bootstrapTable(tableSettings);
+
+  $(document).keydown((event) => {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      String.fromCharCode(event.which).toLowerCase() === 'f'
+    ) {
+      if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length) {
+        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
+      } else {
+        $('input.bootstrap-table-filter-control-qid').focus();
+      }
+      event.preventDefault();
+    }
+  });
+
 });
