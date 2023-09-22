@@ -15,7 +15,6 @@ interface SessionStoreOptions {
  */
 export class SessionStore extends session.Store {
   private expireSeconds: number;
-  private meter: opentelemetry.Meter;
   private setCounter: opentelemetry.Counter;
   private getCounter: opentelemetry.Counter;
   private destroyCounter: opentelemetry.Counter;
@@ -24,14 +23,15 @@ export class SessionStore extends session.Store {
     super();
 
     this.expireSeconds = options.expireSeconds || 86400;
-    this.meter = opentelemetry.metrics.getMeter('prairielearn');
-    this.setCounter = opentelemetry.getCounter(this.meter, 'session_store.set', {
+
+    const meter = opentelemetry.metrics.getMeter('prairielearn');
+    this.setCounter = opentelemetry.getCounter(meter, 'session_store.set', {
       valueType: opentelemetry.ValueType.INT,
     });
-    this.getCounter = opentelemetry.getCounter(this.meter, 'session_store.get', {
+    this.getCounter = opentelemetry.getCounter(meter, 'session_store.get', {
       valueType: opentelemetry.ValueType.INT,
     });
-    this.destroyCounter = opentelemetry.getCounter(this.meter, 'session_store.destroy', {
+    this.destroyCounter = opentelemetry.getCounter(meter, 'session_store.destroy', {
       valueType: opentelemetry.ValueType.INT,
     });
   }
