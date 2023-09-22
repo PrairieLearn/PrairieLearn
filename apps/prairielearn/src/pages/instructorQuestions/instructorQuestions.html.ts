@@ -2,8 +2,17 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
 import { compiledScriptTag } from '../../lib/assets';
+import { QuestionsTableData } from '../../models/questions';
 
-export const QuestionsPage = ({ questions, showAddQuestionButton, resLocals }) => {
+export const QuestionsPage = ({
+  questions,
+  showAddQuestionButton,
+  resLocals,
+}: {
+  questions: QuestionsTableData[];
+  showAddQuestionButton: boolean;
+  resLocals;
+}) => {
   return html`
     <!doctype html>
     <html lang="en">
