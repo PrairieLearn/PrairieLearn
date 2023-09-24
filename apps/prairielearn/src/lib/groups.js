@@ -217,6 +217,15 @@ async function getRolesInfo(groupId, groupMembers) {
     (member) => roleAssignments[member.uid] === undefined,
   );
 
+  rolesInfo.validRoleConfig = true;
+  if (
+    (typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) ||
+    !rolesInfo.rolesAreBalanced ||
+    rolesInfo.usersWithoutRoles.length > 0
+  ) {
+    rolesInfo.validRoleConfig = false;
+  }
+
   return rolesInfo;
 }
 
