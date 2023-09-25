@@ -5,7 +5,7 @@ const async = require('async');
 const ejs = require('ejs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const z = require('zod');
+const { z } = require('zod');
 
 const error = require('@prairielearn/error');
 const question = require('../lib/question');
@@ -69,10 +69,12 @@ module.exports = {
   renderText(assessment, urlPrefix) {
     if (!assessment.text) return null;
 
+    const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
+
     var context = {
-      clientFilesCourse: urlPrefix + '/clientFilesCourse',
-      clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
-      clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessment',
+      clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
+      clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
+      clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
     };
     return ejs.render(assessment.text, context);
   },

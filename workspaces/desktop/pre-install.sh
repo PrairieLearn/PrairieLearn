@@ -13,7 +13,13 @@ groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 
 # install needed apps
-apt-get install xfce4-terminal firefox build-essential geany emacs-gtk vim-gtk nano gedit less -y
+apt-get install xfce4-terminal build-essential geany emacs-gtk vim-gtk nano gedit less -y
+
+# install firefox without snap (https://askubuntu.com/a/1369163)
+apt-get purge firefox -y
+apt-get install software-properties-common -y
+add-apt-repository -y ppa:mozillateam/ppa
+apt-get install firefox-esr -y
 
 # install vscode depending on what architecture we're building on
 arch=$(uname -m)

@@ -1,5 +1,27 @@
 # @prairielearn/sentry
 
+## 1.1.0
+
+### Minor Changes
+
+- 7f31ebd78: Export `runWithAsyncContext` function
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 1.0.8
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 1.0.7
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
 ## 1.0.6
 
 ### Patch Changes

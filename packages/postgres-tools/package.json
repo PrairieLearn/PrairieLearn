@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres-tools",
-  "version": "1.1.4",
+  "version": "1.1.7",
   "main": "./dist/index.js",
   "bin": {
     "pg-describe": "./dist/bin/pg-describe.js",
@@ -19,10 +19,10 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/diff": "^5.0.3",
     "@types/fs-extra": "^11.0.1",
-    "@types/lodash": "^4.14.196",
-    "@types/node": "^18.17.1",
+    "@types/lodash": "^4.14.198",
+    "@types/node": "^18.17.14",
     "@types/yargs": "^17.0.24",
-    "typescript": "^5.1.6",
+    "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {

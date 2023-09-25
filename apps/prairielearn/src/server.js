@@ -63,9 +63,8 @@ const namedLocks = require('@prairielearn/named-locks');
 const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
-const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const SessionStore = require('./lib/session-store');
+const { SessionStore } = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
@@ -94,6 +93,13 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
+function enterpriseOnlyMiddleware(load) {
+  if (isEnterprise()) {
+    return load();
+  }
+  return (req, res, next) => next();
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {import('express').Application} The express "app" object that was created.
@@ -111,6 +117,8 @@ module.exports.initExpress = function () {
     if (config.sentryTracesSampleRate) {
       app.use(Sentry.Handlers.tracingHandler());
     }
+
+    app.use(require('./lib/sentry').enrichSentryEventMiddleware);
   }
 
   // This should come before the session middleware so that we don't
@@ -268,6 +276,7 @@ module.exports.initExpress = function () {
       return (
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'connect.sid' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
@@ -386,8 +395,14 @@ module.exports.initExpress = function () {
     workspaceProxy,
   ]);
 
-  // Limit to 5MB of JSON
-  app.use(bodyParser.json({ limit: 5 * 1024 * 1024 }));
+  app.use((req, res, next) => {
+    // Stripe webhook signature verification requires the raw body, so we avoid
+    // using the body parser for that route.
+    if (req.path === '/pl/webhooks/stripe') return next();
+
+    // Limit to 5MB of JSON
+    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+  });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
@@ -472,6 +487,13 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
+  app.use('/pl/logout', [
+    function (req, res, next) {
+      res.locals.navPage = 'logout';
+      next();
+    },
+    require('./pages/authLogout/authLogout').default,
+  ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -490,6 +512,10 @@ module.exports.initExpress = function () {
 
   // Must come before CSRF middleware; we do our own signature verification here.
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
+  app.use(
+    '/pl/webhooks/stripe',
+    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
+  );
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -523,21 +549,8 @@ module.exports.initExpress = function () {
   // some pages don't need authorization
   app.use('/', require('./pages/home/home'));
   app.use('/pl', require('./pages/home/home'));
-  app.use('/pl/settings', [
-    function (req, res, next) {
-      res.locals.navPage = 'user_settings';
-      next();
-    },
-    require('./pages/userSettings/userSettings'),
-  ]);
+  app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
-  app.use('/pl/logout', [
-    function (req, res, next) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    require('./pages/authLogout/authLogout'),
-  ]);
   app.use('/pl/password', [
     function (req, res, next) {
       res.locals.navPage = 'password';
@@ -617,9 +630,28 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // sets res.locals.course and res.locals.course_instance
+  app.use(
+    '/pl/course_instance/:course_instance_id',
+    require('./middlewares/authzCourseOrInstance'),
+  );
+
+  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+  // or `autoEnroll` middlewares so that we can render it even when the student
+  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
+  if (isEnterprise()) {
+    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
+    // below so that we can render it even when the student isn't enrolled in the
+    // course instance.
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+  }
+
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id', [
-    require('./middlewares/authzCourseOrInstance'), // sets res.locals.course and res.locals.courseInstance
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrants').default),
+    require('./middlewares/autoEnroll').default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -933,6 +965,10 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
     ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1262,7 +1298,7 @@ module.exports.initExpress = function () {
     ]);
   }
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
@@ -1271,12 +1307,28 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance',
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
   );
+
+  // Client files for assessments
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance',
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
@@ -1328,27 +1380,12 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  if (isEnterprise()) {
-    app.use('/pl/course_instance/:course_instance_id/upgrade', [
-      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
-    ]);
-
-    // Important: this middleware must come after the upgrade page. Otherwise,
-    // this middleware will always try to redirect before the upgrade page
-    // can be rendered.
-    app.use(
-      '/pl/course_instance/:course_instance_id',
-      require('./ee/middlewares/checkPlanGrants').default,
-    );
-  }
-
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
     require('./middlewares/logPageView')('studentGradebook'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/assessments', [
@@ -1357,7 +1394,6 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
@@ -1398,6 +1434,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
@@ -1412,15 +1449,30 @@ module.exports.initExpress = function () {
     );
   }
 
-  // clientFiles
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+  );
+
+  // Client files for assessments
+  app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse', [
+    require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourse/clientFilesCourse'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance',
+    [
+      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    ],
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [
@@ -1428,6 +1480,12 @@ module.exports.initExpress = function () {
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1661,9 +1719,15 @@ module.exports.initExpress = function () {
       .default,
   );
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course/:course_id/question/:question_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
@@ -1796,15 +1860,6 @@ module.exports.initExpress = function () {
     next(err);
   });
 
-  // We need to add our own handler here to ensure that we add the appropriate
-  // information to the current Sentry scope.
-  //
-  // Note that this is typically done by our `logResponse` middleware, but
-  // that doesn't run soon enough for the Sentry error handler to pick up.
-  app.use((err, req, res, next) => {
-    enrichSentryScope(req, res);
-    next(err);
-  });
   app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.

@@ -1,7 +1,5 @@
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const fs = require('fs-extra');
-const path = require('path');
 
 const { config } = require('../lib/config');
 const fetch = require('node-fetch');
@@ -10,7 +8,6 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
-const { TEST_COURSE_PATH } = require('../lib/paths');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -19,10 +16,6 @@ const defaultUser = {
   authName: config.authName,
   authUin: config.authUin,
 };
-
-const fibonacciSolution = fs.readFileSync(
-  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py'),
-);
 
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
@@ -205,7 +198,7 @@ describe('Grading method(s)', function () {
         });
         it('should be possible to submit a grade action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
 
@@ -239,7 +232,7 @@ describe('Grading method(s)', function () {
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from('solution').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
 
@@ -269,16 +262,14 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('button[value="grade"]'), 1);
         });
         it('should submit "grade" action', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
           questionsPage = await gradeRes.text();
@@ -311,12 +302,10 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
 
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+            { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
 

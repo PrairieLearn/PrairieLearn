@@ -190,7 +190,11 @@ module.exports = {
             output += '\n' + msg;
           }
           try {
-            module.exports._updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
+            await module.exports._updateAssessmentInstanceFromJson(
+              json,
+              assessment_id,
+              authn_user_id,
+            );
             successCount++;
           } catch (err) {
             errorCount++;

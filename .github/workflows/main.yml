@@ -26,49 +26,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # We need the whole history so we can diff against `master` to determine
-        # what images need to be built.
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          # We need the whole history so we can diff against `master` to determine
+          # what images need to be built.
+          fetch-depth: 0
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
 
-    - name: Build the workspace-desktop docker image if needed
-      run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
-    - name: Build the workspace-jupyterlab docker image if needed
-      run: ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab:latest
-    - name: Build the workspace-rstudio docker image if needed
-      run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
-    - name: Build the workspace-xtermjs docker image if needed
-      run: ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
+      - name: Build the workspace-desktop docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
+      - name: Build the workspace-jupyterlab docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab:latest
+      - name: Build the workspace-rstudio docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
+      - name: Build the workspace-xtermjs docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
 
   build-grader-images:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # We need the whole history so we can diff against `master` to determine
-        # what images need to be built.
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          # We need the whole history so we can diff against `master` to determine
+          # what images need to be built.
+          fetch-depth: 0
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
 
-    - name: Build the grader-c docker image if needed
-      run: ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c:latest
-    - name: Build the grader-java docker image if needed
-      run: ./tools/build-image-if-needed.sh graders/java prairielearn/grader-java:latest
-    - name: Build the grader-python docker image if needed
-      run: ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python:latest
-    - name: Build the grader-r docker image if needed
-      run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
+      - name: Build the grader-c docker image if needed
+        run: ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c:latest
+      - name: Build the grader-java docker image if needed
+        run: ./tools/build-image-if-needed.sh graders/java prairielearn/grader-java:latest
+      - name: Build the grader-python docker image if needed
+        run: ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python:latest
+      - name: Build the grader-r docker image if needed
+        run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
 
   build-core-images:
     runs-on: ubuntu-latest
@@ -77,119 +77,121 @@ jobs:
       DOCKERHUB_USERNAME_SECRET: ${{ secrets.DOCKERHUB_USERNAME }}
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # We need the whole history so we can diff against `master` to determine
-        # what images need to be built.
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          # We need the whole history so we can diff against `master` to determine
+          # what images need to be built.
+          fetch-depth: 0
 
-    - name: Build the plbase docker image if needed
-      run: ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase:${{ env.COMMIT_SHA }}
-    - name: Build the prairielearn docker image
-      run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
-      env: 
-        PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
-    - name: Build executor image
-      run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
-      env:
-        PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
-    - name: Tag executor image as latest
-      run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
+      - name: Build the plbase docker image if needed
+        run: ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase:${{ env.COMMIT_SHA }}
+      - name: Build the prairielearn docker image
+        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
+        env:
+          PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
+      - name: Tag prairielearn image as latest
+        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
+      - name: Build executor image
+        run: docker build ./images/executor --tag prairielearn/executor:${{ env.COMMIT_SHA }}
+        env:
+          PRAIRIELEARN_IMAGE_TAG: ${{ env.COMMIT_SHA }}
+      - name: Tag executor image as latest
+        run: docker tag prairielearn/executor:${{ env.COMMIT_SHA }} prairielearn/executor:latest
 
-    # The following steps won't run correctly for forks since the Dockerhub
-    # credentials secrets will be missing. We only run them if the secrets are
-    # provided. Note that we can't use `secrets.*` directly in an `if` conditional
-    # here, so we copy them to an environment variable at the start of the job
-    # and then check that here.
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Push prairielearn image to Docker registry
-      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
-      run: docker push prairielearn/prairielearn:${{ env.COMMIT_SHA }}
-    - name: Push executor image to Docker registry
-      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
-      run: docker push prairielearn/executor:${{ env.COMMIT_SHA }}
-    # Only push the `:latest` image if we're on the `master` branch.
-    - name: Push latest executor image to Docker registry
-      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
-      run: docker push prairielearn/executor:latest
+      # The following steps won't run correctly for forks since the Dockerhub
+      # credentials secrets will be missing. We only run them if the secrets are
+      # provided. Note that we can't use `secrets.*` directly in an `if` conditional
+      # here, so we copy them to an environment variable at the start of the job
+      # and then check that here.
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push prairielearn image to Docker registry
+        if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
+        run: docker push prairielearn/prairielearn:${{ env.COMMIT_SHA }}
+      - name: Push executor image to Docker registry
+        if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
+        run: docker push prairielearn/executor:${{ env.COMMIT_SHA }}
+      # Only push the `:latest` image if we're on the `master` branch.
+      - name: Push latest executor image to Docker registry
+        if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' && github.ref == 'refs/heads/master' }}
+        run: docker push prairielearn/executor:latest
 
-    # We run the following steps in this job instead of separately to avoid the
-    # overhead of pulling the image another time.
+      # We run the following steps in this job instead of separately to avoid the
+      # overhead of pulling the image another time.
 
-    - name: Create a temporary directory for host files
-      run: mkdir -p /tmp/prairielearn
-    - name: Start the container
-      # We have tests for external grading code, which relies on the Docker
-      # socket being available, as well as a specific volume mount and
-      # environment variable. See the docs for more details:
-      # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
-      #
-      # We put the Postgres data on a tmpfs volume, which should be much faster.
-      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
-    - name: Run the JavaScript tests
-      run: docker exec test_container /PrairieLearn/docker/test_js.sh
-      # The JS tests hang relatively often when someone makes a mistake in a PR,
-      # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
-      # spinning until it eventually times out. This shorter timeout helps
-      # ensure that the tests fail more quickly so that people can fix them.
-      timeout-minutes: 30
+      - name: Create a temporary directory for host files
+        run: mkdir -p /tmp/prairielearn
+      - name: Start the container
+        # We have tests for external grading code, which relies on the Docker
+        # socket being available, as well as a specific volume mount and
+        # environment variable. See the docs for more details:
+        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+        #
+        # We put the Postgres data on a tmpfs volume, which should be much faster.
+        run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+      - name: Run the JavaScript tests
+        run: docker exec test_container /PrairieLearn/docker/test_js.sh
+        # The JS tests hang relatively often when someone makes a mistake in a PR,
+        # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
+        # spinning until it eventually times out. This shorter timeout helps
+        # ensure that the tests fail more quickly so that people can fix them.
+        timeout-minutes: 30
 
   native-checks:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Install OS packages
-      run: sudo apt-get install -y graphviz graphviz-dev
+      - name: Install OS packages
+        run: sudo apt-get install -y graphviz graphviz-dev
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-        cache: pip
-        cache-dependency-path: images/plbase/python-requirements.txt
-    - name: Install Python dependencies
-      run: pip install -r images/plbase/python-requirements.txt
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: images/plbase/python-requirements.txt
+      - name: Install Python dependencies
+        run: pip install -r images/plbase/python-requirements.txt
 
-    - name: Set up Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-    - name: Install Node dependencies
-      run: yarn install --immutable
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'yarn'
+      - name: Install Node dependencies
+        run: yarn install --immutable
 
-    - name: Set up Turborepo cache
-      uses: actions/cache@v3
-      with:
-        path: ./node_modules/.cache/turbo
-        key: ${{ runner.os }}-turbo-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-turbo-
+      - name: Set up Turborepo cache
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules/.cache/turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
 
-    - name: Build all code
-      run: make build
-    - name: Run the JavaScript linter
-      run: make lint-js
-    - name: Run the HTML linter
-      run: make lint-html
-    - name: Run the links linter
-      run: make lint-links
-    - name: Run the Python typechecker
-      run: make typecheck-python
-    - name: Run the Python linter
-      run: make lint-python
-    - name: Run the Python tests
-      run: make test-python
-      timeout-minutes: 5
-    
-    # The rest of our code is typechecked in the `build` Makefile target, which
-    # is run above.
-    - name: Run the TypeScript typechecker for tools
-      run: make typecheck-tools
+      - name: Build all code
+        run: make build
+      - name: Run the JavaScript linter
+        run: make lint-js
+      - name: Run the HTML linter
+        run: make lint-html
+      - name: Run the links linter
+        run: make lint-links
+      - name: Run the Python typechecker
+        run: make typecheck-python
+      - name: Run the Python linter
+        run: make lint-python
+      - name: Run the Python tests
+        run: make test-python
+        timeout-minutes: 5
+
+      # The rest of our code is typechecked in the `build` Makefile target, which
+      # is run above.
+      - name: Run the TypeScript typechecker for tools
+        run: make typecheck-tools
