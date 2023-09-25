@@ -1,9 +1,10 @@
 import execa = require('execa');
 import * as fs from 'fs-extra';
+import { z } from 'zod';
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { CourseSchema, DateFromISOString } from '../lib/db-types';
+import { DateFromISOString, IdSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -55,8 +56,12 @@ export default makeBatchedMigration({
       const course = await queryOptionalRow(
         sql.select_course,
         { course_id: id },
-        CourseSchema.omit({ created_at: true }).extend({
+        // CourseSchema isn't used to avoid problems if the schema changes in
+        // the future. Only fields that are actually used are added here.
+        z.object({
           created_at: DateFromISOString.nullable(),
+          id: IdSchema,
+          path: z.string().nullable(),
         }),
       );
 
