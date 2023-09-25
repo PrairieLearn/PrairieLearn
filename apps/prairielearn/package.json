@@ -47,7 +47,7 @@
     "@sentry/profiling-node": "^1.2.1",
     "@sentry/tracing": "^7.68.0",
     "@socket.io/redis-adapter": "^8.2.1",
-    "@types/tabulator-tables": "^5.5.2",
+    "@types/tabulator-tables": "~5.5.2",
     "ace-builds": "^1.24.1",
     "ace-code": "^1.24.1",
     "ajv": "^8.12.0",
