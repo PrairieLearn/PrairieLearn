@@ -52,7 +52,13 @@ export default makeBatchedMigration({
 
   async execute(start: bigint, end: bigint): Promise<void> {
     for (let id = start; id <= end; id++) {
-      const course = await queryOptionalRow(sql.select_course, { course_id: id }, CourseSchema);
+      const course = await queryOptionalRow(
+        sql.select_course,
+        { course_id: id },
+        CourseSchema.omit({ created_at: true }).extend({
+          created_at: DateFromISOString.nullable(),
+        }),
+      );
 
       if (course == null || course.created_at != null) {
         // This course does not exist, or it already has a created_at date.
