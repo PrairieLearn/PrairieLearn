@@ -1,29 +1,29 @@
-@import "tabulator-tables/dist/css/tabulator_bootstrap4.min.css";
+@import 'tabulator-tables/dist/css/tabulator_bootstrap4.min.css';
 
 .tabulator {
-    /* Override the tabulator typical overflow (needed for sticky header) */
-    overflow: visible;
+  /* Override the tabulator typical overflow (needed for sticky header) */
+  overflow: visible;
 }
 
 .tabulator .tabulator-header {
-    position: sticky;
-    top: 0;
-    /* Must be higher than the z-index of the sticky column (currently 10) */
-    z-index: 99;
+  position: sticky;
+  top: 0;
+  /* Must be higher than the z-index of the sticky column (currently 10) */
+  z-index: 99;
 }
 
 .tabulator .tabulator-footer {
-    position: sticky;
-    bottom: 0;
-    /* Must be higher than the z-index of the sticky column (currently 10) */
-    z-index: 99;
+  position: sticky;
+  bottom: 0;
+  /* Must be higher than the z-index of the sticky column (currently 10) */
+  z-index: 99;
 }
 
 /* Given that tabulator does not translate Bootstrap table-hover functionality, this is done manually */
 .tabulator-row-odd:hover {
-    background-color: #ebebeb;
+  background-color: #ebebeb;
 }
 
 .tabulator-row-even:hover {
-    background-color: #e6e6e6;
+  background-color: #e6e6e6;
 }
