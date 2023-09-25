@@ -1568,6 +1568,14 @@ module.exports.initExpress = function () {
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [ // TODO do we care about having the course_id in the URL? we don't need it necessarily
+    function (req, res, next) {
+      res.locals.navSubPage = 'preview';
+      next();
+    },
+    require('./pages/shared/floatFormatters'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview'),
+  ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [
     function (req, res, next) {
       res.locals.navSubPage = 'statistics';
