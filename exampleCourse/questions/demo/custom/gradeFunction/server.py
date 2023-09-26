@@ -11,6 +11,15 @@ def generate(data):
 def parse(data):
     sub = data["submitted_answers"].get("c", "")
     if len(sub.replace("0", "").replace("1", "")) > 0:
+        # This question uses both feedback and format_errors for reference, but
+        # only one is needed.
+        # * format_errors tags the answer as invalid, which will keep the
+        # question from being graded.
+        # * feedback does not affect the grading process and can be used for
+        # neutral comments that show up even if the student selects "Save Only"
+        # instead of "Save and Grade".
+        # We use the "c" key in case we have multiple feedbacks for different
+        # answers.
         data["feedback"]["c"] = data["format_errors"][
             "c"
         ] = "Your answer should not contain characters other than '0' and '1'"
@@ -27,14 +36,12 @@ def grade(data):
         # We use the "c" key in case we have multiple feedbacks for different answers.
         # This feedback is shown to students on every submission,
         # even if they have attempts remaining, so it shouldn't give away the answer.
-        # Some feedback is already provided in the parse function.
 
         # get the submitted answer, defaulting to empty string if it's missing
-        if "c" not in data["feedback"]:
-            sub = data["submitted_answers"].get("c", "")
-            if len(sub) != len(data["correct_answers"]["c"]):
-                data["feedback"]["c"] = "Your answer has the wrong length"
-            else:
-                data["feedback"][
-                    "c"
-                ] = "Your answer was has the correct length and format, but the value is wrong"
+        sub = data["submitted_answers"].get("c", "")
+        if len(sub) != len(data["correct_answers"]["c"]):
+            data["feedback"]["c"] = "Your answer has the wrong length"
+        else:
+            data["feedback"][
+                "c"
+            ] = "Your answer was has the correct length and format, but the value is wrong"
