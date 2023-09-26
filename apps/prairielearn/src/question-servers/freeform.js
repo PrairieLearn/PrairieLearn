@@ -496,59 +496,44 @@ module.exports = {
     // The following code is deliberately formatted as it is to aid in comprehension,
     // so we prevent Prettier from reformatting the code to span multiple lines.
     // prettier-ignore
+    {
     err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('variant_seed',          'integer', allPhases,                            []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('options',               'object',  allPhases,                            []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
-    // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
+    err = checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test']);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('editable',              'boolean', ['render'],                           []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('manual_grading',        'boolean', ['render'],                           []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('panel',                 'string',  ['render'],                           []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('filename',              'string',  ['file'],                             []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('test_type',             'string',  ['test'],                             []);
     if (err) return err;
-    // prettier-ignore
     err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
     if (err) return err;
+    }
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
@@ -1755,6 +1740,7 @@ module.exports = {
         params: _.get(variant, 'params', {}),
         correct_answers: _.get(variant, 'true_answer', {}),
         submitted_answers: _.get(submission, 'submitted_answer', {}),
+        feedback: _.get(submission, 'feedback', {}),
         format_errors: _.get(submission, 'format_errors', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
@@ -1776,6 +1762,7 @@ module.exports = {
             params: resultData.params,
             true_answer: resultData.correct_answers,
             submitted_answer: resultData.submitted_answers,
+            feedback: resultData.feedback,
             raw_submitted_answer: resultData.raw_submitted_answers,
             format_errors: resultData.format_errors,
             gradable: resultData.gradable,
