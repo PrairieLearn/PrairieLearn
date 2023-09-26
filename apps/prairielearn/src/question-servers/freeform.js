@@ -915,7 +915,6 @@ module.exports = {
           total_weight_score += weight * score;
         });
         resultData.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
-        resultData.feedback = {};
       } else {
         let score = 0;
         if (
@@ -925,7 +924,6 @@ module.exports = {
           score = 1;
         }
         resultData.score = score;
-        resultData.feedback = {};
       }
     }
 
