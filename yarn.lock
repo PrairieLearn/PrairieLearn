@@ -3094,6 +3094,7 @@ __metadata:
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/session": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
@@ -3307,7 +3308,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/session@workspace:packages/session":
+"@prairielearn/session@workspace:^, @prairielearn/session@workspace:packages/session":
   version: 0.0.0-use.local
   resolution: "@prairielearn/session@workspace:packages/session"
   dependencies:
