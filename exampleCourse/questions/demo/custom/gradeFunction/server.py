@@ -12,7 +12,7 @@ def parse(data):
     # use get() for submitted_answers in case no answer was submitted
     # get the submitted answer, defaulting to empty string if it's missing
     sub = data["submitted_answers"].get("c", "")
-    if len(sub.replace("0", "").replace("1", "")) > 0:
+    if set(sub) - {"0", "1"}:
         # format_errors tags the answer as invalid, which will keep the
         # question from being graded.
         data["format_errors"][
