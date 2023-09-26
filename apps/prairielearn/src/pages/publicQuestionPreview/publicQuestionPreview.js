@@ -159,6 +159,7 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 router.get('/', function (req, res, next) {
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);
+  // res.locals.course_id = req.params.course_id;
   async.series(
     [
       (callback) => {
