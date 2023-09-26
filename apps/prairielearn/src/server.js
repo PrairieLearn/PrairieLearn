@@ -19,7 +19,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -64,12 +63,13 @@ const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const { SessionStore } = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
 const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
+const { createSessionMiddleware } = require('@prairielearn/session');
+const { PostgresSessionStore } = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -150,21 +150,30 @@ module.exports.initExpress = function () {
   });
 
   app.use(
-    session({
+    createSessionMiddleware({
       secret: config.secretKey,
-      store: new SessionStore({
-        expireSeconds: config.sessionStoreExpireSeconds,
-      }),
-      resave: false,
-      saveUninitialized: true,
+      store: new PostgresSessionStore(),
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds * 1000,
+        name: 'prairielearn_session',
         httpOnly: true,
-        secure: 'auto', // uses Express "trust proxy"
+        maxAge: config.sessionStoreExpireSeconds * 1000,
+        secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
       },
     }),
   );
+
+  app.use((req, res, next) => {
+    // If the session is going to expire in the near future, we'll extend it
+    // automatically for the user.
+    //
+    // TODO: make this configurable?
+    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+      req.session.setExpiration(config.sessionStoreExpireSeconds);
+    }
+
+    next();
+  });
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
@@ -277,6 +286,7 @@ module.exports.initExpress = function () {
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
         name !== 'connect.sid' &&
+        name !== 'prairielearn_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')

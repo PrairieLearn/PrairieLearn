@@ -64,5 +64,6 @@ referenced by
     question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     reservations: FOREIGN KEY (user_id) REFERENCES users(user_id)
     submissions: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_sessions: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

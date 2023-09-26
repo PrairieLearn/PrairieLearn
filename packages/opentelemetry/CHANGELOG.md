@@ -1,5 +1,19 @@
 # @prairielearn/opentelemetry
 
+## 1.10.0
+
+### Minor Changes
+
+- cfbab7a69: The following types are now exported:
+
+  - `Meter`
+  - `Counter`
+  - `Histogram`
+  - `UpDownCounter`
+  - `ObservableCounter`
+  - `ObservableUpDownCounter`
+  - `ObservableGauge`
+
 ## 1.9.0
 
 ### Minor Changes

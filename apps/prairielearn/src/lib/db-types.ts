@@ -299,3 +299,14 @@ export const AssessmentsFormatForQuestionSchema = z
     }),
   )
   .nullable();
+
+export const UserSessionSchema = z.object({
+  id: IdSchema,
+  session_id: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+  data: z.any(),
+});
+export type UserSession = z.infer<typeof UserSessionSchema>;
