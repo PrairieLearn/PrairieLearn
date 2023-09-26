@@ -391,9 +391,8 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
 
-    if (!this.hasRanges) {
       this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
-    }
+  
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     this.modal.modal('hide');
@@ -402,11 +401,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(() => {
     this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    if (!this.hasRanges) {
       this.editor.setKeyboardHandler(
         sessionStorage.getItem('pl-file-editor-keyboardHandler-current'),
       );
-    }
+
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
     sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
