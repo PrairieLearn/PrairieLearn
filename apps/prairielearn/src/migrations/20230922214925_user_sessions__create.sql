@@ -11,5 +11,3 @@ CREATE TABLE
   );
 
 CREATE INDEX IF NOT EXISTS user_sessions_user_id_updated_at_idx ON user_sessions (user_id, updated_at);
-
-CREATE INDEX IF NOT EXISTS user_sessions_updated_at_idx ON user_sessions (updated_at);
