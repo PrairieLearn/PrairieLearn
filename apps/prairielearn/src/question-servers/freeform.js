@@ -490,50 +490,31 @@ module.exports = {
 
     if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
-    /**************************************************************************************************************************************/
-    //              property                 type       presentPhases                         changePhases
-    /**************************************************************************************************************************************/
     // The following code is deliberately formatted as it is to aid in comprehension,
     // so we prevent Prettier from reformatting the code to span multiple lines.
     // prettier-ignore
-    {
-    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);
+    /**************************************************************************************************************************************/
+    //              property                 type       presentPhases                         changePhases
+    /**************************************************************************************************************************************/
+    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+       || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+       || checkProp('variant_seed',          'integer', allPhases,                            [])
+       || checkProp('options',               'object',  allPhases,                            [])
+       || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
+       || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+       || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
+       || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+       || checkProp('editable',              'boolean', ['render'],                           [])
+       || checkProp('manual_grading',        'boolean', ['render'],                           [])
+       || checkProp('panel',                 'string',  ['render'],                           [])
+       || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+       || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
+       || checkProp('filename',              'string',  ['file'],                             [])
+       || checkProp('test_type',             'string',  ['test'],                             [])
+       || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
     if (err) return err;
-    err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']);
-    if (err) return err;
-    err = checkProp('variant_seed',          'integer', allPhases,                            []);
-    if (err) return err;
-    err = checkProp('options',               'object',  allPhases,                            []);
-    if (err) return err;
-    err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);
-    if (err) return err;
-    err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);
-    if (err) return err;
-    err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);
-    if (err) return err;
-    err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    err = checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test']);
-    if (err) return err;
-    err = checkProp('editable',              'boolean', ['render'],                           []);
-    if (err) return err;
-    err = checkProp('manual_grading',        'boolean', ['render'],                           []);
-    if (err) return err;
-    err = checkProp('panel',                 'string',  ['render'],                           []);
-    if (err) return err;
-    err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
-    if (err) return err;
-    err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
-    if (err) return err;
-    err = checkProp('filename',              'string',  ['file'],                             []);
-    if (err) return err;
-    err = checkProp('test_type',             'string',  ['test'],                             []);
-    if (err) return err;
-    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
-    if (err) return err;
-    }
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
