@@ -74,7 +74,7 @@ onDocumentReady(() => {
     decodeData<QuestionsData>('questions-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
-    layout: 'fitDataFill',
+    layout: 'fitData',
     pagination: true,
     paginationCounter: (pageSize, currentRow, _currentPage, totalRows) =>
       `Showing ${currentRow}-${currentRow + pageSize - 1} of ${totalRows} question${
