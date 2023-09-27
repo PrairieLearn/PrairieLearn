@@ -1,3 +1,10 @@
+// @ts-check
+import { selectQuestion } from '../../models/question';
+import { selectCourse} from '../../models/course';
+import {
+  UserSchema
+} from '../../lib/db-types';
+
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
@@ -10,9 +17,9 @@ const question = require('../../lib/question');
 const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
-const { setQuestionCopyTargets } = require('../../lib/copy-question');
+// const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
-const router = express.Router();
+const router = express.Router({mergeParams: true});
 
 function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
@@ -156,11 +163,17 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
   );
 });
 
-router.get('/', function (req, res, next) {
+router.get('/', async function (req, res, next) {
+  console.log(req.params);
+  res.locals.user = UserSchema.parse(res.locals.authn_user);
+  res.locals.course = await selectCourse({course_id: req.params.course_id});
+  res.locals.question = await selectQuestion({question_id: req.params.question_id});
+  res.locals.authz_data = {};
+
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);
   // res.locals.course_id = req.params.course_id;
-  async.series(
+  return async.series(
     [
       (callback) => {
         // req.query.variant_id might be undefined, which will generate a new variant
@@ -184,7 +197,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
-      setQuestionCopyTargets(res);
+      // setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     },
   );
