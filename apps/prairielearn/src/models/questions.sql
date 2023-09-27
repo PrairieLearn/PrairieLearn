@@ -27,7 +27,15 @@ SELECT
   end AS display_type,
   coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
   row_to_json(top) AS topic,
-  tags_for_question (q.id) AS tags,
+  (
+    SELECT
+      jsonb_agg(to_jsonb(tags))
+    FROM
+      question_tags AS qt
+      JOIN tags ON (tags.id = qt.tag_id)
+    WHERE
+      qt.question_id = q.id
+  ) AS tags,
   assessments_format_for_question (q.id, NULL) AS assessments
 FROM
   questions AS q

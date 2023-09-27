@@ -18,11 +18,11 @@ export const QuestionsPage = ({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${compiledScriptTag('instructorQuestionsClient.ts')}
       </head>
 
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
-        ${compiledScriptTag('instructorQuestionsClient.ts')}
         <main id="content" class="container-fluid">
           ${renderEjs(
             __filename,

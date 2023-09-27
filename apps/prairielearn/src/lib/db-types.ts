@@ -269,6 +269,16 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
+export const TagSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Tag = z.infer<typeof TagSchema>;
+
 export const TopicSchema = z.object({
   color: z.string().nullable(),
   course_id: IdSchema,
@@ -278,27 +288,6 @@ export const TopicSchema = z.object({
   number: z.number().nullable(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
-
-export const TagsForQuestionSchema = z
-  .array(
-    z.object({
-      name: z.string().nullable(),
-      id: IdSchema,
-      color: z.string().nullable(),
-    }),
-  )
-  .nullable();
-
-export const AssessmentsFormatForQuestionSchema = z
-  .array(
-    z.object({
-      label: z.string().nullable(),
-      assessment_id: IdSchema,
-      course_instance_id: IdSchema,
-      color: z.string().nullable(),
-    }),
-  )
-  .nullable();
 
 export const UserSessionSchema = z.object({
   id: IdSchema,
@@ -310,3 +299,12 @@ export const UserSessionSchema = z.object({
   data: z.any(),
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
+
+export const AssessmentsFormatForQuestionSchema = z.array(
+  z.object({
+    label: z.string().nullable(),
+    assessment_id: IdSchema,
+    course_instance_id: IdSchema,
+    color: z.string().nullable(),
+  }),
+);

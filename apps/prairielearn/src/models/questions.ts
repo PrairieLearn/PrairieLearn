@@ -3,7 +3,7 @@ import AnsiUp from 'ansi_up';
 import {
   CourseInstance,
   TopicSchema,
-  TagsForQuestionSchema,
+  TagSchema,
   AssessmentsFormatForQuestionSchema,
 } from '../lib/db-types';
 import { z } from 'zod';
@@ -19,8 +19,8 @@ const QuestionsPageDataSchema = z.object({
   display_type: z.string(),
   open_issue_count: z.string(),
   topic: TopicSchema,
-  tags: TagsForQuestionSchema,
-  assessments: AssessmentsFormatForQuestionSchema.optional(),
+  tags: z.array(TagSchema).nullable(),
+  assessments: AssessmentsFormatForQuestionSchema.nullable(),
 });
 export type QuestionsTableData = z.infer<typeof QuestionsPageDataSchema>;
 
@@ -49,9 +49,9 @@ export async function selectQuestionsForCourse(
     ...row,
     sync_errors_ansified: row.sync_errors && ansiUp.ansi_to_html(row.sync_errors),
     sync_warnings_ansified: row.sync_warnings && ansiUp.ansi_to_html(row.sync_warnings),
-    assessments: row.assessments?.filter((assessment) =>
-      ci_ids.includes(assessment.course_instance_id),
-    ),
+    assessments: row.assessments
+      ? row.assessments.filter((assessment) => ci_ids.includes(assessment.course_instance_id))
+      : null,
   }));
   return questions;
 }
