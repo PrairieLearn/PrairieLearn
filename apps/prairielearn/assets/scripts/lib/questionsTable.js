@@ -48,7 +48,7 @@ onDocumentReady(() => {
       </button>`;
     }
     text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
-      >${_.escape(question.qid)}</a
+      >${question.qid}</a
     >`;
     if (question.open_issue_count > 0) {
       text += html`<a
@@ -62,7 +62,7 @@ onDocumentReady(() => {
 
   window.topicFormatter = function (topic, question) {
     return html`<span class="badge color-${question.topic.color}"
-      >${_.escape(question.topic.name)}</span
+      >${question.topic.name}</span
     >`.toString();
   };
 
@@ -74,7 +74,7 @@ onDocumentReady(() => {
 
   window.versionFormatter = function (version, question) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
-      >${_.escape(question.display_type)}</span
+      >${question.display_type}</span
     >`.toString();
   };
 
@@ -112,7 +112,7 @@ onDocumentReady(() => {
         href="${plainUrlPrefix}/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}"
         class="badge color-${assessment.color} color-hover"
         onclick="event.stopPropagation();"
-        ><span>${_.escape(assessment.label)}</span></a
+        ><span>${assessment.label}</span></a
       >`.toString(),
     ).join(' ');
   };
@@ -136,7 +136,7 @@ onDocumentReady(() => {
     };
   });
 
-  let tableSettings = {
+  const tableSettings = {
     icons: {
       columns: 'fa-th-list',
     },
