@@ -1,5 +1,5 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
-import { nodeModulesAssetPath } from '../lib/assets';
+import { nodeModulesAssetPath, compiledStylesheetPath } from '../lib/assets';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { CourseInstance } from '../lib/db-types';
 import { QuestionsTableData } from '../models/questions';
@@ -12,7 +12,6 @@ export function QuestionsTable({
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
-  errorMessage,
 }: {
   questions: QuestionsTableData[];
   showAddQuestionButton: boolean;
@@ -21,36 +20,12 @@ export function QuestionsTable({
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
-  errorMessage: HtmlSafeString;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
+  // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
+  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it this
   return html`
-    ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
-      'questions-table-data',
-    )}
-    <style>
-      .sticky-column {
-        position: sticky;
-        left: 0;
-        background: white;
-        background-clip: padding-box;
-        box-shadow: inset -1px 0 #dee2e6;
-      }
-      .table-hover tbody tr:hover td.sticky-column {
-        color: #212529;
-        background-color: #efefef;
-      }
-      .fixed-table-toolbar {
-        padding: 0 1em 0 1em;
-      }
-      .fixed-table-toolbar div.pagination,
-      .fixed-table-toolbar div.pagination-detail {
-        margin: 0 1em 0 0 !important;
-      }
-    </style>
-
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
@@ -58,24 +33,14 @@ export function QuestionsTable({
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
       )}"></script>
-    <link
-      href="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.css')}"
-      rel="stylesheet"
-    />
-    <link
-      href="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css',
-      )}"
-      rel="stylesheet"
-    />
-    <link
-      href="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css',
-      )}"
-      rel="stylesheet"
-    />
 
-    ${errorMessage}
+    ${EncodedData(
+      { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
+      'questions-table-data',
+    )}
+
+    <link href="${compiledStylesheetPath('questionsTable.css')}" rel="stylesheet" />
+
     <div class="card mb-4">
       <div class="card-header bg-primary">
         <div class="row align-items-center justify-content-between">

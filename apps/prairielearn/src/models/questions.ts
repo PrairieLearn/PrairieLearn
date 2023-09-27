@@ -8,7 +8,7 @@ import {
 } from '../lib/db-types';
 import { z } from 'zod';
 
-const QuestionsTableDataSchema = z.object({
+const QuestionsPageDataSchema = z.object({
   id: z.string(),
   qid: z.string(),
   title: z.string(),
@@ -20,9 +20,14 @@ const QuestionsTableDataSchema = z.object({
   open_issue_count: z.string(),
   topic: TopicSchema,
   tags: TagsForQuestionSchema,
-  assessments: AssessmentsFormatForQuestionSchema,
+  assessments: AssessmentsFormatForQuestionSchema.optional(),
 });
-export type QuestionsTableData = z.infer<typeof QuestionsTableDataSchema>;
+export type QuestionsTableData = z.infer<typeof QuestionsPageDataSchema>;
+
+interface QuestionsPageDataAnsified extends QuestionsTableData {
+  sync_errors_ansified?: string | null;
+  sync_warnings_ansified?: string | null;
+}
 
 const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -30,25 +35,23 @@ const sql = sqldb.loadSqlEquiv(__filename);
 export async function selectQuestionsForCourse(
   course_id: string | number,
   course_instances: CourseInstance[],
-): Promise<QuestionsTableData[]> {
+): Promise<QuestionsPageDataAnsified[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
     {
       course_id: course_id,
     },
-    QuestionsTableDataSchema,
+    QuestionsPageDataSchema,
   );
 
   const ci_ids = course_instances.map((ci) => ci.id);
-  const questions = rows.map((row) => {
-    if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-    if (row.sync_warnings) {
-      row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-    }
-    row.assessments = row.assessments?.filter((assessment) =>
+  const questions = rows.map((row) => ({
+    ...row,
+    sync_errors_ansified: row.sync_errors && ansiUp.ansi_to_html(row.sync_errors),
+    sync_warnings_ansified: row.sync_warnings && ansiUp.ansi_to_html(row.sync_warnings),
+    assessments: row.assessments?.filter((assessment) =>
       ci_ids.includes(assessment.course_instance_id),
-    );
-    return row;
-  });
+    ),
+  }));
   return questions;
 }

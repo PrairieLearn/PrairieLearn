@@ -24,6 +24,11 @@ export const QuestionsPage = ({
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         ${compiledScriptTag('instructorQuestionsClient.ts')}
         <main id="content" class="container-fluid">
+          ${renderEjs(
+            __filename,
+            " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
+            resLocals,
+          )}
           ${QuestionsTable({
             questions,
             showAddQuestionButton,
@@ -32,11 +37,6 @@ export const QuestionsPage = ({
             urlPrefix: resLocals.urlPrefix,
             plainUrlPrefix: resLocals.plainUrlPrefix,
             __csrf_token: resLocals.__csrf_token,
-            errorMessage: renderEjs(
-              __filename,
-              " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-              resLocals,
-            ),
           })}
         </main>
       </body>
