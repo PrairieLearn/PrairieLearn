@@ -1,4 +1,3 @@
-// @ts-check
 import { selectQuestion } from '../../models/question';
 import { selectCourse } from '../../models/course';
 import { UserSchema } from '../../lib/db-types';
@@ -10,7 +9,7 @@ const path = require('path');
 const error = require('@prairielearn/error');
 const question = require('../../lib/question');
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
-const { processSubmission } = require('../../lib/questionPreview')
+const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router({ mergeParams: true });
 
@@ -25,55 +24,62 @@ function setLocals(req, res) {
     })
     .then((question) => {
       res.locals.question = question;
-      // TODO check if shared, if not give 404 not found!
+      // if (!question.shared_publicly) {
+      //   res.status(404).send({
+      //     message: 'Not Found',
+      //   });
+      // }
     });
 }
 
 router.post('/', function (req, res, next) {
-  // await setLocals(req, res);
-  // res.locals.question = await selectQuestion({ question_id: req.params.question_id });
-  // res.locals.course = await selectCourse({course_id: req.params.course_id});
-  setLocals(req, res).then(() => {
-    if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      processSubmission(req, res, function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/question/' +
-            res.locals.question.id +
-            '/preview/?variant_id=' +
-            variant_id,
+  setLocals(req, res)
+    .then(() => {
+      if (req.body.__action === 'grade' || req.body.__action === 'save') {
+        processSubmission(req, res, function (err, variant_id) {
+          if (ERR(err, next)) return;
+          res.redirect(
+            res.locals.urlPrefix +
+              '/question/' +
+              res.locals.question.id +
+              '/preview/?variant_id=' +
+              variant_id,
+          );
+        });
+      } else if (req.body.__action === 'report_issue') {
+        // we don't care about reporting issues for public facing previews
+      } else {
+        next(
+          error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+          }),
         );
-      });
-    } else if (req.body.__action === 'report_issue') {
-      // we don't care about reporting issues for public facing previews
-    } else {
-      next(
-        error.make(400, 'unknown __action: ' + req.body.__action, {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
-    }
-  });
+      }
+    })
+    .catch((err) => next(err));
 });
 
 router.get('/variant/:variant_id/submission/:submission_id', async function (req, res, next) {
-  question.renderPanelsForSubmission(
-    req.params.submission_id,
-    res.locals.question.id,
-    null, // instance_question_id,
-    req.params.variant_id,
-    res.locals.urlPrefix,
-    null, // questionContext
-    null, // csrfToken
-    null, // authorizedEdit
-    false, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, next)) return;
-      res.send({ submissionPanel: results.submissionPanel });
-    },
-  );
+  setLocals(req, res)
+    .then(() => {
+      question.renderPanelsForSubmission(
+        req.params.submission_id,
+        res.locals.question.id,
+        null, // instance_question_id,
+        req.params.variant_id,
+        res.locals.urlPrefix,
+        null, // questionContext
+        null, // csrfToken
+        null, // authorizedEdit
+        false, // renderScorePanels
+        (err, results) => {
+          if (ERR(err, next)) return;
+          res.send({ submissionPanel: results.submissionPanel });
+        },
+      );
+    })
+    .catch((err) => next(err));
 });
 
 router.get('/', async function (req, res, next) {
@@ -104,7 +110,6 @@ router.get('/', async function (req, res, next) {
         (err) => {
           if (ERR(err, next)) return;
           question.setRendererHeader(res);
-          // setQuestionCopyTargets(res);
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         },
       );

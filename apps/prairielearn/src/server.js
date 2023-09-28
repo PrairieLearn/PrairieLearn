@@ -1773,9 +1773,10 @@ module.exports.initExpress = function () {
 
   app.use('/pl/public/course/:course_id', [
     function (req, res, next) {
-      // res.locals.navbarType = 'public_preview';
+      res.locals.navbarType = 'public';
       // res.locals.navbarType = 'instructor'; // TODO: hack for now, fix later
-      res.locals.navPage = 'public_preview';
+      // res.locals.navPage = 'question';
+      res.locals.navPage = '';
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },

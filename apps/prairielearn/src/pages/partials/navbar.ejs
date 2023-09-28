@@ -33,6 +33,8 @@
         <%- include('navbarInstructor'); %>
       <% } else if (navbarType == 'institution') { %>
         <%- include('navbarInstitution'); %>
+      <% } else if (navbarType == 'public') { %>
+        <%- include('navbarPublic'); %>
       <% } else { %>
         <% throw new Error('Unknown navbarType: ' + navbarType); %>
       <% } %>
@@ -514,7 +516,6 @@ const navPagesTabs = {
     question: 'navTabs/instructorQuestion',
     admin: 'navTabs/administrator',
     institution_admin: 'navTabs/institutionAdmin',
-    public_preview: 'navTabs/publicPreview'
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>

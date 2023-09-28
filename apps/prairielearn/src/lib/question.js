@@ -1851,13 +1851,13 @@ module.exports = {
    * back to the client. This includes the submission panel by default, and if renderScorePanels is
    * set, also the side panels for score, navigation and the question footer.
    *
-   * @param  {number}   submission_id        The id of the submission
-   * @param  {number}   question_id          The id of the question (for authorization check)
-   * @param  {number}   instance_question_id The id of the instance question (for authorization check)
-   * @param  {number}   variant_id           The id of the variant (for authorization check)
+   * @param  {number | string | null}   submission_id        The id of the submission
+   * @param  {number | string}   question_id          The id of the question (for authorization check)
+   * @param  {number | string | null}   instance_question_id The id of the instance question (for authorization check)
+   * @param  {number | string}   variant_id           The id of the variant (for authorization check)
    * @param  {String}   urlPrefix            URL prefix to be used when rendering
-   * @param  {String}   questionContext      The rendering context of this question
-   * @param  {String}   csrfToken            CSRF token for this question page
+   * @param  {String | null}   questionContext      The rendering context of this question
+   * @param  {String | null}   csrfToken            CSRF token for this question page
    * @param  {boolean}  renderScorePanels    If true, render all side panels, otherwise only the submission panel
    * @param  {Function} callback             Receives an error or an object containing the panels that were rendered
    */
