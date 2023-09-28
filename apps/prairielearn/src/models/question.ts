@@ -8,7 +8,6 @@ export async function selectQuestion({
 }: {
   question_id: string;
 }): Promise<Question> {
-    console.log(question_id);
   return await queryRow(
     sql.select_question,
     {

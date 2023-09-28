@@ -4,6 +4,7 @@ import { selectCourse} from '../../models/course';
 import {
   UserSchema
 } from '../../lib/db-types';
+import asyncHandler = require('express-async-handler');
 
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
@@ -20,6 +21,14 @@ const logPageView = require('../../middlewares/logPageView')(path.basename(__fil
 // const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
 const router = express.Router({mergeParams: true});
+
+async function setLocals(req, res) {
+  res.locals.user = UserSchema.parse(res.locals.authn_user);
+  res.locals.course = await selectCourse({course_id: req.params.course_id});
+  res.locals.question = await selectQuestion({question_id: req.params.question_id});
+  res.locals.authz_data = {user: res.locals.user};
+  res.locals.navPage = 'public_preview';
+}
 
 function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
@@ -112,7 +121,12 @@ async function processIssue(req, res, callback) {
   return variantId;
 }
 
-router.post('/', function (req, res, next) {
+router.post('/', async function (req, res, next) {
+  // await setLocals(req, res);
+  res.locals.question = await selectQuestion({question_id: req.params.question_id});
+  // res.locals.course = await selectCourse({course_id: req.params.course_id});
+
+
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
     processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
@@ -145,7 +159,9 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+router.get('/variant/:variant_id/submission/:submission_id', async function (req, res, next) {
+  await setLocals(req, res);
+
   question.renderPanelsForSubmission(
     req.params.submission_id,
     res.locals.question.id,
@@ -164,11 +180,7 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 });
 
 router.get('/', async function (req, res, next) {
-  console.log(req.params);
-  res.locals.user = UserSchema.parse(res.locals.authn_user);
-  res.locals.course = await selectCourse({course_id: req.params.course_id});
-  res.locals.question = await selectQuestion({question_id: req.params.question_id});
-  res.locals.authz_data = {};
+  await setLocals(req, res);
 
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);
