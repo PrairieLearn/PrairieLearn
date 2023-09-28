@@ -24,11 +24,9 @@ function setLocals(req, res) {
     })
     .then((question) => {
       res.locals.question = question;
-      // if (!question.shared_publicly) {
-      //   res.status(404).send({
-      //     message: 'Not Found',
-      //   });
-      // }
+      if (!question.shared_publicly) {
+        throw error.make(404, 'Not Found');
+      }
     });
 }
 

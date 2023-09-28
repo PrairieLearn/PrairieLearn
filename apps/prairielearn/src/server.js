@@ -1774,15 +1774,13 @@ module.exports.initExpress = function () {
   app.use('/pl/public/course/:course_id', [
     function (req, res, next) {
       res.locals.navbarType = 'public';
-      // res.locals.navbarType = 'instructor'; // TODO: hack for now, fix later
-      // res.locals.navPage = 'question';
-      res.locals.navPage = '';
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
   ]);
-  app.use('/pl/public/course/:course_id/question/:question_id/preview', [ // TODO do we care about having the course_id in the URL? we don't need it necessarily
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [
     function (req, res, next) {
+      res.locals.navPage = 'public_question';
       res.locals.navSubPage = 'preview';
       next();
     },
