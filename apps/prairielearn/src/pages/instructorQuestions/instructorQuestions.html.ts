@@ -2,14 +2,14 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
 import { compiledScriptTag } from '../../lib/assets';
-import { QuestionsPageData } from '../../models/questions';
+import { QuestionsPageDataAnsified } from '../../models/questions';
 
 export const QuestionsPage = ({
   questions,
   showAddQuestionButton,
   resLocals,
 }: {
-  questions: QuestionsPageData[];
+  questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
   resLocals;
 }) => {
