@@ -1568,14 +1568,6 @@ module.exports.initExpress = function () {
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
-  app.use('/pl/public/course/:course_id/question/:question_id/preview', [ // TODO do we care about having the course_id in the URL? we don't need it necessarily
-    function (req, res, next) {
-      res.locals.navSubPage = 'preview';
-      next();
-    },
-    require('./pages/shared/floatFormatters'),
-    require('./pages/publicQuestionPreview/publicQuestionPreview'),
-  ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [
     function (req, res, next) {
       res.locals.navSubPage = 'statistics';
@@ -1772,6 +1764,29 @@ module.exports.initExpress = function () {
   app.use('/pl/course/:course_id/question/:question_id/preview/text', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
+  ]);
+
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  // Public course pages ///////////////////////////////////////////////
+
+  app.use('/pl/public/course/:course_id', [
+    function (req, res, next) {
+      // res.locals.navbarType = 'public_preview';
+      // res.locals.navbarType = 'instructor'; // TODO: hack for now, fix later
+      res.locals.navPage = 'public_preview';
+      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
+      next();
+    },
+  ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [ // TODO do we care about having the course_id in the URL? we don't need it necessarily
+    function (req, res, next) {
+      res.locals.navSubPage = 'preview';
+      next();
+    },
+    require('./pages/shared/floatFormatters'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview'),
   ]);
 
   //////////////////////////////////////////////////////////////////////
