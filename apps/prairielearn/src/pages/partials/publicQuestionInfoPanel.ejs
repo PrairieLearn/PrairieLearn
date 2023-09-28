@@ -14,21 +14,13 @@
   <div class="d-flex flex-wrap">
     <div class="pr-1">QID:</div>
     <div>
-      <a href="<%= plainUrlPrefix %>/public/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">@<%= course.sharing_name %>/<%= question.qid %></a>
+      <a href="<%= plainUrlPrefix %>/public/course/<%= course.id %>/question/<%= question.id %>/preview?variant_seed=<%= variant.variant_seed %>">@<%= course.sharing_name %>/<%= question.qid %></a>
     </div>
   </div>
     <div class="d-flex flex-wrap">
       <div class="pr-1">Title:</div>
       <div><%= question.title %></div>
     </div>
-  <div class="d-flex flex-wrap">
-    <div class="pr-1">Started at: </div>
-    <div><%= variant.formatted_date %></div>
-  </div>
-  <div class="d-flex flex-wrap">
-    <div class="pr-1">Duration:</div>
-    <div><%= variant.duration %></div>
-  </div>
   <div class="d-flex flex-wrap pb-2">
     <div class="pr-1">
       <button class="btn btn-link" data-toggle="collapse" data-target="#instructorTrue_answer">Show/Hide answer</button>
