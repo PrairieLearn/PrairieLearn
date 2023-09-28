@@ -2,7 +2,7 @@ import { html, HtmlSafeString } from '@prairielearn/html';
 import { nodeModulesAssetPath, compiledStylesheetPath } from '../lib/assets';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { CourseInstance } from '../lib/db-types';
-import { QuestionsTableData } from '../models/questions';
+import { QuestionsPageDataAnsified } from '../models/questions';
 
 export function QuestionsTable({
   questions,
@@ -13,7 +13,7 @@ export function QuestionsTable({
   plainUrlPrefix,
   __csrf_token,
 }: {
-  questions: QuestionsTableData[];
+  questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
   current_course_instance: CourseInstance;
   course_instances: CourseInstance[];

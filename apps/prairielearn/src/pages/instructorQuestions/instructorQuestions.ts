@@ -7,13 +7,13 @@ import { QuestionAddEditor } from '../../lib/editors';
 import fs = require('fs-extra');
 import async = require('async');
 import { QuestionsPage } from './instructorQuestions.html';
-import { selectQuestionsForCourse } from '../../models/questions';
+import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  let questions,
+  let questions: QuestionsPageDataAnsified[],
     needToSync = false;
   async.series(
     [

@@ -22,9 +22,9 @@ const QuestionsPageDataSchema = z.object({
   tags: z.array(TagSchema).nullable(),
   assessments: AssessmentsFormatForQuestionSchema.nullable(),
 });
-export type QuestionsTableData = z.infer<typeof QuestionsPageDataSchema>;
+type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
-interface QuestionsPageDataAnsified extends QuestionsTableData {
+export interface QuestionsPageDataAnsified extends QuestionsPageData {
   sync_errors_ansified?: string | null;
   sync_warnings_ansified?: string | null;
 }
