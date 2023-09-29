@@ -4,6 +4,20 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 
+function importBootstrapTable() {
+  // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
+  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it this
+  return html`
+    <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
+    <script src="${nodeModulesAssetPath(
+        'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
+      )}"></script>
+    <script src="${nodeModulesAssetPath(
+        'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
+      )}"></script>
+  `;
+}
+
 export function QuestionsTable({
   questions,
   showAddQuestionButton,
@@ -23,21 +37,12 @@ export function QuestionsTable({
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
-  // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it this
   return html`
-    <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-    <script src="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js',
-      )}"></script>
-    <script src="${nodeModulesAssetPath(
-        'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
-      )}"></script>
-
     ${EncodedData(
       { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
       'questions-table-data',
     )}
+    ${importBootstrapTable()}
 
     <link href="${compiledStylesheetPath('questionsTable.css')}" rel="stylesheet" />
 
@@ -170,8 +175,7 @@ export function QuestionsTable({
                   data-filter-control-placeholder="(All Assessments)"
                   data-filter-data="func:assessments${course_instance.id}List"
                   data-filter-custom-search="badgeFilterSearch"
-                  data-visible="${current_course_instance &&
-                  current_course_instance.id === course_instance.id}"
+                  data-visible="${current_course_instance?.id === course_instance.id}"
                   data-switchable="true"
                 >
                   ${course_instance.short_name} Assessments
