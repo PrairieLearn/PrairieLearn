@@ -29,9 +29,7 @@ onDocumentReady(() => {
         class="btn btn-xs mr-1"
         data-toggle="popover"
         data-title="Sync Errors"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3">${_.escape(
-          question.sync_errors_ansified,
-        )}</pre>'
+        data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_errors_ansified}</pre>'
       >
         <i class="fa fa-times text-danger" aria-hidden="true"></i>
       </button>`;
@@ -40,9 +38,7 @@ onDocumentReady(() => {
         class="btn btn-xs mr-1"
         data-toggle="popover"
         data-title="Sync Warnings"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3">${_.escape(
-          question.sync_warnings_ansified,
-        )}</pre>'
+        data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_warnings_ansified}</pre>'
       >
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
@@ -53,7 +49,9 @@ onDocumentReady(() => {
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
-        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(question.qid)}"
+        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
+          question.qid,
+        )}"
         >${question.open_issue_count}</a
       >`;
     }
