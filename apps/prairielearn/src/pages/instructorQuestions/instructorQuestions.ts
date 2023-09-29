@@ -4,53 +4,47 @@ import error = require('@prairielearn/error');
 import { logger } from '@prairielearn/logger';
 import sqldb = require('@prairielearn/postgres');
 import { QuestionAddEditor } from '../../lib/editors';
+import util = require('util');
 import fs = require('fs-extra');
-import async = require('async');
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
+import asyncHandler = require('express-async-handler');
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', function (req, res, next) {
-  let questions: QuestionsPageDataAnsified[],
-    needToSync = false;
-  async.series(
-    [
-      (callback) => {
-        fs.access(res.locals.course.path, (err) => {
-          if (err) {
-            if (err.code === 'ENOENT') {
-              needToSync = true;
-            } else {
-              return ERR(err, callback);
-            }
-          }
-          callback(null);
-        });
-      },
-      async () => {
-        questions = await selectQuestionsForCourse(
-          res.locals.course.id,
-          res.locals.authz_data.course_instances,
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, next)) return;
-      res.send(
-        QuestionsPage({
-          questions: questions,
-          showAddQuestionButton:
-            res.locals.authz_data.has_course_permission_edit &&
-            !res.locals.course.example_course &&
-            !needToSync,
-          resLocals: res.locals,
-        }),
-      );
-    },
-  );
-});
+router.get(
+  '/',
+  asyncHandler(async function (req, res) {
+    const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
+      res.locals.course.id,
+      res.locals.authz_data.course_instances,
+    );
+
+    let needToSync = false;
+    try {
+      console.log(res.locals.course.path)
+      await util.promisify(fs.access)(res.locals.course.path);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        needToSync = true;
+      } else {
+        throw err;
+      }
+    }
+
+    res.send(
+      QuestionsPage({
+        questions: questions,
+        showAddQuestionButton:
+          res.locals.authz_data.has_course_permission_edit &&
+          !res.locals.course.example_course &&
+          !needToSync,
+        resLocals: res.locals,
+      }),
+    );
+  }),
+);
 
 router.post('/', (req, res, next) => {
   if (req.body.__action === 'add_question') {
