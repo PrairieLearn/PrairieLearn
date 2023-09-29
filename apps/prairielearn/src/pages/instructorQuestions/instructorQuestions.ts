@@ -23,7 +23,6 @@ router.get(
 
     let needToSync = false;
     try {
-      console.log(res.locals.course.path)
       await util.promisify(fs.access)(res.locals.course.path);
     } catch (err) {
       if (err.code === 'ENOENT') {
