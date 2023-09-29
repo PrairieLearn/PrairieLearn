@@ -21,9 +21,9 @@ router.get(
     }
 
     await util.promisify(req.session.destroy);
-    // I don't like hardcoding this cookie name, but I didn't see how to get
-    // the name from express-session. Hacky until we replace with our own.
+    // Hold-over from the old express-session implementation
     res.clearCookie('connect.sid');
+    res.clearCookie('prairielearn_session');
 
     const redirect = req.query.redirect;
     if (redirect && typeof redirect === 'string') {

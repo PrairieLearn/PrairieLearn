@@ -269,3 +269,14 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const UserSessionSchema = z.object({
+  id: IdSchema,
+  session_id: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+  data: z.any(),
+});
+export type UserSession = z.infer<typeof UserSessionSchema>;

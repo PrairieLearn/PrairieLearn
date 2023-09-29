@@ -490,6 +490,7 @@ module.exports = {
             data.gradable,
             data.broken,
             data.true_answer,
+            data.feedback,
             false, // regradable
             submission.credit,
             submission.mode,
@@ -863,6 +864,7 @@ module.exports = {
             // `true_answer` so we can use our standard `submissions_insert`
             // sproc.
             variant.true_answer,
+            null, // feedback
             true, // regradable
             null, // credit
             null, // mode
