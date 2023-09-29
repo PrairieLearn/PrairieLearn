@@ -225,6 +225,10 @@ module.exports.makeGradingResult = function (jobId, rawData) {
   }
   data = replaceNull(data);
 
+  if (typeof data.succeeded !== 'boolean') {
+    return makeGradingFailureWithMessage(jobId, data, "results did not contain 'succeeded' field.");
+  }
+
   if (!data.succeeded) {
     return {
       gradingId: jobId,
@@ -240,11 +244,7 @@ module.exports.makeGradingResult = function (jobId, rawData) {
   }
 
   if (!data.results) {
-    return makeGradingFailureWithMessage(
-      jobId,
-      data,
-      "results.json did not contain 'results' object.",
-    );
+    return makeGradingFailureWithMessage(jobId, data, "results did not contain 'results' object.");
   }
 
   let score = 0.0;

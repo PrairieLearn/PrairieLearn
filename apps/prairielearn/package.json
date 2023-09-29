@@ -41,6 +41,7 @@
     "@prairielearn/postgres-tools": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
+    "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
