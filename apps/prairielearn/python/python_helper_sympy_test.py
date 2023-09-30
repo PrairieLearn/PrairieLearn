@@ -57,9 +57,9 @@ class TestSympy:
 
     EXPR_PAIRS = [
         # Test unicode conversion
-        ("m - n", M - N),
-        ("m - （n + m）", -N),
-        ("m ＋ n", N + M),
+        ("m \u2212 n", M - N),
+        ("m - \uff08n + m\uff09", -N),
+        ("m \uff0b n", N + M),
         # Normal test cases
         ("Max(m,n)", sympy.Max(N, M)),
         ("min(alpha, m, n)", sympy.Min(N, M, ALPHA)),
