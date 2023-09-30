@@ -13,21 +13,15 @@ const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router({ mergeParams: true });
 
-function setLocals(req, res) {
+async function setLocals(req, res) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
-
-  return selectCourse({ course_id: req.params.course_id })
-    .then((course) => {
-      res.locals.course = course;
-      return selectQuestion({ question_id: req.params.question_id });
-    })
-    .then((question) => {
-      res.locals.question = question;
-      if (!question.shared_publicly) {
-        throw error.make(404, 'Not Found');
-      }
-    });
+  res.locals.course = await selectCourse({ course_id: req.params.course_id });
+  res.locals.question = await selectQuestion({ question_id: req.params.question_id });
+  if (!res.locals.question.shared_publicly) {
+    throw error.make(404, 'Not Found');
+  }
+  return;
 }
 
 router.post('/', function (req, res, next) {
@@ -58,7 +52,7 @@ router.post('/', function (req, res, next) {
     .catch((err) => next(err));
 });
 
-router.get('/variant/:variant_id/submission/:submission_id', async function (req, res, next) {
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   setLocals(req, res)
     .then(() => {
       question.renderPanelsForSubmission(
@@ -80,7 +74,7 @@ router.get('/variant/:variant_id/submission/:submission_id', async function (req
     .catch((err) => next(err));
 });
 
-router.get('/', async function (req, res, next) {
+router.get('/', function (req, res, next) {
   setLocals(req, res)
     .then(() => {
       var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
