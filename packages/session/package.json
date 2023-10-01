@@ -23,7 +23,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^4.3.5",
-    "@types/cookie": "^0.5.1",
+    "@types/cookie": "^0.5.2",
     "@types/cookie-signature": "^1.1.0",
     "@types/express": "^4.17.17",
     "@types/node": "^18.17.12",
