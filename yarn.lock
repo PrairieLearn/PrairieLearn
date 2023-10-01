@@ -2838,7 +2838,7 @@ __metadata:
   resolution: "@prairielearn/flash@workspace:packages/flash"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/express": ^4.17.17
+    "@types/express": ^4.17.18
     "@types/express-session": ^1.17.7
     "@types/node": ^18.17.14
     mocha: ^10.2.0
@@ -3109,7 +3109,7 @@ __metadata:
     "@types/chai": ^4.3.6
     "@types/chai-as-promised": ^7.1.6
     "@types/dockerode": ^3.3.19
-    "@types/express": ^4.17.17
+    "@types/express": ^4.17.18
     "@types/express-session": ^1.17.7
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
@@ -3316,7 +3316,7 @@ __metadata:
     "@types/chai": ^4.3.5
     "@types/cookie": ^0.5.1
     "@types/cookie-signature": ^1.1.0
-    "@types/express": ^4.17.17
+    "@types/express": ^4.17.18
     "@types/node": ^18.17.12
     "@types/node-fetch": ^2.6.4
     "@types/on-headers": ^1.0.0
@@ -4596,7 +4596,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:*, @types/express@npm:4.17.17, @types/express@npm:^4.17.17":
+"@types/express@npm:*, @types/express@npm:4.17.17":
   version: 4.17.17
   resolution: "@types/express@npm:4.17.17"
   dependencies:
@@ -4605,6 +4605,18 @@ __metadata:
     "@types/qs": "*"
     "@types/serve-static": "*"
   checksum: 0196dacc275ac3ce89d7364885cb08e7fb61f53ca101f65886dbf1daf9b7eb05c0943e2e4bbd01b0cc5e50f37e0eea7e4cbe97d0304094411ac73e1b7998f4da
+  languageName: node
+  linkType: hard
+
+"@types/express@npm:^4.17.18":
+  version: 4.17.18
+  resolution: "@types/express@npm:4.17.18"
+  dependencies:
+    "@types/body-parser": "*"
+    "@types/express-serve-static-core": ^4.17.33
+    "@types/qs": "*"
+    "@types/serve-static": "*"
+  checksum: 8c178da4f0edff1f006d871fbdc3f849620986ff10bad252f3dfd45b57554e26aaa28c602285df028930d5216e257a06fbaf795070f8bb42f7d87e3b689cba50
   languageName: node
   linkType: hard
 
