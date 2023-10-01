@@ -3128,7 +3128,7 @@ __metadata:
     "@types/passport": ^1.0.12
     "@types/passport-azure-ad": ^4.3.1
     "@types/pem": ^1.14.0
-    "@types/pg": ^8.10.2
+    "@types/pg": ^8.10.3
     "@types/tar": ^6.1.5
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.3
@@ -4916,7 +4916,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:*, @types/pg@npm:^8.10.2":
+"@types/pg@npm:*":
   version: 8.10.2
   resolution: "@types/pg@npm:8.10.2"
   dependencies:
@@ -4935,6 +4935,17 @@ __metadata:
     pg-protocol: "*"
     pg-types: ^2.2.0
   checksum: a44710ff06e70f57685ddb88edbb93d4b46e03fed90619f09853ed3868ab28541c4da03eccf6b0b444a7566a0b3c56028543ced43554d51168ca3f8ae15e194f
+  languageName: node
+  linkType: hard
+
+"@types/pg@npm:^8.10.3":
+  version: 8.10.3
+  resolution: "@types/pg@npm:8.10.3"
+  dependencies:
+    "@types/node": "*"
+    pg-protocol: "*"
+    pg-types: ^4.0.1
+  checksum: 05a12be3f18cc67728e3aee5a7426f065351ca991e351d2e7a0562c5d9063425d67fe88fd35108834e0fa1f5624032fefbf371cf8f3cc47230a666aa953425b9
   languageName: node
   linkType: hard
 
