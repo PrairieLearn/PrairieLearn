@@ -104,7 +104,7 @@ jobs:
       # here, so we copy them to an environment variable at the start of the job
       # and then check that here.
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
