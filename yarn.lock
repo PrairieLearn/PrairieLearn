@@ -3319,7 +3319,7 @@ __metadata:
     "@types/express": ^4.17.17
     "@types/node": ^18.17.12
     "@types/node-fetch": ^2.6.4
-    "@types/on-headers": ^1.0.0
+    "@types/on-headers": ^1.0.1
     "@types/set-cookie-parser": ^2.4.3
     "@types/uid-safe": ^2.1.2
     chai: ^4.3.8
@@ -4853,12 +4853,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/on-headers@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@types/on-headers@npm:1.0.0"
+"@types/on-headers@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@types/on-headers@npm:1.0.1"
   dependencies:
     "@types/node": "*"
-  checksum: 470c26ccfe2430118a21a331a13792a5c02201478b5b5cfea375e9a0097a38eedbc7d33cb5d4c622dffa3afb87fc8c370b2597ca932e6479773f5d50ed04a52c
+  checksum: 8780b7f97c6e0da8fa5512fcaad15b05faa129ef5567bfa7623f5e0087a32fae3acb64caa365ebf609edd11d04544e589ce9cb1891fcbb453dfcadd341163227
   languageName: node
   linkType: hard
 

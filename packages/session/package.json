@@ -28,7 +28,7 @@
     "@types/express": "^4.17.17",
     "@types/node": "^18.17.12",
     "@types/node-fetch": "^2.6.4",
-    "@types/on-headers": "^1.0.0",
+    "@types/on-headers": "^1.0.1",
     "@types/set-cookie-parser": "^2.4.3",
     "@types/uid-safe": "^2.1.2",
     "chai": "^4.3.8",
