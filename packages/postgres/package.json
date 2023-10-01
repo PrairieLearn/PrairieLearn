@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.1",
+    "@types/mocha": "^10.0.2",
     "@types/multipipe": "^3.0.1",
     "@types/node": "^18.17.14",
     "mocha": "^10.2.0",

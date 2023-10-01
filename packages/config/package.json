@@ -18,7 +18,7 @@
     "@prairielearn/tsconfig": "*",
     "@types/fs-extra": "^11.0.1",
     "@types/lodash": "^4.14.198",
-    "@types/mocha": "^10.0.1",
+    "@types/mocha": "^10.0.2",
     "@types/node": "^18.17.14",
     "mocha": "^10.2.0",
     "tmp-promise": "^3.0.3",
