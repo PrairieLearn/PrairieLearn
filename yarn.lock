@@ -3147,7 +3147,7 @@ __metadata:
     blocked-at: ^1.2.0
     body-parser: ^1.20.2
     bootstrap: ^4.6.2
-    bootstrap-icons: ^1.10.5
+    bootstrap-icons: ^1.11.1
     bootstrap-table: 1.21.2
     bowser: ^2.11.0
     byline: ^5.0.0
@@ -5976,10 +5976,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bootstrap-icons@npm:^1.10.5":
-  version: 1.10.5
-  resolution: "bootstrap-icons@npm:1.10.5"
-  checksum: 8a0cfbd237723793dfb04106fdeed7f86bb59249a01a1623b325bf84d61306c22bb46d3df0795f80f0e77d43cd7485273571c253ee7910eb67fae9489691daad
+"bootstrap-icons@npm:^1.11.1":
+  version: 1.11.1
+  resolution: "bootstrap-icons@npm:1.11.1"
+  checksum: d78ff24a832fc47db0c7ba5d92d150caee6d8e9ccef24c6de5c2d9728b9610884c8ade3ecadcf09fffae207786acdf40bb026ea5b79a774a1ada62026d9fe16b
   languageName: node
   linkType: hard
 
