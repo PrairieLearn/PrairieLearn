@@ -145,7 +145,7 @@ The exact details of how PrairieLearn awards points are as follows. First, a num
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
 For each submission attempt made by a student, the scoring algorithm is as follows:
-1. Add `max(0, submission percentage score - best current score) / 100 * question value` to `question points`, capping `question points` at `maxAutoPoints`.
+1. If the `submission percentage score` is more than `best current score`, add `(submission percentage score - best current score) / 100 * question value` to `question points`, capping `question points` at `maxAutoPoints`.
 2. If the `submission percentage score` is 100%, then reset `best current score` to zero. Otherwise, if the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
 3. If the `submission percentage score` is 100%, then increase `question value` by `autoPoints`. Otherwise set `question value` to `autoPoints`. If `constantQuestionValue` is true then skip this step.
 
@@ -164,6 +164,45 @@ Init | - | 0 | 4 | 0 | Initial values
 8 | 100% | 0% | 8 | 10 | (100% - 90%) * 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8
 
 After the eight submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice but they cannot earn any more points for it.
+
+## Question scoring for `Exam` assessments
+
+Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as `allowRealTimeGrading` is true (the default). This section describes in detail how repeated attempts are scored, assuming that the question has `autoPoints` set to an array of values.
+
+The important question configuration settings is:
+- **`autoPoints`** is an array of points, with the `n`-th entry being the number of points that a student receives for a fully correct submission on the `n`-th attempt at the question. If `autoPoints` is set to a single value rather than an array then only a single attempt is allowed.
+
+The basic idea is that `autoPoints` is set to a decreasing sequence of points, such as `[10, 7, 5, 2]`. In this case, a correct answer on the first attempt is worth 10 points, a correct answer on the second attempt is worth 7 points, and so on. If the student does not answer the question correctly after four attempts, they will receive 0 points for the question and cannot attempt it again.
+
+The details of how scoring works are made more complex by the fact that a student may receive partial credit for any given submission attempt. PrairieLearn uses a scoring system that has four key properties, assuming that `autoPoints` is an array of decreasing values:
+1. A student can never lose points by attempting a question again.
+2. If a student submits a more correct answer than their previous answers, they will always receive some additional points for it.
+3. Taking more attempts to answer correctly will always be worth less points than answering in fewer attempts, so students are always incentivized to answer questions correctly as soon as possible.
+4. The total number of submission attempts that a student can make is limited by the number of entries in `autoPoints`.
+
+The exact details of how PrairieLearn awards points are as follows. First, a number of variables are computed internally by PrairieLearn as the student answers the question:
+- **Submission percentage score** is the score (between 0% and 100%) that the student receives for any given submission attempt, as evaluated by the question grading specification.
+- **Best current score** is the highest submission percentage score that the student has received since last achieving 100% for a submission. This is initialized to zero.
+- **Question value** is the current maximum number of points that the question is worth. This is equal to `autoPoints[n]` for the `n`-th attempt at the question.
+- **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
+
+For the `n`-th submission attempt made by a student, the scoring algorithm is as follows:
+1. Set the `question value` to `autoPoints[n]`.
+2. Add `max(0, submission percentage score - best current score) / 100 * question value` to `question points`.
+3. If the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
+4. If the `submission percentage score` is 100% or `n` is the last attempt, then prohibit further submissions to the question.
+
+As an example, suppose a student makes 4 submissions of varying degrees of correctness to a question which has `autoPoints` set to `[10, 7, 5, 2]`. The student's submissions are as follows:
+
+Submission number | Submission perc. score | Best current score | Question value | Question points | Comment
+--- | --- | --- | --- | --- | ---
+Init | - | 0 | - | 0 | Initial values
+1 | 50% | 50% | 10 | 5 | (50% - 0%) * 10 = 5 points awarded
+2 | 20% | 50% | 7 | 5 | No improvement in score, so no points awarded
+3 | 80% | 80% | 5 | 6.5 | (80% - 50%) * 5 = 1.5 points awarded
+4 | 70% | 80% | 2 | 6.5 | No improvement in score, so no points awarded
+
+After the four submissions above the student has achieved 6.5 points for the question, for an overall score of 65% (6.5/10). They can no longer make submission attempts to the question.
 
 ## Assessment and question instances and resetting assessments
 
