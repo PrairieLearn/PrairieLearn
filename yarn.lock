@@ -2782,7 +2782,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
-    "@types/multipipe": ^3.0.1
+    "@types/multipipe": ^3.0.2
     "@types/node": ^18.17.14
     csv-stringify: ^6.4.2
     mocha: ^10.2.0
@@ -3046,7 +3046,7 @@ __metadata:
     "@types/debug": ^4.1.8
     "@types/lodash": ^4.14.198
     "@types/mocha": ^10.0.1
-    "@types/multipipe": ^3.0.1
+    "@types/multipipe": ^3.0.2
     "@types/node": ^18.17.14
     "@types/pg-cursor": ^2.7.0
     mocha: ^10.2.0
@@ -4806,12 +4806,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/multipipe@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "@types/multipipe@npm:3.0.1"
+"@types/multipipe@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/multipipe@npm:3.0.2"
   dependencies:
     "@types/node": "*"
-  checksum: c9f068165f0e01a748a1fff91f5750d2cd1cc207e709298b9fe590709eb036263c40f0bff1154db2a844cf6cef5b78123ffddad64f103640c4e7644d971d421b
+  checksum: ed095b17422d45eea0544b11ee078021f1051dd619e132d12c64c5dbcd36e41b7b46c7294ebb388ba39f1c43af2186923ceb9e39780b2389a8822858bcf4cba7
   languageName: node
   linkType: hard
 
