@@ -22,7 +22,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@types/debug": "^4.1.8",
+    "@types/debug": "^4.1.9",
     "@types/lodash": "^4.14.198",
     "@types/pg-cursor": "^2.7.0",
     "multipipe": "^4.0.0",
