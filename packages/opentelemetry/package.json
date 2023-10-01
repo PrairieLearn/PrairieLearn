@@ -39,7 +39,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^4.3.6",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.17.14",
+    "@types/node": "^18.18.1",
     "chai": "^4.3.8",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
