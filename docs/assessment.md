@@ -128,6 +128,43 @@ By default, PrairieLearn provides an incentive for students to answer a specific
 
 A question may also set a value to `points` instead of `autoPoints` and `manualPoints`. If this option is used, questions with a `gradingMethod` set to `Manual` will be assigned only manual points, while questions with other grading methods will be assigned only auto points. To avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question. If `points` is used, then `maxPoints` should be used instead of `maxAutoPoints`.
 
+## Question scoring for `Homework` assessments
+
+Assessments with `"type": "Homework"` are designed to allow students to repeatedly practice different variants of questions (that is, different random values in the question) until they achieve mastery. The assumption here is that any student should be able to receive full points for a homework question if they work long enough on it. This section describes in detail how repeated attempts are scored, assuming that the question has `autoPoints`.
+
+The two important question configuration settings are:
+- **`autoPoints`** is the number of points that the student receives for a submission that is fully correct.
+- **`maxAutoPoints`** is the maximum number of points that the student can receive for a question, regardless of how many times they answer it correctly.
+
+The basic idea is that students should receive `autoPoints` each time they solve the question successfully, up to a maximum of `maxAutoPoints`. When partial credit is awarded, a student receives partial points for the question, but only if they are getting closer to a correct answer. For example, if a student repeatedly answers a question with 50% correct answers then they will receive 50% points for the first such answer, but they will not be able to build up points to reach `maxAutoPoints`. They will need to answer the question 100% correctly to be able to advance their points past the 50% mark.
+
+The exact details of how PrairieLearn awards points are as follows. First, a number of variables are computed internally by PrairieLearn as the student answers the question:
+- **Submission percentage score** is the score (between 0% and 100%) that the student receives for any given submission attempt, as evaluated by the question grading specification.
+- **Best current score** is the highest submission percentage score that the student has received since last achieving 100% for a submission. This is initialized to zero.
+- **Question value** is the current maximum number of points that the question is worth. This starts at `autoPoints` and increases by `autoPoints` for each consecutive correct submission. This is initialized to `autoPoints`.
+- **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
+
+For each submission attempt made by a student, the scoring algorithm is as follows:
+1. Add `max(0, submission percentage score - best current score) / 100 * question value` to `question points`, capping `question points` at `maxAutoPoints`.
+2. If the `submission percentage score` is 100%, then reset `best current score` to zero. Otherwise, if the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
+3. If the `submission percentage score` is 100%, then increase `question value` by `autoPoints`. Otherwise set `question value` to `autoPoints`. If `constantQuestionValue` is true then skip this step.
+
+As an example, suppose a student makes 8 submissions of varying degrees of correctness to a question. Assume the question has `autoPoints` set to 4 and `maxAutoPoints` set to 10. The student's submissions are as follows:
+
+Submission number | Submission perc. score | Best current score | Question value | Question points | Comment
+--- | --- | --- | --- | --- | ---
+Init | - | 0 | 4 | 0 | Initial values
+1 | 50% | 50% | 4 | 2 | (50% - 0%) * 4 = 2 points awarded
+2 | 80% | 80% | 4 | 3.2 | (80% - 50%) * 4 = 1.2 points awarded
+3 | 20% | 80% | 4 | 3.2 | No improvement in score, so no points awarded
+4 | 100% | 0% | 8 | 4 | (100% - 80%) * 4 = 0.8 points awarded, `best current score` reset to 0%, `question value` increased to 8
+5 | 50% | 50% | 4 | 8 | (50% - 0%) * 8 = 4 points awarded, `question value` reset to 4
+6 | 0% | 50% | 4 | 8 | No improvement in score, so no points awarded
+7 | 90% | 90% | 4 | 9.6 | (90% - 50%) * 4 = 1.6 points awarded
+8 | 100% | 0% | 8 | 10 | (100% - 90%) * 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8
+
+After the eight submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice but they cannot earn any more points for it.
+
 ## Assessment and question instances and resetting assessments
 
 PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
