@@ -202,7 +202,7 @@
     "@types/pem": "^1.14.0",
     "@types/pg": "^8.10.2",
     "@types/tar": "^6.1.5",
-    "@types/tmp": "^0.2.3",
+    "@types/tmp": "^0.2.4",
     "@types/uuid": "^9.0.3",
     "axe-core": "^4.7.2",
     "chai": "^4.3.8",
