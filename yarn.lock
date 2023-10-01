@@ -3132,8 +3132,8 @@ __metadata:
     "@types/tar": ^6.1.5
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.3
-    ace-builds: ^1.24.1
-    ace-code: ^1.24.1
+    ace-builds: ^1.28.0
+    ace-code: ^1.28.0
     ajv: ^8.12.0
     ansi_up: ^5.2.1
     archiver: ^6.0.1
@@ -5239,17 +5239,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.24.1":
-  version: 1.24.1
-  resolution: "ace-builds@npm:1.24.1"
-  checksum: 25604cb4c731fe2260d9200cc2389edbb1aac09eea12ab56b0aa27ae71639b6e1e97ec08581ab6e206754aa0ce6b023839552d63b01c8256d3018eaf39dfb0ab
+"ace-builds@npm:^1.28.0":
+  version: 1.28.0
+  resolution: "ace-builds@npm:1.28.0"
+  checksum: 908bf9b833622355252833614d392ad62ed683fe6d3a31cf6bfc34d9fc4d29df123af75c3851a7c1f7ce1797a5753f34ca3596a77181c8e8623fa15d747379a5
   languageName: node
   linkType: hard
 
-"ace-code@npm:^1.24.1":
-  version: 1.24.1
-  resolution: "ace-code@npm:1.24.1"
-  checksum: c23bc696bc698ba2b01fda3f2cfb68ba35910d135b2d1e930679d72cf2f5a5582c8bbdd2e1dc2f68ff6c322607059d466ef5505cefa2a54c97d8cc41a622fa07
+"ace-code@npm:^1.28.0":
+  version: 1.28.0
+  resolution: "ace-code@npm:1.28.0"
+  checksum: fecda911cb8418b3c18018573268c000dc3bfa868aad746a4b630c9c2ba31b18b0cd6dcf4d9bdc963611cdffa9c3c9c3a568867f4ee30ad2d19226436af26166
   languageName: node
   linkType: hard
 
