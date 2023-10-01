@@ -2763,7 +2763,7 @@ __metadata:
     "@aws-sdk/client-secrets-manager": ^3.405.0
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "*"
-    "@types/fs-extra": ^11.0.1
+    "@types/fs-extra": ^11.0.2
     "@types/lodash": ^4.14.198
     "@types/mocha": ^10.0.1
     "@types/node": ^18.17.14
@@ -2866,7 +2866,7 @@ __metadata:
     "@types/async": ^3.2.20
     "@types/chai": ^4.3.6
     "@types/dockerode": ^3.3.19
-    "@types/fs-extra": ^11.0.1
+    "@types/fs-extra": ^11.0.2
     "@types/node": ^18.17.14
     "@types/tmp": ^0.2.3
     ajv: ^8.12.0
@@ -2938,7 +2938,7 @@ __metadata:
     "@prairielearn/named-locks": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/fs-extra": ^11.0.1
+    "@types/fs-extra": ^11.0.2
     "@types/mocha": ^10.0.1
     "@types/node": ^18.17.14
     fs-extra: ^11.1.1
@@ -3020,7 +3020,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/diff": ^5.0.3
-    "@types/fs-extra": ^11.0.1
+    "@types/fs-extra": ^11.0.2
     "@types/lodash": ^4.14.198
     "@types/node": ^18.17.14
     "@types/yargs": ^17.0.24
@@ -3112,7 +3112,7 @@ __metadata:
     "@types/express": ^4.17.17
     "@types/express-session": ^1.17.7
     "@types/folder-hash": ^4.0.2
-    "@types/fs-extra": ^11.0.1
+    "@types/fs-extra": ^11.0.2
     "@types/jquery": ^3.5.18
     "@types/jsdom": ^21.1.2
     "@types/klaw": ^3.0.3
@@ -4615,13 +4615,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/fs-extra@npm:^11.0.1":
-  version: 11.0.1
-  resolution: "@types/fs-extra@npm:11.0.1"
+"@types/fs-extra@npm:^11.0.2":
+  version: 11.0.2
+  resolution: "@types/fs-extra@npm:11.0.2"
   dependencies:
     "@types/jsonfile": "*"
     "@types/node": "*"
-  checksum: 3e930346e5d84f419deb8ced1c582beef8cb20d0bd8a0eb145a37d75bab0572a1895f0e48a0d681d386b3a58b9a992b2d2acecc464bcaec2548f53ea00718651
+  checksum: 5b3e30343ee62d2e393e1029355f13f64bab6f3416226e22492483f99da840e2e53ca22cbfa4ac3749f2f83f7086d19c009005c8fa175da01df0fae59c2d73e1
   languageName: node
   linkType: hard
 
