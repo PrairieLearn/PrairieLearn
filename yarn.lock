@@ -3118,7 +3118,7 @@ __metadata:
     "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.198
     "@types/loopbench": ^1.2.2
-    "@types/memorystream": ^0.3.1
+    "@types/memorystream": ^0.3.2
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
     "@types/multer": ^1.4.7
@@ -4753,12 +4753,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/memorystream@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "@types/memorystream@npm:0.3.1"
+"@types/memorystream@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "@types/memorystream@npm:0.3.2"
   dependencies:
     "@types/node": "*"
-  checksum: ee1d4cb6838bb772e4118aa0797bd0d8a3a471076f83cad3ff1fd539e5f63e9bd7b0374406f05de1e3d1fcd41a7e8d0e0d0ea49616c854a5c872fe3a0df84468
+  checksum: add607c10497f5d32b59d42b779e3740077cc2fa1f8548bbb97d3406ed162680d5a4b6dd84720c5b42f0b90287a4e04d40ac148f057c6f32d24289c4865de83f
   languageName: node
   linkType: hard
 

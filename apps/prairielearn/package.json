@@ -190,7 +190,7 @@
     "@types/klaw": "^3.0.3",
     "@types/lodash": "^4.14.198",
     "@types/loopbench": "^1.2.2",
-    "@types/memorystream": "^0.3.1",
+    "@types/memorystream": "^0.3.2",
     "@types/mime": "^3.0.1",
     "@types/mocha": "^10.0.1",
     "@types/multer": "^1.4.7",
