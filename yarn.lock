@@ -3126,7 +3126,7 @@ __metadata:
     "@types/node-fetch": ^2.6.4
     "@types/object-hash": ^3.0.4
     "@types/passport": ^1.0.12
-    "@types/passport-azure-ad": ^4.3.1
+    "@types/passport-azure-ad": ^4.3.2
     "@types/pem": ^1.14.0
     "@types/pg": ^8.10.2
     "@types/tar": ^6.1.5
@@ -4869,13 +4869,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/passport-azure-ad@npm:^4.3.1":
-  version: 4.3.1
-  resolution: "@types/passport-azure-ad@npm:4.3.1"
+"@types/passport-azure-ad@npm:^4.3.2":
+  version: 4.3.2
+  resolution: "@types/passport-azure-ad@npm:4.3.2"
   dependencies:
     "@types/express": "*"
     "@types/passport": "*"
-  checksum: c235bcc7062cf6f23324dece209cca06474a03229bc1fbe16bb6b680d930c5ff32c8b121a4b3d2a783be8b90f763bf71482dc6df0716c8ace414dd79ca8d4150
+  checksum: 4e34c6f5a9268291682b668446698744f415bc7ce4e9706fafdfc27734b92e74d3975b8b57d0cc0875e5aaee9baae7ab1fae76b9ca46fd20ede3962a1ef9c747
   languageName: node
   linkType: hard
 
