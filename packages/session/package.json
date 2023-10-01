@@ -31,7 +31,7 @@
     "@types/on-headers": "^1.0.0",
     "@types/set-cookie-parser": "^2.4.3",
     "@types/uid-safe": "^2.1.2",
-    "chai": "^4.3.8",
+    "chai": "^4.3.10",
     "express": "^4.18.2",
     "fetch-cookie": "^2.1.0",
     "mocha": "^10.2.0",
