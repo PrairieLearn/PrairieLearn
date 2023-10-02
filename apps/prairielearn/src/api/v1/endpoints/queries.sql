@@ -316,7 +316,14 @@ WITH
       (
         SELECT
           JSONB_AGG(
-            JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
+            JSONB_BUILD_OBJECT(
+              'rubric_item_id',
+              rgi.rubric_item_id,
+              'text',
+              rgi.description,
+              'points',
+              rgi.points
+            )
           )
         FROM
           rubric_grading_items rgi
