@@ -1,7 +1,7 @@
 columns
     branch: text default 'master'::text
     commit_hash: text
-    created_at: timestamp with time zone default now()
+    created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
     display_timezone: text not null
     example_course: boolean not null default false

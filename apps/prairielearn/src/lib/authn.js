@@ -65,6 +65,11 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     throw new Error('user not found with user_id ' + user_id);
   }
 
+  // The session store will pick this up and store it in the `user_sessions.user_id` column.
+  if (req.session) {
+    req.session.user_id = user_id;
+  }
+
   if (options.pl_authn_cookie) {
     var tokenData = {
       user_id: user_id,
