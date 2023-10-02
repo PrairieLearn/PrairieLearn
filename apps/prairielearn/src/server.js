@@ -1779,6 +1779,37 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
+  // Public course pages ///////////////////////////////////////////////
+
+  app.use('/pl/public/course/:course_id', [
+    function (req, res, next) {
+      res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
+      next();
+    },
+  ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'preview';
+      next();
+    },
+    require('./pages/shared/floatFormatters'),
+    // require('./pages/publicQuestionPreview/publicQuestionPreview'),
+  ]);
+  app.use('/pl/public/course/:course_id/questions', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_questions';
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    require('./pages/publicQuestions/publicQuestions'),
+  ]);
+
+
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
