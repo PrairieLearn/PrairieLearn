@@ -20,8 +20,8 @@ FOCUS_DEFAULT = False
 DIRECTORY_DEFAULT = "."
 NORMALIZE_TO_ASCII_DEFAULT = False
 
-def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) -> tuple[str, list, str]:
-    hasRange = "false"
+def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) -> tuple[bool, list[list[int]], str]:
+    hasRange = False
     file_contents = []
     range_list = []
     line = 0 # keeps track of what line in the editor we are in
@@ -44,7 +44,7 @@ def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) ->
         line += new_lines
     
     if len(range_list) != 0:
-        hasRange = "true"
+        hasRange = True
 
     return hasRange, range_list, "".join(file_contents)
 
@@ -148,7 +148,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     }
 
     ranges = []
-    hasRanges = "false"
+    hasRanges = False
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
@@ -172,7 +172,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             text_display = ""
 
-    html_params["range_flag"] = hasRanges
+    html_params["range_flag"] = str(hasRanges)
     html_params["ranges"] = ranges
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8").strip()
