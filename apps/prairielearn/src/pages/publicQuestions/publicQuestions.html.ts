@@ -7,10 +7,12 @@ import { QuestionsPageData } from '../../models/questions';
 export const QuestionsPage = ({
   questions,
   showAddQuestionButton,
+  qidPrefix,
   resLocals,
 }: {
   questions: QuestionsPageData[];
   showAddQuestionButton: boolean;
+  qidPrefix?: string;
   resLocals;
 }) => {
   return html`
@@ -27,6 +29,7 @@ export const QuestionsPage = ({
           ${QuestionsTable({
             questions,
             showAddQuestionButton,
+            qidPrefix,
             urlPrefix: resLocals.urlPrefix,
             plainUrlPrefix: resLocals.plainUrlPrefix,
           })}
