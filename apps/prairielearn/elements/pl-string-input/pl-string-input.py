@@ -189,7 +189,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
-    # raise Exception("Invalid panel type: %s" % data["panel"])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
