@@ -204,7 +204,7 @@
     "@types/tar": "^6.1.6",
     "@types/tmp": "^0.2.4",
     "@types/uuid": "^9.0.4",
-    "axe-core": "^4.8.2",
+    "axe-core": "^4.7.0",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "express-list-endpoints": "^6.0.0",
