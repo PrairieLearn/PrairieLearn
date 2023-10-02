@@ -28,6 +28,8 @@ VOID_ELEMENTS = frozenset(
     }
 )
 
+UNESCAPED_ELEMENTS = frozenset({"script"})
+
 
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
@@ -127,9 +129,11 @@ def traverse_and_replace(
             else:
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))
-
                 if new_elements.text is not None:
-                    result.append(html_escape(new_elements.text))
+                    if new_elements.tag in UNESCAPED_ELEMENTS:
+                        result.append(new_elements.text)
+                    else:
+                        result.append(html_escape(new_elements.text))
 
                 # Add all children to the work stack
                 children = list(new_elements)
