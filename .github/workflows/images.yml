@@ -151,7 +151,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-jupyterlab-python:latest
+          tags: prairielearn/workspace-jupyterlab-python:latest,prairielearn/workspace-jupyterlab-python:${{ github.sha }}
 
       ######################################################################################################
       # workspace-rstudio
