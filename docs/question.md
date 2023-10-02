@@ -145,7 +145,7 @@ The `server.py` file for each question creates randomized question variants by g
 | `generate()` |                                          | `correct_answers`, `params`                                                                              | `options`, `variant_seed`                                                                                                                                                                                  | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Modify the `data` dictionary in-place.                                                                 |
 | `prepare()`  |                                          | `answers_names`, `correct_answers`, `params`                                                             | `options`, `variant_seed`                                                                                                                                                                                  | Final question preparation after element code has run. Can modify data as necessary. Modify the `data` dictionary in-place.                                                                                                                                                   |
 | `render()`   | `html` (string)                          |                                                                                                          | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed`, `num_valid_submissions` | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
-| `parse()`    |                                          | `format_errors`, `submitted_answers`                                                                     | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed`                                                                                                                            | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
+| `parse()`    |                                          | `format_errors`, `submitted_answers`, `correct_answers`, `feedback`                                      | `options`, `params`, `raw_submitted_answers`, `variant_seed`                                                                                                                                               | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
 | `grade()`    |                                          | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                                         | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
 | `file()`     | `object` (string, bytes-like, file-like) |                                                                                                          | `correct_answers`, `filename`, `options`, `params`, `variant_seed`                                                                                                                                         | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
 
@@ -193,6 +193,7 @@ def parse(data):
     # data["format_errors"][NAME] is the answer format error (if any) from elements.
     # We can modify or delete format errors if we have custom logic (rarely needed).
     # If there are format errors then the submission is "invalid" and is not graded.
+    # To provide feedback but keep the submission "valid", data["feedback"][NAME] can be used.
 
     # As an example, we will reject negative numbers for "y":
     # check we don't already have a format error
@@ -209,7 +210,8 @@ def grade(data):
     # grade(data) can also set data['format_errors'][NAME] if there is any reason to mark the question
     # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
     # You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead,
-    # since that method is also called when the student hits "Save only" or in assessments without real-time grading.
+    # since that method is also called when the student hits "Save only", in manually graded questions, or in
+    # assessments without real-time grading.
 
     # As an example, we will give half points for incorrect answers larger than "x",
     # only if not already correct. Use math.isclose to avoid possible floating point errors.
@@ -524,3 +526,8 @@ Similarly, for grading functions involving floating point numbers, _avoid exact 
 - `is_correct_scalar_dd` compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
+
+_Note:_ Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
+element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
+code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
+[PrairieLearn elements documentation](elements.md) for more detailed discussion related to specific elements.
