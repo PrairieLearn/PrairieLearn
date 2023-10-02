@@ -1,6 +1,5 @@
 /* eslint-env browser,jquery */
 /* global ace, showdown, MathJax, DOMPurify */
-
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
@@ -74,7 +73,8 @@ if (this.hasRanges) {
     
     var inRange = this.rangeList.some(intersects);
     
-    if (inRange) {
+    let exceptions = ["gotoleft", "gotoright", "golineup", "golinedown", "gotolinestart", "gotolineend"]
+    if (inRange && !exceptions.includes(e.command.name)) {
       e.stopPropagation();
       e.preventDefault();
       return;
@@ -87,7 +87,6 @@ if (this.hasRanges) {
     }
 
     var isBeforeReadonlyRange = this.rangeList.some(range => {
-      var startOfRange = editor.session.getLine(range.start.row);
       return (cursor.row === range.start.row && cursor.column === 0 && e.command.name === "del" && editor.selection.isEmpty()) ||
              (cursor.row === range.start.row - 1 && cursor.column === editor.session.getLine(cursor.row).length && e.command.name === "del" && editor.selection.isEmpty());
     });
@@ -102,12 +101,12 @@ if (this.hasRanges) {
   let contentBeforeDrop;
   let cursorBeforeDrop;
 
-  editor.container.addEventListener('dragover', function(e) {
+  editor.container.addEventListener('dragover', function() {
       contentBeforeDrop = editor.getValue();
       cursorBeforeDrop = editor.getCursorPosition();
   }.bind(this));
 
-  function isCursorBeforeOrInReadOnly(range) {
+  const isCursorBeforeOrInReadOnly = (range) => {
     var cursor = editor.selection.getCursor();
 
     var extendedRange = new ace.Range(
@@ -138,6 +137,7 @@ if (this.hasRanges) {
               const linesBeforeDrop = contentBeforeDrop.split('\n');
               const addedLinesCount = linesAfterDrop.length - linesBeforeDrop.length;
 
+
               const startRemovingPosition = {
                   row: cursorBeforeDrop.row,
                   column: cursorBeforeDrop.column
@@ -160,17 +160,12 @@ if (this.hasRanges) {
                   startRemovingPosition.row, startRemovingPosition.column,
                   endRemovingPosition.row, endRemovingPosition.column
               ), '');
-              editor.clearSelection(); 
+
+              editor.clearSelection();
           }, 0);
       }
   }.bind(this));
 }
-
-/////////////////////////////////
-// END OF CODE STAY ABOVE HERE //
-/////////////////////////////////
-// TODO: Remove these comments //
-/////////////////////////////////
 
   if (options.aceMode) {
     this.editor.getSession().setMode(options.aceMode);
@@ -453,6 +448,7 @@ window.PLFileEditor.prototype.setAnchors = function () {
 };
 window.PLFileEditor.prototype.setEditorContents = function (contents) {
   this.editor.setValue(contents);
+  this.editor.session.getUndoManager().reset();
   this.editor.gotoLine(1, 0);
   if (this.plOptionFocus) {
     this.editor.focus();
