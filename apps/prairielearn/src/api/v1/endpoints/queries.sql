@@ -311,6 +311,18 @@ WITH
       s.score,
       s.correct,
       s.feedback,
+      rg.computed_points AS rubric_grading_computed_points,
+      rg.adjust_points AS rubric_grading_adjust_points,
+      (
+        SELECT
+          JSONB_AGG(
+            JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
+          )
+        FROM
+          rubric_grading_items rgi
+        WHERE
+          rgi.rubric_grading_id = rg.id
+      ) AS rubric_grading_items,
       (
         row_number() OVER (
           PARTITION BY
@@ -341,6 +353,7 @@ WITH
       JOIN questions AS q ON (q.id = aq.question_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
+      LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
     WHERE
       ci.id = $course_instance_id
       AND (
