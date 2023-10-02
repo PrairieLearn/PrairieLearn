@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/fs-extra": "^11.0.1",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^18.17.14",
+    "@types/fs-extra": "^11.0.2",
+    "@types/mocha": "^10.0.2",
+    "@types/node": "^18.18.1",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
