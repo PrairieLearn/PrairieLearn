@@ -2,41 +2,38 @@ import { Router } from 'express';
 import util = require('util');
 import fs = require('fs-extra');
 import { QuestionsPage } from './publicQuestions.html';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
+import { selectPublicQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
-      res.locals.course.id,
-      res.locals.authz_data.course_instances,
-    );
+    // res.locals.course = await selectCourse({ course_id: req.params.course_id });
+    // HARD CODE until we get the public question sharing page merged to master
+    res.locals.course = {
+      id: 2,
+      short_name: 'QA 101',
+      title: 'Test Course',
+      sharing_name: 'test-course',
+    };
 
-    let needToSync = false;
-    try {
-      await util.promisify(fs.access)(res.locals.course.path);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        needToSync = true;
-      } else {
-        throw err;
-      }
-    }
+    // TODO verify that the course has sharing enabled, if not then 404!
+
+    const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
+
+    // TODO: do we actually need this check for the public page? probably not
+    await util.promisify(fs.access)(res.locals.course.path);
 
     res.send(
       QuestionsPage({
         questions: questions,
-        showAddQuestionButton:
-          res.locals.authz_data.has_course_permission_edit &&
-          !res.locals.course.example_course &&
-          !needToSync,
+        showAddQuestionButton: false,
         resLocals: res.locals,
       }),
     );
   }),
 );
 
-export default router;
+export = router;

@@ -29,11 +29,11 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstance[];
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstance[];
   urlPrefix: string;
   plainUrlPrefix: string;
-  __csrf_token: string;
+  __csrf_token?: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);

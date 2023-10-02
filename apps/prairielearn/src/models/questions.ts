@@ -22,7 +22,7 @@ const QuestionsPageDataSchema = z.object({
   tags: z.array(TagSchema).nullable(),
   assessments: AssessmentsFormatForQuestionSchema.nullable(),
 });
-type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
+export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
 export interface QuestionsPageDataAnsified extends QuestionsPageData {
   sync_errors_ansified?: string | null;
@@ -54,4 +54,19 @@ export async function selectQuestionsForCourse(
       : null,
   }));
   return questions;
+}
+
+
+export async function selectPublicQuestionsForCourse(
+  course_id: string | number
+): Promise<QuestionsPageData[]> {
+  const rows = await sqldb.queryRows(
+    sql.select_public_questions_for_course,
+    {
+      course_id: course_id,
+    },
+    QuestionsPageDataSchema,
+  );
+
+  return rows;
 }

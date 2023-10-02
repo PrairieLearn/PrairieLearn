@@ -2,14 +2,14 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { QuestionsTable } from '../../components/QuestionsTable.html';
 import { compiledScriptTag } from '../../lib/assets';
-import { QuestionsPageDataAnsified } from '../../models/questions';
+import { QuestionsPageData } from '../../models/questions';
 
 export const QuestionsPage = ({
   questions,
   showAddQuestionButton,
   resLocals,
 }: {
-  questions: QuestionsPageDataAnsified[];
+  questions: QuestionsPageData[];
   showAddQuestionButton: boolean;
   resLocals;
 }) => {
@@ -24,19 +24,11 @@ export const QuestionsPage = ({
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            __filename,
-            " <%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
           ${QuestionsTable({
             questions,
             showAddQuestionButton,
-            current_course_instance: resLocals.course_instance,
-            course_instances: resLocals.authz_data.course_instances,
             urlPrefix: resLocals.urlPrefix,
             plainUrlPrefix: resLocals.plainUrlPrefix,
-            __csrf_token: resLocals.__csrf_token,
           })}
         </main>
       </body>
