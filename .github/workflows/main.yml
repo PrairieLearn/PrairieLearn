@@ -70,6 +70,35 @@ jobs:
       - name: Build the grader-r docker image if needed
         run: ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r:latest
 
+  build-core-images-arm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3 # https://github.com/marketplace/actions/checkout
+        with:
+          fetch-depth: 0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+
+      - name: Build and push prairielearn/plbase
+        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: images/plbase
+          platforms: linux/amd64,linux/arm64
+          no-cache: true
+          tags: prairielearn/plbase:latest,prairielearn/plbase:${{ github.sha }}
+
+      - name: Build and push prairielearn/prairielearn
+        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          no-cache: true
+          tags: prairielearn/prairielearn:latest,prairielearn/prairielearn:${{ github.sha }}
+
   build-core-images:
     runs-on: ubuntu-latest
 
