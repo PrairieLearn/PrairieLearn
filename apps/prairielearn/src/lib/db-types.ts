@@ -29,7 +29,7 @@ export const DateFromISOString = z
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
-  created_at: DateFromISOString.nullable(),
+  created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
@@ -268,3 +268,14 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const UserSessionSchema = z.object({
+  id: IdSchema,
+  session_id: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+  data: z.any(),
+});
+export type UserSession = z.infer<typeof UserSessionSchema>;

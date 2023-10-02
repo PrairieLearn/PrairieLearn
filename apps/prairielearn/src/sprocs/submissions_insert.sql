@@ -6,6 +6,7 @@ CREATE FUNCTION
         IN gradable boolean,
         IN broken boolean,
         IN new_true_answer jsonb,
+        IN feedback jsonb,
         IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
@@ -97,9 +98,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration, params, true_answer, gradable, broken, regradable)
+            credit, mode, duration, params, true_answer, feedback, gradable, broken, regradable)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, regradable)
+            credit, mode, delta, variant.params, variant.true_answer, feedback, gradable, broken, regradable)
     RETURNING id
     INTO submission_id;
 

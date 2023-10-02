@@ -1,9 +1,10 @@
 import execa = require('execa');
 import * as fs from 'fs-extra';
+import { z } from 'zod';
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { CourseSchema, DateFromISOString } from '../lib/db-types';
+import { DateFromISOString, IdSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -52,10 +53,20 @@ export default makeBatchedMigration({
 
   async execute(start: bigint, end: bigint): Promise<void> {
     for (let id = start; id <= end; id++) {
-      const course = await queryRow(sql.select_course, { course_id: id }, CourseSchema);
+      const course = await queryOptionalRow(
+        sql.select_course,
+        { course_id: id },
+        // CourseSchema isn't used to avoid problems if the schema changes in
+        // the future. Only fields that are actually used are added here.
+        z.object({
+          created_at: DateFromISOString.nullable(),
+          id: IdSchema,
+          path: z.string().nullable(),
+        }),
+      );
 
-      if (course.created_at != null) {
-        // The course already has a date; don't overwrite it.
+      if (course == null || course.created_at != null) {
+        // This course does not exist, or it already has a created_at date.
         continue;
       }
 
