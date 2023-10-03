@@ -1324,14 +1324,6 @@ module.exports.initExpress = function () {
       },
       require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
     ]);
-
-    app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13', [
-      function (req, res, next) {
-        res.locals.navSubPage = 'lti13';
-        next();
-      },
-      require('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13').default,
-    ]);
   }
 
   // Global client files

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import lti13InstanceRouter from '../pages/lti13Instance/lti13Instance';
-import lti13Auth from '../auth/lti13/lti13auth';
-import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
+//import lti13Auth from '../auth/lti13/lti13auth';
+//import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
 import { Lti13InstanceSchema } from '../../lib/db-types';
 import asyncHandler = require('express-async-handler');
 import middlewareAuthn = require('../../middlewares/authn');
@@ -58,13 +58,13 @@ router.use(
   }),
 );
 
-router.use('/:lti13_instance_id/auth', lti13Auth);
-router.use(
-  '/:lti13_instance_id/course_navigation',
-  middlewareAuthn, // authentication, set res.locals.authn_user
-  csrfToken,
-  lti13CourseNavigation,
-);
+//router.use('/:lti13_instance_id/auth', lti13Auth);
+//router.use(
+//  '/:lti13_instance_id/course_navigation',
+//  middlewareAuthn, // authentication, set res.locals.authn_user
+//  csrfToken,
+//  lti13CourseNavigation,
+//);
 
 // router is a catch all for some small pages so put it last (or explicitly route them)
 router.use('/:lti13_instance_id/', lti13InstanceRouter);
