@@ -120,7 +120,7 @@ export function AdministratorFeature({
               ? html`
                   <div class="card-body text-center">
                     <i
-                      class="fas ${featureInConfig
+                      class="fa-solid mr-1 ${featureInConfig
                         ? 'fa-check text-success'
                         : 'fa-times text-danger'}"
                     ></i>
