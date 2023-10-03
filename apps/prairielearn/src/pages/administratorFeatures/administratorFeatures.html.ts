@@ -135,7 +135,7 @@ export function AdministratorFeature({
                     ${featureGrants.map((featureGrant) => {
                       return FeatureGrant({
                         featureGrant,
-                        extraClass: featureInConfig != null ? 'text-muted' : '',
+                        overridden: featureInConfig != null,
                       });
                     })}
                   </div>
@@ -205,13 +205,15 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
 
 function FeatureGrant({
   featureGrant,
-  extraClass,
+  overridden,
 }: {
   featureGrant: FeatureGrantRow;
-  extraClass: string;
+  overridden: boolean;
 }) {
   return html`
-    <div class="list-group-item d-flex flex-row align-items-center ${extraClass}">
+    <div
+      class="list-group-item d-flex flex-row align-items-center ${overridden ? 'text-muted' : ''}"
+    >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
     </div>
   `;
