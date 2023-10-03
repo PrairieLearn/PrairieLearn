@@ -88,7 +88,7 @@ def r_types_dataframe() -> pd.DataFrame:
             "logical-list": pd.Series([True, False, True]),
             "character-string-list": pd.Series(["a", "b", "c"]),
             # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
-            "POSIXct-POSIXt-timestamp": pd.Timestamp("20230102", unit="ns"),
+            "POSIXct-POSIXt-timestamp": pd.Timestamp("20230102").to_datetime64(),
             "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
         }
     )
