@@ -52,9 +52,7 @@ export function InstitutionAdminLti13({
               ${lti13Instances.map((i) => {
                 return html`
                   <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                    <span style="white-space: nowrap">
-                      ${i.name ? i.name : `#${i.id}`}
-                    </span>
+                    <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
                     <span style="white-space: nowrap">(${i.platform})</span>
                   </a>
                 `;
@@ -118,8 +116,12 @@ const displayLTI13Instance = function (instance, resLocals, platform_defaults) {
 
     <hr/>
     <h5>Name:</h5>
-      ${instance.tool_platform_name ? html`
-      The LMS has referred to itself as: <strong>${instance.tool_platform_name}</strong>` : ''}
+      ${
+        instance.tool_platform_name
+          ? html` The LMS has referred to itself as:
+              <strong>${instance.tool_platform_name}</strong>`
+          : ''
+      }
     <form class="form-inline" method="POST">
     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
     <input type="hidden" name="__action" value="update_name" />
@@ -190,16 +192,22 @@ const displayLTI13Instance = function (instance, resLocals, platform_defaults) {
 
     <a href="/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
     contains ${instance.keystore?.keys ? instance.keystore.keys.length : 0} key${
-      instance.keystore?.keys?.length === 1 ? '' : 's'}.<br />
+      instance.keystore?.keys?.length === 1 ? '' : 's'
+    }.<br />
     <ul>
       ${instance.keystore?.keys?.map((k) => {
         return html`<li>
           <form method="POST">
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <input type="hidden" name="__action" value="delete_key" />
-          <input type="hidden" name="kid" value="${k.kid}" />
-          ${k.kid} <input class="btn btn-xs btn-outline-warning" type="submit" value="Delete key"
-          onClick="return confirm('Really delete this key: ${k.kid}?')">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__action" value="delete_key" />
+            <input type="hidden" name="kid" value="${k.kid}" />
+            ${k.kid}
+            <input
+              class="btn btn-xs btn-outline-warning"
+              type="submit"
+              value="Delete key"
+              onClick="return confirm('Really delete this key: ${k.kid}?')"
+            />
           </form>
         </li>`;
       })}

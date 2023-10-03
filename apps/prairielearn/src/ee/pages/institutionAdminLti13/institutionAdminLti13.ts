@@ -92,7 +92,6 @@ router.post(
         keystore: keystore.toJSON(true),
       });
       flash('success', `Key ${kid} added.`);
-
     } else if (req.body.__action === 'delete_keys') {
       await queryAsync(sql.update_keystore, {
         lti13_instance_id: req.params.lti13_instance_id,
@@ -100,7 +99,6 @@ router.post(
         keystore: null,
       });
       flash('success', `All keys deleted.`);
-
     } else if (req.body.__action === 'delete_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
         lti13_instance_id: req.params.lti13_instance_id,
@@ -120,7 +118,6 @@ router.post(
           // true to include private keys
           keystore: keystore.toJSON(true),
         });
-
       } else {
         throw error.make(400, 'error removing key', {
           locals: res.locals,
@@ -128,16 +125,12 @@ router.post(
         });
       }
       flash('success', `Key ${key.kid} deleted.`);
-
     } else if (req.body.__action === 'update_platform') {
-
       const url = getCanonicalHost(req);
 
       const client_params = {
         client_id: req.body.client_id || null,
-        redirect_uris: [
-          `${url}/pl/lti13_instance/${req.params.lti13_instance_id}/auth/callback`,
-        ],
+        redirect_uris: [`${url}/pl/lti13_instance/${req.params.lti13_instance_id}/auth/callback`],
         token_endpoint_auth_method: 'private_key_jwt',
         token_endpoint_auth_signing_alg: 'RS256',
       };
@@ -152,7 +145,6 @@ router.post(
       flash('success', `Platform updated.`);
 
       // TODO: Saving changes should remove the cached value in auth
-
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(
         sql.insert_instance,
@@ -167,7 +159,6 @@ router.post(
       flash('success', `Instance #${new_li} added.`);
 
       return res.redirect(`/pl/institution/${req.params.institution_id}/admin/lti13/${new_li}`);
-
     } else if (req.body.__action === 'update_name') {
       await queryAsync(sql.update_name, {
         name: req.body.name,
@@ -175,7 +166,6 @@ router.post(
         lti13_instance_id: req.params.lti13_instance_id,
       });
       flash('success', `Name updated.`);
-
     } else if (req.body.__action === 'save_pl_config') {
       await queryAsync(sql.update_pl_config, {
         name_attribute: req.body.name_attribute,
@@ -185,14 +175,12 @@ router.post(
         lti13_instance_id: req.params.lti13_instance_id,
       });
       flash('success', `PrairieLearn config updated.`);
-
     } else if (req.body.__action === 'remove_instance') {
       await queryAsync(sql.remove_instance, {
         institution_id: req.params.institution_id,
         lti13_instance_id: req.params.lti13_instance_id,
       });
       flash('success', `Instance deleted.`);
-
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,

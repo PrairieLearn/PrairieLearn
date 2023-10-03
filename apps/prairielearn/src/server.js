@@ -1254,10 +1254,7 @@ module.exports.initExpress = function () {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-      const hasLti13 = await features.enabledFromLocals(
-        'lti13',
-        res.locals,
-      );
+      const hasLti13 = await features.enabledFromLocals('lti13', res.locals);
       res.locals.lti13_enabled = hasLti13 && isEnterprise();
       next();
     }),
