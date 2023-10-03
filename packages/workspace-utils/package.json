@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/workspace-utils",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "private": true,
   "main": "./dist/index.js",
   "repository": {
@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.17.12",
+    "@types/node": "^18.18.2",
     "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   },
