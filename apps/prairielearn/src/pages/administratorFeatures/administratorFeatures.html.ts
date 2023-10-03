@@ -118,28 +118,37 @@ export function AdministratorFeature({
             </div>
             ${featureInConfig != null
               ? html`
-                  <div class="card-body text-center">
-                    <i
-                      class="fa-solid mr-1 ${featureInConfig
-                        ? 'fa-check text-success'
-                        : 'fa-times text-danger'}"
-                    ></i>
-                    Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
+                  <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                      <i
+                        class="fa-solid mr-1 ${featureInConfig
+                          ? 'fa-check text-success'
+                          : 'fa-times text-danger'}"
+                      ></i>
+                      Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
+                    </div>
                   </div>
                 `
-              : featureGrants.length > 0
+              : ''}
+            ${featureGrants.length > 0
               ? html`
-                  <div class="list-group list-group-flush">
+                  <div
+                    class="list-group list-group-flush ${featureInConfig == null
+                      ? ''
+                      : 'text-muted'}"
+                  >
                     ${featureGrants.map((featureGrant) => {
                       return FeatureGrant({ featureGrant });
                     })}
                   </div>
                 `
-              : html`
+              : featureInConfig == null
+              ? html`
                   <div class="card-body text-center text-secondary">
                     There are no grants for this feature
                   </div>
-                `}
+                `
+              : ''}
           </div>
         </main>
       </body>
