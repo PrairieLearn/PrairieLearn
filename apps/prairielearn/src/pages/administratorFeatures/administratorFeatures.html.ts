@@ -135,7 +135,7 @@ export function AdministratorFeature({
                   <div
                     class="list-group list-group-flush ${featureInConfig == null
                       ? ''
-                      : 'text-muted'}"
+                      : 'border-top-0 text-muted'}"
                   >
                     ${featureGrants.map((featureGrant) => {
                       return FeatureGrant({ featureGrant });
