@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
 
 import authzIsAdministrator = require('../../middlewares/authzIsAdministrator');
 import generalRouter from '../pages/institutionAdminGeneral/institutionAdminGeneral';
@@ -7,6 +8,9 @@ import courseRouter from '../pages/institutionAdminCourse/institutionAdminCourse
 import courseInstanceRouter from '../pages/institutionAdminCourseInstance/institutionAdminCourseInstance';
 import ssoRouter from '../pages/institutionAdminSso/institutionAdminSso';
 import samlRouter from '../pages/institutionAdminSaml/institutionAdminSaml';
+import lti13Router from '../pages/institutionAdminLti13/institutionAdminLti13';
+import { features } from '../../lib/features';
+import { isEnterprise } from '../../lib/license';
 
 const router = Router({ mergeParams: true });
 
@@ -15,11 +19,18 @@ const router = Router({ mergeParams: true });
 // We should change this in the future.
 router.use(authzIsAdministrator);
 
-router.use((req, res, next) => {
-  // The navbar relies on this property.
-  res.locals.urlPrefix = req.baseUrl;
-  next();
-});
+router.use(
+  asyncHandler(async (req, res, next) => {
+    // The navbar relies on this property.
+    res.locals.urlPrefix = req.baseUrl;
+
+    const hasLti13 = await features.enabled(
+      'lti13',
+      { institution_id: req.params.institution_id },
+    );
+    res.locals.lti13_enabled = hasLti13 && isEnterprise();
+    next();
+}));
 
 router.use('/', generalRouter);
 router.use('/courses', coursesRouter);
@@ -27,5 +38,6 @@ router.use('/course/:course_id', courseRouter);
 router.use('/course_instance/:course_instance_id', courseInstanceRouter);
 router.use('/sso', ssoRouter);
 router.use('/saml', samlRouter);
+router.use('/lti13', lti13Router);
 
 export default router;
