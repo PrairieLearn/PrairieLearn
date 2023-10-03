@@ -1,16 +1,11 @@
 import { Router } from 'express';
 import lti13InstanceRouter from '../pages/lti13Instance/lti13Instance';
-<<<<<<< HEAD
 import { Lti13InstanceSchema } from '../../lib/db-types';
 import asyncHandler = require('express-async-handler');
-=======
 //import lti13Auth from '../auth/lti13/lti13auth';
 //import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
-import { Lti13InstanceSchema } from '../../lib/db-types';
-import asyncHandler = require('express-async-handler');
-import middlewareAuthn = require('../../middlewares/authn');
-import csrfToken = require('../../middlewares/csrfToken');
->>>>>>> 4d3a154ef (fix merge stuff)
+//import middlewareAuthn = require('../../middlewares/authn');
+//import csrfToken = require('../../middlewares/csrfToken');
 import logRequest = require('../../middlewares/logRequest');
 import { features } from '../../lib/features';
 
