@@ -324,3 +324,16 @@ def test_traverse_and_replace_script() -> None:
 
     html = traverse_and_replace('<script>""</script>', replace)
     assert html == '<script>""</script>'
+
+
+def test_traverse_and_replace_script_complex() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    test_str = (
+        '<script>const test = "&quot;";</script>'
+        '<style>.class-a > .class-b::before { content: "a &gt; b"; }</style>'
+    )
+
+    html = traverse_and_replace(test_str, replace)
+    assert html == test_str
