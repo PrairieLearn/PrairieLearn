@@ -58,7 +58,7 @@ router.get(
         feature: req.params.feature,
         featureGrants,
         institutions,
-        featureInConfig: req.params.feature in config.features,
+        featureInConfig: config.features[req.params.feature] ?? null,
         resLocals: res.locals,
       }),
     );

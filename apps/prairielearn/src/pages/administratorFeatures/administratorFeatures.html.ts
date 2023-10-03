@@ -78,7 +78,7 @@ export function AdministratorFeature({
   feature: string;
   institutions: Institution[];
   featureGrants: FeatureGrantRow[];
-  featureInConfig: boolean;
+  featureInConfig: boolean | null;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -116,11 +116,11 @@ export function AdministratorFeature({
                 Grant feature
               </button>
             </div>
-            ${featureInConfig
+            ${featureInConfig != null
               ? html`
                   <div class="card-body text-center">
                     <i class="fas fa-check text-success"></i>
-                    Feature enabled in configuration file
+                    Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
                   </div>
                 `
               : featureGrants.length > 0
