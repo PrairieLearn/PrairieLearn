@@ -18,19 +18,14 @@ WITH
       bool_or(aqrp.can_view) AS can_user_view,
       bool_or(aqrp.can_submit) AS can_user_submit
     FROM
-      instance_questions AS iq
-      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+      instance_questions AS current_iq
+      JOIN instance_questions AS iq ON (
+        iq.assessment_instance_id = current_iq.assessment_instance_id
+      )
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN assessment_question_role_permissions AS aqrp ON (aqrp.assessment_question_id = aq.id)
     WHERE
-      ai.id IN (
-        SELECT
-          assessment_instance_id
-        FROM
-          instance_questions
-        WHERE
-          id = $instance_question_id
-      )
+      current_iq.id = $instance_question_id
       AND aqrp.group_role_id IN (
         SELECT
           *
@@ -58,19 +53,15 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+      JOIN instance_questions AS current_iq ON (current_iq.assessment_instance_id = ai.id)
+      JOIN instance_questions AS iq ON (
+        iq.assessment_instance_id = current_iq.assessment_instance_id
+      )
       JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       LEFT JOIN visibility_info AS vi ON (vi.instance_question_id = iq.id)
     WHERE
-      ai.id IN (
-        SELECT
-          assessment_instance_id
-        FROM
-          instance_questions
-        WHERE
-          id = $instance_question_id
-      )
+      current_iq.id = $instance_question_id
       AND (
         vi.can_user_view IS NULL
         OR vi.can_user_view = true

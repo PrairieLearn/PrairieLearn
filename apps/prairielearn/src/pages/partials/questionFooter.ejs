@@ -21,13 +21,7 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-            <%
-            let invalidRoleConfig = false;
-            if (typeof groupConfig !== 'undefined' && groupConfig.has_roles && typeof rolesInfo !== 'undefined') {
-              invalidRoleConfig = rolesInfo.validationErrors.length > 0 || !rolesInfo.rolesAreBalanced || rolesInfo.usersWithoutRoles.length > 0;
-            }
-            %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton || invalidRoleConfig ? "disabled" : "" %> name="__action" value="grade">Save & Grade
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton || (typeof rolesInfo !== 'undefined' && !rolesInfo.validRoleConfig) ? "disabled" : "" %> name="__action" value="grade">Save & Grade
             <% if (variantAttemptsTotal > 0) { %>
                <% if (variantAttemptsLeft > 1) { %>
                <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
@@ -40,13 +34,14 @@
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
             </button>
-            <% if (question_context != 'instructor' && (disableGradeButton || invalidRoleConfig)) { %>
+            <% if (question_context != 'instructor' && (disableGradeButton || (typeof rolesInfo !== 'undefined' && !rolesInfo.validRoleConfig))) { %>
               <%
               let lockedPopoverText;
-              if (invalidRoleConfig) {
+              if (typeof rolesInfo !== 'undefined' && !rolesInfo.validRoleConfig) {
                 lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is correct."
               } else {
-                lockedPopoverText = "You are not assigned a role that can submit this question."
+                const userRoleConig = rolesInfo.roleAssignments[user.uid].map((r) => r.role_name).join(', ');
+                lockedPopoverText = `Your current role configuration (${userRoleConig}) does not have permission to submit this question.`
               }
               %>
               <a tabindex="0" class="btn btn-xs border mx-1 order-last" data-toggle="popover" data-trigger="focus" data-container="body" data-html="true" data-placement="auto" data-content="<%= lockedPopoverText %>" aria-label="Locked">
