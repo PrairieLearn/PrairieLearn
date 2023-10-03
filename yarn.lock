@@ -3229,7 +3229,7 @@ __metadata:
     fast-glob: ^3.3.1
     fetch-cookie: ^2.1.0
     file-type: ^16.5.4
-    filesize: ^10.0.12
+    filesize: ^10.1.0
     folder-hash: ^4.0.4
     form-data: ^4.0.0
     fs-extra: ^11.1.1
@@ -3463,7 +3463,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.18.2
     fast-glob: ^3.3.1
-    filesize: ^10.0.12
+    filesize: ^10.1.0
     typescript: ^5.2.2
     typescript-cp: ^0.1.9
   languageName: unknown
@@ -8986,10 +8986,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"filesize@npm:^10.0.12":
-  version: 10.0.12
-  resolution: "filesize@npm:10.0.12"
-  checksum: 1719683813fabf8afb39133871b80dcc71f31695c70b866814d7fd15151888fc3405d6ca0b9ac2665c59c046e7104e8776e938e6f5c68b2fda060d35d256416b
+"filesize@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "filesize@npm:10.1.0"
+  checksum: 8dd35fe85ebc56e9ee99b6814a854f5d5ee12d09a05cf38ebc1865b5efca128a2bb7480d3c2e841a3d20d45c756fc669efecbf65b6842afd75b7f20648306654
   languageName: node
   linkType: hard
 

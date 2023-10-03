@@ -90,7 +90,7 @@
     "fast-glob": "^3.3.1",
     "fetch-cookie": "^2.1.0",
     "file-type": "^16.5.4",
-    "filesize": "^10.0.12",
+    "filesize": "^10.1.0",
     "folder-hash": "^4.0.4",
     "fs-extra": "^11.1.1",
     "generic-pool": "^3.9.0",
