@@ -116,39 +116,35 @@ export function AdministratorFeature({
                 Grant feature
               </button>
             </div>
-            ${featureInConfig != null
+            ${featureGrants.length > 0 || featureInConfig != null
               ? html`
                   <div class="list-group list-group-flush">
-                    <div class="list-group-item">
-                      <i
-                        class="fa-solid mr-1 ${featureInConfig
-                          ? 'fa-check text-success'
-                          : 'fa-times text-danger'}"
-                      ></i>
-                      Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
-                    </div>
-                  </div>
-                `
-              : ''}
-            ${featureGrants.length > 0
-              ? html`
-                  <div
-                    class="list-group list-group-flush ${featureInConfig == null
-                      ? ''
-                      : 'border-top-0 text-muted'}"
-                  >
+                    ${featureInConfig != null
+                      ? html`
+                          <div class="list-group-item">
+                            <i
+                              class="fa-solid mr-1 ${featureInConfig
+                                ? 'fa-check text-success'
+                                : 'fa-times text-danger'}"
+                            ></i>
+                            Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration
+                            file
+                          </div>
+                        `
+                      : ''}
                     ${featureGrants.map((featureGrant) => {
-                      return FeatureGrant({ featureGrant });
+                      return FeatureGrant({
+                        featureGrant,
+                        extraClass: featureInConfig != null ? 'text-muted' : '',
+                      });
                     })}
                   </div>
                 `
-              : featureInConfig == null
-              ? html`
+              : html`
                   <div class="card-body text-center text-secondary">
                     There are no grants for this feature
                   </div>
-                `
-              : ''}
+                `}
           </div>
         </main>
       </body>
@@ -207,9 +203,15 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
   `;
 }
 
-function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
+function FeatureGrant({
+  featureGrant,
+  extraClass,
+}: {
+  featureGrant: FeatureGrantRow;
+  extraClass: string;
+}) {
   return html`
-    <div class="list-group-item d-flex flex-row align-items-center">
+    <div class="list-group-item d-flex flex-row align-items-center ${extraClass}">
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
     </div>
   `;
