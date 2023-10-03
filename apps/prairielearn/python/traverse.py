@@ -28,7 +28,7 @@ VOID_ELEMENTS = frozenset(
     }
 )
 
-UNESCAPED_ELEMENTS = frozenset({"script"})
+UNESCAPED_ELEMENTS = frozenset({"script", "style"})
 
 
 def traverse_and_execute(
