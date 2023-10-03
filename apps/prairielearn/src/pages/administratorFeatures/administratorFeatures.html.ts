@@ -119,7 +119,11 @@ export function AdministratorFeature({
             ${featureInConfig != null
               ? html`
                   <div class="card-body text-center">
-                    <i class="fas fa-check text-success"></i>
+                    <i
+                      class="fas ${featureInConfig
+                        ? 'fa-check text-success'
+                        : 'fa-times text-danger'}"
+                    ></i>
                     Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration file
                   </div>
                 `
