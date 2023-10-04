@@ -6,7 +6,7 @@ import { QuestionsPageDataAnsified } from '../models/questions';
 
 export function importBootstrapTable() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it this
+  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
   return html`
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
     <script src="${nodeModulesAssetPath(
