@@ -4,6 +4,11 @@
 const outputComponent = 'output/svg';
 
 window.MathJax = {
+  options: {
+    // We previously documented the `tex2jax_ignore` class, so we'll keep
+    // supporting it for backwards compatibility.
+    ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore',
+  },
   tex: {
     inlineMath: [
       ['$', '$'],

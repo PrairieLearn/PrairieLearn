@@ -5,7 +5,7 @@ const async = require('async');
 const ejs = require('ejs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const z = require('zod');
+const { z } = require('zod');
 
 const error = require('@prairielearn/error');
 const question = require('../lib/question');
@@ -69,10 +69,12 @@ module.exports = {
   renderText(assessment, urlPrefix) {
     if (!assessment.text) return null;
 
+    const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
+
     var context = {
-      clientFilesCourse: urlPrefix + '/clientFilesCourse',
-      clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
-      clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessment',
+      clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
+      clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
+      clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
     };
     return ejs.render(assessment.text, context);
   },
@@ -359,6 +361,7 @@ module.exports = {
           if (!_(content.grading).isObject()) {
             return callback(error.makeWithData('invalid grading', { content: content }));
           }
+
           if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
             return callback(
               error.makeWithData('invalid grading.feedback', {
@@ -367,11 +370,25 @@ module.exports = {
             );
           }
 
-          const succeeded = !!_.get(content, 'grading.feedback.results.succeeded', true);
-          let gradable = !!_.get(content, 'grading.feedback.results.gradable', true);
+          // There are two "succeeded" flags in the grading results. The first
+          // is at the top level and is set by `grader-host`; the second is in
+          // `results` and is set by course code.
+          //
+          // If the top-level flag is false, that means there was a serious
+          // error in the grading process and we should treat the submission
+          // as not gradable. This avoids penalizing students for issues outside
+          // their control.
+          const jobSucceeded = !!content.grading?.feedback?.succeeded;
+
+          const succeeded = !!(content.grading.feedback?.results?.succeeded ?? true);
           if (!succeeded) {
             content.grading.score = 0;
           }
+
+          // The submission is only gradable if the job as a whole succeeded
+          // and the course code marked it as gradable. We default to true for
+          // backwards compatibility with graders that don't set this flag.
+          let gradable = jobSucceeded && !!(content.grading.feedback?.results?.gradable ?? true);
 
           if (gradable) {
             // We only care about the score if it is gradable.

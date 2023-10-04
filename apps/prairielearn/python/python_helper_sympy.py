@@ -3,7 +3,7 @@ import copy
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
+from typing import Any, Callable, Literal, Type, TypedDict, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -12,11 +12,12 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     stringify_expr,
 )
+from text_unidecode import unidecode
 from typing_extensions import NotRequired
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Union[Callable, sympy.Basic]]
+SympyMapT = dict[str, Callable | sympy.Basic]
 ASTWhiteListT = tuple[Type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
@@ -365,6 +366,7 @@ def evaluate_with_source(
     # for exponentiation. In Python, only the latter can be used.
     # Also replace the unicode minus with the normal one.
     expr = expr.replace("^", "**").replace("\u2212", "-")
+    expr = unidecode(expr)
 
     local_dict = {
         k: v
@@ -420,13 +422,13 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
         expr,
@@ -441,13 +443,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -599,14 +601,14 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: None | list[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    imaginary_unit: Optional[str] = None,
-) -> Optional[str]:
+    custom_functions: None | list[str] = None,
+    imaginary_unit: None | str = None,
+) -> None | str:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
@@ -696,7 +698,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: Optional[str]) -> list[str]:
+def get_items_list(items_string: None | str) -> list[str]:
     if items_string is None:
         return []
 

@@ -284,11 +284,11 @@ describe('Question Sharing', function () {
         qid: sharedQuestionQid,
       });
       const questionSettingsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${result.rows[0].id}/settings`;
-      let res = await helperClient.fetchCheerio(questionSettingsUrl);
-      assert(res.ok);
+      const resGet = await helperClient.fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
 
-      const token = res.$('#test_csrf_token').text();
-      res = await fetch(questionSettingsUrl, {
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'sharing_set_add',
@@ -297,7 +297,7 @@ describe('Question Sharing', function () {
         }),
       });
 
-      assert(res.ok);
+      assert(resPost.ok);
       const settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
       assert(settingsPageResponse.text().includes('share-set-example'));
     });

@@ -1,6 +1,6 @@
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
-const z = require('zod');
+const { z } = require('zod');
 const _ = require('lodash');
 
 const WorkspaceSchema = z.object({

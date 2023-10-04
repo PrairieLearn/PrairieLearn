@@ -74,7 +74,9 @@ BEGIN
     auto_points := least(auto_points, aq.max_auto_points);
 
     -- status
-    IF correct THEN
+    IF auto_points >= aq.max_auto_points AND aq.max_manual_points = 0 THEN
+        status := 'complete';
+    ELSIF correct AND iq.status != 'complete' THEN
         status := 'correct';
     ELSE
         -- use current status unless it's 'unanswered' or 'saved'

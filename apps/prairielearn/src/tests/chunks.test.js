@@ -1,6 +1,5 @@
 // @ts-check
 const assert = require('chai').assert;
-const util = require('util');
 const tmp = require('tmp-promise');
 const fs = require('fs-extra');
 const path = require('path');
@@ -294,7 +293,7 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await util.promisify(helperServer.before(tempTestCourseDir.path).bind(this))();
+      await helperServer.before(tempTestCourseDir.path).call(this);
 
       // Find the ID of this course
       const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
@@ -328,7 +327,7 @@ describe('chunks', () => {
       } catch (err) {
         console.error(err);
       }
-      await util.promisify(helperServer.after.bind(this))();
+      await helperServer.after.call(this);
 
       config.chunksConsumer = false;
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;

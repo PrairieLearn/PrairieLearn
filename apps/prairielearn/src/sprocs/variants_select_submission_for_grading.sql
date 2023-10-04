@@ -46,7 +46,7 @@ BEGIN
     IF NOT FOUND THEN RETURN; END IF; -- no submissions
 
     IF check_submission_id IS NOT NULL and check_submission_id != submission.id THEN
-        RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
+        RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id USING ERRCODE = 'ST400';
     END IF;
 
     -- mark submission as regradable
