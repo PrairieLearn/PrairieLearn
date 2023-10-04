@@ -21,17 +21,7 @@ router.get(
       res.locals.authz_data.course_instances,
     );
 
-    let needToSync = false;
-    try {
-      await util.promisify(fs.access)(res.locals.course.path);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        needToSync = true;
-      } else {
-        throw err;
-      }
-    }
-
+    const needToSync = !(await fs.pathExists(res.locals.course.path))
     res.send(
       QuestionsPage({
         questions: questions,
