@@ -103,7 +103,7 @@ onDocumentReady(() => {
   let assessmentsByCourseInstanceFormatter = function (ci_id, question) {
     var ci_assessments = _.filter(
       question.assessments ?? [],
-      (assessment) => assessment.course_instance_id === ci_id,
+      (assessment) => assessment.course_instance_id.toString() === ci_id.toString(),
     );
     return _.map(ci_assessments, (assessment) =>
       html`<a
