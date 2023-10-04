@@ -1,6 +1,4 @@
 import { Router } from 'express';
-// import util = require('util');
-// import fs = require('fs-extra');
 import { QuestionsPage } from './publicQuestions.html';
 import { selectPublicQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');
@@ -22,10 +20,6 @@ router.get(
     // TODO verify that the course has sharing enabled, if not then 404!
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
-
-    // TODO: do we actually need this check for the public page? probably not
-    // await util.promisify(fs.access)(res.locals.course.path);
-
     res.send(
       QuestionsPage({
         questions: questions,
