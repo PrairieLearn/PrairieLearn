@@ -115,7 +115,7 @@ describe('Instructor questions', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = decodeBrowserData(locals.$('#questions-data')).questions;
+      questionData = decodeBrowserData(locals.$('#questions-table-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -164,7 +164,7 @@ describe('Instructor questions', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = decodeBrowserData(locals.$('#questions-data')).questions;
+      questionData = decodeBrowserData(locals.$('#questions-table-data')).questions;
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });

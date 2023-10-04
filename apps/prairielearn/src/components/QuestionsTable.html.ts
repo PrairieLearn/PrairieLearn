@@ -34,7 +34,7 @@ export function QuestionsTable({
   const course_instances_client_data = (course_instances || []).map((course_instance) => ({
     id: course_instance.id.toString(),
     short_name: course_instance.short_name,
-    current: idsEqual(current_course_instance.id, course_instance.id),
+    current: idsEqual(current_course_instance?.id, course_instance.id),
   }));
   return html`
     ${EncodedData(
