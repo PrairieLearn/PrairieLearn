@@ -33,6 +33,8 @@
         <%- include('navbarInstructor'); %>
       <% } else if (navbarType == 'institution') { %>
         <%- include('navbarInstitution'); %>
+      <% } else if (navbarType == 'public') { %>
+        <%- include('navbarPublic'); %>
       <% } else { %>
         <% throw new Error('Unknown navbarType: ' + navbarType); %>
       <% } %>
@@ -306,7 +308,7 @@
             <% } else { %>
               title="News"
               aria-label="News"
-            <% } %>  
+            <% } %>
           >
             News
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
