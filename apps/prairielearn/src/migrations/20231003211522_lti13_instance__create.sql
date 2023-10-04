@@ -1,4 +1,3 @@
--- Don't hard code authn_provider.id?
 INSERT INTO
   authn_providers
 VALUES
@@ -24,6 +23,8 @@ CREATE TABLE IF NOT EXISTS
     access_tokenset jsonb,
     access_token_expires_at timestamptz
   );
+
+CREATE INDEX IF NOT EXISTS pl_lti13_instances_institution_id_idx ON pl_lti13_instances (institution_id);
 
 CREATE TABLE IF NOT EXISTS
   pl_lti13_platform_defaults (

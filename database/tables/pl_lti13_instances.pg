@@ -18,6 +18,7 @@ columns
 
 indexes
     pl_lti13_instances_pkey: PRIMARY KEY (id) USING btree (id)
+    pl_lti13_instances_institution_id_idx: USING btree (institution_id)
 
 foreign-key constraints
     pl_lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
