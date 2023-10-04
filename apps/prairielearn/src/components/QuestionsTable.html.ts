@@ -1,12 +1,12 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
-import { nodeModulesAssetPath, compiledStylesheetPath } from '../lib/assets';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
+import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
 
-function importBootstrapTable() {
+export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it this
+  // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
   return html`
     <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
     <script src="${nodeModulesAssetPath(
@@ -15,6 +15,9 @@ function importBootstrapTable() {
     <script src="${nodeModulesAssetPath(
         'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
       )}"></script>
+
+    ${compiledScriptTag('instructorQuestionsClient.ts')}
+    ${compiledStylesheetTag('questionsTable.css')}
   `;
 }
 
@@ -44,9 +47,6 @@ export function QuestionsTable({
       { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
       'questions-table-data',
     )}
-    ${importBootstrapTable()}
-
-    <link href="${compiledStylesheetPath('questionsTable.css')}" rel="stylesheet" />
 
     <div class="card mb-4">
       <div class="card-header bg-primary">

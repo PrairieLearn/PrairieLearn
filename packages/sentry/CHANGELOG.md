@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 1.1.1
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
 ## 1.1.0
 
 ### Minor Changes
