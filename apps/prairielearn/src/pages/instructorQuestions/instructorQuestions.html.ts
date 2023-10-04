@@ -1,7 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { QuestionsTable, importBootstrapTable } from '../../components/QuestionsTable.html';
-import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets';
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html';
 import { QuestionsPageDataAnsified } from '../../models/questions';
 
 export const QuestionsPage = ({
@@ -18,8 +17,7 @@ export const QuestionsPage = ({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
-        ${compiledScriptTag('instructorQuestionsClient.ts')}
-        ${compiledStylesheetTag('questionsTable.css')} ${importBootstrapTable()}
+        ${QuestionsTableHead()}
       </head>
 
       <body>
