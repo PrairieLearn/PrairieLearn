@@ -67,9 +67,6 @@ router.get(
 router.post(
   '/:lti13_instance_id?',
   asyncHandler(async (req, res) => {
-    //console.log(req.params);
-    //console.log(req.body);
-
     if (req.body.__action === 'add_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
         lti13_instance_id: req.params.lti13_instance_id,
@@ -119,7 +116,7 @@ router.post(
           keystore: keystore.toJSON(true),
         });
       } else {
-        throw error.make(400, 'error removing key', {
+        throw error.make(500, 'error removing key', {
           locals: res.locals,
           body: req.body,
         });
