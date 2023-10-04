@@ -39,9 +39,9 @@
               let lockedPopoverText;
               if (typeof rolesInfo !== 'undefined' && !rolesInfo.validRoleConfig) {
                 lockedPopoverText = "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is correct."
-              } else {
-                const userRoleConig = rolesInfo.roleAssignments[user.uid].map((r) => r.role_name).join(', ');
-                lockedPopoverText = `Your current role configuration (${userRoleConig}) does not have permission to submit this question.`
+              } else if (typeof rolesInfo !== 'undefined') {
+                const userRoleConfig = rolesInfo.roleAssignments[user.uid].map((r) => r.role_name).join(', ');
+                lockedPopoverText = `Your current role configuration (${userRoleConfig}) does not have permission to submit this question.`
               }
               %>
               <a tabindex="0" class="btn btn-xs border mx-1 order-last" data-toggle="popover" data-trigger="focus" data-container="body" data-html="true" data-placement="auto" data-content="<%= lockedPopoverText %>" aria-label="Locked">

@@ -355,7 +355,7 @@ describe('Assessment instance with group roles & permissions', function () {
         const popoverText = $(element).find('[data-toggle="popover"]').attr('data-content');
         assert.strictEqual(
           popoverText,
-          "Your current group role doesn't have permission to view this question.",
+          'Your current role configuration (Manager) does not have permission to view this question.',
         );
       });
 
@@ -418,7 +418,7 @@ describe('Assessment instance with group roles & permissions', function () {
       const popoverContent = popover.data('content');
       assert.strictEqual(
         popoverContent,
-        'You are not assigned a role that can submit this question.',
+        'Your current role configuration (Manager) does not have permission to submit this question.',
       );
 
       // Save button should be disabled without correct permission
