@@ -175,17 +175,6 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // Toggle devMode top menu for LTI sessions
-  app.use((req, res, next) => {
-    if (config.devMode && isEnterprise() && 'lti13_claims' in req.session) {
-      res.locals.ltiFrame = true;
-      res.locals.lti13_claims = req.session.lti13_claims;
-    } else {
-      res.locals.ltiFrame = false;
-    }
-    next();
-  });
-
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
