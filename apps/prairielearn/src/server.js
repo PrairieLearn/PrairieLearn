@@ -1788,7 +1788,7 @@ module.exports.initExpress = function () {
       next();
     },
   ]);
-    app.use('/pl/public/course/:course_id/question/:question_id/preview', [
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [
     function (req, res, next) {
       res.locals.navPage = 'public_question';
       res.locals.navSubPage = 'preview';
