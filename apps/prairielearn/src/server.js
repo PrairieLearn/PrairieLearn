@@ -1243,8 +1243,6 @@ module.exports.initExpress = function () {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-      const hasLti13 = await features.enabledFromLocals('lti13', res.locals);
-      res.locals.lti13_enabled = hasLti13 && isEnterprise();
       next();
     }),
   );
@@ -1283,7 +1281,6 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti'),
   ]);
-
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_edit', [
     function (req, res, next) {
       res.locals.navSubPage = 'file_edit';
