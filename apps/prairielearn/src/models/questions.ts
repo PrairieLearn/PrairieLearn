@@ -7,6 +7,7 @@ import {
   AssessmentsFormatForQuestionSchema,
 } from '../lib/db-types';
 import { z } from 'zod';
+import { idsEqual } from '../lib/id';
 
 const QuestionsPageDataSchema = z.object({
   id: z.string(),
@@ -44,14 +45,14 @@ export async function selectQuestionsForCourse(
     QuestionsPageDataSchema,
   );
 
-  const ci_ids = course_instances.map((ci) => ci.id);
   const questions = rows.map((row) => ({
     ...row,
     sync_errors_ansified: row.sync_errors && ansiUp.ansi_to_html(row.sync_errors),
     sync_warnings_ansified: row.sync_warnings && ansiUp.ansi_to_html(row.sync_warnings),
-    assessments: row.assessments
-      ? row.assessments.filter((assessment) => ci_ids.includes(assessment.course_instance_id))
-      : null,
+    assessments:
+      row.assessments?.filter((assessment) =>
+        course_instances.some((ci) => idsEqual(ci.id, assessment.course_instance_id)),
+      ) ?? null,
   }));
   return questions;
 }
