@@ -1,0 +1,10 @@
+columns
+    client_params: jsonb
+    custom_params: jsonb
+    display_order: integer
+    id: bigint not null default nextval('pl_lti13_platform_defaults_id_seq'::regclass)
+    issuer_params: jsonb
+    platform: text not null default 'Unknown'::text
+
+indexes
+    pl_lti13_platform_defaults_pkey: PRIMARY KEY (id) USING btree (id)

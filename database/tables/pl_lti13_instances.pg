@@ -1,0 +1,23 @@
+columns
+    access_token_expires_at: timestamp with time zone
+    access_tokenset: jsonb
+    client_params: jsonb
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    custom_params: jsonb
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('pl_lti13_instances_id_seq'::regclass)
+    institution_id: bigint not null
+    issuer_params: jsonb
+    keystore: jsonb
+    name: text
+    name_attribute: text
+    platform: text
+    tool_platform_name: text
+    uid_attribute: text
+    uin_attribute: text
+
+indexes
+    pl_lti13_instances_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pl_lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL

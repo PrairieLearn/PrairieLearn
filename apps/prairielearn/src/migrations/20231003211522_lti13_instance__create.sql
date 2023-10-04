@@ -8,7 +8,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS
   pl_lti13_instances (
     id bigserial PRIMARY KEY,
-    institution_id BIGINT REFERENCES institutions ON DELETE CASCADE ON UPDATE CASCADE,
+    institution_id BIGINT NOT NULL REFERENCES institutions ON UPDATE CASCADE ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     deleted_at timestamptz,
     platform text,
