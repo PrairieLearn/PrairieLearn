@@ -1,5 +1,11 @@
 # @prairielearn/flash
 
+## 1.0.6
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
 ## 1.0.5
 
 ### Patch Changes

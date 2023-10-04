@@ -14,6 +14,7 @@ import {
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
+// TODO Import types from models and db-types
 interface Assessment {
   assessment_id: string;
   course_instance_id: string;
@@ -71,7 +72,7 @@ Tabulator.registerModule([
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances } =
-    decodeData<QuestionsData>('questions-data');
+    decodeData<QuestionsData>('questions-table-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
     layout: 'fitData',
@@ -276,7 +277,7 @@ onDocumentReady(() => {
 });
 
 function qidFormatter(cell: CellComponent): string {
-  const { urlPrefix } = decodeData<QuestionsData>('questions-data');
+  const { urlPrefix } = decodeData<QuestionsData>('questions-table-data');
   const question: Question = cell.getRow().getData();
   let text = '';
   if (question.sync_errors) {
