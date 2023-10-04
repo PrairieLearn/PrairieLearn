@@ -218,7 +218,7 @@ router.post('/', function (req, res, next) {
           next(error.make(403, 'Access denied (feature not available)'));
         }
         sqldb.queryZeroOrOneRow(
-          sql.share_publicly,
+          sql.update_question_shared_publicly,
           {
             course_id: res.locals.course.id,
             question_id: res.locals.question.id,

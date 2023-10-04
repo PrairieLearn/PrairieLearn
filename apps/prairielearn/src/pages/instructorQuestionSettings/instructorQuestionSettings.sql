@@ -92,7 +92,7 @@ WHERE
   AND ss.id = $unsafe_sharing_set_id
   AND q.id = $question_id;
 
--- BLOCK share_publicly
+-- BLOCK update_question_shared_publicly
 UPDATE questions
 SET
   shared_publicly = TRUE
