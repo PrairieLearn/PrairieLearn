@@ -4,7 +4,6 @@ import error = require('@prairielearn/error');
 import { logger } from '@prairielearn/logger';
 import sqldb = require('@prairielearn/postgres');
 import { QuestionAddEditor } from '../../lib/editors';
-import util = require('util');
 import fs = require('fs-extra');
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
@@ -21,14 +20,14 @@ router.get(
       res.locals.authz_data.course_instances,
     );
 
-    const needToSync = !(await fs.pathExists(res.locals.course.path))
+    const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions: questions,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
-          !needToSync,
+          courseDirExists,
         resLocals: res.locals,
       }),
     );

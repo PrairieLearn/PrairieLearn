@@ -19,8 +19,7 @@ export const QuestionsPage = ({
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
         ${compiledScriptTag('instructorQuestionsClient.ts')}
-        ${compiledStylesheetTag('questionsTable.css')}
-        ${importBootstrapTable()}
+        ${compiledStylesheetTag('questionsTable.css')} ${importBootstrapTable()}
       </head>
 
       <body>
