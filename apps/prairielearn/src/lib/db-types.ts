@@ -315,3 +315,4 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string().nullable(),
   }),
 );
+export type AssessmentsFormatForQuestion = z.infer<typeof AssessmentsFormatForQuestionSchema>;

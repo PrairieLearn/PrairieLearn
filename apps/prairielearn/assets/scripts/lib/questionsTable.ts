@@ -14,55 +14,19 @@ import {
 import { html } from '@prairielearn/html';
 import { uniq } from 'lodash';
 
-// TODO Import types from models and db-types
-interface Assessment {
-  assessment_id: string;
-  course_instance_id: string;
-  label: string;
-  color: string;
-}
+import { Topic, Tag, SharingSet, AssessmentsFormatForQuestion } from '../../../src/lib/db-types';
+import { QuestionsPageDataAnsified } from '../../../src/models/questions';
+
 interface CourseInstance {
   id: string;
   short_name: string;
   current: boolean;
 }
-interface Topic {
-  id: string;
-  name: string;
-  color: string;
-}
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
-interface SharingSet {
-  id: string;
-  course_id: string;
-  name: string;
-}
-
-interface Question {
-  id: string;
-  qid: string;
-  display_type: string;
-  grading_method: string;
-  external_grading_image: string | null;
-  topic: Topic | null;
-  tags: Tag[] | null;
-  sharing_sets: SharingSet[] | null;
-  assessments: Assessment[] | null;
-  sync_errors: string | null;
-  sync_warnings: string | null;
-  sync_errors_ansified: string | null;
-  sync_warnings_ansified: string | null;
-  open_issue_count: number;
-}
 
 interface QuestionsData {
   plainUrlPrefix: string;
   urlPrefix: string;
-  questions: Question[];
+  questions: QuestionsPageDataAnsified[];
   course_instances: CourseInstance[];
   showSharingSets: boolean;
 }
@@ -225,13 +189,13 @@ onDocumentReady(() => {
       ...course_instances.map((ci) => ({
         field: `assessments_${ci.id}`,
         title: `${ci.short_name} Assessments`,
-        mutator: (_value, data: Question): Assessment[] =>
+        mutator: (_value, data: QuestionsPageDataAnsified): AssessmentsFormatForQuestion =>
           data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()) ??
           [],
         visible: ci.current,
         headerSort: false,
         formatter: (cell: CellComponent) =>
-          (cell.getValue() as Assessment[])
+          (cell.getValue() as AssessmentsFormatForQuestion)
             ?.map((assessment) =>
               html`<a
                 href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${assessment.assessment_id}"
@@ -243,7 +207,7 @@ onDocumentReady(() => {
             .join(' '),
         headerFilter: 'list' as Editor,
         headerFilterPlaceholder: '(All Assessments)',
-        headerFilterFunc: (headerValue: string, rowValue: Assessment[]) =>
+        headerFilterFunc: (headerValue: string, rowValue: AssessmentsFormatForQuestion) =>
           headerValue === '0'
             ? !rowValue?.length
             : rowValue?.some((row) => headerValue === row.label),
@@ -318,7 +282,7 @@ onDocumentReady(() => {
 
 function qidFormatter(cell: CellComponent): string {
   const { urlPrefix } = decodeData<QuestionsData>('questions-table-data');
-  const question: Question = cell.getRow().getData();
+  const question: QuestionsPageDataAnsified = cell.getRow().getData();
   let text = '';
   if (question.sync_errors) {
     text += html`<button
@@ -342,10 +306,10 @@ function qidFormatter(cell: CellComponent): string {
   text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
     >${question.qid}</a
   >`.toString();
-  if (question.open_issue_count > 0) {
+  if (question.open_issue_count !== '0') {
     text += html`<a
       class="badge badge-pill badge-danger ml-1"
-      href="<%= urlPrefix %>/course_admin/issues?q=is%3Aopen+qid%3A${question.qid}"
+      href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}"
       >${question.open_issue_count}</a
     >`.toString();
   }
