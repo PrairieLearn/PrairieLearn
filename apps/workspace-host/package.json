@@ -20,6 +20,7 @@
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
+    "@prairielearn/socket.io-redis-adapter": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@socket.io/redis-adapter": "^8.2.1",
     "archiver": "^6.0.1",

@@ -1,7 +1,7 @@
 // @ts-check
 const { Server } = require('socket.io');
 const redis = require('redis');
-const { createAdapter } = require('@socket.io/redis-adapter');
+const { createAdapter } = require('@prairielearn/socket.io-redis-adapter');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 

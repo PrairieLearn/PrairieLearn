@@ -3147,6 +3147,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/session": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
+    "@prairielearn/socket.io-redis-adapter": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@sa11y/format": ^5.3.0
@@ -3406,7 +3407,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter":
+"@prairielearn/socket.io-redis-adapter@workspace:^, @prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter":
   version: 0.0.0-use.local
   resolution: "@prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter"
   dependencies:
@@ -3437,6 +3438,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/socket.io-redis-adapter": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": ^8.2.1
     "@types/node": ^18.18.2

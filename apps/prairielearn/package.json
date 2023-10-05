@@ -43,6 +43,7 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
+    "@prairielearn/socket.io-redis-adapter": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@sentry/profiling-node": "^1.2.1",
