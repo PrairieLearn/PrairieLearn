@@ -75,6 +75,12 @@ onDocumentReady(() => {
     ).join(' ');
   };
 
+  window.sharingSetFormatter = function (sharing_sets, question) {
+    return _.map(question.sharing_sets ?? [], (sharing_set) =>
+      html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
+    ).join(' ');
+  };
+
   window.versionFormatter = function (version, question) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
       >${question.display_type}</span

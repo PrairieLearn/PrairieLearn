@@ -24,6 +24,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton,
+  questionSharingEnabled,
   current_course_instance,
   course_instances,
   urlPrefix,
@@ -32,6 +33,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
+  questionSharingEnabled: boolean;
   current_course_instance: CourseInstance;
   course_instances: CourseInstance[];
   urlPrefix: string;
@@ -129,20 +131,22 @@ export function QuestionsTable({
             >
               Tags
             </th>
-            <th
-              data-field="sharing_sets"
-              data-sortable="false"
-              data-class="align-middle text-nowrap"
-              data-formatter="tagsFormatter"
-              data-filter-control="select"
-              data-filter-control-placeholder="(All Sharing Sets)"
-              data-filter-data="func:sharingSetsList"
-              data-filter-custom-search="badgeFilterSearch"
-              data-switchable="true"
-              data-visible="false"
-            >
-              Sharing Sets
-            </th>
+            ${questionSharingEnabled
+              ? html` <th
+                  data-field="sharing_sets"
+                  data-sortable="false"
+                  data-class="align-middle text-nowrap"
+                  data-formatter="sharingSetFormatter"
+                  data-filter-control="select"
+                  data-filter-control-placeholder="(All Sharing Sets)"
+                  data-filter-data="func:sharingSetsList"
+                  data-filter-custom-search="badgeFilterSearch"
+                  data-switchable="true"
+                  data-visible="false"
+                >
+                  Sharing Sets
+                </th>`
+              : ''}
             <th
               data-field="display_type"
               data-sortable="true"
