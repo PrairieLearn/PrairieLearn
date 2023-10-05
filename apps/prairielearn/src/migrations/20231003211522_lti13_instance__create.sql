@@ -5,7 +5,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS
-  pl_lti13_instances (
+  lti13_instances (
     id bigserial PRIMARY KEY,
     institution_id BIGINT NOT NULL REFERENCES institutions ON UPDATE CASCADE ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
@@ -24,10 +24,10 @@ CREATE TABLE IF NOT EXISTS
     access_token_expires_at timestamptz
   );
 
-CREATE INDEX IF NOT EXISTS pl_lti13_instances_institution_id_idx ON pl_lti13_instances (institution_id);
+CREATE INDEX IF NOT EXISTS lti13_instances_institution_id_idx ON lti13_instances (institution_id);
 
 CREATE TABLE IF NOT EXISTS
-  pl_lti13_platform_defaults (
+  lti13_platform_defaults (
     id bigserial PRIMARY KEY,
     platform text NOT NULL DEFAULT 'Unknown',
     issuer_params jsonb,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS
   );
 
 INSERT INTO
-  pl_lti13_platform_defaults (platform, issuer_params, display_order)
+  lti13_platform_defaults (platform, issuer_params, display_order)
 VALUES
   ('Unknown', null, 0),
   (

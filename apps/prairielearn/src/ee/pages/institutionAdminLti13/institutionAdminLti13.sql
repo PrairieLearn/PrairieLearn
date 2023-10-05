@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  pl_lti13_instances
+  lti13_instances
 WHERE
   institution_id = $institution_id
   AND deleted_at IS NULL
@@ -14,7 +14,7 @@ SELECT
   platform,
   issuer_params
 FROM
-  pl_lti13_platform_defaults
+  lti13_platform_defaults
 ORDER BY
   display_order,
   platform;
@@ -23,14 +23,14 @@ ORDER BY
 SELECT
   keystore
 FROM
-  pl_lti13_instances
+  lti13_instances
 WHERE
   institution_id = $institution_id
   AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK update_keystore
-UPDATE pl_lti13_instances
+UPDATE lti13_instances
 SET
   keystore = $keystore::jsonb
 WHERE
@@ -39,7 +39,7 @@ WHERE
   AND deleted_at IS NULL;
 
 -- BLOCK update_platform
-UPDATE pl_lti13_instances
+UPDATE lti13_instances
 SET
   (platform, issuer_params, client_params) = ($platform, $issuer_params, $client_params)
 WHERE
@@ -49,7 +49,7 @@ WHERE
 
 -- BLOCK insert_instance
 INSERT INTO
-  pl_lti13_instances (
+  lti13_instances (
     institution_id,
     name_attribute,
     uid_attribute,
@@ -61,7 +61,7 @@ RETURNING
   id;
 
 -- BLOCK update_name
-UPDATE pl_lti13_instances
+UPDATE lti13_instances
 SET
   name = $name
 WHERE
@@ -70,7 +70,7 @@ WHERE
   AND deleted_at IS NULL;
 
 -- BLOCK update_pl_config
-UPDATE pl_lti13_instances
+UPDATE lti13_instances
 SET
   name_attribute = $name_attribute,
   uid_attribute = $uid_attribute,
@@ -81,7 +81,7 @@ WHERE
   AND deleted_at IS NULL;
 
 -- BLOCK remove_instance
-UPDATE pl_lti13_instances
+UPDATE lti13_instances
 SET
   deleted_at = now()
 WHERE

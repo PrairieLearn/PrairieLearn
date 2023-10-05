@@ -5,7 +5,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     custom_params: jsonb
     deleted_at: timestamp with time zone
-    id: bigint not null default nextval('pl_lti13_instances_id_seq'::regclass)
+    id: bigint not null default nextval('lti13_instances_id_seq'::regclass)
     institution_id: bigint not null
     issuer_params: jsonb
     keystore: jsonb
@@ -17,8 +17,8 @@ columns
     uin_attribute: text
 
 indexes
-    pl_lti13_instances_pkey: PRIMARY KEY (id) USING btree (id)
-    pl_lti13_instances_institution_id_idx: USING btree (institution_id)
+    lti13_instances_pkey: PRIMARY KEY (id) USING btree (id)
+    lti13_instances_institution_id_idx: USING btree (institution_id)
 
 foreign-key constraints
-    pl_lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
