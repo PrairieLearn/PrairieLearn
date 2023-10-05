@@ -73,7 +73,7 @@ export function QuestionsTable({
           </button>
           ${showAddQuestionButton
             ? html`<form class="btn-group" name="add-question-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                 <input type="hidden" name="__action" value="add_question" />
                 <button type="submit" class="btn btn-secondary">
                   <i class="fas fa-plus"></i> Add Question
