@@ -19,7 +19,9 @@ onDocumentReady(() => {
 
   window.sharingSetsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name));
+    return _.keyBy(
+      _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+    );
   };
 
   window.versionList = function () {

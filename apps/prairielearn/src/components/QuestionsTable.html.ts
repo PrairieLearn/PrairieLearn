@@ -24,7 +24,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton,
-  questionSharingEnabled,
+  showSharingSets,
   current_course_instance,
   course_instances,
   urlPrefix,
@@ -33,7 +33,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
-  questionSharingEnabled: boolean;
+  showSharingSets: boolean;
   current_course_instance: CourseInstance;
   course_instances: CourseInstance[];
   urlPrefix: string;
@@ -131,7 +131,7 @@ export function QuestionsTable({
             >
               Tags
             </th>
-            ${questionSharingEnabled
+            ${showSharingSets
               ? html` <th
                   data-field="sharing_sets"
                   data-sortable="false"
