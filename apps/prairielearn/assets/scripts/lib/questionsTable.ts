@@ -36,6 +36,11 @@ interface Tag {
   name: string;
   color: string;
 }
+interface SharingSet {
+  id: string;
+  course_id: string;
+  name: string;
+}
 
 interface Question {
   id: string;
@@ -45,6 +50,7 @@ interface Question {
   external_grading_image: string | null;
   topic: Topic | null;
   tags: Tag[] | null;
+  sharing_sets: SharingSet[] | null;
   assessments: Assessment[] | null;
   sync_errors: string | null;
   sync_warnings: string | null;
@@ -58,6 +64,7 @@ interface QuestionsData {
   urlPrefix: string;
   questions: Question[];
   course_instances: CourseInstance[];
+  showSharingSets: boolean;
 }
 
 Tabulator.registerModule([
@@ -71,7 +78,7 @@ Tabulator.registerModule([
 ]);
 
 onDocumentReady(() => {
-  const { plainUrlPrefix, questions, course_instances } =
+  const { plainUrlPrefix, questions, course_instances, showSharingSets } =
     decodeData<QuestionsData>('questions-table-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
@@ -134,10 +141,39 @@ onDocumentReady(() => {
         headerFilterParams: {
           values: [
             { label: '(All Tags)' },
-            ...uniq(questions.map((q) => q.tags?.map((tag) => tag.name)).flat()).sort(),
+            ...uniq(questions.map((q) => q.tags?.map((tag) => tag.name) ?? []).flat()).sort(),
           ],
         },
       },
+      ...(showSharingSets
+        ? [
+            {
+              field: 'sharing_sets',
+              title: 'Sharing Sets',
+              formatter: (cell) =>
+                (cell.getValue() as SharingSet[])
+                  ?.map((sharing_set) =>
+                    html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
+                  )
+                  .join(' '),
+              headerSort: false,
+              headerFilter: 'list' as Editor,
+              headerFilterPlaceholder: '(All Sharing Sets)',
+              headerFilterFunc: (headerValue: string, rowValue: SharingSet[]) =>
+                rowValue?.some((sharing_set) => headerValue === sharing_set.name),
+              headerFilterParams: {
+                values: [
+                  { label: '(All Sharing Sets)' },
+                  ...uniq(
+                    questions
+                      .map((q) => q.sharing_sets?.map((sharing_set) => sharing_set.name) ?? [])
+                      .flat(),
+                  ).sort(),
+                ],
+              },
+            },
+          ]
+        : []),
       {
         field: 'display_type',
         title: 'Version',
@@ -187,7 +223,8 @@ onDocumentReady(() => {
         field: `assessments_${ci.id}`,
         title: `${ci.short_name} Assessments`,
         mutator: (_value, data: Question): Assessment[] =>
-          data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()),
+          data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()) ??
+          [],
         visible: ci.current,
         headerSort: false,
         formatter: (cell: CellComponent) =>
@@ -205,8 +242,8 @@ onDocumentReady(() => {
         headerFilterPlaceholder: '(All Assessments)',
         headerFilterFunc: (headerValue: string, rowValue: Assessment[]) =>
           headerValue === '0'
-            ? !rowValue.length
-            : rowValue.some((row) => headerValue === row.label),
+            ? !rowValue?.length
+            : rowValue?.some((row) => headerValue === row.label),
         headerFilterParams: {
           values: [
             { label: '(All Assessments)' },
@@ -217,7 +254,7 @@ onDocumentReady(() => {
                   (q) =>
                     q.assessments
                       ?.filter((a) => a.course_instance_id.toString() === ci.id.toString())
-                      .map((a) => a.label),
+                      .map((a) => a.label) ?? [],
                 )
                 .flat(),
             ).sort(),

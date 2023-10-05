@@ -17,6 +17,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton,
+  showSharingSets,
   current_course_instance,
   course_instances,
   urlPrefix,
@@ -25,6 +26,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
+  showSharingSets: boolean;
   current_course_instance: CourseInstance;
   course_instances: CourseInstance[];
   urlPrefix: string;
@@ -43,6 +45,7 @@ export function QuestionsTable({
         urlPrefix,
         plainUrlPrefix,
         questions,
+        showSharingSets,
       },
       'questions-table-data',
     )}

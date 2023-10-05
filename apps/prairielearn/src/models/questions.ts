@@ -3,8 +3,9 @@ import AnsiUp from 'ansi_up';
 import {
   CourseInstance,
   TopicSchema,
-  TagSchema,
+  SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
+  TagSchema,
 } from '../lib/db-types';
 import { z } from 'zod';
 import { idsEqual } from '../lib/id';
@@ -21,6 +22,7 @@ const QuestionsPageDataSchema = z.object({
   open_issue_count: z.string(),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
+  sharing_sets: z.array(SharingSetSchema).nullable(),
   assessments: AssessmentsFormatForQuestionSchema.nullable(),
 });
 type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
