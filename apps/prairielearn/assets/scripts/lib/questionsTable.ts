@@ -16,21 +16,8 @@ import { uniq } from 'lodash';
 
 import { Topic, Tag, SharingSet, AssessmentsFormatForQuestion } from '../../../src/lib/db-types';
 import { QuestionsPageDataAnsified } from '../../../src/models/questions';
+import { EncodedQuestionsData } from '../../../src/components/QuestionsTable.html';
 import { idsEqual } from '../../../src/lib/id';
-
-interface CourseInstance {
-  id: string;
-  short_name: string;
-  current: boolean;
-}
-
-interface QuestionsData {
-  plainUrlPrefix: string;
-  urlPrefix: string;
-  questions: QuestionsPageDataAnsified[];
-  course_instances: CourseInstance[];
-  showSharingSets: boolean;
-}
 
 Tabulator.registerModule([
   FormatModule,
@@ -44,7 +31,7 @@ Tabulator.registerModule([
 
 onDocumentReady(() => {
   const { plainUrlPrefix, questions, course_instances, showSharingSets } =
-    decodeData<QuestionsData>('questions-table-data');
+    decodeData<EncodedQuestionsData>('questions-table-data');
   const table = new Tabulator('#questionsTable', {
     data: questions,
     layout: 'fitData',
@@ -281,7 +268,7 @@ onDocumentReady(() => {
 });
 
 function qidFormatter(cell: CellComponent): string {
-  const { urlPrefix } = decodeData<QuestionsData>('questions-table-data');
+  const { urlPrefix } = decodeData<EncodedQuestionsData>('questions-table-data');
   const question: QuestionsPageDataAnsified = cell.getRow().getData();
   let text = '';
   if (question.sync_errors) {

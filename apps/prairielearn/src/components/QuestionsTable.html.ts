@@ -5,6 +5,18 @@ import { QuestionsPageDataAnsified } from '../models/questions';
 import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
 import { idsEqual } from '../lib/id';
 
+export interface EncodedQuestionsData {
+  plainUrlPrefix: string;
+  urlPrefix: string;
+  questions: QuestionsPageDataAnsified[];
+  course_instances: {
+    id: string;
+    short_name: string | null;
+    current: boolean;
+  }[];
+  showSharingSets: boolean;
+}
+
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
@@ -39,7 +51,7 @@ export function QuestionsTable({
     current: idsEqual(current_course_instance?.id, course_instance.id),
   }));
   return html`
-    ${EncodedData(
+    ${EncodedData<EncodedQuestionsData>(
       {
         course_instances: course_instances_client_data,
         urlPrefix,
