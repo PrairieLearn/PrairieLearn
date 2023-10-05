@@ -3411,6 +3411,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter"
   dependencies:
+    "@prairielearn/logger": "workspace:^"
     debug: ~4.3.1
     notepack.io: ~3.0.1
     typescript: ^5.2.2

@@ -2,6 +2,7 @@ import uid2 = require('uid2');
 import msgpack = require('notepack.io');
 import { Adapter, BroadcastOptions, Room } from 'socket.io-adapter';
 import { PUBSUB } from './util';
+import { logger } from '@prairielearn/logger';
 
 const debug = require('debug')('socket.io-redis');
 
@@ -182,32 +183,59 @@ export class RedisAdapter extends Adapter {
    */
   private onmessage(pattern, channel, msg) {
     channel = channel.toString();
+    logger.verbose(`socket.io-redis-adapter onmessage(): received`, { channel });
 
     const channelMatches = channel.startsWith(this.channel);
     if (!channelMatches) {
+      logger.verbose('socket.io-redis-adapter onmessage(): ignore different channel', {
+        thisChannel: this.channel,
+        channel,
+      });
       return debug('ignore different channel');
     }
 
     const room = channel.slice(this.channel.length, -1);
     if (room !== '' && !this.hasRoom(room)) {
+      logger.verbose(`socket.io-redis-adapter onmessage(): ignore unknown room ${room}`, {
+        room,
+        channel,
+      });
       return debug('ignore unknown room %s', room);
     }
 
     const args = this.parser.decode(msg);
 
     const [uid, packet, opts] = args;
-    if (this.uid === uid) return debug('ignore same uid');
+    logger.verbose('socket.io-redis-adapter onmessage(): args', { channel, uid, packet, opts });
+    if (this.uid === uid) {
+      logger.verbose('socket.io-redis-adapter onmessage(): ignore same uid', {
+        channel,
+        uid: this.uid,
+        args,
+      });
+      return debug('ignore same uid');
+    }
 
     if (packet && packet.nsp === undefined) {
       packet.nsp = '/';
     }
 
     if (!packet || packet.nsp !== this.nsp.name) {
+      logger.verbose('socket.io-redis-adapter onmessage(): ignore different namespace', {
+        channel,
+        packet,
+        nspName: this.nsp.name,
+      });
       return debug('ignore different namespace');
     }
     opts.rooms = new Set(opts.rooms);
     opts.except = new Set(opts.except);
 
+    logger.verbose('socket.io-redis-adapter onmessage(): broadcast packet', {
+      channel,
+      packet,
+      opts,
+    });
     super.broadcast(packet, opts);
   }
 
@@ -224,10 +252,15 @@ export class RedisAdapter extends Adapter {
    */
   private async onrequest(channel, msg) {
     channel = channel.toString();
+    logger.verbose(`socket.io-redis-adapter onrequest(): received`, { channel });
 
     if (channel.startsWith(this.responseChannel)) {
       return this.onresponse(channel, msg);
     } else if (!channel.startsWith(this.requestChannel)) {
+      logger.verbose('socket.io-redis-adapter onrequest(): ignore different channel', {
+        channel,
+        requestChannel: this.requestChannel,
+      });
       return debug('ignore different channel');
     }
 
@@ -241,11 +274,16 @@ export class RedisAdapter extends Adapter {
         request = this.parser.decode(msg);
       }
     } catch (err) {
+      logger.verbose('socket.io-redis-adapter onrequest(): ignore malformed request', {
+        channel,
+        err,
+      });
       debug('ignoring malformed request');
       return;
     }
 
     debug('received request %j', request);
+    logger.verbose('socket.io-redis-adapter onrequest(): request', { channel, request });
 
     let response, socket;
 
@@ -262,6 +300,11 @@ export class RedisAdapter extends Adapter {
           sockets: [...sockets],
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
@@ -275,6 +318,11 @@ export class RedisAdapter extends Adapter {
           rooms: [...this.rooms.keys()],
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
@@ -284,20 +332,38 @@ export class RedisAdapter extends Adapter {
             rooms: new Set<Room>(request.opts.rooms),
             except: new Set<Room>(request.opts.except),
           };
+          logger.verbose('socket.io-redis-adapter onrequest(): addSockets', {
+            channel,
+            request,
+            opts,
+          });
           return super.addSockets(opts, request.rooms);
         }
 
         socket = this.nsp.sockets.get(request.sid);
         if (!socket) {
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore unknown socket', {
+            channel,
+            request,
+          });
           return;
         }
 
+        logger.verbose('socket.io-redis-adapter onrequest(): socket.join', {
+          channel,
+          request,
+        });
         socket.join(request.room);
 
         response = JSON.stringify({
           requestId: request.requestId,
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
@@ -307,20 +373,38 @@ export class RedisAdapter extends Adapter {
             rooms: new Set<Room>(request.opts.rooms),
             except: new Set<Room>(request.opts.except),
           };
+          logger.verbose('socket.io-redis-adapter onrequest(): delSockets', {
+            channel,
+            request,
+            opts,
+          });
           return super.delSockets(opts, request.rooms);
         }
 
         socket = this.nsp.sockets.get(request.sid);
         if (!socket) {
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore unknown socket', {
+            channel,
+            request,
+          });
           return;
         }
 
+        logger.verbose('socket.io-redis-adapter onrequest(): socket.leave', {
+          channel,
+          request,
+        });
         socket.leave(request.room);
 
         response = JSON.stringify({
           requestId: request.requestId,
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
@@ -330,25 +414,47 @@ export class RedisAdapter extends Adapter {
             rooms: new Set<Room>(request.opts.rooms),
             except: new Set<Room>(request.opts.except),
           };
+          logger.verbose('socket.io-redis-adapter onrequest(): disconnectSockets', {
+            channel,
+            request,
+            opts,
+          });
           return super.disconnectSockets(opts, request.close);
         }
 
         socket = this.nsp.sockets.get(request.sid);
         if (!socket) {
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore unknown socket', {
+            channel,
+            request,
+          });
           return;
         }
 
+        logger.verbose('socket.io-redis-adapter onrequest(): socket.disconnect', {
+          channel,
+          request,
+        });
         socket.disconnect(request.close);
 
         response = JSON.stringify({
           requestId: request.requestId,
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
       case RequestType.REMOTE_FETCH:
         if (this.requests.has(request.requestId)) {
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore same requestId', {
+            channel,
+            request,
+          });
           return;
         }
 
@@ -372,16 +478,29 @@ export class RedisAdapter extends Adapter {
           }),
         });
 
+        logger.verbose('socket.io-redis-adapter onrequest(): publishResponse', {
+          channel,
+          request,
+          response,
+        });
         this.publishResponse(request, response);
         break;
 
       case RequestType.SERVER_SIDE_EMIT:
         if (request.uid === this.uid) {
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore same uid', {
+            channel,
+            request,
+          });
           debug('ignore same uid');
           return;
         }
         const withAck = request.requestId !== undefined;
         if (!withAck) {
+          logger.verbose('socket.io-redis-adapter onrequest(): _onServerSideEmit', {
+            channel,
+            request,
+          });
           this.nsp._onServerSideEmit(request.data);
           return;
         }
@@ -392,6 +511,11 @@ export class RedisAdapter extends Adapter {
             return;
           }
           called = true;
+          logger.verbose('socket.io-redis-adapter onrequest(): acknowledgement', {
+            channel,
+            request,
+            arg,
+          });
           debug('calling acknowledgement with %j', arg);
           this.pubClient.publish(
             this.responseChannel,
@@ -403,12 +527,20 @@ export class RedisAdapter extends Adapter {
           );
         };
         request.data.push(callback);
+        logger.verbose('socket.io-redis-adapter onrequest(): _onServerSideEmit', {
+          channel,
+          request,
+        });
         this.nsp._onServerSideEmit(request.data);
         break;
 
       case RequestType.BROADCAST: {
         if (this.ackRequests.has(request.requestId)) {
           // ignore self
+          logger.verbose('socket.io-redis-adapter onrequest(): ignore same requestId', {
+            channel,
+            request,
+          });
           return;
         }
 
@@ -417,11 +549,21 @@ export class RedisAdapter extends Adapter {
           except: new Set<Room>(request.opts.except),
         };
 
+        logger.verbose('socket.io-redis-adapter onrequest(): broadcastWithAck', {
+          channel,
+          request,
+          opts,
+        });
         super.broadcastWithAck(
           request.packet,
           opts,
           (clientCount) => {
             debug('waiting for %d client acknowledgements', clientCount);
+            logger.verbose('socket.io-redis-adapter onrequest(): clientCount publishResponse', {
+              channel,
+              request,
+              clientCount,
+            });
             this.publishResponse(
               request,
               JSON.stringify({
@@ -434,6 +576,14 @@ export class RedisAdapter extends Adapter {
           (arg) => {
             debug('received acknowledgement with value %j', arg);
 
+            logger.verbose(
+              'socket.io-redis-adapter onrequest(): received acknowledgement publishResponse',
+              {
+                channel,
+                request,
+                arg,
+              },
+            );
             this.publishResponse(
               request,
               this.parser.encode({
@@ -448,6 +598,10 @@ export class RedisAdapter extends Adapter {
       }
 
       default:
+        logger.verbose('socket.io-redis-adapter onrequest(): ignore unknown request type', {
+          channel,
+          request,
+        });
         debug('ignoring unknown request type: %s', request.type);
     }
   }
@@ -462,6 +616,10 @@ export class RedisAdapter extends Adapter {
     const responseChannel = this.publishOnSpecificResponseChannel
       ? `${this.responseChannel}${request.uid}#`
       : this.responseChannel;
+    logger.verbose('socket.io-redis-adapter publishResponse()', {
+      responseChannel,
+      response,
+    });
     debug('publishing response to channel %s', responseChannel);
     this.pubClient.publish(responseChannel, response);
   }
@@ -473,6 +631,7 @@ export class RedisAdapter extends Adapter {
    */
   private onresponse(channel, msg) {
     let response;
+    logger.verbose(`socket.io-redis-adapter onresponse(): received`, { channel });
 
     try {
       // if the buffer starts with a "{" character
@@ -482,6 +641,10 @@ export class RedisAdapter extends Adapter {
         response = this.parser.decode(msg);
       }
     } catch (err) {
+      logger.verbose('socket.io-redis-adapter onresponse(): ignore malformed response', {
+        channel,
+        err,
+      });
       debug('ignoring malformed response');
       return;
     }
@@ -502,15 +665,24 @@ export class RedisAdapter extends Adapter {
           break;
         }
       }
+      logger.verbose('socket.io-redis-adapter onresponse(): ackRequests has requestId', {
+        channel,
+        response,
+      });
       return;
     }
 
     if (!requestId || !(this.requests.has(requestId) || this.ackRequests.has(requestId))) {
+      logger.verbose('socket.io-redis-adapter onresponse(): ignore unknown requestId', {
+        channel,
+        response,
+      });
       debug('ignoring unknown request');
       return;
     }
 
     debug('received response %j', response);
+    logger.verbose('socket.io-redis-adapter onresponse(): response', { channel, response });
 
     const request = this.requests.get(requestId);
 
@@ -518,9 +690,19 @@ export class RedisAdapter extends Adapter {
       case RequestType.SOCKETS:
       case RequestType.REMOTE_FETCH:
         request.msgCount++;
+        logger.verbose('socket.io-redis-adapter onresponse(): msgCount', {
+          channel,
+          request,
+        });
 
         // ignore if response does not contain 'sockets' key
-        if (!response.sockets || !Array.isArray(response.sockets)) return;
+        if (!response.sockets || !Array.isArray(response.sockets)) {
+          logger.verbose('socket.io-redis-adapter onresponse(): ignore no sockets', {
+            channel,
+            response,
+          });
+          return;
+        }
 
         if (request.type === RequestType.SOCKETS) {
           response.sockets.forEach((s) => request.sockets.add(s));
@@ -535,13 +717,27 @@ export class RedisAdapter extends Adapter {
           }
           this.requests.delete(requestId);
         }
+        logger.verbose('socket.io-redis-adapter onresponse(): handled case 1', {
+          channel,
+          request,
+        });
         break;
 
       case RequestType.ALL_ROOMS:
         request.msgCount++;
+        logger.verbose('socket.io-redis-adapter onresponse(): msgCount', {
+          channel,
+          request,
+        });
 
         // ignore if response does not contain 'rooms' key
-        if (!response.rooms || !Array.isArray(response.rooms)) return;
+        if (!response.rooms || !Array.isArray(response.rooms)) {
+          logger.verbose('socket.io-redis-adapter onresponse(): ignore no rooms', {
+            channel,
+            response,
+          });
+          return;
+        }
 
         response.rooms.forEach((s) => request.rooms.add(s));
 
@@ -552,6 +748,10 @@ export class RedisAdapter extends Adapter {
           }
           this.requests.delete(requestId);
         }
+        logger.verbose('socket.io-redis-adapter onresponse(): handled case 2', {
+          channel,
+          request,
+        });
         break;
 
       case RequestType.REMOTE_JOIN:
@@ -562,6 +762,10 @@ export class RedisAdapter extends Adapter {
           request.resolve();
         }
         this.requests.delete(requestId);
+        logger.verbose('socket.io-redis-adapter onresponse(): handled case 3', {
+          channel,
+          request,
+        });
         break;
 
       case RequestType.SERVER_SIDE_EMIT:
@@ -579,9 +783,17 @@ export class RedisAdapter extends Adapter {
           }
           this.requests.delete(requestId);
         }
+        logger.verbose('socket.io-redis-adapter onresponse(): handled case 4', {
+          channel,
+          request,
+        });
         break;
 
       default:
+        logger.verbose('socket.io-redis-adapter onresponse(): ignore unknown request type', {
+          channel,
+          request,
+        });
         debug('ignoring unknown request type: %s', request.type);
     }
   }
