@@ -31,6 +31,7 @@ export const QuestionsPage = ({
           ${QuestionsTable({
             questions,
             showAddQuestionButton,
+            showSharingSets: resLocals.question_sharing_enabled,
             current_course_instance: resLocals.course_instance,
             course_instances: resLocals.authz_data.course_instances,
             urlPrefix: resLocals.urlPrefix,
