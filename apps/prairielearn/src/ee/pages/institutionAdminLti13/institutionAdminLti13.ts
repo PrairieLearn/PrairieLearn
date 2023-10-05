@@ -50,7 +50,9 @@ router.get(
       return res.redirect(`lti13/${lti13Instances[0].id}`);
     }
 
-    const paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
+    const paramInstance = lti13Instances.find(
+      ({ id }) => id === req.params.unsafe_lti13_instance_id,
+    );
 
     res.send(
       InstitutionAdminLti13({
@@ -127,7 +129,9 @@ router.post(
 
       const client_params = {
         client_id: req.body.client_id || null,
-        redirect_uris: [`${url}/pl/lti13_instance/${req.params.unsafe_lti13_instance_id}/auth/callback`],
+        redirect_uris: [
+          `${url}/pl/lti13_instance/${req.params.unsafe_lti13_instance_id}/auth/callback`,
+        ],
         token_endpoint_auth_method: 'private_key_jwt',
         token_endpoint_auth_signing_alg: 'RS256',
       };
