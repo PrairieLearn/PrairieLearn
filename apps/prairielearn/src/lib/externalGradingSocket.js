@@ -23,16 +23,26 @@ module.exports.init = function (callback) {
 module.exports.connection = function (socket) {
   socket.on('init', (msg, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
+      logger.error('External grading socket error: init: missing props', msg);
       return callback(null);
     }
     if (!checkToken(msg.variant_token, msg.variant_id)) {
+      logger.error('External grading socket error: init: invalid token', msg);
       return callback(null);
     }
 
     socket.join(`variant-${msg.variant_id}`);
 
     module.exports.getVariantSubmissionsStatus(msg.variant_id, (err, submissions) => {
-      if (ERR(err, (err) => logger.error('Error getting variant submissions status', err))) return;
+      if (
+        ERR(err, (err) =>
+          logger.error(
+            'External grading socket error: init: Error getting variant submissions status',
+            { msg, err },
+          ),
+        )
+      )
+        return;
       callback({ variant_id: msg.variant_id, submissions });
     });
   });
@@ -50,9 +60,11 @@ module.exports.connection = function (socket) {
         'csrf_token',
       ])
     ) {
+      logger.error('External grading socket error: getResults: missing props', msg);
       return callback(null);
     }
     if (!checkToken(msg.variant_token, msg.variant_id)) {
+      logger.error('External grading socket error: getResults: invalid token', msg);
       return callback(null);
     }
 
@@ -66,7 +78,15 @@ module.exports.connection = function (socket) {
       msg.csrf_token,
       msg.authorized_edit,
       (err, panels) => {
-        if (ERR(err, (err) => logger.error('Error rendering panels for submission', err))) return;
+        if (
+          ERR(err, (err) =>
+            logger.error(
+              'External grading socket error: getResults: Error rendering panels for submission',
+              err,
+            ),
+          )
+        )
+          return;
         callback({
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
@@ -78,6 +98,10 @@ module.exports.connection = function (socket) {
         });
       },
     );
+  });
+
+  socket.onAnyOutgoing((event, ...args) => {
+    logger.verbose('External grading socket: outgoing packet', { event, args });
   });
 };
 
@@ -94,11 +118,23 @@ module.exports.getVariantSubmissionsStatus = function (variant_id, callback) {
 module.exports.gradingJobStatusUpdated = function (grading_job_id) {
   const params = { grading_job_id };
   sqldb.queryOneRow(sql.select_submission_for_grading_job, params, (err, result) => {
-    if (ERR(err, (err) => logger.error('Error selecting submission for grading job', err))) return;
+    if (
+      ERR(err, (err) =>
+        logger.error(
+          'External grading socket error: Error selecting submission for grading job',
+          err,
+        ),
+      )
+    )
+      return;
     const eventData = {
       variant_id: result.rows[0].variant_id,
       submissions: result.rows,
     };
+    logger.verbose('External grading socket: gradingJobStatusUpdated', {
+      grading_job_id,
+      eventData,
+    });
     module.exports._namespace
       .to(`variant-${result.rows[0].variant_id}`)
       .emit('change:status', eventData);
