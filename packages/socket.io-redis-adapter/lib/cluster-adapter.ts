@@ -575,6 +575,7 @@ export abstract class ClusterAdapterWithHeartbeat extends ClusterAdapter {
     clearTimeout(this.heartbeatTimer);
   }
 
+  // @ts-expect-error -- This comes from upstream.
   override onMessage(message: ClusterMessage, offset?: string) {
     if (message.uid === this.uid) {
       return debug('ignore message from self');
