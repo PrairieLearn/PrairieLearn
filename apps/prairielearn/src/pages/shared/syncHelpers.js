@@ -72,7 +72,6 @@ module.exports.pullAndUpdate = async function (locals) {
           });
 
           job.info('Fetch from remote git repository');
-          console.log(locals.course);
           await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
 
           job.info('Clean local files not in remote git repository');
