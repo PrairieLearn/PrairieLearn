@@ -16,6 +16,7 @@ import { uniq } from 'lodash';
 
 import { Topic, Tag, SharingSet, AssessmentsFormatForQuestion } from '../../../src/lib/db-types';
 import { QuestionsPageDataAnsified } from '../../../src/models/questions';
+import { idsEqual } from '../../../src/lib/id';
 
 interface CourseInstance {
   id: string;
@@ -190,8 +191,7 @@ onDocumentReady(() => {
         field: `assessments_${ci.id}`,
         title: `${ci.short_name} Assessments`,
         mutator: (_value, data: QuestionsPageDataAnsified): AssessmentsFormatForQuestion =>
-          data.assessments?.filter((a) => a.course_instance_id.toString() === ci.id.toString()) ??
-          [],
+          data.assessments?.filter((a) => idsEqual(a.course_instance_id, ci.id)) ?? [],
         visible: ci.current,
         headerSort: false,
         formatter: (cell: CellComponent) =>
@@ -220,7 +220,7 @@ onDocumentReady(() => {
                 .map(
                   (q) =>
                     q.assessments
-                      ?.filter((a) => a.course_instance_id.toString() === ci.id.toString())
+                      ?.filter((a) => idsEqual(a.course_instance_id, ci.id))
                       .map((a) => a.label) ?? [],
                 )
                 .flat(),
@@ -306,7 +306,7 @@ function qidFormatter(cell: CellComponent): string {
   text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
     >${question.qid}</a
   >`.toString();
-  if (question.open_issue_count !== '0') {
+  if (idsEqual(question.open_issue_count, 0)) {
     text += html`<a
       class="badge badge-pill badge-danger ml-1"
       href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}"
