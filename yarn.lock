@@ -3406,6 +3406,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/socket.io-redis-adapter@workspace:packages/socket.io-redis-adapter"
+  dependencies:
+    debug: ~4.3.1
+    notepack.io: ~3.0.1
+    typescript: ^5.2.2
+    uid2: 1.0.0
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"

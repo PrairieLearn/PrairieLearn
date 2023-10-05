@@ -15,3 +15,6 @@
 /apps/*/dist/
 /apps/prairielearn/public/build/
 /packages/*/dist/
+
+# Fork of third-party code that doesn't yet follow our linting rules.
+/packages/socket.io-redis-adapter/

@@ -1,0 +1,17 @@
+{
+  "name": "@prairielearn/socket.io-redis-adapter",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "debug": "~4.3.1",
+    "notepack.io": "~3.0.1",
+    "uid2": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
