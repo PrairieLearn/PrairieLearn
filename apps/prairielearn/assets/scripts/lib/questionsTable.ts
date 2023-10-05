@@ -80,7 +80,7 @@ onDocumentReady(() => {
         field: 'tags',
         title: 'Tags',
         formatter: (cell) =>
-          (cell.getValue() as Tag[])
+          (cell.getValue() as Tag[] | null)
             ?.map((tag) =>
               html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
             )
@@ -88,7 +88,7 @@ onDocumentReady(() => {
         headerSort: false,
         headerFilter: 'list',
         headerFilterPlaceholder: '(All Tags)',
-        headerFilterFunc: (headerValue: string, rowValue: Tag[]) =>
+        headerFilterFunc: (headerValue: string, rowValue: Tag[] | null) =>
           rowValue?.some((tag) => headerValue === tag.name),
         headerFilterParams: {
           values: [
@@ -103,7 +103,7 @@ onDocumentReady(() => {
               field: 'sharing_sets',
               title: 'Sharing Sets',
               formatter: (cell) =>
-                (cell.getValue() as SharingSet[])
+                (cell.getValue() as SharingSet[] | null)
                   ?.map((sharing_set) =>
                     html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
                   )
@@ -111,7 +111,7 @@ onDocumentReady(() => {
               headerSort: false,
               headerFilter: 'list' as Editor,
               headerFilterPlaceholder: '(All Sharing Sets)',
-              headerFilterFunc: (headerValue: string, rowValue: SharingSet[]) =>
+              headerFilterFunc: (headerValue: string, rowValue: SharingSet[] | null) =>
                 headerValue === '0'
                   ? !rowValue?.length
                   : rowValue?.some((sharing_set) => headerValue === sharing_set.name),
@@ -181,7 +181,7 @@ onDocumentReady(() => {
           data.assessments?.filter((a) => idsEqual(a.course_instance_id, ci.id)) ?? [],
         visible: ci.current,
         headerSort: false,
-        formatter: (cell: CellComponent) =>
+        formatter: (cell) =>
           (cell.getValue() as AssessmentsFormatForQuestion)
             ?.map((assessment) =>
               html`<a
