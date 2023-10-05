@@ -130,6 +130,20 @@ export function QuestionsTable({
               Tags
             </th>
             <th
+              data-field="sharing_sets"
+              data-sortable="false"
+              data-class="align-middle text-nowrap"
+              data-formatter="tagsFormatter"
+              data-filter-control="select"
+              data-filter-control-placeholder="(All Sharing Sets)"
+              data-filter-data="func:sharingSetsList"
+              data-filter-custom-search="badgeFilterSearch"
+              data-switchable="true"
+              data-visible="false"
+            >
+              Sharing Sets
+            </th>
+            <th
               data-field="display_type"
               data-sortable="true"
               data-class="align-middle text-nowrap"

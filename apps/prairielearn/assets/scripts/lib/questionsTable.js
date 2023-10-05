@@ -17,6 +17,11 @@ onDocumentReady(() => {
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
+  window.sharingSetsList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
+    return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name));
+  };
+
   window.versionList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
