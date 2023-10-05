@@ -25,7 +25,7 @@ router.use(
 );
 
 router.get(
-  '/:lti13_instance_id?',
+  '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
@@ -46,17 +46,17 @@ router.get(
     );
 
     // Handle the / (no id passed case)
-    if (typeof req.params.lti13_instance_id === 'undefined' && lti13Instances.length > 0) {
+    if (typeof req.params.unsafe_lti13_instance_id === 'undefined' && lti13Instances.length > 0) {
       return res.redirect(`lti13/${lti13Instances[0].id}`);
     }
 
-    const paramInstance = lti13Instances.find(({ id }) => id === req.params.lti13_instance_id);
+    const paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
 
     res.send(
       InstitutionAdminLti13({
         institution,
         lti13Instances,
-        instance: paramInstance ? paramInstance : null,
+        instance: paramInstance ?? null,
         resLocals: res.locals,
         platform_defaults,
       }),
@@ -65,11 +65,11 @@ router.get(
 );
 
 router.post(
-  '/:lti13_instance_id?',
+  '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
       });
       const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
@@ -83,7 +83,7 @@ router.post(
       });
 
       await queryAsync(sql.update_keystore, {
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         // true to include private keys
         keystore: keystore.toJSON(true),
@@ -91,14 +91,14 @@ router.post(
       flash('success', `Key ${kid} added.`);
     } else if (req.body.__action === 'delete_keys') {
       await queryAsync(sql.update_keystore, {
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         keystore: null,
       });
       flash('success', `All keys deleted.`);
     } else if (req.body.__action === 'delete_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
       });
       const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
@@ -110,7 +110,7 @@ router.post(
         keystore.remove(key);
 
         await queryAsync(sql.update_keystore, {
-          lti13_instance_id: req.params.lti13_instance_id,
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           institution_id: req.params.institution_id,
           // true to include private keys
           keystore: keystore.toJSON(true),
@@ -127,13 +127,13 @@ router.post(
 
       const client_params = {
         client_id: req.body.client_id || null,
-        redirect_uris: [`${url}/pl/lti13_instance/${req.params.lti13_instance_id}/auth/callback`],
+        redirect_uris: [`${url}/pl/lti13_instance/${req.params.unsafe_lti13_instance_id}/auth/callback`],
         token_endpoint_auth_method: 'private_key_jwt',
         token_endpoint_auth_signing_alg: 'RS256',
       };
 
       await queryAsync(sql.update_platform, {
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         issuer_params: req.body.issuer_params,
         platform: req.body.platform,
@@ -160,7 +160,7 @@ router.post(
       await queryAsync(sql.update_name, {
         name: req.body.name,
         institution_id: req.params.institution_id,
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `Name updated.`);
     } else if (req.body.__action === 'save_pl_config') {
@@ -169,13 +169,13 @@ router.post(
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
         institution_id: req.params.institution_id,
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `PrairieLearn config updated.`);
     } else if (req.body.__action === 'remove_instance') {
       await queryAsync(sql.remove_instance, {
         institution_id: req.params.institution_id,
-        lti13_instance_id: req.params.lti13_instance_id,
+        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `Instance deleted.`);
     } else {

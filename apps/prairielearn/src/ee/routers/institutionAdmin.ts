@@ -10,7 +10,6 @@ import ssoRouter from '../pages/institutionAdminSso/institutionAdminSso';
 import samlRouter from '../pages/institutionAdminSaml/institutionAdminSaml';
 import lti13Router from '../pages/institutionAdminLti13/institutionAdminLti13';
 import { features } from '../../lib/features';
-import { isEnterprise } from '../../lib/license';
 
 const router = Router({ mergeParams: true });
 
@@ -25,7 +24,7 @@ router.use(
     res.locals.urlPrefix = req.baseUrl;
 
     const hasLti13 = await features.enabled('lti13', { institution_id: req.params.institution_id });
-    res.locals.lti13_enabled = hasLti13 && isEnterprise();
+    res.locals.lti13_enabled = hasLti13;
     next();
   }),
 );

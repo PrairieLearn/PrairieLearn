@@ -26,7 +26,7 @@ FROM
   pl_lti13_instances
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK update_keystore
@@ -35,7 +35,7 @@ SET
   keystore = $keystore::jsonb
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK update_platform
@@ -44,7 +44,7 @@ SET
   (platform, issuer_params, client_params) = ($platform, $issuer_params, $client_params)
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK insert_instance
@@ -66,7 +66,7 @@ SET
   name = $name
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK update_pl_config
@@ -77,7 +77,7 @@ SET
   uin_attribute = $uin_attribute
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;
 
 -- BLOCK remove_instance
@@ -86,5 +86,5 @@ SET
   deleted_at = now()
 WHERE
   institution_id = $institution_id
-  AND id = $lti13_instance_id
+  AND id = $unsafe_lti13_instance_id
   AND deleted_at IS NULL;

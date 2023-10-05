@@ -71,7 +71,7 @@ export function InstitutionAdminLti13({
               </form>
             </div>
 
-            <div class="col-9">${displayLTI13Instance(instance, resLocals, platform_defaults)}</div>
+            <div class="col-9">${LTI13Instance(instance, resLocals, platform_defaults)}</div>
           </div>
         </main>
       </body>
@@ -79,7 +79,11 @@ export function InstitutionAdminLti13({
   `.toString();
 }
 
-const displayLTI13Instance = function (instance, resLocals, platform_defaults) {
+function LTI13Instance(
+  instance: Lti13Instance | null,
+  resLocals: Record<string, any>,
+  platform_defaults: Record<string, any>,
+) {
   if (instance) {
     return html`
       <h3>${instance.tool_platform_name} (ID #${instance.id})</h3>
@@ -332,4 +336,4 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
   } else {
     return html`Please select an instance on the left.`;
   }
-};
+}

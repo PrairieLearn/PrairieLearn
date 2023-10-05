@@ -20,6 +20,6 @@ onDocumentReady(() => {
       return;
     }
 
-    ip.value = JSON.stringify(platform_default.issuer_params, null, 3);
+    ip.value = JSON.stringify(platform_default.issuer_params, null, 2);
   });
 });

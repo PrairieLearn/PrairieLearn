@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import lti13InstanceRouter from '../pages/lti13Instance/lti13Instance';
+import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
 import { Lti13InstanceSchema } from '../../lib/db-types';
 import asyncHandler = require('express-async-handler');
 import logRequest = require('../../middlewares/logRequest');
@@ -53,6 +53,6 @@ router.use(
 );
 
 // router is a catch all for some small pages so put it last (or explicitly route them)
-router.use('/:lti13_instance_id/', lti13InstanceRouter);
+router.use('/:lti13_instance_id/', lti13InstancePages);
 
 export default router;
