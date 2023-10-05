@@ -37,11 +37,7 @@ CREATE TABLE IF NOT EXISTS
   );
 
 INSERT INTO
-  pl_lti13_platform_defaults (
-    platform,
-    issuer_params,
-    display_order
-  )
+  pl_lti13_platform_defaults (platform, issuer_params, display_order)
 VALUES
   ('Unknown', null, 0),
   (
