@@ -40,11 +40,10 @@ INSERT INTO
   pl_lti13_platform_defaults (
     platform,
     issuer_params,
-    client_params,
     display_order
   )
 VALUES
-  ('Unknown', null, null, 0),
+  ('Unknown', null, 0),
   (
     'Canvas Production',
     '{
@@ -52,14 +51,6 @@ VALUES
    "jwks_uri": "https://sso.canvaslms.com/api/lti/security/jwks",
    "token_endpoint": "https://sso.canvaslms.com/login/oauth2/token",
    "authorization_endpoint": "https://sso.canvaslms.com/api/lti/authorize_redirect"
-}',
-    '{
-   "client_id": "10000000000001",
-   "redirect_uris": [
-      "https://pl.tbkenny.com/pl/lti13_instance/1/auth/callback"
-   ],
-   "token_endpoint_auth_method": "private_key_jwt",
-   "token_endpoint_auth_signing_alg": "RS256"
 }',
     10
   );

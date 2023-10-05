@@ -14,7 +14,7 @@ import { getCanonicalHost } from '../../../lib/url';
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-// Middlewear to check for feature and access
+// Middleware to check for feature and access
 router.use(
   asyncHandler(async (req, res, next) => {
     if (!res.locals.lti13_enabled) {
