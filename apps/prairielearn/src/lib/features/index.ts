@@ -8,6 +8,8 @@ const featureNames = [
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',
+  // Can only be applied globally.
+  'socket-io-long-polling-only',
 ] as const;
 
 const features = new FeatureManager(featureNames);

@@ -21,7 +21,10 @@
 <% if (job_sequence_enable_live_update) { %>
 <script>
     $(function() {
-        var socket = io();
+        const longPollingOnly = document.querySelector('meta[name=socket-io-long-polling-only]') != null;
+        var socket = io({
+            transports: longPollingOnly ? ['polling'] : ['polling', 'websocket'],
+        });
 
         socket.on('update', function() {
             window.location.reload(true);

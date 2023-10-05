@@ -29,7 +29,11 @@ $(function () {
     30 * 60,
   );
 
-  const socket = io('/workspace');
+  const longPollingOnly = document.querySelector('meta[name=socket-io-long-polling-only]') != null;
+  const socket = io('/workspace', {
+    transports: longPollingOnly ? ['polling'] : ['polling', 'websocket'],
+  });
+
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;

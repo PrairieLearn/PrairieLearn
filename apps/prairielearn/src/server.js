@@ -483,6 +483,10 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
 
+  // Reads the `socket-io-long-polling-only` feature flag and sets
+  // `res.locals.socket_io_long_polling_only` based on it.
+  app.use(require('./middlewares/socketIoLongPolling').default);
+
   if (isEnterprise()) {
     if (config.hasAzure) {
       app.use('/pl/azure_login', require('./ee/auth/azure/login').default);

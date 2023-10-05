@@ -10,3 +10,6 @@
 <script src="<%= node_modules_asset_path('bootstrap/dist/js/bootstrap.bundle.min.js') %>"></script>
 <script src="<%= node_modules_asset_path('@fortawesome/fontawesome-free/js/all.min.js') %>"></script>
 <script src="<%= node_modules_asset_path('js-cookie/dist/js.cookie.min.js') %>"></script>
+<% if (typeof socket_io_long_polling_only !== 'undefined' && socket_io_long_polling_only) { %>
+<meta name="socket-io-long-polling-only" content="true">
+<% } %>

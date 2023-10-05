@@ -44,7 +44,10 @@ function externalGradingLiveUpdate() {
   if (!gradingPending) return;
 
   // By this point, it's safe to open a socket
-  const socket = io('/external-grading');
+  const longPollingOnly = document.querySelector('meta[name=socket-io-long-polling-only]') != null;
+  const socket = io('/external-grading', {
+    transports: longPollingOnly ? ['polling'] : ['polling', 'websocket'],
+  });
 
   socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
     handleStatusChange(socket, msg);
