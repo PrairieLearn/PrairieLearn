@@ -160,10 +160,13 @@ onDocumentReady(() => {
               headerFilter: 'list' as Editor,
               headerFilterPlaceholder: '(All Sharing Sets)',
               headerFilterFunc: (headerValue: string, rowValue: SharingSet[]) =>
-                rowValue?.some((sharing_set) => headerValue === sharing_set.name),
+                headerValue === '0'
+                  ? !rowValue?.length
+                  : rowValue?.some((sharing_set) => headerValue === sharing_set.name),
               headerFilterParams: {
                 values: [
                   { label: '(All Sharing Sets)' },
+                  { label: '(None)', value: '0' },
                   ...uniq(
                     questions
                       .map((q) => q.sharing_sets?.map((sharing_set) => sharing_set.name) ?? [])
