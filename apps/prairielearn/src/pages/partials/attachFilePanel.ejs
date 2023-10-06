@@ -38,6 +38,7 @@
     </tbody>
   </table>
 
+  <% if (locals.question_context !== 'manual_grading') { %>
   <div class="card-footer">
     <% if (!assessment_instance.open || !authz_result.active) { %>
     <p class="small mb-0">
@@ -116,4 +117,5 @@
     <!-- END OF FILES -->
     <% } %>
   </div>
+  <% } %>
 </div>

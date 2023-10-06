@@ -93,6 +93,10 @@
             </div>
           </div>
 
+          <% if (config.attachedFilesDialogEnabled) { %>
+            <%- include('../../partials/attachFilePanel', {question_context: 'manual_grading'}) %>
+          <% } %>
+
           <%- include('../../partials/instructorInfoPanel', {question_context: 'manual_grading'}); %>
         </div>
       </div>
