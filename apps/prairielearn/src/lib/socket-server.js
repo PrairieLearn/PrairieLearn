@@ -14,19 +14,22 @@ const { config } = require('./config');
  */
 function attachEventListeners(client, type) {
   client.on('error', (err) => {
-    logger.error(`redis ${type} client error`, err);
+    logger.error(`redis ${type} client: error`, err);
   });
   client.on('connect', () => {
-    logger.verbose(`redis ${type} client connected`);
+    logger.verbose(`redis ${type} client: connect`);
   });
   client.on('ready', () => {
-    logger.verbose(`redis ${type} client ready`);
+    logger.verbose(`redis ${type} client: ready`);
   });
   client.on('reconnecting', () => {
-    logger.verbose(`redis ${type} client reconnecting`);
+    logger.verbose(`redis ${type} client: reconnecting`);
   });
   client.on('close', () => {
-    logger.verbose(`redis ${type} client closed`);
+    logger.verbose(`redis ${type} client: close`);
+  });
+  client.on('end', () => {
+    logger.verbose(`redis ${type} client: end`);
   });
 }
 
