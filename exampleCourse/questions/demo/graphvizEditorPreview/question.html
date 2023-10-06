@@ -1,0 +1,17 @@
+<pl-question-panel>
+  <p>
+      Change the graph below.
+  </p>
+
+  <pl-file-editor file-name="graph.dot" ace-mode="ace/mode/dot" preview="dot">
+digraph {
+  A [style="filled", fillcolor="red"]
+  B [style="filled", fillcolor="yellow"]
+  A -> B [color="green"]
+}</pl-file-editor>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
