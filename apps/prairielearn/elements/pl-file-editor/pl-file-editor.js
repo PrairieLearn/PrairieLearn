@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, showdown, MathJax, DOMPurify, Viz */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -73,6 +73,21 @@ window.PLFileEditor = function (uuid, options) {
       this.updatePreview(renderer.makeHtml(this.editor.getValue()));
     });
     this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+  } else if (options.preview === 'dot') {
+    Viz.instance().then((viz) => {
+      this.editor.session.on('change', () => {
+        try {
+          this.updatePreview(viz.renderString(this.editor.getValue(), { format: 'svg' }));
+        } catch (err) {
+          this.updatePreview(`<span class="text-danger">${err.message}</span>`);
+        }
+      });
+      try {
+        this.updatePreview(viz.renderString(this.editor.getValue(), { format: 'svg' }));
+      } catch (err) {
+        this.updatePreview(`<span class="text-danger">${err.message}</span>`);
+      }
+    });
   } else if (options.preview === 'html') {
     this.editor.session.on('change', () => {
       this.updatePreview(this.editor.getValue());

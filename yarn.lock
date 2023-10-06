@@ -3183,6 +3183,7 @@ __metadata:
     "@types/tar": ^6.1.6
     "@types/tmp": ^0.2.4
     "@types/uuid": ^9.0.4
+    "@viz-js/viz": ^3.2.0
     ace-builds: ^1.28.0
     ace-code: ^1.28.0
     ajv: ^8.12.0
@@ -5270,6 +5271,13 @@ __metadata:
     "@typescript-eslint/types": 6.7.4
     eslint-visitor-keys: ^3.4.1
   checksum: 34d09798b6c48dc059e88c6cb3df5f96e859bd65d1dd05d907b8a3c7a5708a737d50607081fb14a4b974b90cfe4169a93db974bf53af8b282420187f73b0afac
+  languageName: node
+  linkType: hard
+
+"@viz-js/viz@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@viz-js/viz@npm:3.2.0"
+  checksum: 25dded32a87fa5c8a652bed3d4f95d94864f25b631f21d93bc0eb7f718f4d56c05f49476539a8e26f7965ab2b60a3faf3879d123d2d62c019e3caa098c8507f2
   languageName: node
   linkType: hard
 
