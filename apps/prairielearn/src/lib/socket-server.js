@@ -2,6 +2,7 @@
 const { Server } = require('socket.io');
 const redis = require('redis');
 const { createAdapter } = require('@prairielearn/socket.io-redis-adapter');
+const { logger } = require('@prairielearn/logger');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -15,6 +16,12 @@ module.exports.init = async function (server) {
     debug('init(): initializing redis pub/sub clients');
     module.exports.pub = redis.createClient({ url: config.redisUrl });
     module.exports.sub = redis.createClient({ url: config.redisUrl });
+    module.exports.pub.on('error', (err) => {
+      logger.error('Error with redis pub client', err);
+    });
+    module.exports.sub.on('error', (err) => {
+      logger.error('Error with redis sub client', err);
+    });
     await Promise.all([module.exports.pub.connect(), module.exports.sub.connect()]);
     debug('init(): initializing redis socket adapter');
     module.exports.io.adapter(createAdapter(module.exports.pub, module.exports.sub));

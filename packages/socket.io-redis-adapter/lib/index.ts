@@ -122,6 +122,7 @@ export class RedisAdapter extends Adapter {
     readonly subClient: any,
     opts: Partial<RedisAdapterOptions> = {},
   ) {
+    logger.verbose('socket.io-redis-adapter constructor()', { nsp, opts });
     super(nsp);
 
     this.uid = uid2(6);
@@ -172,6 +173,16 @@ export class RedisAdapter extends Adapter {
         console.warn("missing 'error' handler on this Redis client");
       }
     };
+    logger.verbose(
+      `socket.io-redis-adapter constructor(): pubClient.listenerCount = ${pubClient.listenerCount(
+        'error',
+      )}`,
+    );
+    logger.verbose(
+      `socket.io-redis-adapter constructor(): subClient.listenerCount = ${subClient.listenerCount(
+        'error',
+      )}`,
+    );
     this.pubClient.on('error', this.friendlyErrorHandler);
     this.subClient.on('error', this.friendlyErrorHandler);
   }
