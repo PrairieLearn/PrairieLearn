@@ -31,6 +31,12 @@ function attachEventListeners(client, type) {
   client.on('end', () => {
     logger.verbose(`redis client event for ${type}: end`);
   });
+  client.on('wait', () => {
+    logger.verbose(`redis client event for ${type}: wait`);
+  });
+  client.on('select', () => {
+    logger.verbose(`redis client event for ${type}: select`);
+  });
 }
 
 module.exports.init = async function (server) {
