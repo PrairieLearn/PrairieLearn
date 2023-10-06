@@ -22,8 +22,10 @@ function attachEventListeners(client, type) {
   client.on('ready', () => {
     logger.verbose(`redis client event for ${type}: ready`);
   });
-  client.on('reconnecting', () => {
-    logger.verbose(`redis client event for ${type}: reconnecting`);
+  client.on('reconnecting', (reconnectTimeMilliseconds) => {
+    logger.verbose(
+      `redis client event for ${type}: reconnecting in ${reconnectTimeMilliseconds} milliseconds`,
+    );
   });
   client.on('close', () => {
     logger.verbose(`redis client event for ${type}: close`);
