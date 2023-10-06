@@ -93,7 +93,7 @@
             </div>
           </div>
 
-          <% if (config.attachedFilesDialogEnabled) { %>
+          <% if (file_list.length > 0) { %>
             <%- include('../../partials/attachFilePanel', {question_context: 'manual_grading'}) %>
           <% } %>
 
