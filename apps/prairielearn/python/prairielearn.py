@@ -23,6 +23,7 @@ from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
+from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 
@@ -1063,8 +1064,8 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
     if s is None:
         return None
 
-    # Replace unicode minus with hyphen minus wherever it occurs
-    s = s.replace("\u2212", "-").strip()
+    # Do unidecode before parsing
+    s = full_unidecode(s).strip()
 
     # Try to parse as int
     try:
@@ -1812,3 +1813,8 @@ def index2key(i):
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
+
+
+def full_unidecode(input_str: str) -> str:
+    """Does unidecode of input"""
+    return unidecode(input_str.replace("\u2212", "-"))
