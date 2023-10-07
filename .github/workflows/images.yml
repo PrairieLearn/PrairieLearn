@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3 # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4 # https://github.com/marketplace/actions/checkout
         with:
           fetch-depth: 0
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
+        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
       - name: Login to DockerHub
-        uses: docker/login-action@v2 # https://github.com/marketplace/actions/docker-login
+        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
           platforms: linux/amd64
           push: true
           no-cache: true
-          tags: prairielearn/plbase:latest
+          tags: prairielearn/plbase:latest,prairielearn/plbase:${{ github.sha }}
 
       ######################################################################################################
       # prairielearn
@@ -67,7 +67,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-c:latest
+          tags: prairielearn/grader-c:latest,prairielearn/grader-c:${{ github.sha }}
 
       ######################################################################################################
       # grader-java
@@ -81,7 +81,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-java:latest
+          tags: prairielearn/grader-java:latest,prairielearn/grader-java:${{ github.sha }}
 
       ######################################################################################################
       # grader-python
@@ -95,7 +95,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-python:latest
+          tags: prairielearn/grader-python:latest,prairielearn/grader-python:${{ github.sha }}
 
       ######################################################################################################
       # grader-r
@@ -109,7 +109,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/grader-r:latest
+          tags: prairielearn/grader-r:latest,prairielearn/grader-r:${{ github.sha }}
 
       ######################################################################################################
       # workspace-desktop
@@ -123,7 +123,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-desktop:latest
+          tags: prairielearn/workspace-desktop:latest,prairielearn/workspace-desktop:${{ github.sha }}
 
       ######################################################################################################
       # workspace-jupyterlab
@@ -137,7 +137,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-jupyterlab:latest
+          tags: prairielearn/workspace-jupyterlab:latest,prairielearn/workspace-jupyterlab:${{ github.sha }}
 
       ######################################################################################################
       # workspace-rstudio
@@ -151,7 +151,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-rstudio:latest
+          tags: prairielearn/workspace-rstudio:latest,prairielearn/workspace-rstudio:${{ github.sha }}
 
       ######################################################################################################
       # workspace-xtermjs
@@ -165,4 +165,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           no-cache: true
-          tags: prairielearn/workspace-xtermjs:latest
+          tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
