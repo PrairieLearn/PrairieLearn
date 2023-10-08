@@ -130,7 +130,7 @@ By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for s
 ],
 ```
 
-When using `maxAutoPoints` the number of correct answers needed to obtain the full points available for a question can be a little complicated. If we use `"constantQuestionValue": true` then the question value never changes and so the number of correct answers needed is just `maxAutoPoints / autoPoints`. However, in the default case when `constantQuestionValue` is false, repeated correct answers will allow a student to reach the `maxAutoPoints` more quickly. For example, with `autoPoints` of 3 and `maxAutoPoints` of 30, a student who answers the question correctly just 4 times in a row will receive the full 3+6+9+12=30 points. This means that a student who has achieved mastery can quickly complete the question. In contrast, a student who is struggling with the question may have to answer it correctly up to 30/3=10 times if they make repeated mistakes along the way to keep resetting the question value back to 3.
+When using `maxAutoPoints`, the number of correct answers needed to obtain the full points available for a question can be a little complicated. If we use `"constantQuestionValue": true` then the question value never changes and so the number of correct answers needed is just `maxAutoPoints / autoPoints`. However, in the default case when `constantQuestionValue` is false, repeated correct answers will allow a student to reach the `maxAutoPoints` more quickly. For example, with `autoPoints` of 3 and `maxAutoPoints` of 30, a student who answers the question correctly just 4 times in a row will receive the full 3+6+9+12=30 points. This means that a student who has achieved mastery can quickly complete the question. In contrast, a student who is struggling with the question may have to answer it correctly up to 30/3=10 times if they make repeated mistakes along the way to keep resetting the question value back to 3.
 
 Manual grading points are set using the `manualPoints`. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0.
 
@@ -181,11 +181,11 @@ As an example, suppose a student makes 8 submissions of varying degrees of corre
 | Init              | -                      | 0                  | 4              | 0               | Initial values                                                                                            |
 | 1                 | 50%                    | 50%                | 4              | 2               | (50% - 0%) \* 4 = 2 points awarded                                                                        |
 | 2                 | 80%                    | 80%                | 4              | 3.2             | (80% - 50%) \* 4 = 1.2 points awarded                                                                     |
-| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded or deducted                                                             |
+| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded or deducted                                                 |
 | 4                 | 100%                   | 0%                 | 8              | 4               | (100% - 80%) \* 4 = 0.8 points awarded, `best current score` reset to 0%, `question value` increased to 8 |
 | 5                 | 50%                    | 50%                | 4              | 8               | (50% - 0%) \* 8 = 4 points awarded, `question value` reset to 4                                           |
-| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded or deducted                                                             |
-| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded or deducted                                                                     |
+| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded or deducted                                                 |
+| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded or deducted                                                         |
 | 8                 | 100%                   | 0%                 | 8              | 10              | (100% - 90%) \* 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8 |
 
 After the eight submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice but they cannot earn any more points for it.
@@ -223,12 +223,12 @@ For the `n`-th submission attempt made by a student, the scoring algorithm is as
 
 As an example, suppose a student makes 4 submissions of varying degrees of correctness to a question which has `autoPoints` set to `[10, 7, 5, 2]`. The student's submissions are as follows:
 
-| Submission number | Submission perc. score | Best current score | Question value | Question points | Comment                                       |
-| ----------------- | ---------------------- | ------------------ | -------------- | --------------- | --------------------------------------------- |
-| Init              | -                      | 0                  | -              | 0               | Initial values                                |
-| 1                 | 50%                    | 50%                | 10             | 5               | (50% - 0%) \* 10 = 5 points awarded           |
+| Submission number | Submission perc. score | Best current score | Question value | Question points | Comment                                                   |
+| ----------------- | ---------------------- | ------------------ | -------------- | --------------- | --------------------------------------------------------- |
+| Init              | -                      | 0                  | -              | 0               | Initial values                                            |
+| 1                 | 50%                    | 50%                | 10             | 5               | (50% - 0%) \* 10 = 5 points awarded                       |
 | 2                 | 20%                    | 50%                | 7              | 5               | No improvement in score, so no points awarded or deducted |
-| 3                 | 80%                    | 80%                | 5              | 6.5             | (80% - 50%) \* 5 = 1.5 points awarded         |
+| 3                 | 80%                    | 80%                | 5              | 6.5             | (80% - 50%) \* 5 = 1.5 points awarded                     |
 | 4                 | 70%                    | 80%                | 2              | 6.5             | No improvement in score, so no points awarded or deducted |
 
 After the four submissions above the student has achieved 6.5 points for the question, for an overall score of 65% (6.5/10). They can no longer make submission attempts to the question.
