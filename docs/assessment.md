@@ -110,7 +110,7 @@ An assessment is broken down in to a list of zones, like this:
 
 Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](manualGrading.md)).
 
-Auto-grading points are set using the `autoPoints` value. For Exam-type assessments, this option can be set to a single value (in which case a single attempt is allowed), or using an array of values, where each value corresponds to an attempt. For Homework-type assessments, the number of `autoPoints` must be a single value, and it corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and full auto points. Manual grading points are set using the `manualPoints`. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0.
+Auto-grading points are set using the `autoPoints` value. For Exam-type assessments, this option can be set to a single value (in which case a single attempt is allowed), or using a list of values, where each value corresponds to an attempt. For Homework-type assessments, the number of `autoPoints` must be a single value, and it corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and full auto points. Manual grading points are set using the `manualPoints`. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0.
 
 For Homework-type assessments, it is also possible to set a value to `maxAutoPoints`. If this value is used, then once a student gets a correct answer with the full value of `autoPoints`, the student is able to get additional points for a new attempt, typically with a new question variant. Every new correct answer adds up `autoPoints` points, up to a maximum of `maxAutoPoints`. Answers with partial credit do not accumulate, and their partial points are added only to previous correct answers. For example, if `autoPoints` is 3 and `maxAutoPoints` is 12, then each correct answer adds 3 points to the question, up to a maximum total of 12 points.
 
@@ -142,7 +142,7 @@ The basic idea is that students should receive `autoPoints` each time they solve
 The exact details of how PrairieLearn awards points are as follows. First, a number of variables are computed internally by PrairieLearn as the student answers the question:
 
 - **Submission percentage score** is the score (between 0% and 100%) that the student receives for any given submission attempt, as evaluated by the question grading specification.
-- **Best current score** is the highest submission percentage score that the student has received since last achieving 100% for a submission. This is initialized to zero.
+- **Best current score** is the highest submission percentage score the student has received so far. If the student has already achieved 100% for a submission at least once, it is the highest submission percentage score the student has received since last achieving 100% for a submission. This is initialized to zero.
 - **Question value** is the current maximum number of points that the question is worth. This starts at `autoPoints` and increases by `autoPoints` for each consecutive correct submission. This is initialized to `autoPoints`.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
@@ -159,26 +159,26 @@ As an example, suppose a student makes 8 submissions of varying degrees of corre
 | Init              | -                      | 0                  | 4              | 0               | Initial values                                                                                            |
 | 1                 | 50%                    | 50%                | 4              | 2               | (50% - 0%) \* 4 = 2 points awarded                                                                        |
 | 2                 | 80%                    | 80%                | 4              | 3.2             | (80% - 50%) \* 4 = 1.2 points awarded                                                                     |
-| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded                                                             |
+| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded or deducted                                                             |
 | 4                 | 100%                   | 0%                 | 8              | 4               | (100% - 80%) \* 4 = 0.8 points awarded, `best current score` reset to 0%, `question value` increased to 8 |
 | 5                 | 50%                    | 50%                | 4              | 8               | (50% - 0%) \* 8 = 4 points awarded, `question value` reset to 4                                           |
-| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded                                                             |
-| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded                                                                     |
+| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded or deducted                                                             |
+| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded or deducted                                                                     |
 | 8                 | 100%                   | 0%                 | 8              | 10              | (100% - 90%) \* 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8 |
 
 After the eight submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice but they cannot earn any more points for it.
 
 ## Question scoring for `Exam` assessments
 
-Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as `allowRealTimeGrading` is true (the default). This section describes in detail how repeated attempts are scored, assuming that the question has `autoPoints` set to an array of values.
+Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as `allowRealTimeGrading` is true (the default). This section describes in detail how repeated attempts are scored, assuming that the question has `autoPoints` set to a list of values.
 
-The important question configuration settings is:
+The important question configuration setting is:
 
-- **`autoPoints`** is an array of points, with the `n`-th entry being the number of points that a student receives for a fully correct submission on the `n`-th attempt at the question. If `autoPoints` is set to a single value rather than an array then only a single attempt is allowed.
+- **`autoPoints`** is a list of points, with the `n`-th entry being the number of points that a student receives for a fully correct submission on the `n`-th attempt at the question. If `autoPoints` is set to a single value rather than a list then only a single attempt is allowed.
 
 The basic idea is that `autoPoints` is set to a decreasing sequence of points, such as `[10, 7, 5, 2]`. In this case, a correct answer on the first attempt is worth 10 points, a correct answer on the second attempt is worth 7 points, and so on. If the student does not answer the question correctly after four attempts, they will receive 0 points for the question and cannot attempt it again.
 
-The details of how scoring works are made more complex by the fact that a student may receive partial credit for any given submission attempt. PrairieLearn uses a scoring system that has four key properties, assuming that `autoPoints` is an array of decreasing values:
+The details of how scoring works are made more complex by the fact that a student may receive partial credit for any given submission attempt. PrairieLearn uses a scoring system that has four key properties, assuming that `autoPoints` is a list of decreasing values:
 
 1. A student can never lose points by attempting a question again.
 2. If a student submits a more correct answer than their previous answers, they will always receive some additional points for it.
@@ -188,7 +188,7 @@ The details of how scoring works are made more complex by the fact that a studen
 The exact details of how PrairieLearn awards points are as follows. First, a number of variables are computed internally by PrairieLearn as the student answers the question:
 
 - **Submission percentage score** is the score (between 0% and 100%) that the student receives for any given submission attempt, as evaluated by the question grading specification.
-- **Best current score** is the highest submission percentage score that the student has received since last achieving 100% for a submission. This is initialized to zero.
+- **Best current score** is the highest submission percentage score the student has received so far. This is initialized to zero.
 - **Question value** is the current maximum number of points that the question is worth. This is equal to `autoPoints[n]` for the `n`-th attempt at the question.
 - **Question points** is the total number of points earned by the student for the question. This will never decrease. This is initialized to zero.
 
@@ -205,9 +205,9 @@ As an example, suppose a student makes 4 submissions of varying degrees of corre
 | ----------------- | ---------------------- | ------------------ | -------------- | --------------- | --------------------------------------------- |
 | Init              | -                      | 0                  | -              | 0               | Initial values                                |
 | 1                 | 50%                    | 50%                | 10             | 5               | (50% - 0%) \* 10 = 5 points awarded           |
-| 2                 | 20%                    | 50%                | 7              | 5               | No improvement in score, so no points awarded |
+| 2                 | 20%                    | 50%                | 7              | 5               | No improvement in score, so no points awarded or deducted |
 | 3                 | 80%                    | 80%                | 5              | 6.5             | (80% - 50%) \* 5 = 1.5 points awarded         |
-| 4                 | 70%                    | 80%                | 2              | 6.5             | No improvement in score, so no points awarded |
+| 4                 | 70%                    | 80%                | 2              | 6.5             | No improvement in score, so no points awarded or deducted |
 
 After the four submissions above the student has achieved 6.5 points for the question, for an overall score of 65% (6.5/10). They can no longer make submission attempts to the question.
 
