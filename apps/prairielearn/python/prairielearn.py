@@ -17,13 +17,12 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
+import python_helper_sympy as phs
 import sympy
 import to_precision
 from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
-from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 
@@ -289,7 +288,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
-        return sympy_to_json(v)
+        return phs.sympy_to_json(v)
     elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -421,7 +420,7 @@ def from_json(v):
                         "variable of type complex_ndarray should have value with real and imaginary pair"
                     )
             elif v["_type"] == "sympy":
-                return json_to_sympy(v)
+                return phs.json_to_sympy(v)
             elif v["_type"] == "sympy_matrix":
                 if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
                     value = v["_value"]
@@ -430,7 +429,9 @@ def from_json(v):
                     M = sympy.Matrix.zeros(shape[0], shape[1])
                     for i in range(0, shape[0]):
                         for j in range(0, shape[1]):
-                            M[i, j] = convert_string_to_sympy(value[i][j], variables)
+                            M[i, j] = phs.convert_string_to_sympy(
+                                value[i][j], variables
+                            )
                     return M
                 else:
                     raise Exception(
@@ -1065,7 +1066,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
         return None
 
     # Do unidecode before parsing
-    s = full_unidecode(s).strip()
+    s = phs.full_unidecode(s).strip()
 
     # Try to parse as int
     try:
@@ -1813,8 +1814,3 @@ def index2key(i):
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
-
-
-def full_unidecode(input_str: str) -> str:
-    """Does unidecode of input"""
-    return unidecode(input_str.replace("\u2212", "-"))

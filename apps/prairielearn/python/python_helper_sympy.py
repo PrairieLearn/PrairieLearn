@@ -364,9 +364,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    # Also replace the unicode minus with the normal one.
-    expr = expr.replace("^", "**").replace("\u2212", "-")
-    expr = unidecode(expr)
+    expr = full_unidecode(expr).replace("^", "**")
 
     local_dict = {
         k: v
@@ -703,3 +701,8 @@ def get_items_list(items_string: None | str) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+def full_unidecode(input_str: str) -> str:
+    """Does unidecode of input and replaces the unicode minus with the normal one."""
+    return unidecode(input_str.replace("\u2212", "-"))
