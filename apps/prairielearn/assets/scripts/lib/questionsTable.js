@@ -17,6 +17,13 @@ onDocumentReady(() => {
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
+  window.sharingSetsList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
+    return _.keyBy(
+      _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+    );
+  };
+
   window.versionList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
@@ -67,6 +74,12 @@ onDocumentReady(() => {
   window.tagsFormatter = function (tags, question) {
     return _.map(question.tags ?? [], (tag) =>
       html`<span class="badge color-${tag.color}">${tag.name}</span>`.toString(),
+    ).join(' ');
+  };
+
+  window.sharingSetFormatter = function (sharing_sets, question) {
+    return _.map(question.sharing_sets ?? [], (sharing_set) =>
+      html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
     ).join(' ');
   };
 
