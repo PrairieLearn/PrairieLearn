@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify, Viz */
+/* global ace, showdown, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -64,26 +64,26 @@ window.PLFileEditor = function (uuid, options) {
   this.plOptionFocus = options.plOptionFocus;
 
   if (options.preview !== undefined) {
-    if (options.preview === 'markdown') {
+    // Retrieve preview render function from extension
+    if (this.preview[options.preview]) {
+      if (this.preview[options.preview].then) {
+        // If preview function is a Promise, keep no render immediately, but
+        // update it when the promise fulfills
+        this.previewRender = null;
+        this.preview[options.preview].then((fn) => {
+          this.previewRender = fn;
+          this.updatePreview();
+        });
+      } else {
+        this.previewRender = this.preview[options.preview];
+      }
+    } else if (options.preview === 'markdown') {
       const renderer = new showdown.Converter({
         literalMidWordUnderscores: true,
         literalMidWordAsterisks: true,
       });
 
       this.previewRender = (value) => renderer.makeHtml(value);
-    } else if (options.preview === 'dot') {
-      this.previewRender = null;
-      Viz.instance().then((viz) => {
-        this.previewRender = (value) => {
-          try {
-            return viz.renderString(value, { format: 'svg' });
-          } catch (err) {
-            return `<span class="text-danger">${err.message}</span>`;
-          }
-        };
-        // Call updatePreview again, to render the initial value, since it's inside a promise.
-        this.updatePreview();
-      });
     } else if (options.preview === 'html') {
       this.previewRender = (value) => value;
     } else {
@@ -303,4 +303,8 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
       return String.fromCharCode('0x' + p1);
     }),
   );
+};
+
+window.PLFileEditor.prototype.preview = {
+  // Object potentially used by extensions to populate new types of preview
 };
