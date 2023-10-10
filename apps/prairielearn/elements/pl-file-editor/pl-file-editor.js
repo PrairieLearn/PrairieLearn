@@ -63,34 +63,36 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview === 'markdown') {
-    const renderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
+  if (options.preview !== undefined) {
+    if (options.preview === 'markdown') {
+      const renderer = new showdown.Converter({
+        literalMidWordUnderscores: true,
+        literalMidWordAsterisks: true,
+      });
 
-    this.previewRender = (value) => renderer.makeHtml(value);
-  } else if (options.preview === 'dot') {
-    this.previewRender = null;
-    Viz.instance().then((viz) => {
-      this.previewRender = (value) => {
-        try {
-          return viz.renderString(value, { format: 'svg' });
-        } catch (err) {
-          return `<span class="text-danger">${err.message}</span>`;
-        }
-      };
-      // Call updatePreview again, to render the initial value, since it's inside a promise.
-      this.updatePreview();
-    });
-  } else if (options.preview === 'html') {
-    this.previewRender = (value) => value;
-  } else if (options.preview !== undefined) {
-    this.previewRender = () => '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
+      this.previewRender = (value) => renderer.makeHtml(value);
+    } else if (options.preview === 'dot') {
+      this.previewRender = null;
+      Viz.instance().then((viz) => {
+        this.previewRender = (value) => {
+          try {
+            return viz.renderString(value, { format: 'svg' });
+          } catch (err) {
+            return `<span class="text-danger">${err.message}</span>`;
+          }
+        };
+        // Call updatePreview again, to render the initial value, since it's inside a promise.
+        this.updatePreview();
+      });
+    } else if (options.preview === 'html') {
+      this.previewRender = (value) => value;
+    } else {
+      this.previewRender = () => `<p>Unknown preview type: <code>${options.preview}</code></p>`;
+    }
+
+    this.editor.session.on('change', () => this.updatePreview());
+    this.updatePreview();
   }
-
-  this.editor.session.on('change', () => this.updatePreview());
-  this.updatePreview();
 
   var currentContents = '';
   if (options.currentContents) {
