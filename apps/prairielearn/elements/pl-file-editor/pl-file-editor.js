@@ -64,39 +64,33 @@ window.PLFileEditor = function (uuid, options) {
   this.plOptionFocus = options.plOptionFocus;
 
   if (options.preview === 'markdown') {
-    let renderer = new showdown.Converter({
+    const renderer = new showdown.Converter({
       literalMidWordUnderscores: true,
       literalMidWordAsterisks: true,
     });
 
-    this.editor.session.on('change', () => {
-      this.updatePreview(renderer.makeHtml(this.editor.getValue()));
-    });
-    this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+    this.previewRender = (value) => renderer.makeHtml(value);
   } else if (options.preview === 'dot') {
+    this.previewRender = null;
     Viz.instance().then((viz) => {
-      this.editor.session.on('change', () => {
+      this.previewRender = (value) => {
         try {
-          this.updatePreview(viz.renderString(this.editor.getValue(), { format: 'svg' }));
+          return viz.renderString(value, { format: 'svg' });
         } catch (err) {
-          this.updatePreview(`<span class="text-danger">${err.message}</span>`);
+          return `<span class="text-danger">${err.message}</span>`;
         }
-      });
-      try {
-        this.updatePreview(viz.renderString(this.editor.getValue(), { format: 'svg' }));
-      } catch (err) {
-        this.updatePreview(`<span class="text-danger">${err.message}</span>`);
-      }
+      };
+      // Call updatePreview again, to render the initial value, since it's inside a promise.
+      this.updatePreview();
     });
   } else if (options.preview === 'html') {
-    this.editor.session.on('change', () => {
-      this.updatePreview(this.editor.getValue());
-    });
-    this.updatePreview(this.editor.getValue());
+    this.previewRender = (value) => value;
   } else if (options.preview !== undefined) {
-    let preview = this.element.find('.preview')[0];
-    preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
+    this.previewRender = () => '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
   }
+
+  this.editor.session.on('change', () => this.updatePreview());
+  this.updatePreview();
 
   var currentContents = '';
   if (options.currentContents) {
@@ -131,7 +125,8 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = function (html_contents) {
+window.PLFileEditor.prototype.updatePreview = function () {
+  const html_contents = this.previewRender?.(this.editor.getValue()) || '';
   const default_preview_text = '<p>Begin typing above to preview</p>';
   let preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
