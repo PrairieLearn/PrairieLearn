@@ -1,13 +1,13 @@
 <pl-question-panel>
   <p>
-      Change the graph below.
+      This question demonstrates the use of custom preview functions as element extensions to <code>pl-file-editor</code>. The example course includes an extension that provides a previewer for <a href="https://graphviz.org/doc/info/lang.html" target="_blank">the Dot language</a>, used to draw graphs.
   </p>
 
   <pl-file-editor file-name="graph.dot" ace-mode="ace/mode/dot" preview="dot">
 digraph {
-  A [style="filled", fillcolor="red"]
-  B [style="filled", fillcolor="yellow"]
-  A -> B [color="green"]
+    A [style="filled", fillcolor="red"]
+    B [style="filled", fillcolor="yellow"]
+    A -> B [color="green"]
 }</pl-file-editor>
 
 </pl-question-panel>
