@@ -11,6 +11,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
+from io import StringIO
 from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
@@ -453,7 +454,7 @@ def from_json(v):
             elif v["_type"] == "dataframe_v2":
                 # Convert native JSON back to a string representation so that
                 # pandas read_json() can process it.
-                value_str = json.dumps(v["_value"])
+                value_str = StringIO(json.dumps(v["_value"]))
                 return pandas.read_json(value_str, orient="table")
             elif v["_type"] == "networkx_graph":
                 return nx.adjacency_graph(v["_value"])
