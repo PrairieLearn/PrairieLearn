@@ -29,7 +29,7 @@ digraph G {
 <div class="card my-2">
     <div class="card-body">
         <pl-question-panel>
-            <p>Here's a graph with randomly-generated edge weights.  Because here the graph is specified in the <code>question.html</code>, parameters can be templated using Mustache.</p>
+            <p>Here's a graph with randomly-generated edge weights. Because here the graph is specified in the <code>question.html</code>, parameters can be templated using Mustache.</p>
 
 <pl-code language="html">
 &lt;pl-graph&gt;
@@ -53,7 +53,7 @@ digraph G {
 <div class="card my-2">
     <div class="card-body">
         <pl-question-panel>
-            <p>Here's a graph created from a randomly-generated adjacency matrix.  By default, weights will be displayed when they are not <code>0</code> or <code>1</code>.  The matrix and labels can be specified with <code>params-name</code> and <code>params-name-labels</code>, respectively.</p>
+            <p>Here's a graph created from a randomly-generated adjacency matrix. By default, weights will be displayed when they are not <code>0</code> or <code>1</code>. The matrix and labels can be specified with <code>params-name</code> and <code>params-name-labels</code>, respectively.</p>
 
 <pl-code language="python">
 mat = np.random.random((3, 3))
@@ -76,7 +76,7 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2">
     <div class="card-body" >
         <pl-question-panel>
-            <p>To force no weights being displayed, the attribute <code>weights</code> can be set to <code>"false"</code>.  Here is the same graph with no edge weights.</p>
+            <p>To force no weights being displayed, the attribute <code>weights</code> can be set to <code>"false"</code>. Here is the same graph with no edge weights.</p>
         </pl-question-panel>
         <pl-graph params-name="matrix" params-name-labels="labels" weights="false"></pl-graph>
     </div>
@@ -85,7 +85,7 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2">
     <div class="card-body" >
         <pl-question-panel>
-            <p>To force the graph to be undirected, the attribute <code>directed</code> can be set to <code>"false"</code>.  Here is an undirected graph.
+            <p>To force the graph to be undirected, the attribute <code>directed</code> can be set to <code>"false"</code>. Here is an undirected graph.
                 <b>The input matrix must be symmetric in this case.</b>
             </p>
         </pl-question-panel>
@@ -107,7 +107,7 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2">
     <div class="card-body" >
         <pl-question-panel>
-            <p>Here is another graph with binary <code>0</code> or <code>1</code> weights.  These weights will not be displayed unless specified with <code>weights="true"</code>.</p>
+            <p>Here is another graph with binary <code>0</code> or <code>1</code> weights. These weights will not be displayed unless specified with <code>weights="true"</code>.</p>
         </pl-question-panel>
         <pl-matrix-latex params-name="matrix2"></pl-matrix-latex>
         <pl-graph params-name="matrix2"></pl-graph>
@@ -130,7 +130,7 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2" >
     <div class="card-body">
         <pl-question-panel>
-            <p> The <code class="user-output">pl-graph</code> element has the ability to be extended on a course level to create graphs based on custom inputs.  This course extension located in <code class="user-output">elementExtensions/pl-graph/edge-inc-matrix</code> adds the capability of rendering edge-incidence matrices as graphs. </p>
+            <p> The <code class="user-output">pl-graph</code> element has the ability to be extended on a course level to create graphs based on custom inputs. This course extension located in <code class="user-output">elementExtensions/pl-graph/edge-inc-matrix</code> adds the capability of rendering edge-incidence matrices as graphs. </p>
             <pl-matrix-latex params-name="edge-inc-mat"></pl-matrix-latex>
             <pl-graph params-name="edge-inc-mat" params-type="edge-inc-matrix"></pl-graph>
             <p> For more information on how to create extensions, check the <a href="">extension documentation</a> and <a href="">graph element documentation</a>. </p>
