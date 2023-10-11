@@ -7,7 +7,7 @@ const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const debug = require('debug')('prairielearn:instructorFileEditor');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify } = require('util');
 const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs-legacy');
@@ -374,7 +374,7 @@ router.post('/*', (req, res, next) => {
   }
 
   **/
- 
+
 });
 
 function getHash(contents) {
