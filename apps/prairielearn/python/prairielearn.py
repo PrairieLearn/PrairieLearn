@@ -1816,6 +1816,7 @@ def index2key(i):
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
 
+
 def full_unidecode(input_str: str) -> str:
     """Does unidecode of input and replaces the unicode minus with the normal one."""
     return unidecode(input_str.replace("\u2212", "-"))
