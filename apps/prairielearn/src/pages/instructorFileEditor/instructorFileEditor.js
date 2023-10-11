@@ -29,6 +29,8 @@ const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
 const { getLockNameForCoursePath } = require('../../lib/course');
+const { logger } = require('@prairielearn/logger');
+
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -183,6 +185,57 @@ router.get('/*', (req, res, next) => {
 });
 
 router.post('/*', (req, res, next) => {
+  debug('POST /');
+  if (!res.locals.authz_data.has_course_permission_edit) {
+    return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
+  getPaths(req, res, (err, paths) => {
+    if (ERR(err, next)) return;
+    const container = {
+      rootPath: paths.rootPath,
+      invalidRootPaths: paths.invalidRootPaths,
+    };
+
+    // NOTE: All actions are meant to do things to *files* and not to directories
+    // (or anything else). However, nowhere do we check that it is actually being
+    // applied to a file and not to a directory.
+
+    if (req.body.__action === 'save_and_sync') {
+      debug('Save and sync');
+      
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container: container,
+        filePath: paths.workingPath,
+        editContents: req.body.file_edit_contents,
+        origHash: req.body.file_edit_orig_hash,
+      });
+      debug(editor);
+      editor.shouldEdit((err, yes) => {
+        if (ERR(err, next)) return;
+        if (!yes) return res.redirect(req.originalUrl);
+        editor.canEdit((err) => {
+          if (ERR(err, next)) return;
+
+          // FIXME - if we want to keep the same UI, then we
+          //         should not redirect to edit_error page
+          editor.doEdit((err, job_sequence_id) => {
+            if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
+              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+            } else {
+              res.redirect(req.originalUrl);
+            }
+          });
+        });
+      });
+    } else {
+      return next(new Error('unknown __action: ' + req.body.__action));
+    }
+  });
+  
+
+  /**
+   
   debug(`Responding to post with action ${req.body.__action}`);
   if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
@@ -319,6 +372,9 @@ router.post('/*', (req, res, next) => {
       }),
     );
   }
+
+  **/
+ 
 });
 
 function getHash(contents) {
