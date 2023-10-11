@@ -22,6 +22,7 @@ const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
 const { getLockNameForCoursePath } = require('./course');
+const b64Util = require('../lib/base64-util');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -1178,6 +1179,108 @@ class FileUploadEditor extends Editor {
   }
 }
 
+class FileModifyEditor extends Editor {
+  // Naming convention for contents and hashes in FileModifyEditor:
+  //  
+  //    xyzContentsUTF - contents of xyz file as utf8
+  //
+  //    xyzContents - contents of xyz file as utf8 that is base64-encoded
+  //
+  //    xyzHash - hash of contents of xyz file as utf8 that is base64-encoded
+  //
+  // The base64 encoding and its corresponding hash are used by the file editor.
+  // If this weren't the case, then we wouldn't use it here either. For example,
+  // FileUploadEditor - which is used by the file browser - doesn't require any
+  // base64 encoding. In that case, contents/hashes are just utf8.
+  
+  constructor(params) {
+    super(params);
+    this.container = params.container;
+    this.filePath = params.filePath;
+    this.editContents = params.editContents;
+    this.origHash = params.origHash;
+    if (this.course.path === this.container.rootPath) {
+      this.prefix = '';
+    } else {
+      this.prefix = `${path.basename(this.container.rootPath)}: `;
+    }
+    this.description = `${this.prefix}modify ${path.relative(
+      this.container.rootPath,
+      this.filePath,
+    )}`;
+  }
+
+  getHash(contents) {
+    return sha256(contents).toString();
+  }
+
+  shouldEdit(callback) {
+    debug('get hash of edit contents');
+    const editHash = this.getHash(this.editContents);
+    debug('editHash: ' + editHash);
+    debug('origHash: ' + this.origHash);
+    if (this.origHash === editHash) {
+      debug('edit contents are the same as orig contents, so abort');
+      callback(null, false);
+    } else {
+      debug('edit contents are different from orig contents, so continue');
+      callback(null, true);
+    }
+  }
+
+  canEdit(callback) {
+    if (!contains(this.container.rootPath, this.filePath)) {
+      const err = error.makeWithInfo(
+        'Invalid file path',
+        `<p>The file path</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
+          `<p>must be inside the root directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+      );
+      return callback(err);
+    }
+
+    const found = this.container.invalidRootPaths.find((invalidRootPath) =>
+      contains(invalidRootPath, this.filePath),
+    );
+    if (found) {
+      const err = error.makeWithInfo(
+        'Invalid file path',
+        `<p>The file path</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
+          `<p>must <em>not</em> be inside the directory</p>` +
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+      );
+      return callback(err);
+    }
+
+    super.canEdit((err) => {
+      if (ERR(err, callback)) return;
+      callback(null);
+    });
+  }
+
+  async write() {
+    debug('FileModifyEditor: write()');
+    
+    debug(`ensure path exists`);
+    await fs.ensureDir(path.dirname(this.filePath));
+
+    debug(`verify disk hash matches orig hash`);
+    const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
+    const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
+    const diskHash = this.getHash(diskContents);
+    if (this.origHash !== diskHash) {
+      throw new Error('Another user made changes to the file you were editing.');
+    }
+
+    debug(`write file`);
+    await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+    this.pathsToAdd = [this.filePath];
+    this.commitMessage = this.description;
+  }
+}
+
 class CourseInfoEditor extends Editor {
   constructor(params) {
     super(params);
@@ -1226,5 +1329,6 @@ module.exports = {
   FileDeleteEditor,
   FileRenameEditor,
   FileUploadEditor,
+  FileModifyEditor,
   CourseInfoEditor,
 };
