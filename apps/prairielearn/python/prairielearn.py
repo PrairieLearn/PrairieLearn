@@ -23,6 +23,7 @@ import to_precision
 from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
+from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 
@@ -1066,7 +1067,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
         return None
 
     # Do unidecode before parsing
-    s = phs.full_unidecode(s).strip()
+    s = full_unidecode(s).strip()
 
     # Try to parse as int
     try:
@@ -1814,3 +1815,7 @@ def index2key(i):
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
+
+def full_unidecode(input_str: str) -> str:
+    """Does unidecode of input and replaces the unicode minus with the normal one."""
+    return unidecode(input_str.replace("\u2212", "-"))
