@@ -293,7 +293,7 @@ function qidFormatter(cell: CellComponent): string {
   text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
     >${question.qid}</a
   >`.toString();
-  if (idsEqual(question.open_issue_count, 0)) {
+  if (!idsEqual(question.open_issue_count, 0)) {
     text += html`<a
       class="badge badge-pill badge-danger ml-1"
       href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}"
