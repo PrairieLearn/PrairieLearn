@@ -30,6 +30,7 @@ const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
 const { getLockNameForCoursePath } = require('../../lib/course');
 const { logger } = require('@prairielearn/logger');
+const { FileModifyEditor } = require('../../lib/editors');
 
 
 const sql = sqldb.loadSqlEquiv(__filename);
