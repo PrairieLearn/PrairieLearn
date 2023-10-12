@@ -3434,6 +3434,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": ^8.2.1
+    "@socket.io/redis-emitter": ^5.1.0
     "@types/node": ^18.18.2
     archiver: ^6.0.1
     async: ^3.2.4
@@ -3448,8 +3449,6 @@ __metadata:
     lodash: ^4.17.21
     mocha: ^10.2.0
     nodemon: ^3.0.1
-    socket.io: ^4.7.2
-    socket.io-adapter: ^2.5.2
     ts-node: ^10.9.1
     typescript: ^5.2.2
     typescript-cp: ^0.1.9
@@ -3466,6 +3465,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@socket.io/redis-emitter": ^5.1.0
     "@types/node": ^18.18.2
     fast-glob: ^3.3.1
     filesize: ^10.1.0
@@ -4293,6 +4293,17 @@ __metadata:
   peerDependencies:
     socket.io-adapter: ^2.4.0
   checksum: f0fc24a537b075ed6340a4adbd12631e3b55e867b8aa9203ed1cd5a28a4c97dc0dc3e65c00bbbe13ee6dc3bae382b6d9ed9ac44d4eb156f23965ee0e0ac9e6fd
+  languageName: node
+  linkType: hard
+
+"@socket.io/redis-emitter@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "@socket.io/redis-emitter@npm:5.1.0"
+  dependencies:
+    debug: ~4.3.1
+    notepack.io: ~3.0.1
+    socket.io-parser: ~4.2.1
+  checksum: 2e338c8b1ea49b13c163c96115a6e91e45eddfdf900780c24a2371e6a4b3f831ba879bb422ed18dde1182435a5489a0444265d9e8ec1261f3f0888b06e01461d
   languageName: node
   linkType: hard
 
@@ -14867,7 +14878,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"socket.io-parser@npm:~4.2.4":
+"socket.io-parser@npm:~4.2.1, socket.io-parser@npm:~4.2.4":
   version: 4.2.4
   resolution: "socket.io-parser@npm:4.2.4"
   dependencies:

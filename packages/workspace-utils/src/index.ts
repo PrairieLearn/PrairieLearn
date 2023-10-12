@@ -1,13 +1,14 @@
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { contains } from '@prairielearn/path-utils';
 import type { Server as SocketIOServer } from 'socket.io';
+import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import path from 'path';
 
 const sql = loadSqlEquiv(__filename);
 
-let socketIoServer: SocketIOServer | null = null;
+let socketIoServer: SocketIOServer | SocketIOEmitter | null = null;
 
 export function init(io: SocketIOServer) {
   socketIoServer = io;
