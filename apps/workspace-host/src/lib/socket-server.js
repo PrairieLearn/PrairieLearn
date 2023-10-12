@@ -53,6 +53,8 @@ module.exports.init = async function (server) {
     attachEventListeners(module.exports.pub, 'pub');
     attachEventListeners(module.exports.sub, 'sub');
 
+    // TODO: remove the `sub` client if this issue is resolved:
+    // https://github.com/socketio/socket.io-redis-adapter/issues/516
     debug('init(): initializing redis socket adapter');
     module.exports.io.adapter(createAdapter(module.exports.pub, module.exports.sub));
   }
