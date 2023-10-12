@@ -1,3 +1,5 @@
+//@ts-check
+
 import { selectQuestion } from '../../models/question';
 import { selectCourse } from '../../models/course';
 import { UserSchema } from '../../lib/db-types';
@@ -83,7 +85,7 @@ router.get('/', function (req, res, next) {
           (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
             question.getAndRenderVariant(
-              req.query.variant_id,
+              req.query.variant_id // use this: https://github.com/PrairieLearn/PrairieLearn/blob/e9c290c830a4f3c1579e28f62457cfcb545cbbac/apps/prairielearn/src/ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade.ts#L101,
               variant_seed,
               res.locals,
               function (err) {
