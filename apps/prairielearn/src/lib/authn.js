@@ -65,13 +65,11 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     throw new Error('user not found with user_id ' + user_id);
   }
 
-  if (req.session) {
-    // The session store will pick this up and store it in the `user_sessions.user_id` column.
-    req.session.user_id = user_id;
+  // The session store will pick this up and store it in the `user_sessions.user_id` column.
+  req.session.user_id = user_id;
 
-    // Our authentication middleware will read this value.
-    req.session.authn_provider_name = authnParams.provider;
-  }
+  // Our authentication middleware will read this value.
+  req.session.authn_provider_name = authnParams.provider;
 
   if (options.pl_authn_cookie) {
     var tokenData = {
