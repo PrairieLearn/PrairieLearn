@@ -111,13 +111,25 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
 
   var authnData = null;
-  if (req.cookies.pl_authn) {
-    // if we have a authn cookie then we try and unpack it
+
+  // `authnLib.loadUser` will migrate data into the session. If that data is
+  // already available, use it instead of the cookie.
+  if (req.session.user_id && req.session.authn_provider_name) {
+    authnData = {
+      user_id: req.session.user_id,
+      authn_provider_name: req.session.authn_provider_name,
+    };
+  }
+
+  if (!authnData && req.cookies.pl_authn) {
+    // If we have a authn cookie then we try and unpack it. If we fail to
+    // unpack the cookie's data, then authnData will be null and we'll
+    // treat the user as though they're not authenticated.
     authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
-    // if the cookie unpacking failed then authnData will be null
   }
+
   if (authnData == null) {
     // We failed to authenticate.
 

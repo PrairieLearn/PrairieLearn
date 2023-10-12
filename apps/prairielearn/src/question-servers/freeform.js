@@ -16,7 +16,7 @@ const schemas = require('../schemas');
 const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
-const jsonLoader = require('../lib/json-load');
+const jsonLoad = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
@@ -158,7 +158,7 @@ module.exports = {
         throw err;
       }
 
-      await jsonLoader.validateJSONAsync(info, elementSchema);
+      await jsonLoad.validateJSONAsync(info, elementSchema);
       info.name = elementName;
       info.directory = path.join(sourceDir, elementName);
       info.type = elementType;
@@ -260,7 +260,7 @@ module.exports = {
         }
       }
 
-      await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+      await jsonLoad.validateJSONAsync(info, schemas.infoElementExtension);
       info.name = extensionDir;
       info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
