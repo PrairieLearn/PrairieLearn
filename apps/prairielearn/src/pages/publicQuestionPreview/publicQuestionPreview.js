@@ -15,6 +15,13 @@ const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router({ mergeParams: true });
 
+// TODO:
+// -get navbar out of <main>
+// -look at instructorQuestion.test.js, manualgrading.test.ts
+// -tests: submitting an answer
+// downloading dynamic content (clientfilesquestion/clientfilescourse)
+
+
 async function setLocals(req, res) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
