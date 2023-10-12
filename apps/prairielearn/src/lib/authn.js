@@ -66,9 +66,10 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
   }
 
   // The session store will pick this up and store it in the `user_sessions.user_id` column.
-  if (req.session) {
-    req.session.user_id = user_id;
-  }
+  req.session.user_id = user_id;
+
+  // Our authentication middleware will read this value.
+  req.session.authn_provider_name = authnParams.provider;
 
   if (options.pl_authn_cookie) {
     var tokenData = {
