@@ -1,5 +1,4 @@
 FROM jupyter/minimal-notebook:2023-10-02
-COPY jupyter_notebook_config.py /etc/jupyter/
 
 ENV XDG_DATA_HOME=/tmp/local/share
 ENV XDG_CACHE_HOME=/tmp/cache
@@ -15,6 +14,7 @@ ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
 USER root
 COPY install.sh requirements.txt /
 RUN /bin/bash /install.sh
+COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
 CMD ["start.sh", "jupyter", "lab"]
