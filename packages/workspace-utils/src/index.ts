@@ -8,21 +8,21 @@ import path from 'path';
 
 const sql = loadSqlEquiv(__filename);
 
+export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
+
 let socketIoServer: SocketIOServer | SocketIOEmitter | null = null;
 
-export function init(io: SocketIOServer) {
+export function init(io: SocketIOServer | SocketIOEmitter) {
   socketIoServer = io;
 }
 
 function emitMessageForWorkspace(workspaceId: string | number, event: string, ...args: any[]) {
-  getWorkspaceSocketNamespace()
+  if (!socketIoServer) throw new Error('SocketIO server not initialized.');
+
+  socketIoServer
+    .of(WORKSPACE_SOCKET_NAMESPACE)
     .to(`workspace-${workspaceId}`)
     .emit(event, ...args);
-}
-
-export function getWorkspaceSocketNamespace() {
-  if (!socketIoServer) throw new Error('socket.io server not initialized');
-  return socketIoServer.of('/workspace');
 }
 
 /**
