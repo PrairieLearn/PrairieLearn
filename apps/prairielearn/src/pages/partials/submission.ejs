@@ -16,7 +16,9 @@
   <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
     <div class="card-body">
       <% if (submission.rubric_grading) { %>
-      <% (locals.rubric_data?.rubric_items || []).forEach((item) => { %>
+      <% (locals.rubric_data?.rubric_items || [])
+           .filter((item) => item.always_show_to_students || submission.rubric_grading?.rubric_items?.[item.id]?.score)
+           .forEach((item) => { %>
       <div>
         <label class="w-100" data-testid="rubric-item-container-<%= item.id %>">
           <input type="checkbox" disabled <%= submission.rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : '' %> >
