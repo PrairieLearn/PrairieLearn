@@ -207,6 +207,7 @@ SET
     WHEN $number > 10 THEN NULL
     ELSE MOD($number + 1, 10)
   END,
+  always_show_to_students = COALESCE($always_show_to_students, always_show_to_students),
   deleted_at = NULL
 WHERE
   id = $id
@@ -223,7 +224,8 @@ INSERT INTO
     description,
     explanation,
     grader_note,
-    key_binding
+    key_binding,
+    always_show_to_students
   )
 VALUES
   (
@@ -236,7 +238,8 @@ VALUES
     CASE
       WHEN $number > 10 THEN NULL
       ELSE MOD($number + 1, 10)
-    END
+    END,
+    $always_show_to_students
   );
 
 -- BLOCK select_instance_questions_to_update

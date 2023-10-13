@@ -127,6 +127,7 @@ async function populateManualGradingData(submission) {
  * @param {string} [rubric_items[].explanation] - A longer explanation of the rubric item. Visible to graders and students.
  * @param {string} [rubric_items[].grader_note] - A note associated to the rubric item that is visible to graders only.
  * @param {number} rubric_items[].order - An indicator of the order in which items are to be presented.
+ * @param {boolean} rubric_items[].always_show_to_students - If the rubric item should be shown to students when not applied.
  * @param {boolean} tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
  * @param {number} authn_user_id - The user_id of the logged in user.
  */
