@@ -19,7 +19,7 @@ FROM
   workspaces
 WHERE
   id = $workspace_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_workspace_settings
 SELECT
