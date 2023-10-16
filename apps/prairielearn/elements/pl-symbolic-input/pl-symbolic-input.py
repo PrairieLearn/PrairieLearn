@@ -47,6 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "blank-value",
         "placeholder",
         "custom-functions",
+        "show-score",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
