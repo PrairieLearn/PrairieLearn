@@ -920,11 +920,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, {
-        workspace_id,
-        hostname,
-      });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
@@ -940,7 +935,36 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+
+      // Before we transition this workspace to running, check that the container
+      // we just launched is the same one that this workspace is still assigned to.
+      // To be more precise, we'll check that the container's launch_uuid matches
+      // the current launch_uuid for this workspace. If they don't match, then
+      // the workspace was relaunched while we were initializing it, and we should
+      // abandon it.
+      //
+      // We don't have to explicitly kill the container here - our usual
+      // background maintenance processes will soon notice that this container
+      // should not be running on this host and kill it.
+      await sqldb.runInTransactionAsync(async () => {
+        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
+          workspace_id: workspace.id,
+        });
+        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        if (launch_uuid !== workspace.launch_uuid) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+          );
+          return;
+        }
+
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+        await sqldb.queryAsync(sql.update_workspace_hostname, {
+          workspace_id,
+          hostname,
+        });
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      });
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
