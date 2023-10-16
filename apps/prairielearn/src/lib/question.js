@@ -13,6 +13,7 @@ const unzipper = require('unzipper');
 const fg = require('fast-glob');
 const util = require('util');
 const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-utils');
+const { EncodedData } = require('@prairielearn/browser-utils');
 
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
@@ -1916,7 +1917,7 @@ module.exports = {
       };
 
       // Fake locals. Yay!
-      const locals = {};
+      const locals = { encoded_data: EncodedData };
       setLocalsFromConfig(locals);
       _.assign(
         locals,

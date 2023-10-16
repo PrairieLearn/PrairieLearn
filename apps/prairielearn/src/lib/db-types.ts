@@ -290,6 +290,13 @@ export const TopicSchema = z.object({
 });
 export type Topic = z.infer<typeof TopicSchema>;
 
+export const SharingSetSchema = z.object({
+  course_id: IdSchema,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type SharingSet = z.infer<typeof SharingSetSchema>;
+
 export const UserSessionSchema = z.object({
   id: IdSchema,
   session_id: z.string(),

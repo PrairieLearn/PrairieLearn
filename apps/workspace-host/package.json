@@ -22,6 +22,7 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@socket.io/redis-adapter": "^8.2.1",
+    "@socket.io/redis-emitter": "^5.1.0",
     "archiver": "^6.0.1",
     "async": "^3.2.4",
     "async-mutex": "^0.4.0",
@@ -32,9 +33,6 @@
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
     "lodash": "^4.17.21",
-    "redis": "^4.6.10",
-    "socket.io": "^4.7.2",
-    "socket.io-adapter": "^2.5.2",
     "uuid": "^9.0.1",
     "yargs-parser": "^21.1.1",
     "zod": "^3.22.3"
