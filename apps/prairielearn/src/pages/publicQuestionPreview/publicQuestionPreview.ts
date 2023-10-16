@@ -1,26 +1,19 @@
-// @ts-check
-
 import { selectQuestion } from '../../models/question';
 import { selectCourse } from '../../models/course';
+import { processSubmission } from '../../lib/questionPreview';
 import { IdSchema, UserSchema } from '../../lib/db-types';
-import { z } from 'zod'
+import { z } from 'zod';
 
-const ERR = require('async-stacktrace');
-const express = require('express');
-const async = require('async');
-const path = require('path');
-const error = require('@prairielearn/error');
-const question = require('../../lib/question');
-const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
-const { processSubmission } = require('../../lib/questionPreview');
+import ERR = require('async-stacktrace');
+import { Router } from 'express';
+import async = require('async');
+import path = require('path');
+import error = require('@prairielearn/error');
+import question = require('../../lib/question');
+import LogPageView = require('../../middlewares/logPageView');
+const logPageView = LogPageView(path.basename(__filename, '.ts'));
 
-const router = express.Router({ mergeParams: true });
-
-// TODO:
-// -look at instructorQuestion.test.js, manualgrading.test.ts
-// -tests: submitting an answer
-// downloading dynamic content (clientfilesquestion/clientfilescourse)
-
+const router = Router({ mergeParams: true });
 
 async function setLocals(req, res) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
@@ -91,15 +84,10 @@ router.get('/', function (req, res, next) {
       return async.series(
         [
           (callback) => {
-            question.getAndRenderVariant(
-              variant_id,
-              variant_seed,
-              res.locals,
-              function (err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-              },
-            );
+            question.getAndRenderVariant(variant_id, variant_seed, res.locals, function (err) {
+              if (ERR(err, callback)) return;
+              callback(null);
+            });
           },
           (callback) => {
             logPageView(req, res, (err) => {
@@ -111,11 +99,11 @@ router.get('/', function (req, res, next) {
         (err) => {
           if (ERR(err, next)) return;
           question.setRendererHeader(res);
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.render(__filename.replace(/\.ts$/, '.ejs'), res.locals);
         },
       );
     })
     .catch((err) => next(err));
 });
 
-module.exports = router;
+export = router;
