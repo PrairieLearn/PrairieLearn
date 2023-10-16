@@ -14,16 +14,16 @@ const QuestionsPageDataSchema = z.object({
   id: z.string(),
   qid: z.string(),
   title: z.string(),
-  sync_errors: z.string().nullable(),
-  sync_warnings: z.string().nullable(),
+  sync_errors: z.string().nullable().optional(),
+  sync_warnings: z.string().nullable().optional(),
   grading_method: z.string(),
   external_grading_image: z.string().nullable(),
   display_type: z.string(),
-  open_issue_count: z.string(),
+  open_issue_count: z.string().optional(),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
-  sharing_sets: z.array(SharingSetSchema).nullable(),
-  assessments: AssessmentsFormatForQuestionSchema.nullable(),
+  sharing_sets: z.array(SharingSetSchema).nullable().optional(),
+  assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
 });
 export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
