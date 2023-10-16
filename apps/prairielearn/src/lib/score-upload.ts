@@ -28,7 +28,7 @@ const AssessmentInfoSchema = z.object({
  */
 export async function uploadInstanceQuestionScores(
   assessment_id: string,
-  csvFile: { originalname: string; size: number; buffer: Buffer } | null | undefined,
+  csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
@@ -153,7 +153,7 @@ export async function uploadInstanceQuestionScores(
  */
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
-  csvFile: { originalname: string; size: number; buffer: Buffer } | null | undefined,
+  csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
