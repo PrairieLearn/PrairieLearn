@@ -14,7 +14,7 @@ const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
-  redisUrl: z.string().nullable().default('redis://localhost:6379/'),
+  redisUrl: z.string().optional().default('redis://localhost:6379/'),
   runningInEc2: z.boolean().default(false),
   cacheImageRegistry: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),

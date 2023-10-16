@@ -1,5 +1,13 @@
 # @prairielearn/compiled-assets
 
+## 2.0.8
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+- Updated dependencies [bd0053577]
+  - @prairielearn/html@3.0.8
+
 ## 2.0.7
 
 ### Patch Changes
