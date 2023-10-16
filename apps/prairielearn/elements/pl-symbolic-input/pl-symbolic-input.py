@@ -18,6 +18,7 @@ WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
 CUSTOM_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
+SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
@@ -48,6 +49,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "placeholder",
         "custom-functions",
         "show-score",
+        "suffix",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -92,6 +94,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     variables = phs.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
@@ -181,6 +184,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "suffix": suffix,
             "editable": editable,
             "info": info,
             "placeholder": placeholder,
@@ -204,6 +208,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
+            "suffix": suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
@@ -237,7 +242,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
 
         a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
+        html_params = {
+            "answer": True,
+            "label": label,
+            "suffix": suffix,
+            "a_tru": sympy.latex(a_tru),
+        }
         return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
