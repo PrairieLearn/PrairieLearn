@@ -30,6 +30,7 @@ interface RubricItem {
   description: string;
   explanation?: string;
   grader_note?: string;
+  always_show_to_students: boolean;
   description_render?: string;
   explanation_render?: string;
   grader_note_render?: string;
@@ -226,26 +227,30 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     } else {
       rubric_items.forEach((item, index) => {
         const container = feedbackBlock.find(`[data-testid="rubric-item-container-${item.id}"]`);
-        assert.equal(container.length, 1);
-        assert.equal(
-          container.find('input[type="checkbox"]').is(':checked'),
-          selected_rubric_items.includes(index),
-        );
-        assert.equal(
-          container.find('[data-testid="rubric-item-points"]').text().trim(),
-          `[${item.points >= 0 ? '+' : ''}${item.points}]`,
-        );
-        assert.equal(
-          container.find('[data-testid="rubric-item-description"]').html()?.trim(),
-          item.description_render ?? item.description,
-        );
-        if (item.explanation) {
+        if (item.always_show_to_students || selected_rubric_items.includes(index)) {
+          assert.equal(container.length, 1);
           assert.equal(
-            container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
-            item.explanation_render ?? `<p>${item.explanation}</p>`,
+            container.find('input[type="checkbox"]').is(':checked'),
+            selected_rubric_items.includes(index),
           );
+          assert.equal(
+            container.find('[data-testid="rubric-item-points"]').text().trim(),
+            `[${item.points >= 0 ? '+' : ''}${item.points}]`,
+          );
+          assert.equal(
+            container.find('[data-testid="rubric-item-description"]').html()?.trim(),
+            item.description_render ?? item.description,
+          );
+          if (item.explanation) {
+            assert.equal(
+              container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+              item.explanation_render ?? `<p>${item.explanation}</p>`,
+            );
+          } else {
+            assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
+          }
         } else {
-          assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
+          assert.equal(container.length, 0);
         }
       });
     }
@@ -299,6 +304,10 @@ function checkSettingsResults(
         `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
       );
       assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
+      const always_show_to_students = form.find(
+        `[name="rubric_item[cur${item.id}][always_show_to_students]"]:checked`,
+      );
+      assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
   });
 
@@ -690,7 +699,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 6, description: 'First rubric item' },
+            { points: 6, description: 'First rubric item', always_show_to_students: true },
             {
               points: 3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -699,6 +708,7 @@ describe('Manual Grading', function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
+              always_show_to_students: false,
             },
             {
               points: 0.4,
@@ -710,14 +720,17 @@ describe('Manual Grading', function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
+              always_show_to_students: true,
             },
             {
               points: -1.6,
               description: 'Penalty rubric item (negative points, floating point)',
+              always_show_to_students: false,
             },
             {
               points: 0,
               description: 'Rubric item with no value (zero points)',
+              always_show_to_students: true,
             },
           ];
 
@@ -873,7 +886,7 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
-            { points: 0, description: 'First rubric item' },
+            { points: 0, description: 'First rubric item', always_show_to_students: true },
             {
               points: -3,
               description: 'Second rubric item (partial, with `markdown`)',
@@ -882,6 +895,7 @@ describe('Manual Grading', function () {
               description_render: 'Second rubric item (partial, with <code>markdown</code>)',
               explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
               grader_note_render: '<p>Instructions with <em>markdown</em></p>',
+              always_show_to_students: true,
             },
             {
               points: -4,
@@ -893,15 +907,18 @@ describe('Manual Grading', function () {
               explanation_render: '<p>Explanation with moustache: 43</p>',
               grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
+              always_show_to_students: false,
             },
             {
               points: 1.6,
               description:
                 'Positive rubric item in negative grading (positive points, floating point)',
+              always_show_to_students: false,
             },
             {
               points: 6,
               description: 'Rubric item with positive reaching maximum',
+              always_show_to_students: true,
             },
           ];
 

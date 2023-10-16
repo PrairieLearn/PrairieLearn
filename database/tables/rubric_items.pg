@@ -1,4 +1,5 @@
 columns
+    always_show_to_students: boolean not null default true
     deleted_at: timestamp with time zone
     description: character varying(100) not null
     explanation: character varying(10000)
