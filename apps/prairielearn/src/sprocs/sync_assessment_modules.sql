@@ -50,9 +50,13 @@ BEGIN
     -- Make sure we have the "Default" assessment module under all
     -- conditions, because we will use this as a last resort for
     -- assessments.
-    INSERT INTO assessment_modules (
-              number, course_id
-    ) VALUES (0,      syncing_course_id)
+    --
+    -- If the instructor has explicitly created a module named "Default",
+    -- we'll use that, including whatever number they've assigned to it.
+    INSERT INTO
+        assessment_modules (name, number, course_id)
+    VALUES
+        ('Default', 0, syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
     IF ('Default' != ALL(used_assessment_module_names)) THEN

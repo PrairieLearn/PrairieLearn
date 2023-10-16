@@ -77,4 +77,29 @@ describe('Assessment modules syncing', () => {
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
     assert.match(syncedCourse?.sync_warnings, /Found duplicates in 'assessmentModules'/);
   });
+
+  it('uses explicitly-created default assessment module', async () => {
+    const courseData = util.getCourseData();
+    const defaultAssessmentModule = {
+      name: 'Default',
+      heading: 'Default assessment module',
+    };
+    courseData.course.assessmentModules = [defaultAssessmentModule];
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedAssessmentModules = await util.dumpTable('assessment_modules');
+    assert.lengthOf(syncedAssessmentModules, 1);
+
+    const syncedAssessmentModule = syncedAssessmentModules.find(
+      (am) => am.name === defaultAssessmentModule.name,
+    );
+    checkAssessmentModule(syncedAssessmentModule, defaultAssessmentModule);
+
+    const syncedAssessments = await util.dumpTable('assessments');
+    assert.lengthOf(syncedAssessments, 1);
+
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === 'test');
+    assert.isOk(syncedAssessment);
+    assert.equal(syncedAssessment?.assessment_module_id, syncedAssessmentModule?.id);
+  });
 });

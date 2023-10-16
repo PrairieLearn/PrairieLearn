@@ -13,22 +13,6 @@
   <br/>To work individually, you must also create a group, but you don't need to share your join code.
   <% } %>
 </p>
-<% if (typeof used_join_code !== 'undefined') { %>
-  <div class="alert alert-danger" role="alert">
-    Failed to join the group with join code <span class="badge badge-secondary"><%= used_join_code %></span>. It is already full or does not exist. Please try to join another one.
-  </div>
-<% } %>
-<% if (typeof invalidGroupName !== 'undefined') { %>
-  <div class="alert alert-danger" role="alert">
-    The group name is invalid. Alpha and numeric characters only. ([0-9] [a-z] [A-Z]), with maximum length of 30 characters.
-  </div>
-<% } %>
-<% if (typeof uniqueGroupName !== 'undefined') { %>
-  <div class="alert alert-danger" role="alert">
-    Failed to create the group. It is already taken. Please try another one.
-  </div>
-<% } %>
-
 <%- include('../shared/groupWorkInitial.ejs', {groupConfig: groupConfig}); %>
 <% } %>
 <% } else {%>

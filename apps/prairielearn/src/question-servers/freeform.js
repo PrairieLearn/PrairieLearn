@@ -4,7 +4,9 @@ const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
-const cheerio = require('cheerio');
+// Use slim export, which relies on htmlparser2 instead of parse5. This provides
+// support for questions with legacy renderer.
+const cheerio = require('cheerio/lib/slim');
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
@@ -14,7 +16,7 @@ const schemas = require('../schemas');
 const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
-const jsonLoader = require('../lib/json-load');
+const jsonLoad = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
@@ -156,7 +158,7 @@ module.exports = {
         throw err;
       }
 
-      await jsonLoader.validateJSONAsync(info, elementSchema);
+      await jsonLoad.validateJSONAsync(info, elementSchema);
       info.name = elementName;
       info.directory = path.join(sourceDir, elementName);
       info.type = elementType;
@@ -258,7 +260,7 @@ module.exports = {
         }
       }
 
-      await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+      await jsonLoad.validateJSONAsync(info, schemas.infoElementExtension);
       info.name = extensionDir;
       info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
@@ -488,64 +490,30 @@ module.exports = {
 
     if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
-    /**************************************************************************************************************************************/
-    //              property                 type       presentPhases                         changePhases
-    /**************************************************************************************************************************************/
     // The following code is deliberately formatted as it is to aid in comprehension,
     // so we prevent Prettier from reformatting the code to span multiple lines.
     // prettier-ignore
-    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('variant_seed',          'integer', allPhases,                            []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('options',               'object',  allPhases,                            []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('editable',              'boolean', ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('manual_grading',        'boolean', ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('panel',                 'string',  ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('filename',              'string',  ['file'],                             []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('test_type',             'string',  ['test'],                             []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+    /**************************************************************************************************************************************/
+    //              property                 type       presentPhases                         changePhases
+    /**************************************************************************************************************************************/
+    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+       || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+       || checkProp('variant_seed',          'integer', allPhases,                            [])
+       || checkProp('options',               'object',  allPhases,                            [])
+       || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
+       || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+       || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
+       || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+       || checkProp('editable',              'boolean', ['render'],                           [])
+       || checkProp('manual_grading',        'boolean', ['render'],                           [])
+       || checkProp('panel',                 'string',  ['render'],                           [])
+       || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+       || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
+       || checkProp('filename',              'string',  ['file'],                             [])
+       || checkProp('test_type',             'string',  ['test'],                             [])
+       || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
     if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
@@ -928,7 +896,6 @@ module.exports = {
           total_weight_score += weight * score;
         });
         resultData.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
-        resultData.feedback = {};
       } else {
         let score = 0;
         if (
@@ -938,7 +905,6 @@ module.exports = {
           score = 1;
         }
         resultData.score = score;
-        resultData.feedback = {};
       }
     }
 
@@ -1753,6 +1719,7 @@ module.exports = {
         params: _.get(variant, 'params', {}),
         correct_answers: _.get(variant, 'true_answer', {}),
         submitted_answers: _.get(submission, 'submitted_answer', {}),
+        feedback: _.get(submission, 'feedback', {}),
         format_errors: _.get(submission, 'format_errors', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
@@ -1774,6 +1741,7 @@ module.exports = {
             params: resultData.params,
             true_answer: resultData.correct_answers,
             submitted_answer: resultData.submitted_answers,
+            feedback: resultData.feedback,
             raw_submitted_answer: resultData.raw_submitted_answers,
             format_errors: resultData.format_errors,
             gradable: resultData.gradable,
@@ -1982,7 +1950,7 @@ module.exports = {
     try {
       const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-      return `${commitHash}-${dataHash}`;
+      return `question:${commitHash}-${dataHash}`;
     } catch (err) {
       return null;
     }
@@ -2008,7 +1976,7 @@ module.exports = {
       // tl;dr: don't cache any results that would create course issues.
       const hasCourseIssues = computedData?.courseIssues?.length > 0;
       if (cacheKey && !hasCourseIssues) {
-        cache.set(cacheKey, computedData);
+        cache.set(cacheKey, computedData, config.questionRenderCacheTtlSec * 1000);
       }
 
       return {

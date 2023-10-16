@@ -5,6 +5,7 @@ const { promisify } = require('util');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
+const { isEnterprise } = require('../lib/license');
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
 const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));
 const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
@@ -26,6 +27,11 @@ module.exports = asyncHandler(async (req, res, next) => {
     req.params.instance_question_id = res.locals.instance_question_id;
     req.params.question_id = res.locals.question_id;
     await authzCourseOrInstance(req, res);
+
+    if (isEnterprise()) {
+      const checkPlanGrants = promisify(require('../ee/middlewares/checkPlanGrants').default);
+      await checkPlanGrants(req, res);
+    }
 
     if (res.locals.instance_question_id) {
       await selectAndAuthzInstanceQuestion(req, res);

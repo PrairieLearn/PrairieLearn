@@ -1,0 +1,25 @@
+@import url('bootstrap-table/dist/bootstrap-table.min.css');
+@import url('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css');
+@import url('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css');
+
+.sticky-column {
+  position: sticky;
+  left: 0;
+  background: white;
+  background-clip: padding-box;
+  box-shadow: inset -1px 0 #dee2e6;
+}
+
+.table-hover tbody tr:hover td.sticky-column {
+  color: #212529;
+  background-color: #efefef;
+}
+
+.fixed-table-toolbar {
+  padding: 0 1em 0 1em;
+}
+
+.fixed-table-toolbar div.pagination,
+.fixed-table-toolbar div.pagination-detail {
+  margin: 0 1em 0 0 !important;
+}

@@ -71,8 +71,8 @@ PROPS: dict[str, PropInfo] = {
     },
     "feedback": {
         "type": "object",
-        "present_phases": frozenset({"render", "grade", "test"}),
-        "edit_phases": frozenset({"grade", "test"}),
+        "present_phases": frozenset({"render", "parse", "grade", "test"}),
+        "edit_phases": frozenset({"parse", "grade", "test"}),
     },
     "editable": {
         "type": "boolean",
@@ -108,6 +108,11 @@ PROPS: dict[str, PropInfo] = {
         "type": "string",
         "present_phases": frozenset({"test"}),
         "edit_phases": frozenset(),
+    },
+    "answers_names": {
+        "type": "object",
+        "present_phases": frozenset({"prepare"}),
+        "edit_phases": frozenset({"prepare"}),
     },
     "extensions": {
         "type": "object",

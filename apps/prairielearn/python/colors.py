@@ -1,9 +1,10 @@
 """
-Custom colors for the PrarieLearn project based on Coloraide.
+Custom colors for the PrairieLearn project based on Coloraide.
 
 Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
 """
 import re
+from typing import cast
 
 from coloraide import Color as PLColor
 from coloraide import algebra as alg
@@ -61,14 +62,14 @@ PL_COLORS_VALUE_MAP: dict[ColorTuple, str] = {
 }
 
 
-class PrarieLearnColor(sRGB):
-    """Custom sRGB class to handle custom PrarieLearn colors, via Coloraide."""
+class PrairieLearnColor(sRGB):
+    """Custom sRGB class to handle custom PrairieLearn colors, via Coloraide."""
 
     def match(
         self, string: str, start: int = 0, fullmatch: bool = True
     ) -> tuple[tuple[Vector, float], int] | None:
         """
-        Match a color string, first trying PrarieLearn.
+        Match a color string, first trying PrairieLearn.
         If no match is found, defaults to sRGB class' implementation.
         """
         # Match the string using fullmatch if requested
@@ -113,7 +114,7 @@ class PrarieLearnColor(sRGB):
             coords = serialize.get_coords(parent, fit, False, False) + [alpha_float]
 
             # See if the color value is a match, if so, return the string
-            value = tuple(alg.round_half_up(c * 255) for c in coords)
+            value = cast(ColorTuple, tuple(alg.round_half_up(c * 255) for c in coords))
 
             result = PL_COLORS_VALUE_MAP.get(value)
             if result is not None:
@@ -129,7 +130,7 @@ class PrarieLearnColor(sRGB):
         )
 
 
-PLColor.register(PrarieLearnColor(), overwrite=True)
+PLColor.register(PrairieLearnColor(), overwrite=True)
 
 
 def get_css_color(name: str) -> str | None:

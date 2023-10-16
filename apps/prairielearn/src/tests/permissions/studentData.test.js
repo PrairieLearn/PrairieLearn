@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');
@@ -6,6 +5,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('student data access', function () {
   this.timeout(60000);
@@ -18,7 +18,7 @@ describe('student data access', function () {
   context.userIdStudent = 2;
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     let result = await sqldb.queryOneRowAsync(sql.select_homework1, []);
     context.homeworkAssessmentId = result.rows[0].id;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;
@@ -46,7 +46,7 @@ describe('student data access', function () {
       'Owner',
       1,
     ]);
-    await sqldb.queryAsync(sql.insert_enrollment, {
+    await ensureEnrollment({
       user_id: 3,
       course_instance_id: 1,
     });

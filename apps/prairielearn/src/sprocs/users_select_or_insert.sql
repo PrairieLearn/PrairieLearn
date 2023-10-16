@@ -20,7 +20,7 @@ BEGIN
     FROM users
     WHERE
         users.uin = users_select_or_insert.uin
-        AND (users_select_or_insert.institution_id IS NULL OR u.institution_id = users_select_or_insert.institution_id);
+        AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
     IF u.user_id IS NULL THEN
@@ -55,11 +55,18 @@ BEGIN
     -- providers, as we want to ensure that any identity they return is scoped
     -- to the appropriate institution.
     IF institution_id IS NOT NULL AND (institution.id IS NULL OR institution.id != institution_id) THEN
-        RAISE EXCEPTION 'Institution mismatch: % != %', institution.id, institution_id;
+        -- explicitly get the passed in institution name for the error
+        SELECT i.*
+        INTO institution
+        FROM institutions AS i
+        WHERE i.id = institution_id;
+
+        RAISE EXCEPTION 'Identity "%" does not match policy for institution "%"', users_select_or_insert.uid, institution.long_name;
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it
-    IF institution.id IS NOT NULL THEN
+    -- In development mode, 'dev' is always a valid authn_provider so skip the check
+    IF institution.id IS NOT NULL AND authn_provider_name != 'dev' THEN
         PERFORM *
         FROM
             institution_authn_providers AS iap

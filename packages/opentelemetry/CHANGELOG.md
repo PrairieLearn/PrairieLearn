@@ -1,5 +1,55 @@
 # @prairielearn/opentelemetry
 
+## 1.10.1
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
+## 1.10.0
+
+### Minor Changes
+
+- cfbab7a69: The following types are now exported:
+
+  - `Meter`
+  - `Counter`
+  - `Histogram`
+  - `UpDownCounter`
+  - `ObservableCounter`
+  - `ObservableUpDownCounter`
+  - `ObservableGauge`
+
+## 1.9.0
+
+### Minor Changes
+
+- e88f7457b: Export `TraceFlags` from `@opentelemetry/api`
+
+## 1.8.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 1.8.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 1.8.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 1.8.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
 ## 1.8.3
 
 ### Patch Changes

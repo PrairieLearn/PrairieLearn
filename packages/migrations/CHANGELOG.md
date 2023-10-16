@@ -1,5 +1,60 @@
 # @prairielearn/migrations
 
+## 2.0.8
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+- Updated dependencies [bd0053577]
+  - @prairielearn/named-locks@1.5.5
+  - @prairielearn/postgres@1.7.7
+  - @prairielearn/logger@1.0.7
+  - @prairielearn/error@1.0.8
+
+## 2.0.7
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+- Updated dependencies [f03853d90]
+  - @prairielearn/named-locks@1.5.4
+  - @prairielearn/postgres@1.7.6
+  - @prairielearn/logger@1.0.6
+  - @prairielearn/error@1.0.7
+
+## 2.0.6
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+- Updated dependencies [6cad75197]
+  - @prairielearn/named-locks@1.5.3
+  - @prairielearn/postgres@1.7.5
+  - @prairielearn/logger@1.0.5
+  - @prairielearn/error@1.0.6
+
+## 2.0.5
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+- Updated dependencies [10cc07dcc]
+  - @prairielearn/named-locks@1.5.2
+  - @prairielearn/postgres@1.7.4
+  - @prairielearn/logger@1.0.4
+  - @prairielearn/error@1.0.5
+
+## 2.0.4
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/named-locks@1.5.1
+  - @prairielearn/postgres@1.7.3
+  - @prairielearn/logger@1.0.3
+  - @prairielearn/error@1.0.4
+
 ## 2.0.3
 
 ### Patch Changes

@@ -13,6 +13,7 @@ const error = require('@prairielearn/error');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
 const cache = require('../../lib/cache');
+const { shouldSecureCookie } = require('../../lib/cookie');
 
 var timeTolerance = 3000; // seconds
 
@@ -131,8 +132,13 @@ router.post('/', function (req, res, next) {
         res.cookie('pl_authn', pl_authn, {
           maxAge: config.authnCookieMaxAgeMilliseconds,
           httpOnly: true,
-          secure: true,
+          secure: shouldSecureCookie(req),
         });
+
+        // Dual-write information to the session so that we can start reading
+        // it instead of the cookie in the future.
+        req.session.user_id = result.rows[0].user_id;
+        req.session.authn_provider_name = 'LTI';
 
         const params = {
           course_instance_id: ltiresult.course_instance_id,
