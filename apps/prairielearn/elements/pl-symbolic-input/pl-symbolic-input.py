@@ -15,7 +15,6 @@ class DisplayType(Enum):
 
 
 WEIGHT_DEFAULT = 1
-CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
 CUSTOM_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
@@ -53,13 +52,33 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    correct_answer = pl.get_string_attrib(
-        element, "correct-answer", CORRECT_ANSWER_DEFAULT
-    )
-    if correct_answer is not None:
+    if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
-            raise ValueError(f"Duplicate correct_answers variable name: {name}")
-        data["correct_answers"][name] = correct_answer
+            raise ValueError(f"duplicate correct_answers variable name: {name}")
+
+        a_true = pl.get_string_attrib(element, "correct-answer")
+        variables = phs.get_items_list(
+            pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        )
+        custom_functions = phs.get_items_list(
+            pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+        )
+        allow_complex = pl.get_boolean_attrib(
+            element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+        )
+        # Validate that the answer can be parsed before storing
+        try:
+            phs.convert_string_to_sympy(
+                a_true,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=True,
+                custom_functions=custom_functions,
+            )
+        except phs.BaseSympyError:
+            raise ValueError(f'Parsing correct answer "{a_true}" for "{name}" failed.')
+
+        data["correct_answers"][name] = a_true
 
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
