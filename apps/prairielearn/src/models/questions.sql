@@ -36,6 +36,15 @@ SELECT
     WHERE
       qt.question_id = q.id
   ) AS tags,
+  (
+    SELECT
+      jsonb_agg(to_jsonb(ss))
+    FROM
+      sharing_set_questions AS ssq
+      JOIN sharing_sets AS ss on (ss.id = ssq.sharing_set_id)
+    WHERE
+      ssq.question_id = q.id
+  ) AS sharing_sets,
   assessments_format_for_question (q.id, NULL) AS assessments
 FROM
   questions AS q

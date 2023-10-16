@@ -24,6 +24,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton,
+  showSharingSets,
   current_course_instance,
   course_instances,
   qidPrefix,
@@ -33,9 +34,10 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton: boolean;
-  current_course_instance?: CourseInstance;
-  course_instances?: CourseInstance[];
   qidPrefix?: string;
+  showSharingSets: boolean;
+  current_course_instance: CourseInstance;
+  course_instances: CourseInstance[];
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token?: string;
@@ -131,6 +133,22 @@ export function QuestionsTable({
             >
               Tags
             </th>
+            ${showSharingSets
+              ? html` <th
+                  data-field="sharing_sets"
+                  data-sortable="false"
+                  data-class="align-middle text-nowrap"
+                  data-formatter="sharingSetFormatter"
+                  data-filter-control="select"
+                  data-filter-control-placeholder="(All Sharing Sets)"
+                  data-filter-data="func:sharingSetsList"
+                  data-filter-custom-search="badgeFilterSearch"
+                  data-switchable="true"
+                  data-visible="false"
+                >
+                  Sharing Sets
+                </th>`
+              : ''}
             <th
               data-field="display_type"
               data-sortable="true"

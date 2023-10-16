@@ -13,6 +13,7 @@ const unzipper = require('unzipper');
 const fg = require('fast-glob');
 const util = require('util');
 const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-utils');
+const { EncodedData } = require('@prairielearn/browser-utils');
 
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
@@ -1582,7 +1583,7 @@ module.exports = {
   /**
    * Render all information needed for a question.
    *
-   * @param {?number} variant_id - The variant to render, or null if it should be generated.
+   * @param {?(number | string)} variant_id - The variant to render, or null if it should be generated.
    * @param {?string} variant_seed - Random seed for variant, or null if it should be generated.
    * @param {Object} locals - The current locals structure to read/write.
    * @param {function} callback - A callback(err) function.
@@ -1916,7 +1917,7 @@ module.exports = {
       };
 
       // Fake locals. Yay!
-      const locals = {};
+      const locals = { encoded_data: EncodedData };
       setLocalsFromConfig(locals);
       _.assign(
         locals,

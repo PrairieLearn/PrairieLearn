@@ -16,8 +16,8 @@
     <%- extraHeadersHtml %>
   </head>
   <body>
+    <%- include('../partials/navbar'); %>
     <main id="content" class="container">
-      <%- include('../partials/navbar'); %>
       <div class="row">
           <div class="col-lg-9 col-sm-12">
               <%- include('../partials/question', {question_context: 'instructor'}); %>
