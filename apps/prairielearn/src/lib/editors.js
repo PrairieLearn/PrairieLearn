@@ -57,7 +57,9 @@ async function syncCourseFromDisk(course, startGitHash, job) {
 }
 
 async function cleanAndResetRepository(course, env, job) {
+  job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
+  job.info('Reset state to remote git repository');
   await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
     cwd: course.path,
     env,
@@ -125,6 +127,27 @@ class Editor {
               const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
 
               if (config.fileEditorUseGit) {
+                job.info('Update to latest remote origin address');
+                await job.exec(
+                  'git',
+                  [
+                    'remote',
+                    'set-url',
+                    'origin',
+                    this.course.repository,
+                  ],
+                  {
+                    cwd: this.course.path,
+                    env: gitEnv,
+                  },
+                );
+
+                job.info('Fetch from remote git repository');
+                await job.exec('git', ['fetch'], {
+                  cwd: this.course.path,
+                  env: gitEnv,
+                });
+
                 await cleanAndResetRepository(this.course, gitEnv, job);
               }
 
@@ -134,6 +157,7 @@ class Editor {
               } catch (err) {
                 if (config.fileEditorUseGit) {
                   await cleanAndResetRepository(this.course, gitEnv, job);
+                  await syncCourseFromDisk(this.course, startGitHash, job);
                 }
 
                 throw err;
@@ -167,6 +191,7 @@ class Editor {
                 );
               } catch (err) {
                 await cleanAndResetRepository(this.course, gitEnv, job);
+                await syncCourseFromDisk(this.course, startGitHash, job);
                 throw err;
               }
 
