@@ -144,7 +144,10 @@ These functions have some behaviors that can make them more convenient to work w
 
   ```sql
   -- BLOCK select_user_names
-  SELECT name FROM users;
+  SELECT
+    name
+  FROM
+    users;
   ```
 
   If we then use that query with `queryRows`, the returned Promise resolves to an array of strings:
