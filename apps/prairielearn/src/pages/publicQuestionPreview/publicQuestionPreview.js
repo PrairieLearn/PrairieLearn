@@ -17,7 +17,6 @@ const { processSubmission } = require('../../lib/questionPreview');
 const router = express.Router({ mergeParams: true });
 
 // TODO:
-// -get navbar out of <main>
 // -look at instructorQuestion.test.js, manualgrading.test.ts
 // -tests: submitting an answer
 // downloading dynamic content (clientfilesquestion/clientfilescourse)
@@ -92,7 +91,6 @@ router.get('/', function (req, res, next) {
       return async.series(
         [
           (callback) => {
-            // req.query.variant_id might be undefined, which will generate a new variant
             question.getAndRenderVariant(
               variant_id,
               variant_seed,
