@@ -263,7 +263,7 @@ function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
 // missing values and empty strings get mapped to null
 function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
   const value = getJsonPropertyOrNull(json, key);
-  if (typeof value !== 'number' || isNaN(value)) {
+  if (value != null && (typeof value !== 'number' || isNaN(value))) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
   return value;
@@ -405,7 +405,7 @@ async function updateAssessmentInstanceFromJson(
   if (!_.has(json, 'instance')) throw new Error('"instance" not found');
 
   await sqldb.runInTransactionAsync(async () => {
-    const result = await sqldb.queryOptionalRow(
+    const assessment_instance_id = await sqldb.queryOptionalRow(
       query,
       {
         assessment_id,
@@ -413,12 +413,11 @@ async function updateAssessmentInstanceFromJson(
         group_name: json.group_name,
         instance_number: json.instance,
       },
-      z.object({ assessment_instance_id: IdSchema }),
+      IdSchema,
     );
-    if (result == null) {
+    if (assessment_instance_id == null) {
       throw new Error(`unable to locate instance ${json.instance} for ${id}`);
     }
-    const assessment_instance_id = result.assessment_instance_id;
 
     if (_.has(json, 'score_perc')) {
       await sqldb.callAsync('assessment_instances_update_score_perc', [
