@@ -76,7 +76,7 @@ export async function uploadInstanceQuestionScores(assessment_id, csvFile, user_
         // Replace all keys with their lower-case values
         json = _.mapKeys(json, (_v, k) => k.toLowerCase());
         try {
-          if (await _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id)) {
+          if (await updateInstanceQuestionFromJson(json, assessment_id, authn_user_id)) {
             successCount++;
             // The number refers to a zero-based index of the data entries.
             // Adding 1 to use 1-based (as is used in Excel et al), and 1 to
@@ -201,7 +201,7 @@ export async function uploadAssessmentInstanceScores(
           output += '\n' + msg;
         }
         try {
-          await _updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
+          await updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
           successCount++;
         } catch (err) {
           errorCount++;
@@ -241,15 +241,15 @@ export async function uploadAssessmentInstanceScores(
 }
 
 // missing values and empty strings get mapped to null
-function _getJsonPropertyOrNull(json, key) {
+function getJsonPropertyOrNull(json, key) {
   const value = _.get(json, key, null);
   if (value === '') return null;
   return value;
 }
 
 // missing values and empty strings get mapped to null
-function _getNumericJsonPropertyOrNull(json, key) {
-  const value = _getJsonPropertyOrNull(json, key);
+function getNumericJsonPropertyOrNull(json, key) {
+  const value = getJsonPropertyOrNull(json, key);
   if (isNaN(value)) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
@@ -257,9 +257,9 @@ function _getNumericJsonPropertyOrNull(json, key) {
 }
 
 // "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json"
-function _getFeedbackOrNull(json) {
-  const feedback_string = _getJsonPropertyOrNull(json, 'feedback');
-  const feedback_json = _getJsonPropertyOrNull(json, 'feedback_json');
+function getFeedbackOrNull(json) {
+  const feedback_string = getJsonPropertyOrNull(json, 'feedback');
+  const feedback_json = getJsonPropertyOrNull(json, 'feedback_json');
   let feedback = null;
   if (feedback_string != null) {
     feedback = { manual: feedback_string };
@@ -282,8 +282,8 @@ function _getFeedbackOrNull(json) {
   return feedback;
 }
 
-function _getPartialScoresOrNull(json) {
-  const partial_scores_json = _getJsonPropertyOrNull(json, 'partial_scores');
+function getPartialScoresOrNull(json) {
+  const partial_scores_json = getJsonPropertyOrNull(json, 'partial_scores');
   let partial_scores = null;
   if (partial_scores_json != null) {
     try {
@@ -298,12 +298,12 @@ function _getPartialScoresOrNull(json) {
   return partial_scores;
 }
 
-async function _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id) {
-  const submission_id = _getJsonPropertyOrNull(json, 'submission_id');
+async function updateInstanceQuestionFromJson(json, assessment_id, authn_user_id) {
+  const submission_id = getJsonPropertyOrNull(json, 'submission_id');
   const uid_or_group =
-    _getJsonPropertyOrNull(json, 'group_name') ?? _getJsonPropertyOrNull(json, 'uid');
-  const ai_number = _getJsonPropertyOrNull(json, 'instance');
-  const qid = _getJsonPropertyOrNull(json, 'qid');
+    getJsonPropertyOrNull(json, 'group_name') ?? getJsonPropertyOrNull(json, 'uid');
+  const ai_number = getJsonPropertyOrNull(json, 'instance');
+  const qid = getJsonPropertyOrNull(json, 'qid');
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryZeroOrOneRowAsync(sql.select_submission_to_update, {
@@ -329,14 +329,14 @@ async function _updateInstanceQuestionFromJson(json, assessment_id, authn_user_i
     }
 
     const new_score = {
-      score_perc: _getNumericJsonPropertyOrNull(json, 'score_perc'),
-      points: _getNumericJsonPropertyOrNull(json, 'points'),
-      manual_score_perc: _getNumericJsonPropertyOrNull(json, 'manual_score_perc'),
-      manual_points: _getNumericJsonPropertyOrNull(json, 'manual_points'),
-      auto_score_perc: _getNumericJsonPropertyOrNull(json, 'auto_score_perc'),
-      auto_points: _getNumericJsonPropertyOrNull(json, 'auto_points'),
-      feedback: _getFeedbackOrNull(json),
-      partial_scores: _getPartialScoresOrNull(json),
+      score_perc: getNumericJsonPropertyOrNull(json, 'score_perc'),
+      points: getNumericJsonPropertyOrNull(json, 'points'),
+      manual_score_perc: getNumericJsonPropertyOrNull(json, 'manual_score_perc'),
+      manual_points: getNumericJsonPropertyOrNull(json, 'manual_points'),
+      auto_score_perc: getNumericJsonPropertyOrNull(json, 'auto_score_perc'),
+      auto_points: getNumericJsonPropertyOrNull(json, 'auto_points'),
+      feedback: getFeedbackOrNull(json),
+      partial_scores: getPartialScoresOrNull(json),
     };
     if (_.some(Object.values(new_score), (value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
@@ -354,7 +354,7 @@ async function _updateInstanceQuestionFromJson(json, assessment_id, authn_user_i
   });
 }
 
-async function _updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id) {
+async function updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id) {
   let query, id;
   if (_.has(json, 'uid')) {
     query = sql.select_assessment_instance_uid;
