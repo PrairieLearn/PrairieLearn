@@ -11,7 +11,7 @@ export const QuestionsPage = ({
 }: {
   questions: QuestionsPageData[];
   showAddQuestionButton: boolean;
-  qidPrefix?: string;
+  qidPrefix: string;
   resLocals;
 }) => {
   return html`

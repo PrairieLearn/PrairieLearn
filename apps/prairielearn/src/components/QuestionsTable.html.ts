@@ -33,11 +33,11 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageDataAnsified[];
-  showAddQuestionButton: boolean;
+  showAddQuestionButton?: boolean;
   qidPrefix?: string;
-  showSharingSets: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstance[];
+  showSharingSets?: boolean;
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstance[];
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token?: string;
