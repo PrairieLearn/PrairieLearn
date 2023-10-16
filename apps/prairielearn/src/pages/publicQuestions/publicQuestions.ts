@@ -13,7 +13,7 @@ router.get(
     res.locals.course = await selectCourse({ course_id: req.params.course_id });
     const questionSharingEnabled = await features.enabled('question-sharing', {
       course_id: res.locals.course.id,
-      institution_id: res.locals.course.institution_id
+      institution_id: res.locals.course.institution_id,
     });
 
     if (!questionSharingEnabled) {

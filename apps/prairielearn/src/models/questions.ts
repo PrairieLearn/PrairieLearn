@@ -59,9 +59,8 @@ export async function selectQuestionsForCourse(
   return questions;
 }
 
-
 export async function selectPublicQuestionsForCourse(
-  course_id: string | number
+  course_id: string | number,
 ): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_public_questions_for_course,
