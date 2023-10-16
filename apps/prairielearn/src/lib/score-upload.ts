@@ -154,8 +154,8 @@ export async function uploadInstanceQuestionScores(
 export async function uploadAssessmentInstanceScores(
   assessment_id: string,
   csvFile: { originalname: string; size: number; buffer: Buffer } | null | undefined,
-  user_id,
-  authn_user_id,
+  user_id: string,
+  authn_user_id: string,
 ): Promise<string> {
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
