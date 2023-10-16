@@ -1,8 +1,9 @@
-//@ts-check
+// @ts-check
 
 import { selectQuestion } from '../../models/question';
 import { selectCourse } from '../../models/course';
-import { UserSchema } from '../../lib/db-types';
+import { IdSchema, UserSchema } from '../../lib/db-types';
+import { z } from 'zod'
 
 const ERR = require('async-stacktrace');
 const express = require('express');
@@ -86,13 +87,14 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 router.get('/', function (req, res, next) {
   setLocals(req, res)
     .then(() => {
-      var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
+      const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
+      const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
       return async.series(
         [
           (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
             question.getAndRenderVariant(
-              req.query.variant_id // use this: https://github.com/PrairieLearn/PrairieLearn/blob/e9c290c830a4f3c1579e28f62457cfcb545cbbac/apps/prairielearn/src/ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade.ts#L101,
+              variant_id,
               variant_seed,
               res.locals,
               function (err) {
