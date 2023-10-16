@@ -298,6 +298,13 @@ function getPartialScoresOrNull(json) {
   return partial_scores;
 }
 
+/** Update the score of an instance question based on a single row from the CSV file.
+ *
+ * @param {Record<string, any>} json Data from the CSV row.
+ * @param {string} assessment_id ID of the assessment being updated.
+ * @param {string} authn_user_id User ID currently authenticated.
+ * @returns {Promise<boolean>} True if the record included an update, or false if the record included no scores or feedback to be changed.
+ */
 async function updateInstanceQuestionFromJson(json, assessment_id, authn_user_id) {
   const submission_id = getJsonPropertyOrNull(json, 'submission_id');
   const uid_or_group =
