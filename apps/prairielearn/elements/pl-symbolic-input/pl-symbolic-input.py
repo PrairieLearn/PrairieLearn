@@ -1,6 +1,5 @@
 import random
 from enum import Enum
-from typing import Any
 
 import chevron
 import lxml.html
