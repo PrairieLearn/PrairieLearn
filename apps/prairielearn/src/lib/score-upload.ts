@@ -10,7 +10,7 @@ import { IdSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const assessment_info_schema = z.object({
+const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
   course_instance_id: IdSchema,
   course_id: IdSchema,
@@ -39,7 +39,7 @@ export async function uploadInstanceQuestionScores(
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_assessment_info,
     { assessment_id },
-    assessment_info_schema,
+    AssessmentInfoSchema,
   );
 
   const serverJob = await createServerJob({
@@ -163,7 +163,7 @@ export async function uploadAssessmentInstanceScores(
   const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
     sql.select_assessment_info,
     { assessment_id },
-    assessment_info_schema,
+    AssessmentInfoSchema,
   );
 
   const serverJob = await createServerJob({
