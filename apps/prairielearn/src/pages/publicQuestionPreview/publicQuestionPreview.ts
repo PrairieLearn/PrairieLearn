@@ -1,5 +1,3 @@
-//@ts-check
-
 import { selectQuestion } from '../../models/question';
 import { selectCourse } from '../../models/course';
 import { UserSchema } from '../../lib/db-types';
