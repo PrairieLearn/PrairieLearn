@@ -11,7 +11,7 @@ const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 const { setQuestionCopyTargets } = require('../../lib/copy-question');
-const { processSubmission } = require('../../lib/questionPreview')
+const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router();
 
