@@ -32,7 +32,7 @@ describe('flash', () => {
     });
   });
 
-  it('adds a flash escapes unsafe string message', () => {
+  it('adds a flash and escapes unsafe HTML', () => {
     const req = {
       session: {},
     } as any;
