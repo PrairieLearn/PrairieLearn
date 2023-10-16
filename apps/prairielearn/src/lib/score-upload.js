@@ -78,7 +78,10 @@ export async function uploadInstanceQuestionScores(assessment_id, csvFile, user_
         try {
           if (await _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id)) {
             successCount++;
-            const msg = `Processed CSV record ${number}: ${JSON.stringify(json)}`;
+            // The number refers to a zero-based index of the data entries.
+            // Adding 1 to use 1-based (as is used in Excel et al), and 1 to
+            // account for the header.
+            const msg = `Processed CSV line ${number + 2}: ${JSON.stringify(json)}`;
             if (output == null) {
               output = msg;
             } else {
@@ -90,7 +93,7 @@ export async function uploadInstanceQuestionScores(assessment_id, csvFile, user_
           }
         } catch (err) {
           errorCount++;
-          const msg = `Error processing CSV record ${number}: ${JSON.stringify(json)}\n${err}`;
+          const msg = `Error processing CSV line ${number + 2}: ${JSON.stringify(json)}\n${err}`;
           if (output == null) {
             output = msg;
           } else {
@@ -191,7 +194,7 @@ export async function uploadAssessmentInstanceScores(
         json = _.mapKeys(json, (v, k) => {
           return k.toLowerCase();
         });
-        const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+        const msg = `Processing CSV line ${number + 2}: ${JSON.stringify(json)}`;
         if (output == null) {
           output = msg;
         } else {
