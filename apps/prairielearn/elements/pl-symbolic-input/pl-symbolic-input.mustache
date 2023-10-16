@@ -133,10 +133,11 @@ ${{a_sub}}$
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </a>
 
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/error}}
 {{#inline}}</span>{{/inline}}
 {{/submission}}
