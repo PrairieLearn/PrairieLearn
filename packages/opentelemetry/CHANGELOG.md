@@ -1,5 +1,25 @@
 # @prairielearn/opentelemetry
 
+## 1.10.1
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
+## 1.10.0
+
+### Minor Changes
+
+- cfbab7a69: The following types are now exported:
+
+  - `Meter`
+  - `Counter`
+  - `Histogram`
+  - `UpDownCounter`
+  - `ObservableCounter`
+  - `ObservableUpDownCounter`
+  - `ObservableGauge`
+
 ## 1.9.0
 
 ### Minor Changes

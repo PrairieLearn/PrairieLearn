@@ -56,7 +56,9 @@ module.exports = {
 
   async init() {
     workspaceUtils.init(socketServer.io);
-    workspaceUtils.getWorkspaceSocketNamespace().on('connection', module.exports.connection);
+    socketServer.io
+      .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .on('connection', module.exports.connection);
   },
 
   /**

@@ -178,7 +178,7 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => socketServer.init(server),
+    async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
       // Set up a periodic pruning of running containers

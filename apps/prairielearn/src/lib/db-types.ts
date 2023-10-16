@@ -29,6 +29,7 @@ export const DateFromISOString = z
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
+  created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
@@ -267,3 +268,50 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const TagSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Tag = z.infer<typeof TagSchema>;
+
+export const TopicSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Topic = z.infer<typeof TopicSchema>;
+
+export const SharingSetSchema = z.object({
+  course_id: IdSchema,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type SharingSet = z.infer<typeof SharingSetSchema>;
+
+export const UserSessionSchema = z.object({
+  id: IdSchema,
+  session_id: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+  data: z.any(),
+});
+export type UserSession = z.infer<typeof UserSessionSchema>;
+
+export const AssessmentsFormatForQuestionSchema = z.array(
+  z.object({
+    label: z.string().nullable(),
+    assessment_id: IdSchema,
+    course_instance_id: IdSchema,
+    color: z.string().nullable(),
+  }),
+);
