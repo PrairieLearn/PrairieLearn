@@ -1,6 +1,5 @@
 import random
 from enum import Enum
-from typing import Optional
 
 import big_o_utils as bou
 import chevron
@@ -121,10 +120,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     }
 
     with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-        info = chevron.render(f, info_params).strip()
+        template = f.read()
+
+    info = chevron.render(template, info_params).strip()
 
     # First, prepare the parse error since this gets used in multiple panels
-    parse_error: Optional[str] = data["format_errors"].get(name)
+    parse_error: str | None = data["format_errors"].get(name)
     missing_input = False
     a_sub = None
 
@@ -143,10 +144,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         # Use the existing format text in the invalid popup and render it
         if parse_error is not None:
-            with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                parse_error += chevron.render(
-                    f, {"format_error": True, "format_string": info}
-                ).strip()
+            parse_error += chevron.render(
+                template, {"format_error": True, "format_string": info}
+            ).strip()
 
     # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
@@ -174,8 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         # No need to escape the raw_submitted_answer,
@@ -198,8 +197,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 data["partial_scores"].get(name, {}).get("feedback")
             )
 
-        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     # Display the correct answer.
     elif data["panel"] == "answer":
@@ -216,8 +214,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
         }
-        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -258,7 +256,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    a_tru: Optional[str] = data["correct_answers"].get(name)
+    a_tru: str | None = data["correct_answers"].get(name)
 
     # No need to grade if no correct answer given
     if a_tru is None:
