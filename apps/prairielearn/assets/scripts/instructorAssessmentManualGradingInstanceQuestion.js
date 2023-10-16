@@ -504,6 +504,9 @@ function addRubricItemRow() {
   row.querySelector(
     '.js-rubric-item-grader-note',
   ).dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
+  row
+    .querySelectorAll('.js-rubric-item-always-show')
+    .forEach((input) => (input.name = `rubric_item[new${next_id}][always_show_to_students]`));
 
   row.querySelector('.js-rubric-item-points').focus();
 

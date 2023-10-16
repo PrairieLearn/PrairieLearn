@@ -90,14 +90,22 @@ class Grader {
         NetworkDisabled: !question.external_grading_enable_networking,
         HostConfig: {
           Binds: [`${hostDir}:/grade`],
-          Memory: 1 << 30, // 1 GiB
-          MemorySwap: 1 << 30, // same as Memory, so no access to swap
+          Memory: (1 << 30) * 2, // 2 GiB
+          MemorySwap: (1 << 30) * 2, // same as Memory, so no access to swap
           KernelMemory: 1 << 29, // 512 MiB
           DiskQuota: 1 << 30, // 1 GiB
           IpcMode: 'private',
           CpuPeriod: 100000, // microseconds
           CpuQuota: 90000, // portion of the CpuPeriod for this container
           PidsLimit: 1024,
+          Ulimits: [
+            {
+              // Disable core dumps, which can get very large and bloat our storage.
+              Name: 'core',
+              Soft: 0,
+              Hard: 0,
+            },
+          ],
         },
         Entrypoint: question.external_grading_entrypoint.split(' '),
       });

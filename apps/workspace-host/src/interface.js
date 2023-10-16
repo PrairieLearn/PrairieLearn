@@ -4,9 +4,10 @@ const _ = require('lodash');
 const util = require('util');
 const express = require('express');
 const http = require('http');
-const request = require('request');
+const fetch = require('node-fetch').default;
 const path = require('path');
 const { S3 } = require('@aws-sdk/client-s3');
+const { ECRClient } = require('@aws-sdk/client-ecr');
 const { Upload } = require('@aws-sdk/lib-storage');
 const Docker = require('dockerode');
 const fs = require('fs');
@@ -20,7 +21,7 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
@@ -29,7 +30,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const socketServer = require('./lib/socket-server');
-const { makeS3ClientConfig } = require('./lib/aws');
+const { makeS3ClientConfig, makeAwsClientConfig } = require('./lib/aws');
 const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -177,7 +178,7 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => socketServer.init(server),
+    async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
       // Set up a periodic pruning of running containers
@@ -496,35 +497,30 @@ function _checkServer(workspace, callback) {
 
   const startTime = new Date().getTime();
   function checkWorkspace() {
-    request(
-      {
-        url: `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-        timeout: healthCheckTimeout,
-      },
-      function (err, res, _body) {
-        if (err) {
-          // Do nothing, because errors are expected while the container is launching.
-        }
-        if (res && res.statusCode) {
-          // We might get all sorts of strange status codes from the server.
-          // This is okay since it still means the server is running and we're
-          // getting responses.
-          callback(null, workspace);
+    fetch(
+      `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+      { signal: AbortSignal.timeout(healthCheckTimeout) },
+    )
+      .then(() => {
+        // We might get all sorts of strange status codes from the server.
+        // This is okay since it still means the server is running and we're
+        // getting responses. So we don't need to check the response status.
+        callback(null, workspace);
+      })
+      .catch(() => {
+        // Do nothing, because errors are expected while the container is launching.
+        const endTime = new Date().getTime();
+        if (endTime - startTime > startTimeout) {
+          const { id, version, launch_uuid } = workspace;
+          callback(
+            new Error(
+              `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
+            ),
+          );
         } else {
-          const endTime = new Date().getTime();
-          if (endTime - startTime > startTimeout) {
-            const { id, version, launch_uuid } = workspace;
-            callback(
-              new Error(
-                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
-              ),
-            );
-          } else {
-            setTimeout(checkWorkspace, healthCheckInterval);
-          }
+          setTimeout(checkWorkspace, healthCheckInterval);
         }
-      },
-    );
+      });
   }
   checkWorkspace();
 }
@@ -580,7 +576,8 @@ async function _pullImage(workspace) {
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
   // assume we're pulling from the public Docker Hub registry.
-  const auth = config.cacheImageRegistry ? await setupDockerAuthAsync(config.awsRegion) : null;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
   let stream;
@@ -798,6 +795,14 @@ function _createContainer(workspace, callback) {
               PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
+              Ulimits: [
+                {
+                  // Disable core dumps, which can get very large and bloat our storage.
+                  Name: 'core',
+                  Soft: 0,
+                  Hard: 0,
+                },
+              ],
             },
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
@@ -915,11 +920,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, {
-        workspace_id,
-        hostname,
-      });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
@@ -935,7 +935,36 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+
+      // Before we transition this workspace to running, check that the container
+      // we just launched is the same one that this workspace is still assigned to.
+      // To be more precise, we'll check that the container's launch_uuid matches
+      // the current launch_uuid for this workspace. If they don't match, then
+      // the workspace was relaunched while we were initializing it, and we should
+      // abandon it.
+      //
+      // We don't have to explicitly kill the container here - our usual
+      // background maintenance processes will soon notice that this container
+      // should not be running on this host and kill it.
+      await sqldb.runInTransactionAsync(async () => {
+        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
+          workspace_id: workspace.id,
+        });
+        const launch_uuid = currentWorkspace.rows[0].launch_uuid;
+        if (launch_uuid !== workspace.launch_uuid) {
+          logger.info(
+            `Abandoning container for workspace ${workspace.id}: relaunched with launch_uuid ${launch_uuid}`,
+          );
+          return;
+        }
+
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+        await sqldb.queryAsync(sql.update_workspace_hostname, {
+          workspace_id,
+          hostname,
+        });
+        await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
+      });
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
@@ -943,7 +972,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         'stopped',
         `Error starting container. Click "Reboot" to try again.`,
       );
-      return; // don't set host to unhealthy
+
+      // Immediately kill and remove the container, which will flush any
+      // logs to S3 for better debugging.
+      await dockerAttemptKillAndRemove(workspace.container);
+
+      // Don't set host to unhealthy.
+      return;
     }
   } catch (err) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);

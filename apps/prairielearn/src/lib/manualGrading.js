@@ -115,20 +115,21 @@ async function populateManualGradingData(submission) {
 
 /** Updates the rubric settings for an assessment question.
  *
- * @param {number} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
+ * @param {string} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param {boolean} use_rubric - Indicates if a rubric should be used for manual grading.
  * @param {number} starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
  * @param {number} min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
  * @param {number} max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
  * @param {Object[]} rubric_items - An array of items available for grading.
- * @param {number} [rubric_items[].id] - The ID of the rubric item, if an existing item already exists and should be modified. Should be ignored or set to null if a new item is to be created.
+ * @param {string} [rubric_items[].id] - The ID of the rubric item, if an existing item already exists and should be modified. Should be ignored or set to null if a new item is to be created.
  * @param {number} rubric_items[].points - The number of points assigned to the rubric item.
  * @param {string} rubric_items[].description - A short text describing the rubric item. Visible to graders and students.
  * @param {string} [rubric_items[].explanation] - A longer explanation of the rubric item. Visible to graders and students.
  * @param {string} [rubric_items[].grader_note] - A note associated to the rubric item that is visible to graders only.
  * @param {number} rubric_items[].order - An indicator of the order in which items are to be presented.
+ * @param {boolean} rubric_items[].always_show_to_students - If the rubric item should be shown to students when not applied.
  * @param {boolean} tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
- * @param {number} authn_user_id - The user_id of the logged in user.
+ * @param {string} authn_user_id - The user_id of the logged in user.
  */
 async function updateAssessmentQuestionRubric(
   assessment_question_id,
@@ -267,8 +268,8 @@ async function updateAssessmentQuestionRubric(
 
 /** Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
  *
- * @param {number} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
- * @param {number} authn_user_id - The user_id of the logged in user.
+ * @param {string} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
+ * @param {string} authn_user_id - The user_id of the logged in user.
  */
 async function recomputeInstanceQuestions(assessment_question_id, authn_user_id) {
   await sqldb.runInTransactionAsync(async () => {
@@ -352,9 +353,9 @@ async function insertRubricGrading(
 }
 
 /** Manually updates the score of an instance question.
- * @param {number} assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
- * @param {number} instance_question_id - The ID of the instance question to be updated. May or may not be safe.
- * @param {number|null} submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
+ * @param {string} assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
+ * @param {string} instance_question_id - The ID of the instance question to be updated. May or may not be safe.
+ * @param {string|null} submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
  * @param {string|null} check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
  * @param {Object} score - The score values to be used for update.
  * @param {number|string} [score.manual_points] - The manual points to assign to the instance question.
@@ -369,7 +370,7 @@ async function insertRubricGrading(
  * @param {Object} [score.manual_rubric_data.rubric_id] - Rubric ID to use for manual grading.
  * @param {AppliedRubricItem[]} [score.manual_rubric_data.applied_rubric_items] - Applied rubric items.
  * @param {number | string} [score.manual_rubric_data.adjust_points=0] - number of points to add (positive) or subtract (negative) from the total computed from the items.
- * @param {number} authn_user_id - The user_id of the logged in user.
+ * @param {string} authn_user_id - The user_id of the logged in user.
  * @returns {Promise<Object>}
  */
 async function updateInstanceQuestionScore(

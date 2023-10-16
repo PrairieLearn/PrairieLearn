@@ -13,6 +13,7 @@ const unzipper = require('unzipper');
 const fg = require('fast-glob');
 const util = require('util');
 const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-utils');
+const { EncodedData } = require('@prairielearn/browser-utils');
 
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
@@ -142,31 +143,44 @@ module.exports = {
    * @param {String} filename
    * @param {Object} variant - The variant.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, fileData) function.
    */
-  getFile(filename, variant, question, course, authn_user_id, callback) {
+  getFile(filename, variant, question, variant_course, authn_user_id, callback) {
     questionServers.getModule(question.type, (err, questionModule) => {
       if (ERR(err, callback)) return;
-      questionModule.file(filename, variant, question, course, (err, courseIssues, fileData) => {
-        if (ERR(err, callback)) return;
+      util.callbackify(module.exports.getQuestionCourse)(
+        question,
+        variant_course,
+        (err, question_course) => {
+          if (ERR(err, callback)) return;
+          questionModule.file(
+            filename,
+            variant,
+            question,
+            question_course,
+            (err, courseIssues, fileData) => {
+              if (ERR(err, callback)) return;
 
-        const studentMessage = 'Error creating file: ' + filename;
-        const courseData = { variant, question, course };
-        module.exports._writeCourseIssues(
-          courseIssues,
-          variant,
-          authn_user_id,
-          studentMessage,
-          courseData,
-          (err) => {
-            if (ERR(err, callback)) return;
+              const studentMessage = 'Error creating file: ' + filename;
+              const courseData = { variant, question, course: variant_course };
+              module.exports._writeCourseIssues(
+                courseIssues,
+                variant,
+                authn_user_id,
+                studentMessage,
+                courseData,
+                (err) => {
+                  if (ERR(err, callback)) return;
 
-            return callback(null, fileData);
-          },
-        );
-      });
+                  return callback(null, fileData);
+                },
+              );
+            },
+          );
+        },
+      );
     });
   },
 
@@ -362,14 +376,14 @@ module.exports = {
    * @param {Object} submission - The submission to save (should not have an id property yet).
    * @param {Object} variant - The variant to submit to.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {function} callback - A callback(err, submission_id) function.
    */
-  saveSubmission(submission, variant, question, course, callback) {
+  saveSubmission(submission, variant, question, variant_course, callback) {
     debug('saveSubmission()');
     submission.raw_submitted_answer = submission.submitted_answer;
     submission.gradable = true;
-    let questionModule, courseIssues, data, submission_id, workspace_id, zipPath;
+    let questionModule, question_course, courseIssues, data, submission_id, workspace_id, zipPath;
     async.series(
       [
         (callback) => {
@@ -430,12 +444,15 @@ module.exports = {
             callback(null);
           });
         },
+        async () => {
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
+        },
         (callback) => {
           questionModule.parse(
             submission,
             variant,
             question,
-            course,
+            question_course,
             (err, ret_courseIssues, ret_data) => {
               if (ERR(err, callback)) return;
               courseIssues = ret_courseIssues;
@@ -448,7 +465,7 @@ module.exports = {
         },
         (callback) => {
           const studentMessage = 'Error parsing submission';
-          const courseData = { variant, question, submission, course };
+          const courseData = { variant, question, submission, course: variant_course };
           module.exports._writeCourseIssues(
             courseIssues,
             variant,
@@ -474,6 +491,7 @@ module.exports = {
             data.gradable,
             data.broken,
             data.true_answer,
+            data.feedback,
             false, // regradable
             submission.credit,
             submission.mode,
@@ -502,7 +520,7 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} variant_course - The course for the variant.
    */
-  async _getQuestionCourse(question, variant_course) {
+  async getQuestionCourse(question, variant_course) {
     if (question.course_id === variant_course.id) {
       return variant_course;
     } else {
@@ -538,7 +556,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           var params = [variant.id, check_submission_id];
@@ -777,15 +795,15 @@ module.exports = {
    *
    * @param {Object} variant - The variant to submit to.
    * @param {Object} question - The question for the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
    * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
    * @param {string} authn_user_id - The currently authenticated user.
    * @param {function} callback - A callback(err, submission_id) function.
    */
-  _createTestSubmission(variant, question, course, test_type, authn_user_id, callback) {
+  _createTestSubmission(variant, question, variant_course, test_type, authn_user_id, callback) {
     debug('_createTestSubmission()');
     if (question.type !== 'Freeform') return callback(new Error('question.type must be Freeform'));
-    let questionModule, courseIssues, data, submission_id, grading_job;
+    let questionModule, question_course, courseIssues, data, submission_id, grading_job;
     async.series(
       [
         (callback) => {
@@ -796,11 +814,14 @@ module.exports = {
             callback(null);
           });
         },
+        async () => {
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
+        },
         (callback) => {
           questionModule.test(
             variant,
             question,
-            course,
+            question_course,
             test_type,
             (err, ret_courseIssues, ret_data) => {
               if (ERR(err, callback)) return;
@@ -815,7 +836,7 @@ module.exports = {
         },
         (callback) => {
           const studentMessage = 'Error creating test submission';
-          const courseData = { variant, question, course };
+          const courseData = { variant, question, course: variant_course };
           module.exports._writeCourseIssues(
             courseIssues,
             variant,
@@ -844,6 +865,7 @@ module.exports = {
             // `true_answer` so we can use our standard `submissions_insert`
             // sproc.
             variant.true_answer,
+            null, // feedback
             true, // regradable
             null, // credit
             null, // mode
@@ -1091,7 +1113,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          question_course = await module.exports._getQuestionCourse(question, variant_course);
+          question_course = await module.exports.getQuestionCourse(question, variant_course);
         },
         (callback) => {
           const instance_question_id = null;
@@ -1322,7 +1344,8 @@ module.exports = {
    * @param {Object} question - The question for the variant.
    * @param {Object} submission - The current submission to the variant.
    * @param {Array} submissions - The full list of submissions to the variant.
-   * @param {Object} course - The course for the variant.
+   * @param {Object} variant_course - The course for the variant.
+   * @param {Object} question_course - The course for the question.
    * @param {Object} course_instance - The course_instance for the variant.
    * @param {Object} locals - The current locals for the page response.
    * @param {function} callback - A callback(err, courseIssues, htmls) function.
@@ -1333,7 +1356,8 @@ module.exports = {
     question,
     submission,
     submissions,
-    course,
+    variant_course,
+    question_course,
     course_instance,
     locals,
     callback,
@@ -1346,14 +1370,14 @@ module.exports = {
         question,
         submission,
         submissions,
-        course,
+        question_course,
         course_instance,
         locals,
         (err, courseIssues, htmls) => {
           if (ERR(err, callback)) return;
 
           const studentMessage = 'Error rendering question';
-          const courseData = { variant, question, submission, course };
+          const courseData = { variant, question, submission, course: variant_course };
           // locals.authn_user may not be populated when rendering a panel
           const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
           module.exports._writeCourseIssues(
@@ -1398,10 +1422,10 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = questionUrl + 'file';
 
-      // FIXME: broken?
-      urls.calculationQuestionGeneratedFileUrl = questionUrl + 'generatedFilesQuestion';
+      urls.calculationQuestionGeneratedFileUrl =
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      urls.clientFilesCourseUrl = questionUrl + 'clientFilesCourse';
       urls.clientFilesQuestionGeneratedFileUrl =
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
@@ -1417,11 +1441,10 @@ module.exports = {
       // necessary for backward compatibility
       urls.calculationQuestionFileUrl = iqUrl + 'file';
 
-      // FIXME: broken?
       urls.calculationQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
 
-      urls.clientFilesCourseUrl = urlPrefix + '/clientFilesCourse';
+      urls.clientFilesCourseUrl = iqUrl + 'clientFilesCourse';
       urls.clientFilesQuestionGeneratedFileUrl =
         iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
       urls.baseUrl = urlPrefix;
@@ -1569,7 +1592,7 @@ module.exports = {
     async.series(
       [
         async () => {
-          locals.question_course = await module.exports._getQuestionCourse(
+          locals.question_course = await module.exports.getQuestionCourse(
             locals.question,
             locals.course,
           );
@@ -1727,6 +1750,7 @@ module.exports = {
             locals.question,
             locals.submission,
             locals.submissions.slice(0, MAX_RECENT_SUBMISSIONS),
+            locals.course,
             locals.question_course,
             locals.course_instance,
             locals,
@@ -1876,6 +1900,7 @@ module.exports = {
         assessment_instance,
         assessment,
         assessment_set,
+        variant_course,
         question_course,
         course_instance,
         submission_index,
@@ -1892,7 +1917,7 @@ module.exports = {
       };
 
       // Fake locals. Yay!
-      const locals = {};
+      const locals = { encoded_data: EncodedData };
       setLocalsFromConfig(locals);
       _.assign(
         locals,
@@ -1933,6 +1958,7 @@ module.exports = {
               question,
               submission,
               submissions,
+              variant_course,
               question_course,
               course_instance,
               locals,

@@ -6,7 +6,7 @@ module.exports = {
     // e.g. `yarn mocha path/to/file.ts`.
     './src/tests/mocha-env.mjs',
     'ts-node/register',
-    './src/tests/mocha-hooks.mjs',
+    './src/tests/mocha-hooks.ts',
   ],
   timeout: '30000', // in milliseconds
   'watch-files': ['.'],

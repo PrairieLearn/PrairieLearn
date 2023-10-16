@@ -126,6 +126,9 @@ Gives automated feedback in the case of improper asymptotic input.
 | `size`           | integer                                               | 35                      | Size of the input box.                                                                                                                                               |
 | `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 | `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                           |
+| `show-score`     | boolean                                               | true                    | Whether to show the score badge and feedback next to this element.                                                                                                   |
+| `allow-blank`    | boolean                                               | false                   | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
+| `blank-value`    | string                                                | 1 (one)                 | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
 
 #### Details
 
@@ -428,7 +431,7 @@ def generate(data):
 | ---------------- | ------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`   | string              | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
 | `weight`         | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `correct-answer` | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
+| `correct-answer` | string              | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `allow-blank`    | boolean             | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                     |
 | `blank-value`    | integer             | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.                                                                     |
 | `label`          | text                | —        | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
@@ -814,9 +817,10 @@ def generate(data):
 | `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
 | `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
+| `show-score`          | boolean                         | true     | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `show-placeholder`    | boolean                         | true     | Show the placeholder text that shows the default comparison.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `placeholder`         | string                          | -        | Custom placeholder text. By default, the placeholder text shown is the default comparison. comparison.                                                                                                                                                                                                                                                                                                                                                                                  |
 | `size`                | integer                         | 35       | Size of the input box.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `show-correct-answer` | boolean                         | true     | Whether to show the correct answer in the submitted answers panel.                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `allow-fractions`     | boolean                         | true     | Whether to allow answers expressed as a rational number of the format `a/b`.                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -875,6 +879,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `feedback`            | "none", "first-wrong", or "first-wrong-verbose" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `none` will give no feedback. `first-wrong` will tell the student which block in their answer was the first to be incorrect. If set to `first-wrong-verbose`, if the first incorrect block is a distractor any feedback associated with that distractor will be shown as well (see "distractor-feedback" in `<pl-answer>`) |
 | `format`              | "code" or "default"                             | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                                                                           |
 | `code-language`       | string                                          | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                                                                                |
+| `inline`              | boolean                                         | false                          | `false` sets the blocks to be stacked vertically whereas `true` requires blocks to be placed horizontally.                                                                                                                                                                                                                                                                                                                                                     |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -1193,6 +1198,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 | `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set.                                       |
 | `allow-feedback`           | boolean                                      | true         | Whether to show detailed feedback from the autograder for incorrect answers (for example, stating whether a unit or magnitude specifically is incorrect). Feedback varies based on `grading-mode`.                                                                                                                            |
 | `custom-format`            | string                                       | -            | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
+| `show-score`               | boolean                                      | true         | Whether to show the score badge next to this element.                                                                                                                                                                                                                                                                         |
 
 #### Details
 
@@ -1864,21 +1870,21 @@ def generate(data):
 
 #### Customizations
 
-| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                 |
-| ------------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`       | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
-| `prefix`            | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `prefix-newline`    | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
-| `suffix`            | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `suffix-newline`    | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
-| `indent`            | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
-| `depth`             | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
-| `width`             | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
-| `compact`           | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
-| `sort-dicts`        | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
-| `no-highlight`      | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
-| `copy-code-button`  | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                     |
-| `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                             |
+| Attribute           | Type    | Default | Description                                                                                                                                                                                                                                                                                      |
+| ------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`       | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                                     |
+| `prefix`            | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `prefix-newline`    | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                                              |
+| `suffix`            | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                                               |
+| `suffix-newline`    | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                                        |
+| `indent`            | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                                                   |
+| `depth`             | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                                                  |
+| `width`             | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                                           |
+| `compact-sequences` | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If `compact-sequences` is false (the default) then each item of a sequence will be formatted on a separate line. If it is true, as many items as will fit within the width will be formatted on each output line. |
+| `sort-dicts`        | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                                                  |
+| `no-highlight`      | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                                     |
+| `copy-code-button`  | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                          |
+| `show-line-numbers` | boolean | false   | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                  |
 
 #### Details
 
@@ -1898,20 +1904,44 @@ Printing Pandas DataFrames with this element is deprecated. Please use the new [
 
 ### `pl-template` element
 
-Displays boilerplate HTML from templates in a reusable way.
+Displays boilerplate HTML from mustache templates in a reusable way.
 
 #### Sample element
 
 ```html
-<pl-template file-name="outer_template.mustache" subdirectory="templates">
-  <pl-variable name="is-open">True</pl-variable>
-  <pl-variable
-    name="problem-statement"
-    directory="question"
-    file-name="serverFilesQuestion/statement.html"
-  ></pl-variable>
+<pl-template file-name="templates/outer_template.mustache">
+  <pl-variable name="show">True</pl-variable>
+  <pl-variable name="section_header">This is the section header.</pl-variable>
+  <pl-variable name="section_body">This is the section body.</pl-variable>
 </pl-template>
 ```
+
+Along with the sample usage of the element, we include a sample template file. This is the file
+`templates/outer_template.mustache`, stored in the course's `serverFilesCourse` directory:
+
+```html
+<div class="card mb-1 mt-1">
+  <div class="card-header" style="cursor: pointer">
+    <div
+      class="card-title d-flex justify-content-between"
+      data-toggle="collapse"
+      data-target="#collapse-{{uuid}}"
+    >
+      <div>{{section_header}}</div>
+      <div class="fa fa-angle-down"></div>
+    </div>
+  </div>
+
+  <div class="collapse{{#show}} show{{/show}}" id="collapse-{{uuid}}">
+    <div class="card-body">
+      <div class="card-text">{{{section_body}}}</div>
+    </div>
+  </div>
+</div>
+```
+
+_Note:_ The sample element did not define the `uuid` variable, as each `pl-template` element
+has a unique one defined internally.
 
 #### Customizations
 

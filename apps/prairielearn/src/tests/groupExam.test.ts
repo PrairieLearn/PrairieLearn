@@ -1,6 +1,7 @@
 import { assert } from 'chai';
 import cheerio = require('cheerio');
 import fetch from 'node-fetch';
+import fetchCookie = require('fetch-cookie');
 import { config } from '../lib/config';
 import { step } from 'mocha-steps';
 
@@ -80,7 +81,7 @@ async function createGroup(
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
-  const res = await fetch(assessmentUrl, {
+  const res = await fetchCookie(fetch)(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
       __action: 'create_group',
@@ -101,7 +102,7 @@ async function joinGroup(
   joinCode: string,
   csrfToken: string,
 ): Promise<cheerio.CheerioAPI> {
-  const res = await fetch(assessmentUrl, {
+  const res = await fetchCookie(fetch)(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
       __action: 'join_group',
@@ -496,7 +497,7 @@ describe('cross exam assessment access', function () {
     );
 
     // Attempt to join a first assessment group from the second assessment
-    const crossAssessmentJoinResponse = await fetch(secondAssessmentUrl, {
+    const crossAssessmentJoinResponse = await fetchCookie(fetch)(secondAssessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'join_group',

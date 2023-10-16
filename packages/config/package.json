@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/config",
-  "version": "2.0.5",
+  "version": "2.0.8",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -8,21 +8,21 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.388.0",
-    "@aws-sdk/client-secrets-manager": "^3.388.0",
+    "@aws-sdk/client-ec2": "^3.423.0",
+    "@aws-sdk/client-secrets-manager": "^3.423.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.1.1",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/fs-extra": "^11.0.1",
-    "@types/lodash": "^4.14.197",
-    "@types/mocha": "^10.0.1",
-    "@types/node": "^18.17.4",
+    "@types/fs-extra": "^11.0.2",
+    "@types/lodash": "^4.14.199",
+    "@types/mocha": "^10.0.2",
+    "@types/node": "^18.18.2",
     "mocha": "^10.2.0",
     "tmp-promise": "^3.0.3",
     "ts-node": "^10.9.1",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.2"
   }
 }

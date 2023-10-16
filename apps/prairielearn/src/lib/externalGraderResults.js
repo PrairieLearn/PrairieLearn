@@ -169,7 +169,7 @@ async function processMessage(data) {
         ResponseContentType: 'application/json',
       });
       if (!data.Body) throw new Error('No body in S3 response');
-      await processResults(jobId, data.Body.transformToString());
+      await processResults(jobId, await data.Body.transformToString());
       return;
     }
   } else {
