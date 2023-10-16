@@ -1,27 +1,28 @@
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { contains } from '@prairielearn/path-utils';
 import type { Server as SocketIOServer } from 'socket.io';
+import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import path from 'path';
 
 const sql = loadSqlEquiv(__filename);
 
-let socketIoServer: SocketIOServer | null = null;
+export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
 
-export function init(io: SocketIOServer) {
+let socketIoServer: SocketIOServer | SocketIOEmitter | null = null;
+
+export function init(io: SocketIOServer | SocketIOEmitter) {
   socketIoServer = io;
 }
 
 function emitMessageForWorkspace(workspaceId: string | number, event: string, ...args: any[]) {
-  getWorkspaceSocketNamespace()
+  if (!socketIoServer) throw new Error('SocketIO server not initialized.');
+
+  socketIoServer
+    .of(WORKSPACE_SOCKET_NAMESPACE)
     .to(`workspace-${workspaceId}`)
     .emit(event, ...args);
-}
-
-export function getWorkspaceSocketNamespace() {
-  if (!socketIoServer) throw new Error('socket.io server not initialized');
-  return socketIoServer.of('/workspace');
 }
 
 /**
