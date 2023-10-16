@@ -1,7 +1,6 @@
 import random
 from enum import Enum
-from html import escape
-from typing import Any, Union
+from typing import Any
 
 import chevron
 import lxml.html
@@ -31,16 +30,6 @@ BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
 SHOW_SCORE_DEFAULT = True
 SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
-
-
-def prepare_parse_error_popup(info_params: dict[str, Any]) -> str:
-    # Use the existing format text in the invalid popup.
-    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-        info = chevron.render(f, info_params).strip()
-
-    # Render invalid popup
-    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-        return chevron.render(f, {"format_error": True, "format_string": info}).strip()
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -119,11 +108,50 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "allow_complex": allow_complex,
     }
 
-    parse_error = data["format_errors"].get(name)
+    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
+
+    info = chevron.render(template, info_params).strip()
+
+    parse_error: str | None = data["format_errors"].get(name)
+    missing_input = False
+    a_sub_converted = None
+
+    if parse_error is None and name in data["submitted_answers"]:
+        a_sub = data["submitted_answers"][name]
+
+        if isinstance(a_sub, str):
+            # this is for backward-compatibility
+            a_sub_parsed = phs.convert_string_to_sympy(
+                a_sub,
+                variables,
+                allow_complex=allow_complex,
+                custom_functions=custom_functions,
+                allow_trig_functions=True,
+            )
+        else:
+            a_sub_parsed = phs.json_to_sympy(
+                a_sub, allow_complex=allow_complex, allow_trig_functions=True
+            )
+        a_sub_converted = sympy.latex(
+            a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        )
+    elif name not in data["submitted_answers"]:
+        missing_input = True
+        parse_error = None
+    else:
+        # Use the existing format text in the invalid popup and render it
+        if parse_error is not None:
+            parse_error += chevron.render(
+                template, {"format_error": True, "format_string": info}
+            ).strip()
+
+    # Next, get some attributes we will use in multiple places
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    score = data["partial_scores"].get(name, {}).get("score")
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
         with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
@@ -142,24 +170,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "display_append_span": show_info or parse_error or (score is not None),
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
+            "raw_submitted_answer": raw_submitted_answer,
+            "parse_error": parse_error,
+            display.value: True,
         }
-
-        if parse_error is not None:
-            html_params["parse_error"] = parse_error + prepare_parse_error_popup(
-                info_params
-            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        html_params[display.value] = True
-
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-
-        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         html_params = {
@@ -167,37 +187,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
+            "a_sub": a_sub_converted,
+            "raw_submitted_answer": raw_submitted_answer,
+            display.value: True,
+            "error": parse_error or missing_input,
         }
-
-        if parse_error is None:
-            a_sub = data["submitted_answers"].get(name)
-            if a_sub is not None:
-                if isinstance(a_sub, str):
-                    # this is for backward-compatibility
-                    a_sub_parsed = phs.convert_string_to_sympy(
-                        a_sub,
-                        variables,
-                        allow_complex=allow_complex,
-                        custom_functions=custom_functions,
-                    )
-                else:
-                    a_sub_parsed = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-                a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-                html_params["a_sub"] = sympy.latex(a_sub_parsed)
-                html_params["a_sub_raw"] = data["raw_submitted_answers"].get(name, None)
-            else:
-                html_params["missing_input"] = True
-                html_params["parse_error"] = None
-        else:
-            html_params["parse_error"] = parse_error + prepare_parse_error_popup(
-                info_params
-            )
-
-            raw_submitted_answer = data["raw_submitted_answers"].get(name)
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
@@ -205,14 +199,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        html_params[display.value] = True
-
-        html_params["error"] = html_params["parse_error"] or html_params.get(
-            "missing_input", False
-        )
-
-        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name)
@@ -232,8 +219,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
         html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
-        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -343,7 +329,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     else:
         a_tru_sympy = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
 
-    def grade_function(a_sub: Union[str, phs.SympyJson]) -> tuple[bool, None]:
+    def grade_function(a_sub: str | phs.SympyJson) -> tuple[bool, None]:
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility
