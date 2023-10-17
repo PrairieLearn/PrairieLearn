@@ -66,17 +66,7 @@ window.PLFileEditor = function (uuid, options) {
   if (options.preview !== undefined) {
     // Retrieve preview render function from extension
     if (this.preview[options.preview]) {
-      if (this.preview[options.preview].then) {
-        // If preview function is a Promise, keep no render immediately, but
-        // update it when the promise fulfills
-        this.previewRender = null;
-        this.preview[options.preview].then((fn) => {
-          this.previewRender = fn;
-          this.updatePreview();
-        });
-      } else {
-        this.previewRender = this.preview[options.preview];
-      }
+      this.previewRender = this.preview[options.preview];
     } else if (options.preview === 'markdown') {
       const renderer = new showdown.Converter({
         literalMidWordUnderscores: true,
@@ -127,9 +117,13 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = function () {
-  const html_contents = this.previewRender?.(this.editor.getValue()) || '';
+window.PLFileEditor.prototype.updatePreview = async function () {
+  const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
+  const preview_return = editor_value ? this.previewRender?.(editor_value) : default_preview_text;
+  const html_contents =
+    (preview_return instanceof Promise ? await preview_return : preview_return) || '';
+
   let preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
