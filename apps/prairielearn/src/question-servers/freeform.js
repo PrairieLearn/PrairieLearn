@@ -1693,14 +1693,15 @@ module.exports = {
 
             const headerHtmls = [
               ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+              // The import map must come before any scripts that use imports
+              !_.isEmpty(importMap.imports)
+                ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
+                : ``,
               // It's important that any library-style scripts come first
               ...coreScriptUrls.map(
                 (url) => `<script type="text/javascript" src="${url}"></script>`,
               ),
               ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
-              !_.isEmpty(importMap.imports)
-                ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
-                : ``,
             ];
             htmls.extraHeadersHtml = headerHtmls.join('\n');
           },
