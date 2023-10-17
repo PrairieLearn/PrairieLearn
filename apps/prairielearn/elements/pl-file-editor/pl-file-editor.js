@@ -287,17 +287,12 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let markdownRenderer = null;
-    return (value) => {
-      // Only load/create renderer on first call.
-      if (markdownRenderer == null) {
-        markdownRenderer = new showdown.Converter({
-          literalMidWordUnderscores: true,
-          literalMidWordAsterisks: true,
-        });
-      }
-      return markdownRenderer.makeHtml(value);
-    };
+    let markdownRenderer = new showdown.Converter({
+      literalMidWordUnderscores: true,
+      literalMidWordAsterisks: true,
+    });
+
+    return async (value) => markdownRenderer.makeHtml(value);
   })(),
   dot: (() => {
     let vizPromise = null;
@@ -306,7 +301,8 @@ window.PLFileEditor.prototype.preview = {
         // Only load/create instance on first call.
         if (vizPromise == null) {
           vizPromise = (async () => {
-            // TODO Dynamically load @viz-js/viz/lib/viz-standalone.js
+            // eslint-disable-next-line import/no-unresolved
+            await import('pl-file-editor/viz');
             return await Viz.instance();
           })();
         }

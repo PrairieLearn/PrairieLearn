@@ -5,10 +5,14 @@
       "ace-builds/src-min-noconflict/ace.js",
       "ace-builds/src-min-noconflict/ext-themelist.js",
       "showdown/dist/showdown.js",
-      "@viz-js/viz/lib/viz-standalone.js",
       "dompurify/dist/purify.min.js"
     ],
     "elementScripts": ["pl-file-editor.js"],
     "elementStyles": ["pl-file-editor.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "pl-file-editor/viz": "@viz-js/viz/lib/viz-standalone.js"
+    }
   }
 }

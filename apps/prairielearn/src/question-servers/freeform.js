@@ -1415,6 +1415,14 @@ module.exports = {
               clientFilesQuestionStyles: [],
               clientFilesQuestionScripts: [],
             };
+            const dynamicDependencies = {
+              nodeModulesScripts: {},
+              coreElementScripts: {},
+              courseElementScripts: {},
+              extensionScripts: {},
+              clientFilesCourseScripts: {},
+              clientFilesQuestionScripts: {},
+            };
 
             // Question dependencies are checked via schema on sync-time, so
             // there's no need for sanity checks here.
@@ -1430,6 +1438,9 @@ module.exports = {
             allRenderedElementNames.forEach((elementName) => {
               let resolvedElement = module.exports.resolveElement(elementName, context);
               const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
+              const elementDynamicDependencies = _.cloneDeep(
+                resolvedElement.dynamicDependencies || {},
+              );
 
               // Transform non-global dependencies to be prefixed by the element name,
               // since they'll be served from their element's directory
@@ -1440,6 +1451,12 @@ module.exports = {
               }
               if (_.has(elementDependencies, 'elementScripts')) {
                 elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+                  (dep) => `${resolvedElement.name}/${dep}`,
+                );
+              }
+              if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                elementDynamicDependencies.elementScripts = _.mapValues(
+                  elementDynamicDependencies.elementScripts,
                   (dep) => `${resolvedElement.name}/${dep}`,
                 );
               }
@@ -1455,6 +1472,11 @@ module.exports = {
                   elementDependencies.courseElementScripts = elementDependencies.elementScripts;
                   delete elementDependencies.elementScripts;
                 }
+                if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                  elementDynamicDependencies.courseElementScripts =
+                    elementDynamicDependencies.elementScripts;
+                  delete elementDynamicDependencies.elementScripts;
+                }
               } else {
                 if (_.has(elementDependencies, 'elementStyles')) {
                   elementDependencies.coreElementStyles = elementDependencies.elementStyles;
@@ -1463,6 +1485,11 @@ module.exports = {
                 if (_.has(elementDependencies, 'elementScripts')) {
                   elementDependencies.coreElementScripts = elementDependencies.elementScripts;
                   delete elementDependencies.elementScripts;
+                }
+                if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                  elementDynamicDependencies.coreElementScripts =
+                    elementDynamicDependencies.elementScripts;
+                  delete elementDynamicDependencies.elementScripts;
                 }
               }
 
@@ -1495,6 +1522,18 @@ module.exports = {
                     );
                   }
                 }
+                if (_.has(elementDynamicDependencies, type)) {
+                  if (_.isObject(elementDynamicDependencies[type])) {
+                    Object.assign(dynamicDependencies[type], elementDynamicDependencies[type]);
+                  } else {
+                    courseIssues.push(
+                      new CourseIssueError(
+                        `Error getting dynamic dependencies for ${resolvedElement.name}: "${type}" is not an object`,
+                        { data: { elementDependencies }, fatal: true },
+                      ),
+                    );
+                  }
+                }
               }
 
               // Load any extensions if they exist
@@ -1504,9 +1543,8 @@ module.exports = {
                     continue;
                   }
 
-                  const extension = _.cloneDeep(
-                    extensions[elementName][extensionName],
-                  ).dependencies;
+                  const { dependencies: extension, dynamicDependencies: extensionDynamic } =
+                    _.cloneDeep(extensions[elementName][extensionName]);
                   if (_.has(extension, 'extensionStyles')) {
                     extension.extensionStyles = extension.extensionStyles.map(
                       (dep) => `${elementName}/${extensionName}/${dep}`,
@@ -1514,6 +1552,12 @@ module.exports = {
                   }
                   if (_.has(extension, 'extensionScripts')) {
                     extension.extensionScripts = extension.extensionScripts.map(
+                      (dep) => `${elementName}/${extensionName}/${dep}`,
+                    );
+                  }
+                  if (_.has(extensionDynamic, 'extensionScripts')) {
+                    extensionDynamic.extensionScripts = _.mapValues(
+                      extension.extensionScripts,
                       (dep) => `${elementName}/${extensionName}/${dep}`,
                     );
                   }
@@ -1540,7 +1584,19 @@ module.exports = {
                       } else {
                         courseIssues.push(
                           new CourseIssueError(
-                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`,
+                            `Error getting dependencies for extension ${extensionName}: "${type}" is not an array`,
+                            { data: elementDependencies, fatal: true },
+                          ),
+                        );
+                      }
+                    }
+                    if (_.has(extensionDynamic, type)) {
+                      if (_.isObject(extensionDynamic[type])) {
+                        Object.assign(dynamicDependencies[type], extensionDynamic[type]);
+                      } else {
+                        courseIssues.push(
+                          new CourseIssueError(
+                            `Error getting dynamic dependencies for extension ${extensionName}: "${type}" is not an object`,
                             { data: elementDependencies, fatal: true },
                           ),
                         );
@@ -1606,6 +1662,35 @@ module.exports = {
               ),
             );
 
+            const importMap = {
+              imports: {
+                ..._.mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
+                  assets.nodeModulesAssetPath(file),
+                ),
+                ..._.mapValues(
+                  dynamicDependencies.clientFilesCourseScripts,
+                  (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
+                ),
+                ..._.mapValues(
+                  dynamicDependencies.clientFilesQuestionScripts,
+                  (file) => `${locals.clientFilesQuestionUrl}/${file}`,
+                ),
+                ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
+                  assets.coreElementAssetPath(file),
+                ),
+                ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
+                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+                ),
+                ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
+                  assets.courseElementExtensionAssetPath(
+                    course.commit_hash,
+                    locals.urlPrefix,
+                    file,
+                  ),
+                ),
+              },
+            };
+
             const headerHtmls = [
               ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
               // It's important that any library-style scripts come first
@@ -1613,6 +1698,9 @@ module.exports = {
                 (url) => `<script type="text/javascript" src="${url}"></script>`,
               ),
               ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+              !_.isEmpty(importMap.imports)
+                ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
+                : ``,
             ];
             htmls.extraHeadersHtml = headerHtmls.join('\n');
           },
