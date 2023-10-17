@@ -35,7 +35,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the workspace-desktop docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
@@ -59,7 +59,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the grader-c docker image if needed
         run: ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c:latest

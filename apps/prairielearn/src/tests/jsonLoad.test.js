@@ -1,5 +1,4 @@
 const assert = require('chai').assert;
-const sinon = require('sinon');
 const path = require('path');
 const jsonLoad = require('../lib/json-load');
 
@@ -68,27 +67,6 @@ describe('JSON loading', () => {
         assert.isUndefined(json);
         done();
       });
-    });
-  });
-
-  describe('readJSONSyncOrDie', () => {
-    beforeEach(() => {
-      sinon.stub(process, 'exit');
-    });
-
-    afterEach(() => {
-      process.exit.restore();
-    });
-
-    it('reads JSON that matches a schema', () => {
-      const json = jsonLoad.readJSONSyncOrDie(testfile('forSchemaValid.json'), schema);
-      assert.deepEqual(json, { foo: 'bar' });
-      assert.isFalse(process.exit.called);
-    });
-
-    it('exits if JSON does not match scehma', () => {
-      jsonLoad.readJSONSyncOrDie(testfile('forSchemaInvalid.json'), schema);
-      assert.isTrue(process.exit.calledWith(1));
     });
   });
 
