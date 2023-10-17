@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, showdown, MathJax, DOMPurify, Viz */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -63,25 +63,9 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview !== undefined) {
-    // Retrieve preview render function from extension
-    if (this.preview[options.preview]) {
-      this.previewRender = this.preview[options.preview];
-    } else if (options.preview === 'markdown') {
-      const renderer = new showdown.Converter({
-        literalMidWordUnderscores: true,
-        literalMidWordAsterisks: true,
-      });
-
-      this.previewRender = (value) => renderer.makeHtml(value);
-    } else if (options.preview === 'html') {
-      this.previewRender = (value) => value;
-    } else {
-      this.previewRender = () => `<p>Unknown preview type: <code>${options.preview}</code></p>`;
-    }
-
-    this.editor.session.on('change', () => this.updatePreview());
-    this.updatePreview();
+  if (options.preview) {
+    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.updatePreview(options.preview);
   }
 
   var currentContents = '';
@@ -117,12 +101,13 @@ window.PLFileEditor.prototype.syncSettings = function () {
   });
 };
 
-window.PLFileEditor.prototype.updatePreview = async function () {
+window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
-  const preview_return = editor_value ? this.previewRender?.(editor_value) : default_preview_text;
-  const html_contents =
-    (preview_return instanceof Promise ? await preview_return : preview_return) || '';
+  const html_contents = editor_value
+    ? (await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+      `<p>Unknown preview type: <code>${preview_type}</code></p>`
+    : '';
 
   let preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
@@ -300,5 +285,37 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 };
 
 window.PLFileEditor.prototype.preview = {
-  // Object potentially used by extensions to populate new types of preview
+  html: (value) => value,
+  markdown: (() => {
+    let markdownRenderer = null;
+    return (value) => {
+      // Only load/create renderer on first call.
+      if (markdownRenderer == null) {
+        markdownRenderer = new showdown.Converter({
+          literalMidWordUnderscores: true,
+          literalMidWordAsterisks: true,
+        });
+      }
+      return markdownRenderer.makeHtml(value);
+    };
+  })(),
+  dot: (() => {
+    let vizPromise = null;
+    return async (value) => {
+      try {
+        // Only load/create instance on first call.
+        if (vizPromise == null) {
+          vizPromise = (async () => {
+            // TODO Dynamically load @viz-js/viz/lib/viz-standalone.js
+            return await Viz.instance();
+          })();
+        }
+        const viz = await vizPromise;
+        return viz.renderString(value, { format: 'svg' });
+      } catch (err) {
+        return `<span class="text-danger">${err.message}</span>`;
+      }
+    };
+  })(),
+  // Additional preview types can be created by extensions, by adding entries to window.PLFileEditor.prototype.preview.
 };

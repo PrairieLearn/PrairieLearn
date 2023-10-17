@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "nodeModulesScripts": ["@viz-js/viz/lib/viz-standalone.js"],
-    "extensionScripts": ["pl-file-editor-dot-preview.js"]
-  }
-}
