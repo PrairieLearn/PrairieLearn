@@ -1817,7 +1817,7 @@ module.exports.initExpress = function () {
   app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
   app.use(
     '/pl/administrator/jobSequence/',
-    require('./pages/administratorJobSequence/administratorJobSequence'),
+    require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
     '/pl/administrator/courseRequests/',
