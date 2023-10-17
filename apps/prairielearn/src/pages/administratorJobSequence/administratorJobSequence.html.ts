@@ -1,8 +1,8 @@
-import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { nodeModulesAssetPath } from '../../lib/assets';
 
-export function administratorJobSequence({
+export function AdministratorJobSequence({
   job_sequence,
   resLocals,
 }: {
@@ -17,7 +17,7 @@ export function administratorJobSequence({
           ...resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
-        <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+        <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
@@ -35,6 +35,7 @@ export function administratorJobSequence({
           </div>
           ${renderEjs(__filename, "<%- include('../partials/jobSequenceResults') %>", {
             ...resLocals,
+            job_sequence,
             job_sequence_enable_live_update: true,
           })}
         </main>
