@@ -236,7 +236,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "raw_submitted_answer": raw_submitted_answer
+            "raw_submitted_answer": raw_submitted_answer,
         }
 
         if show_score and score is not None:
