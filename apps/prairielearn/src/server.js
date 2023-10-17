@@ -1782,7 +1782,10 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
-  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
+  app.use(
+    '/pl/administrator/admins',
+    require('./pages/administratorAdmins/administratorAdmins').default,
+  );
   app.use(
     '/pl/administrator/settings',
     require('./pages/administratorSettings/administratorSettings'),
