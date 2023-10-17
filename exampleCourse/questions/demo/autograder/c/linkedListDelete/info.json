@@ -1,0 +1,17 @@
+{
+    "uuid": "e873fd4b-870f-4267-b2dc-0d6c96ab235d",
+    "title": "Autograder demo: Remove linked list element in C (Check Framework)",
+    "topic": "Autograder",
+    "tags": [
+      "jonatan", "demo", "autograder", "c", "check", "asan"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-c",
+        "timeout": 100,
+        "entrypoint": "python3 /grade/tests/test.py"
+    }
+}

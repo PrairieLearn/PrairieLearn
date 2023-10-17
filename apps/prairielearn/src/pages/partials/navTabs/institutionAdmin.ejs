@@ -1,0 +1,20 @@
+<%- include('navTab', {
+    activeSubPage:  'general',
+    urlSuffix:      '',
+    iconClasses:    'fa fa-gear',
+    tabLabel:       'General'}) %>
+<%- include('navTab', {
+    activeSubPage:  'courses',
+    urlSuffix:      '/courses',
+    iconClasses:    'fa fa-chalkboard',
+    tabLabel:       'Courses'}) %>
+<%- include('navTab', {
+    activeSubPage:  'sso',
+    urlSuffix:      '/sso',
+    iconClasses:    'fa fa-users',
+    tabLabel:       'Single sign-on'}) %>
+<%- include('navTab', {
+    activeSubPage:  'saml',
+    urlSuffix:      '/saml',
+    iconClasses:    'fa fa-key',
+    tabLabel:       'SAML'}) %>

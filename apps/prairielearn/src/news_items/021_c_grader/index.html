@@ -1,0 +1,69 @@
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+  .code-block {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    background: #f0f0f0;
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .code-block > pre {
+    padding: 0.5rem;
+    display: block;
+    margin-bottom: 0px;
+    line-height: 125%;
+    overflow: wrap;
+    overflow-wrap: normal;
+  }
+</style>
+
+<p>
+  <a href="https://github.com/jonatanschroeder">Jonatan Schroeder</a>
+  has implemented an awesome new C autograder for PrairieLearn. While courses will always be able to
+  use custom autograders, this provides a robust and secure reference implementation that courses
+  can use directly, or as the basis for their own code.
+</p>
+
+<p>
+  To test out the new autograder, try the
+  <a href="https://us.prairielearn.com/pl/course/108/question/9048807/preview"
+    >demo/autograder/c/square</a
+  >
+  and
+  <a href="https://us.prairielearn.com/pl/course/108/question/9048806/preview"
+    >demo/autograder/c/drawTriangle</a
+  >
+  questions in the example course.
+</p>
+
+<p>
+  Some of the features of this new autograder include the ability to test full programs or
+  individual functions, provide additional C files, compile with specific flags, include generated
+  images in test results, and to test programs based on randomly-assigned question parameters.
+</p>
+
+<p>
+  The new autograder is included by default in the <code class="user-output">grader-c</code> docker
+  image. To take advantage of it you can edit your question's
+  <code class="user-output">info.json</code> file to include:
+</p>
+
+<div class="mb-2 rounded code-block">
+  <pre><code>"externalGradingOptions": {
+    "image": "prairielearn/grader-c",
+    "entrypoint": "python3 /grade/tests/test.py"
+}
+</code></pre>
+</div>
+
+<p>
+  To read more about new grader features you can check out
+  <a href="https://prairielearn.readthedocs.io/en/latest/c-grader/">the documentation</a>.
+</p>

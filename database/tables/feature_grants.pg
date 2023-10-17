@@ -1,0 +1,21 @@
+columns
+    course_id: bigint
+    course_instance_id: bigint
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('feature_grants_id_seq'::regclass)
+    institution_id: bigint
+    name: text not null
+    user_id: bigint
+
+indexes
+    feature_grants_pkey: PRIMARY KEY (id) USING btree (id)
+    feature_grants_by_name_idx: UNIQUE NULLS NOT DISTINCT (name, institution_id, course_id, course_instance_id, user_id) USING btree (name, institution_id, course_id, course_instance_id, user_id) NULLS NOT DISTINCT
+    feature_grants_by_entity_idx: USING btree (institution_id, course_id, course_instance_id, user_id, name)
+    feature_grants_name_user_id_idx: USING btree (name, user_id)
+    feature_grants_user_id_name_idx: USING btree (user_id, name)
+
+foreign-key constraints
+    feature_grants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    feature_grants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    feature_grants_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    feature_grants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

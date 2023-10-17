@@ -17,6 +17,3 @@ columns
 
 indexes
     audit_logs_pkey: PRIMARY KEY (id) USING btree (id)
-
-foreign-key constraints
-    audit_logs_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

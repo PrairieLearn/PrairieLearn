@@ -8,6 +8,7 @@ columns
 
 indexes
     workspace_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    workspace_logs_workspace_id_idx: USING btree (workspace_id)
 
 foreign-key constraints
     workspace_logs_workspace_id_fkey: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE

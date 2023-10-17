@@ -219,86 +219,23 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 - Files in the `workspace/` directory are considered last.
 
+## Custom workspace images
+
+You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+
+If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
+
 ## Running locally (on Docker)
 
-- First, create an empty directory to use to share job data between containers.
-
-  - This can live anywhere, but needs to be created first and referenced in the `docker run` command.
-  - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
-  - **If you already created an external grader jobs directory, you can reuse the same one.**
-
-```sh
-mkdir "$HOME/pl_ag_jobs"
-```
-
-- Then, use one of the following `docker run` commands based on your platform.
-
-In MacOS, `cd` to your course directory and copy-paste the following command:
-
-```sh
-docker run -it --rm -p 3000:3000 \
-  -v "$PWD":/course \
-  -v "$HOME/pl_ag_jobs:/jobs" \
-  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  prairielearn/prairielearn
-```
-
-In Linux, `cd` to your course directory and copy-paste the following command (same as the MacOS command but add the `--add-host` option):
-
-```sh
-docker run -it --rm -p 3000:3000 \
-  -v "$PWD":/course \
-  -v "$HOME/pl_ag_jobs:/jobs" \
-  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  --add-host=host.docker.internal:172.17.0.1 `# this line is new vs MacOS` \
-  prairielearn/prairielearn
-```
-
-In Windows 10/11 (PowerShell), `cd` to your course directory and copy the following command **but with your own username in `HOST_JOBS_DIR`**:
-
-```powershell
-docker run -it --rm -p 3000:3000 `
-  -v "$PWD":/course `
-  -v $HOME\pl_ag_jobs:/jobs `
-  -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
-  -v /var/run/docker.sock:/var/run/docker.sock `
-  prairielearn/prairielearn
-```
-
-- **Note** the following about `HOST_JOBS_DIR` in PowerShell:
-
-  - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
-  - Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
-
-- **Note** that `C:` must have shared access between Windows and Docker:
-
-  - Right-click the Docker "whale" icon in the taskbar
-  - Click "Settings"
-  - Ensure `C:` is checked
-
-If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
-
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$PWD":/course \
-    -v $HOME/pl_ag_jobs:/jobs \
-    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --add-host=host.docker.internal:172.17.0.1 \
-    prairielearn/prairielearn
-```
-
-Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 
 For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
 
-```
-make start-workspace-host
-make start
+```sh
+make dev-workspace-host
+make dev
 ```
 
 For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.

@@ -1,9 +1,12 @@
 columns
+    course_instance_enrollment_limit: integer not null default 10000
     default_authn_provider_id: bigint
+    display_timezone: text not null default 'America/Chicago'::text
     id: bigint not null default nextval('institutions_id_seq'::regclass)
     long_name: text not null
     short_name: text not null
     uid_regexp: text
+    yearly_enrollment_limit: integer not null default 100000
 
 indexes
     institutions_pkey: PRIMARY KEY (id) USING btree (id)
@@ -14,7 +17,9 @@ foreign-key constraints
     institutions_default_authn_provider_id_fkey: FOREIGN KEY (default_authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    feature_grants: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     institution_authn_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     pl_courses: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    plan_grants: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     saml_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     users: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL

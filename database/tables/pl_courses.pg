@@ -1,24 +1,28 @@
 columns
     branch: text default 'master'::text
     commit_hash: text
+    created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
-    display_timezone: text
+    display_timezone: text not null
     example_course: boolean not null default false
-    grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
-    manual_grading_visible: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
+    sharing_name: text
+    sharing_token: text not null default gen_random_uuid()
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
+    template_course: boolean not null default false
     title: text
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
+    pl_courses_sharing_name_key: UNIQUE (sharing_name) USING btree (sharing_name)
+    pl_courses_sharing_token_key: UNIQUE (sharing_token) USING btree (sharing_token)
     pl_courses_example_course_key: USING btree (example_course)
 
 foreign-key constraints
@@ -32,6 +36,7 @@ referenced by
     course_instances: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_permissions: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     courses: FOREIGN KEY (pl_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
+    feature_grants: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     file_edits: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     file_transfers: FOREIGN KEY (from_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     file_transfers: FOREIGN KEY (to_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -39,5 +44,8 @@ referenced by
     job_sequences: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     questions: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    sharing_set_courses: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    sharing_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     tags: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     topics: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

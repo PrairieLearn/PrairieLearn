@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <main id="content" class="container-fluid">
+
+      <%# Repository status %> 
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Repository status
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <tbody>
+              <tr>
+                <th class="align-middle">Current commit hash</th>
+                <td><%= course.commit_hash %></td>
+              <tr>
+                <th class="align-middle">Path on disk</th>
+                <td class="align-middle"><%= course.path %></td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="__action" value="status">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                      <i class="fa fa-info-circle" aria-hidden="true"></i>
+                      Show server git status
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <tr>
+                <th class="align-middle">Remote repository</th>
+                <td class="align-middle"><%= course.repository %></td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="__action" value="pull">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                      <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                      Pull from remote git repository
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <%# Docker registry status %> 
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Docker images
+        </div>
+
+        <% if (images.length > 0) { %>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                    <th>Image name</th>
+                    <th>Tag</th>
+                    <th>Digest</th>
+                    <th>Image size</th>
+                    <th>Last sync</th>
+                    <th>Actions</th>
+                    <th>Used by</th>
+                </tr>
+              </thead>
+              <tbody>
+              <% images.forEach((image) => { %>
+                <tr>
+                  <td>
+                    <div class="d-flex flex-row align-items-center">
+                      <span class="mr-2"><%= image.image %></span>
+                      <% if (image.invalid) { %>
+                        <span class="badge badge-danger">Invalid image name</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td><%= image.tag %></td>
+                  <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
+                  <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
+                  <td>
+                    <% if (image.imageSyncNeeded) { %>
+                    <span class="text-warning">Not found in PL registry</span>
+                    <% } else { %>
+                    <%= image.pushed_at_formatted %>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (config.cacheImageRegistry) { %>
+                      <form method="POST">
+                          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                          <input type="hidden" name="__action" value="syncImages">
+                          <input type="hidden" name="single_image" value="<%= image.image %>">
+                          <button type="submit" class="btn btn-xs btn-primary">
+                            <i class="fa fa-sync" aria-hidden="true"></i> Sync
+                          </button>
+                      </form>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (image.questions.length > 0) { %>
+                    <%= image.questions.length %> question<% if (image.questions.length > 1) { %>s<% } %>
+
+                    <a class="btn btn-xs btn-secondary" role="button"
+                    tabindex="0" data-toggle="popover" data-html="true"
+                    title="Questions using <%= image.image %>"
+                    data-content="<%= include('listQuestionsPopover', {image}); %>"
+                    data-trigger="focus" href="#">
+                      Show
+                    </a>
+                    <% } else { %>
+                    No questions
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="card-body">
+            <em>No questions are using Docker images.</em>
+          </div>
+        <% } %>
+
+        <% if (config.cacheImageRegistry) { %>
+          <div class="card-footer">
+            <form name="confirm-form" method="POST">
+              <input type="hidden" name="__action" value="syncImages">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-sm btn-primary">
+                <i class="fa fa-sync" aria-hidden="true"></i>
+                Sync all images from Docker Hub to PrairieLearn
+              </button>
+            </form>
+          </div>
+        <% } %>
+      </div>
+
+      <%# Sync history %> 
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Sync job history
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </body>
+</html>

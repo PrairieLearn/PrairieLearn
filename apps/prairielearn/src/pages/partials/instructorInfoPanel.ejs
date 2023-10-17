@@ -1,0 +1,172 @@
+<% if (authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) {
+
+  // Here, we are only checking if the effective user is an instructor. We are not
+  // attempting to check if this user has permission to view student data. That check
+  // would have already been made (when necessary) before granting access to the page
+  // on which this partial is included (an assessment instance or question instance).
+
+%>
+<div class="card mb-4 border-warning">
+  <div class="card-header bg-warning">Staff information</div>
+  <div class="card-body">
+  <h5 class="card-title">Staff user:</h5>
+  <div class="d-flex flex-wrap pb-2">
+    <div class="pr-1"><%= user.name %></div>
+    <div class="pr-1"><%= user.uid %></div>
+  </div>
+
+  <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+  <hr>
+  <div>
+    <details>
+      <% if (instance_group) { %>
+      <summary><h5 class="card-title">Group details</h5></summary>
+      <div class="d-flex flex-wrap pb-2">
+        <div class="pr-1"><%= instance_group.name %></div>
+        <div class="pr-1">(<%= instance_group_uid_list.join(', ') %>)</div>
+      </div>
+      <% } else if (instance_user) { %>
+      <summary><h5 class="card-title d-inline-block">Student details</h5></summary>
+      <div class="d-flex flex-wrap pb-2">
+        <div class="pr-1"><%= instance_user.name %></div>
+        <div class="pr-1"><%= instance_user.uid %></div>
+      </div>
+      <% } %>
+    </details>
+  </div>
+  <% } %>
+
+  <% if (typeof question !== "undefined") { %>
+  <hr>
+  <h5 class="card-title">Question:</h5>
+
+  <div class="d-flex flex-wrap">
+    <div class="pr-1">QID:</div>
+    <div>
+      <% if (locals.course_instance) { %>
+      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
+      <% } else { %>
+      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
+      <% } %>
+    </div>
+  </div>
+    <div class="d-flex flex-wrap">
+      <div class="pr-1">Title:</div>
+      <div><%= question.title %></div>
+    </div>
+  <div class="d-flex flex-wrap">
+    <div class="pr-1">Started at: </div>
+    <div><%= variant.formatted_date %></div>
+  </div>
+  <div class="d-flex flex-wrap">
+    <div class="pr-1">Duration:</div>
+    <div><%= variant.duration %></div>
+  </div>
+  <div class="d-flex flex-wrap pb-2">
+    <div class="pr-1">
+      <button class="btn btn-link" data-toggle="collapse" data-target="#instructorTrue_answer">Show/Hide answer</button>
+    </div>
+    <div class="collapse" id="instructorTrue_answer">
+        <code><%= JSON.stringify(variant.true_answer); %></code>
+    </div>
+  </div>
+
+  <% if ((typeof question_context !== "undefined") && (question_context == "instructor" || question_context == "manual_grading")) { %>
+  <div class="row">
+    <div class="col-auto">
+      <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+        Report an issue with this question
+      </button>
+    </div>
+  </div>
+  <div class="collapse" id="issueCollapse">
+    <hr />
+    <form method="POST">
+      <div class="form-group">
+        <textarea class="form-control" rows="5" name="description" placeholder="Describe the issue"></textarea>
+      </div>
+      <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+      <div class="form-group text-right">
+        <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue</button>
+      </div>
+    </form>
+  </div>
+  <% } %>
+  <% } %>
+
+  <% 
+     let ip_assessment = null;
+     let ip_assessment_instance = null;
+     let ip_instance_question = null;
+     if (typeof assessment_instance !== "undefined") {
+        ip_assessment = assessment;
+        ip_assessment_instance = assessment_instance;
+        ip_instance_question = locals.instance_question;
+     }
+     if (typeof variant !== "undefined" && variant.assessment_instance) {
+        ip_assessment = variant.assessment;
+        ip_assessment_instance = variant.assessment_instance;
+        ip_instance_question = variant.instance_question ?? ip_instance_question;
+     }
+     if (ip_assessment && ip_assessment_instance) {
+        let instructorUrlPrefix = `${plainUrlPrefix}/course_instance/${ip_assessment.course_instance_id}/instructor`;
+     %>
+      <hr>
+      <h5 class="card-title">Assessment Instance:</h5>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">AID:</div>
+          <div><a href="<%= instructorUrlPrefix %>/assessment/<%= ip_assessment.id %>"><%= ip_assessment.tid %></a></div>
+      </div>
+
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Started at: </div>
+          <div><%= ip_assessment_instance.formatted_date %></div>
+      </div>
+
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Duration:</div>
+          <div><%= ip_assessment_instance.duration %></div>
+      </div>
+
+      <div class="pb-2">
+          <a href="<%= instructorUrlPrefix %>/assessment_instance/<%= ip_assessment_instance.id %>">View log</a>
+      </div>
+
+      <% if (ip_instance_question) { %>
+      <hr>
+      <h5 class="card-title">Manual Grading:</h5>
+
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Status:</div>
+          <div><%= ip_instance_question.requires_manual_grading ? 'Requires grading' : 'Graded' %></div>
+      </div>
+
+      <% if (ip_instance_question.requires_manual_grading) { %>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Assigned to:</div>
+          <div><%= ip_instance_question.assigned_grader ? ip_instance_question.assigned_grader_name : 'Unassigned' %></div>
+      </div>
+      <% } %>
+
+      <% if (ip_instance_question.last_grader) { %>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Graded by:</div>
+          <div><%= ip_instance_question.last_grader_name %></div>
+      </div>
+      <% } %>
+
+      <% if (locals.question_context !== "manual_grading") { %>
+      <div class="pb-2">
+          <a href="<%= instructorUrlPrefix %>/assessment/<%= ip_assessment.id %>/manual_grading/instance_question/<%= ip_instance_question.id %>">Grade</a>
+      </div>
+      <% } %>
+      <% } %>
+  <% } %>
+
+  </div>
+  <div class="card-footer small">
+      This box is not visible to students.
+  </div>
+</div>
+<% } %>

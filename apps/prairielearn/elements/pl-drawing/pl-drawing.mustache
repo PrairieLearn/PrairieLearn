@@ -1,0 +1,59 @@
+{{#render_button}}
+<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}"><img /></button>
+{{/render_button}}
+
+{{#render_element}}
+{{#parse_error}}
+<script>
+    $(function(){
+        $('#pl-drawing-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+<span id="pl-drawing-{{uuid}}">
+    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+    <a tabindex="0" type="button" role="button" class="btn btn-sm btn-secondary small border ml-1" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Format Error" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+</span>
+{{/parse_error}}
+{{^parse_error}}
+<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax">
+    <div>
+        <canvas width="{{width}}" height="{{height}}"> </canvas>
+        {{#show_tolerance}}
+            <div><small>({{{ tolerance }}})</small></div>
+        {{/show_tolerance}}
+        {{#feedback}}
+            <div>
+                Your answer has missing or incorrect items:<br>
+                <ul>
+                    {{{ feedback }}}
+                </ul>
+            </div>
+        {{/feedback}}
+    </div>
+    {{#show_buttons}}
+        <div class="pl-drawing-sidebar">
+            <input type="hidden" name="{{name}}">
+            {{{btn_markup}}}
+        </div>
+    {{/show_buttons}}
+</div>
+<script>
+ (function() {
+     let element = document.currentScript.previousElementSibling;
+     let options = JSON.parse(`{{{options_json}}}`);
+     {{^input_answer}}
+     let submitted_answer = null;
+     {{/input_answer}}
+     {{#input_answer}}
+     let submitted_answer = JSON.parse(`{{{input_answer}}}`);
+     {{/input_answer}}
+     $(function() {
+         window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
+     });
+ })();
+</script>
+{{/parse_error}}
+{{/render_element}}

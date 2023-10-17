@@ -1,7 +1,6 @@
 columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     heartbeat_at: timestamp with time zone
-    homedir_location: enum_file_storage_type
     hostname: text
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
     launch_port: bigint

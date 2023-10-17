@@ -1,0 +1,15 @@
+{
+    "uuid": "eaf28719-7c5f-43b3-93da-33e14998f2a1",
+    "title": "Autograder demo: Create an Object in R",
+    "topic": "Autograder",
+    "tags": ["v3", "demo", "autograder"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-r",
+        "entrypoint": "/r_autograder/run.sh",
+        "timeout": 20
+    }
+}

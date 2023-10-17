@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessments'}); %>
+    <main id="content" class="container">
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Assessments</div>
+
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th style="width: 1%"><span class="sr-only">Label</span></th>
+              <th><span class="sr-only">Title</span></th>
+              <th class="text-center">Available credit</th>
+              <th class="text-center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+            <% if (row.start_new_assessment_group) { %>
+            <tr>
+              <th colspan="4" data-testid="assessment-group-heading">
+                <%= row.assessment_group_heading %>
+              </th>
+            </tr>
+            <% } %>
+            <tr>
+              <td class="align-middle" style="width: 1%">
+                <% if (row.multiple_instance_header || (!row.active && row.assessment_instance_id === null)) { %>
+                  <span
+                    class="badge color-<%= row.assessment_set_color %>"
+                    data-testid="assessment-set-badge"
+                  >
+                    <%= row.label %>
+                  </span>
+                <% } else { %>
+                  <a
+                    href="<%= urlPrefix %><%= row.link %>"
+                    class="badge color-<%= row.assessment_set_color %> color-hover"
+                    data-testid="assessment-set-badge"
+                  >
+                    <%= row.label %>
+                  </a>
+                <% } %>
+              </td>
+              <td class="align-middle">
+                <% if (row.multiple_instance_header || (!row.active && row.assessment_instance_id === null)) { %>
+                <%= row.title %>
+                <% } else { %>
+                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %>
+                <% if (row.group_work) { %>
+                  <i class="fas fa-users" aria-hidden="true"></i>
+                <% } %>
+                </a>
+                <% } %>
+              </td>
+              <td class="text-center align-middle">
+                <% if (row.assessment_instance_open !== false) { %>
+                    <%= row.credit_date_string %>
+                <% } else { %>
+                    Assessment closed.
+                <% } %>
+                <%- include('../partials/studentAccessRulesPopover', {
+                    accessRules: row.access_rules,
+                    assessmentSetName: row.assessment_set_name,
+                    assessmentNumber: row.assessment_number,
+                    }) %>
+              </td>
+              <td class="text-center align-middle">
+                <% if (row.multiple_instance_header) { %>
+                <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
+                <% } else { // multiple_instance_header %>
+                <% if (row.assessment_instance_id) { %>
+                <% if(row.show_closed_assessment_score) { %>
+                <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } else { %>
+                Score not shown
+                <% } %>
+                <% } else { %>
+                Not started
+                <% } %>
+                <% } // multiple_instance_header %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% if (authz_data.mode == 'Exam') { %>
+      <p>Don't see your exam? Exams for this course are only made available to students with checked-in exam reservations. See a proctor for assistance.</p>
+      <% } %>
+    </main>
+  </body>
+</html>

@@ -1,9 +1,0 @@
-{
-    "controller": "pl-xss-safe.py",
-    "dependencies": {
-        "nodeModulesScripts": [
-            "showdown/dist/showdown.js",
-            "xss/dist/xss.min.js"
-        ]
-    }
-}

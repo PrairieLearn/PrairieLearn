@@ -1,0 +1,14 @@
+{
+  "description": "Starts assessment instances for all groups in an assessment (groups must have been created)",
+  "params": [
+    {
+      "name": "assessment_id",
+      "description": "assessment_id to generate instances for (integer)"
+    },
+    {
+      "name": "mode",
+      "description": "mode used for assessment instance (Public or Exam)",
+      "default": "Public"
+    }
+  ]
+}

@@ -1,1 +1,0 @@
-ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS auto_close BOOLEAN DEFAULT FALSE;

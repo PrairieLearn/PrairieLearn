@@ -1,0 +1,34 @@
+{
+  "name": "@prairielearn/migrations",
+  "version": "2.0.8",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/migrations"
+  },
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/fs-extra": "^11.0.2",
+    "@types/mocha": "^10.0.2",
+    "@types/node": "^18.18.2",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "typescript-cp": "^0.1.9"
+  },
+  "dependencies": {
+    "@prairielearn/error": "workspace:^",
+    "@prairielearn/logger": "workspace:^",
+    "@prairielearn/named-locks": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "fs-extra": "^11.1.1",
+    "serialize-error": "^8.1.0",
+    "zod": "^3.22.3"
+  }
+}

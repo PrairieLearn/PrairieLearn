@@ -586,7 +586,7 @@ class Feedback:
         a pandas ``DataFrame``.
         Author: Wade Fagen-Ulmschneider (waf)
 
-        By default, checks if the student DataFrame ``data`` contains the same contents as the reference DataFrame ``ref`` by using ``pandas.util.testing.assert_frame_equal`` after basic sanity checks.
+        By default, checks if the student DataFrame ``data`` contains the same contents as the reference DataFrame ``ref`` by using ``pandas.testing.assert_frame_equal`` after basic sanity checks.
 
         Parameters:
 
@@ -631,7 +631,7 @@ class Feedback:
             data = data[subset_columns]
 
         if check_values:
-            from pandas.util.testing import assert_frame_equal
+            from pandas.testing import assert_frame_equal
 
             try:
                 assert_frame_equal(ref, data, check_like=allow_order_variance)

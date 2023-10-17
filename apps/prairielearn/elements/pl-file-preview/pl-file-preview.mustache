@@ -1,0 +1,45 @@
+<div id="file-preview-{{uuid}}" data-submission-files-url="{{submission_files_url}}">
+  {{#errors}}
+  <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
+  {{/errors}}
+  <div class="card mb-2">
+    <div class="card-header">Files</div>
+    {{#has_files}}
+    <ul class="list-group list-group-flush">
+      {{#files}}
+      <li class="list-group-item" data-file="{{name}}">
+        <div class="d-flex flex-row collapsed file-status-container" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
+          <div class="flex-grow-1">
+            <i class="file-status-icon fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
+            {{name}}
+            <p class="file-status">uploaded</p>
+          </div>
+          <div class="align-self-center">
+            <button class="btn btn-outline-secondary btn-sm file-preview-download-file">
+              Download
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
+              <i class="file-preview-icon fa fa-angle-down"></i>
+            </button>
+          </div>
+        </div>
+        <div class="alert alert-danger mt-2 d-none error" role="alert"></div>
+        <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
+          <img class="mw-100 mt-2 d-none">
+          <pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>
+        </div>
+      </li>
+      {{/files}}
+    </ul>
+    {{/has_files}}
+    {{^has_files}}
+    <div class="card-body">
+      No files were present in this submission.
+    </div>
+    {{/has_files}}
+  </div>
+</div>
+
+<script>
+$(() => new PLFilePreview("{{uuid}}"));
+</script>

@@ -23,7 +23,7 @@ await sqldb.initAsync(
     max: 2,
     idleTimeoutMillis: 30000,
   },
-  idleErrorHandler
+  idleErrorHandler,
 );
 ```
 
@@ -35,10 +35,20 @@ The recommended way to write queries is to store them in a `.sql` file adjacent 
 
 ```sql
 -- BLOCK select_user
-SELECT * FROM users WHERE id = $user_id;
+SELECT
+  *
+FROM
+  users
+WHERE
+  id = $user_id;
 
 -- BLOCK select_course
-SELECT * FROM courses WHERE id = $course_id;
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id;
 ```
 
 You can then load these queries in your JavaScript file:
@@ -79,11 +89,18 @@ There are a variety of utility methods that can make assertions about the result
 There are also functions that make it easy to call a stored procedure with a given set of arguments. Consider a database that has the following sproc defined:
 
 ```sql
-CREATE PROCEDURE insert_data(a integer, b integer)
-LANGUAGE SQL
+CREATE PROCEDURE insert_data (a integer, b integer) LANGUAGE SQL
 BEGIN ATOMIC
-  INSERT INTO tbl VALUES (a);
-  INSERT INTO tbl VALUES (b);
+INSERT INTO
+  tbl
+VALUES
+  (a);
+
+INSERT INTO
+  tbl
+VALUES
+  (b);
+
 END;
 ```
 
@@ -109,7 +126,7 @@ const User = z.object({
   age: z.number(),
 });
 
-const users = queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
+const users = await queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
 console.log(users[0].name);
 ```
 
@@ -127,16 +144,61 @@ As with the non-validated query functions, there are several variants available:
 
 ### Transactions
 
-To use transactions, wrap your queries with the `runInTransaction` function:
+To use transactions, wrap your queries with the `runInTransactionAsync` function:
 
 ```ts
-await sqldb.runInTransaction(async () => {
-  await sqldb.queryAsync(sql.insert_user, { name: 'Kevin Young' });
-  await sqldb.queryAsync(sql.insert_course, { rubric: 'CS 101' });
+const { user, course } = await sqldb.runInTransactionAsync(async () => {
+  const user = await sqldb.queryAsync(sql.insert_user, { name: 'Kevin Young' });
+  const course = await sqldb.queryAsync(sql.insert_course, { rubric: 'CS 101' });
+  return { user, course };
 });
 ```
 
 `runInTransaction` will start a transaction and then execute the provided function. Any nested query will use the same client and thus run inside the transaction. If the function throws an error, the transaction is rolled back; otherwise, it is committed.
+
+### Cursors
+
+For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time.
+
+```ts
+import { queryCursor } from '@prairielearn/postgres';
+
+const cursor = await queryCursor(sql.select_all_users, {});
+for await (const users of cursor.iterate(100)) {
+  // `users` will have up to 100 rows in it.
+  for (const user of users) {
+    console.log(user);
+  }
+}
+```
+
+You can optionally pass a Zod schema to parse and validate each row:
+
+```ts
+import { z } from 'zod';
+import { queryValidatedCursor } from '@prairielearn/postgres';
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, UserSchema);
+for await (const users of cursor.iterate(100)) {
+  for (const user of users) {
+    console.log(user);
+  }
+}
+```
+
+You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
+
+```ts
+import { queryCursor } from '@prairielearn/postgres';
+
+const cursor = await queryCursor(sql.select_all_users, {});
+cursor.stream(100).pipe(makeStreamSomehow());
+```
 
 ### Callback-style functions
 

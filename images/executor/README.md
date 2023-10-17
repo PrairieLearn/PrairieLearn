@@ -2,13 +2,13 @@
 
 This image will be used to execute course code in isolation in production environments.
 
-## Release process
+## Build and release process
 
 This image is built and pushed to the container registry as `prairielearn/executor:GIT_HASH`, where `GIT_HASH` is the Git commit hash of the version of PrairieLearn the executor image was built from. This allows us to ensure a given version of PrairieLearn is always running with the correct executor image.
 
-There are scripts in the `/tools` directory that will aid with the building and releasing of this image. They will automatically determine the correct tag from the underlying Git repository. The scripts should be run from the root of the repository.
+The image is built and pushed to Docker Hub automatically by GitHub Actions.
 
-To build and tag the image for local testing, first ensure that you've built an up-to-date `prairielearn/prairielearn` image, as the `priarielearn/executor` image uses that as its base. You can build a new version by running the following in the root of the repository:
+To build and tag the image for local testing, first ensure that you've built an up-to-date `prairielearn/prairielearn` image, as the `prairielearn/executor` image uses that as its base. You can build a new version by running the following in the root of the repository:
 
 ```sh
 docker build -t prairielearn/prairielearn:latest .
@@ -17,31 +17,19 @@ docker build -t prairielearn/prairielearn:latest .
 Then, run the following to build a new executor image:
 
 ```sh
-./tools/executor/build.js
-```
-
-To push the built image to the Docker and ECR registries, run:
-
-```sh
-./tools/executor/release.js
-```
-
-Note that the scripts `build.js`, `pull.js`, and `release.js` can prepend `sudo` when invoking `docker` if you call these scripts with a `--sudo` flag:
-
-```sh
-./tools/executor/build.js --sudo
+docker build -t prairielearn/executor:latest ./images/executor
 ```
 
 ## In-dev testing
 
-Build the image using the above instructions. Make note of the name of the resulting image; you'll need this image name momentarily.
+Build the image using the above instructions.
 
-Start the container, using the version of the container that you noted above (the examples below use the Git hash `12345`).
+Start the container, using the version of the container that you noted above (the examples below use the tag `latest`).
 
 ```sh
-docker run --rm -it prairielearn/executor:12345
+docker run --rm -it prairielearn/executor:latest
 # Optionally, enable debug prints
-docker run --rm -it -e DEBUG='*' prairielearn/executor:12345
+docker run --rm -it -e DEBUG='*' prairielearn/executor:latest
 ```
 
 Once the container is running, paste the following and hit `Enter`:
@@ -71,9 +59,3 @@ You should see the following printed to the console:
 # Debugging
 
 If you're using a Mac or Windows machine and you see workers exiting shortly after starting up, you might be running out of resources in the Docker VM. Workers use ~200MB of memory each, the memory limit on the Docker VM is 2GB by default, and PrairieLearn defaults to using one worker per CPU, so for machines with 10+ cores, you can easily exhaust the memory in the VM. Try reducing the number of workers via `"workersCount"` in `config.json`, or try increasing the memory limit of Docker.
-
-To see stderr from the containers, find and uncomment the following line in `lib/code-caller-docker.js`:
-
-```js
-// this.stderrStream.pipe(process.stderr)
-```

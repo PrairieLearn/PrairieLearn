@@ -1,0 +1,6 @@
+{
+  "controller": "pl-xss-safe.py",
+  "dependencies": {
+    "nodeModulesScripts": ["showdown/dist/showdown.js", "dompurify/dist/purify.min.js"]
+  }
+}

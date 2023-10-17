@@ -24,6 +24,7 @@ columns
     init_points: double precision
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
+    manual_rubric_id: bigint
     max_auto_points: double precision
     max_manual_points: double precision
     max_points: double precision
@@ -54,6 +55,7 @@ indexes
 foreign-key constraints
     assessment_questions_alternative_group_id_fkey: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_questions_manual_rubric_id_fkey: FOREIGN KEY (manual_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

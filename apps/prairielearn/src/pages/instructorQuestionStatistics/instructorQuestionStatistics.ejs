@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head', {pageNote: question.qid}); %>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/stacked_histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
+    <script>
+      document.urlPrefix = '<%= urlPrefix %>';
+    </script>
+  </head>
+  <body>
+    <script>
+      $(function() {
+        $('[data-toggle="popover"]').popover({
+          sanitize: false
+        });
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <main id="content" class="container-fluid">
+      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Detailed assessment statistics for question <%= question.qid %>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover tablesorter table-bordered">
+            <thead>
+            <tr>
+              <th class="text-center">Course Instance</th>
+              <th class="text-center">Assessment</th>
+                <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+              <th
+                      class="text-center"
+                      title="<%- stat_descriptions[stat].description %>">
+                  <%- stat_descriptions[stat].title %>
+              </th>
+                <% }); %>
+
+            </tr>
+            </thead>
+            <tbody>
+            <% assessment_stats.forEach(function(row, i) { %>
+            <tr>
+              <td>
+                  <%= row.course_instance_short_name %>
+              </td>
+              <td style="width: 1%">
+                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="badge color-<%= row.assessment_color %> color-hover" role="button"><%= row.assessment_label %></a>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.mean_question_score, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.question_score_variance, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.discrimination, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.some_submission_perc, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.some_perfect_submission_perc, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_first_submission_score, 2) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.first_submission_score_variance, 2) %>
+              </td>
+              <td class="text-center">
+                  <% if (row.first_submission_score_hist !== null) { %>
+                <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_last_submission_score, 2) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.last_submission_score_variance, 2) %>
+              </td>
+              <td class="text-center">
+                  <% if (row.last_submission_score_hist !== null) { %>
+                <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_max_submission_score, 2) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.max_submission_score_variance, 2) %>
+              </td>
+              <td class="text-center">
+                  <% if (row.max_submission_score_hist !== null) { %>
+                <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_average_submission_score, 2) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_submission_score_variance, 2) %>
+              </td>
+              <td class="text-center">
+                  <% if (row.average_submission_score_hist !== null) { %>
+                <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <% if (row.submission_score_array_averages !== null) { %>
+                <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <% if (row.incremental_submission_score_array_averages !== null) { %>
+                <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                <% if (row.assessment_type !== 'Homework') { %>
+                  <% if (row.incremental_submission_points_array_averages !== null) { %>
+                    <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.average_number_submissions, 2) %>
+              </td>
+              <td class="text-center">
+                  <%= formatFloat(row.number_submissions_variance, 2) %>
+              </td>
+              <td class="text-center">
+                  <% if (row.number_submissions_hist !== null) { %>
+                <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="text-center">
+                  <% if (row.quintile_question_scores !== null) { %>
+                <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <script>
+                $(function() {
+                    const options = {
+                        width: 60,
+                        height: 20,
+                        ymax: 1
+                    };
+                    histmini("#firstSubmissionScoreHist<%= i %>",
+                             [<%= row.first_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#lastSubmissionScoreHist<%= i %>",
+                             [<%= row.last_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#maxSubmissionScoreHist<%= i %>",
+                             [<%= row.max_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#averageSubmissionScoreHist<%= i %>",
+                             [<%= row.average_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#submissionScoreArray<%= i %>",
+                             [<%= row.submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionScoreArray<%= i %>",
+                             [<%= row.incremental_submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionPointsArray<%= i %>",
+                             [<%= row.incremental_submission_points_array_averages %>],
+                             _.defaults({ymax: <%= row.max_points %>}, options));
+                    histmini("#numberSubmissionsHist<%= i %>",
+                             [<%= row.number_submissions_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#quintileQuestionScoresHist<%= i %>",
+                             [<%= row.quintile_question_scores %>],
+                             _.defaults({ymax: 100}, options));
+                });
+              </script>
+            </tr>
+            <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/question/<%= question.id %>/statistics/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
+          </p>
+          <small>
+            <ul>
+                <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+              <li>
+                <strong>
+                    <%- stat_descriptions[stat].title %>:
+                </strong>
+                  <%- stat_descriptions[stat].description %>
+              </li>
+                <% }); %>
+            </ul>
+            <p class="mb-0">
+              In the case that a student takes this assessment multiple
+              times (e.g., if this assessment is a practice exam), we
+              are calculating the above statistics by first averaging
+              over all assessment instances for each student, then
+              averaging over students.
+            </p>
+          </small>
+        </div>
+      </div>
+
+    </main>
+  </body>
+</html>

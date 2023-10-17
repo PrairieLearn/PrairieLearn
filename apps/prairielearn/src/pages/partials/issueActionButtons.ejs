@@ -1,0 +1,15 @@
+<form method="POST" style="white-space: nowrap;">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <input type="hidden" name="issue_id" value="<%= issue.issue_id %>">
+    <div class="btn-group btn-group-sm">
+        <% // This is temporarily disabled until we can fully integrate replies into PL %>
+        <% if (false && issue.manually_reported) { %>
+        <button class="btn btn-outline-secondary" type="button" title="Reply to issue" data-toggle="modal" data-target="#issueResponseModal" data-uid="<%= issue.user_uid %>" data-issue-id="<%= issue.issue_id %>" data-student-message="<%= issue.student_message %>"><i class="fa fa-reply fa-fw"></i></button>
+        <% } %>
+        <% if (issue.open) { %>
+        <button class="btn btn-outline-secondary" name="__action" value="close" title="Close issue"><i class="fa fa-times fa-fw" aria-hidden="true"></i></button>
+        <% } else { %>
+        <button class="btn btn-outline-secondary" name="__action" value="open" title="Reopen issue"><i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i></button>
+        <% } %>
+    </div>
+</form>

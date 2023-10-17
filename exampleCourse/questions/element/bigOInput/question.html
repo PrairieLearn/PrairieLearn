@@ -6,15 +6,15 @@
         <pl-question-panel>
             <p>Submit $O(1)$.</p>
         </pl-question-panel>
-        <pl-big-o-input answers-name="q1" correct-answer="1"></pl-big-o-input>
+        <pl-big-o-input answers-name="q1" variable="n" correct-answer="1"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="s1" correct-answer="1" type="theta"></pl-big-o-input>
+        <pl-big-o-input answers-name="s1" variable="n" correct-answer="1" type="theta"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="t1" correct-answer="1" type="omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="t1" variable="n" correct-answer="1" type="omega"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="r1" correct-answer="1" type="little-o"></pl-big-o-input>
+        <pl-big-o-input answers-name="r1" variable="n" correct-answer="1" type="little-o"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="m1" correct-answer="1" type="little-omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="m1" variable="n" correct-answer="1" type="little-omega"></pl-big-o-input>
     </div>
 </div>
 
@@ -123,17 +123,17 @@
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>Submit $O(2^n)$.</p>
+            <p>Submit $O(2^n)$. We set <code>allow-blank="true"</code> to allow blank inputs.</p>
         </pl-question-panel>
-        <pl-big-o-input answers-name="q6" variable="n" correct-answer="2**n"></pl-big-o-input>
+        <pl-big-o-input answers-name="q6" variable="n" correct-answer="2**n" allow-blank="true"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="s6" variable="n" correct-answer="2**n" type="theta"></pl-big-o-input>
+        <pl-big-o-input answers-name="s6" variable="n" correct-answer="2**n" type="theta" allow-blank="true"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="t6" variable="n" correct-answer="2**n" type="omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="t6" variable="n" correct-answer="2**n" type="omega" allow-blank="true"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="r6" variable="n" correct-answer="2**n" type="little-o"></pl-big-o-input>
+        <pl-big-o-input answers-name="r6" variable="n" correct-answer="2**n" type="little-o" allow-blank="true"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="m6" variable="n" correct-answer="2**n" type="little-omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="m6" variable="n" correct-answer="2**n" type="little-omega" allow-blank="true"></pl-big-o-input>
     </div>
 </div>
 
@@ -143,17 +143,16 @@
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>Submit $O(n!)$.</p>
+            <p>Submit $O(n!)$. We set <code>show-score="false"</code> to hide the score badge.</p>
         </pl-question-panel>
-        <pl-big-o-input answers-name="q7" variable="n" correct-answer="factorial(n)"></pl-big-o-input>
+        <pl-big-o-input answers-name="q7" variable="n" correct-answer="n!" show-score="false"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="s7" variable="n" correct-answer="factorial(n)" type="theta"></pl-big-o-input>
+        <pl-big-o-input answers-name="s7" variable="n" correct-answer="n!" type="theta" show-score="false"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="t7" variable="n" correct-answer="factorial(n)" type="omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="t7" variable="n" correct-answer="n!" type="omega" show-score="false"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="r7" variable="n" correct-answer="factorial(n)" type="little-o"></pl-big-o-input>
+        <pl-big-o-input answers-name="r7" variable="n" correct-answer="n!" type="little-o" show-score="false"></pl-big-o-input>
         <br><br>
-        <pl-big-o-input answers-name="m7" variable="n" correct-answer="factorial(n)"
-            type="little-omega"></pl-big-o-input>
+        <pl-big-o-input answers-name="m7" variable="n" correct-answer="n!" type="little-omega" show-score="false"></pl-big-o-input>
     </div>
 </div>
