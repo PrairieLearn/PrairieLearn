@@ -12,7 +12,7 @@
   },
   "dynamicDependencies": {
     "nodeModulesScripts": {
-      "pl-file-editor/viz": "@viz-js/viz/lib/viz-standalone.js"
+      "@viz-js": "@viz-js/viz/lib/viz-standalone.js"
     }
   }
 }

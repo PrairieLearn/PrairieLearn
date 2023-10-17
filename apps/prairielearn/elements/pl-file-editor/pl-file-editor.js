@@ -302,7 +302,7 @@ window.PLFileEditor.prototype.preview = {
         if (vizPromise == null) {
           vizPromise = (async () => {
             // eslint-disable-next-line import/no-unresolved
-            await import('pl-file-editor/viz');
+            await import('@viz-js');
             return await Viz.instance();
           })();
         }
