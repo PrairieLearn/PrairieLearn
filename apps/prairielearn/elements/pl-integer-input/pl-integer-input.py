@@ -89,6 +89,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    score = data["partial_scores"].get(name, {"score": None}).get("score")
 
     with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
         template = f.read()
@@ -130,8 +131,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "use_numeric": True if 1 <= base <= 10 else False,
             "raw_submitted_answer": raw_submitted_answer,
         }
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -178,8 +177,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
                 )
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score")
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
