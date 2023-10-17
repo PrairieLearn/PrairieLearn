@@ -1,33 +1,18 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import {
+  BatchedMigrationJobRow,
+  BatchedMigrationRow,
+  BatchedMigrationStatus,
+} from '@prairielearn/migrations';
 
-/**
- * @typedef {Object} AdministratorBatchedMigrationsProps
- * @property {import('@prairielearn/migrations').BatchedMigrationRow[]} batchedMigrations
- * @property {Record<string, any>} resLocals
- */
-
-/**
- * @typedef {Object} AdministratorBatchedMigrationProps
- * @property {import('@prairielearn/migrations').BatchedMigrationRow} batchedMigration
- * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} recentSucceededJobs
- * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} recentFailedJobs
- * @property {Record<string, any>} resLocals
- */
-
-/**
- * @typedef {Object} MigrationJobsCardProps
- * @property {string} title
- * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} jobs
- * @property {string} emptyText
- */
-
-/**
- * @param {AdministratorBatchedMigrationsProps} props
- * @returns {string}
- */
-function AdministratorBatchedMigrations({ batchedMigrations, resLocals }) {
+export function AdministratorBatchedMigrations({
+  batchedMigrations,
+  resLocals,
+}: {
+  batchedMigrations: BatchedMigrationRow[];
+  resLocals: Record<string, any>;
+}) {
   const hasBatchedMigrations = batchedMigrations.length > 0;
   return html`
     <!doctype html>
@@ -70,15 +55,16 @@ function AdministratorBatchedMigrations({ batchedMigrations, resLocals }) {
   `.toString();
 }
 
-/**
- * @param {AdministratorBatchedMigrationProps} props
- * @returns {string}
- */
-function AdministratorBatchedMigration({
+export function AdministratorBatchedMigration({
   batchedMigration,
   recentSucceededJobs,
   recentFailedJobs,
   resLocals,
+}: {
+  batchedMigration: BatchedMigrationRow;
+  recentSucceededJobs: BatchedMigrationJobRow[];
+  recentFailedJobs: BatchedMigrationJobRow[];
+  resLocals: Record<string, any>;
 }) {
   return html`
     <!doctype html>
@@ -163,12 +149,7 @@ function AdministratorBatchedMigration({
   `.toString();
 }
 
-/**
- *
- * @param {import('@prairielearn/migrations').BatchedMigrationStatus} status
- * @returns
- */
-function MigrationStatusBadge(status) {
+function MigrationStatusBadge(status: BatchedMigrationStatus) {
   switch (status) {
     case 'pending':
       return html`<span class="badge badge-secondary">Pending</span>`;
@@ -187,10 +168,15 @@ function MigrationStatusBadge(status) {
   }
 }
 
-/**
- * @param {MigrationJobsCardProps} props
- */
-function MigrationJobsCard({ title, jobs, emptyText }) {
+function MigrationJobsCard({
+  title,
+  jobs,
+  emptyText,
+}: {
+  title: string;
+  jobs: BatchedMigrationJobRow[];
+  emptyText: string;
+}) {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -199,7 +185,7 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
       ${jobs.length > 0
         ? html`<div class="list-group list-group-flush">
             ${jobs.map((job) => {
-              let duration = null;
+              let duration: number | null = null;
               if (job.started_at && job.finished_at) {
                 duration = job.finished_at.getTime() - job.started_at.getTime();
               }
@@ -241,8 +227,3 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
     </div>
   `;
 }
-
-module.exports = {
-  AdministratorBatchedMigrations,
-  AdministratorBatchedMigration,
-};
