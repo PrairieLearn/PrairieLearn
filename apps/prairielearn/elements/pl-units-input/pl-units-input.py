@@ -1,5 +1,4 @@
 from enum import Enum
-from html import escape
 from random import choice
 from typing import Any, Optional
 
@@ -185,15 +184,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error = data["format_errors"].get(name)
     ureg = pl.get_unit_registry()
 
+    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
+
     if data["panel"] == "question":
         editable = data["editable"]
 
         # Get info strings
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(
-                f,
-                {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
-            ).strip()
+        info = chevron.render(
+            template,
+            {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
+        ).strip()
 
         if pl.has_attrib(element, "placeholder"):
             placeholder_text = pl.get_string_attrib(element, "placeholder")
@@ -235,17 +236,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
+            "raw_submitted_answer": raw_submitted_answer
         }
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         html_params = {
@@ -272,10 +270,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["parse_error"] = None
 
         else:
-            submitted_answer = data["raw_submitted_answers"].get(name, None)
-            if submitted_answer is not None:
+            if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    submitted_answer
+                    raw_submitted_answer
                 )
 
         if show_score and score is not None:
@@ -292,8 +289,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
@@ -309,8 +306,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
             "suffix": suffix,
         }
-        with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
