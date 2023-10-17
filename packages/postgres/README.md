@@ -126,10 +126,10 @@ const User = z.object({
   age: z.number(),
 });
 
-// Get all users.
-const users = await queryValidatedOneRow(sql.select_users, User);
+// Get all users. Returns an array of objects.
+const users = await queryRows(sql.select_users, User);
 
-// Get single user.
+// Get single user. Returns a single object.
 const user = await queryRow(sql.select_user, { user_id: '1' }, User);
 
 // Get a user that may not exist. Returns `null` if the user cannot be found.
