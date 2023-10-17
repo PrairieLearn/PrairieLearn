@@ -175,11 +175,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
-        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
-
         html_params = {
             "question": True,
             "name": name,
@@ -216,8 +211,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
         }
-
-        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
