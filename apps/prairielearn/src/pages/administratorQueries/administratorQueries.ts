@@ -1,11 +1,12 @@
-const express = require('express');
+import express = require('express');
 const router = express.Router();
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 const fsPromises = require('fs').promises;
-const path = require('path');
-const _ = require('lodash');
+import path = require('path');
+import _ = require('lodash');
 
-const jsonLoad = require('../../lib/json-load');
+import jsonLoad = require('../../lib/json-load');
+import { AdministratorQueries } from './administratorQueries.html';
 
 const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
 
@@ -14,7 +15,7 @@ router.get(
   asyncHandler(async (req, res, _next) => {
     const fileList = await fsPromises.readdir(queriesDir);
     const jsonList = _.filter(fileList, (f) => /\.json$/.test(f));
-    res.locals.queries = await Promise.all(
+    const queries = await Promise.all(
       jsonList.map(async (f) => {
         const contents = await jsonLoad.readJSONAsync(path.join(queriesDir, f));
         contents.sqlFilename = f.replace(/\.json$/, '.sql');
@@ -22,8 +23,13 @@ router.get(
         return contents;
       }),
     );
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(
+      AdministratorQueries({
+        resLocals: res.locals,
+        queries,
+      }),
+    );
   }),
 );
 
-module.exports = router;
+export default router;

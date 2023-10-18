@@ -1812,7 +1812,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/queries',
-    require('./pages/administratorQueries/administratorQueries'),
+    require('./pages/administratorQueries/administratorQueries').default,
   );
   app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
   app.use(
