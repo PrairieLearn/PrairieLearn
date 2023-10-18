@@ -299,6 +299,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
 
+
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
