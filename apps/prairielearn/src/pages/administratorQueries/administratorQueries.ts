@@ -1,16 +1,16 @@
 import { z } from 'zod';
 import express = require('express');
-const router = express.Router();
 import asyncHandler = require('express-async-handler');
 import fsPromises = require('node:fs/promises');
 import path = require('path');
 
 import jsonLoad = require('../../lib/json-load');
-import { AdministratorQueries } from './administratorQueries.html';
+import { AdministratorQueries, type AdministratorQuery } from './administratorQueries.html';
 
+const router = express.Router();
 const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
 
-const AdministratorQueryParamsSchema = z.object({
+const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),
   description: z.string(),
   default: z.string().nullable().optional(),
@@ -21,14 +21,8 @@ const AdministratorQueryJsonSchema = z.object({
   description: z.string(),
   resultFormats: z.any().nullable(),
   comment: z.any().nullable(),
-  params: z.array(AdministratorQueryParamsSchema).nullable().optional(),
+  params: z.array(AdministratorQueryJsonParamsSchema).nullable().optional(),
 });
-export type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
-
-export type AdministratorQuery = AdministratorQueryJson & {
-  sqlFilename: string;
-  link: string;
-};
 
 router.get(
   '/',
@@ -40,7 +34,6 @@ router.get(
         const contents = AdministratorQueryJsonSchema.parse(
           await jsonLoad.readJSONAsync(path.join(queriesDir, f)),
         );
-        console.log('new query', f, contents);
         return {
           ...contents,
           sqlFilename: f.replace(/\.json$/, '.sql'),
@@ -51,7 +44,7 @@ router.get(
     res.send(
       AdministratorQueries({
         resLocals: res.locals,
-        queries,
+        queries: queries as AdministratorQuery[],
       }),
     );
   }),

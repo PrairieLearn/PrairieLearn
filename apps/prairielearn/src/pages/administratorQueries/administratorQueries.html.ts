@@ -1,6 +1,21 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { AdministratorQuery } from './administratorQueries';
+
+interface AdministratorQueryParams {
+  name: string;
+  description: string;
+  default: string | null;
+  comment: any | null;
+}
+
+export interface AdministratorQuery {
+  description: string;
+  resultFormats: any | null;
+  comment: any | null;
+  params: AdministratorQueryParams[] | null;
+  sqlFilename: string;
+  link: string;
+}
 
 export function AdministratorQueries({
   queries,
