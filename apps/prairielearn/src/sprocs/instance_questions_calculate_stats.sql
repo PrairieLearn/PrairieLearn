@@ -5,13 +5,13 @@ CREATE FUNCTION
 AS $$
 WITH first_calculation AS (
     SELECT
-        count(s.id) > 0                        AS some_submission_var,
-        coalesce(bool_or(s.score = 1), FALSE)  AS some_perfect_submission_var,
+        count(s.id) > 0 AS some_submission_var,
+        coalesce(bool_or(s.score = 1), FALSE) AS some_perfect_submission_var,
         coalesce(bool_or(s.score != 0), FALSE) AS some_nonzero_submission_var,
-        array_agg(s.score ORDER BY s.date)     AS submission_score_array_var,
+        array_agg(s.score ORDER BY s.date) AS submission_score_array_var,
         array_agg(s.score ORDER BY s.date) FILTER (WHERE s.score IS NOT NULL) AS submission_non_null_score_array_var,
-        max(s.score)                           AS max_submission_score_var,
-        avg(s.score)                           AS average_submission_score_var
+        max(s.score) AS max_submission_score_var,
+        avg(s.score) AS average_submission_score_var
     FROM
         variants AS v
         JOIN submissions AS s ON (s.variant_id = v.id)
