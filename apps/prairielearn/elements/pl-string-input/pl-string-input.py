@@ -5,7 +5,6 @@ from typing import Any
 import chevron
 import lxml.html
 import prairielearn as pl
-from text_unidecode import unidecode
 from typing_extensions import assert_never
 
 
@@ -218,7 +217,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Do unicode decode
     if normalize_to_ascii:
-        a_sub = unidecode(a_sub)
+        a_sub = pl.full_unidecode(a_sub)
 
     # Remove the leading and trailing characters
     if remove_leading_trailing:
