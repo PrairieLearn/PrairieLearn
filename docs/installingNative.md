@@ -5,7 +5,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 - Install the prerequisites:
 
   - [Git](https://git-scm.com)
-  - [Node.js](http://nodejs.org)
+  - [Node.js](https://nodejs.org)
   - [Yarn](https://classic.yarnpkg.com)
   - [Python 3.10](https://www.python.org)
   - [PostgreSQL 15](https://www.postgresql.org)
