@@ -1,7 +1,7 @@
 import express = require('express');
 const router = express.Router();
 import asyncHandler = require('express-async-handler');
-const fsPromises = require('fs').promises;
+import fsPromises = require('node:fs/promises');
 import path = require('path');
 import _ = require('lodash');
 
