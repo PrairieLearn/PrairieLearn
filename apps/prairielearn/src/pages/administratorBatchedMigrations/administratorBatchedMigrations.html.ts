@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import {
+import type {
   BatchedMigrationJobRow,
   BatchedMigrationRow,
   BatchedMigrationStatus,
