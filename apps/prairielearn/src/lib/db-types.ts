@@ -1,3 +1,4 @@
+import { type } from 'node:os';
 import { z } from 'zod';
 
 // IDs are always coerced to strings. This ensures consistent handling when an
@@ -315,3 +316,20 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string().nullable(),
   }),
 );
+
+export const AdministratorQueryParamsSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  default: z.string().nullable().optional(),
+  comment: z.any().nullable(),
+});
+
+export const AdministratorQuerySchema = z.object({
+  description: z.string(),
+  resultFormats: z.any().nullable(),
+  comment: z.any().nullable(),
+  params: z.array(AdministratorQueryParamsSchema).nullable().optional(),
+  sqlFilename: z.string().nullable().optional(),
+  link: z.string().nullable().optional(),
+});
+export type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;

@@ -1,18 +1,12 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-
-interface Query {
-  description: string;
-  params: string[];
-  sqlFilename: string;
-  link: string;
-}
+import { AdministratorQuery } from './administratorQueries';
 
 export function AdministratorQueries({
   queries,
   resLocals,
 }: {
-  queries: Query[];
+  queries: AdministratorQuery[];
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -37,7 +31,7 @@ export function AdministratorQueries({
                     (query) => html`
                       <tr>
                         <td>
-                          <a href=${`../administrator/query/${query.link}`}>
+                          <a href=${`${resLocals.urlPrefix}/administrator/query/${query.link}`}>
                             <code>${query.sqlFilename}</code>
                           </a>
                         </td>
