@@ -46,40 +46,12 @@ let courseElementsCache = {};
 let courseExtensionsCache = {};
 
 /**
- * This subclass of Error supports chaining.
- * If available, it uses the built-in support for property `.cause`.
- * Otherwise, it sets it up itself.
- *
- * @see https://github.com/tc39/proposal-error-cause
- */
-class CausedError extends Error {
-  /**
-   *
-   * @param {string} message
-   * @param {{ cause?: Error }} [options]
-   */
-  constructor(message, options) {
-    // @ts-expect-error -- Node 14 does not yet support `.cause`
-    super(message, options);
-    if (options?.cause && !('cause' in this)) {
-      const cause = options.cause;
-      // @ts-expect-error -- Node 14 does not yet support `.cause`
-      this.cause = cause;
-      if ('stack' in cause) {
-        // @ts-expect-error -- Node 14 does not yet support `.cause`
-        this.stack = this.stack + '\nCAUSE: ' + cause.stack;
-      }
-    }
-  }
-}
-
-/**
  * @typedef {Object} CourseIssueErrorOptions
  * @property {any} [data]
  * @property {boolean} [fatal]
  * @property {Error} [cause]
  */
-class CourseIssueError extends CausedError {
+class CourseIssueError extends Error {
   /**
    *
    * @param {string} message
