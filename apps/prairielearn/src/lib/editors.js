@@ -164,7 +164,9 @@ class Editor {
               }
 
               if (!config.fileEditorUseGit) {
+                job.data.syncAttempted = true;
                 await syncCourseFromDisk(this.course, startGitHash, job);
+                job.data.syncSucceeded = true;
                 return;
               }
 
