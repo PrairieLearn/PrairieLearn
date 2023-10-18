@@ -17,6 +17,7 @@ const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
+  postgresqlSsl: z.boolean().default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
