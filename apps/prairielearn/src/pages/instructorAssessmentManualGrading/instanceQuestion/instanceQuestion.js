@@ -167,7 +167,9 @@ router.post(
     } else if (req.body.__action === 'modify_rubric_settings') {
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
+      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {}).map(
+        (item) => ({ ...item, always_show_to_students: item.always_show_to_students === 'true' }),
+      );
       manualGrading
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
