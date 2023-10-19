@@ -20,6 +20,11 @@ The `info.json` file is structurally similar to the element info file and may co
     "clientFilesCourseScripts": ["Client files course JavaScripts"],
     "extensionStyles": ["Styles in the extension directory"],
     "extensionScripts": ["JavaScripts in the extension directory"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {"Node modules JavaScripts"},
+    "clientFilesCourseScripts": {"Client files course JavaScripts"},
+    "extensionScripts": {"JavaScripts in the extension directory"}
   }
 }
 ```
@@ -83,18 +88,18 @@ def my_cool_function():
 
 ### Extension Dependencies
 
-Similar to how questions and elements may require client-side assets, extensions may also require client-side JavaScript and CSS. The different properties are summarized here:
+Similar to how questions and elements may require client-side assets, extensions may also require client-side JavaScript and CSS. The different properties are summarized here. Note that script dependencies may be set as either static or dynamic dependencies, while styles may only be set as static dependencies.
 
 | Property                   | Description                                                                                                                                     |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `nodeModulesStyles`        | The styles required by this extension, relative to `[PrairieLearn directory]/node_modules`.                                                     |
 | `nodeModulesScripts`       | The scripts required by this extension, relative to `[PrairieLearn directory]/node_modules`.                                                    |
-| `elementStyles`            | The styles required by this element relative to the extension's directory,`[course directory]/elementExtensions/element-name/extension-name`.   |
-| `elementScripts`           | The scripts required by this element relative to the extension's directory, `[course directory]/elementExtensions/element-name/extension-name`. |
+| `extensionStyles`          | The styles required by this element relative to the extension's directory,`[course directory]/elementExtensions/element-name/extension-name`.   |
+| `extensionScripts`         | The scripts required by this element relative to the extension's directory, `[course directory]/elementExtensions/element-name/extension-name`. |
 | `clientFilesCourseStyles`  | The styles required by this extension relative to `[course directory]/clientFilesCourse`.                                                       |
 | `clientFilesCourseScripts` | The scripts required by this extension relative to `[course directory]/clientFilesCourse`.                                                      |
 
-Note that all client-side extension assets are always loaded, regardless of whether their Python controller was loaded or not.
+Note that all client-side extension assets are always loaded, regardless of whether their Python controller was loaded or not. As such, it is recommended that, when suitable, extensions make use of dynamic dependencies that load scripts only as necessary, based on the context of the element.
 
 ### Other Client Files
 

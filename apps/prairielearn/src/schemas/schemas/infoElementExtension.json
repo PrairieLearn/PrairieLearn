@@ -99,16 +99,11 @@
           "description": "The styles required by this element from clientFilesCourse as an importmap.",
           "type": "object"
         },
-        "elementScripts": {
-          "description": "The scripts required by this element from the element's directory as an importmap.",
-          "type": "object"
-        },
         "extensionScripts": {
           "description": "The scripts required by this extension from the extension's directory.",
           "type": "object"
         }
       }
     }
-
   }
 }
