@@ -51,20 +51,6 @@ WHERE
 RETURNING
   fe.file_id;
 
--- BLOCK update_did_save
-UPDATE file_edits AS fe
-SET
-  did_save = TRUE
-WHERE
-  fe.id = $id;
-
--- BLOCK update_did_sync
-UPDATE file_edits AS fe
-SET
-  did_sync = TRUE
-WHERE
-  fe.id = $id;
-
 -- BLOCK update_job_sequence_id
 UPDATE file_edits AS fe
 SET
