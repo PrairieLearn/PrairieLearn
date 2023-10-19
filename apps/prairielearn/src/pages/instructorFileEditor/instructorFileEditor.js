@@ -51,11 +51,13 @@ router.get('/*', (req, res, next) => {
     if (ERR(err, next)) return;
 
     // We could also check if the file exists, if the file actually is a
-    // file and not a directory, if the file is non-binary, etc. We will
-    // assume that the user gets to this page through our UI, which does
-    // checks like these already and tries not to let users navigate to
-    // edit pages they shouldn't. At worst, we redirect the user to a
-    // cryptic error page.
+    // file and not a directory, if the file is non-binary, etc., and try
+    // to give a graceful error message on the edit page rather than send
+    // the user to an error page.
+    //
+    // We won't do that, on the assumption that most users get to an edit
+    // page through our UI, which already tries to prevent letting users
+    // go where they should not.
 
     const fullPath = paths.workingPath;
     const relPath = paths.workingPathRelativeToCourse;
