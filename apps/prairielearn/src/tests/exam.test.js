@@ -834,7 +834,8 @@ describe('Exam assessment', function () {
         locals.csvData =
           'uid,instance,qid,score_perc,feedback\n' +
           'dev@illinois.edu,1,addNumbers,40,feedback numbers\n' +
-          'dev@illinois.edu,1,addVectors,50,feedback vectors\n';
+          'dev@illinois.edu,1,addVectors,50,feedback vectors\n' +
+          'dev@illinois.edu,1,fossilFuelsRadio,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);

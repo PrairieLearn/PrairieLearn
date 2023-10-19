@@ -9,6 +9,7 @@ const { z } = require('zod');
 const error = require('@prairielearn/error');
 const { flash } = require('@prairielearn/flash');
 const sqldb = require('@prairielearn/postgres');
+const { html } = require('@prairielearn/html');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const groups = require('../../lib/groups');
@@ -154,7 +155,8 @@ router.post(
       if (notExist) {
         flash(
           'error',
-          `Could not create group. The following users do not exist: ${notExist.toString()}`,
+          html`Could not create group. The following users do not exist:
+            <strong>${notExist.toString()}</strong>`,
         );
       }
 
@@ -162,7 +164,8 @@ router.post(
       if (inGroup) {
         flash(
           'error',
-          `Could not create group. The following users are already in another group: ${inGroup.toString()}`,
+          html`Could not create group. The following users are already in another group:
+            <strong>${inGroup.toString()}</strong>`,
         );
       }
 

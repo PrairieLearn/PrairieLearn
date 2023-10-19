@@ -93,7 +93,10 @@ static inline void pl_fixture_sandbox_teardown(void) {
   if (*sanitizer_output)
     __lsan_do_leak_check();
 #endif
+
+#ifndef PLCHECK_NO_EXTRA_FORK
   *plcheck_final_check = CORRECT_FINAL_CHECK;
+#endif
 }
 
 static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
