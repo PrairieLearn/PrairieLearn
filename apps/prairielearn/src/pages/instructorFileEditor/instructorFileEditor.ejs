@@ -2,7 +2,13 @@
 <html lang="en">
 
 <head>
-    <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
+    <%
+    let pageTitle = 'Edit';
+    if (authz_data.has_course_permission_edit) {
+      pageTitle += ` ${fileEdit.fileName}`;
+    }
+    %>
+    <%- include('../partials/head', {pageTitle: pageTitle}); %>
     <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
     <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
     <script src="<%= compiled_script_path('instructorFileEditorClient.js') %>"></script>
@@ -12,7 +18,27 @@
     <%- include('../partials/navbar'); %>
 
     <main id="content" class="container-fluid">
-
+      <% if (!authz_data.has_course_permission_edit) { %>
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+            Files
+            </div>
+            <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
+            <% if (course_owners.length > 0) { %>
+                <p>Contact one of the below course owners to request access.</p>
+                <ul>
+                <% course_owners.forEach(function(owner) { %>
+                <li>
+                    <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+                </li>
+                <% }); %>
+                </ul>
+            <% } %>
+            </div>
+        </div>
+      <% } else { %>
         <% if (fileEdit.sync_errors) { %>
         <div class="alert alert-danger" role="alert">
             <h2 class="h5 alert-heading">Sync error</h2>
@@ -221,6 +247,7 @@
                 </div>
             </div>
         </form>
+      <% } %>
     </main>
 </body>
 </html>

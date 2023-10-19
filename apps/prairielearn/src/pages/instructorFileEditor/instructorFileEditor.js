@@ -19,6 +19,7 @@ const { isBinaryFile } = require('isbinaryfile');
 const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');
+const { getCourseOwners } = require('../../lib/course');
 const { getPaths } = require('../../lib/instructorFiles');
 const { logger } = require('@prairielearn/logger');
 const { FileModifyEditor } = require('../../lib/editors');
@@ -28,7 +29,15 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be course editor)'));
+    // Access denied, but instead of sending them to an error page, we'll show
+    // them an explanatory message and prompt them to get edit permissions.
+    getCourseOwners(res.locals.course.id)
+      .then((owners) => {
+        res.locals.course_owners = owners;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => next(err));
+    return;
   }
 
   let workingPath;
