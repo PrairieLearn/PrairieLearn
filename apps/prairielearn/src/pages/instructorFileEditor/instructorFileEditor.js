@@ -63,13 +63,9 @@ router.get('/*', (req, res, next) => {
   };
 
   // Do not allow users to edit the exampleCourse
-  if (res.locals.course.example_course) {
-    return next(
-      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
-        locals: res.locals,
-        body: req.body,
-      }),
-    );
+  if (res.locals.course.example_course) {    
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    return;
   }
 
   // Do not allow users to edit files outside the course

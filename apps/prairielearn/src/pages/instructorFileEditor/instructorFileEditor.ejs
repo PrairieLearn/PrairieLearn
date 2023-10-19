@@ -4,7 +4,7 @@
 <head>
     <%
     let pageTitle = 'Edit';
-    if (authz_data.has_course_permission_edit) {
+    if (locals.fileEdit) {
       pageTitle += ` ${fileEdit.fileName}`;
     }
     %>
@@ -20,24 +20,34 @@
     <main id="content" class="container-fluid">
       <% if (!authz_data.has_course_permission_edit) { %>
         <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
-            Files
-            </div>
-            <div class="card-body">
+          <div class="card-header bg-danger text-white">
+            File editor
+          </div>
+          <div class="card-body">
             <h2>Insufficient permissions</h2>
             <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
             <% if (course_owners.length > 0) { %>
-                <p>Contact one of the below course owners to request access.</p>
-                <ul>
-                <% course_owners.forEach(function(owner) { %>
-                <li>
-                    <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
-                </li>
-                <% }); %>
-                </ul>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+              <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+              </li>
+              <% }); %>
+              </ul>
             <% } %>
-            </div>
+          </div>
         </div>
+      <% } else if (course.example_course) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            File editor
+          </div>
+          <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>No one is allowed to edit the example course.</p>
+          </div>
+      </div>
       <% } else { %>
         <% if (fileEdit.sync_errors) { %>
         <div class="alert alert-danger" role="alert">
