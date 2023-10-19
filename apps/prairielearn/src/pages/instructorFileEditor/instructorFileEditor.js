@@ -84,7 +84,7 @@ router.get('/*', (req, res, next) => {
       [
         async () => {
           debug('Read from db');
-          await readEdit(fileEdit);
+          await readDraftEdit(fileEdit);
   
           debug('Read from disk');
           const contents = await fs.readFile(fullPath);
@@ -124,7 +124,7 @@ router.get('/*', (req, res, next) => {
         if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
-          // from the database on readEdit).
+          // from the database on readDraftEdit).
           debug('Job sequence is still running - redirect to status page');
           res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
           return;
@@ -272,7 +272,7 @@ function getHash(contents) {
   return sha256(contents).toString();
 }
 
-async function readEdit(fileEdit) {
+async function readDraftEdit(fileEdit) {
   debug(`Looking for previously saved drafts`);
   const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
     user_id: fileEdit.userID,
