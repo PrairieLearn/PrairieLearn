@@ -168,7 +168,6 @@ Dynamic dependencies are implemented using [import maps](https://developer.mozil
 | `elementScripts`           | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.                             |
 | `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
 
-
 Note that the key used in the dynamic dependencies will be shared among all elements available in a question. For example, if two elements in a question both declare a dynamic dependency on `d3`, then the `d3` library will only be loaded once, even if both elements use it. For this reason, it is important that the following convention is used when defining keys for dynamic dependencies:
 
 - For node modules: use the name of the module, as defined in the `package.json` file. This will allow multiple elements that use the same module to share the same dependency without loading the module twice.
