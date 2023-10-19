@@ -30,30 +30,8 @@
                 </div>
             </h5>
             <div class="card-body">
-                <% if (job_errors.length === 0) { %>
-                    <p>The file edit did not complete successfully.</p>
-                <% } else { %>
-                    <% job_errors.forEach(function(job_error) { %>
-                        <p><strong><%= job_error.description %></strong>
-                        <% if (job_error.error_message) { %>
-                            failed with this result:</p>
-                            <pre class="bg-dark text-white rounded p-2 mx-4 text-wrap"><%= job_error.error_message %></pre>
-                        <% } else { %>
-                            failed.</p>
-                        <% }%>
-                    <% }); %>
-                <% } %>
-                <% if (failedPush) { %>
-                    <p>
-                        In particular, it looks like there was a failure to push your changes to the remote GitHub repository. The most likely cause is that another user made changes to other course files while you were editing. Please click <strong>Pull from remote GitHub repository</strong> to sync these changes, then go back and try again.
-                    </p>
-                    <form method="POST">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <div class="mx-4">
-                            <button name="__action" value="pull" class="btn btn-primary">Pull from remote GitHub repository</button>
-                        </div>
-                    </form>
-                <% } else if (failedSync) { %>
+                <p>The file edit did not complete successfully.</p>
+                <% if (failedSync) { %>
                     <p>
                         In particular, it looks like your changes were written to disk<% if (config.fileEditorUseGit) { %> and were pushed to the remote GitHub repository<% } %>, but that there was a failure to sync these changes to the database. The most likely cause is broken course content. Please fix this content, then click <strong>Pull from remote GitHub repository</strong> to try again.
                     </p>
