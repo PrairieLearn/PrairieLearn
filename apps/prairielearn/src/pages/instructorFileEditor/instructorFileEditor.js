@@ -129,12 +129,52 @@ router.get('/*', (req, res, next) => {
     (err) => {
       if (ERR(err, next)) return;
       if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
+        // Because of the redirect, if the job sequence ends up failing to save,
+        // then the corresponding draft will be lost (all drafts are soft-deleted
+        // from the database on readEdit).
         debug('Job sequence is still running - redirect to status page');
         res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
         return;
       }
 
       fileEdit.alertChoice = false;
+      fileEdit.didSave = false;
+      fileEdit.didSync = false;
+
+      if ('jobSequence' in fileEdit) {
+        // No draft is older than 24 hours, so it is safe to assume that no
+        // job sequence is legacy... but, just in case, we will check and log
+        // a warning if we find one. We will treat the corresponding draft as
+        // if it was neither saved nor synced.
+        if (fileEdit.jobSequence.legacy) {
+          debug('Found a legacy job sequence');
+          logger.warn(`Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
+                      `in a file edit (id=${fileEdit.editID})`);
+        } else {
+          const job = fileEdit.jobSequence.jobs[0];
+
+          debug(`Found a job sequence: ` +
+            `syncAttempted=${job.data.syncAttempted}, ` +
+            `syncSucceeded=${job.data.syncSucceeded}`);
+          
+          // We check for the presence of a `syncAttempted` key to know if
+          // we attempted a sync (if it exists, its value will be true). If
+          // a sync was attempted, then the edit must have been saved (i.e,
+          // written to disk in the case of no git, or written to disk and
+          // then pushed in the case of git).
+          if (job.data.syncAttempted) {
+            fileEdit.didSave = true;
+
+            // We check for the presence of a `syncSucceeded` key to know
+            // if the sync was successful (if it exists, its value will be
+            // true). Note that the cause of sync failure could be a file
+            // other than the one being edited.
+            if (job.data.syncSucceeded) {
+              fileEdit.didSync = true;
+            }
+          }
+        }
+      }
 
       if ('editID' in fileEdit) {
         // There is a recently saved draft ...
@@ -145,31 +185,7 @@ router.get('/*', (req, res, next) => {
           fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
         }
       }
-
-      if ('jobSequence' in fileEdit) {
-        // New case: single job for the entire operation. We check the flag
-        // we would have set when the job executed to determine if the push
-        // succeeded or not.
-        if (!fileEdit.jobSequence.legacy) {
-          const job = fileEdit.jobSequence.jobs[0];
-
-          // We check for presence of the `pushed` key to determine if we
-          // attempted a push, and we check for the value to know if the push
-          // succeeded or not.
-          if (job.data.pushAttempted && !job.data.pushSucceeded) {
-            fileEdit.failedPush = true;
-          }
-        } else {
-          // TODO: remove legacy case here once this has been running in production
-          // for a while.
-          fileEdit.jobSequence.jobs.forEach((item) => {
-            if (item.type === 'git_push' && item.status === 'Error') {
-              fileEdit.failedPush = true;
-            }
-          });
-        }
-      }
-
+      
       if (!fileEdit.alertChoice) {
         fileEdit.editContents = fileEdit.diskContents;
         fileEdit.origHash = fileEdit.diskHash;
@@ -217,16 +233,43 @@ router.post('/*', (req, res, next) => {
         if (!yes) return res.redirect(req.originalUrl);
         editor.canEdit((err) => {
           if (ERR(err, next)) return;
-
-          // FIXME - if we want to keep the same UI, then we
-          //         should not redirect to edit_error page
-          editor.doEdit((err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
+          let editID = null;
+          let jobSequenceID = null;
+          async.series(
+            [
+              async () => {
+                debug('Write draft file edit to db and to file store');
+                const fileEdit = {
+                  userID: res.locals.user.user_id,
+                  courseID: res.locals.course.id,
+                  dirName: req.body.file_edit_dir_name,
+                  fileName: req.body.file_edit_file_name,
+                  origHash: req.body.file_edit_orig_hash,
+                  coursePath: res.locals.course.path,
+                  uid: res.locals.user.uid,
+                  user_name: res.locals.user.name,
+                  editContents: req.body.file_edit_contents,
+                };
+                editID = await writeDraftEdit(fileEdit);
+              },
+              (callback) => {
+                editor.doEdit((err, job_sequence_id) => {
+                  // An error here should be logged but not passed on,
+                  // because the UI will look at the job_sequence_id.
+                  ERR(err, (e) => logger.error('Error in doEdit()', e));
+                  jobSequenceID = job_sequence_id;
+                  callback(null);
+                });
+              },
+              async () => {
+                await updateJobSequenceId(editID, jobSequenceID);
+              },
+            ],
+            (err) => {
+              if (ERR(err, next)) return;
               res.redirect(req.originalUrl);
-            }
-          });
+            },
+          );
         });
       });
     } else {
@@ -397,11 +440,8 @@ async function readEdit(fileEdit) {
     if (draftResult.rows[0].age < 24) {
       fileEdit.editID = draftResult.rows[0].id;
       fileEdit.origHash = draftResult.rows[0].orig_hash;
-      fileEdit.didSave = draftResult.rows[0].did_save;
-      fileEdit.didSync = draftResult.rows[0].did_sync;
       fileEdit.jobSequenceId = draftResult.rows[0].job_sequence_id;
       fileEdit.fileID = draftResult.rows[0].file_id;
-      debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
     } else {
       debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
     }
@@ -441,12 +481,12 @@ async function readEdit(fileEdit) {
   }
 }
 
-async function updateJobSequenceId(fileEdit, job_sequence_id) {
+async function updateJobSequenceId(edit_id, job_sequence_id) {
   await sqldb.queryAsync(sql.update_job_sequence_id, {
-    id: fileEdit.editID,
+    id: edit_id,
     job_sequence_id: job_sequence_id,
   });
-  debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
+  debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
 async function updateDidSave(fileEdit) {
@@ -463,7 +503,7 @@ async function updateDidSync(fileEdit) {
   debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
 }
 
-async function createEdit(fileEdit) {
+async function writeDraftEdit(fileEdit) {
   const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
@@ -476,28 +516,7 @@ async function createEdit(fileEdit) {
     await fileStore.delete(row.file_id, fileEdit.userID);
   }
 
-  debug('Write contents to file edit');
-  const fileID = await writeEdit(fileEdit);
-  fileEdit.fileID = fileID;
-  fileEdit.didWriteEdit = true;
-
-  const params = {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-    orig_hash: fileEdit.origHash,
-    file_id: fileEdit.fileID,
-  };
-  debug(
-    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
-  );
-  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
-  fileEdit.editID = result.rows[0].id;
-  debug(`Created file edit in database with id ${fileEdit.editID}`);
-}
-
-async function writeEdit(fileEdit) {
+  debug('Write contents to file store');
   const fileID = await fileStore.upload(
     fileEdit.fileName,
     Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
@@ -507,8 +526,23 @@ async function writeEdit(fileEdit) {
     fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
     fileEdit.userID, //       although I don't think there's any need to do so
   );
-  debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
-  return fileID;
+  debug(`Wrote file_id=${fileID} to file store`);
+  
+  const params = {
+    user_id: fileEdit.userID,
+    course_id: fileEdit.courseID,
+    dir_name: fileEdit.dirName,
+    file_name: fileEdit.fileName,
+    orig_hash: fileEdit.origHash,
+    file_id: fileID,
+  };
+  debug(
+    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
+  );
+  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
+  const editID = result.rows[0].id;
+  debug(`Created file edit in database with id ${editID}`);
+  return editID;
 }
 
 async function saveAndSync(fileEdit, locals) {
