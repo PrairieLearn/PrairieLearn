@@ -40,6 +40,12 @@ router.get('/*', (req, res, next) => {
     return;
   }
 
+  // Do not allow users to edit the exampleCourse
+  if (res.locals.course.example_course) {    
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    return;
+  }
+
   let workingPath;
   if (req.params[0]) {
     try {
@@ -51,6 +57,10 @@ router.get('/*', (req, res, next) => {
     return next(new Error(`No path`));
   }
 
+  debug(workingPath);
+  // for a test:
+  //workingPath = '/courseLiveDir/courseInstances/Sp23/infoCourseInstance.json';
+
   let fileEdit = {
     uuid: uuidv4(),
     userID: res.locals.user.user_id,
@@ -61,13 +71,7 @@ router.get('/*', (req, res, next) => {
     fileNameForDisplay: path.normalize(workingPath),
     aceMode: modelist.getModeForPath(workingPath).mode,
   };
-
-  // Do not allow users to edit the exampleCourse
-  if (res.locals.course.example_course) {    
-    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    return;
-  }
-
+  
   // Do not allow users to edit files outside the course
   const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
@@ -191,6 +195,7 @@ router.get('/*', (req, res, next) => {
         if (ERR(err, next)) return;
         res.locals.fileEdit = fileEdit;
         res.locals.fileEdit.paths = paths;
+        debug(paths);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
     },
@@ -223,7 +228,6 @@ router.post('/*', (req, res, next) => {
         editContents: req.body.file_edit_contents,
         origHash: req.body.file_edit_orig_hash,
       });
-      debug(editor);
       editor.shouldEdit((err, yes) => {
         if (ERR(err, next)) return;
         if (!yes) return res.redirect(req.originalUrl);
