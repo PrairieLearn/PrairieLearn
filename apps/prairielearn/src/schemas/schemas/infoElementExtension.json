@@ -93,15 +93,18 @@
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "clientFilesCourseScripts": {
           "description": "The styles required by this element from clientFilesCourse as an importmap.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "extensionScripts": {
           "description": "The scripts required by this extension from the extension's directory.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     }

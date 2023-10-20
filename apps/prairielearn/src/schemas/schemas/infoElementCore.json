@@ -86,11 +86,13 @@
         },
         "nodeModulesScripts": {
           "description": "The scripts required by this element from /node_modules as an importmap.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "elementScripts": {
           "description": "The scripts required by this element from the element's directory as an importmap.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
