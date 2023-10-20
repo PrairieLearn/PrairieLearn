@@ -1421,7 +1421,6 @@ module.exports = {
               courseElementScripts: {},
               extensionScripts: {},
               clientFilesCourseScripts: {},
-              clientFilesQuestionScripts: {},
             };
 
             // Question dependencies are checked via schema on sync-time, so
@@ -1493,19 +1492,7 @@ module.exports = {
                 }
               }
 
-              const dependencyTypes = [
-                'coreStyles',
-                'coreScripts',
-                'nodeModulesStyles',
-                'nodeModulesScripts',
-                'clientFilesCourseStyles',
-                'clientFilesCourseScripts',
-                'coreElementStyles',
-                'coreElementScripts',
-                'courseElementStyles',
-                'courseElementScripts',
-              ];
-              for (const type of dependencyTypes) {
+              for (const type in dependencies) {
                 if (_.has(elementDependencies, type)) {
                   if (_.isArray(elementDependencies[type])) {
                     for (const dep of elementDependencies[type]) {
@@ -1529,7 +1516,7 @@ module.exports = {
                     courseIssues.push(
                       new CourseIssueError(
                         `Error getting dynamic dependencies for ${resolvedElement.name}: "${type}" is not an object`,
-                        { data: { elementDependencies }, fatal: true },
+                        { data: { elementDynamicDependencies }, fatal: true },
                       ),
                     );
                   }
@@ -1539,12 +1526,19 @@ module.exports = {
               // Load any extensions if they exist
               if (_.has(extensions, elementName)) {
                 for (const extensionName of Object.keys(extensions[elementName])) {
-                  if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                  if (
+                    !_.has(extensions[elementName][extensionName], 'dependencies') &&
+                    !_.has(extensions[elementName][extensionName], 'dynamicDependencies')
+                  ) {
                     continue;
                   }
 
-                  const { dependencies: extension, dynamicDependencies: extensionDynamic } =
-                    _.cloneDeep(extensions[elementName][extensionName]);
+                  const extension = _.cloneDeep(
+                    extensions[elementName][extensionName],
+                  ).dependencies;
+                  const extensionDynamic = _.cloneDeep(
+                    extensions[elementName][extensionName],
+                  ).dynamicDependencies;
                   if (_.has(extension, 'extensionStyles')) {
                     extension.extensionStyles = extension.extensionStyles.map(
                       (dep) => `${elementName}/${extensionName}/${dep}`,
@@ -1562,18 +1556,7 @@ module.exports = {
                     );
                   }
 
-                  const dependencyTypes = [
-                    'coreStyles',
-                    'coreScripts',
-                    'nodeModulesStyles',
-                    'nodeModulesScripts',
-                    'clientFilesCourseStyles',
-                    'clientFilesCourseScripts',
-                    'extensionStyles',
-                    'extensionScripts',
-                  ];
-
-                  for (const type of dependencyTypes) {
+                  for (const type in dependencies) {
                     if (_.has(extension, type)) {
                       if (_.isArray(extension[type])) {
                         for (const dep of extension[type]) {
@@ -1670,10 +1653,6 @@ module.exports = {
                 ..._.mapValues(
                   dynamicDependencies.clientFilesCourseScripts,
                   (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
-                ),
-                ..._.mapValues(
-                  dynamicDependencies.clientFilesQuestionScripts,
-                  (file) => `${locals.clientFilesQuestionUrl}/${file}`,
                 ),
                 ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
                   assets.coreElementAssetPath(file),
