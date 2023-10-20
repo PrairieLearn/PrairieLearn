@@ -115,9 +115,11 @@ router.post(
     });
 
     const queryParams = {};
-    info.params.forEach((p) => {
-      queryParams[p.name] = req.body[p.name];
-    });
+    if (info.params) {
+      info.params.forEach((p) => {
+        queryParams[p.name] = req.body[p.name];
+      });
+    }
 
     const params: AdministratorQueryRunParams = {
       name: req.params.query,
