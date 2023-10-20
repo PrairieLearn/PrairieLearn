@@ -5,13 +5,18 @@ interface AdministratorQueryParams {
   name: string;
   description: string;
   default: string | null;
-  comment: any | null;
+  comment: string | null;
 }
 
 export interface AdministratorQuery {
   description: string;
-  resultFormats: any | null;
-  comment: any | null;
+  resultFormats: {
+    description: string | null;
+    additionalProperties: {
+      query: string | null;
+    };
+  } | null;
+  comment: string | null;
   params: AdministratorQueryParams[] | null;
   sqlFilename: string;
   link: string;
