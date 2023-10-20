@@ -3,7 +3,6 @@ const router = express.Router();
 import asyncHandler = require('express-async-handler');
 import fsPromises = require('node:fs/promises');
 import path = require('path');
-import _ = require('lodash');
 import hljs from 'highlight.js';
 import { stringify } from '@prairielearn/csv';
 import { z } from 'zod';

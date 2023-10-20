@@ -109,7 +109,7 @@ export function AdministratorQuery({
       null;
     } else if (row[col] == null) {
       return html` <td ${tdAttributes}></td> `;
-    } else if (info.resultFormats && info.resultFormats[col] == 'pre') {
+    } else if (info.resultFormats && info.resultFormats[col] === 'pre') {
       return html`
         <td ${tdAttributes}>
           <pre>${row[col]}</pre>
