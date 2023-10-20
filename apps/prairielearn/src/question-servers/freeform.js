@@ -1554,7 +1554,7 @@ module.exports = {
                   }
                   if (_.has(extensionDynamic, 'extensionScripts')) {
                     extensionDynamic.extensionScripts = _.mapValues(
-                      extension.extensionScripts,
+                      extensionDynamic.extensionScripts,
                       (dep) => `${elementName}/${extensionName}/${dep}`,
                     );
                   }
