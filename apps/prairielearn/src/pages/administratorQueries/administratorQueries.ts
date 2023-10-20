@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import express = require('express');
-import asyncHandler = require('express-async-handler');
-import fsPromises = require('node:fs/promises');
-import path = require('path');
+import * as express from 'express';
+import * as asyncHandler from 'express-async-handler';
+import * as fsPromises from 'node:fs/promises';
+import * as path from 'path';
 
 import jsonLoad = require('../../lib/json-load');
 import { AdministratorQueries, type AdministratorQuery } from './administratorQueries.html';
