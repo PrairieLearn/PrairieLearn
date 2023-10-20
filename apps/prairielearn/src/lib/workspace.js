@@ -293,7 +293,7 @@ module.exports = {
    * are not atomic.
    *
    * @param {string | number} workspace_id
-   * @returns {Promise<InitializeResult | null>}
+   * @returns {Promise<InitializeResult>}
    */
   async initialize(workspace_id) {
     const { workspace, variant, question, course } = (
