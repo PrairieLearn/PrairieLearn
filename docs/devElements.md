@@ -136,7 +136,7 @@ The different types of dependency properties currently available are summarized 
 
 The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide.md#html-style).
 
-In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loads only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
+In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
 
 ```json
 {
@@ -145,7 +145,7 @@ In addition to static dependencies, elements can also declare dynamic dependenci
     "elementScripts": ["pl-my-element.js"]
   },
   "dynamicDependencies": {
-    "nodeModulesScripts": { "d3": "d3/d3.min.js" }
+    "nodeModulesScripts": { "d3": "d3/dist/d3.min.js" }
   }
 }
 ```
