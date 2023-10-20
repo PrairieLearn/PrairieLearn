@@ -1501,7 +1501,29 @@ module.exports = {
               }
 
               for (const type in elementDynamicDependencies) {
-                Object.assign(dynamicDependencies[type], elementDynamicDependencies[type]);
+                for (const key in elementDynamicDependencies[type]) {
+                  if (!_.has(dynamicDependencies[type], key)) {
+                    dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
+                  } else if (
+                    dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]
+                  ) {
+                    courseIssues.push(
+                      new CourseIssueError(
+                        `Dynamic dependency ${key} assigned to conflicting files`,
+                        {
+                          data: {
+                            dependencyType: type,
+                            values: [
+                              dynamicDependencies[type][key],
+                              elementDynamicDependencies[type][key],
+                            ],
+                          },
+                          fatal: true,
+                        },
+                      ),
+                    );
+                  }
+                }
               }
 
               // Load any extensions if they exist
@@ -1545,7 +1567,27 @@ module.exports = {
                     }
                   }
                   for (const type in extensionDynamic) {
-                    Object.assign(dynamicDependencies[type], extensionDynamic[type]);
+                    for (const key in extensionDynamic[type]) {
+                      if (!_.has(dynamicDependencies[type], key)) {
+                        dynamicDependencies[type][key] = extensionDynamic[type][key];
+                      } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+                        courseIssues.push(
+                          new CourseIssueError(
+                            `Dynamic dependency ${key} assigned to conflicting files`,
+                            {
+                              data: {
+                                dependencyType: type,
+                                values: [
+                                  dynamicDependencies[type][key],
+                                  extensionDynamic[type][key],
+                                ],
+                              },
+                              fatal: true,
+                            },
+                          ),
+                        );
+                      }
+                    }
                   }
                 }
               }
@@ -1630,6 +1672,21 @@ module.exports = {
                 ),
               },
             };
+
+            // Check if any of the keys was found in more than one dependency type
+            Object.keys(importMap.imports).forEach((key) => {
+              const types = Object.entries(dynamicDependencies)
+                .filter(([, value]) => _.has(value, key))
+                .map(([type]) => type);
+              if (types.length > 1) {
+                courseIssues.push(
+                  new CourseIssueError(
+                    `Dynamic dependency key ${key} assigned to multiple types of dependencies`,
+                    { data: { types }, fatal: true },
+                  ),
+                );
+              }
+            });
 
             const headerHtmls = [
               ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),

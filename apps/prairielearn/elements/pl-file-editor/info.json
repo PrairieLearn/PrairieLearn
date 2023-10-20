@@ -9,5 +9,9 @@
     ],
     "elementScripts": ["pl-file-editor.js"],
     "elementStyles": ["pl-file-editor.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {"d3": "d3/d3.min.js"},
+    "elementScripts": {"dd3": "d3/d3.min.js"}
   }
 }

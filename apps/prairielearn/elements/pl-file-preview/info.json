@@ -3,5 +3,9 @@
   "dependencies": {
     "elementScripts": ["pl-file-preview.js"],
     "elementStyles": ["pl-file-preview.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {"d3": "d3/d33.min.js"},
+    "elementScripts": {"preview/dd3": "d3/d3.min.js"}
   }
 }
