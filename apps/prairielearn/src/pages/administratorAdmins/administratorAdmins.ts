@@ -1,9 +1,10 @@
-const asyncHandler = require('express-async-handler');
-const express = require('express');
-const sqldb = require('@prairielearn/postgres');
+import asyncHandler = require('express-async-handler');
+import express = require('express');
+import sqldb = require('@prairielearn/postgres');
 
-const error = require('@prairielearn/error');
-const { AdministratorAdmins } = require('./administratorAdmins.html');
+import error = require('@prairielearn/error');
+import { AdministratorAdmins } from './administratorAdmins.html';
+import { UserSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -11,8 +12,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryAsync(sql.select_admins, []);
-    res.send(AdministratorAdmins({ admins: result.rows, resLocals: res.locals }));
+    const admins = await sqldb.queryRows(sql.select_admins, [], UserSchema);
+    res.send(AdministratorAdmins({ admins, resLocals: res.locals }));
   }),
 );
 
@@ -39,4 +40,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

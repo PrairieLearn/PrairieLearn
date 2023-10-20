@@ -41,6 +41,8 @@ jobs:
         run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
       - name: Build the workspace-jupyterlab docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab:latest
+      - name: Build the workspace-jupyterlab-python docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/jupyterlab-python prairielearn/workspace-jupyterlab-python:latest
       - name: Build the workspace-rstudio docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
       - name: Build the workspace-xtermjs docker image if needed
