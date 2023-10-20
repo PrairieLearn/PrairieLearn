@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
-    "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
+    "test": "mocha --no-config --require tsx/cjs src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
@@ -18,7 +18,7 @@
     "@types/mocha": "^10.0.2",
     "@types/node": "^18.18.2",
     "mocha": "^10.2.0",
-    "ts-node": "^10.9.1",
+    "tsx": "^3.14.0",
     "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   },

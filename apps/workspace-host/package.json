@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev:no-watch": "ts-node --transpile-only src/interface.js",
+    "dev:no-watch": "tsx src/interface.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/interface.js",
-    "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
+    "test": "mocha --no-config --require tsx/cjs src/**/*.test.{js,ts}"
   },
   "dependencies": {
     "@aws-sdk/client-ecr": "^3.423.0",
@@ -42,7 +42,7 @@
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.1",
-    "ts-node": "^10.9.1",
+    "tsx": "^3.14.0",
     "typescript": "^5.2.2",
     "typescript-cp": "^0.1.9"
   }

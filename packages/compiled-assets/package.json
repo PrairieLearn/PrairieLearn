@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
+    "test": "mocha --no-config --require tsx/cjs src/index.test.ts"
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
@@ -31,7 +31,7 @@
     "get-port": "^5.1.1",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
-    "ts-node": "^10.9.1",
+    "tsx": "^3.14.0",
     "typescript": "^5.2.2"
   }
 }
