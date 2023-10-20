@@ -1,6 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { nodeModulesAssetPath } from '../../lib/assets';
+
 export interface AdministratorQueryRunParams {
   name: string;
   sql: string;
@@ -58,30 +60,28 @@ export function AdministratorQuery({
     });
 
     if (col === 'course_id' && 'course' in row) {
-      null;
+      return '';
     } else if (col === 'course_instance_id' && 'course_instance' in row) {
-      null;
+      return '';
     } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
-      null;
+      return '';
     } else if (/^_sortval_/.test(col)) {
-      null;
+      return '';
     } else {
       return html`<th>${col}</th>`;
     }
   }
 
   function render(row, col) {
-    let tdAttributes = '';
-    if ('_sortval_' + col in row) {
-      tdAttributes = `data-text="${row['_sortval_' + col]}"`;
-    }
+    const tdAttributes =
+      `_sortval_${col}` in row ? html`data-text="${row['_sortval_' + col]}"` : html``;
 
     if (col === 'course_id' && 'course' in row) {
       null;
     } else if (col === 'course' && 'course_id' in row) {
       return html`
         <td ${tdAttributes}>
-          <a href=${`${resLocals.urlPrefix}/course/${row['course_id']}`}>${row[col]}</a>
+          <a href="${`${resLocals.urlPrefix}/course/${row['course_id']}`}">${row[col]}</a>
         </td>
       `;
     } else if (col === 'course_instance_id' && 'course_instance' in row) {
@@ -89,7 +89,7 @@ export function AdministratorQuery({
     } else if (col === 'course_instance' && 'course_instance_id' in row) {
       return html`
         <td ${tdAttributes}>
-          <a href=${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}`}
+          <a href="${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}`}"
             >${row[col]}</a
           >
         </td>
@@ -100,7 +100,7 @@ export function AdministratorQuery({
       return html`
         <td ${tdAttributes}>
           <a
-            href=${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}/instructor/assessment/${row['assessment_id']}`}
+            href="${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}/instructor/assessment/${row['assessment_id']}`}"
             >${row[col]}</a
           >
         </td>
@@ -131,20 +131,17 @@ export function AdministratorQuery({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head') %>", resLocals)}
+        <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         <link
-          href=${resLocals.node_modules_asset_path('highlight.js/styles/default.css')}
+          href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
         />
-        <link
-          href=${resLocals.node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css')}
-          rel="stylesheet"
-        />
-        <script src=${resLocals.node_modules_asset_path(
+        <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.min.js',
-          )}></script>
-        <script src=${resLocals.node_modules_asset_path(
+          )}"></script>
+        <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
-          )}></script>
+          )}"></script>
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
@@ -182,32 +179,30 @@ export function AdministratorQuery({
                   ? info.params.map((param) => {
                       return html`
                         <div class="form-group">
-                          <label for=${`param-${param.name}`}>${param.name}</label>
+                          <label for="${`param-${param.name}`}">${param.name}</label>
                           <input
                             class="form-control"
                             type="text"
-                            id=${`param-${param.name}`}
-                            aria-describedby=${`param-${param.name}-help`}
-                            name=${param.name}
+                            id="${`param-${param.name}`}"
+                            aria-describedby="${`param-${param.name}-help`}"
+                            name="${param.name}"
                             autocomplete="off"
-                            ${typeof params != 'undefined' && params != null && params[param.name]
-                              ? html`value=${params[param.name]}`
-                              : param.default != null && param.default !== ''
-                              ? html`value=${param.default}`
-                              : html`value = ''`}
+                            ${params?.[param.name]
+                              ? html`value="${params[param.name]}"`
+                              : html`value="${param.default ?? ''}"`}
                           />
 
-                          <small id=${`param-${param.name}-help`} class="form-text text-muted"
+                          <small id="${`param-${param.name}-help`}" class="form-text text-muted"
                             >${param.description}</small
                           >
                         </div>
                       `;
                     })
                   : null}
-                <input type="hidden" name="__csrf_token" value=${resLocals.__csrf_token} />
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button type="submit" class="btn btn-primary">
                   <i class="fas fa-play"></i>
-                  Run query ${typeof result != 'undefined' ? 'again' : null}
+                  Run query ${has_query_run ? 'again' : null}
                 </button>
               </form>
             </div>
@@ -223,14 +218,14 @@ export function AdministratorQuery({
                           ${result.rowCount} ${result.rowCount === 1 ? 'row' : 'rows'}
                         </span>
                         <a
-                          href=${`?query_run_id=${query_run_id}&format=json`}
+                          href="${`?query_run_id=${query_run_id}&format=json`}"
                           role="button"
                           class="btn btn-sm btn-light"
                         >
                           <i class="fas fa-download" aria-hidden="true"></i> JSON
                         </a>
                         <a
-                          href=${`?query_run_id=${query_run_id}&format=csv`}
+                          href="${`?query_run_id=${query_run_id}&format=csv`}"
                           role="button"
                           class="btn btn-sm btn-light"
                         >
@@ -292,7 +287,7 @@ export function AdministratorQuery({
                           return html`
                             <tr>
                               <td>
-                                <a href=${`?query_run_id=${run.id}`}> ${run.formatted_date} </a>
+                                <a href="${`?query_run_id=${run.id}`}"> ${run.formatted_date} </a>
                               </td>
                               <td>
                                 <pre class="mb-0">${JSON.stringify(run.params)}</pre>
