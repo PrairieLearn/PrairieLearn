@@ -1492,35 +1492,16 @@ module.exports = {
                 }
               }
 
-              for (const type in dependencies) {
-                if (_.has(elementDependencies, type)) {
-                  if (_.isArray(elementDependencies[type])) {
-                    for (const dep of elementDependencies[type]) {
-                      if (!_.includes(dependencies[type], dep)) {
-                        dependencies[type].push(dep);
-                      }
-                    }
-                  } else {
-                    courseIssues.push(
-                      new CourseIssueError(
-                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`,
-                        { data: { elementDependencies }, fatal: true },
-                      ),
-                    );
+              for (const type in elementDependencies) {
+                for (const dep of elementDependencies[type]) {
+                  if (!_.includes(dependencies[type], dep)) {
+                    dependencies[type].push(dep);
                   }
                 }
-                if (_.has(elementDynamicDependencies, type)) {
-                  if (_.isObject(elementDynamicDependencies[type])) {
-                    Object.assign(dynamicDependencies[type], elementDynamicDependencies[type]);
-                  } else {
-                    courseIssues.push(
-                      new CourseIssueError(
-                        `Error getting dynamic dependencies for ${resolvedElement.name}: "${type}" is not an object`,
-                        { data: { elementDynamicDependencies }, fatal: true },
-                      ),
-                    );
-                  }
-                }
+              }
+
+              for (const type in elementDynamicDependencies) {
+                Object.assign(dynamicDependencies[type], elementDynamicDependencies[type]);
               }
 
               // Load any extensions if they exist
@@ -1556,35 +1537,15 @@ module.exports = {
                     );
                   }
 
-                  for (const type in dependencies) {
-                    if (_.has(extension, type)) {
-                      if (_.isArray(extension[type])) {
-                        for (const dep of extension[type]) {
-                          if (!_.includes(dependencies[type], dep)) {
-                            dependencies[type].push(dep);
-                          }
-                        }
-                      } else {
-                        courseIssues.push(
-                          new CourseIssueError(
-                            `Error getting dependencies for extension ${extensionName}: "${type}" is not an array`,
-                            { data: elementDependencies, fatal: true },
-                          ),
-                        );
+                  for (const type in extension) {
+                    for (const dep of extension[type]) {
+                      if (!_.includes(dependencies[type], dep)) {
+                        dependencies[type].push(dep);
                       }
                     }
-                    if (_.has(extensionDynamic, type)) {
-                      if (_.isObject(extensionDynamic[type])) {
-                        Object.assign(dynamicDependencies[type], extensionDynamic[type]);
-                      } else {
-                        courseIssues.push(
-                          new CourseIssueError(
-                            `Error getting dynamic dependencies for extension ${extensionName}: "${type}" is not an object`,
-                            { data: elementDependencies, fatal: true },
-                          ),
-                        );
-                      }
-                    }
+                  }
+                  for (const type in extensionDynamic) {
+                    Object.assign(dynamicDependencies[type], extensionDynamic[type]);
                   }
                 }
               }
