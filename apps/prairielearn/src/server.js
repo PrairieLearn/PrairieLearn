@@ -1027,7 +1027,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment').default,
     ],
   );
 
