@@ -1,20 +1,17 @@
-// @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
-const error = require('@prairielearn/error');
-const {
+import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
+import error = require('@prairielearn/error');
+import {
   selectAllBatchedMigrations,
   selectBatchedMigration,
   selectRecentJobsWithStatus,
-} = require('@prairielearn/migrations');
+} from '@prairielearn/migrations';
 
-const {
+import {
   AdministratorBatchedMigrations,
   AdministratorBatchedMigration,
-} = require('./administratorBatchedMigrations.html');
-const {
-  retryFailedBatchedMigrationJobs,
-} = require('@prairielearn/migrations/dist/batched-migrations');
+} from './administratorBatchedMigrations.html';
+import { retryFailedBatchedMigrationJobs } from '@prairielearn/migrations/dist/batched-migrations';
 
 const router = Router({ mergeParams: true });
 
@@ -61,4 +58,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

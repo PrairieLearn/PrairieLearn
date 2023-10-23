@@ -1783,7 +1783,10 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
-  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
+  app.use(
+    '/pl/administrator/admins',
+    require('./pages/administratorAdmins/administratorAdmins').default,
+  );
   app.use(
     '/pl/administrator/settings',
     require('./pages/administratorSettings/administratorSettings'),
@@ -1815,7 +1818,7 @@ module.exports.initExpress = function () {
   app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
   app.use(
     '/pl/administrator/jobSequence/',
-    require('./pages/administratorJobSequence/administratorJobSequence'),
+    require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
     '/pl/administrator/courseRequests/',
@@ -1823,7 +1826,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/batchedMigrations',
-    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations'),
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
 
   //////////////////////////////////////////////////////////////////////

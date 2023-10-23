@@ -56,7 +56,9 @@ module.exports = {
 
   async init() {
     workspaceUtils.init(socketServer.io);
-    workspaceUtils.getWorkspaceSocketNamespace().on('connection', module.exports.connection);
+    socketServer.io
+      .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .on('connection', module.exports.connection);
   },
 
   /**
@@ -291,7 +293,7 @@ module.exports = {
    * are not atomic.
    *
    * @param {string | number} workspace_id
-   * @returns {Promise<InitializeResult | null>}
+   * @returns {Promise<InitializeResult>}
    */
   async initialize(workspace_id) {
     const { workspace, variant, question, course } = (
