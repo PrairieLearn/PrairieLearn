@@ -206,8 +206,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
     )
 
-    ignore_case = pl.get_boolean_attrib(element, "ignore-case", IGNORE_CASE_DEFAULT)
-
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name, None)
     if a_sub is None:
@@ -226,10 +224,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Remove the blank spaces between characters
     if remove_spaces:
         a_sub = "".join(a_sub.split())
-
-    # Modify string case for submission and true answer to be lower.
-    if ignore_case:
-        a_sub = a_sub.lower()
 
     if not a_sub and not allow_blank:
         data["format_errors"][
