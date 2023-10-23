@@ -52,6 +52,7 @@ router.get(
       const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {
         query_run_id: req.query.query_run_id,
       });
+      // console.log('query_run here:', query_run, '--end--');
       has_query_run = true;
       query_run_id = AdministratorQueryQueryRunSchema.parse(req.query.query_run_id);
       formatted_date = query_run.rows[0].formatted_date;
@@ -124,7 +125,6 @@ router.post(
       authn_user_id: res.locals.authn_user.user_id,
       error: null,
       result: null,
-      formatted_date: null,
     };
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);

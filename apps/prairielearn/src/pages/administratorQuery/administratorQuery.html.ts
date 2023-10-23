@@ -319,20 +319,20 @@ export function AdministratorQuery({
             </div>
           </div>
         </main>
-      </body>
-      <script>
-        $(function () {
-          $('.tablesorter').tablesorter({
-            theme: 'bootstrap',
-            widthFixed: true,
-            headerTemplate: '{content} {icon}',
-            widgets: ['uitheme', 'zebra'],
-            widgetOptions: {
-              zebra: ['even', 'odd'],
-            },
+        <script>
+          $(function () {
+            $('.tablesorter').tablesorter({
+              theme: 'bootstrap',
+              widthFixed: true,
+              headerTemplate: '{content} {icon}',
+              widgets: ['uitheme', 'zebra'],
+              widgetOptions: {
+                zebra: ['even', 'odd'],
+              },
+            });
           });
-        });
-      </script>
+        </script>
+      </body>
     </html>
   `.toString();
 }
