@@ -1825,7 +1825,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/batchedMigrations',
-    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations'),
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
 
   //////////////////////////////////////////////////////////////////////
