@@ -1,23 +1,24 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
-interface AdministratorQueryParams {
-  name: string;
-  description: string;
-  default: string | null;
-  comment: string | null;
-}
+export const AdministratorQueryJsonParamsSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  default: z.string().optional(),
+  comment: z.string().optional(),
+});
+export type AdministratorQueryJsonParams = z.infer<typeof AdministratorQueryJsonParamsSchema>;
 
-export interface AdministratorQuery {
-  description: string;
-  resultFormats: {
-    description: string | null;
-    additionalProperties: {
-      query: string | null;
-    };
-  } | null;
-  comment: string | null;
-  params: AdministratorQueryParams[] | null;
+export const AdministratorQueryJsonSchema = z.object({
+  description: z.string(),
+  resultFormats: z.record(z.enum(['pre'])).optional(),
+  comment: z.string().optional(),
+  params: z.array(AdministratorQueryJsonParamsSchema).optional(),
+});
+export type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
+
+interface AdministratorQuery extends AdministratorQueryJson {
   sqlFilename: string;
   link: string;
 }
@@ -51,7 +52,7 @@ export function AdministratorQueries({
                     (query) => html`
                       <tr>
                         <td>
-                          <a href=${`${resLocals.urlPrefix}/administrator/query/${query.link}`}>
+                          <a href="${`${resLocals.urlPrefix}/administrator/query/${query.link}`}">
                             <code>${query.sqlFilename}</code>
                           </a>
                         </td>
