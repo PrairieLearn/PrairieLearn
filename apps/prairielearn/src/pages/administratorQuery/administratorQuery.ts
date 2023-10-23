@@ -13,19 +13,14 @@ import {
   AdministratorQuery,
   AdministratorQueryRunParams,
   AdministratorQueryResult,
+  AdministratorQuerySchema,
 } from './administratorQuery.html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
-const schemaFilename = path.resolve(__dirname, '..', '..', 'schemas', 'schemas', 'adminQuery.json');
 
 const AdministratorQueryQueryRunSchema = z.string();
-const AdministratorQueryResultSchema = z.object({
-  rows: z.array(z.object({})),
-  rowCount: z.number(),
-  columns: z.array(z.string()),
-});
 
 router.get(
   '/:query',
@@ -33,13 +28,13 @@ router.get(
     const jsonFilename = req.params.query + '.json';
     const sqlFilename = req.params.query + '.sql';
 
-    const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
-    const schema = await jsonLoad.readJSONAsync(schemaFilename);
-    await jsonLoad.validateJSONAsync(info, schema);
-    res.locals.sql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+    const info = AdministratorQuerySchema.parse(
+      await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename)),
+    );
+    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
-    res.locals.sqlHighlighted = hljs.highlight(res.locals.sql, {
+    const sqlHighlighted = hljs.highlight(querySql, {
       language: 'sql',
     }).value;
 
@@ -48,11 +43,11 @@ router.get(
     let formatted_date: string | null = null;
     let params: AdministratorQueryRunParams | null = null;
     let error: string | null = null;
-    let result: AdministratorQueryResult = AdministratorQueryResultSchema.parse({
+    let result: AdministratorQueryResult = {
       rows: [],
       rowCount: 0,
       columns: [],
-    });
+    };
     if (req.query.query_run_id) {
       const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {
         query_run_id: req.query.query_run_id,
@@ -97,6 +92,7 @@ router.get(
           result,
           sqlFilename,
           info,
+          sqlHighlighted,
         }),
       );
     }

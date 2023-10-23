@@ -1,36 +1,45 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
 import { nodeModulesAssetPath } from '../../lib/assets';
 
-export interface AdministratorQueryRunParams {
-  name: string;
-  sql: string;
-  params: string;
-  authn_user_id: string;
-  error: string | null;
-  result: AdministratorQueryResult | null;
-  formatted_date: string | null;
-}
+export const AdministratorQueryResultSchema = z.object({
+  rows: z.array(z.object({})),
+  rowCount: z.number(),
+  columns: z.array(z.string()),
+});
+export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
-export interface AdministratorQueryResult {
-  rows: any[];
-  columns: string[];
-  rowCount: number;
-}
+export const AdministratorQueryRunParamsSchema = z.object({
+  name: z.string(),
+  sql: z.string(),
+  params: z.string(),
+  authn_user_id: z.string(),
+  error: z.string().optional().nullable(),
+  result: AdministratorQueryResultSchema.optional().nullable(),
+  formatted_date: z.string().optional().nullable(),
+});
+export type AdministratorQueryRunParams = z.infer<typeof AdministratorQueryRunParamsSchema>;
 
-export interface AdministratorQuery {
-  description: string;
-  resultFormats: any | null;
-  comment: any | null;
-  params: {
-    name: string;
-    description: string;
-    default: string | null;
-  }[];
-  sqlFilename: string;
-  link: string;
-}
+export const AdministratorQuerySchema = z.object({
+  description: z.string(),
+  resultFormats: z.any().optional(),
+  comment: z.any().optional(),
+  params: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        default: z.string().optional(),
+        comment: z.string().optional(),
+      }),
+    )
+    .optional(),
+  sqlFilename: z.string().optional(),
+  link: z.string().optional(),
+});
+type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;
 
 export function AdministratorQuery({
   resLocals,
@@ -42,6 +51,7 @@ export function AdministratorQuery({
   result,
   sqlFilename,
   info,
+  sqlHighlighted,
 }: {
   resLocals: Record<string, any>;
   has_query_run: boolean;
@@ -52,6 +62,7 @@ export function AdministratorQuery({
   result: AdministratorQueryResult | null;
   sqlFilename: string;
   info;
+  sqlHighlighted: string;
 }) {
   function renderHeader(columns, col) {
     const row = {};
@@ -162,7 +173,7 @@ export function AdministratorQuery({
                 aria-expanded="false"
                 aria-controls="sql-query"
               >
-                Show SQL<i class="fas fa-caret-down"></i>
+                Show SQL <i class="fas fa-caret-down"></i>
               </button>
               <span class="ml-3">&mdash;</span>
               <span class="ml-3">${info.description}</span>
@@ -170,7 +181,7 @@ export function AdministratorQuery({
 
             <div id="sql-query" class="collapse">
               <pre class="m-0 p-2 bg-light border-bottom"><code class="sql">${unsafeHtml(
-                resLocals.sqlHighlighted,
+                sqlHighlighted,
               )}</code></pre>
             </div>
             <div class="card-body">
@@ -192,9 +203,9 @@ export function AdministratorQuery({
                               : html`value="${param.default ?? ''}"`}
                           />
 
-                          <small id="${`param-${param.name}-help`}" class="form-text text-muted"
-                            >${param.description}</small
-                          >
+                          <small id="${`param-${param.name}-help`}" class="form-text text-muted">
+                            ${param.description}
+                          </small>
                         </div>
                       `;
                     })
@@ -309,20 +320,19 @@ export function AdministratorQuery({
           </div>
         </main>
       </body>
-    </html>
-
-    <script>
-      $(function () {
-        $('.tablesorter').tablesorter({
-          theme: 'bootstrap',
-          widthFixed: true,
-          headerTemplate: '{content} {icon}',
-          widgets: ['uitheme', 'zebra'],
-          widgetOptions: {
-            zebra: ['even', 'odd'],
-          },
+      <script>
+        $(function () {
+          $('.tablesorter').tablesorter({
+            theme: 'bootstrap',
+            widthFixed: true,
+            headerTemplate: '{content} {icon}',
+            widgets: ['uitheme', 'zebra'],
+            widgetOptions: {
+              zebra: ['even', 'odd'],
+            },
+          });
         });
-      });
-    </script>
+      </script>
+    </html>
   `.toString();
 }
