@@ -20,6 +20,7 @@ const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const chunks = require('./chunks');
 const workspaceHostUtils = require('./workspaceHost');
+const issues = require('./issues');
 
 const sqldb = require('@prairielearn/postgres');
 const ERR = require('async-stacktrace');
@@ -305,8 +306,8 @@ module.exports = {
       questionId: question.id,
     });
 
-    /** @type {{msg: string; data: Record<string, any>}[]} */
-    const issues = [];
+    /** @type {{file: string; msg: string; err?: any, data?: Record<string, any>}[]} */
+    const fileGenerationErrors = [];
 
     // local workspace files
     const questionBasePath = path.join(course_path, 'questions', question.qid);
@@ -361,9 +362,10 @@ module.exports = {
                 ),
               };
             } catch (err) {
-              issues.push({
-                msg: 'Error rendering workspace template file.',
-                data: { generatedFileName, err: err.message },
+              fileGenerationErrors.push({
+                file: generatedFileName,
+                err,
+                msg: `Error rendering workspace template file: ${err.message}`,
               });
               // File cannot be rendered, treat file as static file
               return { name: generatedFileName, localPath: file.path };
@@ -381,11 +383,12 @@ module.exports = {
 
     /** @type {WorkspaceFile[]} */
     const dynamicFiles = (
-      await async.mapSeries(variant.params._workspace_files || [], async (file) => {
+      await async.mapSeries(variant.params._workspace_files || [], async (file, i) => {
         try {
           // Ignore files without a name
           if (!file.name) {
-            issues.push({
+            fileGenerationErrors.push({
+              file: `Dynamic file ${i}`,
               msg: 'Dynamic workspace file does not include a name. File ignored.',
               data: file,
             });
@@ -393,7 +396,8 @@ module.exports = {
           }
           // Discard names with directory traversal outside the home directory
           if (!contains(remotePath, path.join(remotePath, file.name), false)) {
-            issues.push({
+            fileGenerationErrors.push({
+              file: file.name,
               msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
               data: file,
             });
@@ -404,7 +408,8 @@ module.exports = {
             const localPath = path.join(questionBasePath, file.questionFile);
             // Discard paths with directory traversal outside the question
             if (!contains(questionBasePath, localPath, false)) {
-              issues.push({
+              fileGenerationErrors.push({
+                file: file.name,
                 msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
                 data: file,
               });
@@ -420,7 +425,8 @@ module.exports = {
 
           // Discard encodings outside of explicit list of allowed encodings
           if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
-            issues.push({
+            fileGenerationErrors.push({
+              file: file.name,
               msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,
               data: file,
             });
@@ -432,9 +438,11 @@ module.exports = {
           };
         } catch (err) {
           // Error retrieving contents of dynamic file. Ignoring file.
-          issues.push({
-            msg: 'Dynamic workspace file could not be decoded with the provided encoding type. File ignored.',
-            data: { file, err: err.message },
+          fileGenerationErrors.push({
+            file: file.name,
+            msg: `Error decoding dynamic workspace file: ${err.message}`,
+            err,
+            data: { file },
           });
           return null;
         }
@@ -468,9 +476,11 @@ module.exports = {
             await fse.writeFile(sourceFile, workspaceFile.buffer);
           }
         } catch (err) {
-          issues.push({
-            msg: 'Workspace file could not be written to workspace.',
-            data: { workspaceFile, err: err.message },
+          fileGenerationErrors.push({
+            file: workspaceFile.name,
+            msg: `Workspace file could not be written to workspace: ${err.message}`,
+            err,
+            data: { workspaceFile },
           });
           debug(`File ${workspaceFile.name} could not be written`, err);
         }
@@ -486,18 +496,38 @@ module.exports = {
       }
     }
 
-    issues.forEach(async (issue) => {
-      await sqldb.callAsync('issues_insert_for_variant', [
-        variant.id,
-        'Error initializing workspace', // Student message
-        issue.msg, // Instructor message
-        false, // Manually reported
-        true, // Course caused
-        { workspace, variant, question, course, error: issue.data }, // Course data
-        issue.data, // System data
-        null, // Authenticated user
-      ]);
-    });
+    if (fileGenerationErrors.length > 0) {
+      const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
+      issues.insertIssue({
+        variantId: variant.id,
+        studentMessage: 'Error retrieving workspace files',
+        instructorMessage: 'Error retrieving workspace files',
+        manuallyReported: false,
+        courseCaused: true,
+        courseData: { workspace, variant, question, course },
+        systemData: {
+          courseErrData: {
+            // This is shown in the console log of the issue
+            outputBoth: output,
+            // This data is only shown if user is admin (e.g., in dev mode).
+            errors: fileGenerationErrors.map((error) => ({
+              ...error,
+              // Since error is typically not serializable, a custom object is created.
+              err: error.err
+                ? {
+                    ...error.err,
+                    stack: error.err.stack,
+                    data: error.err.data,
+                    message: error.err.message,
+                    cause: error.err.cause,
+                  }
+                : undefined,
+            })),
+          },
+        },
+        authnUserId: null,
+      });
+    }
 
     return {
       sourcePath,
