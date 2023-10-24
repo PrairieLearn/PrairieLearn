@@ -5,22 +5,25 @@ import { z } from 'zod';
 import { nodeModulesAssetPath } from '../../lib/assets';
 
 export const AdministratorQueryResultSchema = z.object({
-  rows: z.array(z.object({})),
-  rowCount: z.number(),
-  columns: z.array(z.string()),
+  rows: z.array(z.record(z.any())),
+  rowCount: z.number().optional(),
+  columns: z.array(z.string()).optional(),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),
   sql: z.string(),
-  params: z.string(),
+  params: z.record(z.any()),
   authn_user_id: z.string(),
   error: z.string().optional().nullable(),
   result: AdministratorQueryResultSchema.optional().nullable(),
   formatted_date: z.string().optional().nullable(),
 });
 export type AdministratorQueryRunParams = z.infer<typeof AdministratorQueryRunParamsSchema>;
+
+const AdministratoryQueryParamsRecordSchema = z.record(z.string());
+export type AdministratorQueryParamsRecord = z.infer<typeof AdministratoryQueryParamsRecordSchema>;
 
 export const AdministratorQuerySchema = z.object({
   description: z.string(),
@@ -41,6 +44,18 @@ export const AdministratorQuerySchema = z.object({
 });
 type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;
 
+export const AdministratorQueryQueryRunSchema = z.object({
+  formatted_date: z.string().optional(),
+  sql: z.string(),
+  params: z.record(z.any()),
+  error: z.string().nullable(),
+  result: AdministratorQueryResultSchema,
+  authn_user_id: z.string().optional(),
+  name: z.string().optional(),
+  id: z.string().optional(),
+});
+export type AdministratorQueryQueryRun = z.infer<typeof AdministratorQueryQueryRunSchema>;
+
 export function AdministratorQuery({
   resLocals,
   has_query_run,
@@ -56,12 +71,12 @@ export function AdministratorQuery({
   resLocals: Record<string, any>;
   has_query_run: boolean;
   query_run_id: string | null;
-  formatted_date: string | null;
-  params: AdministratorQueryRunParams | null;
+  formatted_date: string | undefined;
+  params: AdministratorQueryParamsRecord | undefined;
   error: string | null;
   result: AdministratorQueryResult | null;
   sqlFilename: string;
-  info;
+  info: AdministratorQuery;
   sqlHighlighted: string;
 }) {
   function renderHeader(columns, col) {
@@ -254,17 +269,17 @@ export function AdministratorQuery({
                     <table class="table table-sm table-hover table-striped tablesorter">
                       <thead>
                         <tr>
-                          ${result.columns.map((col) => {
+                          ${result.columns?.map((col) => {
                             return html` ${renderHeader(result.columns, col)} `;
                           })}
                         </tr>
                       </thead>
 
                       <tbody>
-                        ${result.rows.map((row) => {
+                        ${result.rows?.map((row) => {
                           return html`
                             <tr>
-                              ${result.columns.map((col) => {
+                              ${result.columns?.map((col) => {
                                 return html` ${render(row, col)}`;
                               })}
                             </tr>

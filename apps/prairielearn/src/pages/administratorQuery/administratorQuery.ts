@@ -11,16 +11,18 @@ import jsonLoad = require('../../lib/json-load');
 import sqldb = require('@prairielearn/postgres');
 import {
   AdministratorQuery,
-  AdministratorQueryRunParams,
+  AdministratorQueryParamsRecord,
   AdministratorQueryResult,
   AdministratorQuerySchema,
+  AdministratorQueryQueryRunSchema,
+  AdministratorQueryRunParams,
 } from './administratorQuery.html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
 
-const AdministratorQueryQueryRunSchema = z.string();
+const AdministratorQueryQueryRunIDSchema = z.string();
 
 router.get(
   '/:query',
@@ -40,8 +42,8 @@ router.get(
 
     let has_query_run = false;
     let query_run_id: string | null = null;
-    let formatted_date: string | null = null;
-    let params: AdministratorQueryRunParams | null = null;
+    let formatted_date: string | undefined = undefined;
+    let params: AdministratorQueryParamsRecord | undefined = undefined;
     let error: string | null = null;
     let result: AdministratorQueryResult = {
       rows: [],
@@ -49,17 +51,20 @@ router.get(
       columns: [],
     };
     if (req.query.query_run_id) {
-      const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {
-        query_run_id: req.query.query_run_id,
-      });
-      // console.log('query_run here:', query_run, '--end--');
+      const query_run = await sqldb.queryRow(
+        sql.select_query_run,
+        {
+          query_run_id: req.query.query_run_id,
+        },
+        AdministratorQueryQueryRunSchema,
+      );
       has_query_run = true;
-      query_run_id = AdministratorQueryQueryRunSchema.parse(req.query.query_run_id);
-      formatted_date = query_run.rows[0].formatted_date;
-      res.locals.sql = query_run.rows[0].sql;
-      params = query_run.rows[0].params;
-      error = query_run.rows[0].error;
-      result = query_run.rows[0].result;
+      query_run_id = AdministratorQueryQueryRunIDSchema.parse(req.query.query_run_id);
+      formatted_date = query_run.formatted_date;
+      res.locals.sql = query_run.sql;
+      params = query_run.params;
+      error = query_run.error;
+      result = query_run.result;
     }
 
     if (!has_query_run && info.params == null) {
@@ -121,10 +126,9 @@ router.post(
     const params: AdministratorQueryRunParams = {
       name: req.params.query,
       sql: querySql,
-      params: JSON.stringify(queryParams),
+      params: queryParams,
       authn_user_id: res.locals.authn_user.user_id,
       error: null,
-      result: null,
     };
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
@@ -136,8 +140,12 @@ router.post(
     } catch (err) {
       params.error = err.toString();
     }
-    const result = await sqldb.queryOneRowAsync(sql.insert_query_run, params);
-    const query_run_id = result.rows[0].id;
+    const result = await sqldb.queryRow(
+      sql.insert_query_run,
+      params,
+      AdministratorQueryQueryRunIDSchema,
+    );
+    const query_run_id = result;
     res.redirect(`${req.baseUrl}${req.path}?query_run_id=${query_run_id}`);
   }),
 );
