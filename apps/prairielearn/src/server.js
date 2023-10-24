@@ -1788,7 +1788,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/settings',
-    require('./pages/administratorSettings/administratorSettings'),
+    require('./pages/administratorSettings/administratorSettings').default,
   );
   app.use(
     '/pl/administrator/institutions',

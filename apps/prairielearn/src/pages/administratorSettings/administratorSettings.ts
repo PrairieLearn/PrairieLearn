@@ -1,11 +1,12 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-const express = require('express');
+import asyncHandler = require('express-async-handler');
+import * as express from 'express';
 
-const error = require('@prairielearn/error');
-const chunks = require('../../lib/chunks');
-const cache = require('../../lib/cache');
-const { AdministratorSettings } = require('./administratorSettings.html');
+import * as error from '@prairielearn/error';
+import * as chunks from '../../lib/chunks';
+import * as cache from '../../lib/cache';
+import { AdministratorSettings } from './administratorSettings.html';
+import { IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
 
@@ -25,12 +26,12 @@ router.post(
       await cache.reset();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
-      const course_ids_string = req.body.course_ids || '';
-      const authn_user_id = res.locals.authn_user.user_id;
+      const course_ids_string: string = req.body.course_ids || '';
+      const authn_user_id: string = res.locals.authn_user.user_id;
 
-      let course_ids;
+      let course_ids: string[];
       try {
-        course_ids = course_ids_string.split(',').map((x) => parseInt(x));
+        course_ids = course_ids_string.split(',').map((x) => IdSchema.parse(x));
       } catch (err) {
         throw error.make(
           400,
@@ -45,4 +46,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

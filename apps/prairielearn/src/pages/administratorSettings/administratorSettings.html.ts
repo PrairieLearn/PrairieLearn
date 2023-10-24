@@ -1,7 +1,7 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-function AdministratorSettings({ resLocals }) {
+export function AdministratorSettings({ resLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -93,5 +93,3 @@ function AdministratorSettings({ resLocals }) {
     </html>
   `.toString();
 }
-
-module.exports.AdministratorSettings = AdministratorSettings;
