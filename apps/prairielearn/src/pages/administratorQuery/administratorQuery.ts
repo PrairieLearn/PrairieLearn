@@ -39,7 +39,6 @@ router.get(
       language: 'sql',
     }).value;
 
-    let has_query_run = false;
     let query_run_id: string | null = null;
     let query_run: AdministratorQueryQueryRun | null = null;
     if (req.query.query_run_id) {
@@ -51,10 +50,9 @@ router.get(
         },
         AdministratorQueryQueryRunSchema,
       );
-      has_query_run = true;
     }
 
-    if (!has_query_run && info.params == null) {
+    if (!query_run && info.params == null) {
       // if we don't have any params, do an immediate POST to run the query
       req.method = 'POST';
       return next();
@@ -79,7 +77,6 @@ router.get(
       res.send(
         AdministratorQuery({
           resLocals: res.locals,
-          has_query_run,
           query_run_id,
           query_run,
           sqlFilename,

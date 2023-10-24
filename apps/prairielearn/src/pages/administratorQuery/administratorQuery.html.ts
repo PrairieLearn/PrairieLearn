@@ -57,7 +57,6 @@ export type AdministratorQueryQueryRun = z.infer<typeof AdministratorQueryQueryR
 
 export function AdministratorQuery({
   resLocals,
-  has_query_run,
   query_run_id,
   query_run,
   sqlFilename,
@@ -66,7 +65,6 @@ export function AdministratorQuery({
   recent_query_runs,
 }: {
   resLocals: Record<string, any>;
-  has_query_run: boolean;
   query_run_id: string | null;
   query_run: AdministratorQueryQueryRun | null;
   sqlFilename: string;
@@ -223,12 +221,12 @@ export function AdministratorQuery({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button type="submit" class="btn btn-primary">
                   <i class="fas fa-play"></i>
-                  Run query ${has_query_run ? 'again' : null}
+                  Run query ${query_run ? 'again' : null}
                 </button>
               </form>
             </div>
 
-            ${has_query_run
+            ${query_run
               ? html`
                   <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
                     Query ran at: ${query_run?.formatted_date}
