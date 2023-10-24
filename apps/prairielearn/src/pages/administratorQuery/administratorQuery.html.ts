@@ -6,8 +6,8 @@ import { nodeModulesAssetPath } from '../../lib/assets';
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.array(z.record(z.any())),
-  rowCount: z.number().optional(),
-  columns: z.array(z.string()).optional(),
+  rowCount: z.number(),
+  columns: z.array(z.string()),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
