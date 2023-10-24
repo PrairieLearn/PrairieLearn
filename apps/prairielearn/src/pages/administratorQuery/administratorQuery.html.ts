@@ -22,9 +22,6 @@ export const AdministratorQueryRunParamsSchema = z.object({
 });
 export type AdministratorQueryRunParams = z.infer<typeof AdministratorQueryRunParamsSchema>;
 
-const AdministratoryQueryParamsRecordSchema = z.record(z.string());
-export type AdministratorQueryParamsRecord = z.infer<typeof AdministratoryQueryParamsRecordSchema>;
-
 export const AdministratorQuerySchema = z.object({
   description: z.string(),
   resultFormats: z.any().optional(),
@@ -53,6 +50,8 @@ export const AdministratorQueryQueryRunSchema = z.object({
   authn_user_id: z.string().optional(),
   name: z.string().optional(),
   id: z.string().optional(),
+  user_name: z.string().optional(),
+  user_uid: z.string().optional(),
 });
 export type AdministratorQueryQueryRun = z.infer<typeof AdministratorQueryQueryRunSchema>;
 
@@ -60,24 +59,20 @@ export function AdministratorQuery({
   resLocals,
   has_query_run,
   query_run_id,
-  formatted_date,
-  params,
-  error,
-  result,
+  query_run,
   sqlFilename,
   info,
   sqlHighlighted,
+  recent_query_runs,
 }: {
   resLocals: Record<string, any>;
   has_query_run: boolean;
   query_run_id: string | null;
-  formatted_date: string | undefined;
-  params: AdministratorQueryParamsRecord | undefined;
-  error: string | null;
-  result: AdministratorQueryResult | null;
+  query_run: AdministratorQueryQueryRun | null;
   sqlFilename: string;
   info: AdministratorQuery;
   sqlHighlighted: string;
+  recent_query_runs: AdministratorQueryQueryRun[];
 }) {
   function renderHeader(columns, col) {
     const row = {};
@@ -134,7 +129,7 @@ export function AdministratorQuery({
     } else if (/^_sortval_/.test(col)) {
       null;
     } else if (row[col] == null) {
-      return html` <td ${tdAttributes}></td> `;
+      return html`<td ${tdAttributes}></td>`;
     } else if (info.resultFormats && info.resultFormats[col] === 'pre') {
       return html`
         <td ${tdAttributes}>
@@ -213,8 +208,8 @@ export function AdministratorQuery({
                             aria-describedby="${`param-${param.name}-help`}"
                             name="${param.name}"
                             autocomplete="off"
-                            ${params?.[param.name]
-                              ? html`value="${params[param.name]}"`
+                            ${query_run?.params?.[param.name]
+                              ? html`value="${query_run?.params[param.name]}"`
                               : html`value="${param.default ?? ''}"`}
                           />
 
@@ -236,12 +231,13 @@ export function AdministratorQuery({
             ${has_query_run
               ? html`
                   <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
-                    Query ran at: ${formatted_date}
-                    ${result != null &&
+                    Query ran at: ${query_run?.formatted_date}
+                    ${query_run?.result != null &&
                     html`
                       <div class="ml-auto">
                         <span class="mr-2 test-suite-row-count">
-                          ${result.rowCount} ${result.rowCount === 1 ? 'row' : 'rows'}
+                          ${query_run.result.rowCount}
+                          ${query_run.result.rowCount === 1 ? 'row' : 'rows'}
                         </span>
                         <a
                           href="${`?query_run_id=${query_run_id}&format=json`}"
@@ -262,24 +258,26 @@ export function AdministratorQuery({
                   </div>
                 `
               : null}
-            ${error != null ? html` <p class="text-danger m-2">${error}</p> ` : null}
-            ${result != null
+            ${query_run?.error != null
+              ? html` <p class="text-danger m-2">${query_run.error}</p> `
+              : null}
+            ${query_run?.result != null
               ? html`
                   <div class="table-responsive">
                     <table class="table table-sm table-hover table-striped tablesorter">
                       <thead>
                         <tr>
-                          ${result.columns?.map((col) => {
-                            return html` ${renderHeader(result.columns, col)} `;
+                          ${query_run.result.columns?.map((col) => {
+                            return html` ${renderHeader(query_run.result.columns, col)} `;
                           })}
                         </tr>
                       </thead>
 
                       <tbody>
-                        ${result.rows?.map((row) => {
+                        ${query_run.result.rows?.map((row) => {
                           return html`
                             <tr>
-                              ${result.columns?.map((col) => {
+                              ${query_run.result.columns?.map((col) => {
                                 return html` ${render(row, col)}`;
                               })}
                             </tr>
@@ -297,7 +295,7 @@ export function AdministratorQuery({
               Recent query runs
             </div>
             <div class="table-responsive">
-              ${resLocals.recent_query_runs.length > 0
+              ${recent_query_runs.length > 0
                 ? html`
                     <table class="table table-sm">
                       <thead>
@@ -309,7 +307,7 @@ export function AdministratorQuery({
                         </tr>
                       </thead>
                       <tbody>
-                        ${resLocals.recent_query_runs.map((run) => {
+                        ${recent_query_runs.map((run) => {
                           return html`
                             <tr>
                               <td>

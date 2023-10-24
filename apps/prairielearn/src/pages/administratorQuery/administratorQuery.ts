@@ -11,11 +11,10 @@ import jsonLoad = require('../../lib/json-load');
 import sqldb = require('@prairielearn/postgres');
 import {
   AdministratorQuery,
-  AdministratorQueryParamsRecord,
-  AdministratorQueryResult,
   AdministratorQuerySchema,
   AdministratorQueryQueryRunSchema,
   AdministratorQueryRunParams,
+  AdministratorQueryQueryRun,
 } from './administratorQuery.html';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -42,29 +41,17 @@ router.get(
 
     let has_query_run = false;
     let query_run_id: string | null = null;
-    let formatted_date: string | undefined = undefined;
-    let params: AdministratorQueryParamsRecord | undefined = undefined;
-    let error: string | null = null;
-    let result: AdministratorQueryResult = {
-      rows: [],
-      rowCount: 0,
-      columns: [],
-    };
+    let query_run: AdministratorQueryQueryRun | null = null;
     if (req.query.query_run_id) {
-      const query_run = await sqldb.queryRow(
+      query_run_id = AdministratorQueryQueryRunIDSchema.parse(req.query.query_run_id);
+      query_run = await sqldb.queryRow(
         sql.select_query_run,
         {
-          query_run_id: req.query.query_run_id,
+          query_run_id,
         },
         AdministratorQueryQueryRunSchema,
       );
       has_query_run = true;
-      query_run_id = AdministratorQueryQueryRunIDSchema.parse(req.query.query_run_id);
-      formatted_date = query_run.formatted_date;
-      res.locals.sql = query_run.sql;
-      params = query_run.params;
-      error = query_run.error;
-      result = query_run.result;
     }
 
     if (!has_query_run && info.params == null) {
@@ -75,30 +62,30 @@ router.get(
 
     if (req.query.format === 'json') {
       res.attachment(req.params.query + '.json');
-      res.send(result.rows);
+      res.send(query_run?.result.rows);
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
-      stringify(result.rows, {
-        header: true,
-        columns: result.columns,
-      }).pipe(res);
+      if (query_run != null) {
+        stringify(query_run.result.rows, {
+          header: true,
+          columns: query_run?.result.columns,
+        }).pipe(res);
+      }
     } else {
       const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
         query_name: req.params.query,
       });
-      res.locals.recent_query_runs = recentQueryRuns.rows;
+      const recent_query_runs: AdministratorQueryQueryRun[] = recentQueryRuns.rows;
       res.send(
         AdministratorQuery({
           resLocals: res.locals,
           has_query_run,
           query_run_id,
-          formatted_date,
-          params,
-          error,
-          result,
+          query_run,
           sqlFilename,
           info,
           sqlHighlighted,
+          recent_query_runs,
         }),
       );
     }
