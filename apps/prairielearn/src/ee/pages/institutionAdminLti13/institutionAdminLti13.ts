@@ -91,6 +91,7 @@ router.post(
         keystore: keystore.toJSON(true),
       });
       flash('success', `Key ${kid} added.`);
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_keys') {
       await queryAsync(sql.update_keystore, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -98,6 +99,7 @@ router.post(
         keystore: null,
       });
       flash('success', `All keys deleted.`);
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
       const keystoreJson = await queryAsync(sql.select_keystore, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -117,13 +119,14 @@ router.post(
           // true to include private keys
           keystore: keystore.toJSON(true),
         });
+        flash('success', `Key ${key.kid} deleted.`);
+        return res.redirect(req.originalUrl);
       } else {
         throw error.make(500, 'error removing key', {
           locals: res.locals,
           body: req.body,
         });
       }
-      flash('success', `Key ${key.kid} deleted.`);
     } else if (req.body.__action === 'update_platform') {
       const url = getCanonicalHost(req);
 
@@ -144,8 +147,8 @@ router.post(
         client_params,
       });
       flash('success', `Platform updated.`);
-
       // TODO: Saving changes should remove the cached value in auth
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(
         sql.insert_instance,
@@ -167,6 +170,7 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `Name updated.`);
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
       await queryAsync(sql.update_pl_config, {
         name_attribute: req.body.name_attribute,
@@ -176,20 +180,20 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `PrairieLearn config updated.`);
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_instance') {
       await queryAsync(sql.remove_instance, {
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', `Instance deleted.`);
+      return res.redirect(req.originalUrl);
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
       });
     }
-
-    res.redirect(req.originalUrl);
   }),
 );
 

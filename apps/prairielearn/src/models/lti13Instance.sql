@@ -1,4 +1,4 @@
--- BLOCK get_instances
+-- BLOCK select_lti13_instance
 SELECT
   *
 FROM

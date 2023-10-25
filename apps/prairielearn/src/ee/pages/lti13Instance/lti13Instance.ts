@@ -3,13 +3,15 @@ import asyncHandler = require('express-async-handler');
 import jose = require('node-jose');
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
+import { selectLti13Instance } from '../../../models/lti13Instance';
 
 const router = Router({ mergeParams: true });
 
 router.get(
   '/jwks',
   asyncHandler(async (req, res) => {
-    const keystore = await jose.JWK.asKeyStore(res.locals.lti13_instance.keystore || []);
+    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+    const keystore = await jose.JWK.asKeyStore(lti13_instance.keystore || []);
 
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     // Only extract the public keys, pass false
@@ -63,16 +65,18 @@ router.get(
     //
     // The file is human readable on purpose to support manual configuration in the LMS.
 
+    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+
     const lmsConfig = ltiConfig; //structuredClone(ltiConfig);
     const url = new URL(getCanonicalHost(req));
 
-    lmsConfig.oidc_initiation_url = `${url.href}/pl/lti13_instance/${res.locals.lti13_instance.id}/auth/login`;
-    lmsConfig.target_link_uri = `${url.href}/pl/lti13_instance/${res.locals.lti13_instance.id}/auth/callback`;
+    lmsConfig.oidc_initiation_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/auth/login`;
+    lmsConfig.target_link_uri = `${url.href}/pl/lti13_instance/${lti13_instance.id}/auth/callback`;
 
     lmsConfig.extensions[0].domain = url.hostname || '';
-    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}/pl/lti13_instance/${res.locals.lti13_instance.id}/course_navigation`;
+    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/course_navigation`;
 
-    lmsConfig.public_jwk_url = `${url.href}/pl/lti13_instance/${res.locals.lti13_instance.id}/jwks`;
+    lmsConfig.public_jwk_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/jwks`;
 
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(lmsConfig, null, 2));
