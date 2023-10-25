@@ -22,9 +22,9 @@ The `info.json` file is structurally similar to the element info file and may co
     "extensionScripts": ["script_file_path"]
   },
   "dynamicDependencies": {
-    "nodeModulesScripts": {"module_name": "module_path"},
-    "clientFilesCourseScripts": {"file_name": "file_path"},
-    "extensionScripts": {"file_name": "file_path"}
+    "nodeModulesScripts": { "module_name": "module_path" },
+    "clientFilesCourseScripts": { "file_name": "file_path" },
+    "extensionScripts": { "file_name": "file_path" }
   }
 }
 ```
