@@ -14,17 +14,17 @@ The `info.json` file is structurally similar to the element info file and may co
 {
   "controller": "Python script",
   "dependencies": {
-    "nodeModulesStyles": ["Node modules styles"],
-    "nodeModulesScripts": ["Node modules JavaScripts"],
-    "clientFilesCourseStyles": ["Client files course styles"],
-    "clientFilesCourseScripts": ["Client files course JavaScripts"],
-    "extensionStyles": ["Styles in the extension directory"],
-    "extensionScripts": ["JavaScripts in the extension directory"]
+    "nodeModulesStyles": ["style_file_path"],
+    "nodeModulesScripts": ["script_file_path"],
+    "clientFilesCourseStyles": ["style_file_path"],
+    "clientFilesCourseScripts": ["script_file_path"],
+    "extensionStyles": ["style_file_path"],
+    "extensionScripts": ["script_file_path"]
   },
   "dynamicDependencies": {
-    "nodeModulesScripts": {"Node modules JavaScripts"},
-    "clientFilesCourseScripts": {"Client files course JavaScripts"},
-    "extensionScripts": {"JavaScripts in the extension directory"}
+    "nodeModulesScripts": {"module_name": "module_path"},
+    "clientFilesCourseScripts": {"file_name": "file_path"},
+    "extensionScripts": {"file_name": "file_path"}
   }
 }
 ```
