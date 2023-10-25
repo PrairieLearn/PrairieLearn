@@ -1,11 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import z = require('zod');
+import { z } from 'zod';
 
 import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types';
 
-// TODO: upstream this into `lib/db-types`. We're skipping that for now since
-// we don't have a way to handle interval columns.
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),

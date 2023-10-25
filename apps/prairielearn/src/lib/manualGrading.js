@@ -358,14 +358,14 @@ async function insertRubricGrading(
  * @param {string|null} submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
  * @param {string|null} check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
  * @param {Object} score - The score values to be used for update.
- * @param {number|string} [score.manual_points] - The manual points to assign to the instance question.
- * @param {number|string} [score.manual_score_perc] - The percentage of manual points to assign to the instance question.
- * @param {number|string} [score.auto_points] - The auto points to assign to the instance question.
- * @param {number|string} [score.auto_score_perc] - The percentage of auto points to assign to the instance question.
- * @param {number|string} [score.points] - The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points.
- * @param {number|string} [score.score_perc] - The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points.
- * @param {Object} [score.feedback] - Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments.
- * @param {Object} [score.partial_scores] - Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value.
+ * @param {number|string|null} [score.manual_points] - The manual points to assign to the instance question.
+ * @param {number|string|null} [score.manual_score_perc] - The percentage of manual points to assign to the instance question.
+ * @param {number|string|null} [score.auto_points] - The auto points to assign to the instance question.
+ * @param {number|string|null} [score.auto_score_perc] - The percentage of auto points to assign to the instance question.
+ * @param {number|string|null} [score.points] - The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points.
+ * @param {number|string|null} [score.score_perc] - The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points.
+ * @param {Object|null} [score.feedback] - Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments.
+ * @param {Object|null} [score.partial_scores] - Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value.
  * @param {Object} [score.manual_rubric_data] - Rubric items associated to the grading of manual points. If provided, overrides manual points.
  * @param {Object} [score.manual_rubric_data.rubric_id] - Rubric ID to use for manual grading.
  * @param {AppliedRubricItem[]} [score.manual_rubric_data.applied_rubric_items] - Applied rubric items.

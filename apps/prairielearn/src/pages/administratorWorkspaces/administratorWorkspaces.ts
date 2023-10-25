@@ -1,5 +1,5 @@
 import asyncHandler = require('express-async-handler');
-import express = require('express');
+import * as express from 'express';
 import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config';
