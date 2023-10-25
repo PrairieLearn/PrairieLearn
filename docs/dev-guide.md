@@ -18,38 +18,38 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 - Top-level files and directories are:
 
-```text
-PrairieLearn
-+-- autograder         # files needed to autograde code on a separate server
-|   `-- ...            # various scripts and docker images
-+-- config.json        # server configuration file (optional)
-+-- cron               # jobs to be periodically executed, one file per job
-|   +-- index.js       # entry point for all cron jobs
-|   `-- ...            # one JS file per cron job, executed by index.js
-+-- docs               # documentation
-+-- exampleCourse      # example content for a course
-+-- lib                # miscellaneous helper code
-+-- middlewares        # Express.js middleware, one per file
-+-- migrations         # DB migrations
-|   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
-+-- package.json       # JavaScript package manifest
-+-- pages              # one sub-dir per web page
-|   +-- partials       # EJS helper sub-templates
-|   +-- instructorHome # all the code for the instructorHome page
-|   +-- userHome       # all the code for the userHome page
-|   `-- ...            # other "instructor" and "user" pages
-+-- public             # all accessible without access control
-|   +-- javascripts    # external packages only, no modifications
-|   +-- localscripts   # all local site-wide JS
-|   `-- stylesheets    # all CSS, both external and local
-+-- question-servers   # one file per question type
-+-- server.js          # top-level program
-+-- sprocs             # DB stored procedures, one per file
-|   +-- index.js       # entry point for all sproc initialization
-|   `-- ...            # one JS file per sproc, executed by index.js
-+-- sync               # code to load on-disk course config into DB
-`-- tests              # unit and integration tests
-```
+  ```text
+  PrairieLearn
+  +-- autograder         # files needed to autograde code on a separate server
+  |   `-- ...            # various scripts and docker images
+  +-- config.json        # server configuration file (optional)
+  +-- cron               # jobs to be periodically executed, one file per job
+  |   +-- index.js       # entry point for all cron jobs
+  |   `-- ...            # one JS file per cron job, executed by index.js
+  +-- docs               # documentation
+  +-- exampleCourse      # example content for a course
+  +-- lib                # miscellaneous helper code
+  +-- middlewares        # Express.js middleware, one per file
+  +-- migrations         # DB migrations
+  |   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
+  +-- package.json       # JavaScript package manifest
+  +-- pages              # one sub-dir per web page
+  |   +-- partials       # EJS helper sub-templates
+  |   +-- instructorHome # all the code for the instructorHome page
+  |   +-- userHome       # all the code for the userHome page
+  |   `-- ...            # other "instructor" and "user" pages
+  +-- public             # all accessible without access control
+  |   +-- javascripts    # external packages only, no modifications
+  |   +-- localscripts   # all local site-wide JS
+  |   `-- stylesheets    # all CSS, both external and local
+  +-- question-servers   # one file per question type
+  +-- server.js          # top-level program
+  +-- sprocs             # DB stored procedures, one per file
+  |   +-- index.js       # entry point for all sproc initialization
+  |   `-- ...            # one JS file per sproc, executed by index.js
+  +-- sync               # code to load on-disk course config into DB
+  `-- tests              # unit and integration tests
+  ```
 
 ## Unit tests and integration tests
 
@@ -67,25 +67,25 @@ PrairieLearn
 
 - Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
 
-```sh
-DEBUG=* make dev
-```
+  ```sh
+  DEBUG=* make dev
+  ```
 
 - To just see debugging logs from PrairieLearn you can use:
 
-```sh
-DEBUG=prairielearn:* make dev
-```
+  ```sh
+  DEBUG=prairielearn:* make dev
+  ```
 
 - To insert more debugging output, import `debug` and use it like this:
 
-```javascript
-var path = require('path');
-var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+  ```javascript
+  var path = require('path');
+  var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-// in some function later
-debug('func()', 'param:', param);
-```
+  // in some function later
+  debug('func()', 'param:', param);
+  ```
 
 - As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
@@ -99,26 +99,26 @@ debug('func()', 'param:', param);
 
 - Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
-```sh
-psql postgres
-```
+  ```sh
+  psql postgres
+  ```
 
 - To debug syntax errors in a stored procedure, import it manually with `\i filename.sql` in `psql`.
 
 - To follow execution flow in PL/pgSQL use `RAISE NOTICE`. This will log to the console when run from `psql` and to the server log file when run from within PrairieLearn. The syntax is:
 
-```sql
-RAISE NOTICE 'This is logging: % and %',
-var1,
-var2;
-```
+  ```sql
+  RAISE NOTICE 'This is logging: % and %',
+  var1,
+  var2;
+  ```
 
 - To manually run a function:
 
-```sql
-SELECT
-  the_sql_function (arg1, arg2);
-```
+  ```sql
+  SELECT
+    the_sql_function (arg1, arg2);
+  ```
 
 ## HTML page generation
 
@@ -128,47 +128,47 @@ SELECT
 
 - Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
 
-```text
-pages/instructorGradebook
-+-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
-+-- instructorGradebook.sql        # all SQL code specific to this page
-+-- instructorGradebook.ejs        # the EJS template for the page
-`-- instructorGradebookClient.js   # any client-side JS needed
-```
+  ```text
+  pages/instructorGradebook
+  +-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
+  +-- instructorGradebook.sql        # all SQL code specific to this page
+  +-- instructorGradebook.ejs        # the EJS template for the page
+  `-- instructorGradebookClient.js   # any client-side JS needed
+  ```
 
 - The above `instructorGradebook` page is loaded from the top-level `server.js` with:
 
-```javascript
-app.use(
-  '/instructor/:courseInstanceId/gradebook',
-  require('./pages/instructorGradebook/instructorGradebook'),
-);
-```
+  ```javascript
+  app.use(
+    '/instructor/:courseInstanceId/gradebook',
+    require('./pages/instructorGradebook/instructorGradebook'),
+  );
+  ```
 
 - The `instructorGradebook.js` main JS file is an Express `router` and has the basic structure:
 
-```javascript
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+  ```javascript
+  var ERR = require('async-stacktrace');
+  var _ = require('lodash');
+  var express = require('express');
+  var router = express.Router();
+  var sqldb = require('@prairielearn/postgres');
+  var sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', function (req, res, next) {
-  var params = { course_instance_id: res.params.courseInstanceId };
-  sqldb.query(sql.user_scores, params, function (err, result) {
-    // SQL queries for page data
-    if (ERR(err, next)) return;
-    res.locals.user_scores = result.rows; // store the data in res.locals
+  router.get('/', function (req, res, next) {
+    var params = { course_instance_id: res.params.courseInstanceId };
+    sqldb.query(sql.user_scores, params, function (err, result) {
+      // SQL queries for page data
+      if (ERR(err, next)) return;
+      res.locals.user_scores = result.rows; // store the data in res.locals
 
-    res.render('pages/instructorGradebook/instructorGradebook', res.locals); // render the page
-    // inside the EJS template, "res.locals.var" can be accessed with just "var"
+      res.render('pages/instructorGradebook/instructorGradebook', res.locals); // render the page
+      // inside the EJS template, "res.locals.var" can be accessed with just "var"
+    });
   });
-});
 
-module.exports = router;
-```
+  module.exports = router;
+  ```
 
 - Use the `res.locals` variable to build up data for the page rendering. Many basic objects are already included from the `selectAndAuthz*.js` middleware that runs before most page loads.
 
@@ -176,9 +176,9 @@ module.exports = router;
 
 - Sub-templates are stored in `pages/partials` and can be loaded as below. The sub-template can also access `res.locals` as its base scope, and can also accept extra arguments with an arguments object:
 
-```javascript
-<%- include('../partials/assessment', {assessment: assessment}); %>
-```
+  ```javascript
+  <%- include('../partials/assessment', {assessment: assessment}); %>
+  ```
 
 ## HTML style
 
@@ -208,23 +208,23 @@ module.exports = router;
 
 - SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
-```sql
--- BLOCK select_question
-SELECT
-  *
-FROM
-  questions
-WHERE
-  id = $question_id;
+  ```sql
+  -- BLOCK select_question
+  SELECT
+    *
+  FROM
+    questions
+  WHERE
+    id = $question_id;
 
--- BLOCK insert_submission
-INSERT INTO
-  submissions (submitted_answer)
-VALUES
-  ($submitted_answer)
-RETURNING
-  *;
-```
+  -- BLOCK insert_submission
+  INSERT INTO
+    submissions (submitted_answer)
+  VALUES
+    ($submitted_answer)
+  RETURNING
+    *;
+  ```
 
 From JavaScript you can then do:
 
@@ -241,61 +241,61 @@ sqldb.query(sql.select_question, params, ...);
 
 - The layout of the SQL code should generally have each list in separate indented blocks, like:
 
-```sql
-SELECT
-  ft.col1,
-  ft.col2 AS renamed_col,
-  st.col1
-FROM
-  first_table AS ft
-  JOIN second_table AS st ON (st.first_table_id = ft.id)
-WHERE
-  ft.col3 = select3
-  AND st.col2 = select2
-ORDER BY
-  ft.col1;
-```
+  ```sql
+  SELECT
+    ft.col1,
+    ft.col2 AS renamed_col,
+    st.col1
+  FROM
+    first_table AS ft
+    JOIN second_table AS st ON (st.first_table_id = ft.id)
+  WHERE
+    ft.col3 = select3
+    AND st.col2 = select2
+  ORDER BY
+    ft.col1;
+  ```
 
 - To keep SQL code organized it is a good idea to use [CTEs (`WITH` queries)](https://www.postgresql.org/docs/current/static/queries-with.html). These are formatted like:
 
-```sql
-WITH
-  first_preliminary_table AS (
-    SELECT
-      -- first preliminary query
-  ),
-  second_preliminary_table AS (
-    SELECT
-      -- second preliminary query
-  )
-SELECT
-  -- main query here
-FROM
-  first_preliminary_table AS fpt,
-  second_preliminary_table AS spt;
-```
+  ```sql
+  WITH
+    first_preliminary_table AS (
+      SELECT
+        -- first preliminary query
+    ),
+    second_preliminary_table AS (
+      SELECT
+        -- second preliminary query
+    )
+  SELECT
+    -- main query here
+  FROM
+    first_preliminary_table AS fpt,
+    second_preliminary_table AS spt;
+  ```
 
 ## DB stored procedures (sprocs)
 
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
-```
-const workspace_id = 1342;
-const message = 'Startup successful';
-sqldb.call('workspaces_message_update', [workspace_id, message], (err, result) => {
-    if (ERR(err, callback)) return;
-    // we could use the result here if we want the return value of the stored procedure
-    callback(null);
-});
-```
+  ```
+  const workspace_id = 1342;
+  const message = 'Startup successful';
+  sqldb.call('workspaces_message_update', [workspace_id, message], (err, result) => {
+      if (ERR(err, callback)) return;
+      // we could use the result here if we want the return value of the stored procedure
+      callback(null);
+  });
+  ```
 
 - The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
 
 - To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
 
-```
-set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
-```
+  ```
+  set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
+  ```
 
 - During startup we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchemaAsync()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own locally-scoped copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = "server_2021-07-07T20:25:04.779Z_T75V6Y",public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string. Note that schema names need to be quoted using double-quotations in `psql` because they contain characters such as hyphens.
 
@@ -341,17 +341,17 @@ set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
 
 - Tables have plural names (e.g. `assessments`) and always have a primary key called `id`. The foreign keys pointing to this table are non-plural, like `assessment_id`. When referring to this use an abbreviation of the first letters of each word, like `ai` in this case. The only exceptions are `aset` for `assessment_sets` (to avoid conflicting with the SQL `AS` keyword), `top` for `topics`, and `tag` for `tags` (to avoid conflicts). This gives code like:
 
-```sql
--- select all active assessment_instances for a given assessment
-SELECT
-  ai.*
-FROM
-  assessments AS a
-  JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-WHERE
-  a.id = 45
-  AND ai.deleted_at IS NULL;
-```
+  ```sql
+  -- select all active assessment_instances for a given assessment
+  SELECT
+    ai.*
+  FROM
+    assessments AS a
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+  WHERE
+    a.id = 45
+    AND ai.deleted_at IS NULL;
+  ```
 
 - We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
@@ -363,77 +363,77 @@ See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/m
 
 - Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
 
-```diff
-@@ -16,2 +16,3 @@ columns
-     order_by: integer
-+    require_honor_code: boolean default true
-     shuffle_questions: boolean default false
-```
+  ```diff
+  @@ -16,2 +16,3 @@ columns
+      order_by: integer
+  +    require_honor_code: boolean default true
+      shuffle_questions: boolean default false
+  ```
 
 - Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
 
-```diff
-@@ -0,0 +1 @@
-+ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
-```
+  ```diff
+  @@ -0,0 +1 @@
+  +ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
+  ```
 
 - Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
 
-```diff
-@@ -89,2 +89,7 @@
-             "default": true
-+        },
-+        "requireHonorCode": {
-+            "description": "Requires the student to accept an honor code before starting exam assessments.",
-+            "type": "boolean",
-+            "default": true
-         }
-```
+  ```diff
+  @@ -89,2 +89,7 @@
+              "default": true
+  +        },
+  +        "requireHonorCode": {
+  +            "description": "Requires the student to accept an honor code before starting exam assessments.",
+  +            "type": "boolean",
+  +            "default": true
+          }
+  ```
 
 - Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
 
-```diff
-@@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-         const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
-+        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+  ```diff
+  @@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+          const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
+  +        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
 
-@@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-             allow_real_time_grading: allowRealTimeGrading,
-+            require_honor_code: requireHonorCode,
-             auto_close: !!_.get(assessment, 'autoClose', true),
-```
+  @@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+              allow_real_time_grading: allowRealTimeGrading,
+  +            require_honor_code: requireHonorCode,
+              auto_close: !!_.get(assessment, 'autoClose', true),
+  ```
 
 - Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
 
-```diff
-@@ -44,3 +44,4 @@ BEGIN
-             allow_issue_reporting,
--            allow_real_time_grading)
-+            allow_real_time_grading,
-+            require_honor_code)
-             (
-@@ -64,3 +65,4 @@ BEGIN
-                 (assessment->>'allow_issue_reporting')::boolean,
--                (assessment->>'allow_real_time_grading')::boolean
-+                (assessment->>'allow_real_time_grading')::boolean,
-+                (assessment->>'require_honor_code')::boolean
-         )
-@@ -83,3 +85,4 @@ BEGIN
-             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
--            allow_real_time_grading = EXCLUDED.allow_real_time_grading
-+            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-+            require_honor_code = EXCLUDED.require_honor_code
-         WHERE
-```
+  ```diff
+  @@ -44,3 +44,4 @@ BEGIN
+              allow_issue_reporting,
+  -            allow_real_time_grading)
+  +            allow_real_time_grading,
+  +            require_honor_code)
+              (
+  @@ -64,3 +65,4 @@ BEGIN
+                  (assessment->>'allow_issue_reporting')::boolean,
+  -                (assessment->>'allow_real_time_grading')::boolean
+  +                (assessment->>'allow_real_time_grading')::boolean,
+  +                (assessment->>'require_honor_code')::boolean
+          )
+  @@ -83,3 +85,4 @@ BEGIN
+              allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+  -            allow_real_time_grading = EXCLUDED.allow_real_time_grading
+  +            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
+  +            require_honor_code = EXCLUDED.require_honor_code
+          WHERE
+  ```
 
 - Edit the sync tests; e.g., modify `tests/sync/util.js`:
 
-```diff
-@@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
-  * @property {boolean} allowRealTimeGrading
-+ * @property {boolean} requireHonorCode
-  * @property {boolean} multipleInstance
-```
+  ```diff
+  @@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
+    * @property {boolean} allowRealTimeGrading
+  + * @property {boolean} requireHonorCode
+    * @property {boolean} multipleInstance
+  ```
 
 - Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
 
@@ -445,15 +445,15 @@ See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/m
 
 - For single queries we normally use the following pattern, which automatically uses connection pooling from node-postgres and safe variable interpolation with named parameters and [prepared statements](https://github.com/brianc/node-postgres/wiki/Parameterized-queries-and-Prepared-Statements):
 
-```javascript
-var params = {
-  course_id: 45,
-};
-sqldb.query(sql.select_questions_by_course, params, function (err, result) {
-  if (ERR(err, callback)) return;
-  var questions = result.rows;
-});
-```
+  ```javascript
+  var params = {
+    course_id: 45,
+  };
+  sqldb.query(sql.select_questions_by_course, params, function (err, result) {
+    if (ERR(err, callback)) return;
+    var questions = result.rows;
+  });
+  ```
 
 Where the corresponding `filename.sql` file contains:
 
@@ -469,97 +469,97 @@ WHERE
 
 - For queries where it would be an error to not return exactly one result row:
 
-```javascript
-sqldb.queryOneRow(sql.block_name, params, function (err, result) {
-  if (ERR(err, callback)) return;
-  var obj = result.rows[0]; // guaranteed to exist and no more
-});
-```
+  ```javascript
+  sqldb.queryOneRow(sql.block_name, params, function (err, result) {
+    if (ERR(err, callback)) return;
+    var obj = result.rows[0]; // guaranteed to exist and no more
+  });
+  ```
 
 - Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
 
-| Locking function            | Argument                 |
-| --------------------------- | ------------------------ |
-| `assessment_instances_lock` | `assessment_instance_id` |
-| `instance_questions_lock`   | `instance_question_id`   |
-| `variants_lock`             | `variant_id`             |
-| `submission_lock`           | `submission_id`          |
+  | Locking function            | Argument                 |
+  | --------------------------- | ------------------------ |
+  | `assessment_instances_lock` | `assessment_instance_id` |
+  | `instance_questions_lock`   | `instance_question_id`   |
+  | `variants_lock`             | `variant_id`             |
+  | `submission_lock`           | `submission_id`          |
 
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
-```javascript
-var params = {
-    points_list: [10, 5, 1],
-};
-sqldb.query(sql.insert_assessment_question, params, ...);
-```
+  ```javascript
+  var params = {
+      points_list: [10, 5, 1],
+  };
+  sqldb.query(sql.insert_assessment_question, params, ...);
+  ```
 
-```sql
--- BLOCK insert_assessment_question
-INSERT INTO
-  assessment_questions (points_list)
-VALUES
-  ($points_list::INTEGER[]);
-```
+  ```sql
+  -- BLOCK insert_assessment_question
+  INSERT INTO
+    assessment_questions (points_list)
+  VALUES
+    ($points_list::INTEGER[]);
+  ```
 
 - To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
 
-```javascript
-var params = {
-    id_list: [7, 12, 45],
-};
-sqldb.query(sql.select_questions, params, ...);
-```
+  ```javascript
+  var params = {
+      id_list: [7, 12, 45],
+  };
+  sqldb.query(sql.select_questions, params, ...);
+  ```
 
-```sql
--- BLOCK select_questions
-SELECT
-  *
-FROM
-  questions
-WHERE
-  id IN (
-    SELECT
-      unnest($id_list::INTEGER[])
-  );
-```
+  ```sql
+  -- BLOCK select_questions
+  SELECT
+    *
+  FROM
+    questions
+  WHERE
+    id IN (
+      SELECT
+        unnest($id_list::INTEGER[])
+    );
+  ```
 
 - To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:
 
-```javascript
-let data = [
-    {a: 5, b: "foo"},
-    {a: 9, b: "bar"}
-];
-let params = {data: JSON.stringify(data)};
-sqldb.query(sql.insert_data, params, ...);
-```
+  ```javascript
+  let data = [
+      {a: 5, b: "foo"},
+      {a: 9, b: "bar"}
+  ];
+  let params = {data: JSON.stringify(data)};
+  sqldb.query(sql.insert_data, params, ...);
+  ```
 
-```sql
--- BLOCK insert_data
-INSERT INTO
-  my_table (a, b)
-SELECT
-  *
-FROM
-  jsonb_to_recordset($data) AS (a INTEGER, b TEXT);
-```
+  ```sql
+  -- BLOCK insert_data
+  INSERT INTO
+    my_table (a, b)
+  SELECT
+    *
+  FROM
+    jsonb_to_recordset($data) AS (a INTEGER, b TEXT);
+  ```
 
 - To use a JSON object array in the above fashion, but where the order of rows is important, use `ROWS FROM () WITH ORDINALITY` to generate a row index like this:
 
-```sql
--- BLOCK insert_data
-INSERT INTO
-  my_table (a, b, order_by)
-SELECT
-  *
-FROM
-  ROWS
-FROM
-  (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
-WITH
-  ORDINALITY AS data (a, b, order_by);
-```
+  ```sql
+  -- BLOCK insert_data
+  INSERT INTO
+    my_table (a, b, order_by)
+  SELECT
+    *
+  FROM
+    ROWS
+  FROM
+    (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
+  WITH
+    ORDINALITY AS data (a, b, order_by);
+  ```
 
 ## Asynchronous control flow in JavaScript
 
@@ -573,200 +573,200 @@ WITH
 
 - Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
 
-```javascript
-const asyncHandler = require('express-async-handler');
-router.get(
-  '/',
-  asyncHandler(async (req, res, next) => {
-    // can use "await" here
-  }),
-);
-```
+  ```javascript
+  const asyncHandler = require('express-async-handler');
+  router.get(
+    '/',
+    asyncHandler(async (req, res, next) => {
+      // can use "await" here
+    }),
+  );
+  ```
 
 ## Interfacing between callback-style and async/await-style functions
 
 - To write a callback-style function that internally uses async/await code, use this pattern:
 
-```javascript
-const util = require('util');
-function oldFunction(x1, x2, callback) {
-    util.callbackify(async () => {
-        # here we can use async/await code
-        y1 = await f(x1);
-        y2 = await f(x2);
-        return y1 + y2;
-    })(callback);
-}
-```
+  ```javascript
+  const util = require('util');
+  function oldFunction(x1, x2, callback) {
+      util.callbackify(async () => {
+          # here we can use async/await code
+          y1 = await f(x1);
+          y2 = await f(x2);
+          return y1 + y2;
+      })(callback);
+  }
+  ```
 
 - To write a multi-return-value callback-style function that internally uses async/await code, we don't currently have an established pattern.
 
 - To call our own library functions from async/await code, we should provide a version of them with "Async" appended to the name:
 
-```
-const util = require('util');
-module.exports.existingLibFun = (x1, x2, callback) => {
-    callback(null, x1*x2);
-};
-module.exports.existingLibFunAsync = util.promisify(module.exports.myFun);
+  ```
+  const util = require('util');
+  module.exports.existingLibFun = (x1, x2, callback) => {
+      callback(null, x1*x2);
+  };
+  module.exports.existingLibFunAsync = util.promisify(module.exports.myFun);
 
-# in `async` code we can now call existingLibFunAsync() directly with `await`:
-async function newFun(x1, x2) {
-    let y = await existingLibFunAsync(x1, x2);
-    return 3*y;
-}
-```
+  # in `async` code we can now call existingLibFunAsync() directly with `await`:
+  async function newFun(x1, x2) {
+      let y = await existingLibFunAsync(x1, x2);
+      return 3*y;
+  }
+  ```
 
 - If our own library functions use multiple return values, then the async version of them should return an object:
 
-```
-const util = require('util');
-module.exports.existingMultiFun = (x, callback) => {
-    const y1 = x*x;
-    const y2 = x*x*x;
-    callback(null, y1, y2); # note the two return values here
-};
-module.exports.existingMultiFunAsync = util.promisify((x, callback) =>
-    module.exports.existingMultiFun(x, (err, y1, y2) => callback(err, {y1, y2}))
-);
+  ```
+  const util = require('util');
+  module.exports.existingMultiFun = (x, callback) => {
+      const y1 = x*x;
+      const y2 = x*x*x;
+      callback(null, y1, y2); # note the two return values here
+  };
+  module.exports.existingMultiFunAsync = util.promisify((x, callback) =>
+      module.exports.existingMultiFun(x, (err, y1, y2) => callback(err, {y1, y2}))
+  );
 
-async function newFun(x) {
-    let {y1, y2} = await existingMultiFunAsync(x); # must use y1,y2 names here
-    return y1*y2;
-}
-```
+  async function newFun(x) {
+      let {y1, y2} = await existingMultiFunAsync(x); # must use y1,y2 names here
+      return y1*y2;
+  }
+  ```
 
 - To call a callback-style function in an external library from within an async/await function, use this pattern:
 
-```javascript
-util = require('util');
-async function g(x) {
-  x1 = await f(x + 2);
-  x2 = await f(x + 4);
-  z = await util.promisify(oldFunction)(x1, x2);
-  return z;
-}
-```
+  ```javascript
+  util = require('util');
+  async function g(x) {
+    x1 = await f(x + 2);
+    x2 = await f(x + 4);
+    z = await util.promisify(oldFunction)(x1, x2);
+    return z;
+  }
+  ```
 
 - As of 2019-08-15 we are not calling any multi-return-value callback-style functions in external libraries from within async/await functions, but if we need to do this then we could include the `bluebird` package and use the pattern:
 
-```javascript
-bluebird = require('bluebird');
-function oldMultiFunction(x, callback) {
-    return callback(null, x*x, x*x*x);
-}
-async function g(x) {
-    let [y1, y2] = await bluebird.promisify(oldMultiFunction, {multiArgs: true})(x); # note array destructuring with y1,y2
-    return y1*y2;
-}
-```
+  ```javascript
+  bluebird = require('bluebird');
+  function oldMultiFunction(x, callback) {
+      return callback(null, x*x, x*x*x);
+  }
+  async function g(x) {
+      let [y1, y2] = await bluebird.promisify(oldMultiFunction, {multiArgs: true})(x); # note array destructuring with y1,y2
+      return y1*y2;
+  }
+  ```
 
 - To call an async/await function from within a callback-style function, use this pattern:
 
-```javascript
-util = require('util');
-function oldFunction(x, callback) {
-  util.callbackify(g)(x, (err, y) => {
-    if (ERR(err, callback)) return;
-    callback(null, y);
-  });
-}
-```
+  ```javascript
+  util = require('util');
+  function oldFunction(x, callback) {
+    util.callbackify(g)(x, (err, y) => {
+      if (ERR(err, callback)) return;
+      callback(null, y);
+    });
+  }
+  ```
 
 - To call an multi-return-value async/await function from within a callback-style function, use this pattern:
 
-```javascript
-util = require('util');
-async function gMulti(x) {
-    y1 = x*x;
-    y2 = x*x*x;
-    return {y1, y2};
-}
-function oldFunction(x, callback) {
-    util.callbackify(gMulti)(x, (err, {y1, y2}]) => {
-        if (ERR(err, callback)) return;
-        callback(null, y1*y2);
-    });
-}
-```
+  ```javascript
+  util = require('util');
+  async function gMulti(x) {
+      y1 = x*x;
+      y2 = x*x*x;
+      return {y1, y2};
+  }
+  function oldFunction(x, callback) {
+      util.callbackify(gMulti)(x, (err, {y1, y2}]) => {
+          if (ERR(err, callback)) return;
+          callback(null, y1*y2);
+      });
+  }
+  ```
 
 ## Stack traces with callback-style functions
 
 - Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modifies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
-```javascript
-// Don't do this:
-function foo(p, callback) {
-  bar(q, function (err, result) {
-    if (err) return callback(err);
-    callback(null, result);
-  });
-}
+  ```javascript
+  // Don't do this:
+  function foo(p, callback) {
+    bar(q, function (err, result) {
+      if (err) return callback(err);
+      callback(null, result);
+    });
+  }
 
-// Instead do this:
-ERR = require('async-stacktrace'); // at top of file
-function foo(p, callback) {
-  bar(q, function (err, result) {
-    if (ERR(err, callback)) return; // this is the change
-    callback(null, result);
-  });
-}
-```
+  // Instead do this:
+  ERR = require('async-stacktrace'); // at top of file
+  function foo(p, callback) {
+    bar(q, function (err, result) {
+      if (ERR(err, callback)) return; // this is the change
+      callback(null, result);
+    });
+  }
+  ```
 
 - Don't pass `callback` functions directly through to children, but instead capture the error with the [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
 
-```javascript
-// Don't do this:
-function foo(p, callback) {
-  bar(q, callback);
-}
+  ```javascript
+  // Don't do this:
+  function foo(p, callback) {
+    bar(q, callback);
+  }
 
-// Instead do this:
-function foo(p, callback) {
-  bar(q, function (err, result) {
-    if (ERR(err, callback)) return;
-    callback(null, result);
-  });
-}
-```
+  // Instead do this:
+  function foo(p, callback) {
+    bar(q, function (err, result) {
+      if (ERR(err, callback)) return;
+      callback(null, result);
+    });
+  }
+  ```
 
 - Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
 - If we are in a function that does not have an active callback (perhaps we already called it) then we should log errors with the following pattern. Note that the first string argument to `logger.error()` is mandatory. Failure to provide a string argument will result in `error: undefined` being logged to the console.
 
-```javascript
-function foo(p) {
-    bar(p, function(err, result) {
-        if (ERR(err, e => logger.error('Error in bar()', e);
-        ...
-    });
-}
-```
+  ```javascript
+  function foo(p) {
+      bar(p, function(err, result) {
+          if (ERR(err, e => logger.error('Error in bar()', e);
+          ...
+      });
+  }
+  ```
 
 - Don't call a `callback` function inside a try block, especially if there is also a `callback` call in the catch handler. Otherwise exceptions thrown much later will show up incorrectly as a double-callback or just in the wrong place. For example:
 
-```javascript
-// Don't do this:
-function foo(p, callback) {
-  try {
-    let result = 3;
-    callback(null, result); // this could throw an error from upstream code in the callback
-  } catch (err) {
-    callback(err);
+  ```javascript
+  // Don't do this:
+  function foo(p, callback) {
+    try {
+      let result = 3;
+      callback(null, result); // this could throw an error from upstream code in the callback
+    } catch (err) {
+      callback(err);
+    }
   }
-}
 
-// Instead do this:
-function foo(p, callback) {
-  let result;
-  try {
-    result = 3;
-  } catch (err) {
-    callback(err);
+  // Instead do this:
+  function foo(p, callback) {
+    let result;
+    try {
+      result = 3;
+    } catch (err) {
+      callback(err);
+    }
+    callback(null, result);
   }
-  callback(null, result);
-}
-```
+  ```
 
 ## Security model
 
@@ -796,40 +796,40 @@ function foo(p, callback) {
 
 - Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
-```javascript
-router.post('/', function (req, res, next) {
-  if (req.body.__action == 'enroll') {
-    var params = {
-      course_instance_id: req.body.course_instance_id,
-      user_id: res.locals.authn_user.user_id,
-    };
-    sqldb.queryOneRow(sql.enroll, params, function (err, result) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
-        body: req.body,
-        locals: res.locals,
-      }),
-    );
-  }
-});
-```
+  ```javascript
+  router.post('/', function (req, res, next) {
+    if (req.body.__action == 'enroll') {
+      var params = {
+        course_instance_id: req.body.course_instance_id,
+        user_id: res.locals.authn_user.user_id,
+      };
+      sqldb.queryOneRow(sql.enroll, params, function (err, result) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else {
+      return next(
+        error.make(400, 'unknown __action', {
+          body: req.body,
+          locals: res.locals,
+        }),
+      );
+    }
+  });
+  ```
 
 - To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) inside the POST data.
 
 - All data modifying requests should come from `form` elements like:
 
-```html
-<form name="enroll-form" method="POST">
-  <input type="hidden" name="__action" value="enroll" />
-  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
-  <input type="hidden" name="course_instance_id" value="56" />
-  <button type="submit" class="btn btn-info">Enroll in course instance 56</button>
-</form>
-```
+  ```html
+  <form name="enroll-form" method="POST">
+    <input type="hidden" name="__action" value="enroll" />
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+    <input type="hidden" name="course_instance_id" value="56" />
+    <button type="submit" class="btn btn-info">Enroll in course instance 56</button>
+  </form>
+  ```
 
 - The `res.locals.__csrf_token` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
 
@@ -873,11 +873,11 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - There are three levels at which “open” status is tracked, as follows. If `open = false` for any object then it will block the creation of new objects below it. For example, to create a new submission the corresponding variant, instance_question, and assessment_instance must all be open.
 
-| Variable                   | Allow new `instance_questions` | Allow new `variants` | Allow new `submissions` |
-| -------------------------- | ------------------------------ | -------------------- | ----------------------- |
-| `assessment_instance.open` | ✓                              | ✓                    | ✓                       |
-| `instance_question.open`   |                                | ✓                    | ✓                       |
-| `variant.open`             |                                |                      | ✓                       |
+  | Variable                   | Allow new `instance_questions` | Allow new `variants` | Allow new `submissions` |
+  | -------------------------- | ------------------------------ | -------------------- | ----------------------- |
+  | `assessment_instance.open` | ✓                              | ✓                    | ✓                       |
+  | `instance_question.open`   |                                | ✓                    | ✓                       |
+  | `variant.open`             |                                |                      | ✓                       |
 
 ## Errors in question handling
 
@@ -889,30 +889,30 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - There are three levels of errors that can occur during the creation, answering, and grading of a question:
 
-| Error level     | Caused                                                           | Stored                                                                                    | Reported                             | Effect                                                                                                                                                                     |
-| --------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System errors   | Internal PrairieLearn errors                                     | On-disk logs                                                                              | Error page                           | Operation is blocked. Data is not saved to the database.                                                                                                                   |
-| Question errors | Errors in question code                                          | `issues` table                                                                            | Issue panels on the question page    | `variant.broken` or `submission.broken` set to `true`. Operation completes, but future operations are blocked.                                                             |
-| Student errors  | Invalid data submitted by the student (unparsable or ungradable) | `submission.gradable` set to `false` and details are stored in `submission.format_errors` | Inside the rendered submission panel | The submission is not assigned a score and no further action is taken (e.g., points are changed for the instance question). The student can resubmit to correct the error. |
+  | Error level     | Caused                                                           | Stored                                                                                    | Reported                             | Effect                                                                                                                                                                     |
+  | --------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | System errors   | Internal PrairieLearn errors                                     | On-disk logs                                                                              | Error page                           | Operation is blocked. Data is not saved to the database.                                                                                                                   |
+  | Question errors | Errors in question code                                          | `issues` table                                                                            | Issue panels on the question page    | `variant.broken` or `submission.broken` set to `true`. Operation completes, but future operations are blocked.                                                             |
+  | Student errors  | Invalid data submitted by the student (unparsable or ungradable) | `submission.gradable` set to `false` and details are stored in `submission.format_errors` | Inside the rendered submission panel | The submission is not assigned a score and no further action is taken (e.g., points are changed for the instance question). The student can resubmit to correct the error. |
 
 - The important variables involved in tracking question errors are:
 
-| Variable                   | Error level    | Description                                                                                                                                                                                          |
-| -------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `variant.broken`           | Question error | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`. |
-| `submission.broken`        | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.                            |
-| `issues` table             | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.                                                                       |
-| `submission.gradable`      | Student error  | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.                                           |
-| `submission.format_errors` | Student error  | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.                                    |
-| `submission.graded_at`     | None           | NULL if grading has not yet occurred, otherwise a timestamp.                                                                                                                                         |
-| `submission.score`         | None           | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                          |
-| `submission.feedback`      | None           | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                       |
+  | Variable                   | Error level    | Description                                                                                                                                                                                          |
+  | -------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `variant.broken`           | Question error | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`. |
+  | `submission.broken`        | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.                            |
+  | `issues` table             | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.                                                                       |
+  | `submission.gradable`      | Student error  | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.                                           |
+  | `submission.format_errors` | Student error  | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.                                    |
+  | `submission.graded_at`     | None           | NULL if grading has not yet occurred, otherwise a timestamp.                                                                                                                                         |
+  | `submission.score`         | None           | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                          |
+  | `submission.feedback`      | None           | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.                                                                                                       |
 
 - Note that `submission.format_errors` stores information about student errors, while the `issues` table stores information about question code errors.
 
 - The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
 
-![Question flow](question-flow.png)
+  ![Question flow](question-flow.png)
 
 ## JavaScript equality operator
 

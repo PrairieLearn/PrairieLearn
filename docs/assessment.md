@@ -196,13 +196,13 @@ Underneath the "Groups" tab in an assessment, instructors have three ways of ass
 
 1. Uploading a CSV file in the following format:
 
-```
-groupName,UID
-groupA,one@example.com
-groupA,two@example.com
-groupB,three@example.com
-groupB,four@example.com
-```
+  ```
+  groupName,UID
+  groupA,one@example.com
+  groupA,two@example.com
+  groupB,three@example.com
+  groupB,four@example.com
+  ```
 
 2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
 
@@ -374,17 +374,17 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "singleAttemptQ", "points": 10},
-            {"id": "tryOncePerVar", "points": 10},
-            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-        ]
-    }
-],
-```
+  ```json
+  "zones": [
+      {
+          "questions": [
+              {"id": "singleAttemptQ", "points": 10},
+              {"id": "tryOncePerVar", "points": 10},
+              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
+          ]
+      }
+  ],
+  ```
 
 ## Limiting the rate at which answers can be graded
 
