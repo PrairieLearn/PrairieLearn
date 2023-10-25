@@ -4,6 +4,7 @@ import jose = require('node-jose');
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
 import { selectLti13Instance } from '../../../models/lti13Instance';
+import { cloneDeep } from 'lodash';
 
 const router = Router({ mergeParams: true });
 
@@ -67,7 +68,7 @@ router.get(
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lmsConfig = ltiConfig; //structuredClone(ltiConfig);
+    const lmsConfig = cloneDeep(ltiConfig);
     const url = new URL(getCanonicalHost(req));
 
     lmsConfig.oidc_initiation_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/auth/login`;
