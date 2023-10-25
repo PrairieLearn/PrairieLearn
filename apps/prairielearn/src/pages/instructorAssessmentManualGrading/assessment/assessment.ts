@@ -11,7 +11,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, next) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     const questions = await sqldb.queryRows(
       sql.select_questions_manual_grading,
