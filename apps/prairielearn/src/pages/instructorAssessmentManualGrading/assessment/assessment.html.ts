@@ -70,82 +70,83 @@ export function ManualGradingAssessment({
                   </tr>
                 </thead>
                 <tbody>
-                  ${questions.map(
-                    (question) =>
-                      html` <tr>
-                        <td>
-                          <a
-                            href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                              .id}/manual_grading/assessment_question/${question.id}"
-                          >
-                            ${question.alternative_group_number}.${question.alternative_group_size ===
-                            1
-                              ? ''
-                              : `${question.number_in_alternative_group}.`}
-                            ${question.title}
-                          </a>
-                        </td>
-                        <td>${question.qid}</td>
-                        <td class="text-center">
-                          ${question.max_auto_points
-                            ? resLocals.assessment.type === 'Exam'
-                              ? (question.points_list || [question.max_manual_points ?? 0])
-                                  .map((p) => p - (question.max_manual_points ?? 0))
-                                  .join(',')
-                              : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
-                            : '—'}
-                        </td>
-                        <td class="text-center">${question.max_manual_points || '—'}</td>
-                        <td class="text-center" data-testid="iq-to-grade-count">
-                          ${question.num_instance_questions_to_grade} /
-                          ${question.num_instance_questions}
-                        </td>
-                        <td>
-                          ${ProgressBar(
-                            question.num_instance_questions_to_grade,
-                            question.num_instance_questions,
-                          )}
-                        </td>
-                        <td>
-                          ${question.num_instance_questions_assigned > 0
-                            ? html`<strong class="bg-warning rounded px-1">
-                                  ${resLocals.authz_data.user.name ??
-                                  resLocals.authz_data.user.uid}</strong
-                                >${question.assigned_graders?.some((u) =>
-                                  idsEqual(u.user_id, resLocals.authz_data.user.user_id),
-                                )
-                                  ? ', '
-                                  : ''}`
-                            : ''}
-                          ${(question.assigned_graders || [])
-                            .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
-                            .map((u) => u.name ?? u.uid)
-                            .join(', ')}
-                          ${question.num_instance_questions_unassigned > 0
-                            ? html` <small class="text-muted"
-                                >(${question.num_instance_questions_unassigned} unassigned)</small
-                              >`
-                            : ''}
-                        </td>
-                        <td>
-                          ${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
-                        </td>
-                        <td>
-                          ${resLocals.authz_data.has_course_instance_permission_edit &&
-                          question.num_instance_questions_assigned +
-                            question.num_instance_questions_unassigned >
-                            0
-                            ? html`<a
-                                class="btn btn-xs btn-primary"
-                                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/manual_grading/assessment_question/${question.id}/next_ungraded"
-                              >
-                                Grade next submission
-                              </a>`
-                            : ''}
-                        </td>
-                      </tr>`,
-                  )}
+                  ${questions.map((question) => {
+                    const showGradingButton =
+                      resLocals.authz_data.has_course_instance_permission_edit &&
+                      question.num_instance_questions_assigned +
+                        question.num_instance_questions_unassigned >
+                        0;
+                    return html` <tr>
+                      <td>
+                        <a
+                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                            .id}/manual_grading/assessment_question/${question.id}"
+                        >
+                          ${question.alternative_group_number}.${question.alternative_group_size ===
+                          1
+                            ? ''
+                            : `${question.number_in_alternative_group}.`}
+                          ${question.title}
+                        </a>
+                      </td>
+                      <td>${question.qid}</td>
+                      <td class="text-center">
+                        ${question.max_auto_points
+                          ? resLocals.assessment.type === 'Exam'
+                            ? (question.points_list || [question.max_manual_points ?? 0])
+                                .map((p) => p - (question.max_manual_points ?? 0))
+                                .join(',')
+                            : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
+                          : '—'}
+                      </td>
+                      <td class="text-center">${question.max_manual_points || '—'}</td>
+                      <td class="text-center" data-testid="iq-to-grade-count">
+                        ${question.num_instance_questions_to_grade} /
+                        ${question.num_instance_questions}
+                      </td>
+                      <td>
+                        ${ProgressBar(
+                          question.num_instance_questions_to_grade,
+                          question.num_instance_questions,
+                        )}
+                      </td>
+                      <td>
+                        ${question.num_instance_questions_assigned > 0
+                          ? html`<strong class="bg-warning rounded px-1">
+                                ${resLocals.authz_data.user.name ??
+                                resLocals.authz_data.user.uid}</strong
+                              >${question.assigned_graders?.some((u) =>
+                                idsEqual(u.user_id, resLocals.authz_data.user.user_id),
+                              )
+                                ? ', '
+                                : ''}`
+                          : ''}
+                        ${(question.assigned_graders || [])
+                          .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
+                          .map((u) => u.name ?? u.uid)
+                          .join(', ')}
+                        ${question.num_instance_questions_unassigned > 0
+                          ? html` <small class="text-muted"
+                              >(${question.num_instance_questions_unassigned} unassigned)</small
+                            >`
+                          : ''}
+                      </td>
+                      <td>
+                        ${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
+                      </td>
+                      <td>
+                        ${showGradingButton
+                          ? html`<a
+                              class="btn btn-xs btn-primary"
+                              href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                                .id}/manual_grading/assessment_question/${question.id}/next_ungraded"
+                            >
+                              Grade next submission
+                            </a>`
+                          : ''}
+                      </td>
+                    </tr>`;
+                  })}
                 </tbody>
               </table>
             </div>
