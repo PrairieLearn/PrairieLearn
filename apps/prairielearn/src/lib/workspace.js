@@ -14,6 +14,7 @@ const tmp = require('tmp-promise');
 const mustache = require('mustache');
 const workspaceUtils = require('@prairielearn/workspace-utils');
 const { contains } = require('@prairielearn/path-utils');
+const { serializeError } = require('serialize-error');
 
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
@@ -442,7 +443,7 @@ module.exports = {
             file: file.name,
             msg: `Error decoding dynamic workspace file: ${err.message}`,
             err,
-            data: { file },
+            data: file,
           });
           return null;
         }
@@ -513,15 +514,7 @@ module.exports = {
             errors: fileGenerationErrors.map((error) => ({
               ...error,
               // Since error is typically not serializable, a custom object is created.
-              err: error.err
-                ? {
-                    ...error.err,
-                    stack: error.err.stack,
-                    data: error.err.data,
-                    message: error.err.message,
-                    cause: error.err.cause,
-                  }
-                : undefined,
+              err: serializeError(error.err),
             })),
           },
         },
