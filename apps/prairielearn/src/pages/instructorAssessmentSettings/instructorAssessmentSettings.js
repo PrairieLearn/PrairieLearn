@@ -94,7 +94,7 @@ router.post('/', function (req, res, next) {
               if (ERR(err, next)) return;
               flash(
                 'success',
-                'Successfully copied assessment. You are now viewing your copy of the assessment.',
+                'Assessment copied successfully. You are now viewing your copy of the assessment.',
               );
               res.redirect(
                 res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
