@@ -76,6 +76,9 @@ export function ManualGradingAssessment({
                       question.num_instance_questions_assigned +
                         question.num_instance_questions_unassigned >
                         0;
+                    const otherAssignedGraders = (question.assigned_graders || [])
+                      .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
+                      .map((u) => u.name ?? u.uid);
                     return html` <tr>
                       <td>
                         <a
@@ -115,16 +118,9 @@ export function ManualGradingAssessment({
                           ? html`<strong class="bg-warning rounded px-1">
                                 ${resLocals.authz_data.user.name ??
                                 resLocals.authz_data.user.uid}</strong
-                              >${question.assigned_graders?.some((u) =>
-                                idsEqual(u.user_id, resLocals.authz_data.user.user_id),
-                              )
-                                ? ', '
-                                : ''}`
+                              >${otherAssignedGraders.length ? ', ' : ''}`
                           : ''}
-                        ${(question.assigned_graders || [])
-                          .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
-                          .map((u) => u.name ?? u.uid)
-                          .join(', ')}
+                        ${otherAssignedGraders.join(', ')}
                         ${question.num_instance_questions_unassigned > 0
                           ? html` <small class="text-muted"
                               >(${question.num_instance_questions_unassigned} unassigned)</small
