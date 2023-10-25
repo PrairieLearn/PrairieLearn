@@ -82,7 +82,6 @@ BEGIN
     -- "has_course_instance_permission_edit" - permissions that, as we've said, the
     -- authn user is already known to have.
     authorized := user_result.authorized;
-
     -- all other variables are from the effective user authorization
     exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;

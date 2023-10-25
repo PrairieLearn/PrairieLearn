@@ -828,6 +828,17 @@ module.exports.initExpress = function () {
       next();
     },
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access_overrides',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'access_overrides';
+        next();
+      },
+      require('./pages/instructorAssessmentOverrides/instructorAssessmentOverrides'),
+    ],
+  );
+
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', [
     function (req, res, next) {
       res.locals.navSubPage = 'settings';
@@ -859,6 +870,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
   ]);
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics',
     [
