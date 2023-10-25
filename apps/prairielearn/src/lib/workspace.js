@@ -14,7 +14,6 @@ const tmp = require('tmp-promise');
 const mustache = require('mustache');
 const workspaceUtils = require('@prairielearn/workspace-utils');
 const { contains } = require('@prairielearn/path-utils');
-const { serializeError } = require('serialize-error');
 
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
@@ -625,3 +624,14 @@ module.exports = {
     return zipPath;
   },
 };
+
+function serializeError(err) {
+  if (err == null) return err;
+  return {
+    ...err,
+    stack: err.stack,
+    data: err.data,
+    message: err.message,
+    cause: err.cause,
+  };
+}
