@@ -500,8 +500,8 @@ module.exports = {
       const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
       issues.insertIssue({
         variantId: variant.id,
-        studentMessage: 'Error retrieving workspace files',
-        instructorMessage: 'Error retrieving workspace files',
+        studentMessage: 'Error initializing workspace files',
+        instructorMessage: 'Error initializing workspace files',
         manuallyReported: false,
         courseCaused: true,
         courseData: { workspace, variant, question, course },
