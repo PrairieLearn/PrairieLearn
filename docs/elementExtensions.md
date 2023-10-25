@@ -94,12 +94,12 @@ Similar to how questions and elements may require client-side assets, extensions
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `nodeModulesStyles`        | The styles required by this extension, relative to `[PrairieLearn directory]/node_modules`.                                                     |
 | `nodeModulesScripts`       | The scripts required by this extension, relative to `[PrairieLearn directory]/node_modules`.                                                    |
-| `extensionStyles`          | The styles required by this element relative to the extension's directory,`[course directory]/elementExtensions/element-name/extension-name`.   |
+| `extensionStyles`          | The styles required by this element relative to the extension's directory, `[course directory]/elementExtensions/element-name/extension-name`.  |
 | `extensionScripts`         | The scripts required by this element relative to the extension's directory, `[course directory]/elementExtensions/element-name/extension-name`. |
 | `clientFilesCourseStyles`  | The styles required by this extension relative to `[course directory]/clientFilesCourse`.                                                       |
 | `clientFilesCourseScripts` | The scripts required by this extension relative to `[course directory]/clientFilesCourse`.                                                      |
 
-Note that all client-side extension assets are always loaded, regardless of whether their Python controller was loaded or not. As such, it is recommended that, when suitable, extensions make use of dynamic dependencies that load scripts only as necessary, based on the context of the element.
+Note that any element extension assets declared in `dependencies` will always be loaded, regardless of whether their Python controller was loaded or not. As such, it is recommended that, when suitable, extensions make use of `dynamicDependencies` to load scripts only when necessary, based on the context/usage of the element.
 
 ### Other Client Files
 
