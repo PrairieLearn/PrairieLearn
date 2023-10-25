@@ -101,7 +101,7 @@ export function ManualGradingAssessment({
                           ${question.num_instance_questions}
                         </td>
                         <td>
-                          ${progressBar(
+                          ${ProgressBar(
                             question.num_instance_questions_to_grade,
                             question.num_instance_questions,
                           )}
@@ -155,7 +155,7 @@ export function ManualGradingAssessment({
     </html>`.toString();
 }
 
-function progressBar(partial: number | null, total: number | null) {
+function ProgressBar(partial: number | null, total: number | null) {
   if (total == null || total <= 0) return '';
   const progress = Math.floor(100 * (1 - (partial ?? 0) / total));
   return html`
