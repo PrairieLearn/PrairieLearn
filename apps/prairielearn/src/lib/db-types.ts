@@ -209,7 +209,7 @@ export const Lti13InstanceSchema = z.object({
   institution_id: IdSchema,
   created_at: z.date(),
   deleted_at: z.date().nullable(),
-  platform: z.string().nullable(),
+  platform: z.string(),
   name: z.string(),
   tool_platform_name: z.string().nullable(),
   keystore: z.any().nullable(),

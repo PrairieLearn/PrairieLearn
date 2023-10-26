@@ -45,9 +45,7 @@ const ltiConfig = {
       },
     },
   ],
-  custom_fields: {
-    uin: '$Canvas.user.sisIntegrationId',
-  },
+  custom_fields: {},
   public_jwk_url: 'replace',
   scopes: [
     'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
@@ -78,6 +76,7 @@ router.get(
     lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/course_navigation`;
 
     lmsConfig.public_jwk_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/jwks`;
+    lmsConfig.custom_fields = lti13_instance.custom_fields;
 
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify(lmsConfig, null, 2));
