@@ -8,7 +8,6 @@ import asyncHandler from 'express-async-handler';
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
 import { withServer } from './test-utils';
-import { create } from 'node:domain';
 
 const TEST_SECRET = 'test-secret';
 
