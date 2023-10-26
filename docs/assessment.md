@@ -196,13 +196,13 @@ Underneath the "Groups" tab in an assessment, instructors have three ways of ass
 
 1. Uploading a CSV file in the following format:
 
-  ```
-  groupName,UID
-  groupA,one@example.com
-  groupA,two@example.com
-  groupB,three@example.com
-  groupB,four@example.com
-  ```
+```
+groupName,UID
+groupA,one@example.com
+groupA,two@example.com
+groupB,three@example.com
+groupB,four@example.com
+```
 
 2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
 
