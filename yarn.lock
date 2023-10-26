@@ -3164,7 +3164,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@sa11y/format": ^5.3.0
+    "@sa11y/format": ^5.3.2
     "@sentry/profiling-node": ^1.2.1
     "@sentry/tracing": ^7.75.1
     "@socket.io/redis-adapter": ^8.2.1
@@ -3198,8 +3198,8 @@ __metadata:
     "@types/tar": ^6.1.7
     "@types/tmp": ^0.2.5
     "@types/uuid": ^9.0.6
-    ace-builds: ^1.28.0
-    ace-code: ^1.28.0
+    ace-builds: ^1.31.0
+    ace-code: ^1.31.0
     ajv: ^8.12.0
     ansi_up: ^5.2.1
     archiver: ^6.0.1
@@ -3556,32 +3556,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sa11y/common@npm:5.3.0":
-  version: 5.3.0
-  resolution: "@sa11y/common@npm:5.3.0"
+"@sa11y/common@npm:5.3.2":
+  version: 5.3.2
+  resolution: "@sa11y/common@npm:5.3.2"
   dependencies:
     axe-core: 4.7.0
-  checksum: a04d9a02af3f9799df1b2929ac1836bf51658e67034628637ae250c7cab73196037c34617d7e8236a007eead2fcad0966a5751de86e7db489705e6bfde321dea
+  checksum: 49db7af04f25147a8e174c2b3a4661125fbc1e2970a0f3f02e32dad47252266c8bd331d81e35ef766ed9509c6d7c518f10ae90ef81a383657364a758ec93a707
   languageName: node
   linkType: hard
 
-"@sa11y/format@npm:^5.3.0":
-  version: 5.3.0
-  resolution: "@sa11y/format@npm:5.3.0"
+"@sa11y/format@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "@sa11y/format@npm:5.3.2"
   dependencies:
-    "@sa11y/common": 5.3.0
-    "@sa11y/preset-rules": 5.3.0
+    "@sa11y/common": 5.3.2
+    "@sa11y/preset-rules": 5.3.2
     axe-core: 4.7.0
-  checksum: 35d9dd1c1de23b6319dde4609d30c13d166f3a98e29a4f6d7dcc742e7812d00fb4fa47c7b9ca591ed063bd4c4c0c264c4f27b63d3b41ef7e69cde943d19b57e3
+  checksum: ba6759f05e2abe68c508f7e94fb9fd55f30bb6ef66a1c66e3d17ef44aaa231bbbdd024163c75cff9f562972d189c0f65be61a8bb31b86a7394378e60de6c6cab
   languageName: node
   linkType: hard
 
-"@sa11y/preset-rules@npm:5.3.0":
-  version: 5.3.0
-  resolution: "@sa11y/preset-rules@npm:5.3.0"
+"@sa11y/preset-rules@npm:5.3.2":
+  version: 5.3.2
+  resolution: "@sa11y/preset-rules@npm:5.3.2"
   dependencies:
-    "@sa11y/common": 5.3.0
-  checksum: d2c835bb9dd4ed280358b6b9c0d10ffff4d3d68bb2918d287f5218af92b3c3feeaf4bc0c1e4e7d48ec082f69e395766f3870557f812fa553362de947dab3c161
+    "@sa11y/common": 5.3.2
+  checksum: d67ce71fa8fc3ff54cc7f7e4cebf7785e8591e493b94b11edbfbbc8be65d91bab8ebd8f01520ad60798b9967423035afc0cbb8188860644aaf2a9901c1a27b9b
   languageName: node
   linkType: hard
 
@@ -5285,17 +5285,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.28.0":
-  version: 1.28.0
-  resolution: "ace-builds@npm:1.28.0"
-  checksum: 908bf9b833622355252833614d392ad62ed683fe6d3a31cf6bfc34d9fc4d29df123af75c3851a7c1f7ce1797a5753f34ca3596a77181c8e8623fa15d747379a5
+"ace-builds@npm:^1.31.0":
+  version: 1.31.0
+  resolution: "ace-builds@npm:1.31.0"
+  checksum: cb4d4314aee4a48db62309281e4854428cd55ce5de2c43ef98f59f6ff99b98b0e8c6df0c3b6a54101b7e4b9f42f54c3c34efb2b1e0c40b123d322e525e4a44c9
   languageName: node
   linkType: hard
 
-"ace-code@npm:^1.28.0":
-  version: 1.28.0
-  resolution: "ace-code@npm:1.28.0"
-  checksum: fecda911cb8418b3c18018573268c000dc3bfa868aad746a4b630c9c2ba31b18b0cd6dcf4d9bdc963611cdffa9c3c9c3a568867f4ee30ad2d19226436af26166
+"ace-code@npm:^1.31.0":
+  version: 1.31.0
+  resolution: "ace-code@npm:1.31.0"
+  checksum: 009cbe630e128427b97c89d4ad8d7c957386af74ad890910729aa3d6ac9521ddba9b15038200c38031c676def937d073112ccea9b5dc6b4aa9aaac6766b792ac
   languageName: node
   linkType: hard
 
