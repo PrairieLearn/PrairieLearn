@@ -1,5 +1,6 @@
 import ast
 import copy
+import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
@@ -521,7 +522,7 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
 
 
