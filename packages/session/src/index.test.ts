@@ -8,6 +8,7 @@ import asyncHandler from 'express-async-handler';
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
 import { withServer } from './test-utils';
+import { create } from 'node:domain';
 
 const TEST_SECRET = 'test-secret';
 
@@ -623,6 +624,64 @@ describe('session middleware', () => {
 
       // Ensure the session was not persisted.
       assert.equal(setCount, 1);
+    });
+  });
+
+  it('rotates to a new cookie when needed', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const store = new MemoryStore();
+
+    // Will create "legacy" sessions.
+    const legacyApp = express();
+    legacyApp.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        cookie: {
+          name: 'legacy_session',
+        },
+      }),
+    );
+    legacyApp.get('/', (req, res) => res.send(req.session.id.toString()));
+
+    // Will create "new" sessions and upgrade "legacy" sessions.
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        cookie: {
+          name: ['session', 'legacy_session'],
+        },
+      }),
+    );
+    app.get('/', (req, res) => res.send(req.session.id.toString()));
+
+    let legacySessionId: string | null = null;
+
+    await withServer(legacyApp, async ({ url }) => {
+      // Generate a legacy session.
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      legacySessionId = await res.text();
+    });
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      const newSessionId = await res.text();
+
+      // Ensure that the new session cookie was set.
+      const header = res.headers.get('set-cookie');
+      assert.isNotNull(header);
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+
+      // Ensure that the legacy session is migrated to a new session.
+      assert.equal(newSessionId, legacySessionId);
     });
   });
 });
