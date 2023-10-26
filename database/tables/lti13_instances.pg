@@ -3,15 +3,15 @@ columns
     access_tokenset: jsonb
     client_params: jsonb
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
-    custom_params: jsonb
+    custom_fields: jsonb default '{}'::jsonb
     deleted_at: timestamp with time zone
     id: bigint not null default nextval('lti13_instances_id_seq'::regclass)
     institution_id: bigint not null
-    issuer_params: jsonb
+    issuer_params: jsonb default '{}'::jsonb
     keystore: jsonb
-    name: text
+    name: text not null default 'LMS'::text
     name_attribute: text
-    platform: text
+    platform: text not null default 'Unknown'::text
     tool_platform_name: text
     uid_attribute: text
     uin_attribute: text
