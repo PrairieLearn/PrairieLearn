@@ -12,7 +12,7 @@
           canTriggerFinish: authz_result.authorized_edit,
           csrfToken: __csrf_token,
         }, 'time-limit-data') %>
-    <script src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
+    <script defer src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>

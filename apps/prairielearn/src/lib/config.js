@@ -17,6 +17,19 @@ const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
+  postgresqlSsl: z
+    .union([
+      z.boolean(),
+      // A subset of the options that can be provided to the `TLSSocket` constructor.
+      // https://node-postgres.com/features/ssl
+      z.object({
+        rejectUnauthorized: z.boolean().default(true),
+        ca: z.string().nullable().default(null),
+        key: z.string().nullable().default(null),
+        cert: z.string().nullable().default(null),
+      }),
+    ])
+    .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())

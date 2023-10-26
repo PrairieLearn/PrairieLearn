@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import util = require('util');
 import { config } from '../../lib/config';
 
 const router = Router();
@@ -22,7 +21,7 @@ router.get(
       });
     }
 
-    await util.promisify(req.session.destroy);
+    await req.session.destroy();
     // Hold-over from the old express-session implementation
     res.clearCookie('connect.sid');
     res.clearCookie('prairielearn_session');

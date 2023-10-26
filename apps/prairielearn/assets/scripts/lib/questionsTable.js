@@ -17,6 +17,13 @@ onDocumentReady(() => {
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
+  window.sharingSetsList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
+    return _.keyBy(
+      _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+    );
+  };
+
   window.versionList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
@@ -70,6 +77,12 @@ onDocumentReady(() => {
     ).join(' ');
   };
 
+  window.sharingSetFormatter = function (sharing_sets, question) {
+    return _.map(question.sharing_sets ?? [], (sharing_set) =>
+      html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
+    ).join(' ');
+  };
+
   window.versionFormatter = function (version, question) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
       >${question.display_type}</span
@@ -103,7 +116,7 @@ onDocumentReady(() => {
   let assessmentsByCourseInstanceFormatter = function (ci_id, question) {
     var ci_assessments = _.filter(
       question.assessments ?? [],
-      (assessment) => assessment.course_instance_id === ci_id,
+      (assessment) => assessment.course_instance_id.toString() === ci_id.toString(),
     );
     return _.map(ci_assessments, (assessment) =>
       html`<a

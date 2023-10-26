@@ -1,10 +1,12 @@
 import ast
 import copy
+import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Callable, Literal, Type, TypedDict, cast
 
+import prairielearn as pl
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
@@ -12,7 +14,6 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     stringify_expr,
 )
-from text_unidecode import unidecode
 from typing_extensions import NotRequired
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
@@ -364,9 +365,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    # Also replace the unicode minus with the normal one.
-    expr = expr.replace("^", "**").replace("\u2212", "-")
-    expr = unidecode(expr)
+    expr = pl.full_unidecode(expr).replace("^", "**")
 
     local_dict = {
         k: v
@@ -523,7 +522,7 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
 
 

@@ -140,9 +140,10 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Submit $beef(y) * f(y)$.
+                Submit $beef(y) + the(y)$. We set <code>show-score="false"</code> to hide the score badge and <code>suffix="$= \text{where?}$"</code>
+                to set the suffix.
             </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="custom_function_2" variables="y" custom-functions="beef,f"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
     </div>
 </div>
