@@ -33,7 +33,9 @@ export function ManualGradingAssessment({
   questions: ManualGradingQuestion[];
   num_open_instances: number;
 }) {
-  return html`<!doctype html>
+  const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
+  return html`
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../partials/head') %>", resLocals)}
@@ -79,69 +81,75 @@ export function ManualGradingAssessment({
                     const otherAssignedGraders = (question.assigned_graders || [])
                       .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
                       .map((u) => u.name ?? u.uid);
-                    return html` <tr>
-                      <td>
-                        <a
-                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/manual_grading/assessment_question/${question.id}"
-                        >
-                          ${question.alternative_group_number}.${question.alternative_group_size ===
-                          1
-                            ? ''
-                            : `${question.number_in_alternative_group}.`}
-                          ${question.title}
-                        </a>
-                      </td>
-                      <td>${question.qid}</td>
-                      <td class="text-center">
-                        ${question.max_auto_points
-                          ? resLocals.assessment.type === 'Exam'
-                            ? (question.points_list || [question.max_manual_points ?? 0])
-                                .map((p) => p - (question.max_manual_points ?? 0))
-                                .join(',')
-                            : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
-                          : '—'}
-                      </td>
-                      <td class="text-center">${question.max_manual_points || '—'}</td>
-                      <td class="text-center" data-testid="iq-to-grade-count">
-                        ${question.num_instance_questions_to_grade} /
-                        ${question.num_instance_questions}
-                      </td>
-                      <td>
-                        ${ProgressBar(
-                          question.num_instance_questions_to_grade,
-                          question.num_instance_questions,
-                        )}
-                      </td>
-                      <td>
-                        ${question.num_instance_questions_assigned > 0
-                          ? html`<strong class="bg-warning rounded px-1">
-                                ${resLocals.authz_data.user.name ??
-                                resLocals.authz_data.user.uid}</strong
-                              >${otherAssignedGraders.length ? ', ' : ''}`
-                          : ''}
-                        ${otherAssignedGraders.join(', ')}
-                        ${question.num_instance_questions_unassigned > 0
-                          ? html` <small class="text-muted"
-                              >(${question.num_instance_questions_unassigned} unassigned)</small
-                            >`
-                          : ''}
-                      </td>
-                      <td>
-                        ${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
-                      </td>
-                      <td>
-                        ${showGradingButton
-                          ? html`<a
-                              class="btn btn-xs btn-primary"
-                              href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                .id}/manual_grading/assessment_question/${question.id}/next_ungraded"
-                            >
-                              Grade next submission
-                            </a>`
-                          : ''}
-                      </td>
-                    </tr>`;
+                    return html`
+                      <tr>
+                        <td>
+                          <a
+                            href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                              .id}/manual_grading/assessment_question/${question.id}"
+                          >
+                            ${question.alternative_group_number}.${question.alternative_group_size ===
+                            1
+                              ? ''
+                              : `${question.number_in_alternative_group}.`}
+                            ${question.title}
+                          </a>
+                        </td>
+                        <td>${question.qid}</td>
+                        <td class="text-center">
+                          ${question.max_auto_points
+                            ? resLocals.assessment.type === 'Exam'
+                              ? (question.points_list || [question.max_manual_points ?? 0])
+                                  .map((p) => p - (question.max_manual_points ?? 0))
+                                  .join(',')
+                              : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
+                            : '—'}
+                        </td>
+                        <td class="text-center">${question.max_manual_points || '—'}</td>
+                        <td class="text-center" data-testid="iq-to-grade-count">
+                          ${question.num_instance_questions_to_grade} /
+                          ${question.num_instance_questions}
+                        </td>
+                        <td>
+                          ${ProgressBar(
+                            question.num_instance_questions_to_grade,
+                            question.num_instance_questions,
+                          )}
+                        </td>
+                        <td>
+                          ${question.num_instance_questions_assigned > 0
+                            ? html`
+                                <strong class="bg-warning rounded px-1">${currentUserName}</strong
+                                >${otherAssignedGraders.length ? ', ' : ''}
+                              `
+                            : ''}
+                          ${otherAssignedGraders.join(', ')}
+                          ${question.num_instance_questions_unassigned > 0
+                            ? html`
+                                <small class="text-muted">
+                                  (${question.num_instance_questions_unassigned} unassigned)
+                                </small>
+                              `
+                            : ''}
+                        </td>
+                        <td>
+                          ${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
+                        </td>
+                        <td>
+                          ${showGradingButton
+                            ? html`
+                                <a
+                                  class="btn btn-xs btn-primary"
+                                  href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                                    .id}/manual_grading/assessment_question/${question.id}/next_ungraded"
+                                >
+                                  Grade next submission
+                                </a>
+                              `
+                            : ''}
+                        </td>
+                      </tr>
+                    `;
                   })}
                 </tbody>
               </table>
@@ -149,7 +157,8 @@ export function ManualGradingAssessment({
           </div>
         </main>
       </body>
-    </html>`.toString();
+    </html>
+  `.toString();
 }
 
 function ProgressBar(partial: number | null, total: number | null) {
