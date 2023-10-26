@@ -3173,6 +3173,7 @@ __metadata:
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.2
     "@types/jquery": ^3.5.20
+    "@types/js-cookie": ^3.0.5
     "@types/jsdom": ^21.1.3
     "@types/klaw": ^3.0.4
     "@types/lodash": ^4.14.199
@@ -4692,6 +4693,13 @@ __metadata:
   dependencies:
     "@types/sizzle": "*"
   checksum: 9bd69faea3d60f52d3029a87b890003042a9dcf4f538c23ac2c11b3bd0e0ccd86b281d5ba3028d1b02df67c69266b8dc0ef0a35696ae174515ecf34523a0287b
+  languageName: node
+  linkType: hard
+
+"@types/js-cookie@npm:^3.0.5":
+  version: 3.0.5
+  resolution: "@types/js-cookie@npm:3.0.5"
+  checksum: 4d91ae26445499fdde283928aac9ad149be3561ef9b4d959f77e44694608accd5939c8c68ba42c50c2cfc007ccd442cc566a41077d7f2766390088fa91b612ce
   languageName: node
   linkType: hard
 
