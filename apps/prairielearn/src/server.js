@@ -1789,7 +1789,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/settings',
-    require('./pages/administratorSettings/administratorSettings'),
+    require('./pages/administratorSettings/administratorSettings').default,
   );
   app.use(
     '/pl/administrator/institutions',
@@ -1805,7 +1805,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/workspaces',
-    require('./pages/administratorWorkspaces/administratorWorkspaces'),
+    require('./pages/administratorWorkspaces/administratorWorkspaces').default,
   );
   app.use(
     '/pl/administrator/features',
@@ -1813,9 +1813,12 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/queries',
-    require('./pages/administratorQueries/administratorQueries'),
+    require('./pages/administratorQueries/administratorQueries').default,
   );
-  app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+  app.use(
+    '/pl/administrator/query',
+    require('./pages/administratorQuery/administratorQuery').default,
+  );
   app.use(
     '/pl/administrator/jobSequence/',
     require('./pages/administratorJobSequence/administratorJobSequence').default,
@@ -2100,6 +2103,7 @@ if (require.main === module && config.startServer) {
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+          ssl: config.postgresqlSsl,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
