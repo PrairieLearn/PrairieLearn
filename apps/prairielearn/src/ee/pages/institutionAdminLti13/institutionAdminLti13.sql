@@ -41,7 +41,17 @@ WHERE
 -- BLOCK update_platform
 UPDATE lti13_instances
 SET
-  (platform, issuer_params, client_params) = ($platform, $issuer_params, $client_params)
+  (
+    platform,
+    issuer_params,
+    client_params,
+    custom_fields
+  ) = (
+    $platform,
+    $issuer_params,
+    $client_params,
+    $custom_fields
+  )
 WHERE
   institution_id = $institution_id
   AND id = $unsafe_lti13_instance_id

@@ -145,6 +145,7 @@ router.post(
         issuer_params: req.body.issuer_params,
         platform: req.body.platform,
         client_params,
+        custom_fields: req.body.custom_fields,
       });
       flash('success', `Platform updated.`);
       // TODO: Saving changes should remove the cached value in auth

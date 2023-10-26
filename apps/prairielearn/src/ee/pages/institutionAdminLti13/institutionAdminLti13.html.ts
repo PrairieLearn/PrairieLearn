@@ -128,7 +128,7 @@ function LTI13Instance(
         ? html` The LMS has referred to itself as:
             <strong>${instance.tool_platform_name}</strong>`
         : ''}
-      <form class="form-inline" method="POST">
+      <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_name" />
         <div class="form-group my-2">
@@ -141,8 +141,11 @@ function LTI13Instance(
             spellcheck="false"
             name="name"
             value="${instance.name}"
-            placeholder="Use this name inside PL to refer to the LMS"
+            aria-describedby="nameHelp"
           />
+          <small id="nameHelp" class="form-text text-muted">
+            Use this name inside PL to refer to the LMS, i.e. whatever your institution calls it
+          </small>
         </div>
         <button class="btn btn-info">Save name</button>
         <input type="reset" class="btn btn-secondary" value="Reset options" />
@@ -153,12 +156,26 @@ function LTI13Instance(
 
       ${EncodedData(platform_defaults, 'platform_defaults_data')}
 
-      <form class="form-inline" method="POST">
+      <form class="form" method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="update_platform" />
 
         <div class="form-group">
-          <label for="choosePlatform" class="mr-2">Platform type: </label>
+          <label for="choosePlatform">Platform type: </label>
+          <div class="form-check form-check-inline ml-2">
+            <label class="form-check-label">
+              <input
+                id="update_params"
+                class="form-check-input"
+                type="checkbox"
+                name="platform_update"
+                value="1"
+                checked
+              />
+              On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
+            </label>
+          </div>
+
           <select class="form-control" id="choosePlatform" name="platform">
             ${platform_defaults.map((d) => {
               return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
@@ -167,43 +184,26 @@ function LTI13Instance(
             })}
           </select>
         </div>
-        <div class="form-check form-check-inline m-2">
-          <label class="form-check-label">
-            <input
-              id="update_params"
-              class="form-check-input"
-              type="checkbox"
-              name="platform_update"
-              value="1"
-              checked
-            />
-            On change, load defaults into form&nbsp;<em>(remember to edit and save!)</em>
-          </label>
-        </div>
 
-        <div class="form-group my-2">
-          <label
-            >Issuer params:
-            <textarea
-              class="form-control ml-2"
-              id="issuer_params"
-              name="issuer_params"
-              cols="80"
-              rows="8"
-              spellcheck="false"
-            >
+        <div class="form-group mt-2">
+          <label for="issuer_params"> Issuer params: </label>
+          <textarea
+            class="form-control"
+            id="issuer_params"
+            name="issuer_params"
+            rows="8"
+            spellcheck="false"
+          >
 ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
-            >
-          </label>
+          >
         </div>
 
-        <div class="form-group my-2">
-          <label for="client_id" class="mr-2">Client ID: </label>
+        <div class="form-group mt-2">
+          <label for="client_id">Client ID: </label>
           <input
             id="client_id"
             class="form-control"
             type="text"
-            size="80"
             spellcheck="false"
             name="client_id"
             value="${instance.client_params?.client_id}"
@@ -211,6 +211,22 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
           />
           <small id="client_idHelp" class="form-text text-muted">
             Get this unique ID from the LMS.
+          </small>
+        </div>
+
+        <div class="form-group mt-2">
+          <label for="custom_fields">Custom fields suggestions: </label>
+          <textarea
+            class="form-control"
+            id="custom_fields"
+            name="custom_fields"
+            rows="8"
+            spellcheck="false"
+          >
+${JSON.stringify(instance.custom_fields, null, 3)}</textarea
+          >
+          <small id="custom_fieldsHelp" class="form-text text-muted">
+            Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom fields
           </small>
         </div>
 
