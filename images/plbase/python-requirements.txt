@@ -15,6 +15,7 @@ networkx==3.1
 nltk==3.8.1
 numpy==1.26.0
 openpyxl==3.1.2
+orjson==3.9.9
 pandas-stubs==2.1.1.230928
 pandas==2.1.1
 Pint==0.22
