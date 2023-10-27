@@ -6,31 +6,31 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 
 - Clone PrairieLearn from the main repository:
 
-```sh
-git clone https://github.com/PrairieLearn/PrairieLearn.git
-```
+  ```sh
+  git clone https://github.com/PrairieLearn/PrairieLearn.git
+  ```
 
 - Run PrairieLearn with:
 
-```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+  ```sh
+  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 
-# You can now run the following commands inside the container:
+  # You can now run the following commands inside the container:
 
-# Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
-# Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
-# If editing code in `packages/`, you should also repeat either this command or `make build`.
-make deps
+  # Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
+  # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
+  # If editing code in `packages/`, you should also repeat either this command or `make build`.
+  make deps
 
-# Run the PrairieLearn server in development mode.
-make dev
+  # Run the PrairieLearn server in development mode.
+  make dev
 
-# Or, run PrairieLearn like it's run in production.
-make start
+  # Or, run PrairieLearn like it's run in production.
+  make start
 
-# To stop the server, press Ctrl-C.
-# To exit the container, press Ctrl-C and then Ctrl-D.
-```
+  # To stop the server, press Ctrl-C.
+  # To exit the container, press Ctrl-C and then Ctrl-D.
+  ```
 
 The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows command prompt outside WSL), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
 
@@ -105,22 +105,22 @@ The previous shells were launched in their own containers. If you want to open a
 
 - Find the name of your running PrairieLearn container by running
 
-```sh
-docker ps
-```
+  ```sh
+  docker ps
+  ```
 
-which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
+  which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-```
-CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
-e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
-```
+  ```
+  CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
+  e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+  ```
 
 - Open a shell in your PrairieLearn container by running
 
-```sh
-docker exec -it CONTAINER_NAME /bin/bash
-```
+  ```sh
+  docker exec -it CONTAINER_NAME /bin/bash
+  ```
 
 ## Using tmux in a container
 
