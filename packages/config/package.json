@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx/cjs src/**/*.test.ts"
+    "test": "mocha --no-config --require tsx src/**/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.437.0",

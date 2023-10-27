@@ -7,7 +7,7 @@
     "dev:no-watch": "tsx src/index.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/index.js",
-    "test": "mocha --no-config --require tsx/cjs src/**/*.test.{js,ts}"
+    "test": "mocha --no-config --require tsx src/**/*.test.{js,ts}"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.437.0",

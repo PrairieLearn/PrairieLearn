@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "nyc --reporter=html --reporter=text mocha --no-config --require tsx/cjs --watch-files src/ src/**/*.test.ts"
+    "test": "nyc --reporter=html --reporter=text mocha --no-config --require tsx --watch-files src/ src/**/*.test.ts"
   },
   "dependencies": {
     "cookie": "^0.5.0",
