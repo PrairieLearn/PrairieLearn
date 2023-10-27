@@ -121,7 +121,6 @@ def get_string_precision(number_string: str) -> float:
     return 10 ** (len(number_string) - len(number_string.rstrip("0")))
 
 
-# TODO: add precision calculation function for other grading methods
 def get_string_significant_digits(number_string: str) -> int:
     if "." in number_string:
         number_string_partition = number_string.partition(".")
@@ -145,10 +144,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "custom-format", CUSTOM_FORMAT_DEFAULT
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    show_correct_answer = pl.get_boolean_attrib(
+            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+        )
+    show_help_text = pl.get_boolean_attrib(
+            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
+        )
+    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    partial_score = data["partial_scores"].get(name, {"score": None})
+    score = partial_score.get("score", None)
+    with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        template = f.read()
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
         parse_error = data["format_errors"].get(name, None)
 
         html_params = {
@@ -162,10 +171,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_score": show_score,
             "parse_error": parse_error,
             display.value: True,
+            "raw_submitted_answer": raw_submitted_answer,
         }
 
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
@@ -225,55 +233,45 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        info_params["show_info"] = pl.get_boolean_attrib(
-            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-        )
+        info_params["show_info"] = show_help_text
         info_params["allow_fractions"] = allow_fractions
 
         # Find the true answer to be able to display it in the info popup
         ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if show_correct_answer:
             ans_true = format_true_ans(element, data, name)
         if ans_true is not None:
             info_params["a_tru"] = ans_true
 
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info = chevron.render(f, info_params).strip()
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            info_params.pop("format", None)
-            # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
-            # Here we opt to not generate the value, hence the placeholder is empty.
-            # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
-            if pl.has_attrib(element, "placeholder"):
-                # 'placeholder' attribute is set, override the placeholder text
-                html_params["placeholder"] = pl.get_string_attrib(
-                    element, "placeholder"
-                )
-            else:
-                # 'placeholder' attribute not set, use default shortformat as placeholder text
-                info_params["shortformat"] = pl.get_boolean_attrib(
-                    element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
-                )
-                html_params["placeholder"] = chevron.render(f, info_params).strip()
+
+        info = chevron.render(template, info_params).strip()
+
+        info_params.pop("format", None)
+        # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
+        # Here we opt to not generate the value, hence the placeholder is empty.
+        # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
+        if pl.has_attrib(element, "placeholder"):
+            # 'placeholder' attribute is set, override the placeholder text
+            html_params["placeholder"] = pl.get_string_attrib(
+                element, "placeholder"
+            )
+        else:
+            # 'placeholder' attribute not set, use default shortformat as placeholder text
+            info_params["shortformat"] = pl.get_boolean_attrib(
+                element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
+            )
+            html_params["placeholder"] = chevron.render(template, info_params).strip()
 
         html_params["info"] = info
 
         # Determine the title of the popup based on what information is being shown
-        if pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT):
-            html_params["popup_title"] = "Number"
-        else:
-            html_params["popup_title"] = "Correct Answer"
+        html_params["popup_title"] = "Number" if show_help_text else "Correct Answer"
 
         # Enable or disable the popup
-        if pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT):
+        if show_help_text:
             html_params["show_info"] = True
 
-        if raw_submitted_answer is not None:
-            html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -297,22 +295,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
                 )
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if show_correct_answer:
             ans_true = format_true_ans(element, data, name)
         if ans_true is not None:
             html_params["a_tru"] = ans_true
-
-        partial_score = data["partial_scores"].get(name, {"score": None})
-        score = partial_score.get("score", None)
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -324,14 +316,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params["feedback"] = partial_score.get("feedback", None)
 
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+        return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
         ans_true = None
-        if pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if show_correct_answer:
             ans_true = format_true_ans(element, data, name)
 
         if ans_true is None:
@@ -343,8 +332,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": ans_true,
             "suffix": suffix,
         }
-        with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            return chevron.render(f, html_params).strip()
+
+        return chevron.render(template, html_params).strip()
 
     assert_never(data["panel"])
 
