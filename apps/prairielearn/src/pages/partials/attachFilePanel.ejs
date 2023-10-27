@@ -11,7 +11,7 @@
       <% file_list.forEach(function(file, iFile) { %>
       <tr>
         <td style="word-break:break-all;">
-          <a class="attached-file" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
+          <a class="attached-file" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
             <%= file.display_filename %>
           </a>
         </td>
@@ -38,6 +38,7 @@
     </tbody>
   </table>
 
+  <% if (locals.question_context !== 'manual_grading') { %>
   <div class="card-footer">
     <% if (!assessment_instance.open || !authz_result.active) { %>
     <p class="small mb-0">
@@ -116,4 +117,5 @@
     <!-- END OF FILES -->
     <% } %>
   </div>
+  <% } %>
 </div>

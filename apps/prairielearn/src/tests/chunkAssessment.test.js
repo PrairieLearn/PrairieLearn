@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');
@@ -31,14 +30,14 @@ describe('Generate chunks and use them for a student homework', function () {
     config.chunksConsumer = true;
     config.chunksConsumerDirectory = tempChunksDir.path;
 
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_hw1, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
   after('shut down testing server', async () => {
-    await util.promisify(helperServer.after.bind(this))();
+    await helperServer.after.call(this);
     await tempChunksDir.cleanup();
     config.chunksConsumer = false;
     config.chunksConsumerDirectory = originalChunksConsumerDirectory;

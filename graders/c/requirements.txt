@@ -1,4 +1,4 @@
-matplotlib==3.7.2
-numpy==1.25.2
+matplotlib==3.8.0
+numpy==1.26.1
 sympy==1.12
 lxml==4.9.3

@@ -101,17 +101,17 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Use `"type":"Exam"`
 - Use `alternatives` to select questions out of a pre-defined set. For example:
 
-```json
-{
-  "questions": [
-    {
-      "numberChoose": 1,
-      "points": [3, 2, 1],
-      "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
-    }
-  ]
-}
-```
+  ```json
+  {
+    "questions": [
+      {
+        "numberChoose": 1,
+        "points": [3, 2, 1],
+        "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
+      }
+    ]
+  }
+  ```
 
 - Choose `startDate` and `endDate` to allow for a 1-hour window (this could be your lecture time). In `allowAccess`, set a time limit of 50 minutes. This gives extra 10-minutes for possible delays.
 - Add a password
@@ -134,13 +134,13 @@ When using [PrairieTest](https://us.prairietest.com/pt/docs/staff) to schedule a
 - Start from `Configuration 2`
 - Remove `startDate` and `endDate` from `allowAccess`. Instead use:
 
-```json
-{
-  "mode": "Exam",
-  "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-  "credit": 100
-}
-```
+  ```json
+  {
+    "mode": "Exam",
+    "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+    "credit": 100
+  }
+  ```
 
 You will be able to find the `examUuid` in the CBTF scheduler app.
 

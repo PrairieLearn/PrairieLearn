@@ -82,7 +82,7 @@
         </div>
 
         <div class="card-body">
-          <% if (!assessment.allow_real_time_grading) { %>
+          <% if (!assessment.allow_real_time_grading && assessment_instance.open) { %>
             <div class="alert alert-warning">
               This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later. You can use the <span class="badge badge-outline badge-light">Finish assessment</span> button below to finish and calculate your final grade.
             </div>
@@ -167,10 +167,11 @@
 
         <table class="table table-sm table-hover" data-testid="assessment-questions">
           <thead>
-            <% if (has_auto_grading_question && has_manual_grading_question) { %>
+            <% if (has_auto_grading_question && has_manual_grading_question && assessment.allow_real_time_grading) { %>
             <tr>
               <th rowspan="2">Question</th>
-              <th class="text-center" colspan="<%= assessment.allow_real_time_grading ? 3 : 2 %>">Auto-grading</th>
+              <th class="text-center" rowspan="2">Submission status</th>
+              <th class="text-center" colspan="3">Auto-grading</th>
               <th class="text-center" rowspan="2">Manual grading points</th>
               <th class="text-center" rowspan="2">Total points</th>
             </tr>
@@ -178,6 +179,7 @@
             <% } else { %>
             <tr>
               <th>Question</th>
+              <th class="text-center">Submission status</th>
             <% } %>
             <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
               <th class="text-center">
@@ -192,8 +194,11 @@
                 Awarded points
                 <%- include('../partials/examQuestionHelpAwardedPoints'); %>
               </th>
+            <% } else if (has_auto_grading_question && has_manual_grading_question) { %>
+              <th class="text-center">Auto-grading points</th>
+              <th class="text-center">Manual grading points</th>
+              <th class="text-center">Total points</th>
             <% } else { %>
-              <th class="text-center">Submission status</th>
               <th class="text-center">Points</th>
             <% } %>
             </tr>
@@ -202,7 +207,7 @@
           <% instance_questions.forEach(function(instance_question, iq_index) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th colspan="<%= has_auto_grading_question ? (has_manual_grading_question ? 2 : 0) + (assessment.allow_real_time_grading ? 4 : 3) : 3 %>">
+              <th colspan="<%= has_auto_grading_question ? (has_manual_grading_question ? 2 : 0) + (assessment.allow_real_time_grading ? 5 : 3) : 3 %>">
                 <span class="mr-1">
                   <%= instance_question.zone_title %>
                 </span>
@@ -228,8 +233,9 @@
                   rowLabelText: `Question ${instance_question.question_number}`,
                 }); %>
               </td>
-              <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+              <td class="text-center"><%- include('../partials/examQuestionStatus', {instance_question}); %></td>
               <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
+                <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts] - instance_question.max_manual_points, points_list: instance_question.points_list.map((p) => (p - instance_question.max_manual_points)), highest_submission_score: instance_question.highest_submission_score}); %></td>
               <% } %>
               <% if (assessment.allow_real_time_grading || !assessment_instance.open) { %>

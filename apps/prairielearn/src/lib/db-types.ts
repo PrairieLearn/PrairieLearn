@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import parsePostgresInterval = require('postgres-interval');
+
+const INTERVAL_MS_PER_SECOND = 1000;
+const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
+const INTERVAL_MS_PER_HOUR = 60 * INTERVAL_MS_PER_MINUTE;
+const INTERVAL_MS_PER_DAY = 24 * INTERVAL_MS_PER_HOUR;
+const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
+const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 
 // IDs are always coerced to strings. This ensures consistent handling when an
 // ID is fetched directly or via `to_jsonb`, which returns a number.
@@ -7,7 +15,25 @@ import { z } from 'zod';
 // string is actually a number. If it's not, we want to fail quickly.
 export const IdSchema = z
   .string({ coerce: true })
-  .refine((val) => /^\d+$/.test(val), { message: 'ID is not an integer' });
+  .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
+
+export const IntervalSchema = z.string().transform((val) => {
+  const interval = parsePostgresInterval(val);
+
+  // This calculation matches Postgres's behavior when computing the number of
+  // milliseconds in an interval with `EXTRACT(epoch from '...'::interval) * 1000`.
+  // The noteworthy parts of this conversion are that 1 year = 365.25 days and
+  // 1 month = 30 days.
+  return (
+    interval.years * INTERVAL_MS_PER_YEAR +
+    interval.months * INTERVAL_MS_PER_MONTH +
+    interval.days * INTERVAL_MS_PER_DAY +
+    interval.hours * INTERVAL_MS_PER_HOUR +
+    interval.minutes * INTERVAL_MS_PER_MINUTE +
+    interval.seconds * INTERVAL_MS_PER_SECOND +
+    interval.milliseconds
+  );
+});
 
 // Accepts either a string or a Date object. If a string is passed, it is
 // validated and parsed as an ISO date string.
@@ -29,6 +55,7 @@ export const DateFromISOString = z
 export const CourseSchema = z.object({
   branch: z.string(),
   commit_hash: z.string().nullable(),
+  created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),
@@ -267,3 +294,50 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const TagSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Tag = z.infer<typeof TagSchema>;
+
+export const TopicSchema = z.object({
+  color: z.string().nullable(),
+  course_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  number: z.number().nullable(),
+});
+export type Topic = z.infer<typeof TopicSchema>;
+
+export const SharingSetSchema = z.object({
+  course_id: IdSchema,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type SharingSet = z.infer<typeof SharingSetSchema>;
+
+export const UserSessionSchema = z.object({
+  id: IdSchema,
+  session_id: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  expires_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
+  data: z.any(),
+});
+export type UserSession = z.infer<typeof UserSessionSchema>;
+
+export const AssessmentsFormatForQuestionSchema = z.array(
+  z.object({
+    label: z.string().nullable(),
+    assessment_id: IdSchema,
+    course_instance_id: IdSchema,
+    color: z.string().nullable(),
+  }),
+);

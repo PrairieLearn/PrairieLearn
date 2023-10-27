@@ -11,7 +11,7 @@ const helperServer = require('./helperServer');
 describe('Cron', function () {
   this.timeout(60000);
 
-  before('set up testing server', function (callback) {
+  before('set up testing server', async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
     const now = new Date();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -24,7 +24,7 @@ describe('Cron', function () {
     // set all other cron jobs to execute soon
     config.cronOverrideAllIntervalsSec = 3;
 
-    helperServer.before().call(this, callback);
+    await helperServer.before().call(this);
   });
   after('shut down testing server', helperServer.after);
 

@@ -98,7 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["has_message"] = bool(message)
 
         output = results.get("output", None)
-        html_params["output"] = output
+        html_params["output"] = ansi_to_html(output)
         html_params["has_output"] = bool(output)
 
         images = results.get("images", [])
@@ -142,9 +142,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 test: dict[str, Any] = {
                     "index": index,
                     "name": name,
-                    "message": message,
+                    "message": ansi_to_html(message),
                     "has_message": bool(message),
-                    "output": output,
+                    "output": ansi_to_html(output),
                     "has_output": bool(output),
                     "description": description,
                     "has_description": bool(description),

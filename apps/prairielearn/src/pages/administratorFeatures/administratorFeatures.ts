@@ -5,6 +5,7 @@ import error = require('@prairielearn/error');
 import { z } from 'zod';
 
 import { FeatureName, features } from '../../lib/features';
+import { config } from '../../lib/config';
 import {
   AdministratorFeatures,
   AdministratorFeature,
@@ -57,6 +58,7 @@ router.get(
         feature: req.params.feature,
         featureGrants,
         institutions,
+        featureInConfig: config.features[req.params.feature] ?? null,
         resLocals: res.locals,
       }),
     );

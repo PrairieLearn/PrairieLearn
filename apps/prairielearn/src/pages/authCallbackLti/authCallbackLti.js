@@ -135,6 +135,11 @@ router.post('/', function (req, res, next) {
           secure: shouldSecureCookie(req),
         });
 
+        // Dual-write information to the session so that we can start reading
+        // it instead of the cookie in the future.
+        req.session.user_id = result.rows[0].user_id;
+        req.session.authn_provider_name = 'LTI';
+
         const params = {
           course_instance_id: ltiresult.course_instance_id,
           context_id: parameters.context_id,

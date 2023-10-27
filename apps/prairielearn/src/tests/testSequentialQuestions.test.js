@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
@@ -18,7 +17,7 @@ describe('Assessment that forces students to complete questions in-order', funct
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

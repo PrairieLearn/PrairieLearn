@@ -834,7 +834,8 @@ describe('Exam assessment', function () {
         locals.csvData =
           'uid,instance,qid,score_perc,feedback\n' +
           'dev@illinois.edu,1,addNumbers,40,feedback numbers\n' +
-          'dev@illinois.edu,1,addVectors,50,feedback vectors\n';
+          'dev@illinois.edu,1,addVectors,50,feedback vectors\n' +
+          'dev@illinois.edu,1,fossilFuelsRadio,,\n';
       });
     });
     helperQuestion.uploadInstanceQuestionScores(locals);
@@ -1439,23 +1440,17 @@ describe('Exam assessment', function () {
   partialCreditTests.forEach(function (partialCreditTest, iPartialCreditTest) {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           debug('partial credit test: server shutting down');
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            debug('partial credit test: server shutdown complete');
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
+          debug('partial credit test: server shutdown complete');
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           debug('partial credit test: server starting up');
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            debug('partial credit test: server startup complete');
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
+          debug('partial credit test: server startup complete');
         });
       });
 

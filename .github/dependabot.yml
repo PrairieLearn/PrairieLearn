@@ -91,8 +91,21 @@ updates:
       timezone: America/Chicago
     open-pull-requests-limit: 99
     rebase-strategy: disabled
+    groups:
+      pandas:
+        patterns:
+          - 'pandas'
+          - 'pandas-stubs'
   - package-ecosystem: docker
     directory: '/workspaces/jupyterlab'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
+  - package-ecosystem: pip
+    directory: '/workspaces/jupyterlab-python'
     schedule:
       interval: monthly
       time: '06:00'

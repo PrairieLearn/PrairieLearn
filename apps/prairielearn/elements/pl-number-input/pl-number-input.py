@@ -470,7 +470,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             assert_never(comparison)
 
-        if is_correct:
+        if is_correct and pl.get_boolean_attrib(
+            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+        ):
             feedback += f"The correct answer used for grading was {a_tru_converted}"
         return (is_correct, feedback)
 
