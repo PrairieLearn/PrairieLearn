@@ -5,7 +5,12 @@ import asyncHandler from 'express-async-handler';
 
 import { SessionStore } from './store';
 import { beforeEnd } from './before-end';
-import { getSessionIdFromCookie, type CookieSecure, shouldSecureCookie } from './cookie';
+import {
+  type CookieSecure,
+  shouldSecureCookie,
+  getSessionCookie,
+  getSessionIdFromCookie,
+} from './cookie';
 import { type Session, generateSessionId, loadSession, hashSession } from './session';
 
 declare global {
@@ -22,7 +27,13 @@ export interface SessionOptions {
   store: SessionStore;
   canSetCookie?: (req: Request) => boolean;
   cookie?: {
-    name?: string;
+    /**
+     * If multiple names are provided, the first one is used as the primary
+     * name for setting the cookie. The other names are used as fallbacks when
+     * reading the cookie in requests. If a fallback name is found in a request,
+     * the cookie value will be transparently re-written to the primary name.
+     */
+    name?: string | string[];
     secure?: CookieSecure;
     httpOnly?: boolean;
     sameSite?: boolean | 'none' | 'lax' | 'strict';
@@ -37,7 +48,8 @@ const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day
 
 export function createSessionMiddleware(options: SessionOptions) {
   const secrets = Array.isArray(options.secret) ? options.secret : [options.secret];
-  const cookieName = options.cookie?.name ?? DEFAULT_COOKIE_NAME;
+  const cookieNames = getCookieNames(options.cookie?.name);
+  const primaryCookieName = cookieNames[0];
   const cookieMaxAge = options.cookie?.maxAge ?? DEFAULT_COOKIE_MAX_AGE;
   const store = options.store;
 
@@ -46,7 +58,8 @@ export function createSessionMiddleware(options: SessionOptions) {
     res: Response,
     next: NextFunction,
   ) {
-    const cookieSessionId = getSessionIdFromCookie(req, cookieName, secrets);
+    const sessionCookie = getSessionCookie(req, cookieNames);
+    const cookieSessionId = getSessionIdFromCookie(sessionCookie?.value, secrets);
     const sessionId = cookieSessionId ?? (await generateSessionId());
     req.session = await loadSession(sessionId, req, store, cookieMaxAge);
 
@@ -60,7 +73,12 @@ export function createSessionMiddleware(options: SessionOptions) {
         if (cookieSessionId) {
           // If the request arrived with a session cookie but the session was
           // destroyed, clear the cookie.
-          res.clearCookie(cookieName);
+          //
+          // To cover all our bases, we'll clear *all* known session cookies to
+          // ensure that state sessions aren't left behind.
+          cookieNames.forEach((cookieName) => {
+            res.clearCookie(cookieName);
+          });
           return;
         }
 
@@ -74,12 +92,13 @@ export function createSessionMiddleware(options: SessionOptions) {
         return;
       }
 
+      const needsRotation = sessionCookie?.name && sessionCookie?.name !== primaryCookieName;
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (canSetCookie && (isNewSession || didExpirationChange)) {
+      if (canSetCookie && (isNewSession || didExpirationChange || needsRotation)) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
-        res.cookie(cookieName, signedSessionId, {
+        res.cookie(primaryCookieName, signedSessionId, {
           secure: secureCookie,
           httpOnly: options.cookie?.httpOnly ?? true,
           sameSite: options.cookie?.sameSite ?? false,
@@ -121,6 +140,18 @@ export function createSessionMiddleware(options: SessionOptions) {
 
     next();
   });
+}
+
+function getCookieNames(cookieName: string | string[] | undefined): string[] {
+  if (!cookieName) {
+    return [DEFAULT_COOKIE_NAME];
+  }
+
+  if (Array.isArray(cookieName) && cookieName.length === 0) {
+    throw new Error('cookie.name must not be an empty array');
+  }
+
+  return Array.isArray(cookieName) ? cookieName : [cookieName];
 }
 
 function signSessionId(sessionId: string, secret: string): string {

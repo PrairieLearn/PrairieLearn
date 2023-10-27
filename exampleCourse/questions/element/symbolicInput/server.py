@@ -21,8 +21,8 @@ def generate(data):
     C = sympy.symbols("C", nonpositive=True)
     data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(C))
 
-    f = sympy.Function("f")
+    the = sympy.Function("the")
     beef = sympy.Function("beef")
 
-    ans = f(y) + beef(y)
+    ans = the(y) + beef(y)
     data["correct_answers"]["custom_function_2"] = pl.to_json(ans)

@@ -104,6 +104,14 @@ updates:
       timezone: America/Chicago
     open-pull-requests-limit: 99
     rebase-strategy: disabled
+  - package-ecosystem: pip
+    directory: '/workspaces/jupyterlab-python'
+    schedule:
+      interval: monthly
+      time: '06:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 99
+    rebase-strategy: disabled
   - package-ecosystem: docker
     directory: '/workspaces/xtermjs'
     schedule:

@@ -1,5 +1,11 @@
 # @prairielearn/sanitize
 
+## 1.0.8
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
 ## 1.0.7
 
 ### Patch Changes

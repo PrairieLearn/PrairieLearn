@@ -1782,10 +1782,13 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
-  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
+  app.use(
+    '/pl/administrator/admins',
+    require('./pages/administratorAdmins/administratorAdmins').default,
+  );
   app.use(
     '/pl/administrator/settings',
-    require('./pages/administratorSettings/administratorSettings'),
+    require('./pages/administratorSettings/administratorSettings').default,
   );
   app.use(
     '/pl/administrator/institutions',
@@ -1801,7 +1804,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/workspaces',
-    require('./pages/administratorWorkspaces/administratorWorkspaces'),
+    require('./pages/administratorWorkspaces/administratorWorkspaces').default,
   );
   app.use(
     '/pl/administrator/features',
@@ -1809,12 +1812,15 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/queries',
-    require('./pages/administratorQueries/administratorQueries'),
+    require('./pages/administratorQueries/administratorQueries').default,
   );
-  app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+  app.use(
+    '/pl/administrator/query',
+    require('./pages/administratorQuery/administratorQuery').default,
+  );
   app.use(
     '/pl/administrator/jobSequence/',
-    require('./pages/administratorJobSequence/administratorJobSequence'),
+    require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
     '/pl/administrator/courseRequests/',
@@ -1822,7 +1828,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/batchedMigrations',
-    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations'),
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -2096,6 +2102,7 @@ if (require.main === module && config.startServer) {
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+          ssl: config.postgresqlSsl,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);

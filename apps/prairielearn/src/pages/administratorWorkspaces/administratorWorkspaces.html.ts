@@ -1,9 +1,9 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
-const { z } = require('zod');
-const _ = require('lodash');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
+import _ = require('lodash');
 
-const WorkspaceSchema = z.object({
+export const WorkspaceSchema = z.object({
   id: z.string(),
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   time_in_state: z.string(),
@@ -24,21 +24,17 @@ const WorkspaceSchema = z.object({
   course_name: z.string(),
   institution_name: z.string(),
 });
+type Workspace = z.infer<typeof WorkspaceSchema>;
 
-/** @typedef {z.infer<typeof WorkspaceSchema>} Workspace */
-
-/**
- * @typedef {object} AdministratorWorkspacesProps
- * @property {Workspace[]} workspaces
- * @property {number} workspaceLostHostCapacity
- * @property {Record<string, any>} resLocals
- */
-
-/**
- * @param {AdministratorWorkspacesProps} props
- * @returns {string}
- */
-function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLocals }) {
+export function AdministratorWorkspaces({
+  workspaces,
+  workspaceLoadHostCapacity,
+  resLocals,
+}: {
+  workspaces: Workspace[];
+  workspaceLoadHostCapacity: number;
+  resLocals: Record<string, any>;
+}) {
   const workspacesByHost = _.groupBy(workspaces, 'workspace_host_id');
   const workspaceHosts = Object.entries(workspacesByHost).map(
     ([workspaceHostId, workspacesForHost]) => {
@@ -161,17 +157,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
   `.toString();
 }
 
-/**
- * @typedef {Object} CapacityProps
- * @property {number} total
- * @property {number} current
- */
-
-/**
- * @param {CapacityProps} props
- * @returns {import('@prairielearn/html').HtmlSafeString}
- */
-function Capacity({ total, current }) {
+function Capacity({ total, current }: { total: number; current: number }) {
   const capacity = (current / total) * 100;
   return html`
     <div class="d-flex flex-row align-items-center">
@@ -212,8 +198,3 @@ function WorkspaceHostState({ state }) {
   }
   return html`<span class="badge badge-${color} mr-2">${state}</span>`;
 }
-
-module.exports = {
-  WorkspaceSchema,
-  AdministratorWorkspaces,
-};
