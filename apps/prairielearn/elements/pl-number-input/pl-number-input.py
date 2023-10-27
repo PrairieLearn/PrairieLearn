@@ -145,11 +145,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_correct_answer = pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        )
+        element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+    )
     show_help_text = pl.get_boolean_attrib(
-            element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-        )
+        element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
+    )
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     partial_score = data["partial_scores"].get(name, {"score": None})
     score = partial_score.get("score", None)
@@ -243,7 +243,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if ans_true is not None:
             info_params["a_tru"] = ans_true
 
-
         info = chevron.render(template, info_params).strip()
 
         info_params.pop("format", None)
@@ -252,9 +251,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
         if pl.has_attrib(element, "placeholder"):
             # 'placeholder' attribute is set, override the placeholder text
-            html_params["placeholder"] = pl.get_string_attrib(
-                element, "placeholder"
-            )
+            html_params["placeholder"] = pl.get_string_attrib(element, "placeholder")
         else:
             # 'placeholder' attribute not set, use default shortformat as placeholder text
             info_params["shortformat"] = pl.get_boolean_attrib(
