@@ -136,8 +136,8 @@ onDocumentReady(() => {
     if (e.key === 'Enter') {
       const uid = navbarUserEffectiveUidInput.value.trim();
       if (uid !== '') {
-        document.cookie = `pl_requested_uid=${uid}; path=/; expires=${expires}`;
-        document.cookie = 'pl_requested_data_changed; path=/';
+        Cookies.set('pl_requested_uid', uid, { path: '/', expires: expires });
+        Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
         location.reload();
       }
     }
@@ -146,8 +146,8 @@ onDocumentReady(() => {
   navbarUserEffectiveUidButton?.addEventListener('click', () => {
     const uid = navbarUserEffectiveUidInput.value.trim();
     if (uid !== '') {
-      document.cookie = `pl_requested_uid=${uid}; path=/; expires=${expires}`;
-      document.cookie = 'pl_requested_data_changed; path=/';
+      Cookies.set('pl_requested_uid', uid, { path: '/', expires: expires });
+      Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
       location.reload();
     }
   });
