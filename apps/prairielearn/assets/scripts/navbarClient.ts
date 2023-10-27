@@ -124,7 +124,7 @@ onDocumentReady(() => {
     '#navbar-user-effective-uid-button',
   );
 
-  navbarUserEffectiveUidInput?.addEventListener('keyup', function (e) {
+  navbarUserEffectiveUidInput?.addEventListener('keyup', () => {
     if (navbarUserEffectiveUidInput.value.trim() !== '') {
       navbarUserEffectiveUidButton.removeAttribute('disabled');
     } else {
@@ -132,7 +132,7 @@ onDocumentReady(() => {
     }
   });
 
-  navbarUserEffectiveUidInput?.addEventListener('keypress', function (e) {
+  navbarUserEffectiveUidInput?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       const uid = navbarUserEffectiveUidInput.value.trim();
       if (uid !== '') {
@@ -143,7 +143,7 @@ onDocumentReady(() => {
     }
   });
 
-  navbarUserEffectiveUidButton?.addEventListener('click', function () {
+  navbarUserEffectiveUidButton?.addEventListener('click', () => {
     const uid = navbarUserEffectiveUidInput.value.trim();
     if (uid !== '') {
       document.cookie = `pl_requested_uid=${uid}; path=/; expires=${expires}`;
