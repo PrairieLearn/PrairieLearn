@@ -83,6 +83,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
     score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+    parse_error = data["format_errors"].get(name)
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -128,6 +129,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "raw_submitted_answer": raw_submitted_answer,
+            "parse_error": parse_error,
         }
 
         if show_score and score is not None:
@@ -137,7 +139,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
             "label": label,
