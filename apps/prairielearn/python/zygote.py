@@ -103,22 +103,22 @@ def worker_loop(s: socket.socket):
     # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
-    data = bytearray("", encoding="utf-8")
+    call_data = bytearray("", encoding="utf-8")
     length = None
 
     def receive_json_from_socket():
-        nonlocal data
+        nonlocal call_data
         nonlocal length
 
         while True:
-            data.extend(s.recv(256 * 1024))
-            if len(data) >= 4:
+            call_data.extend(s.recv(256 * 1024))
+            if len(call_data) >= 4:
                 if length is None:
-                    length = int.from_bytes(data[0:4], byteorder="big")
-                    del data[:4]
-                if len(data) >= length:
-                    json_inp = data[0:length]
-                    del data[:length]
+                    length = int.from_bytes(call_data[0:4], byteorder="big")
+                    del call_data[:4]
+                if len(call_data) >= length:
+                    json_inp = call_data[0:length]
+                    del call_data[:length]
                     length = None
                     return json.loads(json_inp, parse_int=zu.safe_parse_int)
 
