@@ -889,7 +889,7 @@ module.exports = {
       renderedElementNames,
     } = await processFunction(...args);
     console.log(
-      `Processed question HTML in phase ${phase} (${data.panel}) in ${Date.now() - start}ms`
+      `Processed question HTML in phase ${phase} (${data.panel}) in ${Date.now() - start}ms`,
     );
 
     if (phase === 'grade' || phase === 'test') {
