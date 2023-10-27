@@ -115,10 +115,10 @@ def worker_loop(s: socket.socket):
             if len(data) >= 4:
                 if length is None:
                     length = int.from_bytes(data[0:4], byteorder="big")
-                    del data[4:]
+                    del data[:4]
                 if len(data) >= length:
                     json_inp = data[0:length]
-                    del data[length:]
+                    del data[:length]
                     length = None
                     return json.loads(json_inp, parse_int=zu.safe_parse_int)
 

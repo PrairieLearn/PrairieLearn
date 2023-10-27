@@ -611,7 +611,7 @@ class CodeCallerNative {
     let data,
       err = null;
     try {
-      if (this.outputData) {
+      if (this.outputData.length > 0) {
         data = JSON.parse(this.outputData.join(''));
       } else {
         const allData = Buffer.concat(this.socketDataBuffers);
