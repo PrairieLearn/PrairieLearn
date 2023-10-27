@@ -29,7 +29,7 @@ describe('session middleware', () => {
     });
   });
 
-  it('sets a session cookie with a custom name', async () => {
+  it('sets a session cookie with options', async () => {
     const app = express();
     app.use(
       createSessionMiddleware({
@@ -37,6 +37,10 @@ describe('session middleware', () => {
         store: new MemoryStore(),
         cookie: {
           name: 'prairielearn_session',
+          httpOnly: true,
+          domain: '.localhost',
+          sameSite: 'strict',
+          maxAge: 1000,
         },
       }),
     );
@@ -51,6 +55,9 @@ describe('session middleware', () => {
       assert.equal(cookies.length, 1);
       assert.equal(cookies[0].name, 'prairielearn_session');
       assert.equal(cookies[0].path, '/');
+      assert.isTrue(cookies[0].httpOnly);
+      assert.equal(cookies[0].domain, '.localhost');
+      assert.equal(cookies[0].sameSite, 'Strict');
     });
   });
 

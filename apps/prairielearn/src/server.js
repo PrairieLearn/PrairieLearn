@@ -549,11 +549,6 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // clear all cached course code in dev mode (no authorization needed)
-  if (config.devMode) {
-    app.use(require('./middlewares/undefCourseCode'));
-  }
-
   // clear cookies on the homepage to reset any stale session state
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 

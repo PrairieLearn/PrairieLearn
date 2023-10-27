@@ -177,17 +177,6 @@ const ConfigSchema = z.object({
   workersCount: z.number().nullable().default(null),
   workersPerCpu: z.number().default(1),
   workersExecutionMode: z.enum(['container', 'native', 'disabled']).default('native'),
-  /**
-   * Controls how legacy v2 questions are executed.
-   *
-   * - 'inprocess' executes them in the main process.
-   * - 'subprocess' executes them in a subprocess via Python workers.
-   * - 'parallel-run' executes them in both the main process and a subprocess and
-   *   reports any differences in the results.
-   */
-  legacyQuestionExecutionMode: z
-    .enum(['inprocess', 'subprocess', 'parallel-run'])
-    .default('inprocess'),
   workerUseQueue: z.boolean().default(true),
   workerOverloadDelayMS: z.number().default(10_000),
   /**
