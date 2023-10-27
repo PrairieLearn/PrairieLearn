@@ -2778,7 +2778,7 @@ __metadata:
   dependencies:
     bindings: ^1.5.0
     nan: ^2.18.0
-    node-gyp: ^9.4.0
+    node-gyp: ^9.4.1
   languageName: unknown
   linkType: soft
 
@@ -12544,7 +12544,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp@npm:^9.3.0, node-gyp@npm:^9.4.0":
+"node-gyp@npm:^9.3.0":
   version: 9.4.0
   resolution: "node-gyp@npm:9.4.0"
   dependencies:
@@ -12562,6 +12562,27 @@ __metadata:
   bin:
     node-gyp: bin/node-gyp.js
   checksum: 78b404e2e0639d64e145845f7f5a3cb20c0520cdaf6dda2f6e025e9b644077202ea7de1232396ba5bde3fee84cdc79604feebe6ba3ec84d464c85d407bb5da99
+  languageName: node
+  linkType: hard
+
+"node-gyp@npm:^9.4.1":
+  version: 9.4.1
+  resolution: "node-gyp@npm:9.4.1"
+  dependencies:
+    env-paths: ^2.2.0
+    exponential-backoff: ^3.1.1
+    glob: ^7.1.4
+    graceful-fs: ^4.2.6
+    make-fetch-happen: ^10.0.3
+    nopt: ^6.0.0
+    npmlog: ^6.0.0
+    rimraf: ^3.0.2
+    semver: ^7.3.5
+    tar: ^6.1.2
+    which: ^2.0.2
+  bin:
+    node-gyp: bin/node-gyp.js
+  checksum: 8576c439e9e925ab50679f87b7dfa7aa6739e42822e2ad4e26c36341c0ba7163fdf5a946f0a67a476d2f24662bc40d6c97bd9e79ced4321506738e6b760a1577
   languageName: node
   linkType: hard
 
