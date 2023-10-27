@@ -1,186 +1,176 @@
 // @ts-check
-const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
-const Sentry = require('@prairielearn/sentry');
-const { logger } = require('@prairielearn/logger');
+const path = require('node:path');
+const { contains } = require('@prairielearn/path-utils');
 
 const { config } = require('../lib/config');
-const calculationInprocess = require('./calculation-inprocess');
-const calculationSubprocess = require('./calculation-subprocess');
+const chunks = require('../lib/chunks');
+const filePaths = require('../lib/file-paths');
+const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
+const { withCodeCaller } = require('../lib/code-caller');
 
-/**
- * Similar to `util.promisify`, but with support for the non-standard
- * three-argument callback function that all of our question functions use.
- * Note that the returned promise resolves with an array of values.
- *
- * TODO: refactor to standard two-argument callback or async/await.
- *
- * @param {string} spanName
- * @param {Function} func
- */
-function promisifyQuestionFunction(spanName, func) {
-  return async (...args) => {
-    return new Promise((resolve, reject) => {
-      func(...args, (err, courseIssues, val) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve([courseIssues, val]);
-        }
-      });
-    });
-  };
+/** @typedef {import('../lib/chunks').Chunk} Chunk */
+
+async function prepareChunksIfNeeded(question, course) {
+  const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
+
+  /** @type {Chunk[]} */
+  const templateQuestionChunks = questionIds.map((id) => ({
+    type: 'question',
+    questionId: id,
+  }));
+
+  /** @type {Chunk[]} */
+  const chunksToLoad = [
+    {
+      type: 'question',
+      questionId: question.id,
+    },
+    {
+      type: 'clientFilesCourse',
+    },
+    {
+      type: 'serverFilesCourse',
+    },
+    ...templateQuestionChunks,
+  ];
+
+  await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
-/**
- * Turns the error or result of an experiment observation into a JSON string
- * suitable for reporting to Sentry.
- *
- * @param {Error} error
- * @param {any} result
- * @returns {string}
- */
-function observationPayload(error, result) {
-  if (error) {
-    return JSON.stringify({
-      type: 'error',
-      result: {
-        message: error.message,
-        stack: error.stack,
-      },
-    });
+function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
+  const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
+
+  if (questionServerType === 'course') {
+    const questionServerPathWithinCourse = path.relative(courseHostPath, questionServerPath);
+    return path.join(courseRuntimePath, questionServerPathWithinCourse);
   }
 
-  return JSON.stringify({
-    type: 'success',
-    result,
-  });
+  if (config.workersExecutionMode === 'native') {
+    return questionServerPath;
+  } else {
+    const questionServerPathWithinRepo = path.relative(REPOSITORY_ROOT_PATH, questionServerPath);
+
+    // This is hardcoded to use the `/PrairieLearn` directory in our container
+    // image, which is where the repository files will be located.
+    return path.join('/PrairieLearn', questionServerPathWithinRepo);
+  }
 }
 
-/**
- * Runs both the `control` and `candidate` functions at the same time and
- * compares their output. No matter what the candidate does, the results of
- * the `control` function will always be what's returned to the client.
- *
- * @param {string} name
- * @param {Function} control
- * @param {Function} candidate
- * @returns {Function}
- */
-function questionFunctionExperiment(name, control, candidate) {
-  const experiment = experimentAsync({
-    name,
-    control: promisifyQuestionFunction('control', control),
-    candidate: promisifyQuestionFunction('candidate', candidate),
-    options: {
-      publish: ({ controlResult, controlError, candidateResult, candidateError }) => {
-        // The control implementation does not utilize course issues.
-        const controlHasError = !!controlError;
+async function callFunction(func, question_course, question, inputData) {
+  await prepareChunksIfNeeded(question, question_course);
 
-        // The candidate implementation does propagate some errors as course
-        // issues, so we need to take those into account when checking if the
-        // implementation resulted in an error.
-        const candidateHasError = !!candidateError || !_.isEmpty(candidateResult?.[0]);
+  const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
+  const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
 
-        // We don't want to assert that the errors themselves are equal, just
-        // that either both errored or both did not error.
-        const errorsMismatched = controlHasError !== candidateHasError;
+  const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
+    'server.js',
+    question.directory,
+    courseHostPath,
+    question,
+  );
 
-        // The "results" can actually contain error information for the candidate,
-        // but not for the control. To avoid false positives, we'll only compare
-        // the "data" portion of the results. The "course issues" portion of the
-        // results was already handled above.
-        const controlData = controlResult?.[1];
-        const candidateData = candidateResult?.[1];
-        const controlHasData = !_.isEmpty(controlData);
-        const candidateHasData = !_.isEmpty(candidateData);
+  // `questionServerPath` may be one of two things:
+  //
+  // - A path to a file within the course directory
+  // - A path to a file in PrairieLearn's `v2-question-servers` directory
+  //
+  // We need to handle these differently.
+  const questionServerRuntimePath = getQuestionRuntimePath(
+    questionServerPath,
+    courseHostPath,
+    courseRuntimePath,
+  );
 
-        // Lodash is clever enough to understand Buffers, so we don't need to
-        // special-case `getFile`, which can sometimes return a Buffer.
-        //
-        // We only assert that `controlData` and `candidateData` are equal if
-        // they're both not "empty" (empty object, null, undefined, etc.) since
-        // for our purposes, all empty data is equal.
-        const dataMismatched =
-          controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
+  try {
+    return await withCodeCaller(courseHostPath, async (codeCaller) => {
+      const res = await codeCaller.call('v2-question', null, questionServerRuntimePath, null, [
+        {
+          questionServerPath: questionServerRuntimePath,
+          func: func,
+          coursePath: courseRuntimePath,
+          question,
+          ...inputData,
+        },
+      ]);
+      // Note that `res` also contains an `output` property. For v3 questions,
+      // we'd create a course issue if `output` is non-empty. However, we didn't
+      // historically have a restriction where v2 questions couldn't write logs,
+      // so we won't impose the same restriction here.
+      return { data: res.result, courseIssues: [] };
+    });
+  } catch (err) {
+    err.fatal = true;
+    return { data: {}, courseIssues: [err] };
+  }
+}
 
-        if (errorsMismatched || dataMismatched) {
-          logger.error('Experiment results did not match', {
-            name,
-            controlError,
-            controlResult,
-            candidateError,
-            candidateResult,
-          });
-          Sentry.captureException(new Error('Experiment results did not match'), {
-            contexts: {
-              experiment: {
-                name,
-                control: observationPayload(controlError, controlResult),
-                candidate: observationPayload(candidateError, candidateResult),
-              },
-            },
-          });
-        }
-      },
+module.exports.generate = (question, course, variant_seed, callback) => {
+  callFunction('generate', course, question, { variant_seed }).then(
+    ({ data, courseIssues }) => callback(null, courseIssues, data),
+    (err) => callback(err),
+  );
+};
+
+module.exports.grade = (submission, variant, question, question_course, callback) => {
+  callFunction('grade', question_course, question, { submission, variant }).then(
+    ({ data, courseIssues }) => callback(null, courseIssues, data),
+    (err) => callback(err),
+  );
+};
+
+module.exports.getFile = (filename, variant, question, course, callback) => {
+  callFunction('getFile', course, question, { filename, variant }).then(
+    ({ data, courseIssues }) => {
+      // We need to "unwrap" buffers if needed
+      const isBuffer = data.type === 'buffer';
+      const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
+      callback(null, courseIssues, unwrappedData);
     },
-  });
+    (err) => callback(err),
+  );
+};
 
-  return (...args) => {
-    if (config.legacyQuestionExecutionMode === 'inprocess') {
-      control(...args);
-      return;
-    } else if (config.legacyQuestionExecutionMode === 'subprocess') {
-      candidate(...args);
-      return;
-    }
+// The following functions don't do anything for v2 questions; they're just
+// here to satisfy the question server interface.
 
-    const callback = args.pop();
-    experiment(...args)
-      .then(([courseIssues, data]) => {
-        callback(null, courseIssues, data);
-      })
-      .catch((err) => {
-        callback(err);
-      });
+module.exports.render = function (
+  renderSelection,
+  variant,
+  question,
+  submission,
+  submissions,
+  course,
+  course_instance,
+  locals,
+  callback,
+) {
+  const htmls = {
+    extraHeadersHtml: '',
+    questionHtml: '',
+    submissionHtmls: _.map(submissions, () => ''),
+    answerHtml: '',
   };
-}
+  callback(null, [], htmls);
+};
 
-module.exports.generate = questionFunctionExperiment(
-  'calculation-question-generate',
-  calculationInprocess.generate,
-  calculationSubprocess.generate,
-);
+module.exports.prepare = function (question, course, variant, callback) {
+  const data = {
+    params: variant.params,
+    true_answer: variant.true_answer,
+    options: variant.options,
+  };
+  callback(null, [], data);
+};
 
-module.exports.prepare = questionFunctionExperiment(
-  'calculation-question-prepare',
-  calculationInprocess.prepare,
-  calculationSubprocess.prepare,
-);
-
-module.exports.render = questionFunctionExperiment(
-  'calculation-question-render',
-  calculationInprocess.render,
-  calculationSubprocess.render,
-);
-
-// Note that the difference in naming between `file` and `getFile` is intentional.
-// The external interface of questions uses `file`, but the internal interface
-// uses `getFile`.
-module.exports.file = questionFunctionExperiment(
-  'calculation-question-getFile',
-  calculationInprocess.getFile,
-  calculationSubprocess.getFile,
-);
-
-module.exports.parse = questionFunctionExperiment(
-  'calculation-question-parse',
-  calculationInprocess.parse,
-  calculationSubprocess.parse,
-);
-
-module.exports.grade = questionFunctionExperiment(
-  'calculation-question-grade',
-  calculationInprocess.grade,
-  calculationSubprocess.grade,
-);
+module.exports.parse = function (submission, variant, question, course, callback) {
+  const data = {
+    params: variant.params,
+    true_answer: variant.true_answer,
+    submitted_answer: submission.submitted_answer,
+    raw_submitted_answer: submission.raw_submitted_answer,
+    format_errors: {},
+    gradable: true,
+  };
+  callback(null, [], data);
+};
