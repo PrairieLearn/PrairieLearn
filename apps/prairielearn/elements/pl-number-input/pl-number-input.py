@@ -127,8 +127,8 @@ def get_string_significant_digits(number_string: str) -> int:
         integer_part = len(number_string_partition[0])
         decimal_part = len(number_string_partition[2].lstrip("0"))
         return integer_part + decimal_part
-    else:
-        return len(number_string.rstrip("0"))
+
+    return len(number_string.rstrip("0"))
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
