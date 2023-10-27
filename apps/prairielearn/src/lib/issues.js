@@ -11,7 +11,7 @@ const { recursivelyTruncateStrings } = require('@prairielearn/sanitize');
  * @property {boolean} courseCaused
  * @property {Object} courseData
  * @property {Object} systemData
- * @property {number | string} authnUserId
+ * @property {number | string | null} authnUserId
  */
 
 /** @typedef {Omit<IssueData, 'manuallyReported' | 'courseCaused' | 'instructorMessage' |'systemData'>} IssueForErrorData */

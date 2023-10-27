@@ -1,13 +1,14 @@
-// @ts-check
-const loopbench = require('loopbench')();
-const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
-const Sentry = require('@prairielearn/sentry');
-const { logger } = require('@prairielearn/logger');
+import loopbench = require('loopbench');
+import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
+import Sentry = require('@prairielearn/sentry');
+import { logger } from '@prairielearn/logger';
 
-const { makeAwsClientConfig } = require('./aws');
-const { config } = require('./config');
+import { makeAwsClientConfig } from './aws';
+import { config } from './config';
 
-let intervalId;
+const loopbenchInstance = loopbench();
+
+let intervalId: NodeJS.Timeout;
 let cpuUsage = process.cpuUsage();
 let time = process.hrtime.bigint();
 
@@ -33,7 +34,7 @@ async function emit() {
       {
         MetricName: 'NodeEventLoopDelay',
         Unit: 'Milliseconds',
-        Value: loopbench.delay,
+        Value: loopbenchInstance.delay,
       },
       {
         MetricName: 'NodeMemoryRss',
@@ -70,11 +71,10 @@ async function emit() {
         Unit: 'Percent',
         Value: totalCpuPercent,
       },
-    ];
+    ] as const;
 
     const cloudwatch = new CloudWatch(makeAwsClientConfig());
-    /** @type {import('@aws-sdk/client-cloudwatch').Dimension[]} */
-    const dimensions = [
+    const dimensions: Dimension[] = [
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
     ];
@@ -93,7 +93,7 @@ async function emit() {
   }
 }
 
-module.exports.init = () => {
+export function init() {
   if (!config.runningInEc2 || config.nodeMetricsIntervalSec === null) return;
 
   // Initialize these so that we can compute a valid delta on the first run of `emit()`.
@@ -102,8 +102,8 @@ module.exports.init = () => {
 
   intervalId = setInterval(emit, config.nodeMetricsIntervalSec * 1000).unref();
   process.nextTick(emit);
-};
+}
 
-module.exports.close = () => {
+export function close() {
   clearInterval(intervalId);
-};
+}
