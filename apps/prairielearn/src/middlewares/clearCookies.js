@@ -1,5 +1,7 @@
 const _ = require('lodash');
 
+const { config } = require('../lib/config');
+
 const cookies_to_ignore = [
   'pl_authn',
   'pl_assessmentpw',
@@ -14,6 +16,7 @@ module.exports = function (req, res, next) {
         return;
       }
       res.clearCookie(key);
+      res.clearCookie(key, { domain: config.cookieDomain });
     }
   });
   next();

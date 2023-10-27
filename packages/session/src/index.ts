@@ -76,9 +76,12 @@ export function createSessionMiddleware(options: SessionOptions) {
           // destroyed, clear the cookie.
           //
           // To cover all our bases, we'll clear *all* known session cookies to
-          // ensure that state sessions aren't left behind.
+          // ensure that state sessions aren't left behind. We'll also send commands
+          // to clear the cookies both on and off the explicit domain, to handle
+          // the case where the application has moved from one domain to another.
           cookieNames.forEach((cookieName) => {
             res.clearCookie(cookieName);
+            res.clearCookie(cookieName, { domain: options.cookie?.domain });
           });
           return;
         }

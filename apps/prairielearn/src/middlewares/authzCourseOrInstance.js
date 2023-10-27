@@ -171,6 +171,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
+      res.clearCookie(override.cookie, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -203,6 +204,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -247,6 +249,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -277,6 +280,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -365,6 +369,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
+      res.clearCookie(override.cookie, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -386,6 +391,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
+      res.clearCookie(override.cookie, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -407,6 +413,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
+      res.clearCookie(override.cookie, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -428,6 +435,7 @@ module.exports = asyncHandler(async (req, res, next) => {
     overrides.forEach((override) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
+      res.clearCookie(override.cookie, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -450,6 +458,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -473,6 +482,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -502,6 +512,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');
@@ -532,6 +543,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
+        res.clearCookie(override.cookie, { domain: config.cookieDomain });
       });
 
       let err = error.make(403, 'Access denied');

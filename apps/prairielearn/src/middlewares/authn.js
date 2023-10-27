@@ -135,6 +135,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     // Clear the pl_authn cookie in case it was bad
     res.clearCookie('pl_authn');
+    res.clearCookie('pl_authn', { domain: config.cookieDomain });
 
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.

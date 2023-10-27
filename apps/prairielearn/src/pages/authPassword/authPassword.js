@@ -22,6 +22,7 @@ router.post('/', function (req, res) {
     domain: config.cookieDomain,
   });
   res.clearCookie('pl_pw_origUrl');
+  res.clearCookie('pl_pw_origUrl', { domain: config.cookieDomain });
   return res.redirect(redirectUrl);
 });
 module.exports = router;

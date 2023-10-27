@@ -87,6 +87,7 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     // After explicitly authenticating, clear the cookie that disables
     // automatic authentication.
     res.clearCookie('pl_disable_auto_authn');
+    res.clearCookie('pl_disable_auto_authn', { domain: config.cookieDomain });
   }
 
   if (options.redirect) {
@@ -94,6 +95,7 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;
       res.clearCookie('preAuthUrl');
+      res.clearCookie('preAuthUrl', { domain: config.cookieDomain });
     }
     res.redirect(redirUrl);
     return;
