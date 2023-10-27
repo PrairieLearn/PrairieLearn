@@ -36,6 +36,7 @@ export interface SessionOptions {
     name?: string | string[];
     secure?: CookieSecure;
     httpOnly?: boolean;
+    domain?: string;
     sameSite?: boolean | 'none' | 'lax' | 'strict';
     maxAge?: number;
   };
@@ -101,6 +102,7 @@ export function createSessionMiddleware(options: SessionOptions) {
         res.cookie(primaryCookieName, signedSessionId, {
           secure: secureCookie,
           httpOnly: options.cookie?.httpOnly ?? true,
+          domain: options.cookie?.domain,
           sameSite: options.cookie?.sameSite ?? false,
           expires: req.session.getExpirationDate(),
         });
