@@ -12,33 +12,48 @@ const aws = require('../../lib/aws');
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-// NOTE: We assume that instructorGradingJob is only mounted on the course_instance
-// page route, as is currently the case. If you add a course page route, take care!
-// See instructorJobSequence, for example.
-
 router.get('/:job_id', (req, res, next) => {
-  const params = {
-    job_id: req.params.job_id,
-    course_instance_id: res.locals.course_instance.id,
-    authz_data: res.locals.authz_data,
-    req_date: res.locals.req_date,
-  };
-  sqldb.queryOneRow(sql.select_job, params, (err, result) => {
-    if (ERR(err, next)) return;
+  // Checking if res.locals.course_instance exists. This determines whether the route was accessed by course/questions or course_instance/questions.
+  if (res.locals.course_instance) {
+    const params = {
+      job_id: req.params.job_id,
+      course_instance_id: res.locals.course_instance.id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+    };
+    sqldb.queryOneRow(sql.select_job, params, (err, result) => {
+      if (ERR(err, next)) return;
 
-    // If the grading job is associated with an assessment instance (through a
-    // submission, a variant, and an instance question), then we need to check
-    // if the effective user is authorized to view this assessment instance.
-    //
-    // The way we implement this check right now with authz_assessment_instance
-    // is overkill, yes, but is easy and robust (we hope).
-    if (result.rows[0].aai && !result.rows[0].aai.authorized) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
-    }
+      // If the grading job is associated with an assessment instance (through a
+      // submission, a variant, and an instance question), then we need to check
+      // if the effective user is authorized to view this assessment instance.
+      //
+      // The way we implement this check right now with authz_assessment_instance
+      // is overkill, yes, but is easy and robust (we hope).
+      if (result.rows[0].aai && !result.rows[0].aai.authorized) {
+        return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      }
 
-    _.assign(res.locals, result.rows[0]);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
+      _.assign(res.locals, result.rows[0]);
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+  } else {
+    const params = {
+      job_id: req.params.job_id,
+      course_id: res.locals.course.id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+    };
+    sqldb.queryOneRow(sql.select_job_by_course, params, (err, result) => {
+      if (ERR(err, next)) return;
+      // Need a way to double check that the grading job is not associated with a particular course instance. If it is, then we need to check if the effective user is authorized to view student data for that course instance.
+      if (result.rows[0].aai && !result.rows[0].aai.authorized) {
+        return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      }
+      _.assign(res.locals, result.rows[0]);
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+  }
 });
 
 const allowedFilesViewer = ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json'];
