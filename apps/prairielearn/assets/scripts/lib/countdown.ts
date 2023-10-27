@@ -59,7 +59,7 @@ export function setupCountdown(options: {
   let serverTimeLimitMS: number;
   let clientStart: number;
   let updateServerIfExpired = true;
-  let nextCountdownDisplay: number | null = null;
+  let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';

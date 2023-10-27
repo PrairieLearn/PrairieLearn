@@ -3188,6 +3188,7 @@ __metadata:
     "@types/passport-azure-ad": ^4.3.2
     "@types/pem": ^1.14.2
     "@types/pg": ^8.10.3
+    "@types/tabulator-tables": ~5.5.2
     "@types/tar": ^6.1.6
     "@types/tmp": ^0.2.4
     "@types/uuid": ^9.0.4
@@ -3311,6 +3312,7 @@ __metadata:
     strip-ansi: ^6.0.1
     stripe: ^13.8.0
     tablesorter: ^2.31.3
+    tabulator-tables: ^5.5.2
     tar: ^6.2.0
     three: ^0.157.0
     tmp: ^0.2.1
@@ -5042,6 +5044,13 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: 4812694de5444802f7386da7882da9072a6d63b5b634eb59fdca39e8f7ad4964bcefe7844d375d594cb979a0804e24aea273098bdbb84e7e23a9d3b5698d3936
+  languageName: node
+  linkType: hard
+
+"@types/tabulator-tables@npm:~5.5.2":
+  version: 5.5.2
+  resolution: "@types/tabulator-tables@npm:5.5.2"
+  checksum: 975c5e68fc2788cd3811b6c87b5f03e47ce6db337ebd65a3ede60972e5e230b91b7bc15d4df296278f9a76ee6104184c92afe1ea177743195e1edb31b47ce4a1
   languageName: node
   linkType: hard
 
@@ -15469,6 +15478,13 @@ __metadata:
   dependencies:
     jquery: ">=1.2.6"
   checksum: 6fad5f03a3a03f814bdd84bdeb1b939cfb1744fa17ddb3c9eb225457f75f34b7b133bc500b6d7ce481073c36cc52f297045274fe17a54db9a97caf74c29aa5e2
+  languageName: node
+  linkType: hard
+
+"tabulator-tables@npm:^5.5.2":
+  version: 5.5.2
+  resolution: "tabulator-tables@npm:5.5.2"
+  checksum: 5f2aa9755fd9a285e14e7bec769a0b3a7296335c82031d98e41ef81bf3f7658779db79d8a2f3a4f067c5e1ac965e9177b90a19940800c734b704c567fe08e59c
   languageName: node
   linkType: hard
 
