@@ -9,16 +9,19 @@ updates:
     open-pull-requests-limit: 99
     rebase-strategy: disabled
     groups:
+      ace:
+        patterns:
+          - 'ace-code'
+          - 'ace-builds'
       aws:
         patterns:
           - '@aws-sdk/*'
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
-      ace:
+      sentry:
         patterns:
-          - 'ace-code'
-          - 'ace-builds'
+          - '@sentry/*'
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
