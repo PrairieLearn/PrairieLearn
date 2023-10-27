@@ -67,9 +67,9 @@
       id="username-nav"
       data-access-as-administrator="<%= locals.access_as_administrator?.toString() %>"
       data-view-type="<%= typeof viewType !== 'undefined' ? viewType : null %>"
-      data-authn-course-role="<%= authz_data.authn_course_role %>"
-      data-authn-course-instance-role="<%= authz_data.authn_course_instance_role %>"
-      data-has-instructor-access="<%= authz_data.user_with_requested_uid_has_instructor_access_to_course_instance?.toString() %>"
+      data-authn-course-role="<%= locals.authz_data?.authn_course_role %>"
+      data-authn-course-instance-role="<%= locals.authz_data?.authn_course_instance_role %>"
+      data-has-instructor-access="<%= locals.authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString() %>"
     >
       <% if (devMode) { %>
           <li class="mb-2 mb-md-0 mr-2 "><a id="navbar-load-from-disk" class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
