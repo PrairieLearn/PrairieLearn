@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/flash",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -17,9 +17,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/express": "^4.17.18",
-    "@types/express-session": "^1.17.8",
-    "@types/node": "^18.18.2",
+    "@types/express": "^4.17.20",
+    "@types/express-session": "^1.17.9",
+    "@types/node": "^18.18.7",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

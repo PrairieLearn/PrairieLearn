@@ -5,6 +5,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const QR = require('qrcode-svg');
+const { flash } = require('@prairielearn/flash');
 
 const sqldb = require('@prairielearn/postgres');
 
@@ -91,6 +92,10 @@ router.post('/', function (req, res, next) {
             },
             (err, result) => {
               if (ERR(err, next)) return;
+              flash(
+                'success',
+                'Assessment copied successfully. You are now viewing your copy of the assessment.',
+              );
               res.redirect(
                 res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
               );

@@ -1,9 +1,9 @@
-const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { loadSqlEquiv, queryValidatedRows } = require('@prairielearn/postgres');
+import asyncHandler = require('express-async-handler');
+import * as express from 'express';
+import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
-const { config } = require('../../lib/config');
-const { AdministratorWorkspaces, WorkspaceSchema } = require('./administratorWorkspaces.html');
+import { config } from '../../lib/config';
+import { AdministratorWorkspaces, WorkspaceSchema } from './administratorWorkspaces.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -22,4 +22,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

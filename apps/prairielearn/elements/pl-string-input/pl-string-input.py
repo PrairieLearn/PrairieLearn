@@ -5,7 +5,6 @@ from typing import Any
 import chevron
 import lxml.html
 import prairielearn as pl
-from text_unidecode import unidecode
 from typing_extensions import assert_never
 
 
@@ -199,6 +198,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     normalize_to_ascii = pl.get_boolean_attrib(
         element, "normalize-to-ascii", NORMALIZE_TO_ASCII_DEFAULT
     )
+    remove_spaces = pl.get_boolean_attrib(
+        element, "remove-spaces", REMOVE_SPACES_DEFAULT
+    )
+
+    remove_leading_trailing = pl.get_boolean_attrib(
+        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+    )
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name, None)
@@ -207,9 +213,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    # Do unicode decode
     if normalize_to_ascii:
-        a_sub = unidecode(a_sub)
-        data["submitted_answers"][name] = a_sub
+        a_sub = pl.full_unidecode(a_sub)
+
+    # Remove the leading and trailing characters
+    if remove_leading_trailing:
+        a_sub = a_sub.strip()
+
+    # Remove the blank spaces between characters
+    if remove_spaces:
+        a_sub = "".join(a_sub.split())
 
     if not a_sub and not allow_blank:
         data["format_errors"][
