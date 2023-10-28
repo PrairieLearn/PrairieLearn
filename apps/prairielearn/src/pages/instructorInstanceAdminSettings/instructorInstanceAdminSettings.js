@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const QR = require('qrcode-svg');
+const { flash } = require('@prairielearn/flash');
 
 const sqldb = require('@prairielearn/postgres');
 
@@ -78,6 +79,10 @@ router.post('/', function (req, res, next) {
             { uuid: editor.uuid, course_id: res.locals.course.id },
             (err, result) => {
               if (ERR(err, next)) return;
+              flash(
+                'success',
+                'Course instance copied successfully. You are new viewing your copy of the course instance.',
+              );
               res.redirect(
                 res.locals.plainUrlPrefix +
                   '/course_instance/' +
