@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import parsePostgresInterval = require('postgres-interval');
+
+const INTERVAL_MS_PER_SECOND = 1000;
+const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
+const INTERVAL_MS_PER_HOUR = 60 * INTERVAL_MS_PER_MINUTE;
+const INTERVAL_MS_PER_DAY = 24 * INTERVAL_MS_PER_HOUR;
+const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
+const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 
 // IDs are always coerced to strings. This ensures consistent handling when an
 // ID is fetched directly or via `to_jsonb`, which returns a number.
@@ -7,7 +15,25 @@ import { z } from 'zod';
 // string is actually a number. If it's not, we want to fail quickly.
 export const IdSchema = z
   .string({ coerce: true })
-  .refine((val) => /^\d+$/.test(val), { message: 'ID is not an integer' });
+  .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
+
+export const IntervalSchema = z.string().transform((val) => {
+  const interval = parsePostgresInterval(val);
+
+  // This calculation matches Postgres's behavior when computing the number of
+  // milliseconds in an interval with `EXTRACT(epoch from '...'::interval) * 1000`.
+  // The noteworthy parts of this conversion are that 1 year = 365.25 days and
+  // 1 month = 30 days.
+  return (
+    interval.years * INTERVAL_MS_PER_YEAR +
+    interval.months * INTERVAL_MS_PER_MONTH +
+    interval.days * INTERVAL_MS_PER_DAY +
+    interval.hours * INTERVAL_MS_PER_HOUR +
+    interval.minutes * INTERVAL_MS_PER_MINUTE +
+    interval.seconds * INTERVAL_MS_PER_SECOND +
+    interval.milliseconds
+  );
+});
 
 // Accepts either a string or a Date object. If a string is passed, it is
 // validated and parsed as an ISO date string.
