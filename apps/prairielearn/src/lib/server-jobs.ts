@@ -33,7 +33,6 @@ export interface ServerJob {
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
-  fail(msg: string): never;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
   data: Record<string, unknown>;
 }
