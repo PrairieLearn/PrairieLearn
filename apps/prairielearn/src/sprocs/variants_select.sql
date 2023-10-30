@@ -31,7 +31,7 @@ BEGIN
             OR v.instance_question_id = variants_select.instance_question_id
         );
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id for this question: %', variant_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id for this question: %', variant_id USING ERRCODE = 'ST404'; END IF;
 
     IF variant_with_id.course_instance_id IS NOT NULL THEN
         SELECT ci.display_timezone
@@ -46,7 +46,7 @@ BEGIN
         course_display_timezone
     FROM
         questions AS q
-        JOIN pl_courses AS c ON (c.id = q.course_id)
+        JOIN pl_courses AS c ON (c.id = variant_with_id.course_id)
     WHERE
         q.id = variant_with_id.question_id;
 

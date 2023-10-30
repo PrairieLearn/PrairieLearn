@@ -55,7 +55,7 @@
                                     </button>
                                     <button type="button" class="btn btn-sm btn-success float-right mr-2" id="approve-request-button-<%= req.id %>"
                                             name="approve_deny_action" value="approve" tabindex="0"
-                                            data-toggle="popover" data-container="body"
+                                            data-toggle="popover" data-container="body" data-boundary="window"
                                             data-html="true" data-placement="auto" title="Approve course request"
                                             data-content="<%= include('courseRequestApproveForm', {request: req, id: 'approve-request-button-' + req.id}) %>"
                                             data-trigger="manual" onclick="$(this).popover('show')">

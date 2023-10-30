@@ -17,13 +17,11 @@
             <p> Within this question, you can observe the default behavior of the <a
                     href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
                 element. The submitted answer and reference solutions will be first be converted to base units and then
-                compared. We must also supply an absolute tolerance with an included unit matching the reference
-                solution, so we set <code>atol="1cm"</code>. Submitting units of incorrect dimensionality will not be
-                given any credit.
+                compared. Submitting units of incorrect dimensionality will not be given any credit.
             </p>
             <p> What is the length of a meter stick? </p>
         </pl-question-panel>
-        <pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
+        <pl-units-input answers-name="c_1" correct-answer="1m"></pl-units-input>
     </div>
 </div>
 
@@ -94,8 +92,8 @@
         <pl-question-panel>
             <p>This example shows the use of the attribute <code>size</code> to control the width of the input box.
                 We also use <code>placeholder=""</code> and <code>show-help-text="false"</code>. We have also
-            set <code>allow-feedback="False"</code> to suppress feedback given to students, and
-            <code>custom-format=".2g"</code> to show a fixed number of digits after the answer has been parsed.
+                set <code>allow-feedback="False"</code> to suppress feedback given to students, and
+                <code>custom-format=".2g"</code> to show a fixed number of digits after the answer has been parsed.
             </p>
             <p>Express the distance of one mile in feet (include unit).</p>
         </pl-question-panel>
@@ -110,10 +108,11 @@
         <pl-question-panel>
             <p>This example shows the use of the attribute <code>allow-blank</code> to allow students to leave
                 this input blank. We set <code>blank-value="1m"</code> to customize the value used for the blank input.
+                We also set <code>show-score="false"</code> to hide the score badge.
             </p>
             <p>How long is a meter stick? Leave the box blank to submit "1 meter".</p>
         </pl-question-panel>
         <pl-units-input answers-name="c_7" display="block" correct-answer="1m" allow-blank="True" atol="1cm"
-            blank-value="1m" placeholder="1 meter"></pl-units-input>
+            blank-value="1m" placeholder="1 meter" show-score="false"></pl-units-input>
     </div>
 </div>

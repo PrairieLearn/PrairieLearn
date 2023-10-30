@@ -6,9 +6,8 @@ CREATE FUNCTION
     ) RETURNS void
 AS $$
 BEGIN
-    -- ##################################################################
-    -- verify the group that will be deleted does in fact below to the selected assessment
-    -- then lock the group row
+    -- Verify the group that will be deleted does in fact belong to the
+    -- selected assessment, then lock the group row.
     PERFORM 1
     FROM
         group_configs AS gc
@@ -23,8 +22,23 @@ BEGIN
         RAISE EXCEPTION 'The user does not belong to the assessment';
     END IF;
 
-    -- ##################################################################
-    -- soft delete a group
+    -- Delete all group users.
+    WITH deleted_group_users AS (
+        DELETE FROM group_users
+        WHERE group_id = arg_group_id
+        RETURNING user_id
+    )
+    INSERT INTO group_logs
+        (authn_user_id, user_id, group_id, action)
+    SELECT
+        assessment_groups_delete_group.authn_user_id,
+        user_id,
+        arg_group_id,
+        'leave'
+    FROM
+        deleted_group_users;
+
+    -- Soft delete the group.
     UPDATE groups
     SET deleted_at = NOW()
     WHERE id = arg_group_id;

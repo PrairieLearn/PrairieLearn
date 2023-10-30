@@ -95,7 +95,7 @@ describe('queueReceiver', () => {
         assert.isNull(err);
         assert.equal(sqs.receiveMessage.args[0][0].input.QueueUrl, 'helloworld');
         done();
-      }
+      },
     );
   });
 
@@ -112,7 +112,7 @@ describe('queueReceiver', () => {
         assert.isNull(err);
         assert.equal(sqs.receiveMessage.callCount, 2);
         done();
-      }
+      },
     );
   });
 
@@ -129,7 +129,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -149,7 +149,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -170,7 +170,7 @@ describe('queueReceiver', () => {
         const params = sqs.changeMessageVisibility.args[0][0].input;
         assert.equal(params.VisibilityTimeout, 10 + TIMEOUT_OVERHEAD);
         done();
-      }
+      },
     );
   });
 
@@ -185,7 +185,7 @@ describe('queueReceiver', () => {
         assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
-      }
+      },
     );
   });
 
@@ -202,7 +202,7 @@ describe('queueReceiver', () => {
         assert.equal(sqs.deleteMessage.args[0][0].input.QueueUrl, 'goodbyeworld');
         assert.equal(sqs.deleteMessage.args[0][0].input.ReceiptHandle, sqs.receiptHandle);
         done();
-      }
+      },
     );
   });
 });

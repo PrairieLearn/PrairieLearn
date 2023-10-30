@@ -1,25 +1,22 @@
 // @ts-check
-const { ECR } = require('@aws-sdk/client-ecr');
+const { ECR, ECRClient } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
 const async = require('async');
 const Docker = require('dockerode');
-const { logger } = require('@prairielearn/logger');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+const namedLocks = require('@prairielearn/named-locks');
 
 const { makeAwsClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
-const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
-const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
 const util = require('util');
 const chunks = require('../../lib/chunks');
 const debug = require('debug')('prairielearn:syncHelpers');
-
-const error = require('@prairielearn/error');
+const { getLockNameForCoursePath } = require('../../lib/course');
 
 const docker = new Docker();
 
@@ -38,79 +35,86 @@ module.exports.pullAndUpdate = async function (locals) {
   }
 
   serverJob.executeInBackground(async (job) => {
-    let startGitHash = null;
-    const coursePathExists = await fs.pathExists(locals.course.path);
-    if (!coursePathExists) {
-      // path does not exist, start with 'git clone'
-      job.info('Clone from remote git repository');
-      await job.exec(
-        'git',
-        ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
-        {
-          // Executed in the root directory, but this shouldn't really matter.
-          cwd: '/',
-          env: gitEnv,
+    const lockName = getLockNameForCoursePath(locals.course.path);
+    await namedLocks.tryWithLock(
+      lockName,
+      {
+        timeout: 5000,
+        onNotAcquired: () => {
+          job.fail('Another user is already syncing or modifying this course.');
+        },
+      },
+      async () => {
+        let startGitHash = null;
+        const coursePathExists = await fs.pathExists(locals.course.path);
+        if (!coursePathExists) {
+          // path does not exist, start with 'git clone'
+          job.info('Clone from remote git repository');
+          await job.exec(
+            'git',
+            ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
+            {
+              // Executed in the root directory, but this shouldn't really matter.
+              cwd: '/',
+              env: gitEnv,
+            },
+          );
+        } else {
+          // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
+
+          startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+
+          job.info('Updating to latest remote origin address');
+          await job.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
+            cwd: locals.course.path,
+            env: gitEnv,
+          });
+
+          job.info('Fetch from remote git repository');
+          await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
+
+          job.info('Clean local files not in remote git repository');
+          await job.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
+
+          job.info('Reset state to remote git repository');
+          await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
+            cwd: locals.course.path,
+            env: gitEnv,
+          });
         }
-      );
-    } else {
-      // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-      startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+        // After either cloning or fetching and resetting from Git, we'll load the
+        // current commit hash. Note that we don't commit this to the database until
+        // after we've synced the changes to the database and generated chunks. This
+        // ensures that if the sync fails, we'll sync from the same starting commit
+        // hash next time.
+        const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
 
-      job.info('Updating to latest remote origin address');
-      await job.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
-        cwd: locals.course.path,
-        env: gitEnv,
-      });
+        job.info('Sync git repository to database');
+        const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
+          locals.course.path,
+          locals.course.id,
+          job,
+        );
 
-      job.info('Fetch from remote git repository');
-      await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
+        if (config.chunksGenerator) {
+          const chunkChanges = await chunks.updateChunksForCourse({
+            coursePath: locals.course.path,
+            courseId: locals.course.id,
+            courseData: syncResult.courseData,
+            oldHash: startGitHash,
+            newHash: endGitHash,
+          });
+          chunks.logChunkChangesToJob(chunkChanges, job);
+        }
 
-      job.info('Clean local files not in remote git repository');
-      await job.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
+        await courseUtil.updateCourseCommitHashAsync(locals.course);
 
-      job.info('Reset state to remote git repository');
-      await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
-        cwd: locals.course.path,
-        env: gitEnv,
-      });
-    }
-
-    // After either cloning or fetching and resetting from Git, we'll load the
-    // current commit hash. Note that we don't commit this to the database until
-    // after we've synced the changes to the database and generated chunks. This
-    // ensures that if the sync fails, we'll sync from the same starting commit
-    // hash next time.
-    const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
-
-    job.info('Sync git repository to database');
-    const syncResult = await syncFromDisk.syncDiskToSqlAsync(
-      locals.course.path,
-      locals.course.id,
-      job
+        if (syncResult.hadJsonErrors) {
+          job.fail('One or more JSON files contained errors and were unable to be synced.');
+        }
+      },
     );
-
-    if (config.chunksGenerator) {
-      const chunkChanges = await chunks.updateChunksForCourse({
-        coursePath: locals.course.path,
-        courseId: locals.course.id,
-        courseData: syncResult.courseData,
-        oldHash: startGitHash,
-        newHash: endGitHash,
-      });
-      chunks.logChunkChangesToJob(chunkChanges, job);
-    }
-
-    await courseUtil.updateCourseCommitHashAsync(locals.course);
-
-    // Before erroring the job from sync errors, reload server.js files.
-    job.info('Reload question server.js files');
-    const coursePath = locals.course.path;
-    await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
-
-    if (syncResult.hadJsonErrors) {
-      throw new Error('One or more JSON files contained errors and were unable to be synced');
-    }
   });
 
   return serverJob.jobSequenceId;
@@ -137,7 +141,7 @@ module.exports.gitStatus = async function (locals) {
       ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
       {
         cwd: locals.course.path,
-      }
+      },
     );
   });
 
@@ -210,6 +214,13 @@ function logProgressOutput(output, job, printedInfos, prefix) {
   }
 }
 
+/**
+ *
+ * @param {string} image
+ * @param {import('@prairielearn/docker-utils').DockerAuth} dockerAuth
+ * @param {Pick<import('../../lib/server-jobs').ServerJob, 'info'>} job
+ * @param {Function} callback
+ */
 function pullAndPushToECR(image, dockerAuth, job, callback) {
   debug(`pullAndPushtoECR for ${image}`);
 
@@ -268,6 +279,8 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
               job.info(`Pushing image: ${repository.getCombined()}`);
               pushImage.push(
                 {
+                  // @ts-expect-error: We seem to be missing a `serveraddress` property,
+                  // but it works fine without it?
                   authconfig: dockerAuth,
                 },
                 (err, stream) => {
@@ -284,9 +297,9 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
                     },
                     (output) => {
                       logProgressOutput(output, job, printedInfos, 'Push progress: ');
-                    }
+                    },
                   );
-                }
+                },
               );
             });
           });
@@ -294,70 +307,37 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
       },
       (output) => {
         logProgressOutput(output, job, printedInfos, 'Pull progress: ');
-      }
+      },
     );
   });
 }
 
-module.exports.ecrUpdate = function (locals, callback) {
+/**
+ * @param {{ image: string }[]} images
+ * @param {any} locals
+ */
+module.exports.ecrUpdate = async function (images, locals) {
   if (!config.cacheImageRegistry) {
-    return callback(new Error('cacheImageRegistry not defined'));
+    throw new Error('cacheImageRegistry not defined');
   }
 
-  setupDockerAuth(config.awsRegion, (err, auth) => {
-    if (ERR(err, callback)) return;
+  const ecr = new ECRClient(makeAwsClientConfig());
+  const auth = await setupDockerAuth(ecr);
 
-    const options = {
-      course_id: locals.course.id,
-      user_id: locals.user.user_id,
-      authn_user_id: locals.authz_data.authn_user.user_id,
-      type: 'images_sync',
-      description: 'Sync Docker images from Docker Hub to PL registry',
-    };
-    serverJobs.createJobSequence(options, function (err, job_sequence_id) {
-      if (ERR(err, callback)) return;
-      callback(null, job_sequence_id);
+  const serverJob = await createServerJob({
+    courseId: locals.course.id,
+    userId: locals.user.user_id,
+    authnUserId: locals.authz_data.authn_user.user_id,
+    type: 'images_sync',
+    description: 'Sync Docker images from Docker Hub to PL registry',
+  });
 
-      var lastIndex = locals.images.length - 1;
-      async.eachOfSeries(
-        locals.images || [],
-        (image, index, callback) => {
-          var jobOptions = {
-            course_id: locals.course ? locals.course.id : null,
-            type: 'image_sync',
-            description: `Pull image from Docker Hub and push to PL registry: ${image.image}`,
-            job_sequence_id,
-          };
-
-          if (index === lastIndex) {
-            jobOptions.last_in_sequence = true;
-          }
-
-          serverJobs.createJob(jobOptions, (err, job) => {
-            if (err) {
-              logger.error('Error in createJob()', err);
-              return callback(err);
-            }
-            debug('successfully created job ', { job_sequence_id });
-
-            // continue executing here to launch the actual job
-            pullAndPushToECR(image.image, auth, job, (err) => {
-              if (err) {
-                job.fail(error.newMessage(err, `Error syncing ${image.image}`));
-                return callback(err);
-              }
-
-              job.succeed();
-              callback(null);
-            });
-          });
-        },
-        (err) => {
-          if (err) {
-            serverJobs.failJobSequence(job_sequence_id);
-          }
-        }
-      );
+  serverJob.executeInBackground(async (job) => {
+    await async.eachOfSeries(images ?? [], async (image) => {
+      job.info(`Pull image from Docker Hub and push to PL registry: ${image.image}`);
+      await util.promisify(pullAndPushToECR)(image.image, auth, job);
     });
   });
+
+  return serverJob.jobSequenceId;
 };

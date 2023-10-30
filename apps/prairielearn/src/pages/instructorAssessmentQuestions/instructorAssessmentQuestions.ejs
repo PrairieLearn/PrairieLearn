@@ -29,9 +29,9 @@
         </div>
 
         <div class="table-responsive">
-          <% 
+          <%
           var nTableCols = 9;
-          
+
           // If at least one question has a nonzero unlock score, display the Advance Score column
           const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
           if (showAdvanceScorePercCol) nTableCols++;
@@ -115,7 +115,7 @@
                     <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
                   </button>
                   <% } %>
-                  <%= question.qid %>
+                  <%= question.display_name %>
                 </td>
                 <td><%- include('../partials/topic', {topic: question.topic}); %></td>
                 <td><%- include('../partials/tags', {tags: question.tags}); %></td>

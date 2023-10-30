@@ -131,7 +131,7 @@ describe('Instructor questions', function () {
     });
     it('should include differentiatePolynomial question', function () {
       elemList = questionData.filter((question) =>
-        idsEqual(question.id, differentiatePolynomial.id)
+        idsEqual(question.id, differentiatePolynomial.id),
       );
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);
@@ -180,7 +180,7 @@ describe('Instructor questions', function () {
     });
     it('should include differentiatePolynomial question', function () {
       elemList = questionData.filter((question) =>
-        idsEqual(question.id, differentiatePolynomial.id)
+        idsEqual(question.id, differentiatePolynomial.id),
       );
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);

@@ -46,7 +46,7 @@ describe('Assessment set syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(
-      (as) => as.name === newAssessmentSet.name
+      (as) => as.name === newAssessmentSet.name,
     );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet);
   });
@@ -61,7 +61,7 @@ describe('Assessment set syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(
-      (as) => as.name === oldAssessmentSet.name
+      (as) => as.name === oldAssessmentSet.name,
     );
     assert.isUndefined(syncedAssessmentSet);
   });
@@ -101,7 +101,7 @@ describe('Assessment set syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(
-      (as) => as.name === newAssessmentSet1.name
+      (as) => as.name === newAssessmentSet1.name,
     );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet2);
     const syncedCourses = await util.dumpTable('pl_courses');

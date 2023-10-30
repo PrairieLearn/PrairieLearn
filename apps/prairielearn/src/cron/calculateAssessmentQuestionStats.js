@@ -13,7 +13,7 @@ module.exports.run = function (callback) {
     const assessments = result.rows;
     for (const assessment of assessments) {
       logger.verbose(
-        `calculateAssessmentQuestionStats: processing assessment_id = ${assessment.id}`
+        `calculateAssessmentQuestionStats: processing assessment_id = ${assessment.id}`,
       );
       await sqldb.callAsync('assessment_questions_calculate_stats_for_assessment', [assessment.id]);
     }

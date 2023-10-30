@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
@@ -18,7 +17,7 @@ describe('Assessment that forces students to complete questions in-order', funct
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
@@ -86,7 +85,7 @@ describe('Assessment that forces students to complete questions in-order', funct
         context.instanceQuestions.map((e) => {
           return e.locked;
         }),
-        initialExpectedLocks
+        initialExpectedLocks,
       );
     });
 
@@ -103,7 +102,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     it('Question 3 should require 60% on Question 2 to unlock', () => {
       assert.include(
         response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
-        '60% on Question 2'
+        '60% on Question 2',
       );
     });
   });

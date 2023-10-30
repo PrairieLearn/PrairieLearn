@@ -1,7 +1,7 @@
 -- BLOCK select_course_instances
 SELECT
   c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
-  c.short_name || ', ' || ci.short_name AS short_label,
+  c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
   (e.id IS NOT NULL) AS enrolled,
   users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
@@ -43,24 +43,17 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
--- BLOCK enroll
-INSERT INTO
-  enrollments AS e (user_id, course_instance_id)
+-- BLOCK select_course_instance
 SELECT
-  u.user_id,
-  $course_instance_id
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(c.*) AS course,
+  to_jsonb(i.*) AS institution
 FROM
-  users AS u
+  course_instances AS ci
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-  u.user_id = $user_id
-  AND check_course_instance_access (
-    $course_instance_id,
-    u.uid,
-    u.institution_id,
-    $req_date
-  )
-RETURNING
-  e.id;
+  ci.id = $course_instance_id;
 
 -- BLOCK unenroll
 DELETE FROM enrollments AS e USING users AS u

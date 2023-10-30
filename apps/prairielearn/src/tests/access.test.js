@@ -4,6 +4,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
+const { ensureEnrollment } = require('../models/enrollment');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
@@ -134,12 +135,8 @@ describe('Access control', function () {
   });
 
   describe('3. Enroll student user into testCourse', function () {
-    it('should succeed', function (callback) {
-      var params = { user_id: user.user_id };
-      sqldb.query(sql.insert_enrollment, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    it('should succeed', async () => {
+      await ensureEnrollment({ user_id: user.user_id, course_instance_id: 1 });
     });
   });
 
@@ -273,7 +270,7 @@ describe('Access control', function () {
         }
         page = body;
         callback(null);
-      }
+      },
     );
   };
 
@@ -335,7 +332,7 @@ describe('Access control', function () {
           return callback(new Error('did not find addVectors instance question in DB'));
         } else if (result.rowCount > 1) {
           return callback(
-            new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    '))
+            new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    ')),
           );
         }
         instance_question = result.rows[0];
@@ -392,7 +389,7 @@ describe('Access control', function () {
     });
     it('base64 data should parse to JSON', function () {
       questionData = JSON.parse(
-        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
+        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()),
       );
     });
     it('should have a variant_id in the questionData', function () {
@@ -430,7 +427,7 @@ describe('Access control', function () {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
-      }
+      },
     );
   };
 

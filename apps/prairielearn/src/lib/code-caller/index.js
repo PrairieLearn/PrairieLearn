@@ -110,7 +110,7 @@ module.exports = {
       {
         min: numWorkers,
         max: numWorkers,
-      }
+      },
     );
 
     pool.on('factoryCreateError', (err) => {
@@ -144,11 +144,17 @@ module.exports = {
     // Ensure that the workers are ready; this will ensure that we're ready to
     // execute code as soon as we start processing requests.
     //
+    // We skip this if we're running in dev mode, as we want to prioritize the
+    // speed of starting up the server to ensure running in watch mode is as
+    // fast as possible.
+    //
     // Note: if resource creation fails for any reason, this will never resolve
     // or reject. This is unfortunate, but we'll still log and report the error
     // above, so it won't fail totally silently. If we fail to create workers,
     // we have a bigger problem.
-    await pool.ready();
+    if (!config.devMode) {
+      await pool.ready();
+    }
   },
 
   async finish() {

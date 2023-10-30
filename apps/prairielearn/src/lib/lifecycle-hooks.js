@@ -19,7 +19,7 @@ async function getInstanceLifecycleState(client) {
   const res = await client.send(
     new DescribeAutoScalingInstancesCommand({
       InstanceIds: [config.instanceId],
-    })
+    }),
   );
 
   return res.AutoScalingInstances?.[0]?.LifecycleState;
@@ -52,7 +52,7 @@ module.exports.completeInstanceLaunch = async function () {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleHookName: config.autoScalingLaunchingLifecycleHookName,
       InstanceId: config.instanceId,
-    })
+    }),
   );
   logger.info('Completed Auto Scaling lifecycle action for instance launch');
 };
@@ -83,7 +83,7 @@ module.exports.completeInstanceTermination = async function () {
       AutoScalingGroupName: config.autoScalingGroupName,
       LifecycleHookName: config.autoScalingTerminatingLifecycleHookName,
       InstanceId: config.instanceId,
-    })
+    }),
   );
   logger.info('Completed Auto Scaling lifecycle action for instance termination');
 };

@@ -42,7 +42,7 @@ class Grader {
               gzip: true,
               cwd: dir,
             },
-            ['.']
+            ['.'],
           );
 
           const passthrough = new PassThroughStream();
@@ -77,7 +77,7 @@ class Grader {
         } else {
           emitter.emit('submit');
         }
-      }
+      },
     );
 
     return emitter;
@@ -98,7 +98,7 @@ async function sendJobToQueue(jobId, question, config) {
       const data = await sqs.send(
         new GetQueueUrlCommand({
           QueueName: config.externalGradingJobsQueueName,
-        })
+        }),
       );
       QUEUE_URL = data.QueueUrl;
     },
@@ -117,7 +117,7 @@ async function sendJobToQueue(jobId, question, config) {
         new SendMessageCommand({
           QueueUrl: QUEUE_URL,
           MessageBody: JSON.stringify(messageBody),
-        })
+        }),
       );
       logger.verbose('Queued external grading job', {
         grading_job_id: jobId,

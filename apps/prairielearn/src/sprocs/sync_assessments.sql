@@ -3,6 +3,7 @@ CREATE FUNCTION
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
         IN syncing_course_instance_id bigint,
+        IN check_sharing_on_sync boolean,
         OUT name_to_id_map JSONB
     )
 AS $$
@@ -19,6 +20,7 @@ DECLARE
     assessment_question JSONB;
     new_assessment_id bigint;
     new_assessment_ids bigint[];
+    new_question_id bigint;
     zone_index integer;
     new_zone_id bigint;
     new_alternative_group_id bigint;
@@ -204,7 +206,7 @@ BEGIN
                 (valid_assessment.data->>'has_roles')::boolean
             ) ON CONFLICT (assessment_id)
             DO UPDATE
-            SET 
+            SET
                 maximum = EXCLUDED.maximum,
                 minimum = EXCLUDED.minimum,
                 student_authz_create = EXCLUDED.student_authz_create,
@@ -284,15 +286,14 @@ BEGIN
                     access_rule->>'password',
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
-                    input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
+                    input_date(access_rule->>'start_date', ci.display_timezone),
+                    input_date(access_rule->>'end_date', ci.display_timezone),
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
                     (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-                    JOIN pl_courses AS c ON (c.id = ci.course_id)
                 WHERE
                     a.id = new_assessment_id
             )
@@ -388,6 +389,21 @@ BEGIN
                             computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                         END IF;
                     END IF;
+
+                    IF (assessment_question->>'question_id')::bigint IS NULL THEN
+                        -- During local dev, if a shared question is not present we can insert dummy values
+                        -- into the questions table to enable sync success. This code should never
+                        -- be reached in production.
+                        IF check_sharing_on_sync THEN
+                            RAISE EXCEPTION 'Question ID should not be null';
+                        END IF;
+
+                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
+                    ELSE
+                        new_question_id := (assessment_question->>'question_id')::bigint;
+                    END IF;
+
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
@@ -417,7 +433,7 @@ BEGIN
                         (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
-                        (assessment_question->>'question_id')::bigint,
+                        new_question_id,
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
@@ -445,7 +461,7 @@ BEGIN
                     IF (valid_assessment.data->>'group_work')::boolean THEN
                         -- Iterate over all group roles in assessment
                         FOR valid_group_role IN (
-                            SELECT gr.id, gr.role_name 
+                            SELECT gr.id, gr.role_name
                             FROM group_roles as gr
                             WHERE gr.assessment_id = new_assessment_id
                         ) LOOP
@@ -458,7 +474,7 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            ) ON CONFLICT (assessment_question_id, group_role_id)
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
@@ -474,7 +490,7 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            ) ON CONFLICT (assessment_question_id, group_role_id)
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
@@ -549,12 +565,14 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
-    
-    -- Ensure all assessments have an assessment module, default number=0.
+
+    -- Ensure all assessments have an assessment module. We'll use the "Default"
+    -- module if one is not specified. The assessment module syncing code will
+    -- ensure that such a module exists.
     UPDATE assessments AS a
     SET
         assessment_module_id = COALESCE(a.assessment_module_id,
-            (SELECT id FROM assessment_modules WHERE number = 0 AND course_id = syncing_course_id))
+            (SELECT id FROM assessment_modules WHERE name = 'Default' AND course_id = syncing_course_id))
     WHERE a.deleted_at IS NULL
     AND a.course_instance_id = syncing_course_instance_id;
 

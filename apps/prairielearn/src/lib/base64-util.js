@@ -11,7 +11,7 @@ module.exports.b64EncodeUnicode = function (str) {
     return btoa(
       encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
         return String.fromCharCode('0x' + p1);
-      })
+      }),
     );
   } catch (e) {
     logger.error(`b64EncodeUnicode: returning empty string because failed to encode ${str}`);
@@ -28,7 +28,7 @@ module.exports.b64DecodeUnicode = function (str) {
         .map((c) => {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         })
-        .join('')
+        .join(''),
     );
   } catch (e) {
     logger.error(`b64DecodeUnicode: returning empty string because failed to decode ${str}`);

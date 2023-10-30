@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { z } from 'zod';
+import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-
-import { config } from '../../lib/config';
 
 import {
   AuthLogin,
   AuthLoginUnsupportedProvider,
   type InstitutionAuthnProvider,
 } from './authLogin.html';
+import { config } from '../../lib/config';
+import * as authLib from '../../lib/authn';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router();
@@ -48,7 +49,7 @@ router.get(
         {
           institution_id: institutionId,
         },
-        InstitutionSupportedProvidersSchema
+        InstitutionSupportedProvidersSchema,
       );
 
       res.send(
@@ -57,14 +58,14 @@ router.get(
           supportedProviders,
           service,
           resLocals: res.locals,
-        })
+        }),
       );
       return;
     }
 
     const institutionAuthnProvidersRes = await queryRows(
       sql.select_institution_authn_providers,
-      InstitutionAuthnProviderSchema
+      InstitutionAuthnProviderSchema,
     );
     const institutionAuthnProviders = institutionAuthnProvidersRes
       .map((provider) => {
@@ -100,7 +101,40 @@ router.get(
       .filter((provider): provider is InstitutionAuthnProvider => provider !== null);
 
     res.send(AuthLogin({ service, institutionAuthnProviders, resLocals: res.locals }));
-  })
+  }),
+);
+
+const DevLoginParamsSchema = z.object({
+  uid: z.string().nonempty(),
+  name: z.string().nonempty(),
+  uin: z.string().nullable().optional().default(null),
+});
+
+router.post(
+  '/',
+  asyncHandler(async (req, res, _next) => {
+    if (!config.devMode) {
+      throw error.make(404, 'Not Found');
+    }
+
+    if (req.body.__action === 'dev_login') {
+      const body = DevLoginParamsSchema.parse(req.body);
+
+      const authnParams = {
+        uid: body.uid,
+        name: body.name,
+        uin: body.uin,
+        provider: 'dev',
+      };
+
+      await authLib.loadUser(req, res, authnParams, {
+        redirect: true,
+        pl_authn_cookie: true,
+      });
+    } else {
+      throw error.make(400, `Unknown action: ${req.body.__action}`);
+    }
+  }),
 );
 
 export default router;

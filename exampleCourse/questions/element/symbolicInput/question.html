@@ -85,3 +85,65 @@
             placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example where we use assumptions.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Sometimes, certain expressions can only be treated as equivalent by sympy if additional assumptions are
+                made. For example, consider that $\sqrt{B^2} = B$ is only true if $B \geq 0$. To use these,
+                assumptions must be set in the <code>server.py</code> file when variables are declared.
+            </p>
+            <p>
+                Submit an expression equivalent to $\sqrt{B^2}$ when assuming $B > 0$.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="assumptions" variables="B"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Another example where we use assumptions.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Simplify $|C|$ assuming that $C \leq 0$.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="assumptions_2" variables="C"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Custom functions test.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Submit $f(x) + beef(\alpha)$, where $\alpha$ should be spelled out as <code>alpha</code> in the submission.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="custom_function" variables="x,alpha" custom-functions="f,beef"
+            correct-answer="f(x) + beef(alpha)"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Another custom functions test.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Submit $beef(y) + the(y)$. We set <code>show-score="false"</code> to hide the score badge and <code>suffix="$= \text{where?}$"</code>
+                to set the suffix.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="custom_function_2" variables="y" show-score="false" custom-functions="beef,the" suffix="$= \text{where?}$"></pl-symbolic-input>
+    </div>
+</div>

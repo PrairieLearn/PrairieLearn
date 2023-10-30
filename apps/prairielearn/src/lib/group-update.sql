@@ -1,6 +1,6 @@
 -- BLOCK select_assessment_info
 SELECT
-  assessment_label (a, aset),
+  assessment_label (a, aset) AS assessment_label,
   ci.id AS course_instance_id,
   c.id AS course_id
 FROM

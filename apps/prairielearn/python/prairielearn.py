@@ -4,38 +4,33 @@ import importlib
 import importlib.util
 import json
 import math
+import numbers
 import os
+import random
 import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-    overload,
-)
+from io import StringIO
+from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
 
-import colors
 import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
+import python_helper_sympy as phs
 import sympy
 import to_precision
+from colors import PLColor
+from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
+from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
-    score: Optional[float]
+    score: float | None
     weight: NotRequired[int]
     feedback: NotRequired[str]
 
@@ -65,10 +60,19 @@ class QuestionData(TypedDict):
     extensions: dict[str, Any]
     num_valid_submissions: int
     manual_grading: bool
+    answers_names: dict[str, bool]
 
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def check_answers_names(data: QuestionData, name: str) -> None:
+    """Checks that answers names are distinct using property in data dict."""
+    if name in data["answers_names"]:
+        raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
+    else:
+        data["answers_names"][name] = True
 
 
 def get_unit_registry() -> UnitRegistry:
@@ -82,7 +86,7 @@ def get_unit_registry() -> UnitRegistry:
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
 ) -> None:
     """
@@ -126,7 +130,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], bool | float]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
@@ -149,7 +153,7 @@ def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
     enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
+    default: EnumT | None = None,
 ) -> EnumT:
     """
     Returns the named attribute for the element parsed as an enum,
@@ -180,7 +184,9 @@ def get_enum_attrib(
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
+        raise ValueError(
+            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
+        )
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
@@ -284,7 +290,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
-        return sympy_to_json(v)
+        return phs.sympy_to_json(v)
     elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -416,7 +422,7 @@ def from_json(v):
                         "variable of type complex_ndarray should have value with real and imaginary pair"
                     )
             elif v["_type"] == "sympy":
-                return json_to_sympy(v)
+                return phs.json_to_sympy(v)
             elif v["_type"] == "sympy_matrix":
                 if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
                     value = v["_value"]
@@ -425,7 +431,9 @@ def from_json(v):
                     M = sympy.Matrix.zeros(shape[0], shape[1])
                     for i in range(0, shape[0]):
                         for j in range(0, shape[1]):
-                            M[i, j] = convert_string_to_sympy(value[i][j], variables)
+                            M[i, j] = phs.convert_string_to_sympy(
+                                value[i][j], variables
+                            )
                     return M
                 else:
                     raise Exception(
@@ -449,7 +457,7 @@ def from_json(v):
             elif v["_type"] == "dataframe_v2":
                 # Convert native JSON back to a string representation so that
                 # pandas read_json() can process it.
-                value_str = json.dumps(v["_value"])
+                value_str = StringIO(json.dumps(v["_value"]))
                 return pandas.read_json(value_str, orient="table")
             elif v["_type"] == "networkx_graph":
                 return nx.adjacency_graph(v["_value"])
@@ -558,7 +566,7 @@ def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> 
 @overload
 def get_string_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -587,7 +595,7 @@ def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -
 @overload
 def get_boolean_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[bool]:
+) -> bool | None:
     ...
 
 
@@ -640,7 +648,7 @@ def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) ->
 @overload
 def get_integer_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[int]:
+) -> int | None:
     ...
 
 
@@ -696,7 +704,7 @@ def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> s
 @overload
 def get_color_attrib(
     element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+) -> str | None:
     ...
 
 
@@ -715,9 +723,8 @@ def get_color_attrib(element, name, *args):
         if val is None:
             return val
 
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             return val
 
@@ -725,9 +732,8 @@ def get_color_attrib(element, name, *args):
     if match:
         return val
     else:
-        named_color = colors.get_css_color(val)
-        if named_color is not None:
-            return named_color
+        if PLColor.match(val) is not None:
+            return PLColor(val).to_string(hex=True)
         else:
             raise Exception(
                 'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(
@@ -1051,7 +1057,7 @@ def string_partition_outer_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s, base=10):
+def string_to_integer(s: str, base: int = 10) -> int | None:
     """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
@@ -1061,8 +1067,8 @@ def string_to_integer(s, base=10):
     if s is None:
         return None
 
-    # Replace unicode minus with hyphen minus wherever it occurs
-    s = s.replace("\u2212", "-").strip()
+    # Do unidecode before parsing
+    s = full_unidecode(s).strip()
 
     # Try to parse as int
     try:
@@ -1498,7 +1504,11 @@ def string_to_2darray(s, allow_complex=True):
     raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
 
 
-def latex_from_2darray(A, presentation_type="f", digits=2):
+def latex_from_2darray(
+    A: numbers.Number | np.ndarray,
+    presentation_type: str = "f",
+    digits: int = 2,
+) -> str:
     r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
@@ -1515,21 +1525,21 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if np.isscalar(A):
+    if isinstance(A, numbers.Number):
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
-
+    # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: to_precision.to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
                 x, digits=digits, presentation_type=presentation_type
             ),
@@ -1547,8 +1557,8 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
         .splitlines()
     )
     rv = [r"\begin{bmatrix}"]
-    rv += ["  " + " & ".join(line.split()) + r"\\" for line in lines]
-    rv += [r"\end{bmatrix}"]
+    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
+    rv.append(r"\end{bmatrix}")
     return "".join(rv)
 
 
@@ -1583,19 +1593,21 @@ def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
-def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
+def is_correct_scalar_ra(
+    a_sub: ArrayLike, a_tru: ArrayLike, rtol: float = 1e-5, atol: float = 1e-8
+) -> bool:
     """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
-    return np.allclose(a_sub, a_tru, rtol, atol)
+    return bool(np.allclose(a_sub, a_tru, rtol, atol))
 
 
-def is_correct_scalar_dd(a_sub, a_tru, digits=2):
+def is_correct_scalar_dd(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many digits after the decimal place."""
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        return is_correct_scalar_dd(
-            a_sub.real, a_tru.real, digits=digits
-        ) and is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)
+        real_comp = is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits)  # type: ignore
+        imag_comp = is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        return real_comp and imag_comp
 
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
@@ -1603,17 +1615,17 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2):
     upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
-    return (a_sub > lower_bound) & (a_sub < upper_bound)
+    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
 
 
-def is_correct_scalar_sf(a_sub, a_tru, digits=2):
+def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) -> bool:
     """Compare a_sub and a_tru using digits many significant figures."""
 
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
-        return is_correct_scalar_sf(
-            a_sub.real, a_tru.real, digits=digits
-        ) and is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)
+        real_comp = is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits)  # type: ignore
+        imag_comp = is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)  # type: ignore
+        return real_comp and imag_comp
 
     # Get bounds on submitted answer
     if a_tru == 0:
@@ -1625,18 +1637,26 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
-    return (a_sub > lower_bound) & (a_sub < upper_bound)
+    return bool((a_sub > lower_bound) & (a_sub < upper_bound))
 
 
-def get_uuid():
-    """get_uuid()
-
-    Returns the string representation of a new random UUID.
+def get_uuid() -> str:
     """
-    return str(uuid.uuid4())
+    Returns the string representation of a new random UUID.
+    First character of this uuid is guaranteed to be an alpha
+    (at the expense of a slight loss in randomness).
+
+    This is done because certain web components need identifiers to
+    start with letters and not numbers.
+    """
+
+    uuid_string = str(uuid.uuid4())
+    random_char = random.choice("abcdef")
+
+    return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string):
+def escape_unicode_string(string: str) -> str:
     """
     escape_unicode_string(string)
 
@@ -1792,3 +1812,12 @@ def index2key(i):
         key = chr(ord("a") + i)
 
     return key
+
+
+def is_int_json_serializable(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1
+
+
+def full_unidecode(input_str: str) -> str:
+    """Does unidecode of input and replaces the unicode minus with the normal one."""
+    return unidecode(input_str.replace("\u2212", "-"))

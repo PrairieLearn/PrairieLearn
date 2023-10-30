@@ -15,11 +15,11 @@ Then access PrairieLearn from port `3000`.
 PrairieLearn can be configured by a `config.json` in the root of the repository.
 
 - First make the file `config.json` in your root repository.
-- Add the following line to `docker-compose-production.yml` under `volumes`:
+- Add the following line to `docker-compose-production.yml` under `services.pl.volumes`:
 
-```sh
-- ./config.json:/PrairieLearn/config.json
-```
+  ```sh
+  - ./config.json:/PrairieLearn/config.json
+  ```
 
 The `config.json` file should contain appropriate overrides for the keys in [`lib/config.js`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.js`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
@@ -35,22 +35,22 @@ PrairieLearn currently has 4 ways to do user authentication. Read more at [authe
 
 - Find the name of your running PrairieLearn container by running
 
-```sh
-docker ps
-```
+  ```sh
+  docker ps
+  ```
 
-which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
+  which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-```
-CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
-e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
-```
+  ```
+  CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
+  e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+  ```
 
 - Open a shell in your PrairieLearn container by running
 
-```sh
-docker exec -it CONTAINER_NAME /bin/bash
-```
+  ```sh
+  docker exec -it CONTAINER_NAME /bin/bash
+  ```
 
 Then follow along at [Admin User](./admin-user.md) to setup PrairieLearn.
 

@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');
@@ -6,6 +5,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
+const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -18,9 +18,7 @@ describe('effective user', function () {
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
   context.userId = 2;
 
-  before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
-  });
+  before('set up testing server', helperServer.before().bind(this));
 
   before('insert users', async function () {
     await sqldb.callAsync('users_select_or_insert', [
@@ -53,7 +51,7 @@ describe('effective user', function () {
       'Editor',
       2,
     ]);
-    await sqldb.queryAsync(sql.insert_enrollment, {
+    await ensureEnrollment({
       user_id: 4,
       course_instance_id: 1,
     });
@@ -97,7 +95,7 @@ describe('effective user', function () {
     assert.equal(response.status, 403);
   });
 
-  step('instructor can override date (and becomes enrolled)', async () => {
+  step('instructor can override date and does not become enrolled', async () => {
     let result = await sqldb.queryAsync(sql.select_enrollment, {
       user_id: 2,
       course_instance_id: 1,
@@ -114,7 +112,7 @@ describe('effective user', function () {
       user_id: 2,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 1);
+    assert.lengthOf(result.rows, 0);
   });
 
   step('instructor can access course instance', async () => {
@@ -191,7 +189,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -202,7 +200,7 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -215,7 +213,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step('cannot request invalid date', async () => {
@@ -400,7 +398,7 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -414,7 +412,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    }
+    },
   );
 
   step(
@@ -426,6 +424,6 @@ describe('effective user', function () {
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.isTrue(response.ok);
-    }
+    },
   );
 });

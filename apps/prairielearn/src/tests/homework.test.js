@@ -276,7 +276,7 @@ describe('Homework assessment', function () {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/',
         );
       });
     });
@@ -320,8 +320,8 @@ describe('Homework assessment', function () {
           if (result.rowCount !== questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
-              )
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+              ),
             );
           }
           locals.instance_questions = result.rows;
@@ -1359,28 +1359,22 @@ describe('Homework assessment', function () {
   partialCreditTests.forEach(function (partialCreditTest, iPartialCreditTest) {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 
       startAssessment();
 
       partialCreditTest.forEach(function (questionTest, iQuestionTest) {
-        describe(`${
-          questionTest.action
-        } answer number #${iQuestionTest + 1} for question ${questionTest.qid} with score ${questionTest.score}`, function () {
+        describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
+          questionTest.qid
+        } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
               if (questionTest.action === 'check-closed') {

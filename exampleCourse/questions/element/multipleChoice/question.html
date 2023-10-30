@@ -243,12 +243,13 @@
         <pl-question-panel>
             <p>Here, you can observe the behavior of the <code>score</code> attribute in <code>pl-answer</code>.
             The score for a question the percentage of points given to it if selected (default is 0 for
-            incorrect answers and 1 for correct ones.)</p>
+            incorrect answers and 1 for correct ones). This also allows no submission by the student, done by
+            setting <code>allow-blank="true"</code>.</p>
 
             <p> What is the color of the sky? </p>
         </pl-question-panel>
 
-        <pl-multiple-choice answers-name="sky-color9">
+        <pl-multiple-choice answers-name="sky-color9" allow-blank="true">
             <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
             <pl-answer>Pink</pl-answer>
             <pl-answer score=0.5>Purple</pl-answer>

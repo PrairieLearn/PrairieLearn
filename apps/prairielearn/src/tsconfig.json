@@ -6,6 +6,7 @@
   },
   "include": ["**/*"],
   "ts-node": {
-    "transpileOnly": true
+    "transpileOnly": true,
+    "swc": true
   }
 }

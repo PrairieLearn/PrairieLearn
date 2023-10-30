@@ -37,23 +37,18 @@ module.exports.run = (callback) => {
         const resultsMessages = await getDeadLetterMsg(sqs, resultsDeadLetterQueueName);
         msg = jobsMessages + resultsMessages;
       },
-      (callback) => {
-        opsbot.sendMessage(msg, (err, res, body) => {
-          if (ERR(err, callback)) return;
-          if (res.statusCode !== 200) {
-            logger.error(
-              `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
-              body
-            );
-          }
-          callback(null);
-        });
+      async () => {
+        await opsbot
+          .sendMessage(msg)
+          .catch((err) =>
+            logger.error(`Error posting external grading dead letters to slack`, err.data),
+          );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 };
 
@@ -101,7 +96,7 @@ async function drainQueue(sqs, queueName) {
           MaxNumberOfMessages: 10,
           QueueUrl: QUEUE_URLS[queueName],
           WaitTimeSeconds: 20,
-        })
+        }),
       );
       if (!data.Messages) {
         // stop with message collection
@@ -116,14 +111,14 @@ async function drainQueue(sqs, queueName) {
           new DeleteMessageCommand({
             QueueUrl: QUEUE_URLS[queueName],
             ReceiptHandle: receiptHandle,
-          })
+          }),
         );
       });
 
       // keep getting messages if we got some this time
       return true;
     },
-    async (keepGoing) => keepGoing
+    async (keepGoing) => keepGoing,
   );
   return messages;
 }

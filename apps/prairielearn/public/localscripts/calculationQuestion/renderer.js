@@ -69,7 +69,7 @@ define(function () {
     toolTipTexts,
     placement,
     showCounts,
-    percentages
+    percentages,
   ) {
     var total = counts.success + counts.warning + counts.danger;
     total = Math.max(1, total);

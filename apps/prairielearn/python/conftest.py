@@ -88,7 +88,7 @@ def r_types_dataframe() -> pd.DataFrame:
             "logical-list": pd.Series([True, False, True]),
             "character-string-list": pd.Series(["a", "b", "c"]),
             # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
-            "POSIXct-POSIXt-timestamp": pd.Timestamp("20230102"),
+            "POSIXct-POSIXt-timestamp": pd.Timestamp("2023-01-02T00:00:00.0000000"),
             "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
         }
     )
@@ -112,4 +112,5 @@ def question_data() -> QuestionData:
         "extensions": dict(),
         "num_valid_submissions": 0,
         "manual_grading": False,
+        "answers_names": dict(),
     }

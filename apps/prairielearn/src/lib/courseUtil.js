@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 const sqldb = require('@prairielearn/postgres');
+const error = require('@prairielearn/error');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 
@@ -14,9 +15,14 @@ function getCommitHash(coursePath, callback) {
     cwd: coursePath,
     env: process.env,
   };
-  exec('git rev-parse HEAD', execOptions, (err, stdout) => {
+  exec('git rev-parse HEAD', execOptions, (err, stdout, stderr) => {
     if (err) {
-      callback(new Error(`Could not get git status; exited with code ${err.code}`));
+      callback(
+        error.makeWithData(`Could not get git status; exited with code ${err.code}`, {
+          stdout,
+          stderr,
+        }),
+      );
     } else {
       // stdout buffer
       callback(null, stdout.trim());
@@ -31,7 +37,7 @@ module.exports.getCommitHashAsync = promisify(getCommitHash);
  * will also add the `commit_hash` property to the given course object.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.updateCourseCommitHash = function (course, callback) {
   getCommitHash(course.path, (err, hash) => {
@@ -59,7 +65,7 @@ module.exports.updateCourseCommitHashAsync = promisify(module.exports.updateCour
  * updated during course sync.
  *
  * @param {Object} course
- * @param {(err?: Error, commitHash?: string) => void} callback
+ * @param {(err?: Error, commitHash: string) => void} callback
  */
 module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
   if (course.commit_hash) {
@@ -73,5 +79,5 @@ module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
 };
 
 module.exports.getOrUpdateCourseCommitHashAsync = promisify(
-  module.exports.getOrUpdateCourseCommitHash
+  module.exports.getOrUpdateCourseCommitHash,
 );

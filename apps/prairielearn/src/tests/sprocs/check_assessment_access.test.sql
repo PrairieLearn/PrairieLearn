@@ -50,20 +50,40 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id)
+      pl_courses (id, display_timezone)
     VALUES
-      (1),
-      (2),
-      (3)
+      (1, 'UTC'),
+      (2, 'UTC'),
+      (3, 'UTC')
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id)
+      course_instances (id, uuid, course_id, display_timezone)
     VALUES
-      (1, 'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d', 1),
-      (2, '5756a615-cdc4-48e6-9836-79fb708a2f55', 2),
-      (3, '335c2f78-f8d3-4a14-99da-53af231b0428', 3),
-      (4, '2256b06e-c00a-4596-a3b2-510f159d36d5', 3)
+      (
+        1,
+        'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
+        1,
+        'UTC'
+      ),
+      (
+        2,
+        '5756a615-cdc4-48e6-9836-79fb708a2f55',
+        2,
+        'UTC'
+      ),
+      (
+        3,
+        '335c2f78-f8d3-4a14-99da-53af231b0428',
+        3,
+        'UTC'
+      ),
+      (
+        4,
+        '2256b06e-c00a-4596-a3b2-510f159d36d5',
+        3,
+        'UTC'
+      )
   ),
   setup_assessment_sets AS (
     INSERT INTO

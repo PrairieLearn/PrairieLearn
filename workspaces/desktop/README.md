@@ -1,6 +1,6 @@
 # Desktop GUI Workspace
 
-This image is using Ubuntu 20.04 and provides a desktop environment that users can access from a web browser. There are a few components that are running to get this working:
+This image is using Ubuntu 22.04 and provides a desktop environment that users can access from a web browser. There are a few components that are running to get this working:
 
 - XVFB (Creates a headless X11 server)
 - x11vnc (Provides the VNC server)

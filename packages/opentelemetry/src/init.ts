@@ -125,8 +125,8 @@ instrumentations.forEach((i) => {
 
 let tracerProvider: NodeTracerProvider | null;
 
-export interface OpenTelemetryConfig {
-  openTelemetryEnabled: boolean;
+export interface OpenTelemetryConfigEnabled {
+  openTelemetryEnabled: true;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetryMetricExportIntervalMillis?: number;
@@ -138,7 +138,13 @@ export interface OpenTelemetryConfig {
   serviceName?: string;
 }
 
-function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
+export type OpenTelemetryConfig =
+  | OpenTelemetryConfigEnabled
+  | {
+      openTelemetryEnabled: false;
+    };
+
+function getHoneycombMetadata(config: OpenTelemetryConfigEnabled, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
@@ -150,7 +156,7 @@ function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): 
   return metadata;
 }
 
-function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
+function getTraceExporter(config: OpenTelemetryConfigEnabled): SpanExporter {
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
@@ -179,7 +185,7 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
   }
 }
 
-function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
+function getMetricExporter(config: OpenTelemetryConfigEnabled): PushMetricExporter | null {
   if (!config.openTelemetryMetricExporter) return null;
 
   if (typeof config.openTelemetryMetricExporter === 'object') {
@@ -203,7 +209,7 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
       });
     default:
       throw new Error(
-        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
+        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`,
       );
   }
 }
@@ -275,7 +281,7 @@ export async function init(config: OpenTelemetryConfig) {
 
   if (config.serviceName) {
     resource = resource.merge(
-      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName })
+      new Resource({ [SemanticResourceAttributes.SERVICE_NAME]: config.serviceName }),
     );
   }
 

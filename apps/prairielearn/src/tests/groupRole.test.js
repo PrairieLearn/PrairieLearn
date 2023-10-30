@@ -5,7 +5,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');
-const util = require('util');
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
@@ -377,7 +376,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.roleUpdates,
       locals.groupRoles,
       locals.studentUsers,
-      locals.assessmentUrl
+      locals.assessmentUrl,
     );
   });
 
@@ -393,7 +392,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('should have error displayed for requiring all users have a role', function () {
     elemList = locals.$(
-      '.alert:contains(At least one user does not have a role. All users must have a role.)'
+      '.alert:contains(At least one user does not have a role. All users must have a role.)',
     );
     assert.lengthOf(elemList, 1);
   });
@@ -446,7 +445,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.roleUpdates,
       locals.groupRoles,
       locals.studentUsers,
-      locals.assessmentUrl
+      locals.assessmentUrl,
     );
   });
 
@@ -457,13 +456,13 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[1],
         locals.assessmentUrl,
         '00000002',
-        2
+        2,
       );
 
       elemList = locals.$('#role-select-form').find('tr');
       // Header row and two user rows
       assert.lengthOf(elemList, 3);
-    }
+    },
   );
 
   step('displays errors for incorrect number of role assignments', function () {
@@ -495,7 +494,7 @@ describe('Test group based assessments with custom group roles from student side
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
       ];
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
-    }
+    },
   );
 
   step('third user can load assessment and join group', async function () {
@@ -590,9 +589,9 @@ describe('Test group based assessments with custom group roles from student side
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        locals.assessmentUrl
+        locals.assessmentUrl,
       );
-    }
+    },
   );
 
   step('database contains correct role configuration after reassigning roles', async function () {
@@ -638,7 +637,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.roleUpdates,
       locals.groupRoles,
       locals.studentUsers,
-      locals.assessmentUrl
+      locals.assessmentUrl,
     );
   });
 
@@ -646,7 +645,7 @@ describe('Test group based assessments with custom group roles from student side
     'should have correct role configuration in the database after assigning two recorders',
     async function () {
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    }
+    },
   );
 
   step('should have correct roles checked in the table', async function () {
@@ -677,7 +676,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.roleUpdates,
       locals.groupRoles,
       locals.studentUsers,
-      locals.assessmentUrl
+      locals.assessmentUrl,
     );
   });
 
@@ -719,7 +718,7 @@ describe('Test group based assessments with custom group roles from student side
         { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
       ];
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    }
+    },
   );
 
   step('first user should see correct roles checked in the table', async function () {
@@ -754,7 +753,7 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[4],
         locals.assessmentUrl,
         '00000005',
-        2
+        2,
       );
       await joinGroup(locals.assessmentUrl, locals.joinCode);
 
@@ -767,7 +766,7 @@ describe('Test group based assessments with custom group roles from student side
         { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].user_id },
       ];
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
-    }
+    },
   );
 
   step('first user should see five roles checked in the table', async function () {
@@ -792,7 +791,7 @@ describe('Test group based assessments with custom group roles from student side
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        locals.assessmentUrl
+        locals.assessmentUrl,
       );
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
 
@@ -802,7 +801,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(await res.text());
 
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    }
+    },
   );
 
   step(
@@ -813,7 +812,7 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[4],
         locals.assessmentUrl,
         '00000005',
-        2
+        2,
       );
       await leaveGroup(locals.assessmentUrl);
 
@@ -841,14 +840,14 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(result.rows, 4);
 
       const secondUserRoles = result.rows.filter(
-        (row) => row.user_id === locals.studentUsers[1].user_id
+        (row) => row.user_id === locals.studentUsers[1].user_id,
       );
       assert.isTrue(secondUserRoles.length === 1);
 
       const secondUserRole = secondUserRoles[0];
       assert.isTrue(
         secondUserRole.group_role_id === locals.recorder.id ||
-          secondUserRole.group_role_id === locals.contributor.id
+          secondUserRole.group_role_id === locals.contributor.id,
       );
 
       const roleUpdates = secondUserRole.id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
@@ -859,7 +858,7 @@ describe('Test group based assessments with custom group roles from student side
 
       assert.sameDeepMembers(expected, result.rows);
       locals.roleUpdates = roleUpdates;
-    }
+    },
   );
 
   step(
@@ -870,11 +869,11 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[0],
         locals.assessmentUrl,
         '00000001',
-        3
+        3,
       );
 
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    }
+    },
   );
 
   step(
@@ -893,7 +892,7 @@ describe('Test group based assessments with custom group roles from student side
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        locals.assessmentUrl
+        locals.assessmentUrl,
       );
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
 
@@ -903,7 +902,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(await res.text());
 
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    }
+    },
   );
 
   step('should be able to switch to fourth user and leave group', async function () {
@@ -927,10 +926,10 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[0],
         locals.assessmentUrl,
         '00000001',
-        3
+        3,
       );
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    }
+    },
   );
 
   step('should be able to switch to fourth user and leave group', async function () {
@@ -965,7 +964,7 @@ describe('Test group based assessments with custom group roles from student side
 
       // Get all roles for first user
       const firstUserRoleUpdates = result.rows.filter(
-        (row) => row.user_id === locals.studentUsers[0].user_id
+        (row) => row.user_id === locals.studentUsers[0].user_id,
       );
       assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
 
@@ -977,7 +976,7 @@ describe('Test group based assessments with custom group roles from student side
 
       assert.sameDeepMembers(expected, result.rows);
       locals.roleUpdates = roleUpdates;
-    }
+    },
   );
 
   step(
@@ -987,10 +986,10 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[0],
         locals.assessmentUrl,
         '00000001',
-        3
+        3,
       );
       verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-    }
+    },
   );
 
   step('all required roles of a leaving user should be transferred if possible', async function () {
@@ -1021,7 +1020,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.studentUsers[0],
       locals.assessmentUrlWithoutRoles,
       '00000001',
-      2
+      2,
     );
   });
 
@@ -1057,7 +1056,7 @@ const changeGroupRolesConfig = async (courseDir, groupRoles) => {
     'Sp15',
     'assessments',
     'hw5-templateGroupWork',
-    'infoAssessment.json'
+    'infoAssessment.json',
   );
   const infoAssessment = await fs.readJSON(infoAssessmentPath);
   infoAssessment.groupRoles = groupRoles;
@@ -1086,7 +1085,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       overwrite: true,
     });
 
-    await util.promisify(helperServer.before(tempTestCourseDir.path).bind(this))();
+    await helperServer.before(tempTestCourseDir.path).call(this);
 
     // Find the ID of an assessment that has group roles
     const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -1102,7 +1101,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     } catch (err) {
       console.error(err);
     }
-    await util.promisify(helperServer.after.bind(this))();
+    await helperServer.after.call(this);
   });
 
   after('unset authenticated user', function () {
@@ -1314,9 +1313,9 @@ describe('Test group role reassignments with role of minimum > 1', function () {
           locals.roleUpdates,
           locals.groupRoles,
           locals.studentUsers,
-          assessmentUrl
+          assessmentUrl,
         );
-      }
+      },
     );
 
     step(
@@ -1333,14 +1332,14 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
         // Group role table should also have all role updates plus assigner role
         verifyRoleAssignmentsInRoleTable(locals.roleUpdates);
-      }
+      },
     );
 
     step('should have no errors displayed', function () {
       elemList = locals.$('.alert:contains(to be assigned)');
       assert.lengthOf(elemList, 0);
       elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)'
+        '.alert:contains(At least one user does not have a role. All users must have a role.)',
       );
       assert.lengthOf(elemList, 0);
     });
@@ -1391,7 +1390,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       elemList = locals.$('.alert:contains(to be assigned)');
       assert.lengthOf(elemList, 0);
       elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)'
+        '.alert:contains(At least one user does not have a role. All users must have a role.)',
       );
       assert.lengthOf(elemList, 0);
     });
@@ -1422,7 +1421,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        assessmentUrl
+        assessmentUrl,
       );
 
       // Verify update in database
@@ -1437,7 +1436,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
     step('should have correct errors displayed', function () {
       elemList = locals.$(
-        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 5)'
+        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 5)',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -1472,7 +1471,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        assessmentUrl
+        assessmentUrl,
       );
 
       // Verify update in database
@@ -1487,11 +1486,11 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
     step('should have correct errors displayed', function () {
       elemList = locals.$(
-        '.alert:contains(1 more person needs to be assigned Recorder. (Found 1, expected exactly 2).)'
+        '.alert:contains(1 more person needs to be assigned Recorder. (Found 1, expected exactly 2).)',
       );
       assert.lengthOf(elemList, 0);
       elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)'
+        '.alert:contains(At least one user does not have a role. All users must have a role.)',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -1518,7 +1517,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
         locals.roleUpdates,
         locals.groupRoles,
         locals.studentUsers,
-        assessmentUrl
+        assessmentUrl,
       );
 
       // Verify in database
@@ -1536,12 +1535,12 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       assert.lengthOf(elemList, 0);
 
       elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)'
+        '.alert:contains(At least one user does not have a role. All users must have a role.)',
       );
       assert.lengthOf(elemList, 1);
 
       elemList = locals.$(
-        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 4)'
+        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 4)',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -1570,7 +1569,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
           { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
-      }
+      },
     );
 
     step('first user sees group role table with three users', async function () {
@@ -1602,21 +1601,21 @@ describe('Test group role reassignments with role of minimum > 1', function () {
         // Ensure that there are two recorder assignments, one manager, and one reflector, and no contributors
         assert.lengthOf(
           result.rows.filter(({ group_role_id }) => group_role_id === locals.manager.id),
-          1
+          1,
         );
         assert.lengthOf(
           result.rows.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
-          2
+          2,
         );
         assert.lengthOf(
           result.rows.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
-          1
+          1,
         );
         assert.lengthOf(
           result.rows.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
-          0
+          0,
         );
-      }
+      },
     );
   });
 });
@@ -1726,7 +1725,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[1].user_id
+        locals.studentUsers[1].user_id,
       );
       // Recorder role should be transferred to first user
       const expected = [
@@ -1740,7 +1739,7 @@ describe('Test group role reassignment logic when user leaves', function () {
         },
       ];
       assert.sameDeepMembers(result, expected);
-    }
+    },
   );
 
   step(
@@ -1769,7 +1768,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id
+        locals.studentUsers[0].user_id,
       );
       // Manager role should replace first user's contributor role
       const expected = [
@@ -1779,7 +1778,7 @@ describe('Test group role reassignment logic when user leaves', function () {
         },
       ];
       assert.sameDeepMembers(result, expected);
-    }
+    },
   );
 
   step(
@@ -1816,7 +1815,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id
+        locals.studentUsers[0].user_id,
       );
       // Case 1: Manager role should replace second user's contributor role, and
       // reflector role should replace third user's contributor role
@@ -1844,13 +1843,13 @@ describe('Test group role reassignment logic when user leaves', function () {
       assert.lengthOf(result, 2);
       // If second user receives manager, we expect case 1; otherwise, we expect case 2
       const secondUserRoleAssignment = result.find(
-        ({ user_id }) => user_id === locals.studentUsers[1].user_id
+        ({ user_id }) => user_id === locals.studentUsers[1].user_id,
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
         secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
-    }
+    },
   );
 
   step(
@@ -1891,29 +1890,29 @@ describe('Test group role reassignment logic when user leaves', function () {
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id
+        locals.studentUsers[0].user_id,
       );
 
       // Ensure that there is a single role assignment for manager, recorder, and reflector each
       assert.lengthOf(
         result.filter(({ group_role_id }) => group_role_id === locals.manager.id),
-        1
+        1,
       );
       assert.lengthOf(
         result.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
-        1
+        1,
       );
       assert.lengthOf(
         result.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
-        1
+        1,
       );
 
       // Ensure that there are no contributors
       assert.lengthOf(
         result.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
-        0
+        0,
       );
-    }
+    },
   );
 
   step('should not transfer non-required roles to another user', function () {
@@ -1940,7 +1939,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
-      locals.studentUsers[1].user_id
+      locals.studentUsers[1].user_id,
     );
     // Recorder role should be transferred to first user
     const expected = [
@@ -1972,7 +1971,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
-      locals.studentUsers[1].user_id
+      locals.studentUsers[1].user_id,
     );
     // Recorder role should be transferred to first user
     const expected = [

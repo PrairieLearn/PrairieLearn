@@ -1,22 +1,14 @@
 #!/bin/bash
 set -ex
 
-yum update -y
-
-amazon-linux-extras install -y \
-    vim \
-    docker \
-    postgresql14 \
-    redis4.0
+dnf update -y
 
 # Notes:
 # - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 # - `libjpeg-devel` is needed by the Pillow package
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-yum -y install \
-    dos2unix \
-    emacs-nox \
+dnf -y install \
     gcc \
     gcc-c++ \
     git \
@@ -26,16 +18,17 @@ yum -y install \
     libjpeg-devel \
     lsof \
     make \
-    man \
     openssl \
-    postgresql-contrib \
-    postgresql-server \
+    postgresql15 \
+    postgresql15-server \
+    postgresql15-contrib \
     procps-ng \
+    redis6 \
     tar \
     texlive \
     texlive-dvipng \
+    texlive-type1cm \
     tmux
-
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -44,10 +37,6 @@ git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 16
-# PrairieLearn doesn't currently use `npm` itself, but we can't be sure that
-# someone else isn't using our base image and relying on `npm`, so we'll
-# continue to install it to avoid breaking things.
-npm install npm@latest -g
 npm install yarn@latest -g
 for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 
@@ -76,7 +65,7 @@ else
 fi
 
 # Clear various caches to minimize the final image size.
-yum clean all
+dnf clean all
 conda clean --all
 nvm cache clear
 rm Miniforge3-Linux-${arch}.sh

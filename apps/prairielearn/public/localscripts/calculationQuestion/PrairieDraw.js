@@ -45,7 +45,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           Matrix.I(4),
           this._initViewAngleX3D,
           this._initViewAngleY3D,
-          this._initViewAngleZ3D
+          this._initViewAngleZ3D,
         );
         this._trans3DStack = [];
 
@@ -328,24 +328,24 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       this._viewAngleX3D = PrairieGeom.clip(
         this._viewAngleX3D,
         this._props.viewAngleXMin,
-        this._props.viewAngleXMax
+        this._props.viewAngleXMax,
       );
       this._viewAngleY3D = PrairieGeom.clip(
         this._viewAngleY3D,
         this._props.viewAngleYMin,
-        this._props.viewAngleYMax
+        this._props.viewAngleYMax,
       );
       this._viewAngleZ3D = PrairieGeom.clip(
         this._viewAngleZ3D,
         this._props.viewAngleZMin,
-        this._props.viewAngleZMax
+        this._props.viewAngleZMax,
       );
     }
     this._trans3D = PrairieGeom.rotateTransform3D(
       Matrix.I(4),
       this._viewAngleX3D,
       this._viewAngleY3D,
-      this._viewAngleZ3D
+      this._viewAngleZ3D,
     );
     if (redraw) {
       this.redraw();
@@ -362,7 +362,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       this._initViewAngleY3D,
       this._initViewAngleZ3D,
       undefined,
-      redraw
+      redraw,
     );
   };
 
@@ -378,7 +378,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       this._viewAngleX3D + deltaAngleX,
       this._viewAngleY3D + deltaAngleY,
       this._viewAngleZ3D + deltaAngleZ,
-      clip
+      clip,
     );
   };
 
@@ -1115,7 +1115,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     centerAngleDw,
     extentAngleDw,
     type,
-    fixedRad
+    fixedRad,
   ) {
     var startAngleDw = centerAngleDw - extentAngleDw / 2;
     var endAngleDw = centerAngleDw + extentAngleDw / 2;
@@ -1139,7 +1139,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     endAngleDw,
     type,
     fixedRad,
-    idealSegmentSize
+    idealSegmentSize,
   ) {
     this.save();
     this._ctx.lineWidth = this._props.arrowLineWidthPx;
@@ -1163,14 +1163,14 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       startAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad
+      fixedRad,
     );
     var endRadiusPx = this._circleArrowRadius(
       radiusPx,
       endAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad
+      fixedRad,
     );
     var arrowLengthPx = radiusPx * Math.abs(endAnglePx - startAnglePx);
     var arrowheadMaxLengthPx = this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
@@ -1206,11 +1206,11 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       arrowBaseAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad
+      fixedRad,
     );
     var arrowPosPx = posPx.add(PrairieGeom.vector2DAtAngle(endAnglePx).x(endRadiusPx));
     var arrowBasePosPx = posPx.add(
-      PrairieGeom.vector2DAtAngle(arrowBaseAnglePx).x(arrowBaseRadiusPx)
+      PrairieGeom.vector2DAtAngle(arrowBaseAnglePx).x(arrowBaseRadiusPx),
     );
     var arrowDirPx = arrowPosPx.subtract(arrowBasePosPx);
     var arrowPosDw = this.pos2Dw(arrowPosPx);
@@ -1234,7 +1234,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     anglePx,
     startAnglePx,
     endAnglePx,
-    fixedRad
+    fixedRad,
   ) {
     if (fixedRad !== undefined && fixedRad === true) {
       return midRadPx;
@@ -1278,7 +1278,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     refDw,
     startAngleDw,
     endAngleDw,
-    options
+    options,
   ) {
     posDw = this.pos2To3(posDw);
     normDw = normDw === undefined ? Vector.k : normDw;
@@ -1330,7 +1330,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     startAngleDw,
     endAngleDw,
     type,
-    options
+    options,
   ) {
     posDw = this.pos2To3(posDw);
     normDw = normDw || Vector.k;
@@ -1374,7 +1374,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     normDw,
     refDw,
     startAngleDw,
-    endAngleDw
+    endAngleDw,
   ) {
     if (labelText === undefined) {
       return;
@@ -1444,7 +1444,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     drawFront,
     refDw,
     startAngleDw,
-    endAngleDw
+    endAngleDw,
   ) {
     var cRDwSq = radDw * radDw - distDw * distDw;
     if (cRDwSq <= 0) {
@@ -1516,7 +1516,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           } else {
             intersections = PrairieGeom.intersectAngleRanges(
               [theta1, theta2],
-              [startAngleDw, endAngleDw]
+              [startAngleDw, endAngleDw],
             );
             for (i = 0; i < intersections.length; i++) {
               range = intersections[i];
@@ -1532,7 +1532,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
         } else {
           intersections = PrairieGeom.intersectAngleRanges(
             [theta2, theta1 + 2 * Math.PI],
-            [startAngleDw, endAngleDw]
+            [startAngleDw, endAngleDw],
           );
           for (i = 0; i < intersections.length; i++) {
             range = intersections[i];
@@ -1684,7 +1684,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           pointsPx[i] = PrairieGeom.linearInterpVector(
             pointsPx[i],
             pointsPx[i - 1],
-            lengthToRemovePx / segmentLengthPx
+            lengthToRemovePx / segmentLengthPx,
           );
           break;
         }
@@ -1786,7 +1786,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     labelStart,
     labelEnd,
     arrowToLine,
-    arrowDown
+    arrowDown,
   ) {
     var LengthDw = endDw.subtract(startDw);
     var L = LengthDw.modulus();
@@ -1813,17 +1813,17 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       for (i = 0; i <= nSpaces; i++) {
         this.arrow(
           startArrow.add($V([inc, (inc * (sizeEndDwSign - sizeStartDwSign)) / L])),
-          endArrow.add($V([inc, 0]))
+          endArrow.add($V([inc, 0])),
         );
         inc = inc + spacing;
       }
       this.text(startArrow, $V([2, 0]), labelStart);
       this.text(
         startArrow.add(
-          $V([inc - spacing, ((inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L])
+          $V([inc - spacing, ((inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L]),
         ),
         $V([-2, 0]),
-        labelEnd
+        labelEnd,
       );
     } else {
       this.line(startDw, endDw);
@@ -1832,17 +1832,17 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       for (i = 0; i <= nSpaces; i++) {
         this.arrow(
           startArrow.add($V([inc, 0])),
-          endArrow.add($V([inc, (-inc * (sizeEndDwSign - sizeStartDwSign)) / L]))
+          endArrow.add($V([inc, (-inc * (sizeEndDwSign - sizeStartDwSign)) / L])),
         );
         inc = inc + spacing;
       }
       this.text(endArrow, $V([2, 0]), labelStart);
       this.text(
         endArrow.add(
-          $V([inc - spacing, (-(inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L])
+          $V([inc - spacing, (-(inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L]),
         ),
         $V([-2, 0]),
-        labelEnd
+        labelEnd,
       );
     }
 
@@ -2274,7 +2274,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
       radiusPx + groundOffsetPx,
       -startAngle,
       -endAngle,
-      true
+      true,
     );
     this._ctx.fillStyle = this._props.groundInsideColor;
     this._ctx.fill();
@@ -2476,7 +2476,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
             xPx - offsetPx.e(1) - textBorderPx,
             yPx + offsetPx.e(2) - textBorderPx,
             img.width + 2 * textBorderPx,
-            img.height + 2 * textBorderPx
+            img.height + 2 * textBorderPx,
           );
           this._ctx.restore();
         }
@@ -2592,7 +2592,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     endAngleDw,
     pos,
     text,
-    fixedRad
+    fixedRad,
   ) {
     // convert to Px coordinates
     var startOffsetDw = PrairieGeom.vector2DAtAngle(startAngleDw).x(radDw);
@@ -2786,14 +2786,14 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     timeOffset,
     yLabel,
     data,
-    type
+    type,
   ) {
     var scale = $V([sizeDw.e(1) / sizeData.e(1), sizeDw.e(2) / sizeData.e(2)]);
     var lastTime = data[data.length - 1][0];
     var offset = $V([timeOffset - lastTime, 0]);
     var plotData = PrairieGeom.scalePoints(
       PrairieGeom.translatePoints(this.pairsToVectors(data), offset),
-      scale
+      scale,
     );
 
     this.save();
@@ -3274,7 +3274,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     holdTimes,
     interps,
     names,
-    t
+    t,
   ) {
     var seq = this._sequences[name];
     if (seq === undefined) {
@@ -3330,7 +3330,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
             states[nextIndex],
             interps,
             endTime,
-            endTime
+            endTime,
           );
           seq.lastState.inTransition = false;
           seq.lastState.index = nextIndex;
@@ -3536,7 +3536,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     var numDecPlaces = 2;
     /* jshint laxbreak: true */
     console.log(
-      '$V([' + posDw.e(1).toFixed(numDecPlaces) + ', ' + posDw.e(2).toFixed(numDecPlaces) + ']),'
+      '$V([' + posDw.e(1).toFixed(numDecPlaces) + ', ' + posDw.e(2).toFixed(numDecPlaces) + ']),',
     );
   };
 
@@ -3677,7 +3677,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
     drawPoint,
     pointLabel,
     pointAnchor,
-    options
+    options,
   ) {
     drawAxes = drawAxes === undefined ? true : drawAxes;
     drawPoint = drawPoint === undefined ? true : drawPoint;
@@ -3715,7 +3715,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           originData.e(1) + sizeData.e(1),
           0,
           sizeDw.e(1),
-          i * dXGrid
+          i * dXGrid,
         );
         this.line($V([x, y0]), $V([x, y1]), 'grid');
       }
@@ -3727,7 +3727,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           originData.e(2) + sizeData.e(2),
           0,
           sizeDw.e(2),
-          i * dYGrid
+          i * dYGrid,
         );
         this.line($V([x0, y]), $V([x1, y]), 'grid');
       }
@@ -3740,7 +3740,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           originData.e(1) + sizeData.e(1),
           0,
           sizeDw.e(1),
-          i * dXGrid
+          i * dXGrid,
         );
         label = String(i * dXGrid);
         this.text($V([x, y0]), $V([0, 1]), label);
@@ -3753,7 +3753,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
           originData.e(2) + sizeData.e(2),
           0,
           sizeDw.e(2),
-          i * dYGrid
+          i * dYGrid,
         );
         label = String(i * dYGrid);
         this.text($V([x0, y]), $V([1, 0]), label);
@@ -3772,7 +3772,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
         originData.e(1) + sizeData.e(1),
         0,
         sizeDw.e(1),
-        vertAxisPos
+        vertAxisPos,
       );
     }
     if (horizAxisPos === 'bottom') {
@@ -3785,7 +3785,7 @@ define(['sylvester', 'sha1', 'PrairieGeom'], function (Sylvester, Sha1, PrairieG
         originData.e(2) + sizeData.e(2),
         0,
         sizeDw.e(2),
-        horizAxisPos
+        horizAxisPos,
       );
     }
     if (drawAxes) {
