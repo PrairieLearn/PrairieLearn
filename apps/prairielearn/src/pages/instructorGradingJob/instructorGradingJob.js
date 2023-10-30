@@ -34,7 +34,6 @@ router.get('/:job_id', (req, res, next) => {
     if (result.rows[0].aai && !result.rows[0].aai.authorized) {
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
-    console.log(result.rows);
     _.assign(res.locals, result.rows[0]);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
@@ -60,7 +59,7 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   };
-  sqldb.queryOneRow(sql.select_job, params, (err, result) => {
+  sqldb.queryZeroOrOneRow(sql.select_job, params, (err, result) => {
     if (ERR(err, next)) return;
     if (result.rows.length === 0) {
       return next(error.make(404, 'Job not found'));
