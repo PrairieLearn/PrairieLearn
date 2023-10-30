@@ -93,7 +93,7 @@ export const InstitutionAdminSso = ({
                   None
                 </option>
                 ${supportedAuthenticationProviders.map((provider) => {
-                  if (provider.name === 'LTI') return null;
+                  if (provider.name === 'LTI') return '';
 
                   const isEnabled = institutionAuthenticationProviders.some(
                     (p) => p.id === provider.id,

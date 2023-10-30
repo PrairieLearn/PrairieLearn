@@ -1,8 +1,8 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { assetPath } from '../../lib/assets';
 import { config } from '../../lib/config';
+import { assetPath } from '../../lib/assets';
 import { isEnterprise } from '../../lib/license';
 
 export interface InstitutionAuthnProvider {
@@ -15,26 +15,15 @@ export interface InstitutionSupportedProviders {
   is_default: boolean;
 }
 
-interface AuthLoginProps {
-  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
-  service: string | null;
-  resLocals: Record<string, any>;
-}
-
-interface AuthLoginUnsupportedProviderProps {
-  supportedProviders: InstitutionSupportedProviders[];
-  institutionId: string;
-  service: string | null;
-  resLocals: Record<string, any>;
-}
-
-interface LoginPageContainerProps {
+function LoginPageContainer({
+  children,
+  service,
+  resLocals,
+}: {
   children: HtmlValue;
   service: string | null;
   resLocals: Record<string, any>;
-}
-
-function LoginPageContainer({ children, service, resLocals }: LoginPageContainerProps) {
+}) {
   return html`
     <!doctype html>
     <html lang="en" class="bg-dark">
@@ -181,7 +170,15 @@ function SamlLoginButton({ institutionId }) {
   `;
 }
 
-export function AuthLogin({ institutionAuthnProviders, service, resLocals }: AuthLoginProps) {
+export function AuthLogin({
+  institutionAuthnProviders,
+  service,
+  resLocals,
+}: {
+  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
+  service: string | null;
+  resLocals: Record<string, any>;
+}) {
   return LoginPageContainer({
     service,
     resLocals,
@@ -195,13 +192,6 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
           `
         : ''}
       <div class="login-methods mt-4">
-        ${resLocals.devMode
-          ? html`
-              <a class="btn btn-success d-block" href="/pl" role="button">
-                <span class="font-weight-bold">DevMode by-pass</span>
-              </a>
-            `
-          : ''}
         ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
@@ -229,7 +219,12 @@ export function AuthLoginUnsupportedProvider({
   institutionId,
   service,
   resLocals,
-}: AuthLoginUnsupportedProviderProps) {
+}: {
+  supportedProviders: InstitutionSupportedProviders[];
+  institutionId: string;
+  service: string | null;
+  resLocals: Record<string, any>;
+}) {
   const supportsLti = supportedProviders.some((p) => p.name === 'LTI');
   const supportsNonLti = supportedProviders.some((p) => p.name !== 'LTI');
 
@@ -291,11 +286,12 @@ export function AuthLoginUnsupportedProvider({
           `
         : ''}
       <div class="login-methods">
-        <!-- prettier-ignore -->
-        ${showSaml ? SamlLoginButton({ institutionId }) : ''}
-        ${showShib ? ShibLoginButton() : ''}
-        ${showGoogle ? GoogleLoginButton() : ''}
-        ${showAzure ? MicrosoftLoginButton() : ''}
+        ${[
+          showSaml ? SamlLoginButton({ institutionId }) : '',
+          showShib ? ShibLoginButton() : '',
+          showGoogle ? GoogleLoginButton() : '',
+          showAzure ? MicrosoftLoginButton() : '',
+        ]}
       </div>
     `,
   }).toString();
