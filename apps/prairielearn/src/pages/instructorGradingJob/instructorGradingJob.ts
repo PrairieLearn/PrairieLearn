@@ -1,13 +1,14 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const express = require('express');
-const { pipeline } = require('node:stream/promises');
-const { S3, NoSuchKey } = require('@aws-sdk/client-s3');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
+import ERR = require('async-stacktrace');
+// import _ = require('lodash');
+import express = require('express');
+import { pipeline } from 'node:stream/promises';
+import { S3, NoSuchKey } from '@aws-sdk/client-s3';
+import error = require('@prairielearn/error');
+import sqldb = require('@prairielearn/postgres');
+import type { Readable } from 'stream';
 
-const aws = require('../../lib/aws');
+import aws = require('../../lib/aws');
+import { instructorGradingJob } from './instructorGradingJob.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -35,9 +36,8 @@ router.get('/:job_id', (req, res, next) => {
     if (result.rows[0].aai && !result.rows[0].aai.authorized) {
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
-
-    _.assign(res.locals, result.rows[0]);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    console.log(result.rows[0]);
+    res.send(instructorGradingJob({ resLocals: res.locals, result: result.rows[0] }));
   });
 });
 
@@ -87,7 +87,8 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     const s3 = new S3(aws.makeS3ClientConfig());
     s3.getObject(params)
       .then((object) => {
-        return pipeline(/** @type {import('stream').Readable} */ (object.Body), res);
+        console.log(object);
+        return pipeline(object.Body<Readable>, res);
       })
       .catch((err) => {
         if (err instanceof NoSuchKey) {
@@ -99,4 +100,4 @@ router.get('/:job_id/file/:file', (req, res, next) => {
   });
 });
 
-module.exports = router;
+export default router;

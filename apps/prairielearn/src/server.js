@@ -1109,7 +1109,7 @@ module.exports.initExpress = function () {
 
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob'),
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/jobSequence',

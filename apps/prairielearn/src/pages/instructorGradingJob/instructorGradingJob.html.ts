@@ -1,0 +1,209 @@
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
+
+const GradingJobSchema = z.object({
+  id: z.string(),
+  s3_bucket: z.string().nullable(),
+  s3_root_key: z.string().nullable(),
+  output: z.string().nullable(),
+  authz_data: z.any(),
+});
+
+const GradingJobQueryResultSchema = z.object({
+  aai: z.record(z.any()).nullable(),
+  grading_job: GradingJobSchema,
+  formatted_grading_requested_at: z.string(),
+  formatted_grading_submitted_at: z.string(),
+  formatted_grading_received_at: z.string(),
+  formatted_grading_started_at: z.string(),
+  formatted_grading_finished_at: z.string(),
+  formatted_graded_at: z.string(),
+  question_qid: z.string(),
+  user_uid: z.string(),
+  course_instance_short_name: z.string(),
+});
+export type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
+
+export function instructorGradingJob({
+  resLocals,
+  result,
+}: {
+  resLocals: Record<string, any>;
+  result: GradingJobQueryResult;
+}) {
+  return html` <!doctype html>
+    <html lang="en">
+      <head>
+        ${renderEjs(__filename, "<%- include('../partials/head') %>", {
+          ...resLocals,
+          pageTitle: `Grading Job ${result.grading_job.id}`,
+        })}
+      </head>
+      <body>
+        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+          ...resLocals,
+          navPage: '',
+        })}
+        <main id="content" class="container">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              Grading Job ${result.grading_job.id}
+            </div>
+
+            <table class="table table-sm table-hover two-column-description">
+              <tbody>
+                <tr>
+                  <th>Question</th>
+                  <td>${result.question_qid}</td>
+                </tr>
+                <tr>
+                  <th>User</th>
+                  <td>${result.user_uid}</td>
+                </tr>
+                <tr>
+                  <th>Requested at</th>
+                  <td>${result.formatted_grading_requested_at}</td>
+                </tr>
+                <tr>
+                  <th>Submitted at</th>
+                  <td>${result.formatted_grading_submitted_at}</td>
+                </tr>
+                <tr>
+                  <th>Received at</th>
+                  <td>${result.formatted_grading_received_at}</td>
+                </tr>
+                <tr>
+                  <th>Started at</th>
+                  <td>${result.formatted_grading_started_at}</td>
+                </tr>
+                <tr>
+                  <th>Finished at</th>
+                  <td>${result.formatted_grading_finished_at}</td>
+                </tr>
+                <tr>
+                  <th>Graded at</th>
+                  <td>${result.formatted_graded_at}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          ${result.grading_job.s3_bucket && result.grading_job.s3_root_key
+            ? html`
+                <div class="card mb-4">
+                  <div class="card-header bg-primary text-white">Downloads</div>
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>File</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${result.grading_job.authz_data.has_course_permission_view
+                        ? html` <tr>
+                              <td>
+                                <a
+                                  href="${resLocals.urlPrefix}/grading_job/${result.grading_job
+                                    .id}/file/job.tar.gz"
+                                  >job.tar.gz</a
+                                >
+                              </td>
+                              <td>
+                                Contains all files necessary for grading; this is what is mounted to
+                                <code>/grade</code> when your job is run.
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <a
+                                  href="${resLocals.urlPrefix}/grading_job/${result.grading_job
+                                    .id}/file/archive.tar.gz"
+                                  >archive.tar.gz</a
+                                >
+                              </td>
+                              <td>
+                                A snapshot of <code>/grade</code> after your job has been executed.
+                              </td>
+                            </tr>`
+                        : ''}
+                      <tr>
+                        <td>
+                          <a
+                            href="${resLocals.urlPrefix}/grading_job/${result.grading_job
+                              .id}/file/results.json"
+                            >results.json</a
+                          >
+                        </td>
+                        <td>
+                          Contains the PrairieLearn-generated results, which includes the contents
+                          of your
+                          <code>results.json</code> as well as some PrairieLearn metadata.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <a
+                            href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log"
+                            >output.log</a
+                          >
+                        </td>
+                        <td>
+                          Contains the raw output from stdout/stderr for your job. Lines beginning
+                          with
+                          <code>container &gt;</code> are from your container; the rest are
+                          diagnostic logs from PrairieLearn.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              `
+            : ''}
+
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Job Output</div>
+            <div class="card-body">
+              ${result.grading_job.s3_bucket && result.grading_job.s3_root_key
+                ? html`
+                    <script>
+                      $.get('<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log')
+                        .done(function (data) {
+                          $('#job-output-loading').hide();
+                          $('#job-output').text(data);
+                          $('#job-output').show();
+                        })
+                        .fail(function () {
+                          $('#job-output-loading').hide();
+                          $('#job-output').text('Unable to load grader results');
+                          $('#job-output').show();
+                        });
+                    </script>
+                    <pre
+                      class="bg-dark text-white rounded p-3 mb-0"
+                      id="job-output"
+                      style="display: none;"
+                    ></pre>
+                    <i
+                      class="fa fa-spinner fa-spin fa-2x"
+                      id="job-output-loading"
+                      style="width: 100%; text-align: center;"
+                    ></i>
+                  `
+                : result.grading_job.output
+                ? html`
+                    <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
+                        ${result.grading_job.output}
+                        </pre
+                    >
+                  `
+                : html` <pre class="bg-dark text-white rounded p-3 mb-0">
+No output was captured for this grading job.</pre
+                  >`}
+            </div>
+          </div>
+        </main>
+      </body>
+    </html>`.toString();
+}
