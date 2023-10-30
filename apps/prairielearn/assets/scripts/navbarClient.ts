@@ -1,7 +1,7 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import Cookies from 'js-cookie';
 
-const expires = 30; // in units of days
+const COOKIE_EXPIRATION_DAYS = 30;
 
 onDocumentReady(() => {
   const usernameNav = document.getElementById('username-nav');
@@ -24,10 +24,16 @@ onDocumentReady(() => {
 
   document.querySelector('#navbar-administrator-toggle')?.addEventListener('click', () => {
     if (accessAsAdministrator) {
-      Cookies.set('pl_access_as_administrator', 'inactive', { path: '/', expires: expires });
+      Cookies.set('pl_access_as_administrator', 'inactive', {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
       Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
     } else {
-      Cookies.set('pl_access_as_administrator', 'active', { path: '/', expires: expires });
+      Cookies.set('pl_access_as_administrator', 'active', {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
       Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
     }
     location.reload();
@@ -72,8 +78,11 @@ onDocumentReady(() => {
 
   document.querySelector('#navbar-user-view-authn-student')?.addEventListener('click', () => {
     Cookies.remove('pl_requested_uid', { path: '/' });
-    Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: expires });
-    Cookies.set('pl_requested_course_instance_role', 'None', { path: '/', expires: expires });
+    Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: COOKIE_EXPIRATION_DAYS });
+    Cookies.set('pl_requested_course_instance_role', 'None', {
+      path: '/',
+      expires: COOKIE_EXPIRATION_DAYS,
+    });
     Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
 
     if (viewType === 'student') {
@@ -92,8 +101,20 @@ onDocumentReady(() => {
   });
 
   document.querySelector('#navbar-user-view-student-no-rules')?.addEventListener('click', () => {
-    Cookies.remove('pl_requested_course_role', { path: '/' });
-    Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+    if (hasInstructorAccess) {
+      Cookies.remove('pl_requested_course_role', { path: '/' });
+      Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+    } else {
+      Cookies.set('pl_requested_course_role', authnCourseRole, {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
+      Cookies.set('pl_requested_course_instance_role', authnCourseInstanceRole, {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
+    }
+
     Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
 
     if (viewType === 'student') {
@@ -102,14 +123,20 @@ onDocumentReady(() => {
   });
 
   document.querySelector('#navbar-user-view-student')?.addEventListener('click', () => {
-    const courseRole = hasInstructorAccess ? 'None' : authnCourseRole;
-    const courseInstanceRole = hasInstructorAccess ? 'None' : authnCourseInstanceRole;
+    if (hasInstructorAccess) {
+      Cookies.set('pl_requested_course_role', 'None', {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
+      Cookies.set('pl_requested_course_instance_role', 'None', {
+        path: '/',
+        expires: COOKIE_EXPIRATION_DAYS,
+      });
+    } else {
+      Cookies.remove('pl_requested_course_role', { path: '/' });
+      Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+    }
 
-    Cookies.set('pl_requested_course_role', courseRole, { path: '/', expires: expires });
-    Cookies.set('pl_requested_course_instance_role', courseInstanceRole, {
-      path: '/',
-      expires: expires,
-    });
     Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
 
     if (viewType === 'student') {
