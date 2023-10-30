@@ -9,16 +9,6 @@ WHERE
 ORDER BY
   id;
 
--- BLOCK select_defaults
-SELECT
-  platform,
-  issuer_params
-FROM
-  lti13_platform_defaults
-ORDER BY
-  display_order,
-  platform;
-
 -- BLOCK select_keystore
 SELECT
   keystore

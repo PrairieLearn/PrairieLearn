@@ -2,6 +2,8 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import jose = require('node-jose');
 import { z } from 'zod';
+import { sortBy } from 'lodash';
+
 import error = require('@prairielearn/error');
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
@@ -10,6 +12,7 @@ import { getInstitution } from '../../lib/institution';
 import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
 import { Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
+import { config } from '../../../lib/config';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -36,13 +39,37 @@ router.get(
       Lti13InstanceSchema,
     );
 
-    const platform_defaults = await queryRows(
-      sql.select_defaults,
-      {},
-      z.object({
-        platform: z.string(),
-        issuer_params: z.any(),
-      }),
+    type LTI13_platform = {
+      platform: string;
+      display_order: number;
+      issuer_params?: object;
+      custom_fields?: object;
+    }[];
+
+    const platform_defaults_hardcoded: LTI13_platform = [
+      {
+        platform: 'Unknown',
+        display_order: 0,
+        issuer_params: {},
+      },
+      {
+        platform: 'Canvas Production',
+        display_order: 10,
+        issuer_params: {
+          issuer: 'https://canvas.instructure.com',
+          jwks_uri: 'https://sso.canvaslms.com/api/lti/security/jwks',
+          token_endpoint: 'https://sso.canvaslms.com/login/oauth2/token',
+          authorization_endpoint: 'https://sso.canvaslms.com/api/lti/authorize_redirect',
+        },
+        custom_fields: {
+          uin: '$Canvas.user.sisIntegrationId',
+        },
+      },
+    ];
+
+    const platform_defaults = sortBy(
+      [...platform_defaults_hardcoded, ...config.lti13InstancePlatformDefaults],
+      ['display_order', 'platform'],
     );
 
     // Handle the / (no id passed case)
@@ -148,7 +175,6 @@ router.post(
         custom_fields: req.body.custom_fields,
       });
       flash('success', `Platform updated.`);
-      // TODO: Saving changes should remove the cached value in auth
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
       const new_li = await queryRows(

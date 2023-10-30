@@ -69,13 +69,13 @@ router.get(
     const lmsConfig = cloneDeep(ltiConfig);
     const url = new URL(getCanonicalHost(req));
 
-    lmsConfig.oidc_initiation_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/auth/login`;
-    lmsConfig.target_link_uri = `${url.href}/pl/lti13_instance/${lti13_instance.id}/auth/callback`;
+    lmsConfig.oidc_initiation_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/auth/login`;
+    lmsConfig.target_link_uri = `${url.href}pl/lti13_instance/${lti13_instance.id}/auth/callback`;
 
     lmsConfig.extensions[0].domain = url.hostname || '';
-    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/course_navigation`;
+    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/course_navigation`;
 
-    lmsConfig.public_jwk_url = `${url.href}/pl/lti13_instance/${lti13_instance.id}/jwks`;
+    lmsConfig.public_jwk_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/jwks`;
     lmsConfig.custom_fields = lti13_instance.custom_fields;
 
     res.setHeader('Content-Type', 'application/json');

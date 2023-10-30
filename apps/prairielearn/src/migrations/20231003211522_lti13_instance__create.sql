@@ -25,28 +25,3 @@ CREATE TABLE IF NOT EXISTS
   );
 
 CREATE INDEX IF NOT EXISTS lti13_instances_institution_id_idx ON lti13_instances (institution_id);
-
-CREATE TABLE IF NOT EXISTS
-  lti13_platform_defaults (
-    id bigserial PRIMARY KEY,
-    platform text NOT NULL DEFAULT 'Unknown',
-    issuer_params jsonb,
-    client_params jsonb,
-    custom_params jsonb,
-    display_order integer
-  );
-
-INSERT INTO
-  lti13_platform_defaults (platform, issuer_params, display_order)
-VALUES
-  ('Unknown', null, 0),
-  (
-    'Canvas Production',
-    '{
-   "issuer": "https://canvas.instructure.com",
-   "jwks_uri": "https://sso.canvaslms.com/api/lti/security/jwks",
-   "token_endpoint": "https://sso.canvaslms.com/login/oauth2/token",
-   "authorization_endpoint": "https://sso.canvaslms.com/api/lti/authorize_redirect"
-}',
-    10
-  );

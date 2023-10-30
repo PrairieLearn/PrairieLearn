@@ -12,6 +12,7 @@ onDocumentReady(() => {
     }
 
     const ip = document.querySelector<HTMLInputElement>('#issuer_params');
+    const cf = document.querySelector<HTMLInputElement>('#custom_fields');
 
     const platform_default = platformDefaults.find(
       ({ platform }) => platform === platformSelector.value,
@@ -21,5 +22,6 @@ onDocumentReady(() => {
     }
 
     ip.value = JSON.stringify(platform_default.issuer_params, null, 2);
+    cf.value = JSON.stringify(platform_default.custom_fields, null, 2);
   });
 });

@@ -220,7 +220,7 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
             class="form-control"
             id="custom_fields"
             name="custom_fields"
-            rows="8"
+            rows="4"
             spellcheck="false"
           >
 ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
