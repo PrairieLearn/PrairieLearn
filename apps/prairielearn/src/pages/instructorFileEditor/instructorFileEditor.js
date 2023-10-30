@@ -8,14 +8,12 @@ const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
-const { promisify } = require('util');
 const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
-const requireFrontend = require('../../lib/require-frontend');
 const { config } = require('../../lib/config');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
@@ -596,8 +594,6 @@ async function saveAndSync(fileEdit, locals) {
             job.fail('One or more JSON files contained errors and were unable to be synced');
           }
         }
-
-        await promisify(requireFrontend.undefQuestionServers)(locals.course.path, job);
 
         await updateDidSync(fileEdit);
         job.verbose('Marked edit as synced');

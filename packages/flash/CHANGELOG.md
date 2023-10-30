@@ -1,5 +1,13 @@
 # @prairielearn/flash
 
+## 1.1.1
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+- Updated dependencies [8dd894623]
+  - @prairielearn/html@3.0.9
+
 ## 1.1.0
 
 ### Minor Changes

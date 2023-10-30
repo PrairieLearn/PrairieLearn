@@ -162,12 +162,14 @@ jobs:
         run: pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
           cache: 'yarn'
       - name: Install Node dependencies
         run: yarn install --immutable
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check
 
       - name: Set up Turborepo cache
         uses: actions/cache@v3

@@ -145,7 +145,7 @@ jobs:
         run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
       - name: Build and push prairielearn/workspace-jupyterlab-python
         if: ${{ env.workspaces_jupyterlab_python_modified }}
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab-python
           platforms: linux/amd64,linux/arm64
