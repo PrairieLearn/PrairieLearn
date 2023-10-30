@@ -21,6 +21,21 @@ app.use(
 );
 ```
 
+### Rotate session cookies
+
+If you want to rotate to a new session cookie name, you can provide an array of cookie names to `createSessionMiddleware`.
+
+```ts
+createSessionMiddleware({
+  // ...
+  cookie: {
+    name: ['session', 'legacy_session', 'ancient_session'],
+  },
+});
+```
+
+If a request is received with a `legacy_session` or an `ancient_session` cookie, the session will be loaded from the store and then persisted as a new cookie named `session`. For all other requests, the session will be loaded from and persisted to the `session` cookie.
+
 ### Controlling when cookies are set
 
 You can pass a `canSetCookie` function to `createSessionMiddleware` to provide control over when session cookies will be returned to the client.

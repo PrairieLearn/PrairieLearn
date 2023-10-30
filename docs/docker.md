@@ -37,39 +37,39 @@ Most of these should be run from the root of your course directory.
 
 - List running containers:
 
-```sh
-docker ps
-```
+  ```sh
+  docker ps
+  ```
 
 - Run a specific command in the container:
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
+  ```
 
-E.g.,
+  E.g.,
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
+  ```
 
 - Start an interactive shell session:
 
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
-```
+  ```sh
+  docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
+  ```
 
 - Run a command in an existing container:
 
-```sh
-docker exec -it CONTAINER_NAME COMMAND
-```
+  ```sh
+  docker exec -it CONTAINER_NAME COMMAND
+  ```
 
-E.g., to start a shell in a container started with `--name pl`:
+  E.g., to start a shell in a container started with `--name pl`:
 
-```sh
-docker exec -it pl /bin/bash
-```
+  ```sh
+  docker exec -it pl /bin/bash
+  ```
 
 ## Docker-Compose
 

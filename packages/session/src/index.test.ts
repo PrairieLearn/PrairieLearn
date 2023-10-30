@@ -29,7 +29,7 @@ describe('session middleware', () => {
     });
   });
 
-  it('sets a session cookie with a custom name', async () => {
+  it('sets a session cookie with options', async () => {
     const app = express();
     app.use(
       createSessionMiddleware({
@@ -37,6 +37,10 @@ describe('session middleware', () => {
         store: new MemoryStore(),
         cookie: {
           name: 'prairielearn_session',
+          httpOnly: true,
+          domain: '.localhost',
+          sameSite: 'strict',
+          maxAge: 1000,
         },
       }),
     );
@@ -51,6 +55,9 @@ describe('session middleware', () => {
       assert.equal(cookies.length, 1);
       assert.equal(cookies[0].name, 'prairielearn_session');
       assert.equal(cookies[0].path, '/');
+      assert.isTrue(cookies[0].httpOnly);
+      assert.equal(cookies[0].domain, '.localhost');
+      assert.equal(cookies[0].sameSite, 'Strict');
     });
   });
 
@@ -623,6 +630,64 @@ describe('session middleware', () => {
 
       // Ensure the session was not persisted.
       assert.equal(setCount, 1);
+    });
+  });
+
+  it('rotates to a new cookie when needed', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const store = new MemoryStore();
+
+    // Will create "legacy" sessions.
+    const legacyApp = express();
+    legacyApp.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        cookie: {
+          name: 'legacy_session',
+        },
+      }),
+    );
+    legacyApp.get('/', (req, res) => res.send(req.session.id.toString()));
+
+    // Will create "new" sessions and upgrade "legacy" sessions.
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+        cookie: {
+          name: ['session', 'legacy_session'],
+        },
+      }),
+    );
+    app.get('/', (req, res) => res.send(req.session.id.toString()));
+
+    let legacySessionId: string | null = null;
+
+    await withServer(legacyApp, async ({ url }) => {
+      // Generate a legacy session.
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      legacySessionId = await res.text();
+    });
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+
+      const newSessionId = await res.text();
+
+      // Ensure that the new session cookie was set.
+      const header = res.headers.get('set-cookie');
+      assert.isNotNull(header);
+      const cookies = parseSetCookie(header ?? '');
+      assert.equal(cookies.length, 1);
+      assert.equal(cookies[0].name, 'session');
+
+      // Ensure that the legacy session is migrated to a new session.
+      assert.equal(newSessionId, legacySessionId);
     });
   });
 });
