@@ -355,11 +355,11 @@ export const AssessmentQuestionSchema = z.object({
   average_submission_score_variance: z.number().nullable(),
   deleted_at: DateFromISOString.nullable(),
   discrimination: z.number().nullable(),
-  effective_advance_score_perc: z.number().nullable().default(0),
+  effective_advance_score_perc: z.number().nullable(),
   first_submission_score_hist: z.array(z.number()).nullable(),
   first_submission_score_variance: z.number().nullable(),
-  force_max_points: z.boolean().nullable().default(false),
-  grade_rate_minutes: z.number().nullable().default(0),
+  force_max_points: z.boolean().nullable(),
+  grade_rate_minutes: z.number().nullable(),
   id: IdSchema,
   incremental_submission_points_array_averages: z.array(z.number()).nullable(),
   incremental_submission_points_array_variances: z.array(z.number()).nullable(),
@@ -388,6 +388,6 @@ export const AssessmentQuestionSchema = z.object({
   some_submission_perc: z.number().nullable(),
   submission_score_array_averages: z.array(z.number()).nullable(),
   submission_score_array_variances: z.array(z.number()).nullable(),
-  tries_per_variant: z.number().nullable().default(1),
+  tries_per_variant: z.number().nullable(),
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
