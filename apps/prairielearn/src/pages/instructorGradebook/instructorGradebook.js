@@ -108,7 +108,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 router.post('/', function (req, res, next) {
@@ -145,7 +145,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

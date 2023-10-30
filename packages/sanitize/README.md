@@ -21,6 +21,6 @@ recursivelyTruncateStrings(
       },
     },
   },
-  100
+  100,
 );
 ```

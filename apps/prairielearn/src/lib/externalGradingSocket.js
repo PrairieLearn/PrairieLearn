@@ -7,6 +7,7 @@ const question = require('./question');
 const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const sqldb = require('@prairielearn/postgres');
+const Sentry = require('@prairielearn/sentry');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -32,7 +33,14 @@ module.exports.connection = function (socket) {
     socket.join(`variant-${msg.variant_id}`);
 
     module.exports.getVariantSubmissionsStatus(msg.variant_id, (err, submissions) => {
-      if (ERR(err, (err) => logger.error('Error getting variant submissions status', err))) return;
+      if (
+        ERR(err, (err) => {
+          logger.error('Error getting variant submissions status', err);
+          Sentry.captureException(err);
+        })
+      ) {
+        return;
+      }
       callback({ variant_id: msg.variant_id, submissions });
     });
   });
@@ -66,7 +74,14 @@ module.exports.connection = function (socket) {
       msg.csrf_token,
       msg.authorized_edit,
       (err, panels) => {
-        if (ERR(err, (err) => logger.error('Error rendering panels for submission', err))) return;
+        if (
+          ERR(err, (err) => {
+            logger.error('Error rendering panels for submission', err);
+            Sentry.captureException(err);
+          })
+        ) {
+          return;
+        }
         callback({
           submission_id: msg.submission_id,
           answerPanel: panels.answerPanel,
@@ -76,7 +91,7 @@ module.exports.connection = function (socket) {
           questionPanelFooter: panels.questionPanelFooter,
           questionNavNextButton: panels.questionNavNextButton,
         });
-      }
+      },
     );
   });
 };
@@ -94,7 +109,14 @@ module.exports.getVariantSubmissionsStatus = function (variant_id, callback) {
 module.exports.gradingJobStatusUpdated = function (grading_job_id) {
   const params = { grading_job_id };
   sqldb.queryOneRow(sql.select_submission_for_grading_job, params, (err, result) => {
-    if (ERR(err, (err) => logger.error('Error selecting submission for grading job', err))) return;
+    if (
+      ERR(err, (err) => {
+        logger.error('Error selecting submission for grading job', err);
+        Sentry.captureException(err);
+      })
+    ) {
+      return;
+    }
     const eventData = {
       variant_id: result.rows[0].variant_id,
       submissions: result.rows,
@@ -114,7 +136,7 @@ module.exports.renderPanelsForSubmission = function (
   questionContext,
   csrfToken,
   authorizedEdit,
-  callback
+  callback,
 ) {
   question.renderPanelsForSubmission(
     submission_id,
@@ -129,7 +151,7 @@ module.exports.renderPanelsForSubmission = function (
     (err, results) => {
       if (ERR(err, callback)) return;
       callback(null, results);
-    }
+    },
   );
 };
 

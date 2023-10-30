@@ -19,6 +19,8 @@ const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const chunks = require('./chunks');
+const workspaceHostUtils = require('./workspaceHost');
+const issues = require('./issues');
 
 const sqldb = require('@prairielearn/postgres');
 const ERR = require('async-stacktrace');
@@ -55,7 +57,9 @@ module.exports = {
 
   async init() {
     workspaceUtils.init(socketServer.io);
-    workspaceUtils.getWorkspaceSocketNamespace().on('connection', module.exports.connection);
+    socketServer.io
+      .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .on('connection', module.exports.connection);
   },
 
   /**
@@ -86,7 +90,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'stopped',
-          `Error! Click "Reboot" to try again. Detail: ${err}`
+          `Error! Click "Reboot" to try again. Detail: ${err}`,
         );
       });
     });
@@ -207,7 +211,7 @@ module.exports = {
               `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
               {
                 overwrite: true,
-              }
+              },
             );
           } catch (err) {
             // If the directory couldn't be moved because it didn't exist, ignore the error.
@@ -227,7 +231,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'stopped',
-          'Initialization complete'
+          'Initialization complete',
         );
       }
 
@@ -237,7 +241,7 @@ module.exports = {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
           'launching',
-          'Assigning workspace host'
+          'Assigning workspace host',
         );
         shouldAssignHost = true;
       }
@@ -261,7 +265,7 @@ module.exports = {
       const t = attempt * config.workspaceLaunchingRetryIntervalSec;
       await workspaceUtils.updateWorkspaceMessage(
         workspace_id,
-        `Deploying more computational resources (${t} seconds elapsed)`
+        `Deploying more computational resources (${t} seconds elapsed)`,
       );
       await util.promisify(setTimeout)(config.workspaceLaunchingRetryIntervalSec * 1000);
       attempt++;
@@ -290,7 +294,7 @@ module.exports = {
    * are not atomic.
    *
    * @param {string | number} workspace_id
-   * @returns {Promise<InitializeResult | null>}
+   * @returns {Promise<InitializeResult>}
    */
   async initialize(workspace_id) {
     const { workspace, variant, question, course } = (
@@ -301,6 +305,9 @@ module.exports = {
       type: 'question',
       questionId: question.id,
     });
+
+    /** @type {{file: string; msg: string; err?: any, data?: Record<string, any>}[]} */
+    const fileGenerationErrors = [];
 
     // local workspace files
     const questionBasePath = path.join(course_path, 'questions', question.qid);
@@ -321,7 +328,7 @@ module.exports = {
             return file.stats.isFile()
               ? { name: path.relative(localPath, file.path), localPath: file.path }
               : null;
-          }
+          },
         )
         .catch(() => {
           // Path does not exist or is not accessible, do nothing
@@ -329,7 +336,7 @@ module.exports = {
         })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     const mustacheParams = { params: variant.params, correct_answers: variant.true_answer };
@@ -343,7 +350,7 @@ module.exports = {
           async (file) => {
             const generatedFileName = path.relative(
               templatePath,
-              file.path.replace(/\.mustache$/i, '')
+              file.path.replace(/\.mustache$/i, ''),
             );
             try {
               if (!file.stats.isFile()) return null;
@@ -351,14 +358,19 @@ module.exports = {
                 name: generatedFileName,
                 buffer: mustache.render(
                   await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
-                  mustacheParams
+                  mustacheParams,
                 ),
               };
-            } catch (_err) {
+            } catch (err) {
+              fileGenerationErrors.push({
+                file: generatedFileName,
+                err,
+                msg: `Error rendering workspace template file: ${err.message}`,
+              });
               // File cannot be rendered, treat file as static file
               return { name: generatedFileName, localPath: file.path };
             }
-          }
+          },
         )
         .catch(() => {
           // Template directory does not exist or is not accessible, do nothing
@@ -366,24 +378,43 @@ module.exports = {
         })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     /** @type {WorkspaceFile[]} */
     const dynamicFiles = (
-      await async.mapSeries(variant.params._workspace_files || [], async (file) => {
+      await async.mapSeries(variant.params._workspace_files || [], async (file, i) => {
         try {
           // Ignore files without a name
-          if (!file.name) return null;
+          if (!file.name) {
+            fileGenerationErrors.push({
+              file: `Dynamic file ${i}`,
+              msg: 'Dynamic workspace file does not include a name. File ignored.',
+              data: file,
+            });
+            return null;
+          }
           // Discard names with directory traversal outside the home directory
           if (!contains(remotePath, path.join(remotePath, file.name), false)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
+              data: file,
+            });
             return null;
           }
 
           if (file.questionFile) {
             const localPath = path.join(questionBasePath, file.questionFile);
             // Discard paths with directory traversal outside the question
-            if (!contains(questionBasePath, localPath, false)) return null;
+            if (!contains(questionBasePath, localPath, false)) {
+              fileGenerationErrors.push({
+                file: file.name,
+                msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
+                data: file,
+              });
+              return null;
+            }
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
             return {
@@ -394,20 +425,31 @@ module.exports = {
 
           // Discard encodings outside of explicit list of allowed encodings
           if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,
+              data: file,
+            });
             return null;
           }
           return {
             name: file.name,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
           };
-        } catch (_err) {
+        } catch (err) {
           // Error retrieving contents of dynamic file. Ignoring file.
+          fileGenerationErrors.push({
+            file: file.name,
+            msg: `Error decoding dynamic workspace file: ${err.message}`,
+            err,
+            data: file,
+          });
           return null;
         }
       })
     ).filter(
       /** @returns {file is WorkspaceFile} */
-      (file) => !!file
+      (file) => !!file,
     );
 
     const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
@@ -420,7 +462,7 @@ module.exports = {
     await fsPromises.chown(
       sourcePath,
       config.workspaceJobsDirectoryOwnerUid,
-      config.workspaceJobsDirectoryOwnerGid
+      config.workspaceJobsDirectoryOwnerGid,
     );
 
     if (allWorkspaceFiles.length > 0) {
@@ -434,6 +476,12 @@ module.exports = {
             await fse.writeFile(sourceFile, workspaceFile.buffer);
           }
         } catch (err) {
+          fileGenerationErrors.push({
+            file: workspaceFile.name,
+            msg: `Workspace file could not be written to workspace: ${err.message}`,
+            err,
+            data: { workspaceFile },
+          });
           debug(`File ${workspaceFile.name} could not be written`, err);
         }
       });
@@ -443,9 +491,34 @@ module.exports = {
         await fsPromises.chown(
           file.path,
           config.workspaceJobsDirectoryOwnerUid,
-          config.workspaceJobsDirectoryOwnerGid
+          config.workspaceJobsDirectoryOwnerGid,
         );
       }
+    }
+
+    if (fileGenerationErrors.length > 0) {
+      const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
+      issues.insertIssue({
+        variantId: variant.id,
+        studentMessage: 'Error initializing workspace files',
+        instructorMessage: 'Error initializing workspace files',
+        manuallyReported: false,
+        courseCaused: true,
+        courseData: { workspace, variant, question, course },
+        systemData: {
+          courseErrData: {
+            // This is shown in the console log of the issue
+            outputBoth: output,
+            // This data is only shown if user is admin (e.g., in dev mode).
+            errors: fileGenerationErrors.map((error) => ({
+              ...error,
+              // Since error is typically not serializable, a custom object is created.
+              err: serializeError(error.err),
+            })),
+          },
+        },
+        authnUserId: null,
+      });
     }
 
     return {
@@ -457,11 +530,12 @@ module.exports = {
   async assignHost(workspace_id) {
     if (!config.workspaceEnable) return;
 
-    const params = [workspace_id, config.workspaceLoadHostCapacity];
-    const result = await sqldb.callOneRowAsync('workspace_hosts_assign_workspace', params);
-    const workspace_host_id = result.rows[0].workspace_host_id;
-    debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspace_host_id}`);
-    return workspace_host_id; // null means we didn't assign a host
+    const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
+      workspace_id,
+      config.workspaceLoadHostCapacity,
+    );
+    debug(`assignHost(): workspace_id=${workspace_id}, workspace_host_id=${workspaceHostId}`);
+    return workspaceHostId; // null means we didn't assign a host
   },
 
   async getGradedFiles(workspace_id) {
@@ -510,7 +584,7 @@ module.exports = {
         {
           maxFiles: config.workspaceMaxGradedFilesCount,
           maxSize: config.workspaceMaxGradedFilesSize,
-        }
+        },
       );
     } catch (err) {
       // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
@@ -550,3 +624,14 @@ module.exports = {
     return zipPath;
   },
 };
+
+function serializeError(err) {
+  if (err == null) return err;
+  return {
+    ...err,
+    stack: err.stack,
+    data: err.data,
+    message: err.message,
+    cause: err.cause,
+  };
+}

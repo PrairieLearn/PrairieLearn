@@ -48,7 +48,7 @@ module.exports.beginGradingJobs = function (grading_job_ids, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    }
+    },
   );
 };
 
@@ -72,7 +72,7 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
     assessment
       .processGradingResult(ret)
       .catch((err) =>
-        logger.error(`Error processing results for grading job ${grading_job.id}`, err)
+        logger.error(`Error processing results for grading job ${grading_job.id}`, err),
       );
     return;
   }
@@ -84,7 +84,7 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
     submission,
     variant,
     question,
-    course
+    course,
   );
   gradeRequest.on('submit', () => {
     updateJobSubmissionTime(grading_job.id, (err) => {
@@ -103,7 +103,7 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
     // external grader results wil be delivered via SQS.
     assessment.processGradingResult(gradingResult).then(
       () => logger.verbose(`Successfully processed grading job ${grading_job.id}`),
-      (err) => logger.error(`Error processing grading job ${grading_job.id}`, err)
+      (err) => logger.error(`Error processing grading job ${grading_job.id}`, err),
     );
   });
   gradeRequest.on('error', (err) => {

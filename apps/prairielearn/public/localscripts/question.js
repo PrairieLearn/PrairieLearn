@@ -25,7 +25,7 @@ $(function () {
     questionContainer.find('.submission-body').each(function (i, x) {
       client.renderSubmission(x, questionData, i);
     });
-    questionContainer.find('.answer-body').each(function (i, x) {
+    questionContainer.find('.answer-body:visible').each(function (i, x) {
       client.renderAnswer(x, questionData);
     });
   };

@@ -1,15 +1,9 @@
 import { io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import './mathjax';
+import { mathjaxTypeset } from './lib/mathjax';
 import { setupCountdown } from './lib/countdown';
 import { confirmOnUnload } from './lib/confirmOnUnload';
-
-declare global {
-  interface Window {
-    MathJax: any;
-  }
-}
 
 onDocumentReady(() => {
   const { gradingMethod } = document.querySelector<HTMLElement>('.question-container').dataset;
@@ -120,10 +114,11 @@ function fetchResults(socket, submissionId) {
         answerContainer.closest('.grading-block').classList.remove('d-none');
       }
       if (msg.submissionPanel) {
-        document.getElementById('submission-' + submissionId).outerHTML = msg.submissionPanel;
-        window.MathJax.startup.promise.then(async () => {
-          window.MathJax.typesetPromise();
-        });
+        // Using jQuery here because msg.submissionPanel may contain scripts
+        // that must be executed. Typical vanilla JS alternatives don't support
+        // this kind of script.
+        $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
+        mathjaxTypeset();
         // Restore modal state if need be
         if (wasModalOpen) {
           $('#submissionInfoModal-' + submissionId).modal('show');
@@ -142,7 +137,7 @@ function fetchResults(socket, submissionId) {
         document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
       }
       setupDynamicObjects();
-    }
+    },
   );
 }
 

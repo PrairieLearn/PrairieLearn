@@ -37,7 +37,7 @@ export class BatchedMigrationRunner {
   constructor(
     migration: BatchedMigrationRow,
     migrationImplementation: BatchedMigrationImplementation,
-    options: BatchedMigrationRunnerOptions = {}
+    options: BatchedMigrationRunnerOptions = {},
   ) {
     this.options = options;
     this.migration = migration;
@@ -55,7 +55,7 @@ export class BatchedMigrationRunner {
     return queryValidatedSingleColumnOneRow(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
-      z.boolean()
+      z.boolean(),
     );
   }
 
@@ -63,7 +63,7 @@ export class BatchedMigrationRunner {
     return queryValidatedSingleColumnOneRow(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
-      z.boolean()
+      z.boolean(),
     );
   }
 
@@ -73,7 +73,7 @@ export class BatchedMigrationRunner {
       {
         id: migration.id,
       },
-      BatchedMigrationStatusSchema
+      BatchedMigrationStatusSchema,
     );
   }
 
@@ -92,12 +92,12 @@ export class BatchedMigrationRunner {
   }
 
   private async getNextBatchBounds(
-    migration: BatchedMigrationRow
+    migration: BatchedMigrationRow,
   ): Promise<null | [bigint, bigint]> {
     const lastJob = await queryValidatedZeroOrOneRow(
       sql.select_last_batched_migration_job,
       { batched_migration_id: migration.id },
-      BatchedMigrationJobRowSchema
+      BatchedMigrationJobRowSchema,
     );
 
     const nextMin = lastJob ? lastJob.max_value + 1n : migration.min_value;
@@ -129,7 +129,7 @@ export class BatchedMigrationRunner {
   private async finishJob(
     job: BatchedMigrationJobRow,
     status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>,
-    data?: unknown
+    data?: unknown,
   ) {
     await queryAsync(sql.finish_batched_migration_job, {
       id: job.id,
@@ -140,7 +140,7 @@ export class BatchedMigrationRunner {
   }
 
   private async getOrCreateNextMigrationJob(
-    migration: BatchedMigrationRow
+    migration: BatchedMigrationRow,
   ): Promise<BatchedMigrationJobRow | null> {
     const nextBatchBounds = await this.getNextBatchBounds(migration);
     if (nextBatchBounds) {
@@ -151,7 +151,7 @@ export class BatchedMigrationRunner {
           min_value: nextBatchBounds[0],
           max_value: nextBatchBounds[1],
         },
-        BatchedMigrationJobRowSchema
+        BatchedMigrationJobRowSchema,
       );
     } else {
       // Pick up any old pending jobs from this migration. These will only exist if
@@ -160,14 +160,14 @@ export class BatchedMigrationRunner {
       return queryValidatedZeroOrOneRow(
         sql.select_first_pending_batched_migration_job,
         { batched_migration_id: migration.id },
-        BatchedMigrationJobRowSchema
+        BatchedMigrationJobRowSchema,
       );
     }
   }
 
   private async runMigrationJob(
     migration: BatchedMigrationRow,
-    migrationImplementation: BatchedMigrationImplementation
+    migrationImplementation: BatchedMigrationImplementation,
   ) {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {

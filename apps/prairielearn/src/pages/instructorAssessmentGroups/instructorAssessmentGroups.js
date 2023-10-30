@@ -8,6 +8,7 @@ const { z } = require('zod');
 const error = require('@prairielearn/error');
 const { flash } = require('@prairielearn/flash');
 const sqldb = require('@prairielearn/postgres');
+const { html } = require('@prairielearn/html');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const groups = require('../../lib/groups');
@@ -27,14 +28,14 @@ router.get(
       res.locals.assessment,
       res.locals.assessment_set,
       res.locals.course_instance,
-      res.locals.course
+      res.locals.course,
     );
     res.locals.groupsCsvFilename = prefix + 'groups.csv';
 
     const groupConfig = await sqldb.queryOptionalRow(
       sql.config_info,
       { assessment_id: res.locals.assessment.id },
-      GroupConfigSchema
+      GroupConfigSchema,
     );
     res.locals.isGroup = !!groupConfig;
     if (!groupConfig) {
@@ -55,7 +56,7 @@ router.get(
         id: IdSchema,
         tid: z.string().nullable(),
         title: z.string().nullable(),
-      })
+      }),
     );
 
     res.locals.groups = await sqldb.queryRows(
@@ -68,7 +69,7 @@ router.get(
         name: z.string(),
         size: z.number(),
         uid_list: z.array(z.string()),
-      })
+      }),
     );
 
     res.locals.notAssigned = await sqldb.queryRows(
@@ -77,11 +78,11 @@ router.get(
         group_config_id: res.locals.config_info.id,
         course_instance_id: res.locals.config_info.course_instance_id,
       },
-      z.string()
+      z.string(),
     );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.post(
@@ -96,7 +97,7 @@ router.post(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'auto_assessment_groups') {
@@ -105,7 +106,7 @@ router.post(
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
         req.body.max_group_size,
-        req.body.min_group_size
+        req.body.min_group_size,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'copy_assessment_groups') {
@@ -146,7 +147,8 @@ router.post(
       if (notExist) {
         flash(
           'error',
-          `Could not create group. The following users do not exist: ${notExist.toString()}`
+          html`Could not create group. The following users do not exist:
+            <strong>${notExist.toString()}</strong>`,
         );
       }
 
@@ -154,7 +156,8 @@ router.post(
       if (inGroup) {
         flash(
           'error',
-          `Could not create group. The following users are already in another group: ${inGroup.toString()}`
+          html`Could not create group. The following users are already in another group:
+            <strong>${inGroup.toString()}</strong>`,
         );
       }
 
@@ -177,7 +180,7 @@ router.post(
         const uids = failedUids.join(', ');
         flash(
           'error',
-          `Failed to add the following users: ${uids}. Please check if the users exist.`
+          `Failed to add the following users: ${uids}. Please check if the users exist.`,
         );
       }
       res.redirect(req.originalUrl);
@@ -199,7 +202,7 @@ router.post(
         const uids = failedUids.join(', ');
         flash(
           'error',
-          `Failed to remove the following users: ${uids}. Please check if the users exist.`
+          `Failed to remove the following users: ${uids}. Please check if the users exist.`,
         );
       }
       res.redirect(req.originalUrl);
@@ -216,7 +219,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
 module.exports = router;

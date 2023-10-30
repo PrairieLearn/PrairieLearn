@@ -56,6 +56,12 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
+        # Test unicode conversion
+        ("m \u2212 n", M - N),
+        ("m - \uff08n + m\uff09", -N),
+        ("m \uff0b n", N + M),
+        # Normal test cases
+        ("Max(m,n)", sympy.Max(N, M)),
         ("min(alpha, m, n)", sympy.Min(N, M, ALPHA)),
         ("max(m)", M),
         ("max(m,n)", sympy.Max(N, M)),
@@ -159,6 +165,22 @@ class TestSympy:
         assert sympy_ref != phs.convert_string_to_sympy(
             a_sub, ["i", "j"], allow_complex=False
         )
+
+    def test_string_conversion_complex_conflict(self) -> None:
+        """
+        Check for no issues in the case where complex is not
+        allowed and variable is named "I".
+        """
+
+        a_sub = "2I"
+        var = sympy.symbols("I")
+        ref_expr = 2 * var
+
+        assert ref_expr == phs.convert_string_to_sympy(
+            a_sub, ["I"], allow_complex=False
+        )
+
+        assert ref_expr == phs.json_to_sympy(phs.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize(
         "a_pair, custom_functions",

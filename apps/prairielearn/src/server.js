@@ -8,6 +8,7 @@ require('@sentry/tracing');
 const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
@@ -18,7 +19,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -62,13 +62,14 @@ const namedLocks = require('@prairielearn/named-locks');
 const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
-const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { featuresMiddleware } = require('./lib/features');
+const { features, featuresMiddleware } = require('./lib/features');
+const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
+const { createSessionMiddleware } = require('@prairielearn/session');
+const { PostgresSessionStore } = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -85,10 +86,18 @@ if ('h' in argv || 'help' in argv) {
     --config <filename>
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
 `;
 
   console.log(msg);
   process.exit(0);
+}
+
+function enterpriseOnlyMiddleware(load) {
+  if (isEnterprise()) {
+    return load();
+  }
+  return (req, res, next) => next();
 }
 
 /**
@@ -108,6 +117,8 @@ module.exports.initExpress = function () {
     if (config.sentryTracesSampleRate) {
       app.use(Sentry.Handlers.tracingHandler());
     }
+
+    app.use(require('./lib/sentry').enrichSentryEventMiddleware);
   }
 
   // This should come before the session middleware so that we don't
@@ -139,21 +150,30 @@ module.exports.initExpress = function () {
   });
 
   app.use(
-    session({
+    createSessionMiddleware({
       secret: config.secretKey,
-      store: new SessionStore({
-        expireSeconds: config.sessionStoreExpireSeconds,
-      }),
-      resave: false,
-      saveUninitialized: true,
+      store: new PostgresSessionStore(),
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds * 1000,
+        name: 'prairielearn_session',
         httpOnly: true,
-        secure: 'auto', // uses Express "trust proxy"
+        maxAge: config.sessionStoreExpireSeconds * 1000,
+        secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
       },
-    })
+    }),
   );
+
+  app.use((req, res, next) => {
+    // If the session is going to expire in the near future, we'll extend it
+    // automatically for the user.
+    //
+    // TODO: make this configurable?
+    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+      req.session.setExpiration(config.sessionStoreExpireSeconds);
+    }
+
+    next();
+  });
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
@@ -182,73 +202,73 @@ module.exports.initExpress = function () {
   });
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post('/pl/course/:course_id/question/:question_id', upload.single('file'));
   app.post('/pl/course/:course_id/question/:question_id/file_view', upload.single('file'));
   app.post('/pl/course/:course_id/question/:question_id/file_view/*', upload.single('file'));
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/settings',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/course_admin/settings',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post('/pl/course/:course_id/course_admin/settings', upload.single('file'));
   app.post('/pl/course/:course_id/course_admin/file_view', upload.single('file'));
   app.post('/pl/course/:course_id/course_admin/file_view/*', upload.single('file'));
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/course_admin/file_view',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/course_admin/file_view/*',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view/*',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*',
-    upload.single('file')
+    upload.single('file'),
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups',
-    upload.single('file')
+    upload.single('file'),
   );
 
   /**
@@ -265,6 +285,8 @@ module.exports.initExpress = function () {
       return (
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'connect.sid' &&
+        name !== 'prairielearn_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
@@ -298,7 +320,7 @@ module.exports.initExpress = function () {
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
         debug(
-          `pathRewrite: found workspace_url_rewrite=${workspace_url_rewrite} for workspace_id=${workspace_id}`
+          `pathRewrite: found workspace_url_rewrite=${workspace_url_rewrite} for workspace_id=${workspace_id}`,
         );
         if (!workspace_url_rewrite) {
           return path;
@@ -320,7 +342,7 @@ module.exports.initExpress = function () {
       const workspace_id = match[1];
       const result = await sqldb.queryZeroOrOneRowAsync(
         "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
-        { workspace_id }
+        { workspace_id },
       );
 
       if (result.rows.length === 0) {
@@ -383,8 +405,14 @@ module.exports.initExpress = function () {
     workspaceProxy,
   ]);
 
-  // Limit to 5MB of JSON
-  app.use(bodyParser.json({ limit: 5 * 1024 * 1024 }));
+  app.use((req, res, next) => {
+    // Stripe webhook signature verification requires the raw body, so we avoid
+    // using the body parser for that route.
+    if (req.path === '/pl/webhooks/stripe') return next();
+
+    // Limit to 5MB of JSON
+    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
+  });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
@@ -408,7 +436,7 @@ module.exports.initExpress = function () {
   // Support legacy use of ace by v2 questions
   app.use(
     '/localscripts/calculationQuestion/ace',
-    staticNodeModules(path.join('ace-builds', 'src-min-noconflict'))
+    staticNodeModules(path.join('ace-builds', 'src-min-noconflict')),
   );
   app.use('/javascripts/ace', staticNodeModules(path.join('ace-builds', 'src-min-noconflict')));
 
@@ -416,6 +444,7 @@ module.exports.initExpress = function () {
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
     res.locals.response_id = uuidv4();
+    res.set('X-Response-ID', res.locals.response_id);
     next();
   });
 
@@ -468,6 +497,13 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
   }
+  app.use('/pl/logout', [
+    function (req, res, next) {
+      res.locals.navPage = 'logout';
+      next();
+    },
+    require('./pages/authLogout/authLogout').default,
+  ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -486,6 +522,10 @@ module.exports.initExpress = function () {
 
   // Must come before CSRF middleware; we do our own signature verification here.
   app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
+  app.use(
+    '/pl/webhooks/stripe',
+    enterpriseOnlyMiddleware(() => require('./ee/webhooks/stripe').default),
+  );
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -508,32 +548,14 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // clear all cached course code in dev mode (no authorization needed)
-  if (config.devMode) {
-    app.use(require('./middlewares/undefCourseCode'));
-  }
-
   // clear cookies on the homepage to reset any stale session state
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
   // some pages don't need authorization
   app.use('/', require('./pages/home/home'));
   app.use('/pl', require('./pages/home/home'));
-  app.use('/pl/settings', [
-    function (req, res, next) {
-      res.locals.navPage = 'user_settings';
-      next();
-    },
-    require('./pages/userSettings/userSettings'),
-  ]);
+  app.use('/pl/settings', require('./pages/userSettings/userSettings').default);
   app.use('/pl/enroll', require('./pages/enroll/enroll').default);
-  app.use('/pl/logout', [
-    function (req, res, next) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    require('./pages/authLogout/authLogout'),
-  ]);
   app.use('/pl/password', [
     function (req, res, next) {
       res.locals.navPage = 'password';
@@ -613,9 +635,28 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // sets res.locals.course and res.locals.course_instance
+  app.use(
+    '/pl/course_instance/:course_instance_id',
+    require('./middlewares/authzCourseOrInstance'),
+  );
+
+  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+  // or `autoEnroll` middlewares so that we can render it even when the student
+  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
+  if (isEnterprise()) {
+    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
+    // below so that we can render it even when the student isn't enrolled in the
+    // course instance.
+    app.use('/pl/course_instance/:course_instance_id/upgrade', [
+      require('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade').default,
+    ]);
+  }
+
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id', [
-    require('./middlewares/authzCourseOrInstance'), // sets res.locals.course and res.locals.courseInstance
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrants').default),
+    require('./middlewares/autoEnroll').default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -630,11 +671,11 @@ module.exports.initExpress = function () {
   // Some course instance student pages only require course instance authorization (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id/news_items',
-    require('./pages/news_items/news_items.js')
+    require('./pages/news_items/news_items.js'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/news_item',
-    require('./pages/news_item/news_item.js')
+    require('./pages/news_item/news_item.js'),
   );
 
   // Some course instance student pages only require the authn user to have permissions
@@ -660,27 +701,27 @@ module.exports.initExpress = function () {
   // Some course instance instructor pages only require the authn user to have permissions (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/effectiveUser',
-    require('./pages/instructorEffectiveUser/instructorEffectiveUser')
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/news_items',
-    require('./pages/news_items/news_items.js')
+    require('./pages/news_items/news_items.js'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/news_item',
-    require('./pages/news_item/news_item.js')
+    require('./pages/news_item/news_item.js'),
   );
 
   // All other course instance student pages require the effective user to have permissions
   app.use(
     '/pl/course_instance/:course_instance_id',
-    require('./middlewares/authzHasCourseInstanceAccess')
+    require('./middlewares/authzHasCourseInstanceAccess'),
   );
 
   // All other course instance instructor pages require the effective user to have permissions
   app.use(
     '/pl/course_instance/:course_instance_id/instructor',
-    require('./middlewares/authzHasCoursePreviewOrInstanceView')
+    require('./middlewares/authzHasCoursePreviewOrInstanceView'),
   );
 
   // all pages under /pl/course require authorization
@@ -703,27 +744,27 @@ module.exports.initExpress = function () {
   // files to be treated as immutable in production and cached aggressively.
   app.use(
     '/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
+    require('./pages/elementFiles/elementFiles'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
+    require('./pages/elementFiles/elementFiles'),
   );
   app.use(
     '/pl/course/:course_id/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
+    require('./pages/elementFiles/elementFiles'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
   app.use(
     '/pl/course/:course_id/cacheableElementExtensions/:cachebuster',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
 
   // For backwards compatibility, we continue to serve the non-cached element
@@ -735,24 +776,24 @@ module.exports.initExpress = function () {
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elements',
-    require('./pages/elementFiles/elementFiles')
+    require('./pages/elementFiles/elementFiles'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/elements',
-    require('./pages/elementFiles/elementFiles')
+    require('./pages/elementFiles/elementFiles'),
   );
   app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
   app.use(
     '/pl/course/:course_id/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
+    require('./pages/elementExtensionFiles/elementExtensionFiles'),
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -765,7 +806,7 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use(
       '/pl/institution/:institution_id/admin',
-      require('./ee/routers/institutionAdmin').default
+      require('./ee/routers/institutionAdmin').default,
     );
   }
 
@@ -784,14 +825,14 @@ module.exports.initExpress = function () {
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
     (req, res, _next) => {
       res.redirect(`${req.params[0]}/questions`);
-    }
+    },
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id',
     function (req, res, next) {
       res.locals.navPage = 'assessment';
       next();
-    }
+    },
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', [
     function (req, res, next) {
@@ -808,7 +849,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
-    ]
+    ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
     function (req, res, next) {
@@ -832,7 +873,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics',
@@ -844,7 +885,7 @@ module.exports.initExpress = function () {
       require('./pages/shared/assessmentStatDescriptions'),
       require('./pages/shared/floatFormatters'),
       require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads',
@@ -854,7 +895,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
-    ]
+    ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
     function (req, res, next) {
@@ -871,7 +912,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances',
@@ -881,7 +922,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_edit',
@@ -891,7 +932,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorFileEditor/instructorFileEditor'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view',
@@ -901,11 +942,11 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorFileBrowser/instructorFileBrowser'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
 
   app.use(
@@ -917,7 +958,7 @@ module.exports.initExpress = function () {
       },
       require('./middlewares/selectAndAuthzAssessmentQuestion'),
       require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
@@ -928,14 +969,18 @@ module.exports.initExpress = function () {
       },
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
-    ]
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    ],
   );
 
   app.use(
@@ -943,7 +988,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    ],
   );
 
   app.use(
@@ -951,14 +996,14 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/legacyQuestionFile/legacyQuestionFile'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/legacyQuestionText/legacyQuestionText'),
-    ]
+    ],
   );
 
   // Submission files
@@ -967,7 +1012,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/submissionFile/submissionFile'),
-    ]
+    ],
   );
 
   app.use(
@@ -978,7 +1023,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
-    ]
+    ],
   );
 
   app.use(
@@ -987,7 +1032,7 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzAssessmentInstance'),
       require('./pages/shared/floatFormatters'),
       require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
-    ]
+    ],
   );
 
   // single question
@@ -1005,14 +1050,14 @@ module.exports.initExpress = function () {
       const newUrlParts = url.parse(newUrl);
       newUrlParts.query = req.query;
       res.redirect(url.format(newUrlParts));
-    }
+    },
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id',
     function (req, res, next) {
       res.locals.navPage = 'question';
       next();
-    }
+    },
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/settings', [
     function (req, res, next) {
@@ -1054,24 +1099,24 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
 
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob')
+    require('./pages/instructorGradingJob/instructorGradingJob'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/jobSequence',
-    require('./pages/instructorJobSequence/instructorJobSequence')
+    require('./pages/instructorJobSequence/instructorJobSequence'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
-    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk')
+    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/edit_error',
-    require('./pages/editError/editError')
+    require('./pages/editError/editError'),
   );
 
   // course instance - course admin pages
@@ -1083,7 +1128,7 @@ module.exports.initExpress = function () {
     function (req, res, next) {
       res.locals.navPage = 'course_admin';
       next();
-    }
+    },
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/settings', [
     function (req, res, next) {
@@ -1091,6 +1136,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
     function (req, res, next) {
@@ -1125,7 +1177,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/syncs', [
     function (req, res, next) {
@@ -1164,7 +1216,7 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/course_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
 
   // course instance - instance admin pages
@@ -1176,7 +1228,17 @@ module.exports.initExpress = function () {
     function (req, res, next) {
       res.locals.navPage = 'instance_admin';
       next();
-    }
+    },
+    asyncHandler(async (req, res, next) => {
+      // The navigation tabs rely on this value to know when to show/hide the
+      // billing tab, so we need to load it for all instance admin pages.
+      const hasCourseInstanceBilling = await features.enabledFromLocals(
+        'course-instance-billing',
+        res.locals,
+      );
+      res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+      next();
+    }),
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', [
     function (req, res, next) {
@@ -1229,31 +1291,56 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
+  if (isEnterprise()) {
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/billing', [
+      function (req, res, next) {
+        res.locals.navSubPage = 'billing';
+        next();
+      },
+      require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
+    ]);
+  }
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance',
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance')
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+  );
+
+  // Client files for assessments
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance',
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
-    ]
+    ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
       require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    ],
   );
 
   // generatedFiles
@@ -1262,7 +1349,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    ],
   );
 
   // Submission files
@@ -1271,7 +1358,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
       require('./pages/submissionFile/submissionFile'),
-    ]
+    ],
   );
 
   // legacy client file paths
@@ -1298,15 +1385,12 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   // Student pages /////////////////////////////////////////////////////
 
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
     require('./middlewares/logPageView')('studentGradebook'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/assessments', [
@@ -1315,9 +1399,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
   ]);
+  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
@@ -1332,7 +1417,7 @@ module.exports.initExpress = function () {
       require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
-    ]
+    ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
@@ -1340,7 +1425,7 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzAssessmentInstance'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
-    ]
+    ],
   );
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
@@ -1354,62 +1439,84 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
-      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk')
+      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
     );
     app.use(
       '/pl/course_instance/:course_instance_id/jobSequence',
-      require('./pages/instructorJobSequence/instructorJobSequence')
+      require('./pages/instructorJobSequence/instructorJobSequence'),
     );
   }
 
-  // clientFiles
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+  );
+
+  // Client files for assessments
+  app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse', [
+    require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourse/clientFilesCourse'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance',
+    [
+      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    ],
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
-    ]
+    ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    require('./pages/clientFilesQuestion/clientFilesQuestion')
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    require('./pages/submissionFile/submissionFile')
+    require('./pages/submissionFile/submissionFile'),
   );
 
   // legacy client file paths
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
-    require('./pages/legacyQuestionFile/legacyQuestionFile')
+    require('./pages/legacyQuestionFile/legacyQuestionFile'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
-    require('./pages/legacyQuestionText/legacyQuestionText')
+    require('./pages/legacyQuestionText/legacyQuestionText'),
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1424,7 +1531,7 @@ module.exports.initExpress = function () {
   // Some course pages only require the authn user to have permission (aleady checked)
   app.use(
     '/pl/course/:course_id/effectiveUser',
-    require('./pages/instructorEffectiveUser/instructorEffectiveUser')
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
   );
   app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
   app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
@@ -1491,7 +1598,7 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course/:course_id/question/:question_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
 
   app.use('/pl/course/:course_id/file_transfer', [
@@ -1513,6 +1620,13 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+  ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
   ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
@@ -1547,7 +1661,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/syncs', [
     function (req, res, next) {
@@ -1586,16 +1700,16 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course/:course_id/course_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload')
+    require('./pages/instructorFileDownload/instructorFileDownload'),
   );
 
   app.use(
     '/pl/course/:course_id/loadFromDisk',
-    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk')
+    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
   );
   app.use(
     '/pl/course/:course_id/jobSequence',
-    require('./pages/instructorJobSequence/instructorJobSequence')
+    require('./pages/instructorJobSequence/instructorJobSequence'),
   );
 
   // This route is used to initiate a transfer of a question from a template course.
@@ -1607,13 +1721,19 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course/:course_id/copy_template_course_question',
     require('./pages/instructorCopyTemplateCourseQuestion/instructorCopyTemplateCourseQuestion')
-      .default
+      .default,
   );
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course/:course_id/question/:question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
@@ -1657,47 +1777,53 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
-  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
+  app.use(
+    '/pl/administrator/admins',
+    require('./pages/administratorAdmins/administratorAdmins').default,
+  );
   app.use(
     '/pl/administrator/settings',
-    require('./pages/administratorSettings/administratorSettings')
+    require('./pages/administratorSettings/administratorSettings').default,
   );
   app.use(
     '/pl/administrator/institutions',
-    require('./pages/administratorInstitutions/administratorInstitutions').default
+    require('./pages/administratorInstitutions/administratorInstitutions').default,
   );
   app.use(
     '/pl/administrator/courses',
-    require('./pages/administratorCourses/administratorCourses')
+    require('./pages/administratorCourses/administratorCourses'),
   );
   app.use(
     '/pl/administrator/networks',
-    require('./pages/administratorNetworks/administratorNetworks')
+    require('./pages/administratorNetworks/administratorNetworks'),
   );
   app.use(
     '/pl/administrator/workspaces',
-    require('./pages/administratorWorkspaces/administratorWorkspaces')
+    require('./pages/administratorWorkspaces/administratorWorkspaces').default,
   );
   app.use(
     '/pl/administrator/features',
-    require('./pages/administratorFeatures/administratorFeatures').default
+    require('./pages/administratorFeatures/administratorFeatures').default,
   );
   app.use(
     '/pl/administrator/queries',
-    require('./pages/administratorQueries/administratorQueries')
+    require('./pages/administratorQueries/administratorQueries').default,
   );
-  app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+  app.use(
+    '/pl/administrator/query',
+    require('./pages/administratorQuery/administratorQuery').default,
+  );
   app.use(
     '/pl/administrator/jobSequence/',
-    require('./pages/administratorJobSequence/administratorJobSequence')
+    require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
     '/pl/administrator/courseRequests/',
-    require('./pages/administratorCourseRequests/administratorCourseRequests')
+    require('./pages/administratorCourseRequests/administratorCourseRequests'),
   );
   app.use(
     '/pl/administrator/batchedMigrations',
-    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1745,15 +1871,6 @@ module.exports.initExpress = function () {
     next(err);
   });
 
-  // We need to add our own handler here to ensure that we add the appropriate
-  // information to the current Sentry scope.
-  //
-  // Note that this is typically done by our `logResponse` middleware, but
-  // that doesn't run soon enough for the Sentry error handler to pick up.
-  app.use((err, req, res, next) => {
-    enrichSentryScope(req, res);
-    next(err);
-  });
   app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
@@ -1805,7 +1922,7 @@ module.exports.startServer = async () => {
     },
     () => {
       return util.promisify(server.getConnections.bind(server))();
-    }
+    },
   );
 
   server.timeout = config.serverTimeout;
@@ -1898,21 +2015,6 @@ if (require.main === module && config.startServer) {
           serviceName: 'prairielearn',
         });
 
-        // Start capturing CPU and memory profiles as soon as possible.
-        if (config.pyroscopeEnabled) {
-          const Pyroscope = require('@pyroscope/nodejs');
-          Pyroscope.init({
-            appName: 'prairielearn',
-            serverAddress: config.pyroscopeServerAddress,
-            authToken: config.pyroscopeAuthToken,
-            tags: {
-              instanceId: config.instanceId,
-              ...(config.pyroscopeTags ?? {}),
-            },
-          });
-          Pyroscope.start();
-        }
-
         // Same with Sentry configuration.
         if (config.sentryDsn) {
           const integrations = [];
@@ -1935,7 +2037,7 @@ if (require.main === module && config.startServer) {
               // from the `router` function in our `http-proxy-middleware` config.
               if (
                 event.exception?.values?.some(
-                  (value) => value.type === 'Error' && value.value === 'Workspace is not running'
+                  (value) => value.type === 'Error' && value.value === 'Workspace is not running',
                 )
               ) {
                 return null;
@@ -1962,7 +2064,7 @@ if (require.main === module && config.startServer) {
               logger.verbose(msg, { time, stack });
               console.log(msg + '\n' + stack.join('\n'));
             },
-            { threshold: config.blockedWarnThresholdMS }
+            { threshold: config.blockedWarnThresholdMS },
           ); // threshold in milliseconds
         } else if (config.blockedWarnEnable) {
           blocked(
@@ -1971,7 +2073,7 @@ if (require.main === module && config.startServer) {
               logger.verbose(msg, { time });
               console.log(msg);
             },
-            { threshold: config.blockedWarnThresholdMS }
+            { threshold: config.blockedWarnThresholdMS },
           ); // threshold in milliseconds
         }
       },
@@ -1995,6 +2097,7 @@ if (require.main === module && config.startServer) {
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+          ssl: config.postgresqlSsl,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
@@ -2022,6 +2125,19 @@ if (require.main === module && config.startServer) {
         logger.verbose('Successfully connected to database');
       },
       async () => {
+        if (argv['refresh-workspace-hosts-and-exit']) {
+          logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+          const hosts = await markAllWorkspaceHostsUnhealthy();
+
+          const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+          logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+          hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+          process.exit(0);
+        }
+      },
+      async () => {
         // We need to do this before we run migrations, as some migrations will
         // call `enqueueBatchedMigration` which requires this to be initialized.
         const runner = initBatchedMigrations({
@@ -2041,7 +2157,7 @@ if (require.main === module && config.startServer) {
         if (config.runMigrations || argv['migrate-and-exit']) {
           await migrations.init(
             [path.join(__dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-            'prairielearn'
+            'prairielearn',
           );
 
           if (argv['migrate-and-exit']) {
@@ -2073,7 +2189,7 @@ if (require.main === module && config.startServer) {
               valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
-            () => pool.totalCount
+            () => pool.totalCount,
           );
 
           opentelemetry.createObservableValueGauges(
@@ -2083,7 +2199,7 @@ if (require.main === module && config.startServer) {
               valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
-            () => pool.idleCount
+            () => pool.idleCount,
           );
 
           opentelemetry.createObservableValueGauges(
@@ -2093,7 +2209,7 @@ if (require.main === module && config.startServer) {
               valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
-            () => pool.waitingCount
+            () => pool.waitingCount,
           );
 
           const queryCounter = opentelemetry.getObservableCounter(
@@ -2101,7 +2217,7 @@ if (require.main === module && config.startServer) {
             `postgres.pool.${name}.query.count`,
             {
               valueType: opentelemetry.ValueType.INT,
-            }
+            },
           );
           queryCounter.addCallback((observableResult) => {
             observableResult.observe(pool.queryCount);
@@ -2270,6 +2386,6 @@ if (require.main === module && config.startServer) {
           }
         });
       }
-    }
+    },
   );
 }

@@ -23,8 +23,8 @@ async function stopLaunchedTimeoutWorkspaces() {
       workspace.id,
       'stopped',
       `Maximum run time of ${Math.round(
-        config.workspaceLaunchedTimeoutSec / 3600
-      )} hours exceeded. Click "Reboot" to keep working.`
+        config.workspaceLaunchedTimeoutSec / 3600,
+      )} hours exceeded. Click "Reboot" to keep working.`,
     );
     launchedTimeoutCounter.add(1);
   }
@@ -45,8 +45,8 @@ async function stopHeartbeatTimeoutWorkspaces() {
       workspace.id,
       'stopped',
       `Connection was lost for more than ${Math.round(
-        config.workspaceHeartbeatTimeoutSec / 60
-      )} min. Click "Reboot" to keep working.`
+        config.workspaceHeartbeatTimeoutSec / 60,
+      )} min. Click "Reboot" to keep working.`,
     );
     visibilityTimeoutCounter.add(1);
   }
@@ -70,8 +70,8 @@ async function stopInLaunchingTimeoutWorkspaces() {
       workspace.id,
       'stopped',
       `Maximum launching time of ${Math.round(
-        config.workspaceInLaunchingTimeoutSec / 60
-      )} min exceeded. Click "Reboot" to keep working.`
+        config.workspaceInLaunchingTimeoutSec / 60,
+      )} min exceeded. Click "Reboot" to keep working.`,
     );
     launchingTimeoutCounter.add(1);
   }

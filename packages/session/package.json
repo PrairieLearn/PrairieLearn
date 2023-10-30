@@ -1,0 +1,44 @@
+{
+  "name": "@prairielearn/session",
+  "version": "1.2.0",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/session"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "nyc --reporter=html --reporter=text mocha --no-config --require ts-node/register --watch-files src/ src/**/*.test.ts"
+  },
+  "dependencies": {
+    "cookie": "^0.5.0",
+    "cookie-signature": "^1.2.1",
+    "express-async-handler": "^1.2.0",
+    "nyc": "^15.1.0",
+    "on-headers": "^1.0.2",
+    "uid-safe": "^2.1.5"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/chai": "^4.3.9",
+    "@types/cookie": "^0.5.3",
+    "@types/cookie-signature": "^1.1.1",
+    "@types/express": "^4.17.20",
+    "@types/node": "^18.18.7",
+    "@types/node-fetch": "^2.6.7",
+    "@types/on-headers": "^1.0.2",
+    "@types/set-cookie-parser": "^2.4.5",
+    "@types/uid-safe": "^2.1.4",
+    "chai": "^4.3.10",
+    "express": "^4.18.2",
+    "fetch-cookie": "^2.1.0",
+    "mocha": "^10.2.0",
+    "node-fetch": "^2.7.0",
+    "set-cookie-parser": "^2.6.0",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}

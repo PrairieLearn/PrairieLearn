@@ -89,7 +89,11 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   // If the current workspace version matches the requested version, we can
   // reach out to the workspace host directly to get the remaining logs. Otherwise,
   // they should have been flushed to S3 already.
-  if (workspace.state === 'running' && workspace.is_current_version && workspace.hostname) {
+  if (
+    ['launching', 'running'].includes(workspace.state) &&
+    workspace.is_current_version &&
+    workspace.hostname
+  ) {
     const res = await fetch(`http://${workspace.hostname}/`, {
       method: 'POST',
       body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
@@ -128,7 +132,7 @@ router.get(
         res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
     });
     res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
-  })
+  }),
 );
 
 // All state transitions for a single workspace version, as well as the container
@@ -149,7 +153,7 @@ router.get(
     if (containerLogsEnabled && !containerLogsExpired) {
       containerLogs = await loadLogsForWorkspaceVersion(
         res.locals.workspace_id,
-        req.params.version
+        req.params.version,
       );
     }
 
@@ -160,9 +164,9 @@ router.get(
         containerLogsEnabled,
         containerLogsExpired,
         resLocals: res.locals,
-      })
+      }),
     );
-  })
+  }),
 );
 
 module.exports = router;

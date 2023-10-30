@@ -1,14 +1,20 @@
-import redis = require('redis');
+import { Redis } from 'ioredis';
 import { LRUCache } from 'lru-cache';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config';
 
+const CACHE_KEY_PREFIX = 'prairielearn-cache:';
+
 let cacheEnabled = false;
 let cacheType: 'redis' | 'memory' | 'none';
 let cache: LRUCache<string, string>;
-let client: redis.RedisClientType;
+let client: Redis;
+
+function cacheKey(key: string): string {
+  return CACHE_KEY_PREFIX + key;
+}
 
 export async function init() {
   cacheType = config.questionRenderCacheType;
@@ -21,10 +27,7 @@ export async function init() {
   if (cacheType === 'redis') {
     if (!config.redisUrl) throw new Error('redisUrl not set in config');
     cacheEnabled = true;
-    client = redis.createClient({
-      url: config.redisUrl,
-    });
-    await client.connect();
+    client = new Redis(config.redisUrl);
     client.on('error', (err) => {
       logger.error('Redis error', err);
       Sentry.captureException(err);
@@ -41,12 +44,14 @@ export async function init() {
   }
 }
 
-export function set(key: string, value: string | number | boolean, maxAgeMS?: number) {
+export function set(key: string, value: any, maxAgeMS: number) {
   if (!cacheEnabled) return;
+
+  const scopedKey = cacheKey(key);
 
   switch (cacheType) {
     case 'memory': {
-      cache.set(key, JSON.stringify(value), { ttl: maxAgeMS ?? undefined });
+      cache.set(scopedKey, JSON.stringify(value), { ttl: maxAgeMS });
       break;
     }
 
@@ -58,8 +63,26 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
       // We don't log the error because it contains the cached value,
       // which can be huge and which fills up the logs.
       client
-        .set(key, JSON.stringify(value), { PX: maxAgeMS ?? undefined })
-        .catch((_err) => logger.error('Cache set error', { key, maxAgeMS }));
+        .set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
+        .catch((_err) => logger.error('Cache set error', { key, scopedKey, maxAgeMS }));
+      break;
+    }
+  }
+}
+
+export async function del(key: string) {
+  if (!cacheEnabled) return;
+
+  const scopedKey = cacheKey(key);
+
+  switch (cacheType) {
+    case 'memory': {
+      cache.delete(scopedKey);
+      break;
+    }
+
+    case 'redis': {
+      await client.del(scopedKey);
       break;
     }
   }
@@ -71,9 +94,11 @@ export function set(key: string, value: string | number | boolean, maxAgeMS?: nu
 export async function get(key: string): Promise<any> {
   if (!cacheEnabled) return null;
 
+  const scopedKey = cacheKey(key);
+
   switch (cacheType) {
     case 'memory': {
-      const value = cache.get(key);
+      const value = cache.get(scopedKey);
       if (typeof value === 'string') {
         return JSON.parse(value);
       }
@@ -81,7 +106,7 @@ export async function get(key: string): Promise<any> {
     }
 
     case 'redis': {
-      const value = await client.get(key);
+      const value = await client.get(scopedKey);
       if (typeof value === 'string') {
         return JSON.parse(value);
       }
@@ -107,13 +132,16 @@ export async function reset() {
     }
 
     case 'redis': {
-      let cursor = 0;
+      let cursor = '0';
       do {
-        const reply = await client.scan(cursor, { MATCH: '*', COUNT: 1000 });
-        cursor = reply.cursor;
-        console.log('deleting keys', reply.keys);
-        await client.del(reply.keys);
-      } while (cursor !== 0);
+        const reply = await client.scan(cursor, 'MATCH', `${CACHE_KEY_PREFIX}*`, 'COUNT', 1000);
+        cursor = reply[0];
+
+        const keys = reply[1];
+        if (keys.length > 0) {
+          await client.del(keys);
+        }
+      } while (cursor !== '0');
       break;
     }
   }

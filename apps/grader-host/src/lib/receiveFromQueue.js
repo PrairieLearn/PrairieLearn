@@ -9,11 +9,9 @@ const {
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
 } = require('@aws-sdk/client-sqs');
-const sqldb = require('@prairielearn/postgres');
 
 const globalLogger = require('./logger');
 const { config } = require('./config');
-const sql = sqldb.loadSqlEquiv(__filename);
 
 let messageSchema = null;
 
@@ -25,7 +23,7 @@ let messageSchema = null;
  * @param {Function} doneCallback
  */
 module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
-  let parsedMessage, jobCanceled, receiptHandle;
+  let parsedMessage, receiptHandle;
   async.series(
     [
       (callback) => {
@@ -37,7 +35,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
                 MaxNumberOfMessages: 1,
                 QueueUrl: queueUrl,
                 WaitTimeSeconds: 20,
-              })
+              }),
             );
             const message = data.Messages?.[0];
             if (!message || !message.Body) return null;
@@ -52,7 +50,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -88,30 +86,10 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
             QueueUrl: queueUrl,
             ReceiptHandle: receiptHandle,
             VisibilityTimeout: newTimeout,
-          })
+          }),
         );
       },
       (callback) => {
-        // If we're configured to use the database, ensure that this job
-        // wasn't canceled in the time since job submission
-        if (!config.useDatabase) return callback(null);
-
-        const params = {
-          grading_job_id: parsedMessage.jobId,
-        };
-        sqldb.queryOneRow(sql.check_job_cancelation, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          jobCanceled = result.rows[0].canceled;
-          callback(null);
-        });
-      },
-      (callback) => {
-        // Don't execute the job if it was canceled
-        if (jobCanceled) {
-          globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job.`);
-          return callback(null);
-        }
-
         receiveCallback(
           parsedMessage,
           (err) => {
@@ -121,7 +99,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           () => {
             globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
             callback(null);
-          }
+          },
         );
       },
       async () => {
@@ -129,13 +107,13 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           new DeleteMessageCommand({
             QueueUrl: queueUrl,
             ReceiptHandle: receiptHandle,
-          })
+          }),
         );
       },
     ],
     (err) => {
       if (ERR(err, doneCallback)) return;
       doneCallback(null);
-    }
+    },
   );
 };

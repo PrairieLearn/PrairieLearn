@@ -35,7 +35,7 @@ router.get(
         // Check whether the user is currently in a group in the current assessment by trying to get a group_id
         const groupId = await groupAssessmentHelper.getGroupId(
           res.locals.assessment.id,
-          res.locals.user.user_id
+          res.locals.user.user_id,
         );
 
         if (groupId === null) {
@@ -52,7 +52,7 @@ router.get(
           if (groupConfig.hasRoles) {
             const result = await groupAssessmentHelper.getAssessmentPermissions(
               res.locals.assessment.id,
-              res.locals.user.user_id
+              res.locals.user.user_id,
             );
             res.locals.canViewRoleTable = result.can_assign_roles_at_start;
           }
@@ -75,7 +75,7 @@ router.get(
           // Check whether the user is currently in a group in the current assessment by trying to get a group_id
           const groupId = await groupAssessmentHelper.getGroupId(
             res.locals.assessment.id,
-            res.locals.user.user_id
+            res.locals.user.user_id,
           );
 
           if (groupId === null) {
@@ -93,7 +93,7 @@ router.get(
             if (groupConfig.has_roles) {
               const result = await groupAssessmentHelper.getAssessmentPermissions(
                 res.locals.assessment.id,
-                res.locals.user.user_id
+                res.locals.user.user_id,
               );
               res.locals.canViewRoleTable = result.can_assign_roles_at_start;
             }
@@ -104,7 +104,7 @@ router.get(
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
       }
     }
-  })
+  }),
 );
 
 router.post(
@@ -139,63 +139,37 @@ router.post(
         (err, assessment_instance_id) => {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-        }
+        },
       );
     } else if (req.body.__action === 'join_group') {
-      groupAssessmentHelper.joinGroup(
+      await groupAssessmentHelper.joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, groupConfig) {
-          if (ERR(err, next)) return err;
-          if (succeeded) {
-            res.redirect(req.originalUrl);
-          } else {
-            res.locals.groupConfig = groupConfig;
-            res.locals.groupSize = 0;
-            res.locals.used_join_code = req.body.join_code;
-            res.locals.notInGroup = true;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        }
       );
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
-      groupAssessmentHelper.createGroup(
+      await groupAssessmentHelper.createGroup(
         req.body.groupName,
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, uniqueGroupName, invalidGroupName, groupConfig) {
-          if (ERR(err, next)) return;
-          if (succeeded) {
-            res.redirect(req.originalUrl);
-          } else {
-            if (invalidGroupName) {
-              res.locals.invalidGroupName = true;
-            } else {
-              res.locals.uniqueGroupName = uniqueGroupName;
-            }
-            res.locals.notInGroup = true;
-            res.locals.groupConfig = groupConfig;
-            res.locals.groupSize = 0;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        }
       );
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       await groupAssessmentHelper.updateGroupRoles(
         req.body,
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id
+        res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
     } else {
@@ -203,10 +177,10 @@ router.post(
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        })
+        }),
       );
     }
-  })
+  }),
 );
 
 module.exports = router;

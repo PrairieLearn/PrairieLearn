@@ -1,12 +1,12 @@
 import ast
-import builtins
 import copy
-import types
+import html
 from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
+from typing import Any, Callable, Literal, Type, TypedDict, cast
 
+import prairielearn as pl
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
@@ -18,7 +18,7 @@ from typing_extensions import NotRequired
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Union[Callable, sympy.Basic]]
+SympyMapT = dict[str, Callable | sympy.Basic]
 ASTWhiteListT = tuple[Type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
@@ -342,11 +342,12 @@ def sympy_check(
 
     while work_stack:
         item = work_stack.pop()
+        str_item = str(item)
 
-        if isinstance(item, sympy.Symbol) and str(item) not in valid_symbols:
-            raise HasInvalidSymbolError(str(item))
+        if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
+            raise HasInvalidSymbolError(str_item)
         elif isinstance(item, sympy.Float):
-            raise HasFloatError(float(str(item)))
+            raise HasFloatError(float(str_item))
         elif not allow_complex and item == sympy.I:
             raise HasComplexError()
 
@@ -364,8 +365,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    # Also replace the unicode minus with the normal one.
-    expr = expr.replace("^", "**").replace("\u2212", "-")
+    expr = pl.full_unidecode(expr).replace("^", "**")
 
     local_dict = {
         k: v
@@ -376,13 +376,11 @@ def evaluate_with_source(
     # Based on code here:
     # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
 
+    # Global dict is set up to be very permissive for parsing purposes
+    # (makes it cleaner to call this function with a custom locals dict).
+    # This line shouldn't be dangerous, as it's just loading the global dict.
     global_dict = {}
     exec("from sympy import *", global_dict)
-
-    builtins_dict = vars(builtins)
-    for name, obj in builtins_dict.items():
-        if isinstance(obj, types.BuiltinFunctionType):
-            global_dict[name] = obj
 
     transformations = standard_transformations + (implicit_multiplication_application,)
 
@@ -397,18 +395,14 @@ def evaluate_with_source(
     # Add locals that appear after sympy stringification
     # This check is only for safety, so won't change what gets parsed
     parsed_locals_to_eval["functions"].update(
-        {
-            "Integer": sympy.Integer,
-            "Symbol": sympy.Symbol,
-            "Float": sympy.Float,
-        }
+        Integer=sympy.Integer,
+        Symbol=sympy.Symbol,
+        Float=sympy.Float,
     )
 
     parsed_locals_to_eval["variables"].update(
-        {
-            "I": sympy.I,
-            "oo": sympy.oo,
-        }
+        I=sympy.I,
+        oo=sympy.oo,
     )
 
     ast_check(code, parsed_locals_to_eval)
@@ -427,13 +421,13 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
         expr,
@@ -448,13 +442,13 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: Optional[list[str]] = None,
+    variables: None | list[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    assumptions: Optional[AssumptionsDictT] = None,
+    custom_functions: None | list[str] = None,
+    assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
 
@@ -528,7 +522,7 @@ def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -606,14 +600,14 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: None | list[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: Optional[list[str]] = None,
-    imaginary_unit: Optional[str] = None,
-) -> Optional[str]:
+    custom_functions: None | list[str] = None,
+    imaginary_unit: None | str = None,
+) -> None | str:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
@@ -703,7 +697,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_items_list(items_string: Optional[str]) -> list[str]:
+def get_items_list(items_string: None | str) -> list[str]:
     if items_string is None:
         return []
 

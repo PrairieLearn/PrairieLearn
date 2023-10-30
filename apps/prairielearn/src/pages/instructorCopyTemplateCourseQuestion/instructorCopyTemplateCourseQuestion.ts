@@ -33,7 +33,7 @@ router.post(
       z.object({
         question: QuestionSchema,
         course: CourseSchema,
-      })
+      }),
     );
 
     if (result.course.template_course === false) {
@@ -45,7 +45,7 @@ router.post(
       toCourseId: res.locals.course.id,
       question: result.question,
     });
-  })
+  }),
 );
 
 export default router;

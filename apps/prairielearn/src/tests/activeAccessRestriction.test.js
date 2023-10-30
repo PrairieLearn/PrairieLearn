@@ -1,4 +1,3 @@
-const util = require('util');
 const { config } = require('../lib/config');
 const assert = require('chai').assert;
 
@@ -32,7 +31,7 @@ describe('Exam and homework assessment with active access restriction', function
     callback(null);
   });
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const resultsExam = await sqldb.queryOneRowAsync(sql.select_exam11, []);
     context.examId = resultsExam.rows[0].id;
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
@@ -68,7 +67,7 @@ describe('Exam and homework assessment with active access restriction', function
       assert.isTrue(response.ok);
 
       assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0);
-    }
+    },
   );
 
   step('try to access the exam when no access rule applies', async () => {
@@ -90,7 +89,7 @@ describe('Exam and homework assessment with active access restriction', function
 
       assert.lengthOf(response.$('td:contains("Test Active Access Rule")'), 1);
       assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0); // there should be no link
-    }
+    },
   );
 
   step('try to access the exam when it is not active', async () => {
@@ -120,7 +119,7 @@ describe('Exam and homework assessment with active access restriction', function
       assert.isTrue(response.ok);
 
       assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
-    }
+    },
   );
 
   step('visit start exam page when the exam is active', async () => {
@@ -196,7 +195,7 @@ describe('Exam and homework assessment with active access restriction', function
       assert.isTrue(response.ok);
 
       assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
-    }
+    },
   );
 
   step('access the exam when it is no longer active', async () => {
@@ -232,7 +231,7 @@ describe('Exam and homework assessment with active access restriction', function
 
       assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
       assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
-    }
+    },
   );
 
   step('try to access the homework when it is not active', async () => {
@@ -322,7 +321,7 @@ describe('Exam and homework assessment with active access restriction', function
       assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
 
       assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-    }
+    },
   );
 
   step(
@@ -334,7 +333,7 @@ describe('Exam and homework assessment with active access restriction', function
         headers,
       });
       assert.isTrue(response.ok);
-    }
+    },
   );
 
   step(
@@ -352,7 +351,7 @@ describe('Exam and homework assessment with active access restriction', function
       assert.match(msg.text(), /Assessment is no longer available\./);
 
       assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-    }
+    },
   );
 
   step('submit an answer to a question when active is false', async () => {
@@ -382,7 +381,7 @@ describe('Exam and homework assessment with active access restriction', function
 
       const result = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
       assert.equal(result.rows[0].points, 0);
-    }
+    },
   );
 
   step('get CSRF token and variant ID for attaching file on question page', async () => {

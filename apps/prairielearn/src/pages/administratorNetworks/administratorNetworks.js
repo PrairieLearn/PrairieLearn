@@ -14,7 +14,7 @@ router.get(
     const result = await sqldb.queryOneRowAsync(sql.select, []);
     _.assign(res.locals, result.rows[0]);
     res.send(AdministratorNetworks({ resLocals: res.locals }));
-  })
+  }),
 );
 
 module.exports = router;

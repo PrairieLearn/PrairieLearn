@@ -24,7 +24,7 @@ const validateRequiredRecursive = (obj, path = '') => {
   for (const property in obj) {
     const errorsRecursive = validateRequiredRecursive(
       obj[property],
-      `${path && path + '.'}${property}`
+      `${path && path + '.'}${property}`,
     );
     errors = [...errors, ...errorsRecursive];
   }

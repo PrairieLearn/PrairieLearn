@@ -27,6 +27,7 @@ dnf -y install \
     tar \
     texlive \
     texlive-dvipng \
+    texlive-type1cm \
     tmux
 
 echo "installing node via nvm"
@@ -36,10 +37,6 @@ git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
 nvm install 16
-# PrairieLearn doesn't currently use `npm` itself, but we can't be sure that
-# someone else isn't using our base image and relying on `npm`, so we'll
-# continue to install it to avoid breaking things.
-npm install npm@latest -g
 npm install yarn@latest -g
 for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 

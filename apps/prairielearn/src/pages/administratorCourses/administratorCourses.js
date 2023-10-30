@@ -67,8 +67,8 @@ router.post('/', (req, res, next) => {
               req.body.confirm_short_name +
               '" did not match expected value of "' +
               short_name +
-              '"'
-          )
+              '"',
+          ),
         );
       }
 
@@ -125,17 +125,14 @@ router.post('/', (req, res, next) => {
         if (ERR(err, next)) return;
 
         res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
-        opsbot.sendCourseRequestMessage(
-          `*Creating course*\n` +
-            `Course rubric: ${repo_options.short_name}\n` +
-            `Course title: ${repo_options.title}\n` +
-            `Approved by: ${res.locals.authn_user.name}`,
-          (err) => {
-            ERR(err, () => {
-              logger.error(err);
-            });
-          }
-        );
+        opsbot
+          .sendCourseRequestMessage(
+            `*Creating course*\n` +
+              `Course rubric: ${repo_options.short_name}\n` +
+              `Course title: ${repo_options.title}\n` +
+              `Approved by: ${res.locals.authn_user.name}`,
+          )
+          .catch((err) => logger.error(err));
       });
     });
   } else {
@@ -143,7 +140,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

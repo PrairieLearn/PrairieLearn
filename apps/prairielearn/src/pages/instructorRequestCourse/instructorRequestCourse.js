@@ -65,7 +65,7 @@ router.post(
         user_id: res.locals.authn_user.user_id,
         short_name,
         title,
-      }
+      },
     );
 
     if (existingCourseRequestsResult.rows[0].has_existing_request) {
@@ -75,7 +75,7 @@ router.post(
 
     const conflictingCourseOwnersResult = await sqldb.queryAsync(
       sql.get_conflicting_course_owners,
-      { short_name: short_name.trim().toLowerCase() }
+      { short_name: short_name.trim().toLowerCase() },
     );
 
     const courseOwners = conflictingCourseOwnersResult.rows;
@@ -127,7 +127,7 @@ router.post(
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await sqldb.queryOneRowAsync(
         sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.user_id }
+        { user_id: res.locals.authn_user.user_id },
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {
@@ -149,44 +149,38 @@ router.post(
           return;
         }
 
-        // Ignore the callback, we don't actually care if the
+        // Do not await, we don't actually care if the
         // message gets sent before we render the page
-        opsbot.sendCourseRequestMessage(
-          `*Automatically creating course*\n` +
-            `Course repo: ${repo_short_name}\n` +
-            `Course rubric: ${short_name}\n` +
-            `Course title: ${title}\n` +
-            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-            `GitHub username: ${github_user || 'not provided'}`,
-          (err) => {
-            ERR(err, () => {
-              logger.error(err);
-            });
-          }
-        );
+        opsbot
+          .sendCourseRequestMessage(
+            `*Automatically creating course*\n` +
+              `Course repo: ${repo_short_name}\n` +
+              `Course rubric: ${short_name}\n` +
+              `Course title: ${title}\n` +
+              `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+              `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+              `GitHub username: ${github_user || 'not provided'}`,
+          )
+          .catch((err) => logger.error(err));
 
         // Redirect on success so that refreshing doesn't create another request
         res.redirect(req.originalUrl);
       });
     } else {
       // Not automatically created
-      opsbot.sendCourseRequestMessage(
-        `*Incoming course request*\n` +
-          `Course rubric: ${short_name}\n` +
-          `Course title: ${title}\n` +
-          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-          `GitHub username: ${github_user || 'not provided'}`,
-        (err) => {
-          ERR(err, () => {
-            logger.error(err);
-          });
-        }
-      );
+      opsbot
+        .sendCourseRequestMessage(
+          `*Incoming course request*\n` +
+            `Course rubric: ${short_name}\n` +
+            `Course title: ${title}\n` +
+            `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+            `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+            `GitHub username: ${github_user || 'not provided'}`,
+        )
+        .catch((err) => logger.error(err));
       res.redirect(req.originalUrl);
     }
-  })
+  }),
 );
 
 router.post('/', get);

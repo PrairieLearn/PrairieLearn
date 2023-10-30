@@ -1,5 +1,71 @@
 # @prairielearn/named-locks
 
+## 1.5.6
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+- Updated dependencies [8dd894623]
+  - @prairielearn/postgres@1.7.8
+
+## 1.5.5
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+- Updated dependencies [bd0053577]
+  - @prairielearn/postgres@1.7.7
+
+## 1.5.4
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+- Updated dependencies [f03853d90]
+  - @prairielearn/postgres@1.7.6
+
+## 1.5.3
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+- Updated dependencies [6cad75197]
+  - @prairielearn/postgres@1.7.5
+
+## 1.5.2
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+- Updated dependencies [10cc07dcc]
+  - @prairielearn/postgres@1.7.4
+
+## 1.5.1
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+- Updated dependencies [098f581da]
+  - @prairielearn/postgres@1.7.3
+
+## 1.5.0
+
+### Minor Changes
+
+- cdb0f2109: Add optional `onNotAcquired` function to `doWithLock` and `tryWithLock`
+
+## 1.4.0
+
+### Minor Changes
+
+- 297bbce5a: Allow `tryLockAsync` and `tryWithLock` to accept a timeout
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+- Updated dependencies [2b003b4d9]
+  - @prairielearn/postgres@1.7.2
+
 ## 1.3.3
 
 ### Patch Changes

@@ -1,0 +1,23 @@
+{
+  "name": "@prairielearn/aws",
+  "version": "1.0.2",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/aws"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "*",
+    "@types/node": "^18.18.7",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@smithy/property-provider": "^2.0.13",
+    "@smithy/types": "^2.4.0"
+  }
+}

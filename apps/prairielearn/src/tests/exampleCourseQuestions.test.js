@@ -73,3 +73,21 @@ describe('Auto-test questions in exampleCourse', function () {
 
   qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
 });
+
+describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
+  this.timeout(60000);
+
+  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+  after('shut down testing server', helperServer.after);
+
+  let originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
+  before('enable process-questions-in-worker', () => {
+    config.features['process-questions-in-worker'] = true;
+  });
+  after('restore process-questions-in-worker', () => {
+    config.features['process-questions-in-worker'] = originalProcessQuestionsInWorker;
+  });
+
+  // Only test the first 10 questions so that this test doesn't take too long.
+  qidsExampleCourse.slice(0, 10).forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+});

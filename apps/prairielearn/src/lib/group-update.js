@@ -154,7 +154,7 @@ module.exports = {
         job.verbose(numNotAssigned + ' of them have not been in a group');
         job.verbose(`----------------------------------------`);
         job.verbose(
-          `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size
+          `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size,
         );
         let numGroup = Math.ceil(numStudents / max_group_size);
         let updateList = [];

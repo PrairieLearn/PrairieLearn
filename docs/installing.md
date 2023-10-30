@@ -14,9 +14,9 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
 - On the shell of your WSL 2 instance, make sure the instance has the `docker` command installed. The installation process may depend on your distribution, but most distributions provide a `docker` package. For example, if you are using Debian, Ubuntu or similar distributions, you may install it with:
 
-```sh
-sudo apt install docker
-```
+  ```sh
+  sudo apt install docker
+  ```
 
 **NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
@@ -46,7 +46,7 @@ To use your own course, use the `-v` flag to bind the Docker `/course` directory
 docker run -it --rm -p 3000:3000 -v $HOME/pl-tam212:/course prairielearn/prairielearn
 ```
 
-Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
+Make sure to replace the course path with your own course directory. To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course1:/course -v /path/to/course2:/course2`). You may use up to nine courses through this method, using the mount points: `/course`, `/course2`, `/course3`, ..., `/course9`.
 
 If you are running on Windows, run the command above in a WSL 2 shell, not on PowerShell or the Command Prompt.
 

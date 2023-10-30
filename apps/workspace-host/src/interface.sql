@@ -12,6 +12,15 @@ FROM
 WHERE
   w.id = $workspace_id;
 
+-- BLOCK select_and_lock_workspace
+SELECT
+  *
+FROM
+  workspaces
+WHERE
+  id = $workspace_id
+FOR NO KEY UPDATE;
+
 -- BLOCK select_workspace_settings
 SELECT
   q.*
@@ -173,12 +182,27 @@ WHERE
   AND wh.instance_id = $instance_id;
 
 -- BLOCK mark_host_unhealthy
-UPDATE workspace_hosts AS wh
-SET
-  state = 'unhealthy',
-  state_changed_at = NOW(),
-  unhealthy_at = NOW(),
-  unhealthy_reason = $unhealthy_reason
-WHERE
-  wh.instance_id = $instance_id
-  AND wh.state IN ('launching', 'ready', 'draining');
+WITH
+  updated_workspace_hosts AS (
+    UPDATE workspace_hosts AS wh
+    SET
+      state = 'unhealthy',
+      state_changed_at = NOW(),
+      unhealthy_at = NOW(),
+      unhealthy_reason = $unhealthy_reason
+    WHERE
+      wh.instance_id = $instance_id
+      AND wh.state IN ('launching', 'ready', 'draining')
+    RETURNING
+      wh.id,
+      wh.state,
+      wh.unhealthy_reason
+  )
+INSERT INTO
+  workspace_host_logs (workspace_host_id, state, message)
+SELECT
+  wh.id,
+  wh.state,
+  wh.unhealthy_reason
+FROM
+  updated_workspace_hosts AS wh;

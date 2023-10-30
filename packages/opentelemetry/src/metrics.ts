@@ -21,7 +21,7 @@ function getCachedMetric<T>(
   cache: WeakMap<Meter, Map<string, T>>,
   meter: Meter,
   name: string,
-  create: () => T
+  create: () => T,
 ): T {
   let meterCache = cache.get(meter);
   if (!meterCache) {
@@ -48,32 +48,32 @@ export function getCounter(meter: Meter, name: string, options?: MetricOptions) 
 
 export function getUpDownCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(upDownCounterCache, meter, name, () =>
-    meter.createUpDownCounter(name, options)
+    meter.createUpDownCounter(name, options),
   );
 }
 
 export function getObservableCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableCounterCache, meter, name, () =>
-    meter.createObservableCounter(name, options)
+    meter.createObservableCounter(name, options),
   );
 }
 
 export function getObservableUpDownCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableUpDownCounterCache, meter, name, () =>
-    meter.createObservableUpDownCounter(name, options)
+    meter.createObservableUpDownCounter(name, options),
   );
 }
 
 export function getObservableGauge(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableGaugeCache, meter, name, () =>
-    meter.createObservableGauge(name, options)
+    meter.createObservableGauge(name, options),
   );
 }
 
 export async function instrumentedWithMetrics<T>(
   meter: Meter,
   name: string,
-  fn: () => Promise<T> | T
+  fn: () => Promise<T> | T,
 ): Promise<T> {
   const error = getCounter(meter, `${name}.error`, { valueType: ValueType.INT });
   const histogram = getHistogram(meter, `${name}.duration`, {
@@ -111,7 +111,7 @@ export async function createObservableValueGauges(
   meter: Meter,
   name: string,
   options: createObservableValueGaugesOptions,
-  observe: () => number
+  observe: () => number,
 ) {
   const { interval, ...metricOptions } = options;
 

@@ -28,6 +28,7 @@ interface ServerJobExecOptions {
 }
 
 export interface ServerJob {
+  fail(msg: string): never;
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
@@ -40,11 +41,15 @@ export interface ServerJob {
 export interface ServerJobExecutor {
   jobSequenceId: string;
   execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 
+/**
+ * Internal error subclass so we can identify when `fail()` is called.
+ */
 class ServerJobAbortError extends Error {
   constructor(message: string) {
     super(message);
@@ -65,6 +70,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.jobId = jobId;
   }
 
+  fail(msg: string): never {
+    this.error(msg);
+    throw new ServerJobAbortError(msg);
+  }
+
   error(msg: string) {
     this.addToOutput(chalk.redBright(msg) + '\n');
   }
@@ -79,11 +89,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   verbose(msg: string) {
     this.addToOutput(chalkDim(msg) + '\n');
-  }
-
-  fail(msg: string): never {
-    this.error(msg);
-    throw new ServerJobAbortError(msg);
   }
 
   async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
@@ -111,10 +116,19 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
+   * sequence has completed, even if an error is encountered.
+   */
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+    this.checkAndMarkStarted();
+    await this.executeInternal(fn, false);
+  }
+
+  /**
+   * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
   }
@@ -139,7 +153,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private async executeInternal(
     fn: ServerJobExecutionFunction,
-    shouldThrow: boolean
+    shouldThrow: boolean,
   ): Promise<void> {
     try {
       await fn(this);
@@ -226,7 +240,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     z.object({
       job_sequence_id: z.string(),
       job_id: z.string(),
-    })
+    }),
   );
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);

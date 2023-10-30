@@ -53,7 +53,7 @@ async function loadServer(questionServerPath, coursePath) {
           e.stack = err.originalError.stack + '\n\n' + err.stack;
         }
         reject(e);
-      }
+      },
     );
   });
 }
@@ -64,8 +64,8 @@ function generate(server, coursePath, question, variant_seed) {
 
   const questionData = server.getData(variant_seed, options, questionDir);
   return {
-    params: questionData.params,
-    true_answer: questionData.trueAnswer,
+    params: questionData.params ?? null,
+    true_answer: questionData.trueAnswer ?? null,
     options: questionData.options || question.options || {},
   };
 }
@@ -102,7 +102,7 @@ function grade(server, coursePath, submission, variant, question) {
     trueAnswer,
     submittedAnswer,
     options,
-    questionDir
+    questionDir,
   );
 
   let score = grading.score;
@@ -114,13 +114,13 @@ function grade(server, coursePath, submission, variant, question) {
   return {
     score: score,
     v2_score: grading.score,
-    feedback: grading.feedback,
+    feedback: grading.feedback ?? null,
     partial_scores: {},
-    submitted_answer: submission.submitted_answer,
+    submitted_answer: submission.submitted_answer ?? null,
     format_errors: {},
     gradable: true,
-    params: variant.params,
-    true_answer: variant.true_answer,
+    params: variant.params ?? null,
+    true_answer: variant.true_answer ?? null,
   };
 }
 

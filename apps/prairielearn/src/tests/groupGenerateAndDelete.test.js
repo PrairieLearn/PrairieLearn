@@ -38,7 +38,7 @@ describe('test auto group and delete groups', function () {
       user_id,
       authn_user_id,
       max_group_size,
-      min_group_size
+      min_group_size,
     );
     await helperServer.waitForJobSequenceAsync(job_sequence_id);
   });
@@ -46,7 +46,7 @@ describe('test auto group and delete groups', function () {
   step('check groups and users', async () => {
     const groupUserCounts = await sqldb.queryAsync(
       'SELECT count(group_id) FROM group_users GROUP BY group_id',
-      []
+      [],
     );
     assert.equal(groupUserCounts.rows.length, 50);
 
@@ -59,7 +59,7 @@ describe('test auto group and delete groups', function () {
 
     const groups = await sqldb.queryAsync(
       'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
-      []
+      [],
     );
     assert.equal(groups.rows.length, 0);
 
