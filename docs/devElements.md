@@ -134,7 +134,47 @@ The different types of dependency properties currently available are summarized 
 | `clientFilesCourseStyles`  | The styles required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_  |
 | `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
 
-The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide.md#html-style).
+The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated and should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide.md#html-style).
+
+While the use of node module dependencies in course elements is supported, it is recommended that caution be used when doing so. In particular, note that node modules may be updated without warning, which in some cases may break your element. If your code relies on a particular version of a node module, it is recommended that you copy the module into your element directory or `courseFilesCourse` and link to that module from there instead.
+
+In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
+
+```json
+{
+  "controller": "pl-my-element.py",
+  "dependencies": {
+    "elementScripts": ["pl-my-element.js"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": { "d3": "d3/dist/d3.min.js" }
+  }
+}
+```
+
+Then, the element's own script (e.g., `pl-my-element.js`) can dynamically import the `d3` library only when considered necessary:
+
+```javascript
+if (options.use_d3) {
+  import('d3').then((module) => {
+    // use d3 here
+  });
+}
+```
+
+Dynamic dependencies are implemented using [import maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), which allow the `import` call in the element script to refer to the module by the name defined in the `info.json` file instead of the full URL. Dynamic dependencies may point to:
+
+| Property                   | Description                                                                                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nodeModulesScripts`       | The scripts required by this element, relative to `[PrairieLearn directory]/node_modules`.                                                                                                                                      |
+| `elementScripts`           | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.                             |
+| `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. _(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)_ |
+
+Note that the key used in the dynamic dependencies will be shared among all elements available in a question. For example, if two elements in a question both declare a dynamic dependency on `d3`, then the `d3` library will only be loaded once, even if both elements use it. For this reason, it is important that the following convention is used when defining keys for dynamic dependencies:
+
+- For node modules: use the name of the module, as defined in the `package.json` file. This will allow multiple elements that use the same module to share the same dependency without loading the module twice.
+- For element scripts: use the name of the element, followed by a slash, followed by the name of the script. For example, if the element is named `pl-my-element` and the script is named `my-element.js`, then the key should be `pl-my-element/my-element.js`.
+- For `clientFilesCourse` scripts: use any course-specific convention that does not clash with the naming above.
 
 You can also find the types of dependencies defined in these schema files:
 
