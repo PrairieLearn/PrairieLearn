@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { html } from '@prairielearn/html';
+import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { AssessmentQuestionSchema } from '../../../lib/db-types';
 import { idsEqual } from '../../../lib/id';
@@ -92,10 +92,15 @@ function AssessmentQuestionRow({
   const showGradingButton =
     resLocals.authz_data.has_course_instance_permission_edit &&
     question.num_instance_questions_assigned + question.num_instance_questions_unassigned > 0;
-  const otherAssignedGraders = (question.assigned_graders || [])
+  const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
+  const assignedGraders: HtmlValue[] = (question.assigned_graders || [])
     .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
     .map((u) => u.name ?? u.uid);
-  const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
+  if (question.num_instance_questions_assigned > 0) {
+    assignedGraders.unshift(
+      html`<strong class="bg-warning rounded px-1">${currentUserName}</strong>`,
+    );
+  }
   const gradingUrl = `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${question.id}`;
 
   return html`
@@ -126,13 +131,7 @@ function AssessmentQuestionRow({
         ${ProgressBar(question.num_instance_questions_to_grade, question.num_instance_questions)}
       </td>
       <td>
-        ${question.num_instance_questions_assigned > 0
-          ? html`
-              <strong class="bg-warning rounded px-1">${currentUserName}</strong
-              >${otherAssignedGraders.length ? ', ' : ''}
-            `
-          : ''}
-        ${otherAssignedGraders.join(', ')}
+        ${joinHtml(assignedGraders, ', ')}
         ${question.num_instance_questions_unassigned > 0
           ? html`
               <small class="text-muted">
