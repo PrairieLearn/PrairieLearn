@@ -1023,7 +1023,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment').default,
     ],
   );
 
@@ -1711,6 +1711,10 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course/:course_id/jobSequence',
     require('./pages/instructorJobSequence/instructorJobSequence'),
+  );
+  app.use(
+    '/pl/course/:course_id/grading_job',
+    require('./pages/instructorGradingJob/instructorGradingJob'),
   );
 
   // This route is used to initiate a transfer of a question from a template course.
