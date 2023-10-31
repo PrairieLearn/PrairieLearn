@@ -290,7 +290,7 @@
 
             <% if (authz_data.overrides) { %>
               <div class="dropdown-item-text">
-                <div class="list-group small" style="white-space: nowrap">
+                <div class="list-group small text-nowrap">
                   <% authz_data.overrides.forEach(function(override) { %>
                     <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
                   <% }); %>
