@@ -1,5 +1,19 @@
 # @prairielearn/config
 
+## 2.0.10
+
+### Patch Changes
+
+- ca0a3d4a9: Upgrade all AWS dependencies
+
+## 2.0.9
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+- Updated dependencies [8dd894623]
+  - @prairielearn/aws-imds@1.0.9
+
 ## 2.0.8
 
 ### Patch Changes

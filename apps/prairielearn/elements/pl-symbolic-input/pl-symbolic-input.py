@@ -185,7 +185,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "placeholder": placeholder,
             "size": size,
             "show_info": show_info,
-            "display_append_span": show_info or parse_error or (score is not None),
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
             "raw_submitted_answer": raw_submitted_answer,
