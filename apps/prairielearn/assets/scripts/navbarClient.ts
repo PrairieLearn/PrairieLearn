@@ -155,7 +155,7 @@ onDocumentReady(() => {
   const effectiveUidInput = document.querySelector<HTMLInputElement>('.js-effective-uid-input');
   const effectiveUidButton = document.querySelector<HTMLButtonElement>('.js-effective-uid-button');
 
-  effectiveUidInput.addEventListener('input', () => {
+  effectiveUidInput?.addEventListener('input', () => {
     if (effectiveUidInput.value.trim() !== '') {
       effectiveUidButton.removeAttribute('disabled');
     } else {
@@ -165,7 +165,7 @@ onDocumentReady(() => {
 
   document
     .querySelector<HTMLFormElement>('.js-effective-uid-form')
-    .addEventListener('submit', (e) => {
+    ?.addEventListener('submit', (e) => {
       e.preventDefault();
 
       const effectiveUid = effectiveUidInput.value.trim();
