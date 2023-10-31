@@ -301,7 +301,6 @@ window.PLFileEditor.prototype.preview = {
         // Only load/create instance on first call.
         if (vizPromise == null) {
           vizPromise = (async () => {
-            // eslint-disable-next-line import/no-unresolved
             const { instance } = await import('@viz-js/viz');
             return instance();
           })();
