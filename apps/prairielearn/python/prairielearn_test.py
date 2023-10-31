@@ -325,3 +325,14 @@ def test_get_uuid() -> None:
 
     # Assert that the first character is a valid hex letter.
     assert pl_uuid[0] in set("abcdef")
+
+
+def test_pickle() -> None:
+    obj = np.array([1.2, 3.5, 5.1, float("nan")])
+    pickled = pl.pickle_object(obj)
+
+    assert type(pickled) is str
+
+    unpickled = pl.unpickle_object(pickled)
+
+    np.testing.assert_array_equal(unpickled, obj)

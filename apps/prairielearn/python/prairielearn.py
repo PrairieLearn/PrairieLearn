@@ -1,3 +1,4 @@
+import codecs
 import collections
 import html
 import importlib
@@ -6,6 +7,7 @@ import json
 import math
 import numbers
 import os
+import pickle
 import random
 import re
 import unicodedata
@@ -65,6 +67,15 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def pickle_object(obj: Any) -> str:
+    """Pickle arbitrary object as string. Based on https://stackoverflow.com/a/30469744/2923069"""
+    return codecs.encode(pickle.dumps(obj), "base64").decode()
+
+
+def unpickle_object(obj_str: str) -> Any:
+    return pickle.loads(codecs.decode(obj_str.encode(), "base64"))
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
