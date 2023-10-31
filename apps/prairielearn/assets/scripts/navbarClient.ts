@@ -144,38 +144,38 @@ onDocumentReady(() => {
     }
   });
 
-  const navbarUserEffectiveUidInput = document.querySelector<HTMLInputElement>(
-    '#navbar-user-effective-uid-input',
-  );
-  const navbarUserEffectiveUidButton = document.querySelector<HTMLButtonElement>(
-    '#navbar-user-effective-uid-button',
-  );
+  document.querySelectorAll<HTMLButtonElement>('.js-remove-override').forEach((element) => {
+    element.addEventListener('click', () => {
+      const cookieName = element.dataset.overrideCookie;
+      Cookies.remove(cookieName, { path: '/' });
+      location.reload();
+    });
+  });
 
-  navbarUserEffectiveUidInput?.addEventListener('keyup', () => {
-    if (navbarUserEffectiveUidInput.value.trim() !== '') {
-      navbarUserEffectiveUidButton.removeAttribute('disabled');
+  const effectiveUidInput = document.querySelector<HTMLInputElement>('.js-effective-uid-input');
+  const effectiveUidButton = document.querySelector<HTMLButtonElement>('.js-effective-uid-button');
+
+  effectiveUidInput?.addEventListener('input', () => {
+    if (effectiveUidInput.value.trim() !== '') {
+      effectiveUidButton.removeAttribute('disabled');
     } else {
-      navbarUserEffectiveUidButton.setAttribute('disabled', 'true');
+      effectiveUidButton.setAttribute('disabled', 'true');
     }
   });
 
-  navbarUserEffectiveUidInput?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      const uid = navbarUserEffectiveUidInput.value.trim();
-      if (uid !== '') {
-        Cookies.set('pl_requested_uid', uid, { path: '/', expires: COOKIE_EXPIRATION_DAYS });
+  document
+    .querySelector<HTMLFormElement>('.js-effective-uid-form')
+    ?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const effectiveUid = effectiveUidInput.value.trim();
+      if (effectiveUid) {
+        Cookies.set('pl_requested_uid', effectiveUid, {
+          path: '/',
+          expires: COOKIE_EXPIRATION_DAYS,
+        });
         Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
         location.reload();
       }
-    }
-  });
-
-  navbarUserEffectiveUidButton?.addEventListener('click', () => {
-    const uid = navbarUserEffectiveUidInput.value.trim();
-    if (uid !== '') {
-      Cookies.set('pl_requested_uid', uid, { path: '/', expires: COOKIE_EXPIRATION_DAYS });
-      Cookies.set('pl_requested_data_changed', 'true', { path: '/' });
-      location.reload();
-    }
-  });
+    });
 });
