@@ -178,4 +178,12 @@ onDocumentReady(() => {
       location.reload();
     }
   });
+
+  document.querySelectorAll<HTMLButtonElement>('.js-remove-override').forEach((element) => {
+    element.addEventListener('click', () => {
+      const cookieName = element.dataset.overrideCookie;
+      Cookies.remove(cookieName, { path: '/' });
+      location.reload();
+    });
+  });
 });
