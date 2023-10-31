@@ -12,7 +12,7 @@
   },
   "dynamicDependencies": {
     "nodeModulesScripts": {
-      "@viz-js": "@viz-js/viz/lib/viz-standalone.js"
+      "@viz-js/viz": "@viz-js/viz/lib/viz-standalone.mjs"
     }
   }
 }

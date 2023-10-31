@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify, Viz */
+/* global ace, showdown, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -302,8 +302,8 @@ window.PLFileEditor.prototype.preview = {
         if (vizPromise == null) {
           vizPromise = (async () => {
             // eslint-disable-next-line import/no-unresolved
-            await import('@viz-js');
-            return await Viz.instance();
+            const { instance } = await import('@viz-js/viz');
+            return instance();
           })();
         }
         const viz = await vizPromise;
