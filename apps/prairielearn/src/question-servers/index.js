@@ -6,11 +6,11 @@ const _ = require('lodash');
  */
 
 const questionModules = {
-  Calculation: require('./calculation'),
-  File: require('./calculation'),
-  Checkbox: require('./calculation'),
-  MultipleChoice: require('./calculation'),
-  MultipleTrueFalse: require('./calculation'),
+  Calculation: require('./calculation-subprocess'),
+  File: require('./calculation-subprocess'),
+  Checkbox: require('./calculation-subprocess'),
+  MultipleChoice: require('./calculation-subprocess'),
+  MultipleTrueFalse: require('./calculation-subprocess'),
   Freeform: require('./freeform'),
 };
 

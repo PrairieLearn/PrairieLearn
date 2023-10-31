@@ -1,4 +1,4 @@
-import { html } from '@prairielearn/html';
+import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../../lib/config';
@@ -10,13 +10,20 @@ export interface InstitutionAuthnProvider {
   url: string;
 }
 
-interface AuthLoginProps {
-  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
-  service: string | null;
-  resLocals: Record<string, any>;
+export interface InstitutionSupportedProviders {
+  name: string;
+  is_default: boolean;
 }
 
-export function AuthLogin({ institutionAuthnProviders, service, resLocals }: AuthLoginProps) {
+function LoginPageContainer({
+  children,
+  service,
+  resLocals,
+}: {
+  children: HtmlValue;
+  service: string | null;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en" class="bg-dark">
@@ -117,74 +124,177 @@ export function AuthLogin({ institutionAuthnProviders, service, resLocals }: Aut
               <h2 class="text-center subheader mb-5">
                 Sign in ${service ? `to continue to ${service}` : ''}
               </h2>
-              ${resLocals.devMode
-                ? html`
-                    ${DevModeBypass()}
-                    <hr />
-                    ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
-                    <hr />
-                  `
-                : ''}
-              <div class="login-methods">
-                ${config.hasShib && !config.hideShibLogin
-                  ? html`
-                      <a
-                        class="btn btn-shib w-100 position-relative"
-                        href="/pl/shibcallback"
-                        role="button"
-                      >
-                        ${config.shibLinkLogo != null
-                          ? html` <img src="${config.shibLinkLogo}" class="social-icon" /> `
-                          : html` <span class="social-icon"></span> `}
-                        <span class="font-weight-bold">${config.shibLinkText}</span>
-                      </a>
-                    `
-                  : ''}
-                ${config.hasOauth
-                  ? html`
-                      <a
-                        class="btn btn-primary w-100 position-relative"
-                        href="/pl/oauth2login"
-                        role="button"
-                      >
-                        <img src="${assetPath('images/google_logo.svg')}" class="social-icon" />
-                        <span class="font-weight-bold">Sign in with Google</span>
-                      </a>
-                    `
-                  : ''}
-                ${config.hasAzure && isEnterprise()
-                  ? html`
-                      <a
-                        class="btn btn-dark w-100 position-relative"
-                        href="/pl/azure_login"
-                        role="button"
-                      >
-                        <img src="${assetPath('images/ms_logo.svg')}" class="social-icon" />
-                        <span class="font-weight-bold">Sign in with Microsoft</span>
-                      </a>
-                    `
-                  : ''}
-              </div>
-              ${institutionAuthnProviders?.length
-                ? html`
-                    <div class="institution-header text-muted my-3">Institution sign-on</div>
-                    <div class="login-methods">
-                      ${institutionAuthnProviders.map(
-                        (provider) => html`
-                          <a href="${provider.url}" class="btn btn-outline-dark btn-block">
-                            ${provider.name}
-                          </a>
-                        `,
-                      )}
-                    </div>
-                  `
-                : ''}
+              ${children}
             </div>
           </div>
         </main>
       </body>
     </html>
-  `.toString();
+  `;
+}
+
+function ShibLoginButton() {
+  return html`
+    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback" role="button">
+      ${config.shibLinkLogo != null
+        ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
+        : html`<span class="social-icon"></span>`}
+      <span class="font-weight-bold">${config.shibLinkText}</span>
+    </a>
+  `;
+}
+
+function GoogleLoginButton() {
+  return html`
+    <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login" role="button">
+      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
+      <span class="font-weight-bold">Sign in with Google</span>
+    </a>
+  `;
+}
+
+function MicrosoftLoginButton() {
+  return html`
+    <a class="btn btn-dark d-block position-relative" href="/pl/azure_login" role="button">
+      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
+      <span class="font-weight-bold">Sign in with Microsoft</span>
+    </a>
+  `;
+}
+
+function SamlLoginButton({ institutionId }) {
+  return html`
+    <a class="btn btn-primary d-block" href="${`/pl/auth/institution/${institutionId}/saml/login`}">
+      <span class="font-weight-bold">Sign in with institution single sign-on</span>
+    </a>
+  `;
+}
+
+export function AuthLogin({
+  institutionAuthnProviders,
+  service,
+  resLocals,
+}: {
+  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
+  service: string | null;
+  resLocals: Record<string, any>;
+}) {
+  return LoginPageContainer({
+    service,
+    resLocals,
+    children: html`
+      ${resLocals.devMode
+        ? html`
+            ${DevModeBypass()}
+            <hr />
+            ${DevModeLogin({ csrfToken: resLocals.__csrf_token })}
+            <hr />
+          `
+        : ''}
+      <div class="login-methods mt-4">
+        ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
+        ${config.hasOauth ? GoogleLoginButton() : ''}
+        ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
+      </div>
+      ${institutionAuthnProviders?.length
+        ? html`
+            <div class="institution-header text-muted my-3">Institution sign-on</div>
+            <div class="login-methods">
+              ${institutionAuthnProviders.map(
+                (provider) => html`
+                  <a href="${provider.url}" class="btn btn-outline-dark btn-block">
+                    <span class="font-weight-bold">${provider.name}</span>
+                  </a>
+                `,
+              )}
+            </div>
+          `
+        : ''}
+    `,
+  }).toString();
+}
+
+export function AuthLoginUnsupportedProvider({
+  supportedProviders,
+  institutionId,
+  service,
+  resLocals,
+}: {
+  supportedProviders: InstitutionSupportedProviders[];
+  institutionId: string;
+  service: string | null;
+  resLocals: Record<string, any>;
+}) {
+  const supportsLti = supportedProviders.some((p) => p.name === 'LTI');
+  const supportsNonLti = supportedProviders.some((p) => p.name !== 'LTI');
+
+  const supportsSaml = supportedProviders.some((p) => p.name === 'SAML');
+  const supportsShib = supportedProviders.some((p) => p.name === 'Shibboleth');
+  const supportsGoogle = supportedProviders.some((p) => p.name === 'Google');
+  const supportsAzure = supportedProviders.some((p) => p.name === 'Azure');
+
+  const defaultProvider = supportedProviders.find((p) => p.is_default === true);
+  const hasNonDefaultProviders = supportedProviders.find(
+    (p) => p.name !== 'LTI' && p.is_default === false,
+  );
+
+  const showSaml = supportsSaml && defaultProvider?.name !== 'SAML';
+  const showShib =
+    config.hasShib &&
+    !config.hideShibLogin &&
+    supportsShib &&
+    defaultProvider?.name !== 'Shibboleth';
+  const showGoogle = config.hasOauth && supportsGoogle && defaultProvider?.name !== 'Google';
+  const showAzure = config.hasAzure && supportsAzure && defaultProvider?.name !== 'Azure';
+
+  let defaultProviderButton: HtmlValue = null;
+  switch (defaultProvider?.name) {
+    case 'SAML':
+      defaultProviderButton = SamlLoginButton({ institutionId });
+      break;
+    case 'Shibboleth':
+      defaultProviderButton = ShibLoginButton();
+      break;
+    case 'Google':
+      defaultProviderButton = GoogleLoginButton();
+      break;
+    case 'Azure':
+      defaultProviderButton = MicrosoftLoginButton();
+  }
+
+  return LoginPageContainer({
+    service,
+    resLocals,
+    children: html`
+      <div class="alert alert-danger text-center my-4" role="alert">
+        The authentication provider you tried to use is not supported by your institution.
+        ${supportsNonLti ? 'Please use a supported provider.' : ''}
+        ${!supportsNonLti && supportsLti
+          ? "You must start a session from your course's Learning Management System (LMS)."
+          : ''}
+        ${supportedProviders.length === 0 ? 'Contact your institution for more information.' : ''}
+      </div>
+      ${defaultProviderButton
+        ? html`
+            <small class="text-muted text-center d-block mb-2">Preferred provider</small>
+            ${defaultProviderButton}
+            ${hasNonDefaultProviders
+              ? html`
+                  <small class="text-muted text-center d-block mt-4 mb-2">Other providers</small>
+                `
+              : ''}
+          `
+        : ''}
+      <div class="login-methods">
+        ${[
+          showSaml ? SamlLoginButton({ institutionId }) : '',
+          showShib ? ShibLoginButton() : '',
+          showGoogle ? GoogleLoginButton() : '',
+          showAzure ? MicrosoftLoginButton() : '',
+        ]}
+      </div>
+    `,
+  }).toString();
 }
 
 function DevModeBypass() {
