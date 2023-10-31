@@ -3201,6 +3201,7 @@ __metadata:
     "@types/tar": ^6.1.7
     "@types/tmp": ^0.2.5
     "@types/uuid": ^9.0.6
+    "@viz-js/viz": ^3.2.3
     ace-builds: ^1.31.0
     ace-code: ^1.31.0
     ajv: ^8.12.0
@@ -5258,6 +5259,13 @@ __metadata:
   version: 1.2.0
   resolution: "@ungap/structured-clone@npm:1.2.0"
   checksum: 4f656b7b4672f2ce6e272f2427d8b0824ed11546a601d8d5412b9d7704e83db38a8d9f402ecdf2b9063fc164af842ad0ec4a55819f621ed7e7ea4d1efcc74524
+  languageName: node
+  linkType: hard
+
+"@viz-js/viz@npm:^3.2.3":
+  version: 3.2.3
+  resolution: "@viz-js/viz@npm:3.2.3"
+  checksum: 76e610e3496f97c0e843f38c430e891aa06a403681513e1e63e1d5e2897592879cf11bb52f791c77367a176c984a13fac01755e393f73acd488c4670a61039ac
   languageName: node
   linkType: hard
 
