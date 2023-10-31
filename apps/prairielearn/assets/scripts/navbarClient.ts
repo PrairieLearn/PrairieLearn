@@ -7,6 +7,8 @@ onDocumentReady(() => {
   const Cookies = CookiesModule.withAttributes({
     path: '/',
     expires: COOKIE_EXPIRATION_DAYS,
+    domain: document.querySelector('meta[name="cookie-domain"]')?.getAttribute('content'),
+    secure: location.protocol === 'https:',
   });
 
   const usernameNav = document.getElementById('username-nav');
