@@ -271,24 +271,35 @@
           %>
             <h6 class="dropdown-header">Effective user</h6>
 
-            <div class="dropdown-item-text d-flex flex-row justify-content-left ml-4 align-items-center">
-              <div class="px-0"><input type="email" class="form-control form-control-sm" id="navbar-user-effective-uid-input" placeholder="netid@illinois.edu" style="min-width:15em"></div>
-              <div class="pl-2"><button type="button" class="btn btn-primary btn-sm text-nowrap" id="navbar-user-effective-uid-button" disabled>Change UID</button></div>
-            </div>
+            <form class="form-inline dropdown-item-text d-flex js-effective-uid-form">
+              <label class="sr-only" for="effective-uid">UID</label>
+              <input
+                name="effective-uid"
+                type="email"
+                placeholder="student@example.com"
+                class="form-control form-control-sm mr-2 flex-grow-1 js-effective-uid-input"
+              >
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm text-nowrap js-effective-uid-button"
+                disabled
+              >
+                Change UID
+              </button>
+            </form>
 
             <% if (authz_data.overrides) { %>
-              <div class="list-group small dropdown-item-text pl-5" style="white-space: nowrap">
-                <% authz_data.overrides.forEach(function(override) { %>
-                  <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
-                <% }); %>
+              <div class="dropdown-item-text">
+                <div class="list-group small" style="white-space: nowrap">
+                  <% authz_data.overrides.forEach(function(override) { %>
+                    <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
+                  <% }); %>
+                </div>
               </div>
             <% } %>
 
             <a class="dropdown-item" href="<%= effectiveUserUrl %>">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"></div>
-                <div class="pl-0">Customize&hellip;</div>
-              </div>
+              Customize&hellip;
             </a>
 
             <div class="dropdown-divider"></div>
