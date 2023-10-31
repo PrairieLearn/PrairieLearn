@@ -57,4 +57,6 @@ WHERE
     'draining',
     'unhealthy',
     'terminating'
-  );
+  )
+ORDER BY
+  wh.launched_at;
