@@ -1,5 +1,12 @@
 # @prairielearn/compiled-assets
 
+## 2.0.10
+
+### Patch Changes
+
+- Updated dependencies [3cd0f83fa]
+  - @prairielearn/html@3.1.0
+
 ## 2.0.9
 
 ### Patch Changes
