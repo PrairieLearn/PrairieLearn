@@ -186,14 +186,7 @@ export async function populateManualGradingData(submission) {
  * @param {number} starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
  * @param {number} min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
  * @param {number} max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
- * @param {RubricItemInput[]} rubric_items - An array of items available for grading.
- * rubric_items[].id - The ID of the rubric item, if an existing item already exists and should be modified. Should be ignored or set to null if a new item is to be created.
- * rubric_items[].points - The number of points assigned to the rubric item.
- * rubric_items[].description - A short text describing the rubric item. Visible to graders and students.
- * rubric_items[].explanation - A longer explanation of the rubric item. Visible to graders and students.
- * rubric_items[].grader_note - A note associated to the rubric item that is visible to graders only.
- * rubric_items[].order - An indicator of the order in which items are to be presented.
- * rubric_items[].always_show_to_students - If the rubric item should be shown to students when not applied.
+ * @param {RubricItemInput[]} rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param {boolean} tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
  * @param {string} authn_user_id - The user_id of the logged in user.
  * @returns {Promise<void>}
