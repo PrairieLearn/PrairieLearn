@@ -1399,6 +1399,7 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
+    require('./middlewares/clientFingerprint').default,
     require('./pages/studentAssessments/studentAssessments'),
   ]);
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
