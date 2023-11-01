@@ -25,3 +25,4 @@ VALUES (
   $accept_language,
   $accept
 )
+RETURNING id

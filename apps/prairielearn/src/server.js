@@ -1399,12 +1399,12 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/clientFingerprint').default,
     require('./pages/studentAssessments/studentAssessments'),
   ]);
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
+    require('./middlewares/clientFingerprint').default,
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
     require('./middlewares/studentAssessmentAccess'),

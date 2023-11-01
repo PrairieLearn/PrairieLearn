@@ -16,8 +16,12 @@ export default asyncHandler(async (req, res, next) => {
     sql.select_client_fingerprint,
     params,
   );
+  res.locals.client_fingerprint_id = selectFingerprint.rows[0].id;
   if (selectFingerprint.rows.length === 0) {
-    await sqldb.queryOneRowAsync(sql.insert_client_fingerprint, params);
+    const client_fingerprint_id = (
+      await sqldb.queryOneRowAsync(sql.insert_client_fingerprint, params)
+    ).rows[0].id;
+    res.locals.client_fingerprint_id = client_fingerprint_id;
   }
   next();
 });
