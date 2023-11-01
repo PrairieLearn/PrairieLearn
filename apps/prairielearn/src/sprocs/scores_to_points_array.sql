@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    array_product(
+    scores_to_points_array(
         IN x DOUBLE PRECISION[],
         IN y DOUBLE PRECISION[],
         OUT product DOUBLE PRECISION[]

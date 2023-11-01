@@ -34,7 +34,7 @@ SET
     average_submission_score = average_submission_score_var,
     submission_score_array = submission_score_array_var,
     incremental_submission_score_array = incremental_submission_score_array_var,
-    incremental_submission_points_array = array_product(incremental_submission_score_array_var, iq.points_list_original)
+    incremental_submission_points_array = scores_to_points_array(incremental_submission_score_array_var, iq.points_list_original)
 FROM
     first_calculation,
     second_calculation
