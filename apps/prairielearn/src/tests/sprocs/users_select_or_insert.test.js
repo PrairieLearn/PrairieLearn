@@ -194,10 +194,9 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    await assert.isRejected(
-      usersSelectOrInsert(user, 'Azure'),
-      /authentication provider is not allowed for institution/,
-    );
+    const userResult = await usersSelectOrInsert(user, 'Azure');
+    assert.equal(userResult.rows[0].result, 'invalid_authn_provider');
+    assert.isNull(userResult.rows[0].user_id);
   });
 
   step('user 3 create under Google', async () => {
