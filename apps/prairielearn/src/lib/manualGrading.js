@@ -1,6 +1,7 @@
+// @ts-check
 import * as async from 'async';
 import * as mustache from 'mustache';
-import * as _ from 'lodash';
+import { sum, sumBy } from 'lodash';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -12,17 +13,17 @@ import {
   IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  RubricItem,
   RubricItemSchema,
   RubricSchema,
 } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-interface AppliedRubricItem {
-  rubric_item_id: string; // ID of the rubric item to be applied.
-  score?: number; // Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item.
-}
+/**
+ * @typedef {Object} AppliedRubricItem
+ * @property {string} rubric_item_id - ID of the rubric item to be applied.
+ * @property {number} [score] - Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item.
+ */
 
 const RubricDataSchema = RubricSchema.extend({
   rubric_items: z.array(
@@ -34,7 +35,7 @@ const RubricDataSchema = RubricSchema.extend({
     }),
   ),
 });
-type RubricData = z.infer<typeof RubricDataSchema>;
+/** @typedef {z.infer<typeof RubricDataSchema>} RubricData */
 
 const RubricGradingDataSchema = RubricGradingSchema.extend({
   rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
@@ -51,6 +52,7 @@ const PartialScoresSchema = z
       .passthrough(),
   )
   .nullable();
+/** @typedef {z.infer<typeof PartialScoresSchema>} PartialScores */
 
 const SubmissionForScoreUpdateSchema = z.object({
   submission_id: IdSchema,
@@ -78,26 +80,25 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   rubric_items_changed: z.boolean(),
 });
 
-type RubricItemInput = Partial<RubricItem> & {
-  order: number;
-};
+/** @typedef {Partial<import('./db-types').RubricItem> & {order: number}} RubricItemInput */
 
 /** Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
  *
- * @param urlPrefix - URL prefix for the current course instance.
- * @param assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
- * @param assessment_question_id - The assessment question being graded.
- * @param user_id - The user_id of the current grader. Typically the current effective user.
- * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param {string} urlPrefix - URL prefix for the current course instance.
+ * @param {string} assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
+ * @param {string} assessment_question_id - The assessment question being graded.
+ * @param {string} user_id - The user_id of the current grader. Typically the current effective user.
+ * @param {string} prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @returns {Promise<string>}
  */
 export async function nextUngradedInstanceQuestionUrl(
-  urlPrefix: string,
-  assessment_id: string,
-  assessment_question_id: string,
-  user_id: string,
-  prior_instance_question_id: string,
-): Promise<string> {
+  urlPrefix,
+  assessment_id,
+  assessment_question_id,
+  user_id,
+  prior_instance_question_id,
+) {
   const instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_ungraded_instance_question,
     { assessment_id, assessment_question_id, user_id, prior_instance_question_id },
@@ -112,13 +113,15 @@ export async function nextUngradedInstanceQuestionUrl(
 
 /** Populates the locals objects for rubric data. Assigns values to `rubric_data` in the locals.
  *
- * @param locals - The locals data to be retrieved and updated. The `assessment_question` is expected to have been retrieved before this call, as well as any value that impacts the mustache rendering, such as `variant` and `submission`.
+ * @param {Record<string, any>} locals - The locals data to be retrieved and updated. The `assessment_question` is expected to have been retrieved before this call, as well as any value that impacts the mustache rendering, such as `variant` and `submission`.
+ * @returns {Promise<void>}
  */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
+export async function populateRubricData(locals) {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!locals.assessment_question) return;
 
-  let rubricData: RubricData | null = null;
+  /** @type RubricData | null */
+  let rubricData = null;
 
   if (locals.assessment_question.manual_rubric_id) {
     rubricData = locals.rubric_data = await sqldb.queryOptionalRow(
@@ -156,9 +159,10 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
  * in-place by adding a `rubric_grading` value, as well as the rendered version of the manual
  * feedback.
  *
- * @param submission - The object whose rubric grading must be retrieved and populated. Typically a submission or grading job.
+ * @param {Record<string, any>} submission - The object whose rubric grading must be retrieved and populated. Typically a submission or grading job.
+ * @returns {Promise<void>}
  */
-export async function populateManualGradingData(submission: Record<string, any>): Promise<void> {
+export async function populateManualGradingData(submission) {
   if (submission.manual_rubric_grading_id) {
     submission.rubric_grading = await sqldb.queryOptionalRow(
       sql.select_rubric_grading_data,
@@ -175,33 +179,35 @@ export async function populateManualGradingData(submission: Record<string, any>)
 
 /** Updates the rubric settings for an assessment question.
  *
- * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
- * @param use_rubric - Indicates if a rubric should be used for manual grading.
- * @param starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
- * @param min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
- * @param max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
- * @param rubric_items - An array of items available for grading.
- * @param rubric_items[].id - The ID of the rubric item, if an existing item already exists and should be modified. Should be ignored or set to null if a new item is to be created.
- * @param rubric_items[].points - The number of points assigned to the rubric item.
- * @param rubric_items[].description - A short text describing the rubric item. Visible to graders and students.
- * @param rubric_items[].explanation - A longer explanation of the rubric item. Visible to graders and students.
- * @param rubric_items[].grader_note - A note associated to the rubric item that is visible to graders only.
- * @param rubric_items[].order - An indicator of the order in which items are to be presented.
- * @param rubric_items[].always_show_to_students - If the rubric item should be shown to students when not applied.
- * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
- * @param authn_user_id - The user_id of the logged in user.
+ * @param {string} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
+ * @param {boolean} use_rubric - Indicates if a rubric should be used for manual grading.
+ * @param {boolean} replace_auto_points - If true, the rubric is used to compute the total points. If false, the rubric is used to compute the manual points.
+ * @param {number} starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
+ * @param {number} min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
+ * @param {number} max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
+ * @param {RubricItemInput[]} rubric_items - An array of items available for grading.
+ * rubric_items[].id - The ID of the rubric item, if an existing item already exists and should be modified. Should be ignored or set to null if a new item is to be created.
+ * rubric_items[].points - The number of points assigned to the rubric item.
+ * rubric_items[].description - A short text describing the rubric item. Visible to graders and students.
+ * rubric_items[].explanation - A longer explanation of the rubric item. Visible to graders and students.
+ * rubric_items[].grader_note - A note associated to the rubric item that is visible to graders only.
+ * rubric_items[].order - An indicator of the order in which items are to be presented.
+ * rubric_items[].always_show_to_students - If the rubric item should be shown to students when not applied.
+ * @param {boolean} tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
+ * @param {string} authn_user_id - The user_id of the logged in user.
+ * @returns {Promise<void>}
  */
 export async function updateAssessmentQuestionRubric(
-  assessment_question_id: string,
-  use_rubric: boolean,
-  replace_auto_points: boolean,
-  starting_points: number,
-  min_points: number,
-  max_extra_points: number,
-  rubric_items: RubricItemInput[],
-  tag_for_manual_grading: boolean,
-  authn_user_id: string,
-): Promise<void> {
+  assessment_question_id,
+  use_rubric,
+  replace_auto_points,
+  starting_points,
+  min_points,
+  max_extra_points,
+  rubric_items,
+  tag_for_manual_grading,
+  authn_user_id,
+) {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
     if (!rubric_items?.length) {
@@ -319,13 +325,11 @@ export async function updateAssessmentQuestionRubric(
 
 /** Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
  *
- * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
- * @param authn_user_id - The user_id of the logged in user.
+ * @param {string} assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
+ * @param {string} authn_user_id - The user_id of the logged in user.
+ * @returns {Promise<void>}
  */
-async function recomputeInstanceQuestions(
-  assessment_question_id: string,
-  authn_user_id: string,
-): Promise<void> {
+async function recomputeInstanceQuestions(assessment_question_id, authn_user_id) {
   await sqldb.runInTransactionAsync(async () => {
     // Recompute grades for existing instance questions using this rubric
     const instance_questions = await sqldb.queryRows(
@@ -349,20 +353,20 @@ async function recomputeInstanceQuestions(
 
 /** Creates a new grading object for a specific rubric.
  *
- * @param rubric_id - ID of the rubric (typically retrieved from the assessment question).
- * @param max_points - number of points assigned as the maximum number of points to the assessment question.
- * @param max_manual_points - number of points assigned as the maximum number of manual points to the assessment question.
- * @param rubric_items - array of items to apply to the grading.
- * @param adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
- * @returns The ID and points of the created rubric grading.
+ * @param {string} rubric_id - ID of the rubric (typically retrieved from the assessment question).
+ * @param {number} max_points - number of points assigned as the maximum number of points to the assessment question.
+ * @param {number} max_manual_points - number of points assigned as the maximum number of manual points to the assessment question.
+ * @param {AppliedRubricItem[]} rubric_items - array of items to apply to the grading.
+ * @param {number|null} adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
+ * @returns {Promise<{ id: string; computed_points: number; replace_auto_points: boolean }>} The ID and points of the created rubric grading.
  */
 async function insertRubricGrading(
-  rubric_id: string,
-  max_points: number,
-  max_manual_points: number,
-  rubric_items: AppliedRubricItem[],
-  adjust_points: number | null,
-): Promise<{ id: string; computed_points: number; replace_auto_points: boolean }> {
+  rubric_id,
+  max_points,
+  max_manual_points,
+  rubric_items,
+  adjust_points,
+) {
   return sqldb.runInTransactionAsync(async () => {
     const { rubric_data, rubric_item_data } = await sqldb.queryRow(
       sql.select_rubric_items,
@@ -370,7 +374,7 @@ async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = _.sum(
+    const sum_rubric_item_points = sum(
       rubric_items?.map(
         (item) =>
           (item.score ?? 1) *
@@ -404,48 +408,36 @@ async function insertRubricGrading(
   });
 }
 
+/**
+ * @typedef {Object} InstanceQuestionScoreInput
+ * @property {number|null} [manual_points] - The manual points to assign to the instance question.
+ * @property {number|null} [manual_score_perc] - The percentage of manual points to assign to the instance question.
+ * @property {number|null} [score.auto_points] - The auto points to assign to the instance question.
+ * @property {number|null} [score.auto_score_perc] - The percentage of auto points to assign to the instance question.
+ * @property {number|null} [score.points] - The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points.
+ * @property {number|null} [score.score_perc] - The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points.
+ * @property {Record<string, any>|null} [score.feedback] - Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments.
+ * @property {PartialScores|null} [score.partial_scores] - Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value.
+ * @property {{rubric_id: string, applied_rubric_items?: AppliedRubricItem[]|null, adjust_points?: number|null}} [score.manual_rubric_data] - Rubric items associated to the grading of manual points. If provided, overrides manual points.
+ */
+
 /** Manually updates the score of an instance question.
- * @param assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
- * @param instance_question_id - The ID of the instance question to be updated. May or may not be safe.
- * @param submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
- * @param check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
- * @param score - The score values to be used for update.
- * @param score.manual_points - The manual points to assign to the instance question.
- * @param score.manual_score_perc - The percentage of manual points to assign to the instance question.
- * @param score.auto_points - The auto points to assign to the instance question.
- * @param score.auto_score_perc - The percentage of auto points to assign to the instance question.
- * @param score.points - The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points.
- * @param score.score_perc - The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points.
- * @param score.feedback - Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments.
- * @param score.partial_scores - Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value.
- * @param score.manual_rubric_data - Rubric items associated to the grading of manual points. If provided, overrides manual points.
- * @param score.manual_rubric_data.rubric_id - Rubric ID to use for manual grading.
- * @param score.manual_rubric_data.applied_rubric_items - Applied rubric items.
- * @param score.manual_rubric_data.adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
- * @param authn_user_id - The user_id of the logged in user.
+ * @param {string} assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
+ * @param {string} instance_question_id - The ID of the instance question to be updated. May or may not be safe.
+ * @param {string|null} submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
+ * @param {string|null} check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
+ * @param {InstanceQuestionScoreInput} score - The score values to be used for update.
+ * @param {string} authn_user_id - The user_id of the logged in user.
+ * @returns {Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }>} The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
 export async function updateInstanceQuestionScore(
-  assessment_id: string,
-  instance_question_id: string,
-  submission_id: string | null,
-  check_modified_at: string | null,
-  score: {
-    manual_points?: number | null;
-    manual_score_perc?: number | null;
-    auto_points?: number | null;
-    auto_score_perc?: number | null;
-    points?: number | null;
-    score_perc?: number | null;
-    feedback?: Record<string, any> | null;
-    partial_scores?: Record<string, any> | null;
-    manual_rubric_data?: {
-      rubric_id: string;
-      applied_rubric_items: AppliedRubricItem[] | null;
-      adjust_points?: number | null;
-    } | null;
-  },
-  authn_user_id: string,
-): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
+  assessment_id,
+  instance_question_id,
+  submission_id,
+  check_modified_at,
+  score,
+  authn_user_id,
+) {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
       sql.select_submission_for_score_update,
@@ -453,11 +445,18 @@ export async function updateInstanceQuestionScore(
       SubmissionForScoreUpdateSchema,
     );
 
-    let new_points: number | null = null;
-    let new_score_perc: number | null = null;
-    let new_auto_score_perc: number | null = null;
-    let new_auto_points: number | null = null;
-    let new_manual_points: number | null = null;
+    /** @type {number | null} */
+    let new_points = null;
+    /** @type {number | null} */
+    let new_score_perc = null;
+    /** @type {number | null} */
+    let new_auto_score_perc = null;
+    /** @type {number | null} */
+    let new_auto_points = null;
+    /** @type {number | null} */
+    let new_manual_points = null;
+    /** @type {string | null} */
+    let manual_rubric_grading_id;
 
     if (score?.partial_scores) {
       if (typeof score.partial_scores !== 'object') {
@@ -468,11 +467,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          _.sumBy(
+          sumBy(
             Object.values(score.partial_scores),
             (value) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
-        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
@@ -496,10 +495,8 @@ export async function updateInstanceQuestionScore(
           : 0;
     }
 
-    let manual_rubric_grading;
-
     if (current_submission.manual_rubric_id && score?.manual_rubric_data?.rubric_id) {
-      manual_rubric_grading = await insertRubricGrading(
+      const manual_rubric_grading = await insertRubricGrading(
         score?.manual_rubric_data?.rubric_id,
         current_submission.max_points ?? 0,
         current_submission.max_manual_points ?? 0,
@@ -512,6 +509,7 @@ export async function updateInstanceQuestionScore(
           ? new_auto_points ?? current_submission.auto_points ?? 0
           : 0);
       score.manual_score_perc = undefined;
+      manual_rubric_grading_id = manual_rubric_grading.id;
     } else if (
       current_submission.manual_rubric_id &&
       score?.points == null &&
@@ -520,10 +518,10 @@ export async function updateInstanceQuestionScore(
       score?.manual_score_perc == null
     ) {
       // If there is a rubric, and the manual_points will not be updated, keep the current rubric grading.
-      manual_rubric_grading = { id: current_submission.manual_rubric_grading_id };
+      manual_rubric_grading_id = current_submission.manual_rubric_grading_id;
     } else {
       // If the manual_points will be updated and the rubric grading has not been set, clear the rubric grading.
-      manual_rubric_grading = null;
+      manual_rubric_grading_id = null;
     }
 
     if (score?.manual_score_perc != null) {
@@ -572,7 +570,8 @@ export async function updateInstanceQuestionScore(
           : 0;
     }
 
-    let grading_job_id: string | null = null;
+    /** @type {string | null} */
+    let grading_job_id = null;
 
     // if we were originally provided a submission_id or we have feedback or partial scores, create a
     // grading job and update the submission
@@ -594,7 +593,7 @@ export async function updateInstanceQuestionScore(
           manual_points: new_manual_points,
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
-          manual_rubric_grading_id: manual_rubric_grading?.id,
+          manual_rubric_grading_id,
         },
         IdSchema,
       );
@@ -604,7 +603,7 @@ export async function updateInstanceQuestionScore(
           submission_id: current_submission.submission_id,
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
-          manual_rubric_grading_id: manual_rubric_grading?.id,
+          manual_rubric_grading_id,
           score: new_auto_score_perc == null ? null : new_auto_score_perc / 100,
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
         });
