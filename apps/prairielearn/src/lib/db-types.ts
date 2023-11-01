@@ -407,11 +407,11 @@ export type Rubric = z.infer<typeof RubricSchema>;
 export const RubricItemSchema = z.object({
   always_show_to_students: z.boolean(),
   deleted_at: DateFromISOString.nullable(),
-  description: z.string().max(100),
-  explanation: z.string().max(10000).nullable(),
-  grader_note: z.string().max(10000).nullable(),
+  description: z.string(),
+  explanation: z.string().nullable(),
+  grader_note: z.string().nullable(),
   id: IdSchema,
-  key_binding: z.string().max(30).nullable(),
+  key_binding: z.string().nullable(),
   number: IdSchema,
   points: z.number(),
   rubric_id: IdSchema,
@@ -430,7 +430,7 @@ export const RubricGradingSchema = z.object({
 export type RubricGrading = z.infer<typeof RubricGradingSchema>;
 
 export const RubricGradingItemSchema = z.object({
-  description: z.string().max(100),
+  description: z.string(),
   id: IdSchema,
   points: z.number(),
   rubric_grading_id: IdSchema,
