@@ -1,5 +1,26 @@
 # @prairielearn/flash
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [3cd0f83fa]
+  - @prairielearn/html@3.1.0
+
+## 1.1.1
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+- Updated dependencies [8dd894623]
+  - @prairielearn/html@3.0.9
+
+## 1.1.0
+
+### Minor Changes
+
+- 0f5ef9c18: Add support for html-safe flash messages
+
 ## 1.0.6
 
 ### Patch Changes

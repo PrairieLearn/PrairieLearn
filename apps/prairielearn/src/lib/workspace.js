@@ -20,6 +20,7 @@ const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const chunks = require('./chunks');
 const workspaceHostUtils = require('./workspaceHost');
+const issues = require('./issues');
 
 const sqldb = require('@prairielearn/postgres');
 const ERR = require('async-stacktrace');
@@ -56,7 +57,9 @@ module.exports = {
 
   async init() {
     workspaceUtils.init(socketServer.io);
-    workspaceUtils.getWorkspaceSocketNamespace().on('connection', module.exports.connection);
+    socketServer.io
+      .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .on('connection', module.exports.connection);
   },
 
   /**
@@ -291,7 +294,7 @@ module.exports = {
    * are not atomic.
    *
    * @param {string | number} workspace_id
-   * @returns {Promise<InitializeResult | null>}
+   * @returns {Promise<InitializeResult>}
    */
   async initialize(workspace_id) {
     const { workspace, variant, question, course } = (
@@ -302,6 +305,9 @@ module.exports = {
       type: 'question',
       questionId: question.id,
     });
+
+    /** @type {{file: string; msg: string; err?: any, data?: Record<string, any>}[]} */
+    const fileGenerationErrors = [];
 
     // local workspace files
     const questionBasePath = path.join(course_path, 'questions', question.qid);
@@ -355,7 +361,12 @@ module.exports = {
                   mustacheParams,
                 ),
               };
-            } catch (_err) {
+            } catch (err) {
+              fileGenerationErrors.push({
+                file: generatedFileName,
+                err,
+                msg: `Error rendering workspace template file: ${err.message}`,
+              });
               // File cannot be rendered, treat file as static file
               return { name: generatedFileName, localPath: file.path };
             }
@@ -372,19 +383,38 @@ module.exports = {
 
     /** @type {WorkspaceFile[]} */
     const dynamicFiles = (
-      await async.mapSeries(variant.params._workspace_files || [], async (file) => {
+      await async.mapSeries(variant.params._workspace_files || [], async (file, i) => {
         try {
           // Ignore files without a name
-          if (!file.name) return null;
+          if (!file.name) {
+            fileGenerationErrors.push({
+              file: `Dynamic file ${i}`,
+              msg: 'Dynamic workspace file does not include a name. File ignored.',
+              data: file,
+            });
+            return null;
+          }
           // Discard names with directory traversal outside the home directory
           if (!contains(remotePath, path.join(remotePath, file.name), false)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
+              data: file,
+            });
             return null;
           }
 
           if (file.questionFile) {
             const localPath = path.join(questionBasePath, file.questionFile);
             // Discard paths with directory traversal outside the question
-            if (!contains(questionBasePath, localPath, false)) return null;
+            if (!contains(questionBasePath, localPath, false)) {
+              fileGenerationErrors.push({
+                file: file.name,
+                msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
+                data: file,
+              });
+              return null;
+            }
             // To avoid race conditions, no check if file exists here, rather an exception is
             // captured when attempting to copy.
             return {
@@ -395,14 +425,25 @@ module.exports = {
 
           // Discard encodings outside of explicit list of allowed encodings
           if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,
+              data: file,
+            });
             return null;
           }
           return {
             name: file.name,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
           };
-        } catch (_err) {
+        } catch (err) {
           // Error retrieving contents of dynamic file. Ignoring file.
+          fileGenerationErrors.push({
+            file: file.name,
+            msg: `Error decoding dynamic workspace file: ${err.message}`,
+            err,
+            data: file,
+          });
           return null;
         }
       })
@@ -435,6 +476,12 @@ module.exports = {
             await fse.writeFile(sourceFile, workspaceFile.buffer);
           }
         } catch (err) {
+          fileGenerationErrors.push({
+            file: workspaceFile.name,
+            msg: `Workspace file could not be written to workspace: ${err.message}`,
+            err,
+            data: { workspaceFile },
+          });
           debug(`File ${workspaceFile.name} could not be written`, err);
         }
       });
@@ -447,6 +494,31 @@ module.exports = {
           config.workspaceJobsDirectoryOwnerGid,
         );
       }
+    }
+
+    if (fileGenerationErrors.length > 0) {
+      const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
+      issues.insertIssue({
+        variantId: variant.id,
+        studentMessage: 'Error initializing workspace files',
+        instructorMessage: 'Error initializing workspace files',
+        manuallyReported: false,
+        courseCaused: true,
+        courseData: { workspace, variant, question, course },
+        systemData: {
+          courseErrData: {
+            // This is shown in the console log of the issue
+            outputBoth: output,
+            // This data is only shown if user is admin (e.g., in dev mode).
+            errors: fileGenerationErrors.map((error) => ({
+              ...error,
+              // Since error is typically not serializable, a custom object is created.
+              err: serializeError(error.err),
+            })),
+          },
+        },
+        authnUserId: null,
+      });
     }
 
     return {
@@ -552,3 +624,14 @@ module.exports = {
     return zipPath;
   },
 };
+
+function serializeError(err) {
+  if (err == null) return err;
+  return {
+    ...err,
+    stack: err.stack,
+    data: err.data,
+    message: err.message,
+    cause: err.cause,
+  };
+}

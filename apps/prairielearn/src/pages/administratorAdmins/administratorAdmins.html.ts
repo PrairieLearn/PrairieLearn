@@ -1,8 +1,14 @@
-// @ts-check
-const { html, escapeHtml } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html, escapeHtml } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import { User } from '../../lib/db-types';
 
-function AdministratorAdmins({ admins, resLocals }) {
+export function AdministratorAdmins({
+  admins,
+  resLocals,
+}: {
+  admins: User[];
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -110,7 +116,7 @@ function AdministratorAdmins({ admins, resLocals }) {
   `.toString();
 }
 
-function AdministratorInsertForm({ csrfToken, id }) {
+function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: string }) {
   return html`
     <form name="add-user-form" method="POST">
       <input type="hidden" name="__action" value="administrators_insert_by_user_uid" />
@@ -135,7 +141,17 @@ function AdministratorInsertForm({ csrfToken, id }) {
   `;
 }
 
-function AdministratorDeleteForm({ csrfToken, id, userId, uid }) {
+function AdministratorDeleteForm({
+  csrfToken,
+  id,
+  userId,
+  uid,
+}: {
+  csrfToken: string;
+  id: string;
+  userId: string;
+  uid: string;
+}) {
   return html`
     <form name="add-user-form" method="POST">
       <input type="hidden" name="__action" value="administrators_delete_by_user_id" />
@@ -154,5 +170,3 @@ function AdministratorDeleteForm({ csrfToken, id, userId, uid }) {
     </form>
   `;
 }
-
-module.exports.AdministratorAdmins = AdministratorAdmins;
