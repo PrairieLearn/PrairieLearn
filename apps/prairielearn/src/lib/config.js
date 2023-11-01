@@ -68,6 +68,7 @@ const ConfigSchema = z.object({
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
+  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
