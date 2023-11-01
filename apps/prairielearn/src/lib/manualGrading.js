@@ -105,10 +105,11 @@ export async function nextUngradedInstanceQuestionUrl(
     IdSchema,
   );
 
-  return instance_question_id != null
-    ? `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`
-    : // If we have no more submissions, then redirect back to manual grading page
-      `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
+  if (instance_question_id != null) {
+    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`;
+  }
+  // If we have no more submissions, then redirect back to main assessment question page
+  return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 
 /** Populates the locals objects for rubric data. Assigns values to `rubric_data` in the locals.
