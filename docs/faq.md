@@ -396,7 +396,7 @@ PrairieLearn access rules default to zero-credit so leaving off the credit means
 To fix student scores without requiring them to answer another question you can:
 
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
-2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points".
+2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points * 100".
 3. Rename the "Score (%)" column to "score_perc" and delete all columns except "uid", "instance", and "score_perc".
 4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
 
