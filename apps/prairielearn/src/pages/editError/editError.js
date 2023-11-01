@@ -29,7 +29,9 @@ router.get('/:job_sequence_id', function (req, res, next) {
 
     if (job_sequence.legacy) {
       // Legacy job sequences should no longer exist.
-      logger.warn(`Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`);
+      logger.warn(
+        `Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`,
+      );
     } else {
       const job = job_sequence.jobs[0];
 

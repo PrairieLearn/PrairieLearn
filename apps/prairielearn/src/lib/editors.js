@@ -128,19 +128,10 @@ class Editor {
 
               if (config.fileEditorUseGit) {
                 job.info('Update to latest remote origin address');
-                await job.exec(
-                  'git',
-                  [
-                    'remote',
-                    'set-url',
-                    'origin',
-                    this.course.repository,
-                  ],
-                  {
-                    cwd: this.course.path,
-                    env: gitEnv,
-                  },
-                );
+                await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+                  cwd: this.course.path,
+                  env: gitEnv,
+                });
 
                 job.info('Fetch from remote git repository');
                 await job.exec('git', ['fetch'], {
@@ -1208,7 +1199,7 @@ class FileUploadEditor extends Editor {
 
 class FileModifyEditor extends Editor {
   // Naming convention for contents and hashes in FileModifyEditor:
-  //  
+  //
   //    xyzContentsUTF - contents of xyz file as utf8
   //
   //    xyzContents - contents of xyz file as utf8 that is base64-encoded
@@ -1219,7 +1210,7 @@ class FileModifyEditor extends Editor {
   // If this weren't the case, then we wouldn't use it here either. For example,
   // FileUploadEditor - which is used by the file browser - doesn't require any
   // base64 encoding. In that case, contents/hashes are just utf8.
-  
+
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1289,7 +1280,7 @@ class FileModifyEditor extends Editor {
 
   async write() {
     debug('FileModifyEditor: write()');
-    
+
     debug(`ensure path exists`);
     await fs.ensureDir(path.dirname(this.filePath));
 

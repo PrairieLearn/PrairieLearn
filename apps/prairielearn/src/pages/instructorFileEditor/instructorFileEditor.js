@@ -22,7 +22,6 @@ const { getPaths } = require('../../lib/instructorFiles');
 const { logger } = require('@prairielearn/logger');
 const { FileModifyEditor } = require('../../lib/editors');
 
-
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
@@ -39,7 +38,7 @@ router.get('/*', (req, res, next) => {
   }
 
   // Do not allow users to edit the exampleCourse
-  if (res.locals.course.example_course) {    
+  if (res.locals.course.example_course) {
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     return;
   }
@@ -74,10 +73,10 @@ router.get('/*', (req, res, next) => {
 
     debug(
       `Edit file in browser\n` +
-      ` fileName: ${fileEdit.fileName}\n` +
-      ` coursePath: ${fileEdit.coursePath}\n` +
-      ` fullPath: ${fullPath}\n` +
-      ` relPath: ${relPath}`
+        ` fileName: ${fileEdit.fileName}\n` +
+        ` coursePath: ${fileEdit.coursePath}\n` +
+        ` fullPath: ${fullPath}\n` +
+        ` relPath: ${relPath}`,
     );
 
     async.waterfall(
@@ -85,12 +84,12 @@ router.get('/*', (req, res, next) => {
         async () => {
           debug('Read from db');
           await readDraftEdit(fileEdit);
-  
+
           debug('Read from disk');
           const contents = await fs.readFile(fullPath);
           fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
           fileEdit.diskHash = getHash(fileEdit.diskContents);
-  
+
           const binary = await isBinaryFile(contents);
           debug(`isBinaryFile: ${binary}`);
           if (binary) {
@@ -99,7 +98,7 @@ router.get('/*', (req, res, next) => {
           } else {
             debug('found a text file');
           }
-  
+
           if (fileEdit.jobSequenceId != null) {
             debug('Read job sequence');
             fileEdit.jobSequence = await serverJobs.getJobSequenceWithFormattedOutputAsync(
@@ -107,7 +106,7 @@ router.get('/*', (req, res, next) => {
               res.locals.course.id,
             );
           }
-  
+
           const data = await editorUtil.getErrorsAndWarningsForFilePath(
             res.locals.course.id,
             relPath,
@@ -129,11 +128,11 @@ router.get('/*', (req, res, next) => {
           res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
           return;
         }
-  
+
         fileEdit.alertChoice = false;
         fileEdit.didSave = false;
         fileEdit.didSync = false;
-  
+
         if ('jobSequence' in fileEdit) {
           // No draft is older than 24 hours, so it is safe to assume that no
           // job sequence is legacy... but, just in case, we will check and log
@@ -141,15 +140,19 @@ router.get('/*', (req, res, next) => {
           // if it was neither saved nor synced.
           if (fileEdit.jobSequence.legacy) {
             debug('Found a legacy job sequence');
-            logger.warn(`Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
-                        `in a file edit (id=${fileEdit.editID})`);
+            logger.warn(
+              `Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
+                `in a file edit (id=${fileEdit.editID})`,
+            );
           } else {
             const job = fileEdit.jobSequence.jobs[0];
-  
-            debug(`Found a job sequence: ` +
-              `syncAttempted=${job.data.syncAttempted}, ` +
-              `syncSucceeded=${job.data.syncSucceeded}`);
-            
+
+            debug(
+              `Found a job sequence: ` +
+                `syncAttempted=${job.data.syncAttempted}, ` +
+                `syncSucceeded=${job.data.syncSucceeded}`,
+            );
+
             // We check for the presence of a `syncAttempted` key to know if
             // we attempted a sync (if it exists, its value will be true). If
             // a sync was attempted, then the edit must have been saved (i.e,
@@ -157,7 +160,7 @@ router.get('/*', (req, res, next) => {
             // then pushed in the case of git).
             if (job.data.syncAttempted) {
               fileEdit.didSave = true;
-  
+
               // We check for the presence of a `syncSucceeded` key to know
               // if the sync was successful (if it exists, its value will be
               // true). Note that the cause of sync failure could be a file
@@ -168,7 +171,7 @@ router.get('/*', (req, res, next) => {
             }
           }
         }
-  
+
         if ('editID' in fileEdit) {
           // There is a recently saved draft ...
           fileEdit.alertResults = true;
@@ -178,7 +181,7 @@ router.get('/*', (req, res, next) => {
             fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
           }
         }
-        
+
         if (!fileEdit.alertChoice) {
           fileEdit.editContents = fileEdit.diskContents;
           fileEdit.origHash = fileEdit.diskHash;
@@ -210,7 +213,7 @@ router.post('/*', (req, res, next) => {
 
     if (req.body.__action === 'save_and_sync') {
       debug('Save and sync');
-      
+
       const editor = new FileModifyEditor({
         locals: res.locals,
         container: container,
@@ -360,7 +363,7 @@ async function writeDraftEdit(fileEdit) {
     fileEdit.userID, //       although I don't think there's any need to do so
   );
   debug(`Wrote file_id=${fileID} to file store`);
-  
+
   const params = {
     user_id: fileEdit.userID,
     course_id: fileEdit.courseID,
