@@ -260,9 +260,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ec2@npm:^3.438.0":
-  version: 3.438.0
-  resolution: "@aws-sdk/client-ec2@npm:3.438.0"
+"@aws-sdk/client-ec2@npm:^3.440.0":
+  version: 3.440.0
+  resolution: "@aws-sdk/client-ec2@npm:3.440.0"
   dependencies:
     "@aws-crypto/sha256-browser": 3.0.0
     "@aws-crypto/sha256-js": 3.0.0
@@ -307,7 +307,7 @@ __metadata:
     fast-xml-parser: 4.2.5
     tslib: ^2.5.0
     uuid: ^8.3.2
-  checksum: 88e3e23f98454e6a8fcfa075d9c20daebd46d34e8bea3f349d6c66a7ff9f54c0b385df2abe7dba9409f5cfc8051f00f737cf2462df1f2d2d761ee1a974aeb0f4
+  checksum: 2e58bff1ab8a0813901fbb3c626197ec87a7b250df8fa17218d450b7a22e44000d8e65d6720556bed2ab753a2e5171c929ea7ff8a6a75ceda80e721075826401
   languageName: node
   linkType: hard
 
@@ -359,9 +359,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.438.0":
-  version: 3.438.0
-  resolution: "@aws-sdk/client-s3@npm:3.438.0"
+"@aws-sdk/client-s3@npm:^3.440.0":
+  version: 3.440.0
+  resolution: "@aws-sdk/client-s3@npm:3.440.0"
   dependencies:
     "@aws-crypto/sha1-browser": 3.0.0
     "@aws-crypto/sha256-browser": 3.0.0
@@ -376,7 +376,7 @@ __metadata:
     "@aws-sdk/middleware-location-constraint": 3.433.0
     "@aws-sdk/middleware-logger": 3.433.0
     "@aws-sdk/middleware-recursion-detection": 3.433.0
-    "@aws-sdk/middleware-sdk-s3": 3.433.0
+    "@aws-sdk/middleware-sdk-s3": 3.440.0
     "@aws-sdk/middleware-signing": 3.433.0
     "@aws-sdk/middleware-ssec": 3.433.0
     "@aws-sdk/middleware-user-agent": 3.438.0
@@ -420,7 +420,7 @@ __metadata:
     "@smithy/util-waiter": ^2.0.12
     fast-xml-parser: 4.2.5
     tslib: ^2.5.0
-  checksum: 6f42342fac480bcd410c3118efee65ff26f9fbad6fb31dfb72611a0b779380e311a171aed6bb3d7d6b641264767e58f180f0a81525a75f95cbb8f7f800404271
+  checksum: 90456c8a8c9d0fa7725affbebc70342347900e676e9b7b7f9cea4b33bda7a172f9c5884ae21a71f2c791d51c45ee437ea12845217fd028bef58cacf3b22720d0
   languageName: node
   linkType: hard
 
@@ -766,9 +766,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/lib-storage@npm:^3.438.0":
-  version: 3.438.0
-  resolution: "@aws-sdk/lib-storage@npm:3.438.0"
+"@aws-sdk/lib-storage@npm:^3.440.0":
+  version: 3.440.0
+  resolution: "@aws-sdk/lib-storage@npm:3.440.0"
   dependencies:
     "@smithy/abort-controller": ^2.0.1
     "@smithy/middleware-endpoint": ^2.1.3
@@ -779,7 +779,7 @@ __metadata:
     tslib: ^2.5.0
   peerDependencies:
     "@aws-sdk/client-s3": ^3.0.0
-  checksum: e44b7839c42a1f43528c41aa232517ca0a7723fc37416f1b1f5e4208509b105150b0b2d0c51380a830a883bf2ba348b269945ccb78854223efa3a48fbbd26fc3
+  checksum: 2848c3fcf50e2323278f5c485da09bea7327ecfddef594c81c1a6cf9206389559345cadb9aaa32a8bf6e9f1f4d8248cf68d4d26c5768bd4f7a88dee91a799e5e
   languageName: node
   linkType: hard
 
@@ -888,9 +888,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/middleware-sdk-s3@npm:3.433.0":
-  version: 3.433.0
-  resolution: "@aws-sdk/middleware-sdk-s3@npm:3.433.0"
+"@aws-sdk/middleware-sdk-s3@npm:3.440.0":
+  version: 3.440.0
+  resolution: "@aws-sdk/middleware-sdk-s3@npm:3.440.0"
   dependencies:
     "@aws-sdk/types": 3.433.0
     "@aws-sdk/util-arn-parser": 3.310.0
@@ -898,7 +898,7 @@ __metadata:
     "@smithy/smithy-client": ^2.1.12
     "@smithy/types": ^2.4.0
     tslib: ^2.5.0
-  checksum: 8d9d5d0b0ad552bf34b15ad510f8aa2257e40f1e0a356fe58ce69a1ee1d560bb94573f24e627384c1447d249f6ec17661887a6ff697217caf37f106b5e53d905
+  checksum: 25513ee79320aedf29bea164b614d302dd7ef7767e025753638f941def166e5c1d9f0a4d687bdf05377d78267bc8e513909915c6bb0da343a9553217e7b750ca
   languageName: node
   linkType: hard
 
@@ -2827,7 +2827,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/config@workspace:packages/config"
   dependencies:
-    "@aws-sdk/client-ec2": ^3.438.0
+    "@aws-sdk/client-ec2": ^3.440.0
     "@aws-sdk/client-secrets-manager": ^3.438.0
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "*"
@@ -2922,10 +2922,10 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.438.0
     "@aws-sdk/client-ecr": ^3.438.0
-    "@aws-sdk/client-s3": ^3.438.0
+    "@aws-sdk/client-s3": ^3.440.0
     "@aws-sdk/client-sqs": ^3.438.0
     "@aws-sdk/credential-providers": ^3.438.0
-    "@aws-sdk/lib-storage": ^3.438.0
+    "@aws-sdk/lib-storage": ^3.440.0
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
@@ -3135,12 +3135,12 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.438.0
     "@aws-sdk/client-cloudwatch": ^3.438.0
-    "@aws-sdk/client-ec2": ^3.438.0
+    "@aws-sdk/client-ec2": ^3.440.0
     "@aws-sdk/client-ecr": ^3.438.0
-    "@aws-sdk/client-s3": ^3.438.0
+    "@aws-sdk/client-s3": ^3.440.0
     "@aws-sdk/client-sqs": ^3.438.0
     "@aws-sdk/credential-providers": ^3.438.0
-    "@aws-sdk/lib-storage": ^3.438.0
+    "@aws-sdk/lib-storage": ^3.440.0
     "@fortawesome/fontawesome-free": ^6.4.2
     "@octokit/rest": ^19.0.13
     "@prairielearn/aws": "workspace:^"
@@ -3437,9 +3437,9 @@ __metadata:
   resolution: "@prairielearn/workspace-host@workspace:apps/workspace-host"
   dependencies:
     "@aws-sdk/client-ecr": ^3.438.0
-    "@aws-sdk/client-s3": ^3.438.0
+    "@aws-sdk/client-s3": ^3.440.0
     "@aws-sdk/credential-providers": ^3.438.0
-    "@aws-sdk/lib-storage": ^3.438.0
+    "@aws-sdk/lib-storage": ^3.440.0
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
