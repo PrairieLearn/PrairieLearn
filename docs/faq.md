@@ -391,7 +391,7 @@ For more information on this granular technique, see [the documentation for pl-h
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but there percentage score will stay at 0%. To correct this you should add `"credit":100` to [the appropriate access rule](accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
