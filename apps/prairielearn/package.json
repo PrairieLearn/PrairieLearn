@@ -197,7 +197,7 @@
     "@types/mime": "^3.0.3",
     "@types/mocha": "^10.0.3",
     "@types/multer": "^1.4.9",
-    "@types/node": "^18.18.7",
+    "@types/node": "^18.18.8",
     "@types/node-fetch": "^2.6.7",
     "@types/object-hash": "^3.0.5",
     "@types/passport": "^1.0.14",
