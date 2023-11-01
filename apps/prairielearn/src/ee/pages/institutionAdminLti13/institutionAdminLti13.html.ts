@@ -86,7 +86,7 @@ function LTI13Instance(
 ) {
   if (instance) {
     return html`
-      <h3>${instance.tool_platform_name} (ID #${instance.id})</h3>
+      <h3>${instance.name} (ID #${instance.id})</h3>
       <p>
         Created at ${instance.created_at.toString()}
         <button
