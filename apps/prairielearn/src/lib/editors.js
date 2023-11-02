@@ -21,6 +21,7 @@ const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
 const { getLockNameForCoursePath } = require('./course');
 const b64Util = require('../lib/base64-util');
+const { html } = require('@prairielearn/html');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -984,11 +985,12 @@ class FileDeleteEditor extends Editor {
     if (!contains(this.container.rootPath, this.deletePath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The path of the file to delete</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>
+          <p>must be inside the root directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -999,10 +1001,12 @@ class FileDeleteEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The path of the file to delete</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The path of the file to delete</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1044,10 +1048,12 @@ class FileRenameEditor extends Editor {
     if (!contains(this.container.rootPath, this.oldPath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file's old path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>
+          <p>must be inside the root directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1055,10 +1061,12 @@ class FileRenameEditor extends Editor {
     if (!contains(this.container.rootPath, this.newPath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file's new path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>
+          <p>must be inside the root directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1071,10 +1079,12 @@ class FileRenameEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's old path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file's old path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1085,10 +1095,12 @@ class FileRenameEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file's new path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file's new path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1164,10 +1176,12 @@ class FileUploadEditor extends Editor {
     if (!contains(this.container.rootPath, this.filePath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <p>must be inside the root directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1178,10 +1192,12 @@ class FileUploadEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1258,10 +1274,12 @@ class FileModifyEditor extends Editor {
     if (!contains(this.container.rootPath, this.filePath)) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <p>must be inside the root directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
@@ -1272,10 +1290,12 @@ class FileModifyEditor extends Editor {
     if (found) {
       const err = error.makeWithInfo(
         'Invalid file path',
-        `<p>The file path</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
-          `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
+        html`
+          <p>The file path</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <p>must <em>not</em> be inside the directory</p>
+          <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
+        `.toString(),
       );
       return callback(err);
     }
