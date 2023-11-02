@@ -136,6 +136,7 @@ router.post(
         res.locals.authz_data.mode,
         res.locals.authz_result.time_limit_min,
         res.locals.req_date,
+        res.locals.client_fingerprint_id,
         (err, assessment_instance_id) => {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

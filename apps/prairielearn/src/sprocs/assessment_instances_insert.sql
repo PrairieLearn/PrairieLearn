@@ -7,6 +7,7 @@ CREATE FUNCTION
         IN mode enum_mode,
         IN time_limit_min integer DEFAULT NULL,
         IN date timestamptz DEFAULT NULL,
+        IN last_client_fingerprint_id bigint DEFAULT NULL,
         OUT assessment_instance_id bigint,
         OUT new_instance_question_ids bigint[]
     )
@@ -89,11 +90,11 @@ BEGIN
 
     INSERT INTO assessment_instances
             ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close,
-              date_limit, number, include_in_statistics)
+              date_limit, number, include_in_statistics, last_client_fingerprint_id)
     VALUES  (authn_user_id, assessment_id,
             CASE WHEN group_work THEN NULL      ELSE user_id END,
             CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close,
-              date_limit, number, include_in_statistics)
+              date_limit, number, include_in_statistics, last_client_fingerprint_id)
     ON CONFLICT (assessment_id, group_id, number) DO UPDATE
     SET assessment_id = excluded.assessment_id
     RETURNING id

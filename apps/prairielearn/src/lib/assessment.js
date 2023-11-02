@@ -99,9 +99,19 @@ module.exports = {
     mode,
     time_limit_min,
     date,
+    last_client_fingerprint_id,
     callback,
   ) {
-    var params = [assessment_id, user_id, group_work, authn_user_id, mode, time_limit_min, date];
+    var params = [
+      assessment_id,
+      user_id,
+      group_work,
+      authn_user_id,
+      mode,
+      time_limit_min,
+      date,
+      last_client_fingerprint_id,
+    ];
     sqldb.callOneRow('assessment_instances_insert', params, (err, result) => {
       if (ERR(err, callback)) return;
       const assessment_instance_id = result.rows[0].assessment_instance_id;
