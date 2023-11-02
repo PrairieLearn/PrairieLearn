@@ -391,3 +391,33 @@ export const AssessmentQuestionSchema = z.object({
   tries_per_variant: z.number().nullable(),
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
+
+export const GradingJobSchema = z.object({
+  auth_user_id: IdSchema.nullable(),
+  auto_points: z.number().nullable(),
+  correct: z.boolean().nullable(),
+  date: DateFromISOString.nullable(),
+  feedback: z.record(z.string(), z.any()).nullable(),
+  gradable: z.boolean().nullable(),
+  graded_at: DateFromISOString.nullable(),
+  graded_by: IdSchema.nullable(),
+  grading_finished_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
+  grading_received_at: DateFromISOString.nullable(),
+  grading_request_canceled_at: DateFromISOString.nullable(),
+  grading_request_canceled_by: IdSchema.nullable(),
+  grading_requested_at: DateFromISOString.nullable(),
+  grading_started_at: DateFromISOString.nullable(),
+  grading_submitted_at: DateFromISOString.nullable(),
+  id: IdSchema.nullable(),
+  manual_points: z.number().nullable(),
+  manual_rubric_grading_id: IdSchema.nullable(),
+  output: z.string().nullable(),
+  partial_scores: z.record(z.string(), z.any()).nullable(),
+  s3_bucket: z.string().nullable(),
+  s3_root_key: z.string().nullable(),
+  score: z.number().nullable(),
+  submission_id: IdSchema,
+  v2_score: z.number().nullable(),
+});
+export type GradingJob = z.infer<typeof GradingJobSchema>;
