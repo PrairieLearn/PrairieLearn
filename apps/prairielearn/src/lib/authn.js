@@ -47,6 +47,11 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
+    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    if (result === 'invalid_authn_provider') {
+      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`);
+      return;
+    }
   }
 
   const selectedUser = await sqldb.queryOptionalRow(

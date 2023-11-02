@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.0.9
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
 ## 1.0.8
 
 ### Patch Changes

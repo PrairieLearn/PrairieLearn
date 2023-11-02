@@ -50,7 +50,7 @@ function xmlReplaceResult(sourcedId, score, identifier) {
 /**
  * Check if LTI needs updating for this assessment.
  *
- * @param {number} ai_id - The assessment instance
+ * @param {string} ai_id - The assessment instance
  * @param {function} callback - A callback(err) function.
  */
 function updateScore(ai_id, callback) {

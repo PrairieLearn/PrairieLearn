@@ -1,5 +1,17 @@
 # @prairielearn/html
 
+## 3.1.0
+
+### Minor Changes
+
+- 3cd0f83fa: Add `joinHtml` function to join an array of HTML values with a given separator
+
+## 3.0.9
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
 ## 3.0.8
 
 ### Patch Changes

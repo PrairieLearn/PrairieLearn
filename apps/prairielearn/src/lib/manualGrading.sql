@@ -13,8 +13,7 @@ WITH
       iq.id = $prior_instance_question_id
   )
 SELECT
-  iq.*,
-  COALESCE(g.name, u.name) AS user_or_group_name
+  iq.id
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -47,7 +46,7 @@ ORDER BY
   iq.assigned_grader NULLS LAST,
   -- Choose question that list after the prior if one exists (follow the order in the instance list)
   (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
-  user_or_group_name,
+  COALESCE(g.name, u.name),
   iq.id
 LIMIT
   1;

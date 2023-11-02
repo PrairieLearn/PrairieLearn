@@ -75,6 +75,27 @@
         }
       }
     },
+    "dynamicDependencies": {
+      "description": "The element's client-side dynamic dependencies.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "description": "Arbitrary comment for reference purposes.",
+          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+        },
+        "nodeModulesScripts": {
+          "description": "The scripts required by this element from /node_modules as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "elementScripts": {
+          "description": "The scripts required by this element from the element's directory as an importmap.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
     "additionalNames": {
       "description": "Any additional names to give this element, i.e. for backwards compatibility.",
       "type": "array",
