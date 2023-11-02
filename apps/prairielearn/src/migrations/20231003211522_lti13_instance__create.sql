@@ -6,22 +6,22 @@ ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS
   lti13_instances (
+    access_token_expires_at timestamptz,
+    access_tokenset jsonb,
+    client_params jsonb,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    custom_fields jsonb DEFAULT '{}'::jsonb,
+    deleted_at timestamptz,
     id bigserial PRIMARY KEY,
     institution_id BIGINT NOT NULL REFERENCES institutions ON UPDATE CASCADE ON DELETE SET NULL,
-    created_at timestamptz NOT NULL DEFAULT current_timestamp,
-    deleted_at timestamptz,
-    platform text NOT NULL DEFAULT 'Unknown',
-    name text NOT NULL DEFAULT 'LMS',
-    tool_platform_name text,
-    keystore jsonb,
     issuer_params jsonb DEFAULT '{}'::jsonb,
-    client_params jsonb,
-    custom_fields jsonb DEFAULT '{}'::jsonb,
-    uid_attribute text,
-    uin_attribute text,
+    keystore jsonb,
+    name text NOT NULL DEFAULT 'LMS',
     name_attribute text,
-    access_tokenset jsonb,
-    access_token_expires_at timestamptz
+    platform text NOT NULL DEFAULT 'Unknown',
+    tool_platform_name text,
+    uid_attribute text,
+    uin_attribute text
   );
 
 CREATE INDEX IF NOT EXISTS lti13_instances_institution_id_idx ON lti13_instances (institution_id);
