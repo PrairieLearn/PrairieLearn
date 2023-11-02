@@ -112,8 +112,8 @@ module.exports = {
   /**
    * Add new questions to the assessment instance and regrade it if necessary.
    *
-   * @param {number} assessment_instance_id - The assessment instance to grade.
-   * @param {number} authn_user_id - The current authenticated user.
+   * @param {string} assessment_instance_id - The assessment instance to grade.
+   * @param {string} authn_user_id - The current authenticated user.
    * @param {function} callback - A callback(err, updated) function.
    */
   update(assessment_instance_id, authn_user_id, callback) {

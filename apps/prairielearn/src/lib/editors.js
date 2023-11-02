@@ -7,7 +7,6 @@ const { createServerJob } = require('./server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../sync/syncFromDisk');
 const courseUtil = require('../lib/courseUtil');
-const requireFrontend = require('../lib/require-frontend');
 const { config } = require('../lib/config');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -16,7 +15,6 @@ const fs = require('fs-extra');
 const async = require('async');
 const { v4: uuidv4 } = require('uuid');
 const sha256 = require('crypto-js/sha256');
-const util = require('util');
 const chunks = require('./chunks');
 const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
@@ -51,8 +49,6 @@ async function syncCourseFromDisk(course, startGitHash, job) {
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
-
-  await util.promisify(requireFrontend.undefQuestionServers)(course.path, job);
 }
 
 async function cleanAndResetRepository(course, env, job) {
