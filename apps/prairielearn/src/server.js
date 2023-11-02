@@ -968,7 +968,8 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion')
+        .default,
     ],
   );
   app.use(

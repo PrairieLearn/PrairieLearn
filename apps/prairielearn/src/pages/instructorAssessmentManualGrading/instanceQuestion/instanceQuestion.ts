@@ -2,8 +2,6 @@ import * as express from 'express';
 import asyncHandler = require('express-async-handler');
 import * as util from 'util';
 import * as qs from 'qs';
-import * as ejs from 'ejs';
-import * as path from 'path';
 import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,6 +11,8 @@ import * as manualGrading from '../../../lib/manualGrading';
 import { features } from '../../../lib/features/index';
 import { IdSchema, UserSchema } from '../../../lib/db-types';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
+import { GradingPanel } from './gradingPanel.html';
+import { RubricSettingsModal } from './rubricSettingsModal.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -60,7 +60,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     { course_instance_id: resLocals.course_instance.id },
     UserSchema.array().nullable(),
   );
-  return { rubric_settings_visible, conflict_grading_job, graders };
+  return { resLocals, rubric_settings_visible, conflict_grading_job, graders };
 }
 
 router.get(
@@ -70,8 +70,7 @@ router.get(
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
 
-    const locals = await prepareLocalsForRender(req.query, res.locals);
-    res.send(InstanceQuestion({ resLocals: res.locals, ...locals }));
+    res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
   }),
 );
 
@@ -98,16 +97,8 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-      // latter would require all includes in EJS to be translated to await recursively.
-      const gradingPanel = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'gradingPanel.ejs'),
-        { context: 'main', ...res.locals, ...locals },
-      );
-      const rubricSettings = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'rubricSettingsModal.ejs'),
-        { ...res.locals, ...locals },
-      );
+      const gradingPanel = GradingPanel({ ...locals, context: 'main' });
+      const rubricSettings = RubricSettingsModal(locals);
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
       res.send({ err: String(err) });
@@ -138,11 +129,13 @@ router.post(
           submission_note: z.string().nullish(),
         })
         .parse(req.body);
-      let manual_rubric_data: {
-        rubric_id: string;
-        applied_rubric_items: manualGrading.AppliedRubricItem[];
-        adjust_points: number | null;
-      } | null = null;
+      let manual_rubric_data:
+        | {
+            rubric_id: string;
+            applied_rubric_items: manualGrading.AppliedRubricItem[];
+            adjust_points: number | null;
+          }
+        | undefined = undefined;
       if (res.locals.assessment_question.manual_rubric_id) {
         const manual_rubric_items = body.rubric_item_selected_manual;
         manual_rubric_data = {
@@ -182,24 +175,48 @@ router.post(
         ),
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
-      // Parse using qs, which allows deep objects to be created based on parameter names
-      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {}).map(
-        (item: manualGrading.RubricItemInput) => ({
-          ...item,
-          always_show_to_students: item.always_show_to_students === 'true',
-        }),
-      );
+      const body = z
+        .object({
+          use_rubric: z
+            .literal('true')
+            .optional()
+            .transform((val) => val === 'true'),
+          replace_auto_points: z.enum(['true', 'false']).transform((val) => val === 'true'),
+          starting_points: z.coerce.number(),
+          min_points: z.coerce.number(),
+          max_extra_points: z.coerce.number(),
+          tag_for_manual_grading: z
+            .literal('true')
+            .optional()
+            .transform((val) => val === 'true'),
+          rubric_item: z.record(
+            z.string(),
+            z.object({
+              id: z.string().optional(),
+              order: z.coerce.number(),
+              points: z.coerce.number(),
+              description: z.string(),
+              explanation: z.string().optional(),
+              grader_note: z.string().optional(),
+              always_show_to_students: z.string().transform((val) => val === 'true'),
+            }),
+          ),
+        })
+        .parse(
+          // Parse using qs, which allows deep objects to be created based on parameter names
+          // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+          qs.parse(qs.stringify(req.body)),
+        );
       try {
         await manualGrading.updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
-          req.body.use_rubric === 'true',
-          req.body.replace_auto_points === 'true',
-          req.body.starting_points,
-          req.body.min_points,
-          req.body.max_extra_points,
-          rubric_items,
-          !!req.body.tag_for_manual_grading,
+          body.use_rubric,
+          body.replace_auto_points,
+          body.starting_points,
+          body.min_points,
+          body.max_extra_points,
+          Object.values(body.rubric_item || {}), // rubric items
+          body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
