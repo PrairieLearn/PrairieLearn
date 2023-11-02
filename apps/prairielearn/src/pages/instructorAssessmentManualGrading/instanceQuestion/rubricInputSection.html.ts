@@ -1,5 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { RubricData } from '../../../lib/manualGrading';
+import { RubricData, RubricGradingData } from '../../../lib/manualGrading';
 
 export function RubricInputSection({
   resLocals,
@@ -10,7 +10,7 @@ export function RubricInputSection({
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
-  const rubric_grading = resLocals.submission.rubric_grading;
+  const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
 
   return html`
     <style>
@@ -103,7 +103,7 @@ export function RubricInputSection({
                 name="score_manual_adjust_points"
                 data-max-points="${resLocals.assessment_question.max_manual_points ||
                 resLocals.assessment_question.max_points}"
-                value="${Math.round(rubric_grading?.adjust_points * 100) / 100 || ''}"
+                value="${Math.round((rubric_grading?.adjust_points ?? 0) * 100) / 100 || ''}"
                 ${disable ? 'disabled' : ''}
               />
             </div>
