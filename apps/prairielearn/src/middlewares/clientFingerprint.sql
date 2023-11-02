@@ -26,3 +26,12 @@ VALUES (
   $accept
 )
 RETURNING id
+
+--BLOCK update_assessment_instance_fingerprint
+UPDATE assessment_instances
+SET
+  last_client_fingerprint_id = $client_fingerprint_id,
+  client_fingerprint_id_change_count = $client_fingerprint_id_change_count
+WHERE
+  id = $assessment_instance_id
+
