@@ -129,21 +129,15 @@ router.post(
           submission_note: z.string().nullish(),
         })
         .parse(req.body);
-      let manual_rubric_data:
-        | {
-            rubric_id: string;
-            applied_rubric_items: manualGrading.AppliedRubricItem[];
-            adjust_points: number | null;
+      const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
+        ? {
+            rubric_id: res.locals.assessment_question.manual_rubric_id,
+            applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: body.score_manual_adjust_points || null,
           }
-        | undefined = undefined;
-      if (res.locals.assessment_question.manual_rubric_id) {
-        const manual_rubric_items = body.rubric_item_selected_manual;
-        manual_rubric_data = {
-          rubric_id: res.locals.assessment_question.manual_rubric_id,
-          applied_rubric_items: manual_rubric_items.map((id) => ({ rubric_item_id: id })),
-          adjust_points: body.score_manual_adjust_points || null,
-        };
-      }
+        : undefined;
 
       const { modified_at_conflict, grading_job_id } =
         await manualGrading.updateInstanceQuestionScore(
