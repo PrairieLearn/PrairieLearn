@@ -35,9 +35,7 @@ router.get('/:job_sequence_id', function (req, res, next) {
     } else {
       const job = job_sequence.jobs[0];
 
-      // The presence of a key determines if we attempted that particular
-      // operation; the value indicates if it succeeded.
-      if (job.data.syncAttempted && !job.data.syncSucceeded) {
+      if (job.data.saveSucceeded && !job.data.syncSucceeded) {
         res.locals.failedSync = true;
       }
     }

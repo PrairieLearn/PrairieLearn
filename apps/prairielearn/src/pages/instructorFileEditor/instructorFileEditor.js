@@ -147,24 +147,30 @@ router.get('/*', (req, res, next) => {
           } else {
             const job = fileEdit.jobSequence.jobs[0];
 
-            debug(
-              `Found a job sequence: ` +
-                `syncAttempted=${job.data.syncAttempted}, ` +
-                `syncSucceeded=${job.data.syncSucceeded}`,
-            );
+            debug('Found a job sequence');
+            debug(` saveAttempted=${job.data.saveAttempted}`);
+            debug(` saveSucceeded=${job.data.saveSucceeded}`);
+            debug(` syncAttempted=${job.data.syncAttempted}`);
+            debug(` syncSucceeded=${job.data.syncSucceeded}`);
 
-            // We check for the presence of a `syncAttempted` key to know if
-            // we attempted a sync (if it exists, its value will be true). If
-            // a sync was attempted, then the edit must have been saved (i.e,
-            // written to disk in the case of no git, or written to disk and
-            // then pushed in the case of git).
-            if (job.data.syncAttempted) {
+            // We check for the presence of a `saveSucceeded` key to know if
+            // the edit was saved (i.e., written to disk in the case of no git,
+            // or written to disk and then pushed in the case of git). If this
+            // key exists, its value will be true.
+            if (job.data.saveSucceeded) {
               fileEdit.didSave = true;
 
               // We check for the presence of a `syncSucceeded` key to know
-              // if the sync was successful (if it exists, its value will be
-              // true). Note that the cause of sync failure could be a file
+              // if the sync was successful. If this key exists, its value will
+              // be true. Note that the cause of sync failure could be a file
               // other than the one being edited.
+              //
+              // By "the sync" we mean "the sync after a successfully saved
+              // edit." Remember that, if using git, we pull before we push.
+              // So, if we error on save, then we still try to sync whatever
+              // was pulled from the remote repository, even though changes
+              // made by the edit will have been discarded. We ignore this
+              // in the UI for now.
               if (job.data.syncSucceeded) {
                 fileEdit.didSync = true;
               }
