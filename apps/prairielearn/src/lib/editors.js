@@ -152,7 +152,7 @@ class Editor {
               // - Sync changes from disk
               //
               // If anything goes wrong in the pull, we error and exit.
-              // 
+              //
               // If anything goes wrong in the write or push, we make sure to clean/reset
               // (removing changes made by this edit) and sync (because changes were made
               // by the pull) before we error and exit.
@@ -987,9 +987,13 @@ class FileDeleteEditor extends Editor {
         'Invalid file path',
         html`
           <p>The path of the file to delete</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
           <p>must be inside the root directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
         `.toString(),
       );
       return callback(err);
@@ -1003,7 +1007,9 @@ class FileDeleteEditor extends Editor {
         'Invalid file path',
         html`
           <p>The path of the file to delete</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre>
+          </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `.toString(),
@@ -1050,9 +1056,13 @@ class FileRenameEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file's old path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
           <p>must be inside the root directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
         `.toString(),
       );
       return callback(err);
@@ -1063,9 +1073,13 @@ class FileRenameEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file's new path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
           <p>must be inside the root directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
         `.toString(),
       );
       return callback(err);
@@ -1081,7 +1095,9 @@ class FileRenameEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file's old path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre>
+          </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `.toString(),
@@ -1097,7 +1113,9 @@ class FileRenameEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file's new path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.newPath}</pre>
+          </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `.toString(),
@@ -1178,9 +1196,13 @@ class FileUploadEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
           <p>must be inside the root directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
         `.toString(),
       );
       return callback(err);
@@ -1194,7 +1216,9 @@ class FileUploadEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `.toString(),
@@ -1276,9 +1300,13 @@ class FileModifyEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
           <p>must be inside the root directory</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre>
+          </div>
         `.toString(),
       );
       return callback(err);
@@ -1292,7 +1320,9 @@ class FileModifyEditor extends Editor {
         'Invalid file path',
         html`
           <p>The file path</p>
-          <div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${this.filePath}</pre>
+          </div>
           <p>must <em>not</em> be inside the directory</p>
           <div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>
         `.toString(),
