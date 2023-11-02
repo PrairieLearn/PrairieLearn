@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types';
+import { type LTI13Platform } from './institutionAdminLti13';
 
 import { EncodedData } from '@prairielearn/browser-utils';
 import { compiledScriptTag } from '../../../lib/assets';
@@ -16,7 +17,7 @@ export function InstitutionAdminLti13({
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
   resLocals: Record<string, any>;
-  platform_defaults: Record<string, any>;
+  platform_defaults: LTI13Platform;
 }): string {
   return html`
     <!doctype html>
@@ -82,7 +83,7 @@ export function InstitutionAdminLti13({
 function LTI13Instance(
   instance: Lti13Instance | null,
   resLocals: Record<string, any>,
-  platform_defaults: Record<string, any>,
+  platform_defaults: LTI13Platform,
 ) {
   if (instance) {
     return html`

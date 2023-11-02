@@ -1,7 +1,8 @@
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { type LTI13Platform } from '../../src/ee/pages/institutionAdminLti13/institutionAdminLti13';
 
 onDocumentReady(() => {
-  const platformDefaults = decodeData('platform_defaults_data');
+  const platformDefaults = decodeData<LTI13Platform>('platform_defaults_data');
 
   const platformSelector = document.querySelector<HTMLSelectElement>('#choosePlatform');
   const updateParams = document.querySelector<HTMLInputElement>('#update_params');

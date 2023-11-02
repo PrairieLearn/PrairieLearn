@@ -17,6 +17,15 @@ import { config } from '../../../lib/config';
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
+type LTI13Platform = {
+  platform: string;
+  display_order: number;
+  issuer_params?: object;
+  custom_fields?: object;
+}[];
+
+export type { LTI13Platform };
+
 // Middleware to check for feature and access
 router.use(
   asyncHandler(async (req, res, next) => {
@@ -39,14 +48,7 @@ router.get(
       Lti13InstanceSchema,
     );
 
-    type LTI13_platform = {
-      platform: string;
-      display_order: number;
-      issuer_params?: object;
-      custom_fields?: object;
-    }[];
-
-    const platform_defaults_hardcoded: LTI13_platform = [
+    const platform_defaults_hardcoded: LTI13Platform = [
       {
         platform: 'Unknown',
         display_order: 0,
