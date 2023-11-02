@@ -97,8 +97,8 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({ ...locals, context: 'main' });
-      const rubricSettings = RubricSettingsModal(locals);
+      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
       res.send({ err: String(err) });

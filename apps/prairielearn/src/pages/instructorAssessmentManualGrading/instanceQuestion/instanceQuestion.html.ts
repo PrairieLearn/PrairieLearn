@@ -1,10 +1,11 @@
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { z } from 'zod';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { GradingJobSchema, User } from '../../../lib/db-types';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets';
 import { GradingPanel } from './gradingPanel.html';
+import { RubricSettingsModal } from './rubricSettingsModal.html';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -31,7 +32,8 @@ export function InstanceQuestion({
         ${renderEjs(__filename, "<%- include('../../partials/head') %>", {
           ...resLocals,
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
-          instance_question_info: undefined, // instance_question_info is reset to keep the default title from showing the student question number
+          // instance_question_info is reset to keep the default title from showing the student question number
+          instance_question_info: undefined,
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
@@ -48,7 +50,7 @@ export function InstanceQuestion({
                 )}"></script>
             `
           : ''}
-        ${resLocals.extraHeadersHtml}
+        ${unsafeHtml(resLocals.extraHeadersHtml)}
         ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       </head>
       <body>
@@ -60,7 +62,7 @@ export function InstanceQuestion({
             resLocals,
           )}
         </div>
-        ${renderEjs(__filename, "<%- include('rubricSettingsModal'); %>", resLocals)}
+        ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
           ${resLocals.assessment_instance.open
             ? html`
@@ -109,7 +111,7 @@ export function InstanceQuestion({
         </main>
       </body>
     </html>
-  `;
+  `.toString();
 }
 
 function ConflictGradingJobModal({

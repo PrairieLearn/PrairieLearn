@@ -103,9 +103,7 @@ export function GradingPointsSection({
             ? html`
                 <span class="js-manual-grading-points">
                   <span class="js-${type}-score-value-info">
-                    <span class="js-value-<%= type %>-points"
-                      >${Math.round(points * 100) / 100}</span
-                    >
+                    <span class="js-value-${type}-points">${Math.round(points * 100) / 100}</span>
                     / ${max_points}
                   </span>
                 </span>

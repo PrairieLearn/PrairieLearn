@@ -58,91 +58,90 @@ export function GradingPanel({
         ${resLocals.assessment_question.max_points
           ? // Percentage-based grading is only suitable if the question has points
             html`
-    <li class="list-group-item">
-      <div class="form-group row justify-content-center">
-        <label class="custom-control-inline col-auto mx-0">
-          <span class="">Points</span>
-          <div class="custom-control custom-switch mx-2">
-            <input class="custom-control-input js-manual-grading-pts-perc-select"
-                   name="use_score_perc" type="checkbox">
-            <span class="custom-control-label">Percentage</span>
-          </div>
-        </label>
-      </div>
-    </li>
- : '' }
-    ${
-      !resLocals.assessment_question.max_auto_points && !auto_points
-        ? html`
-            <li class="list-group-item">
-              ${ManualPointsSection({
-                context,
-                disable,
-                manual_points,
-                rubric_settings_visible,
-                resLocals,
-              })}
-              ${RubricInputSection({ resLocals, disable })}
-            </li>
-          `
-        : html`
-            <li class="list-group-item">
-              ${ManualPointsSection({
-                context,
-                disable,
-                manual_points,
-                rubric_settings_visible,
-                resLocals,
-              })}
-              ${!resLocals.rubric_data?.replace_auto_points
-                ? RubricInputSection({ resLocals, disable })
-                : ''}
-            </li>
-            <li class="list-group-item">
-              ${AutoPointsSection({ context, disable, auto_points, resLocals })}
-            </li>
-            <li class="list-group-item">
-              ${context === 'main' &&
-              rubric_settings_visible &&
-              resLocals.rubric_data?.replace_auto_points &&
-              !disable
-                ? html`
-                    <span class="float-right btn-group btn-group-sm ml-1" role="group">
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary js-show-rubric-settings-button"
-                      >
-                        <i class="fas fa-list-check"></i> Rubric
-                      </button>
-                    </span>
-                  `
-                : ''}
-              <div class="form-group js-manual-grading-points w-100">
-                Total Points:
-                <span class="float-right">
-                  <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
-                  / ${resLocals.assessment_question.max_points}
-                </span>
-              </div>
-              ${resLocals.assessment_question.max_points
-                ? html`
-                    <div class="form-group js-manual-grading-percentage w-100">
-                      Total Score:
-                      <span class="float-right">
-                        <span class="js-value-total-percentage"></span>%
-                      </span>
+              <li class="list-group-item">
+                <div class="form-group row justify-content-center">
+                  <label class="custom-control-inline col-auto mx-0">
+                    <span class="">Points</span>
+                    <div class="custom-control custom-switch mx-2">
+                      <input
+                        class="custom-control-input js-manual-grading-pts-perc-select"
+                        name="use_score_perc"
+                        type="checkbox"
+                      />
+                      <span class="custom-control-label">Percentage</span>
                     </div>
-                  `
-                : ''}
-            </li>
-          `
-    }
-      ${
-        resLocals.rubric_data?.replace_auto_points ? RubricInputSection({ resLocals, disable }) : ''
-      }
-    </li>
-    `
+                  </label>
+                </div>
+              </li>
+            `
           : ''}
+        ${!resLocals.assessment_question.max_auto_points && !auto_points
+          ? html`
+              <li class="list-group-item">
+                ${ManualPointsSection({
+                  context,
+                  disable,
+                  manual_points,
+                  rubric_settings_visible,
+                  resLocals,
+                })}
+                ${RubricInputSection({ resLocals, disable })}
+              </li>
+            `
+          : html`
+              <li class="list-group-item">
+                ${ManualPointsSection({
+                  context,
+                  disable,
+                  manual_points,
+                  rubric_settings_visible,
+                  resLocals,
+                })}
+                ${!resLocals.rubric_data?.replace_auto_points
+                  ? RubricInputSection({ resLocals, disable })
+                  : ''}
+              </li>
+              <li class="list-group-item">
+                ${AutoPointsSection({ context, disable, auto_points, resLocals })}
+              </li>
+              <li class="list-group-item">
+                ${context === 'main' &&
+                rubric_settings_visible &&
+                resLocals.rubric_data?.replace_auto_points &&
+                !disable
+                  ? html`
+                      <span class="float-right btn-group btn-group-sm ml-1" role="group">
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary js-show-rubric-settings-button"
+                        >
+                          <i class="fas fa-list-check"></i> Rubric
+                        </button>
+                      </span>
+                    `
+                  : ''}
+                <div class="form-group js-manual-grading-points w-100">
+                  Total Points:
+                  <span class="float-right">
+                    <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
+                    / ${resLocals.assessment_question.max_points}
+                  </span>
+                </div>
+                ${resLocals.assessment_question.max_points
+                  ? html`
+                      <div class="form-group js-manual-grading-percentage w-100">
+                        Total Score:
+                        <span class="float-right">
+                          <span class="js-value-total-percentage"></span>%
+                        </span>
+                      </div>
+                    `
+                  : ''}
+                ${resLocals.rubric_data?.replace_auto_points
+                  ? RubricInputSection({ resLocals, disable })
+                  : ''}
+              </li>
+            `}
         <li class="form-group list-group-item">
           <label
             >Feedback:

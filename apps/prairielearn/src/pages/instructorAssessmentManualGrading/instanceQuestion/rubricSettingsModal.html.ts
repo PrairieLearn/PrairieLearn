@@ -43,8 +43,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                                 ? ''
                                 : 'checked'}
                             />
-                            Apply rubric to manual points (out of <%=
-                            assessment_question.max_manual_points %>, keep auto points)
+                            Apply rubric to manual points (out of
+                            ${resLocals.assessment_question.max_manual_points}, keep auto points)
                           </label>
                           <button
                             type="button"
@@ -112,7 +112,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         class="form-check-input js-rubric-item-limits js-negative-grading"
                         name="starting_points"
                         type="radio"
-                        value="<%= assessment_question.max_manual_points %>"
+                        value="${resLocals.assessment_question.max_manual_points}"
                         required
                         ${rubric_data?.starting_points ? 'checked' : ''}
                       />
