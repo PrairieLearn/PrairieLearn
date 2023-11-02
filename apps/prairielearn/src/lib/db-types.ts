@@ -412,7 +412,7 @@ export const RubricItemSchema = z.object({
   grader_note: z.string().nullable(),
   id: IdSchema,
   key_binding: z.string().nullable(),
-  number: IdSchema,
+  number: z.number(),
   points: z.number(),
   rubric_id: IdSchema,
 });
