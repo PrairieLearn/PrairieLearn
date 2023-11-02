@@ -126,42 +126,60 @@ class Editor {
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
               const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
 
-              if (config.fileEditorUseGit) {
-                job.info('Update to latest remote origin address');
-                await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-
-                job.info('Fetch from remote git repository');
-                await job.exec('git', ['fetch'], {
-                  cwd: this.course.path,
-                  env: gitEnv,
-                });
-
-                await cleanAndResetRepository(this.course, gitEnv, job);
-              }
-
-              try {
-                job.info('Write changes to disk');
-                await this.write();
-              } catch (err) {
-                if (config.fileEditorUseGit) {
-                  await cleanAndResetRepository(this.course, gitEnv, job);
-                  await syncCourseFromDisk(this.course, startGitHash, job);
-                }
-
-                throw err;
-              }
-
               if (!config.fileEditorUseGit) {
+                // If we are not using git (e.g., if we are running locally), then we:
+                //
+                // - Write changes to disk
+                // - Sync changes from disk
+                //
+                // Either the job ends with a thrown error or with the return statement.
+
+                job.info('Write changes to disk');
+                job.data.saveAttempted = true;
+                await this.write();
+                job.data.saveSucceeded = true;
+
+                job.info('Sync changes from disk');
                 job.data.syncAttempted = true;
                 await syncCourseFromDisk(this.course, startGitHash, job);
                 job.data.syncSucceeded = true;
+
                 return;
               }
 
+              // If we are using git (e.g., if we are running in production), then we:
+              //
+              // - Pull from remote (then clean and reset)
+              // - Write changes to disk
+              // - Push to remote (then clean and reset)
+              // - Sync changes from disk
+              //
+              // If anything goes wrong in the pull, we error and exit.
+              // 
+              // If anything goes wrong in the write or push, we make sure to clean/reset
+              // (removing changes made by this edit) and sync (because changes were made
+              // by the pull) before we error and exit.
+
+              job.info('Update to latest remote origin address');
+              await job.exec('git', ['remote', 'set-url', 'origin', this.course.repository], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+
+              job.info('Fetch from remote git repository');
+              await job.exec('git', ['fetch'], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+
+              await cleanAndResetRepository(this.course, gitEnv, job);
+
               try {
+                job.data.saveAttempted = true;
+                job.info('Write changes to disk');
+                await this.write();
+
+                job.info('Commit changes');
                 await job.exec('git', ['add', ...this.pathsToAdd], {
                   cwd: this.course.path,
                   env: gitEnv,
@@ -182,41 +200,35 @@ class Editor {
                     env: gitEnv,
                   },
                 );
-              } catch (err) {
-                await cleanAndResetRepository(this.course, gitEnv, job);
-                await syncCourseFromDisk(this.course, startGitHash, job);
-                throw err;
-              }
 
-              try {
-                job.data.pushAttempted = true;
-
+                job.info('Push changes to remote git repository');
                 await job.exec('git', ['push'], {
                   cwd: this.course.path,
                   env: gitEnv,
                 });
-
-                // We'll look for this flag on the `editError` page to know if
-                // we need to display instructions to recover from a failed push.
-                job.data.pushSucceeded = true;
+                job.data.saveSucceeded = true;
               } finally {
-                // Regardless of whether we error, we'll do a clean and reset:
+                // Whether or not we error, we'll do a clean and reset.
                 //
                 // If pushing succeeded, the clean will remove any empty directories
                 // that might have been left behind by operations like renames.
                 //
-                // If pushing errored, the reset will get us back to a known good state.
+                // If pushing (or anything before pushing) failed, the reset will get
+                // us back to a known good state.
                 await cleanAndResetRepository(this.course, gitEnv, job);
+
+                // Similarly, whether or not we error, we'll a course sync.
+                //
+                // If pushing succeeded, then we will be syncing the changes made
+                // by this edit.
+                //
+                // If pushing (or anything before pushing) failed, then we will be
+                // syncing the changes we pulled from the remote git repository.
+                job.info('Sync changes from disk');
+                job.data.syncAttempted = true;
+                await syncCourseFromDisk(this.course, startGitHash, job);
+                job.data.syncSucceeded = true;
               }
-
-              job.data.syncAttempted = true;
-
-              await syncCourseFromDisk(this.course, startGitHash, job);
-
-              // As with `job.data.pushSucceeded` above, we'll check this flag
-              // on the `editError` page to know if syncing failed so we can
-              // display appropriate instructions.
-              job.data.syncSucceeded = true;
             });
           });
         },
