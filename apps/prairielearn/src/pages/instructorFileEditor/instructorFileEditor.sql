@@ -3,8 +3,6 @@ SELECT
   fe.id,
   fe.orig_hash,
   fe.file_id,
-  fe.did_save,
-  fe.did_sync,
   floor(
     DATE_PART('epoch', CURRENT_TIMESTAMP - fe.created_at) / 3600
   ) AS age,
