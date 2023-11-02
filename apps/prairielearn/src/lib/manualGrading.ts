@@ -34,11 +34,12 @@ const RubricDataSchema = RubricSchema.extend({
     }),
   ),
 });
-type RubricData = z.infer<typeof RubricDataSchema>;
+export type RubricData = z.infer<typeof RubricDataSchema>;
 
 const RubricGradingDataSchema = RubricGradingSchema.extend({
   rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
 });
+export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
 
 const PartialScoresSchema = z
   .record(
@@ -74,9 +75,9 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   instance_question_id: IdSchema,
   submission_id: IdSchema,
   rubric_settings_changed: z.boolean(),
-  rubric_grading_id: IdSchema,
+  rubric_grading_id: IdSchema.nullable(),
   applied_rubric_items: RubricGradingItemSchema.array().nullable(),
-  rubric_items_changed: z.boolean(),
+  rubric_items_changed: z.boolean().nullable(),
 });
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
