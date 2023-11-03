@@ -84,7 +84,7 @@ const COOKIES_TO_MIGRATE = [
   },
 ];
 
-export function migrateCookiesIfNeeded(req: Request, res: Response, next: NextFunction) {
+export function migrateCookiesIfNeededMiddleware(req: Request, res: Response, next: NextFunction) {
   let didMigrate = false;
   COOKIES_TO_MIGRATE.forEach((cookieMigration) => {
     if (cookieMigration.oldNames) {
