@@ -76,11 +76,20 @@ router.get(
 
       const stringifier = stringifyStream({
         header: true,
-        columns: ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'],
+        columns: [
+          'Time',
+          'Auth user',
+          'Fingerprint ID',
+          'Event',
+          'Instructor question',
+          'Student question',
+          'Data',
+        ],
         transform(record) {
           return [
             record.date_iso8601,
             record.auth_user_uid,
+            record.client_fingerprint_id,
             record.event_name,
             record.instructor_question_number == null
               ? null

@@ -698,14 +698,16 @@ SELECT
   el.variant_number,
   el.submission_id,
   el.data,
-  el.log_id,
   el.client_fingerprint_id,
+  cf.ip_address,
+  cf.session_id,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
   qd.instructor_question_number
 FROM
   event_log AS el
+  LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)
   LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id),
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)

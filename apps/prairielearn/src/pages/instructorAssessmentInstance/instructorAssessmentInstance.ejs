@@ -48,7 +48,26 @@
                   <div tabindex="0" class="btn btn-xs" role="button"
                       data-toggle="popover" data-trigger="focus" data-container="body"
                       data-html="true" title="Client Fingerprint ID Changes"
-                      data-content="This is where the log of client fingerprints will go. "
+                      data-content="<table class=&quot;table&quot;>
+                        <tr>
+                          <th>Event</th>
+                          <th>Time</th>
+                          <th>Fingerprint ID</th>
+                          <th>IP address</th>
+                          <th>Session ID</th>
+                        </tr>
+                          <% log.forEach(function(row) { %>
+                            <% if (row.client_fingerprint_id) { %>
+                              <tr>
+                                <td><%= row.event_name %></td>
+                                <td><%= row.formatted_date %></td>
+                                <td><%= row.client_fingerprint_id %></td>
+                                <td><%= row.ip_address %></td>
+                                <td><%= row.session_id %></td>
+                              </tr>
+                            <%  } %>
+                          <%  }) %>
+                      </table>"
                   ><i class="fa fa-question-circle"></i></div>
                 <% } %>
               </td>
