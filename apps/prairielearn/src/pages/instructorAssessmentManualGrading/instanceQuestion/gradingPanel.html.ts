@@ -1,6 +1,10 @@
 import { html } from '@prairielearn/html';
 import { RubricInputSection } from './rubricInputSection.html';
-import { AutoPointsSection, ManualPointsSection } from './gradingPointsSection.html';
+import {
+  AutoPointsSection,
+  ManualPointsSection,
+  TotalPointsSection,
+} from './gradingPointsSection.html';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;
@@ -105,46 +109,21 @@ export function GradingPanel({
                 ${AutoPointsSection({ context, disable, auto_points, resLocals })}
               </li>
               <li class="list-group-item">
-                ${context === 'main' &&
-                rubric_settings_visible &&
-                resLocals.rubric_data?.replace_auto_points &&
-                !disable
-                  ? html`
-                      <span class="float-right btn-group btn-group-sm ml-1" role="group">
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary js-show-rubric-settings-button"
-                        >
-                          <i class="fas fa-list-check"></i> Rubric
-                        </button>
-                      </span>
-                    `
-                  : ''}
-                <div class="form-group js-manual-grading-points w-100">
-                  Total Points:
-                  <span class="float-right">
-                    <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
-                    / ${resLocals.assessment_question.max_points}
-                  </span>
-                </div>
-                ${resLocals.assessment_question.max_points
-                  ? html`
-                      <div class="form-group js-manual-grading-percentage w-100">
-                        Total Score:
-                        <span class="float-right">
-                          <span class="js-value-total-percentage"></span>%
-                        </span>
-                      </div>
-                    `
-                  : ''}
+                ${TotalPointsSection({
+                  context,
+                  disable,
+                  points,
+                  rubric_settings_visible,
+                  resLocals,
+                })}
                 ${resLocals.rubric_data?.replace_auto_points
                   ? RubricInputSection({ resLocals, disable })
                   : ''}
               </li>
             `}
         <li class="form-group list-group-item">
-          <label
-            >Feedback:
+          <label>
+            Feedback:
             <textarea
               name="submission_note"
               class="form-control js-submission-feedback"

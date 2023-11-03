@@ -56,6 +56,50 @@ export function AutoPointsSection({
   });
 }
 
+export function TotalPointsSection({
+  context,
+  disable,
+  points,
+  rubric_settings_visible,
+  resLocals,
+}: {
+  context: 'main' | 'existing' | 'conflicting';
+  disable: boolean;
+  points: number;
+  rubric_settings_visible?: boolean;
+  resLocals: Record<string, any>;
+}) {
+  return html`
+    ${context === 'main' &&
+    rubric_settings_visible &&
+    resLocals.rubric_data?.replace_auto_points &&
+    !disable
+      ? html`
+          <span class="float-right btn-group btn-group-sm ml-1" role="group">
+            <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
+              <i class="fas fa-list-check"></i> Rubric
+            </button>
+          </span>
+        `
+      : ''}
+    <div class="form-group js-manual-grading-points w-100">
+      Total Points:
+      <span class="float-right">
+        <span class="js-value-total-points">${Math.round(100 * points) / 100}</span>
+        / ${resLocals.assessment_question.max_points}
+      </span>
+    </div>
+    ${resLocals.assessment_question.max_points
+      ? html`
+          <div class="form-group js-manual-grading-percentage w-100">
+            Total Score:
+            <span class="float-right"> <span class="js-value-total-percentage"></span>% </span>
+          </div>
+        `
+      : ''}
+  `;
+}
+
 export function GradingPointsSection({
   type,
   type_label,
