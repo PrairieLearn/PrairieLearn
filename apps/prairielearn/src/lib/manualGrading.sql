@@ -288,14 +288,15 @@ WITH
   )
 SELECT
   rgr.*,
-  gir.*
+  gir.applied_rubric_items,
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
   LEFT JOIN grading_items_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
 WHERE
-  rgr.rubric_settings_changed IS NOT FALSE
-  OR gir.rubric_items_changed IS NOT FALSE
+  rgr.rubric_settings_changed IS TRUE
+  OR gir.rubric_items_changed IS TRUE
 FOR NO KEY UPDATE OF
   iq;
 

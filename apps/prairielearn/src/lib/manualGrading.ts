@@ -75,9 +75,8 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   instance_question_id: IdSchema,
   submission_id: IdSchema,
   rubric_settings_changed: z.boolean(),
-  rubric_grading_id: IdSchema.nullable(),
   applied_rubric_items: RubricGradingItemSchema.array().nullable(),
-  rubric_items_changed: z.boolean().nullable(),
+  rubric_items_changed: z.boolean(),
 });
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
