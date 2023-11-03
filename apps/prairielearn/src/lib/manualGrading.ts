@@ -118,19 +118,16 @@ export async function nextUngradedInstanceQuestionUrl(
  */
 export async function populateRubricData(locals: Record<string, any>): Promise<void> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
-  if (!locals.assessment_question) return;
+  if (!locals.assessment_question?.manual_rubric_id) return;
 
-  let rubric_data: RubricData | null = null;
-  if (locals.assessment_question.manual_rubric_id) {
-    rubric_data = await sqldb.queryOptionalRow(
-      sql.select_rubric_data,
-      {
-        assessment_question_id: locals.assessment_question.id,
-        rubric_id: locals.assessment_question.manual_rubric_id,
-      },
-      RubricDataSchema,
-    );
-  }
+  const rubric_data = await sqldb.queryOptionalRow(
+    sql.select_rubric_data,
+    {
+      assessment_question_id: locals.assessment_question.id,
+      rubric_id: locals.assessment_question.manual_rubric_id,
+    },
+    RubricDataSchema,
+  );
 
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
