@@ -20,8 +20,10 @@ import {
 const sql = sqldb.loadSqlEquiv(__filename);
 
 interface AppliedRubricItem {
-  rubric_item_id: string; // ID of the rubric item to be applied.
-  score?: number | null; // Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item.
+  /** ID of the rubric item to be applied. */
+  rubric_item_id: string;
+  /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
+  score?: number | null;
 }
 
 const RubricDataSchema = RubricSchema.extend({
@@ -401,16 +403,24 @@ async function insertRubricGrading(
 }
 
 interface InstanceQuestionScoreInput {
-  manual_points?: number | null; // The manual points to assign to the instance question.
-  manual_score_perc?: number | null; // The percentage of manual points to assign to the instance question.
-  auto_points?: number | null; // The auto points to assign to the instance question.
-  auto_score_perc?: number | null; // The percentage of auto points to assign to the instance question.
-  points?: number | null; // The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points.
-  score_perc?: number | null; // The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points.
-  feedback?: Record<string, any> | null; // Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments.
-  partial_scores?: PartialScores | null; // Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value.
+  /** The manual points to assign to the instance question. */
+  manual_points?: number | null;
+  /** The percentage of manual points to assign to the instance question. */
+  manual_score_perc?: number | null;
+  /** The auto points to assign to the instance question. */
+  auto_points?: number | null;
+  /** The percentage of auto points to assign to the instance question. */
+  auto_score_perc?: number | null;
+  /** The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points. */
+  points?: number | null;
+  /** The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points. */
+  score_perc?: number | null;
+  /** Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments. */
+  feedback?: Record<string, any> | null;
+  /** Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value. */
+  partial_scores?: PartialScores | null;
+  /** Rubric items associated to the grading of manual points. If provided, overrides manual points. */
   manual_rubric_data?: {
-    // Rubric items associated to the grading of manual points. If provided, overrides manual points.
     rubric_id: string;
     applied_rubric_items?: AppliedRubricItem[] | null;
     adjust_points?: number | null;
