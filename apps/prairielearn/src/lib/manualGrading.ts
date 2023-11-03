@@ -120,8 +120,9 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!locals.assessment_question) return;
 
+  let rubric_data: RubricData | null = null;
   if (locals.assessment_question.manual_rubric_id) {
-    locals.rubric_data = await sqldb.queryOptionalRow(
+    rubric_data = await sqldb.queryOptionalRow(
       sql.select_rubric_data,
       {
         assessment_question_id: locals.assessment_question.id,
@@ -138,21 +139,19 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
     submitted_answers: locals.submission?.submitted_answer,
   };
 
-  await async.eachLimit(
-    (locals.rubric_data as RubricData | null)?.rubric_items || [],
-    3,
-    async (item) => {
-      item.description_rendered = (
-        await markdown.processContentInline(mustache.render(item.description || '', mustache_data))
-      ).toString();
-      item.explanation_rendered = (
-        await markdown.processContent(mustache.render(item.explanation || '', mustache_data))
-      ).toString();
-      item.grader_note_rendered = (
-        await markdown.processContent(mustache.render(item.grader_note || '', mustache_data))
-      ).toString();
-    },
-  );
+  await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
+    item.description_rendered = (
+      await markdown.processContentInline(mustache.render(item.description || '', mustache_data))
+    ).toString();
+    item.explanation_rendered = (
+      await markdown.processContent(mustache.render(item.explanation || '', mustache_data))
+    ).toString();
+    item.grader_note_rendered = (
+      await markdown.processContent(mustache.render(item.grader_note || '', mustache_data))
+    ).toString();
+  });
+
+  locals.rubric_data = rubric_data;
 }
 
 /** Builds the locals object for rubric grading data. Can be called with any object that contains a
