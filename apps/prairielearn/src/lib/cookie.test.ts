@@ -5,13 +5,13 @@ import { parse as parseSetCookie, splitCookiesString } from 'set-cookie-parser';
 import cookieParser = require('cookie-parser');
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { migrateCookiesIfNeededMiddleware } from './cookie';
+import { makeCookieMigrationMiddleware } from './cookie';
 
 describe('migrateCookiesIfNeededMiddleware', () => {
   it('migrates cookies', async () => {
     const app = express();
     app.use(cookieParser());
-    app.use(migrateCookiesIfNeededMiddleware);
+    app.use(makeCookieMigrationMiddleware(true));
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
@@ -38,7 +38,7 @@ describe('migrateCookiesIfNeededMiddleware', () => {
   it('does nothing if cookies are already migrated', async () => {
     const app = express();
     app.use(cookieParser());
-    app.use(migrateCookiesIfNeededMiddleware);
+    app.use(makeCookieMigrationMiddleware(true));
     app.get('/', (_req, res) => res.sendStatus(200));
 
     await withServer(app, async ({ url }) => {
@@ -52,6 +52,30 @@ describe('migrateCookiesIfNeededMiddleware', () => {
 
       const header = res.headers.get('set-cookie');
       assert.isNull(header);
+    });
+  });
+
+  it('rewrites cookies for the current request', async () => {
+    const app = express();
+    app.use(cookieParser());
+    app.use(makeCookieMigrationMiddleware(false));
+    app.get('/', (req, res) => res.status(200).json({ cookies: req.cookies }));
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetch(url, {
+        headers: {
+          cookie: 'pl_authn=foo; pl_authz_workspace_1234=bar',
+        },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 200);
+
+      const header = res.headers.get('set-cookie');
+      assert.isNull(header);
+
+      const body = await res.json();
+      assert.equal(body.cookies.pl_authn, 'foo');
+      assert.equal(body.cookies.pl_authz_workspace_1234, 'bar');
     });
   });
 });

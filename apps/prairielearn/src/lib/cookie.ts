@@ -2,15 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 
 import { config } from './config';
 
-function findLast<T>(arr: T[], predicate: (item: T) => boolean): T | undefined {
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (predicate(arr[i])) {
-      return arr[i];
-    }
-  }
-  return undefined;
-}
-
 export function shouldSecureCookie(req: Request): boolean {
   // In production, always set secure: true. Otherwise, only set it to true if
   // the request is made over HTTPS.
@@ -20,9 +11,12 @@ export function shouldSecureCookie(req: Request): boolean {
   return !config.devMode || req.protocol === 'https';
 }
 
+// Note that the session cookie isn't represented here; it's handled independently
+// by the `@prairielearn/session` package, which has built-in support for migrating
+// from one cookie name to another.
 const COOKIES_TO_MIGRATE = [
   {
-    oldNames: ['pl_authn'],
+    oldName: 'pl_authn',
     newName: 'pl2_authn',
     options: {
       maxAge: config.authnCookieMaxAgeMilliseconds,
@@ -30,7 +24,7 @@ const COOKIES_TO_MIGRATE = [
     },
   },
   {
-    oldNames: ['pl_assessmentpw'],
+    oldName: 'pl_assessmentpw',
     newName: 'pl2_assessmentpw',
     options: {
       // 12 hours, matches the value in `pages/authPassword`.
@@ -39,43 +33,45 @@ const COOKIES_TO_MIGRATE = [
     },
   },
   {
-    oldNames: ['preAuthUrl'],
+    oldName: 'preAuthUrl',
     newName: 'pl2_pre_auth_url',
   },
   {
-    oldNames: ['pl_pw_origUrl'],
+    oldName: 'pl_pw_origUrl',
     newName: 'pl2_pw_original_url',
   },
   {
-    oldNames: ['pl_disable_auto_authn'],
+    oldName: 'pl_disable_auto_authn',
     newName: 'pl2_disable_auto_authn',
   },
   {
-    oldNames: ['pl_requested_data_changed'],
+    oldName: 'pl_requested_data_changed',
     newName: 'pl2_requested_data_changed',
   },
   {
-    oldNames: ['pl_requested_uid'],
+    oldName: 'pl_requested_uid',
     newName: 'pl2_requested_uid',
   },
   {
-    oldNames: ['pl_requested_course_role'],
+    oldName: 'pl_requested_course_role',
     newName: 'pl2_requested_course_role',
   },
   {
-    oldNames: ['pl_requested_course_instance_role'],
+    oldName: 'pl_requested_course_instance_role',
     newName: 'pl2_requested_course_instance_role',
   },
   {
-    oldNames: ['pl_requested_mode'],
+    oldName: 'pl_requested_mode',
     newName: 'pl2_requested_mode',
   },
   {
-    oldNames: ['pl_requested_date'],
+    oldName: 'pl_requested_date',
     newName: 'pl2_requested_date',
   },
   {
     oldRegexp: /pl_authz_workspace_(\d+)/,
+    oldPattern: 'pl_authz_workspace_$1',
+    newRegexp: /pl2_authz_workspace_(\d+)/,
     newPattern: 'pl2_authz_workspace_$1',
     options: {
       maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
@@ -84,51 +80,87 @@ const COOKIES_TO_MIGRATE = [
   },
 ];
 
-export function migrateCookiesIfNeededMiddleware(req: Request, res: Response, next: NextFunction) {
-  let didMigrate = false;
-  COOKIES_TO_MIGRATE.forEach((cookieMigration) => {
-    if (cookieMigration.oldNames) {
-      const sourceCookieName = findLast(cookieMigration.oldNames, (cookieName) => {
-        return cookieName in req.cookies;
-      });
-      if (!sourceCookieName) return;
+export function makeCookieMigrationMiddleware(
+  rewriteCookies: boolean,
+): (req: Request, res: Response, next: NextFunction) => void {
+  return function migrateCookiesIfNeededMiddleware(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    let didMigrate = false;
 
-      // If the cookie was already migrated, do nothing.
-      if (req.cookies[cookieMigration.newName]) return;
+    COOKIES_TO_MIGRATE.forEach((cookieMigration) => {
+      if (cookieMigration.oldName) {
+        // If the cookie was already migrated, we don't need to write anything
+        // back to the client. However, we'll overwrite the value of the old
+        // cookie in the current request so that application code is
+        // forward-compatible with the new cookie name.
+        if (req.cookies[cookieMigration.newName]) {
+          req.cookies[cookieMigration.oldName] = req.cookies[cookieMigration.newName];
+          return;
+        }
 
-      didMigrate = true;
-      res.cookie(cookieMigration.newName, req.cookies[sourceCookieName], {
-        ...(cookieMigration.options ?? {}),
-        secure: shouldSecureCookie(req),
-      });
-    } else if (cookieMigration.oldRegexp) {
-      const { oldRegexp, newPattern } = cookieMigration;
-      const oldNames = req.cookies
-        ? Object.keys(req.cookies).filter((cookieName) => oldRegexp.test(cookieName))
-        : [];
-      if (oldNames.length) {
-        oldNames.forEach((oldName) => {
-          const newName = oldName.replace(oldRegexp, newPattern);
+        // If the old cookie isn't present, there's nothing to do.
+        if (!(cookieMigration.oldName in req.cookies)) return;
 
-          // If the cookie was already migrated, do nothing.
-          if (req.cookies[newName]) return;
-
+        if (rewriteCookies) {
           didMigrate = true;
-          res.cookie(newName, req.cookies[oldName], {
-            ...cookieMigration.options,
+          res.cookie(cookieMigration.newName, req.cookies[cookieMigration.oldName], {
+            ...(cookieMigration.options ?? {}),
             secure: shouldSecureCookie(req),
           });
-        });
+        }
+      } else if (cookieMigration.oldRegexp) {
+        const { oldRegexp, oldPattern, newRegexp, newPattern } = cookieMigration;
+
+        // First, if needed, rewrite old cookies to use the new names.
+        const oldNames = req.cookies
+          ? Object.keys(req.cookies).filter((cookieName) => oldRegexp.test(cookieName))
+          : [];
+        if (oldNames.length) {
+          oldNames.forEach((oldName) => {
+            const newName = oldName.replace(oldRegexp, newPattern);
+
+            // If the cookie was already migrated, do nothing.
+            if (req.cookies[newName]) return;
+
+            // Rewrite the cookie for the current request in case we're configured to
+            // not propagate renames back to the client yet.
+            req.cookies[newName] = req.cookies[oldName];
+
+            if (rewriteCookies) {
+              didMigrate = true;
+              res.cookie(newName, req.cookies[oldName], {
+                ...cookieMigration.options,
+                secure: shouldSecureCookie(req),
+              });
+            }
+          });
+        }
+
+        // Next, if we got any new cookies, overwrite the old cookies in the
+        // current request so that application code is forward-compatible with
+        // the new cookie names.
+        const newNames = req.cookies
+          ? Object.keys(req.cookies).filter((cookieName) => newRegexp.test(cookieName))
+          : [];
+        if (newNames.length) {
+          newNames.forEach((newName) => {
+            const oldName = newName.replace(newRegexp, oldPattern);
+            req.cookies[oldName] = req.cookies[newName];
+          });
+        }
       }
+    });
+
+    if (didMigrate) {
+      // Force the client to pick up the new cookies.
+      res.redirect(307, req.originalUrl);
+      return;
     }
-  });
 
-  if (didMigrate) {
-    // Force the client to pick up the new cookies.
-    res.redirect(307, req.originalUrl);
-    return;
-  }
-
-  // The client doesn't have any cookies that need to be migrated.
-  next();
+    // The client doesn't have any cookies that need to be migrated.
+    next();
+  };
 }

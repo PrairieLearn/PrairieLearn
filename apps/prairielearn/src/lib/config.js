@@ -492,6 +492,10 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  /**
+   * PrairieLearn
+   */
+  rewriteCookies: z.boolean().default(false),
 });
 
 /** @typedef {z.infer<typeof ConfigSchema>} Config */
