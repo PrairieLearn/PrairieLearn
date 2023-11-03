@@ -150,10 +150,9 @@ const PostBodySchema = z.union([
     ),
   }),
   z.object({
-    __action: z
-      .string()
-      .startsWith('reassign_')
-      .transform((val) => val as `reassign_${string}`),
+    __action: z.custom<`reassign_${string}`>(
+      (val) => typeof val === 'string' && val.startsWith('reassign_'),
+    ),
   }),
 ]);
 

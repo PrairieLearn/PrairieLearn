@@ -826,6 +826,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').attr('value') || '',
               __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
+              replace_auto_points: 'false',
               use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
