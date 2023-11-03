@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.10.3
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
 ## 1.10.2
 
 ### Patch Changes
