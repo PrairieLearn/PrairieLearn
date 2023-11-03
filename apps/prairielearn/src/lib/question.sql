@@ -240,10 +240,8 @@ WHERE
   s.id = $submission_id
   AND q.id = $question_id
   AND (
-    CASE
-      WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL
-      ELSE iq.id = $instance_question_id::BIGINT
-    END
+    $instance_question_id::BIGINT IS NULL
+    OR iq.id = $instance_question_id::BIGINT
   )
   AND v.id = $variant_id;
 

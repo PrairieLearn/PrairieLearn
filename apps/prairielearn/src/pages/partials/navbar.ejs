@@ -62,7 +62,15 @@
     }
     %>
 
-    <ul class="nav navbar-nav" id="username-nav">
+    <ul
+      class="nav navbar-nav"
+      id="username-nav"
+      data-access-as-administrator="<%= locals.access_as_administrator?.toString() %>"
+      data-view-type="<%= typeof viewType !== 'undefined' ? viewType : null %>"
+      data-authn-course-role="<%= locals.authz_data?.authn_course_role %>"
+      data-authn-course-instance-role="<%= locals.authz_data?.authn_course_instance_role %>"
+      data-has-instructor-access="<%= locals.authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString() %>"
+    >
       <% if (devMode) { %>
           <li class="mb-2 mb-md-0 mr-2 "><a id="navbar-load-from-disk" class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
       <% } %>
@@ -263,24 +271,35 @@
           %>
             <h6 class="dropdown-header">Effective user</h6>
 
-            <div class="dropdown-item-text d-flex flex-row justify-content-left ml-4 align-items-center">
-              <div class="px-0"><input type="email" class="form-control form-control-sm" id="navbar-user-effective-uid-input" placeholder="netid@illinois.edu" style="min-width:15em"></div>
-              <div class="pl-2"><button type="button" class="btn btn-primary btn-sm text-nowrap" id="navbar-user-effective-uid-button" disabled>Change UID</button></div>
-            </div>
+            <form class="form-inline dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
+              <label class="sr-only" for="effective-uid">UID</label>
+              <input
+                id="effective-uid"
+                type="email"
+                placeholder="student@example.com"
+                class="form-control form-control-sm mr-2 flex-grow-1 js-effective-uid-input"
+              >
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm text-nowrap js-effective-uid-button"
+                disabled
+              >
+                Change UID
+              </button>
+            </form>
 
             <% if (authz_data.overrides) { %>
-              <div class="list-group small dropdown-item-text pl-5" style="white-space: nowrap">
-                <% authz_data.overrides.forEach(function(override) { %>
-                  <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
-                <% }); %>
+              <div class="dropdown-item-text">
+                <div class="list-group small text-nowrap">
+                  <% authz_data.overrides.forEach(function(override) { %>
+                    <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
+                  <% }); %>
+                </div>
               </div>
             <% } %>
 
             <a class="dropdown-item" href="<%= effectiveUserUrl %>">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"></div>
-                <div class="pl-0">Customize&hellip;</div>
-              </div>
+              Customize&hellip;
             </a>
 
             <div class="dropdown-divider"></div>
@@ -320,190 +339,6 @@
       </li>
     </ul>
   </div>
-
-  <script>
-
-    <% if (devMode) { %>
-      $('#navbar-load-from-disk').click(function() {
-        Cookies.remove('pl_requested_uid', { path: '/' });
-        Cookies.remove('pl_requested_course_role', { path: '/' });
-        Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-        Cookies.remove('pl_requested_mode', { path: '/' });
-        Cookies.remove('pl_requested_date', { path: '/' });
-        Cookies.set('pl_requested_data_changed', { path: '/' });
-      });
-    <% } %>
-
-
-    <% if (locals.authn_is_administrator) { %>
-
-      $(function() {
-        const expires = 30; // in units of days
-        $('#navbar-administrator-toggle').click(function() {
-          <% if (locals.access_as_administrator) { %>
-            Cookies.set('pl_access_as_administrator', 'inactive', { path: '/', expires: expires });
-            Cookies.set('pl_requested_data_changed', { path: '/' });
-          <% } else { %>
-            Cookies.set('pl_access_as_administrator', 'active', { path: '/', expires: expires });
-            Cookies.set('pl_requested_data_changed', { path: '/' });
-          <% } %>
-          location.reload();
-        });
-      });
-
-    <% } %>
-
-    <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
-
-      $(function() {
-        const expires = 30; // in units of days
-
-        $('#navbar-reset-view').click(function() {
-          Cookies.remove('pl_requested_uid', { path: '/' });
-          Cookies.remove('pl_requested_course_role', { path: '/' });
-          Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-          Cookies.remove('pl_requested_mode', { path: '/' });
-          Cookies.remove('pl_requested_date', { path: '/' });
-          Cookies.set('pl_requested_data_changed', { path: '/' });
-
-          <% if (viewType == 'instructor') { %>
-            location.reload();
-          <% } %>
-        });
-
-        $('#navbar-user-view-authn-instructor').click(function() {
-          Cookies.remove('pl_requested_uid', { path: '/' });
-          Cookies.remove('pl_requested_course_role', { path: '/' });
-          Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-          Cookies.set('pl_requested_data_changed', { path: '/' });
-
-          <% if (viewType == 'instructor') { %>
-            location.reload();
-          <% } %>
-        });
-
-        $('#navbar-user-view-authn-student-no-rules').click(function() {
-          Cookies.remove('pl_requested_uid', { path: '/' });
-          Cookies.remove('pl_requested_course_role', { path: '/' });
-          Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-          Cookies.set('pl_requested_data_changed', { path: '/' });
-
-          <% if (viewType == 'student') { %>
-            location.reload();
-          <% } %>
-        });
-
-        $('#navbar-user-view-authn-student').click(function() {
-          Cookies.remove('pl_requested_uid', { path: '/' });
-          Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: expires });
-          Cookies.set('pl_requested_course_instance_role', 'None', { path: '/', expires: expires });
-          Cookies.set('pl_requested_data_changed', { path: '/' });
-
-          <% if (viewType == 'student') { %>
-            location.reload();
-          <% } %>
-        });
-
-        <% if (authz_data.authn_user.uid != authz_data.user.uid) { %>
-
-          <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
-
-            $('#navbar-user-view-instructor').click(function() {
-              Cookies.remove('pl_requested_course_role', { path: '/' });
-              Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-
-              <% if (viewType == 'instructor') { %>
-                location.reload();
-              <% } %>
-            });
-
-            $('#navbar-user-view-student-no-rules').click(function() {
-              Cookies.remove('pl_requested_course_role', { path: '/' });
-              Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-
-              <% if (viewType == 'student') { %>
-                location.reload();
-              <% } %>
-            });
-
-            $('#navbar-user-view-student').click(function() {
-              Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: expires });
-              Cookies.set('pl_requested_course_instance_role', 'None', { path: '/', expires: expires });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-
-              <% if (viewType == 'student') { %>
-                location.reload();
-              <% } %>
-            });
-
-          <% } else { %>
-
-            $('#navbar-user-view-student-no-rules').click(function() {
-              Cookies.set('pl_requested_course_role', '<%= authz_data.authn_course_role %>', { path: '/', expires: expires });
-              Cookies.set('pl_requested_course_instance_role', '<%= authz_data.authn_course_instance_role %>', { path: '/', expires: expires });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-
-              <% if (viewType == 'student') { %>
-                location.reload();
-              <% } %>
-            });
-
-            $('#navbar-user-view-student').click(function() {
-              Cookies.remove('pl_requested_course_role', { path: '/' });
-              Cookies.remove('pl_requested_course_instance_role', { path: '/' });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-
-              <% if (viewType == 'student') { %>
-                location.reload();
-              <% } %>
-            });
-
-          <% } %>
-
-        <% } %>
-
-      });
-
-    <% } %>
-
-    <% if (locals.authz_data && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
-      $(function() {
-        const expires = 30; // in units of days
-        $('#navbar-user-effective-uid-input').keyup(function(e) {
-          const btn = $('#navbar-user-effective-uid-button');
-          if ($(this).val().trim() != '') {
-            btn.removeAttr('disabled');
-          } else {
-            btn.attr('disabled', true);
-          }
-        });
-
-        $('#navbar-user-effective-uid-input').keypress(function(e) {
-          if (e.which == 13) {
-            const uid = $('#navbar-user-effective-uid-input').val().trim();
-            if (uid != '') {
-              Cookies.set('pl_requested_uid', uid, { path: '/', expires: expires });
-              Cookies.set('pl_requested_data_changed', { path: '/' });
-              location.reload();
-            }
-          }
-        });
-
-        $('#navbar-user-effective-uid-button').click(function() {
-          const uid = $('#navbar-user-effective-uid-input').val().trim();
-          if (uid != '') {
-            Cookies.set('pl_requested_uid', uid, { path: '/', expires: expires });
-            Cookies.set('pl_requested_data_changed', { path: '/' });
-            location.reload();
-          }
-        });
-      });
-    <% } %>
-
-  </script>
-
 </nav>
 
 <% // Mapping navPage to navtab sets

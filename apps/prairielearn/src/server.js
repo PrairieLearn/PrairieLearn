@@ -154,7 +154,7 @@ module.exports.initExpress = function () {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: 'prairielearn_session',
+        name: config.sessionCookieNames,
         httpOnly: true,
         maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting

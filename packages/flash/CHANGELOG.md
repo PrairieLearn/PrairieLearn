@@ -1,5 +1,20 @@
 # @prairielearn/flash
 
+## 1.1.3
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+- Updated dependencies [1523b97b0]
+  - @prairielearn/html@3.1.1
+
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [3cd0f83fa]
+  - @prairielearn/html@3.1.0
+
 ## 1.1.1
 
 ### Patch Changes

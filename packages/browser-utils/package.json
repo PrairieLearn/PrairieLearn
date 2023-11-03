@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "1.1.6",
+  "version": "1.1.8",
   "main": "dist/index.js",
   "sideEffects": false,
   "repository": {
