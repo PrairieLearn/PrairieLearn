@@ -1,10 +1,11 @@
 --BLOCK select_client_fingerprint
 SELECT
-  id, user_id, ip_address, user_agent, accept, accept_language
+  id, user_id, session_id, ip_address, user_agent, accept, accept_language
 FROM
   client_fingerprints
 WHERE
   user_id = $user_id
+  AND session_id = $session_id
   AND ip_address = $ip_address
   AND user_agent = $user_agent
   AND accept = $accept
@@ -13,6 +14,7 @@ WHERE
 --BLOCK insert_client_fingerprint
 INSERT INTO client_fingerprints (
   user_id,
+  session_id,
   ip_address,
   user_agent,
   accept_language,
@@ -20,6 +22,7 @@ INSERT INTO client_fingerprints (
 ) 
 VALUES (
   $user_id,
+  $session_id,
   $ip_address,
   $user_agent,
   $accept_language,
