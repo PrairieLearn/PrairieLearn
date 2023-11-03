@@ -59,7 +59,6 @@ router.get(
       res.locals.assessment_instance.id,
       false,
     );
-    console.log(res.locals.log);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
