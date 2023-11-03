@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sanitize",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.18.7",
+    "@types/node": "^18.18.8",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

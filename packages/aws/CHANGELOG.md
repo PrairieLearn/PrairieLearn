@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 1.0.3
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
 ## 1.0.2
 
 ### Patch Changes

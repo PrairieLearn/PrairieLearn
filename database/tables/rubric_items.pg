@@ -6,7 +6,7 @@ columns
     grader_note: character varying(10000)
     id: bigint not null default nextval('rubric_items_id_seq'::regclass)
     key_binding: character varying(30)
-    number: bigint not null
+    number: integer not null
     points: double precision not null
     rubric_id: bigint not null
 
