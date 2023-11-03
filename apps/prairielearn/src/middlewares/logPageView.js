@@ -36,7 +36,7 @@ module.exports = function (pageType) {
         ? res.locals.client_fingerprint_id
         : null,
     };
-
+    console.log(res.locals.client_fingerprint_id);
     sqldb.queryOneRow(sql.log_page_view, params, function (err, result) {
       if (ERR(err, (e) => logger.error('error logging page view', e))) return next();
       res.locals.page_view_id = result.rows[0].id;

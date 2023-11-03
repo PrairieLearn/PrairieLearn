@@ -41,6 +41,20 @@
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
             </td></tr>
             <tr>
+              <th>Fingerprint Changes</th>
+              <td colspan="2">
+                <%= assessment_instance.client_fingerprint_id_change_count %>
+                <% if (assessment_instance.client_fingerprint_id_change_count > 0) { %>
+                  <div tabindex="0" class="btn btn-xs" role="button"
+                      data-toggle="popover" data-trigger="focus" data-container="body"
+                      data-html="true" title="Client Fingerprint ID Changes"
+                      data-content="This is where the log of client fingerprints will go. "
+                  ><i class="fa fa-question-circle"></i></div>
+                <% } %>
+              </td>
+            </tr>
+
+            <tr>
               <th>Points</th>
               <td colspan="2">
                 <% include('../partials/pointsFormatter'); %>
@@ -307,6 +321,7 @@
             <tr>
               <th>Time</th>
               <th>User</th>
+              <th>Fingerprint ID</th>
               <th>Event</th>
               <th>Instructor question</th>
               <th>Student question</th>
@@ -318,6 +333,7 @@
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
+              <td><%= row.client_fingerprint_id %></td>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
               <td>
                 <% if (row.qid) { %>

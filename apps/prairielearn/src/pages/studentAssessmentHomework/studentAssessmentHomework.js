@@ -97,6 +97,7 @@ router.get(
           res.locals.authz_data.mode,
           time_limit_min,
           res.locals.authz_data.date,
+          res.locals.client_fingerprint_id,
           (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             debug('redirecting');
@@ -138,6 +139,7 @@ router.post(
             res.locals.authz_data.mode,
             time_limit_min,
             res.locals.authz_data.date,
+            res.locals.client_fingerprint_id,
             (err, assessment_instance_id) => {
               if (ERR(err, next)) return;
               debug('redirecting');

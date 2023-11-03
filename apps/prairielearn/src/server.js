@@ -1404,8 +1404,8 @@ module.exports.initExpress = function () {
   // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
-    require('./middlewares/clientFingerprint').default,
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
@@ -1415,6 +1415,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
+      require('./middlewares/clientFingerprint').default,
       require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
@@ -1440,6 +1441,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
+    require('./middlewares/clientFingerprint').default,
     require('./middlewares/studentAssessmentAccess'),
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),

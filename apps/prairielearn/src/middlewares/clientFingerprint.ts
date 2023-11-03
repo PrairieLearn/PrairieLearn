@@ -35,5 +35,6 @@ export default asyncHandler(async (req, res, next) => {
         res.locals.assessment_instance.client_fingerprint_id_change_count + 1,
     });
   }
+  res.locals.client_fingerprint_id = client_fingerprint_id;
   next();
 });
