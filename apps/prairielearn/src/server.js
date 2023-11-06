@@ -1,5 +1,4 @@
 // IMPORTANT: this must come first so that it can properly instrument our
-
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
