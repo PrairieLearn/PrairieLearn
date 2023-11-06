@@ -1,4 +1,7 @@
 // IMPORTANT: this must come first so that it can properly instrument our
+
+import { pullAndUpdate } from './lib/courseUtil';
+
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
@@ -2168,6 +2171,21 @@ if (require.main === module && config.startServer) {
             logger.info('option --migrate-and-exit passed, running DB setup and exiting');
             process.exit(0);
           }
+        }
+      },
+      async () => {
+        if ('sync-course' in argv) {
+          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+          const { jobSequenceId, jobPromise } = await pullAndUpdate({
+            courseId: argv['sync-course'],
+            authnUserId: '1',
+            userId: '1',
+          });
+          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+          logger.info(`Waiting for job to finish...`);
+          await jobPromise;
+          logger.info(`Job finished. Exiting.`);
+          process.exit(0);
         }
       },
       async () => {

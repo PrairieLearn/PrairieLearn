@@ -67,10 +67,9 @@ export async function getOrUpdateCourseCommitHashAsync(course: {
 export const getOrUpdateCourseCommitHash = callbackify(getOrUpdateCourseCommitHashAsync);
 
 const CourseDataSchema = z.object({
-  // TODO Properly handle case where path, branch and/or repository are not assigned (null).
-  path: z.string(),
-  branch: z.string(),
-  repository: z.string(),
+  path: z.string().nullable(),
+  branch: z.string().nullable(),
+  repository: z.string().nullable(),
   commit_hash: z.string().nullable(),
 });
 
@@ -86,11 +85,11 @@ export async function pullAndUpdate({
   courseId: string;
   userId: string;
   authnUserId: string;
-  path?: string;
-  branch?: string;
-  repository?: string;
+  path?: string | null;
+  branch?: string | null;
+  repository?: string | null;
   commit_hash?: string | null;
-}): Promise<string> {
+}): Promise<{ jobSequenceId: string; jobPromise: Promise<void> }> {
   const serverJob = await createServerJob({
     courseId,
     userId,
@@ -104,7 +103,7 @@ export async function pullAndUpdate({
     gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
   }
 
-  serverJob.executeInBackground(async (job) => {
+  const jobPromise = serverJob.execute(async (job) => {
     const lockName = getLockNameForCoursePath(path);
     await namedLocks.tryWithLock(
       lockName,
@@ -117,7 +116,7 @@ export async function pullAndUpdate({
       async () => {
         if (path === undefined || branch === undefined || repository === undefined) {
           const course_data = await sqldb.queryRow(
-            sql.get_course,
+            sql.get_course_data,
             { course_id: courseId },
             CourseDataSchema,
           );
@@ -125,6 +124,14 @@ export async function pullAndUpdate({
           branch = course_data.branch;
           repository = course_data.repository;
           commit_hash = course_data.commit_hash;
+        }
+        if (!path) {
+          job.fail('Path is not set for this course. Exiting...');
+          return;
+        }
+        if (!branch || !repository) {
+          job.fail('Git repository or branch are not set for this course. Exiting...');
+          return;
         }
 
         let startGitHash: string | null = null;
@@ -190,5 +197,5 @@ export async function pullAndUpdate({
     );
   });
 
-  return serverJob.jobSequenceId;
+  return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }

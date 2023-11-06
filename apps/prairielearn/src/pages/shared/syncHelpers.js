@@ -17,12 +17,13 @@ const debug = require('debug')('prairielearn:syncHelpers');
 const docker = new Docker();
 
 module.exports.pullAndUpdate = async function (locals) {
-  return await courseUtil.pullAndUpdate({
+  const { jobSequenceId } = await courseUtil.pullAndUpdate({
     courseId: locals.course.id,
     userId: locals.user.user_id,
     authnUserId: locals.authz_data.authn_user.user_id,
     ...locals.course,
   });
+  return jobSequenceId;
 };
 
 module.exports.gitStatus = async function (locals) {

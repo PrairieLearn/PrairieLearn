@@ -178,7 +178,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
     socketServer.io
-      .to('job-' + this.jobId)
+      ?.to('job-' + this.jobId)
       .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
@@ -215,8 +215,8 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     });
 
     // Notify sockets.
-    socketServer.io.to('job-' + this.jobId).emit('update');
-    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
+    socketServer.io?.to('job-' + this.jobId).emit('update');
+    socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
   }
 }
 
