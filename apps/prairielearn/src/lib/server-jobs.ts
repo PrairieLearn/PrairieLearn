@@ -3,11 +3,12 @@ import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
+import { IdSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -245,4 +246,19 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
   return serverJob;
+}
+
+const JobOutputSchema = z.object({
+  id: IdSchema,
+  output: z.string().nullable(),
+  status: z.enum(['Running', 'Success', 'Error']),
+});
+type JobOutput = z.infer<typeof JobOutputSchema>;
+
+export async function getJobOutput(jobSequenceId: string): Promise<JobOutput[]> {
+  return await queryRows(
+    sql.select_job_output,
+    { job_sequence_id: jobSequenceId },
+    JobOutputSchema,
+  );
 }

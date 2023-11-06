@@ -70,7 +70,8 @@ const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
-const { pullAndUpdate } = require('./lib/courseUtil');
+const { pullAndUpdate } = require('./lib/course');
+const { getJobOutput } = require('./lib/server-jobs');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2183,7 +2184,9 @@ if (require.main === module && config.startServer) {
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
           logger.info(`Waiting for job to finish...`);
           await jobPromise;
-          logger.info(`Job finished. Exiting.`);
+          (await getJobOutput(jobSequenceId)).forEach(({ id, output, status }) => {
+            logger.info(`Job ${id} finished with status '${status}'.\n${output}`);
+          });
           process.exit(0);
         }
       },

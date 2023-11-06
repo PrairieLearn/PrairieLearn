@@ -99,3 +99,13 @@ SET
 WHERE
   js.id = $job_sequence_id
   AND js.status = 'Running'::enum_job_status;
+
+-- BLOCK select_job_output
+SELECT
+  j.id,
+  j.output,
+  j.status
+FROM
+  jobs AS j
+WHERE
+  j.job_sequence_id = $job_sequence_id;
