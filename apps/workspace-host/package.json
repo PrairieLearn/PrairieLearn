@@ -24,7 +24,7 @@
     "@socket.io/redis-adapter": "^8.2.1",
     "@socket.io/redis-emitter": "^5.1.0",
     "archiver": "^6.0.1",
-    "async": "^3.2.4",
+    "async": "^3.2.5",
     "async-mutex": "^0.4.0",
     "async-stacktrace": "^0.0.2",
     "body-parser": "^1.20.2",
