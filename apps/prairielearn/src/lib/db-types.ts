@@ -341,3 +341,142 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string().nullable(),
   }),
 );
+
+export const AssessmentQuestionSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  alternative_group_id: IdSchema.nullable(),
+  assessment_id: IdSchema,
+  average_average_submission_score: z.number().nullable(),
+  average_first_submission_score: z.number().nullable(),
+  average_last_submission_score: z.number().nullable(),
+  average_max_submission_score: z.number().nullable(),
+  average_number_submissions: z.number().nullable(),
+  average_submission_score_hist: z.array(z.number()).nullable(),
+  average_submission_score_variance: z.number().nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  discrimination: z.number().nullable(),
+  effective_advance_score_perc: z.number().nullable(),
+  first_submission_score_hist: z.array(z.number()).nullable(),
+  first_submission_score_variance: z.number().nullable(),
+  force_max_points: z.boolean().nullable(),
+  grade_rate_minutes: z.number().nullable(),
+  id: IdSchema,
+  incremental_submission_points_array_averages: z.array(z.number()).nullable(),
+  incremental_submission_points_array_variances: z.array(z.number()).nullable(),
+  incremental_submission_score_array_averages: z.array(z.number()).nullable(),
+  incremental_submission_score_array_variances: z.array(z.number()).nullable(),
+  init_points: z.number().nullable(),
+  last_submission_score_hist: z.array(z.number()).nullable(),
+  last_submission_score_variance: z.number().nullable(),
+  manual_rubric_id: IdSchema.nullable(),
+  max_auto_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_points: z.number().nullable(),
+  max_submission_score_hist: z.array(z.number()).nullable(),
+  max_submission_score_variance: z.number().nullable(),
+  mean_question_score: z.number().nullable(),
+  number: z.number().nullable(),
+  number_in_alternative_group: z.number().nullable(),
+  number_submissions_hist: z.array(z.number()).nullable(),
+  number_submissions_variance: z.number().nullable(),
+  points_list: z.array(z.number()).nullable(),
+  question_id: IdSchema,
+  question_score_variance: z.number().nullable(),
+  quintile_question_scores: z.array(z.number()).nullable(),
+  some_nonzero_submission_perc: z.number().nullable(),
+  some_perfect_submission_perc: z.number().nullable(),
+  some_submission_perc: z.number().nullable(),
+  submission_score_array_averages: z.array(z.number()).nullable(),
+  submission_score_array_variances: z.array(z.number()).nullable(),
+  tries_per_variant: z.number().nullable(),
+});
+export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
+
+export const RubricSchema = z.object({
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  max_extra_points: z.number(),
+  min_points: z.number(),
+  modified_at: DateFromISOString,
+  replace_auto_points: z.boolean(),
+  starting_points: z.number(),
+});
+export type Rubric = z.infer<typeof RubricSchema>;
+
+export const RubricItemSchema = z.object({
+  always_show_to_students: z.boolean(),
+  deleted_at: DateFromISOString.nullable(),
+  description: z.string(),
+  explanation: z.string().nullable(),
+  grader_note: z.string().nullable(),
+  id: IdSchema,
+  key_binding: z.string().nullable(),
+  number: z.number(),
+  points: z.number(),
+  rubric_id: IdSchema,
+});
+export type RubricItem = z.infer<typeof RubricItemSchema>;
+
+export const RubricGradingSchema = z.object({
+  adjust_points: z.number(),
+  computed_points: z.number(),
+  id: IdSchema,
+  max_extra_points: z.number(),
+  min_points: z.number(),
+  rubric_id: IdSchema,
+  starting_points: z.number(),
+});
+export type RubricGrading = z.infer<typeof RubricGradingSchema>;
+
+export const RubricGradingItemSchema = z.object({
+  description: z.string(),
+  id: IdSchema,
+  points: z.number(),
+  rubric_grading_id: IdSchema,
+  rubric_item_id: IdSchema,
+  score: z.number(),
+});
+export type RubricGradingItem = z.infer<typeof RubricGradingItemSchema>;
+
+export const InstanceQuestionSchema = z.object({
+  assessment_instance_id: IdSchema,
+  assessment_question_id: IdSchema,
+  assigned_grader: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  auto_points: z.number().nullable(),
+  average_submission_score: z.number().nullable(),
+  created_at: DateFromISOString.nullable(),
+  current_value: z.number().nullable(),
+  duration: IntervalSchema.nullable(),
+  first_duration: IntervalSchema.nullable(),
+  first_submission_score: z.number().nullable(),
+  highest_submission_score: z.number().nullable(),
+  id: IdSchema,
+  incremental_submission_points_array: z.array(z.number()).nullable(),
+  incremental_submission_score_array: z.array(z.number()).nullable(),
+  last_grader: IdSchema.nullable(),
+  last_submission_score: z.number().nullable(),
+  manual_points: z.number().nullable(),
+  max_submission_score: z.number().nullable(),
+  modified_at: DateFromISOString,
+  number: z.number().nullable(),
+  number_attempts: z.number(),
+  open: z.boolean(),
+  order_by: z.number().nullable(),
+  points: z.number().nullable(),
+  points_list: z.array(z.number()).nullable(),
+  points_list_original: z.array(z.number()).nullable(),
+  requires_manual_grading: z.boolean(),
+  score_perc: z.number().nullable(),
+  some_nonzero_submission: z.boolean().nullable(),
+  some_perfect_submission: z.boolean().nullable(),
+  some_submission: z.boolean().nullable(),
+  status: z
+    .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
+    .nullable(),
+  submission_score_array: z.array(z.number()).nullable(),
+  used_for_grade: z.boolean().nullable(),
+  variants_points_list: z.array(z.number()),
+});
+export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;

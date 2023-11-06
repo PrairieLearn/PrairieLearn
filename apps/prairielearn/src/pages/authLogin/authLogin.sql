@@ -1,3 +1,14 @@
+-- BLOCK select_supported_providers_for_institution
+SELECT
+  ap.name,
+  i.id IS NOT NULL AS is_default
+FROM
+  institution_authn_providers AS iap
+  JOIN authn_providers AS ap ON (iap.authn_provider_id = ap.id)
+  LEFT JOIN institutions AS i ON (i.default_authn_provider_id = ap.id)
+WHERE
+  iap.institution_id = $institution_id;
+
 -- BLOCK select_institution_authn_providers
 SELECT
   i.id,

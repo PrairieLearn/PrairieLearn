@@ -154,7 +154,7 @@ module.exports.initExpress = function () {
       secret: config.secretKey,
       store: new PostgresSessionStore(),
       cookie: {
-        name: 'prairielearn_session',
+        name: config.sessionCookieNames,
         httpOnly: true,
         maxAge: config.sessionStoreExpireSeconds * 1000,
         secure: 'auto', // uses Express "trust proxy" setting
@@ -547,11 +547,6 @@ module.exports.initExpress = function () {
     });
     next();
   });
-
-  // clear all cached course code in dev mode (no authorization needed)
-  if (config.devMode) {
-    app.use(require('./middlewares/undefCourseCode'));
-  }
 
   // clear cookies on the homepage to reset any stale session state
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
@@ -1027,7 +1022,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment').default,
     ],
   );
 
@@ -1715,6 +1710,10 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course/:course_id/jobSequence',
     require('./pages/instructorJobSequence/instructorJobSequence'),
+  );
+  app.use(
+    '/pl/course/:course_id/grading_job',
+    require('./pages/instructorGradingJob/instructorGradingJob'),
   );
 
   // This route is used to initiate a transfer of a question from a template course.

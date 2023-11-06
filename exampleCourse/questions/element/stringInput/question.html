@@ -28,14 +28,15 @@ a = "{{params.stringname}}"*{{params.a}}
 <pl-question-panel>
 <p>3) Enter the string below, however include trailing and leading blanks.
  When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
- still be evaluated as correct. </p>
+ still be evaluated as correct. We also set <code>show-score="false"</code> to hide the
+score badge. </p>
 <pl-code language="python">
 "{{params.d}}"
 </pl-code>
 </pl-question-panel>
 
 <p>
-<pl-string-input answers-name="ans3" remove-leading-trailing="true">
+<pl-string-input answers-name="ans3" remove-leading-trailing="true" show-score="false">
 </pl-string-input>
 </p>
 
@@ -68,14 +69,14 @@ that you will not receive the <code>Invalid</code> feedback (and hence the quest
 </p>
 
 <pl-question-panel>
-<p> 6) To allow for case insensitivity, use <code>ignore-case="true"</code>. 
+<p> 6) To allow for case insensitivity, use <code>ignore-case="true"</code>.
 This will autoconvert both the student answer and the correct answer to lower case.  Entering the string below with any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
 
 <pl-code language="python">
 "{{params.e}}"
 </pl-code>
 </pl-question-panel>
-  
+
 <p>
 <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
 </pl-string-input>
@@ -109,5 +110,5 @@ This will autoconvert both the student answer and the correct answer to lower ca
 </pl-question-panel>
 
 <p>
-    <pl-string-input answers-name="ans8" label="Weird text = " normalize-to-ascii="true"></pl-string-input>
+    <pl-string-input answers-name="ans8" label="Weird text = " suffix="?" normalize-to-ascii="true"></pl-string-input>
 </p>

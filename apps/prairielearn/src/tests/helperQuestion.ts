@@ -385,6 +385,31 @@ export function checkQuestionScore(locals: Record<string, any>) {
   });
 }
 
+export function checkQuestionStats(locals: Record<string, any>) {
+  describe('check question stats', function () {
+    it('should have the correct stats', function () {
+      Object.keys(locals.expectedResult.instance_question_stats ?? []).forEach((key) => {
+        const expected_value = locals.expectedResult.instance_question_stats[key];
+        assert.isDefined(locals.instance_question?.[key]);
+        if (expected_value === null) {
+          assert.isNull(locals.instance_question?.[key]);
+        } else if (typeof expected_value === 'number') {
+          assert.approximately(locals.instance_question?.[key], expected_value, 1e-6);
+        } else if (_.isArray(expected_value)) {
+          assert.lengthOf(locals.instance_question?.[key], expected_value.length);
+          expected_value.forEach((item, i) => {
+            if (item == null) {
+              assert.isNull(locals.instance_question?.[key][i]);
+            } else {
+              assert.approximately(item, locals.instance_question?.[key][i], 1e-6);
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
 export function checkAssessmentScore(locals: Record<string, any>) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
