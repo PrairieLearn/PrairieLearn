@@ -57,7 +57,7 @@ const PartialScoresSchema = z
 type PartialScores = z.infer<typeof PartialScoresSchema>;
 
 const SubmissionForScoreUpdateSchema = z.object({
-  submission_id: IdSchema,
+  submission_id: IdSchema.nullable(),
   instance_question_id: IdSchema,
   assessment_instance_id: IdSchema,
   max_points: z.number().nullable(),
