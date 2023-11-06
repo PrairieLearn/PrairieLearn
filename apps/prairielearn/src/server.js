@@ -90,6 +90,7 @@ if ('h' in argv || 'help' in argv) {
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
+    --sync-course <course_id>           Synchronize a course and exit
 `;
 
   console.log(msg);
