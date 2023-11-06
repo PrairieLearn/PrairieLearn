@@ -21,10 +21,7 @@ WHERE
 
 -- BLOCK get_course_data
 SELECT
-  path,
-  repository,
-  branch,
-  commit_hash
+  *
 FROM
   pl_courses
 WHERE

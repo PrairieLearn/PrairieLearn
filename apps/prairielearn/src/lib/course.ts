@@ -8,7 +8,7 @@ import { createServerJob } from './server-jobs';
 import { config } from './config';
 import * as chunks from './chunks';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
-import { IdSchema } from './db-types';
+import { Course, CourseSchema, IdSchema } from './db-types';
 import {
   getCommitHashAsync,
   getOrUpdateCourseCommitHashAsync,
@@ -62,12 +62,9 @@ export function getLockNameForCoursePath(coursePath) {
   return `coursedir:${coursePath}`;
 }
 
-const CourseDataSchema = z.object({
-  path: z.string().nullable(),
-  branch: z.string().nullable(),
-  repository: z.string().nullable(),
-  commit_hash: z.string().nullable(),
-});
+export async function selectCourseById(course_id: string): Promise<Course> {
+  return await sqldb.queryRow(sql.get_course_data, { course_id }, CourseSchema);
+}
 
 export async function pullAndUpdate({
   courseId,
@@ -111,11 +108,7 @@ export async function pullAndUpdate({
       },
       async () => {
         if (path === undefined || branch === undefined || repository === undefined) {
-          const course_data = await sqldb.queryRow(
-            sql.get_course_data,
-            { course_id: courseId },
-            CourseDataSchema,
-          );
+          const course_data = await selectCourseById(courseId);
           path = course_data.path;
           branch = course_data.branch;
           repository = course_data.repository;
