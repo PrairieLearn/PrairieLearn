@@ -23,7 +23,7 @@
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
     "ajv": "^8.12.0",
-    "async": "^3.2.4",
+    "async": "^3.2.5",
     "async-stacktrace": "^0.0.2",
     "byline": "^5.0.0",
     "chai": "^4.3.10",
