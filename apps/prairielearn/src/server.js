@@ -1,7 +1,5 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 
-import { pullAndUpdate } from './lib/courseUtil';
-
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
@@ -73,6 +71,7 @@ const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
+const { pullAndUpdate } = require('./lib/courseUtil');
 
 process.on('warning', (e) => console.warn(e));
 
