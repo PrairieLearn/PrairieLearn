@@ -3,41 +3,40 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
 const GradingJobSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   s3_bucket: z.string().nullable(),
   s3_root_key: z.string().nullable(),
   output: z.string().nullable(),
-  authz_data: z.any(),
 });
 
-const GradingJobQueryResultSchema = z.object({
+export const GradingJobQueryResultSchema = z.object({
   aai: z.record(z.any()).nullable(),
   grading_job: GradingJobSchema,
-  formatted_grading_requested_at: z.string(),
-  formatted_grading_submitted_at: z.string(),
-  formatted_grading_received_at: z.string(),
-  formatted_grading_started_at: z.string(),
-  formatted_grading_finished_at: z.string(),
+  formatted_grading_requested_at: z.string().nullable(),
+  formatted_grading_submitted_at: z.string().nullable(),
+  formatted_grading_received_at: z.string().nullable(),
+  formatted_grading_started_at: z.string().nullable(),
+  formatted_grading_finished_at: z.string().nullable(),
   formatted_graded_at: z.string(),
   question_qid: z.string(),
   user_uid: z.string(),
   course_instance_short_name: z.string(),
 });
-export type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
+type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
 
 export function instructorGradingJob({
   resLocals,
-  result,
+  gradingJobQueryResult,
 }: {
   resLocals: Record<string, any>;
-  result: GradingJobQueryResult;
+  gradingJobQueryResult: GradingJobQueryResult;
 }) {
   return html` <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head') %>", {
           ...resLocals,
-          pageTitle: `Grading Job ${result.grading_job.id}`,
+          pageTitle: `Grading Job ${gradingJobQueryResult.grading_job.id}`,
         })}
       </head>
       <body>
@@ -48,48 +47,49 @@ export function instructorGradingJob({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              Grading Job ${result.grading_job.id}
+              Grading Job ${gradingJobQueryResult.grading_job.id}
             </div>
 
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>
                   <th>Question</th>
-                  <td>${result.question_qid}</td>
+                  <td>${gradingJobQueryResult.question_qid}</td>
                 </tr>
                 <tr>
                   <th>User</th>
-                  <td>${result.user_uid}</td>
+                  <td>${gradingJobQueryResult.user_uid}</td>
                 </tr>
                 <tr>
                   <th>Requested at</th>
-                  <td>${result.formatted_grading_requested_at}</td>
+                  <td>${gradingJobQueryResult.formatted_grading_requested_at}</td>
                 </tr>
                 <tr>
                   <th>Submitted at</th>
-                  <td>${result.formatted_grading_submitted_at}</td>
+                  <td>${gradingJobQueryResult.formatted_grading_submitted_at}</td>
                 </tr>
                 <tr>
                   <th>Received at</th>
-                  <td>${result.formatted_grading_received_at}</td>
+                  <td>${gradingJobQueryResult.formatted_grading_received_at}</td>
                 </tr>
                 <tr>
                   <th>Started at</th>
-                  <td>${result.formatted_grading_started_at}</td>
+                  <td>${gradingJobQueryResult.formatted_grading_started_at}</td>
                 </tr>
                 <tr>
                   <th>Finished at</th>
-                  <td>${result.formatted_grading_finished_at}</td>
+                  <td>${gradingJobQueryResult.formatted_grading_finished_at}</td>
                 </tr>
                 <tr>
                   <th>Graded at</th>
-                  <td>${result.formatted_graded_at}</td>
+                  <td>${gradingJobQueryResult.formatted_graded_at}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          ${result.grading_job.s3_bucket && result.grading_job.s3_root_key
+          ${gradingJobQueryResult.grading_job.s3_bucket &&
+          gradingJobQueryResult.grading_job.s3_root_key
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">Downloads</div>
@@ -101,12 +101,12 @@ export function instructorGradingJob({
                       </tr>
                     </thead>
                     <tbody>
-                      ${result.grading_job.authz_data.has_course_permission_view
+                      ${resLocals.authz_data.has_course_permission_view
                         ? html` <tr>
                               <td>
                                 <a
-                                  href="${resLocals.urlPrefix}/grading_job/${result.grading_job
-                                    .id}/file/job.tar.gz"
+                                  href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
+                                    .grading_job.id}/file/job.tar.gz"
                                   >job.tar.gz</a
                                 >
                               </td>
@@ -118,8 +118,8 @@ export function instructorGradingJob({
                             <tr>
                               <td>
                                 <a
-                                  href="${resLocals.urlPrefix}/grading_job/${result.grading_job
-                                    .id}/file/archive.tar.gz"
+                                  href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
+                                    .grading_job.id}/file/archive.tar.gz"
                                   >archive.tar.gz</a
                                 >
                               </td>
@@ -131,8 +131,8 @@ export function instructorGradingJob({
                       <tr>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/grading_job/${result.grading_job
-                              .id}/file/results.json"
+                            href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
+                              .grading_job.id}/file/results.json"
                             >results.json</a
                           >
                         </td>
@@ -165,7 +165,8 @@ export function instructorGradingJob({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Job Output</div>
             <div class="card-body">
-              ${result.grading_job.s3_bucket && result.grading_job.s3_root_key
+              ${gradingJobQueryResult.grading_job.s3_bucket &&
+              gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
                       $.get('<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log')
@@ -191,10 +192,10 @@ export function instructorGradingJob({
                       style="width: 100%; text-align: center;"
                     ></i>
                   `
-                : result.grading_job.output
+                : gradingJobQueryResult.grading_job.output
                 ? html`
                     <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
-                        ${result.grading_job.output}
+                        ${gradingJobQueryResult.grading_job.output}
                         </pre
                     >
                   `
