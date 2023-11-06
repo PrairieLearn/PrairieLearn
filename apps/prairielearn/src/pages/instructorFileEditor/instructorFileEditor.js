@@ -240,6 +240,7 @@ router.post('/*', (req, res, next) => {
                 debug('Write draft file edit to db and to file store');
                 const fileEdit = {
                   userID: res.locals.user.user_id,
+                  authnUserID: res.locals.authn_user.user_id,
                   courseID: res.locals.course.id,
                   dirName: req.body.file_edit_dir_name,
                   fileName: req.body.file_edit_file_name,
@@ -365,8 +366,8 @@ async function writeDraftEdit(fileEdit) {
     'instructor_file_edit',
     null,
     null,
-    fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-    fileEdit.userID, //       although I don't think there's any need to do so
+    fileEdit.userID,
+    fileEdit.authnUserID,
   );
   debug(`Wrote file_id=${fileID} to file store`);
 
