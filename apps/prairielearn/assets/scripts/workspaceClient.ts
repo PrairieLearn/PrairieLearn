@@ -17,6 +17,7 @@ $(function () {
     trigger: 'focus',
   });
 
+  const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
     document.body,
@@ -29,7 +30,12 @@ $(function () {
     30 * 60,
   );
 
-  const socket = io('/workspace');
+  const socket = io('/workspace', {
+    auth: {
+      token: socketToken,
+      workspace_id: workspaceId,
+    },
+  });
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
@@ -93,12 +99,17 @@ $(function () {
     setMessage(msg.message);
   });
 
-  socket.on('connect', () => {
-    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg) => {
+  socket.emit(
+    'joinWorkspace',
+    {
+      token: socketToken,
+      workspace_id: workspaceId,
+    },
+    (msg) => {
       console.log('joinWorkspace, msg =', msg);
       setState(msg.state);
-    });
-  });
+    },
+  );
 
   socket.emit('startWorkspace', { workspace_id: workspaceId });
 
