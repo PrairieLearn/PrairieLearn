@@ -1,5 +1,5 @@
 import { exec } from 'child_process';
-import { callbackify, promisify } from 'util';
+import { promisify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -20,7 +20,6 @@ export async function getCommitHashAsync(coursePath: string): Promise<string> {
     });
   }
 }
-export const getCommitHash = callbackify(getCommitHashAsync);
 
 /**
  * Loads the current commit hash from disk and stores it in the database. This
@@ -37,7 +36,6 @@ export async function updateCourseCommitHashAsync(course: {
   });
   return hash;
 }
-export const updateCourseCommitHash = callbackify(updateCourseCommitHashAsync);
 
 /**
  * If the provided course object contains a commit hash, that will be used;
@@ -55,4 +53,3 @@ export async function getOrUpdateCourseCommitHashAsync(course: {
 }): Promise<string> {
   return course.commit_hash ?? (await updateCourseCommitHashAsync(course));
 }
-export const getOrUpdateCourseCommitHash = callbackify(getOrUpdateCourseCommitHashAsync);

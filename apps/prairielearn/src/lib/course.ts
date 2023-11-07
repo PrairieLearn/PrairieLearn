@@ -29,10 +29,7 @@ export async function checkBelongsAsync(
   if (
     sqldb.queryOptionalRow(
       sql.check_belongs,
-      {
-        assessment_instance_id,
-        course_instance_id,
-      },
+      { assessment_instance_id, course_instance_id },
       IdSchema,
     ) == null
   ) {
