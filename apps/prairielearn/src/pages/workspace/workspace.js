@@ -35,9 +35,7 @@ router.get('/', (_req, res, _next) => {
       heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
       visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
       socketToken: generateSignedToken(
-        {
-          workspace_id: res.locals.workspace_id.toString(),
-        },
+        { workspace_id: res.locals.workspace_id.toString() },
         config.secretKey,
       ),
       resLocals: res.locals,

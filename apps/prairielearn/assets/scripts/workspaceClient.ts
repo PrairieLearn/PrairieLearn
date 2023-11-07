@@ -99,18 +99,22 @@ $(function () {
     setMessage(msg.message);
   });
 
-  socket.emit(
-    'joinWorkspace',
-    {
-      token: socketToken,
-      workspace_id: workspaceId,
-    },
-    (msg) => {
-      console.log('joinWorkspace, msg =', msg);
-      setState(msg.state);
-    },
-  );
+  // Whenever we establish or reestablish a connection, join the workspace room.
+  socket.on('connect', () => {
+    socket.emit(
+      'joinWorkspace',
+      {
+        token: socketToken,
+        workspace_id: workspaceId,
+      },
+      (msg) => {
+        console.log('joinWorkspace, msg =', msg);
+        setState(msg.state);
+      },
+    );
+  });
 
+  // Only start the workspace when the page is first loaded, not on reconnects.
   socket.emit('startWorkspace', { workspace_id: workspaceId });
 
   let lastVisibleTime = Date.now();
