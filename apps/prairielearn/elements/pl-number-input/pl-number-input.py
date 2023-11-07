@@ -123,7 +123,7 @@ def get_string_precision(number_string: str) -> float:
 def get_string_significant_digits(number_string: str) -> int:
     if "." in number_string:
         number_string_partition = number_string.partition(".")
-        integer_part = len(number_string_partition[0])
+        integer_part = len(number_string_partition[0].lstrip("0"))
         decimal_part = len(number_string_partition[2].lstrip("0"))
         return integer_part + decimal_part
 
