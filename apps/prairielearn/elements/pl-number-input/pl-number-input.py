@@ -306,7 +306,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
         if show_correct_answer:
-            ans_true = format_true_ans(element, data, name)
+            html_params["a_tru"] = format_true_ans(element, data, name)
         if ans_true is not None:
             html_params["a_tru"] = ans_true
 
