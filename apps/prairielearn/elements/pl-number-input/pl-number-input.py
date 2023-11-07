@@ -304,11 +304,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     raw_submitted_answer
                 )
         # Add true answer to be able to display it in the submitted answer panel
-        ans_true = None
         if show_correct_answer:
             html_params["a_tru"] = format_true_ans(element, data, name)
-        if ans_true is not None:
-            html_params["a_tru"] = ans_true
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
