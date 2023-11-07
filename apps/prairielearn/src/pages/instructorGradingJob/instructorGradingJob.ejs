@@ -119,7 +119,9 @@
             });
           </script>
           <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output" style="display: none;"></pre>
-          <i class="fa fa-spinner fa-spin fa-2x" id="job-output-loading" style="width: 100%; text-align: center;"></i>
+          <div id="job-output-loading" class="w-100 text-center">
+            <i class="fa fa-spinner fa-spin fa-2x"></i>
+          </div>
           <% } else { %>
           <% if (grading_job.output) { %>
           <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output"><%= grading_job.output %></pre>
