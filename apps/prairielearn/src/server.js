@@ -71,7 +71,7 @@ const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdate } = require('./lib/course');
-const { getJobOutput } = require('./lib/server-jobs');
+const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2184,8 +2184,8 @@ if (require.main === module && config.startServer) {
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
           logger.info(`Waiting for job to finish...`);
           await jobPromise;
-          (await getJobOutput(jobSequenceId)).forEach(({ id, output, status }) => {
-            logger.info(`Job ${id} finished with status '${status}'.\n${output}`);
+          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
           });
           process.exit(0);
         }

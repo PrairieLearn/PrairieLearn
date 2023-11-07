@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prai
 import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
-import { IdSchema } from './db-types';
+import { Job, JobSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -248,17 +248,6 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
   return serverJob;
 }
 
-const JobOutputSchema = z.object({
-  id: IdSchema,
-  output: z.string().nullable(),
-  status: z.enum(['Running', 'Success', 'Error']),
-});
-type JobOutput = z.infer<typeof JobOutputSchema>;
-
-export async function getJobOutput(jobSequenceId: string): Promise<JobOutput[]> {
-  return await queryRows(
-    sql.select_job_output,
-    { job_sequence_id: jobSequenceId },
-    JobOutputSchema,
-  );
+export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
+  return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
 }

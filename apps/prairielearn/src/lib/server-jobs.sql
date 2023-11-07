@@ -102,9 +102,7 @@ WHERE
 
 -- BLOCK select_job_output
 SELECT
-  j.id,
-  j.output,
-  j.status
+  j.*
 FROM
   jobs AS j
 WHERE

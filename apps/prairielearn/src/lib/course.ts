@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { callbackify } from 'util';
 import * as fs from 'fs-extra';
 import * as namedLocks from '@prairielearn/named-locks';

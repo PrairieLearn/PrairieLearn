@@ -480,3 +480,33 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const JobSchema = z.object({
+  arguments: z.string().array().nullable(),
+  assessment_id: IdSchema.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  command: z.string().nullable(),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  course_request_id: IdSchema.nullable(),
+  data: z.any().nullable(),
+  description: z.string().nullable(),
+  env: z.record(z.string(), z.any()).nullable(),
+  error_message: z.string().nullable(),
+  exit_code: z.number().nullable(),
+  exit_signal: z.string().nullable(),
+  finish_date: DateFromISOString.nullable(),
+  heartbeat_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  last_in_sequence: z.boolean().nullable(),
+  no_job_sequence_update: z.boolean().nullable(),
+  number_in_sequence: z.number().nullable(),
+  output: z.string().nullable(),
+  start_date: DateFromISOString.nullable(),
+  status: z.enum(['Running', 'Success', 'Error']).nullable(),
+  type: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+  working_directory: z.string().nullable(),
+});
+export type Job = z.infer<typeof JobSchema>;
