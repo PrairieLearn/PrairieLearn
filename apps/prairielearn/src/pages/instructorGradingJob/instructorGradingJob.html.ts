@@ -2,8 +2,10 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { IdSchema } from '../../lib/db-types';
+
 const GradingJobSchema = z.object({
-  id: z.number(),
+  id: IdSchema,
   s3_bucket: z.string().nullable(),
   s3_root_key: z.string().nullable(),
   output: z.string().nullable(),
@@ -24,7 +26,7 @@ export const GradingJobQueryResultSchema = z.object({
 });
 type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
 
-export function instructorGradingJob({
+export function InstructorGradingJob({
   resLocals,
   gradingJobQueryResult,
 }: {
@@ -145,7 +147,8 @@ export function instructorGradingJob({
                       <tr>
                         <td>
                           <a
-                            href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log"
+                            href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
+                              .grading_job.id}/file/output.log"
                             >output.log</a
                           >
                         </td>
@@ -185,6 +188,8 @@ export function instructorGradingJob({
                       class="bg-dark text-white rounded p-3 mb-0"
                       id="job-output"
                       style="display: none;"
+                      data-output-url="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
+                        .grading_job.id}/file/output.log"
                     ></pre>
                     <i
                       class="fa fa-spinner fa-spin fa-2x"
