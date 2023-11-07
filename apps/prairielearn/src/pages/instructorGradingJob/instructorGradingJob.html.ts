@@ -172,17 +172,16 @@ export function InstructorGradingJob({
               gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
-                      $.get('<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log')
-                        .done(function (data) {
-                          $('#job-output-loading').hide();
-                          $('#job-output').text(data);
-                          $('#job-output').show();
-                        })
-                        .fail(function () {
-                          $('#job-output-loading').hide();
-                          $('#job-output').text('Unable to load grader results');
-                          $('#job-output').show();
-                        });
+                      .done(function (data) {
+                        $('#job-output-loading').hide();
+                        $('#job-output').text(data);
+                        $('#job-output').show();
+                      })
+                      .fail(function () {
+                        $('#job-output-loading').hide();
+                        $('#job-output').text('Unable to load grader results');
+                        $('#job-output').show();
+                      });
                     </script>
                     <pre
                       class="bg-dark text-white rounded p-3 mb-0"
@@ -191,11 +190,9 @@ export function InstructorGradingJob({
                       data-output-url="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
                         .grading_job.id}/file/output.log"
                     ></pre>
-                    <i
-                      class="fa fa-spinner fa-spin fa-2x"
-                      id="job-output-loading"
-                      style="width: 100%; text-align: center;"
-                    ></i>
+                    <div id="job-output-loading" class="w-100 text-center">
+                      <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    </div>
                   `
                 : gradingJobQueryResult.grading_job.output
                 ? html`
@@ -204,9 +201,11 @@ export function InstructorGradingJob({
                         </pre
                     >
                   `
-                : html` <pre class="bg-dark text-white rounded p-3 mb-0">
+                : html`
+                    <pre class="bg-dark text-white rounded p-3 mb-0">
 No output was captured for this grading job.</pre
-                  >`}
+                    >
+                  `}
             </div>
           </div>
         </main>
