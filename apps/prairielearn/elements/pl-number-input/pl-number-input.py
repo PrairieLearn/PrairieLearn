@@ -127,7 +127,7 @@ def get_string_significant_digits(number_string: str) -> int:
         decimal_part = len(number_string_partition[2].lstrip("0"))
         return integer_part + decimal_part
 
-    return len(number_string.rstrip("0"))
+    return len(number_string.strip("0"))
 
 
 def get_string_decimal_digits(number_string: str) -> int:
