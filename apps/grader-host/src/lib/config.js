@@ -52,6 +52,8 @@ const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),
+  visibilityTimeout: z.number().default(60),
+  visibilityTimeoutHeartbeatIntervalSec: z.number().default(30),
 });
 
 function makeProductionConfigSource() {
