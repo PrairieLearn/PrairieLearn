@@ -96,6 +96,22 @@ export async function pullAndUpdate({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
+    if (path === undefined || branch === undefined || repository === undefined) {
+      const course_data = await selectCourseById(courseId);
+      path = course_data.path;
+      branch = course_data.branch;
+      repository = course_data.repository;
+      commit_hash = course_data.commit_hash;
+    }
+    if (!path) {
+      job.fail('Path is not set for this course. Exiting...');
+      return;
+    }
+    if (!branch || !repository) {
+      job.fail('Git repository or branch are not set for this course. Exiting...');
+      return;
+    }
+
     const lockName = getLockNameForCoursePath(path);
     await namedLocks.tryWithLock(
       lockName,
@@ -106,23 +122,14 @@ export async function pullAndUpdate({
         },
       },
       async () => {
-        if (path === undefined || branch === undefined || repository === undefined) {
-          const course_data = await selectCourseById(courseId);
-          path = course_data.path;
-          branch = course_data.branch;
-          repository = course_data.repository;
-          commit_hash = course_data.commit_hash;
-        }
-        if (!path) {
-          job.fail('Path is not set for this course. Exiting...');
-          return;
-        }
-        if (!branch || !repository) {
-          job.fail('Git repository or branch are not set for this course. Exiting...');
+        let startGitHash: string | null = null;
+
+        // These should be set by the time we get here, but checking to allow typing to assume non-null.
+        if (!path || !branch || !repository) {
+          job.fail('Invalid state');
           return;
         }
 
-        let startGitHash: string | null = null;
         const coursePathExists = await fs.pathExists(path);
         if (!coursePathExists) {
           // path does not exist, start with 'git clone'
