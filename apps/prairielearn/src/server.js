@@ -2174,23 +2174,6 @@ if (require.main === module && config.startServer) {
         }
       },
       async () => {
-        if ('sync-course' in argv) {
-          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
-          const { jobSequenceId, jobPromise } = await pullAndUpdate({
-            courseId: argv['sync-course'],
-            authnUserId: '1',
-            userId: '1',
-          });
-          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-          logger.info(`Waiting for job to finish...`);
-          await jobPromise;
-          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
-            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
-          });
-          process.exit(0);
-        }
-      },
-      async () => {
         // Collect metrics on our Postgres connection pools.
         const meter = opentelemetry.metrics.getMeter('prairielearn');
 
@@ -2291,6 +2274,23 @@ if (require.main === module && config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
+      },
+      async () => {
+        if ('sync-course' in argv) {
+          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+          const { jobSequenceId, jobPromise } = await pullAndUpdate({
+            courseId: argv['sync-course'],
+            authnUserId: '1',
+            userId: '1',
+          });
+          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+          logger.info(`Waiting for job to finish...`);
+          await jobPromise;
+          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
+          });
+          process.exit(0);
+        }
       },
       function (callback) {
         if (!config.initNewsItems) return callback(null);
