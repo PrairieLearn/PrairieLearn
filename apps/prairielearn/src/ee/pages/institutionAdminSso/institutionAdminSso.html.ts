@@ -16,6 +16,7 @@ export const InstitutionAdminSso = ({
   resLocals: Record<string, any>;
 }) => {
   const hasSamlProvider = !!institutionSamlProvider;
+
   // TODO: only show authentication providers that were enabled in `config.json`.
   return html`
     <!doctype html>
@@ -94,11 +95,15 @@ export const InstitutionAdminSso = ({
                 ${supportedAuthenticationProviders.map((provider) => {
                   if (provider.name === 'LTI') return '';
 
+                  const isEnabled = institutionAuthenticationProviders.some(
+                    (p) => p.id === provider.id,
+                  );
+
                   return html`
                     <option
                       value="${provider.id}"
                       ${provider.id === institution.default_authn_provider_id ? 'selected' : ''}
-                      ${provider.name === 'SAML' && !hasSamlProvider ? 'disabled' : ''}
+                      ${!isEnabled ? 'disabled' : ''}
                     >
                       ${provider.name}
                     </option>

@@ -12,20 +12,19 @@ const aws = require('../../lib/aws');
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-// NOTE: We assume that instructorGradingJob is only mounted on the course_instance
-// page route, as is currently the case. If you add a course page route, take care!
-// See instructorJobSequence, for example.
-
 router.get('/:job_id', (req, res, next) => {
   const params = {
     job_id: req.params.job_id,
-    course_instance_id: res.locals.course_instance.id,
+    course_instance_id: res.locals.course_instance?.id ?? null,
+    course_id: res.locals.course.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   };
-  sqldb.queryOneRow(sql.select_job, params, (err, result) => {
+  sqldb.queryZeroOrOneRow(sql.select_job, params, (err, result) => {
     if (ERR(err, next)) return;
-
+    if (result.rows.length === 0) {
+      return next(error.make(404, 'Job not found'));
+    }
     // If the grading job is associated with an assessment instance (through a
     // submission, a variant, and an instance question), then we need to check
     // if the effective user is authorized to view this assessment instance.
@@ -35,7 +34,6 @@ router.get('/:job_id', (req, res, next) => {
     if (result.rows[0].aai && !result.rows[0].aai.authorized) {
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
-
     _.assign(res.locals, result.rows[0]);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
@@ -56,13 +54,16 @@ router.get('/:job_id/file/:file', (req, res, next) => {
 
   const params = {
     job_id: req.params.job_id,
-    course_instance_id: res.locals.course_instance.id,
+    course_instance_id: res.locals.course_instance?.id ?? null,
+    course_id: res.locals.course.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   };
-  sqldb.queryOneRow(sql.select_job, params, (err, result) => {
+  sqldb.queryZeroOrOneRow(sql.select_job, params, (err, result) => {
     if (ERR(err, next)) return;
-
+    if (result.rows.length === 0) {
+      return next(error.make(404, 'Job not found'));
+    }
     // If the grading job is associated with an assessment instance (through a
     // submission, a variant, and an instance question), then we need to check
     // if the effective user is authorized to view this assessment instance.

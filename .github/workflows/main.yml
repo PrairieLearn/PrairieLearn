@@ -35,12 +35,14 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the workspace-desktop docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop:latest
       - name: Build the workspace-jupyterlab docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab:latest
+      - name: Build the workspace-jupyterlab-python docker image if needed
+        run: ./tools/build-image-if-needed.sh workspaces/jupyterlab-python prairielearn/workspace-jupyterlab-python:latest
       - name: Build the workspace-rstudio docker image if needed
         run: ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio:latest
       - name: Build the workspace-xtermjs docker image if needed
@@ -59,7 +61,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
+        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
 
       - name: Build the grader-c docker image if needed
         run: ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c:latest
@@ -160,12 +162,14 @@ jobs:
         run: pip install -r images/plbase/python-requirements.txt
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
           cache: 'yarn'
       - name: Install Node dependencies
         run: yarn install --immutable
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check
 
       - name: Set up Turborepo cache
         uses: actions/cache@v3

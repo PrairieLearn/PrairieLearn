@@ -203,6 +203,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/statistics/:filename',
   '/pl/course/:course_id/question/:question_id/submission/:submission_id/file/*',
   '/pl/course/:course_id/question/:question_id/text/:filename',
+  '/pl/course/:course_id/grading_job/:job_id/file/:file',
   '/pl/news_item/:news_item_id/*',
 
   // Renders partial HTML documents, not a full page.
@@ -255,6 +256,7 @@ const SKIP_ROUTES = [
 
   // TODO: submit an answer to a question so we can test this page.
   '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
+  '/pl/course/:course_id/grading_job/:job_id',
 ];
 
 function shouldSkipPath(path) {
