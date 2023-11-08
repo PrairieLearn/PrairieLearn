@@ -24,7 +24,7 @@ let messageSchema = null;
  * @param {number} timeout
  * @returns {Promise<void>}
  */
-async function extendVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
+async function changeVisibilityTimeout(sqs, queueUrl, receiptHandle, timeout) {
   await sqs.send(
     new ChangeMessageVisibilityCommand({
       QueueUrl: queueUrl,
@@ -43,7 +43,7 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
   const abortController = new AbortController();
 
   // Run the first extension immediately before we start processing the job.
-  await extendVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
+  await changeVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
 
   // We want this process to run in the background, so we don't await it.
   // `extendVisibilityTimeout` will handle errors.
@@ -55,7 +55,7 @@ async function startHeartbeat(sqs, queueUrl, receiptHandle) {
       if (abortController.signal.aborted) return;
 
       try {
-        await extendVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
+        await changeVisibilityTimeout(sqs, queueUrl, receiptHandle, config.visibilityTimeout);
       } catch (err) {
         globalLogger.error('Error extending visibility timeout', err);
         Sentry.captureException(err);
