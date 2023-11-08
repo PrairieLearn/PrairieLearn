@@ -30,6 +30,5 @@ ADD COLUMN last_client_fingerprint_id BIGINT REFERENCES client_fingerprints (id)
 ALTER TABLE assessment_instances
 ADD COLUMN client_fingerprint_id_change_count INT NOT NULL DEFAULT 0;
 
-
 -- create index
 CREATE INDEX client_fingerprints_user_id_user_session_id_ip_address_idx ON client_fingerprints (user_id, user_session_id, ip_address);
