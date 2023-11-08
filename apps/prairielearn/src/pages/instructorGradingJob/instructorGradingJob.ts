@@ -4,10 +4,10 @@ import { pipeline } from 'node:stream/promises';
 import { S3, NoSuchKey } from '@aws-sdk/client-s3';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import asyncHandler from 'express-async-handler';
-import stream from 'node:stream';
+import asyncHandler = require('express-async-handler');
+import type * as stream from 'node:stream';
 
-import aws from '../../lib/aws';
+import { makeS3ClientConfig } from '../../lib/aws';
 import { InstructorGradingJob, GradingJobQueryResultSchema } from './instructorGradingJob.html';
 
 const router = express.Router();
@@ -87,7 +87,7 @@ router.get(
 
     res.attachment(file);
 
-    const s3 = new S3(aws.makeS3ClientConfig());
+    const s3 = new S3(makeS3ClientConfig());
     s3.getObject({
       Bucket: grading_job.s3_bucket,
       Key: `${grading_job.s3_root_key}/${file}`,

@@ -33,7 +33,8 @@ export function InstructorGradingJob({
   resLocals: Record<string, any>;
   gradingJobQueryResult: GradingJobQueryResult;
 }) {
-  return html` <!doctype html>
+  return html`
+    <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head') %>", {
@@ -172,16 +173,19 @@ export function InstructorGradingJob({
               gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
-                      .done(function (data) {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text(data);
-                        $('#job-output').show();
-                      })
-                      .fail(function () {
-                        $('#job-output-loading').hide();
-                        $('#job-output').text('Unable to load grader results');
-                        $('#job-output').show();
-                      });
+                      const outputUrl = document.getElementById('job-output').dataset.outputUrl;
+
+                      $.get(outputUrl)
+                        .done(function (data) {
+                          $('#job-output-loading').hide();
+                          $('#job-output').text(data);
+                          $('#job-output').show();
+                        })
+                        .fail(function () {
+                          $('#job-output-loading').hide();
+                          $('#job-output').text('Unable to load grader results');
+                          $('#job-output').show();
+                        });
                     </script>
                     <pre
                       class="bg-dark text-white rounded p-3 mb-0"
@@ -197,8 +201,7 @@ export function InstructorGradingJob({
                 : gradingJobQueryResult.grading_job.output
                 ? html`
                     <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
-                        ${gradingJobQueryResult.grading_job.output}
-                        </pre
+${gradingJobQueryResult.grading_job.output}</pre
                     >
                   `
                 : html`
@@ -210,5 +213,6 @@ No output was captured for this grading job.</pre
           </div>
         </main>
       </body>
-    </html>`.toString();
+    </html>
+  `.toString();
 }
