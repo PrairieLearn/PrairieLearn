@@ -137,6 +137,11 @@
                               Once this question is publicly shared, anyone will be able to view it
                               or use it as a part of their course. This operation cannot be undone.
                             </p>
+<% if (isEnterprise) { %>
+<p>
+You retain full ownership of all shared content as described in the <a href="https://www.prairielearn.com/legal/terms#2-user-content">Terms of Service</a>. To allow PrairieLearn to share your content to other users you agree to the <a href="https://www.prairielearn.com/legal/terms#3-user-content-license-grant">User Content License Grant</a>.
+</p>
+<% } %>
                           </div>
                           <div class="modal-footer">
                             <form name="share-publicly" method="POST">
