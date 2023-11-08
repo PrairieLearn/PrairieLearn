@@ -52,7 +52,7 @@ router.get(
       : ['output.log', 'results.json'];
 
     if (allowList.indexOf(file) === -1) {
-      throw Error(`Unknown file ${file}`);
+      throw error.make(404, `Unknown file ${file}`);
     }
 
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
