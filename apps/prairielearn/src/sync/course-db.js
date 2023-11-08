@@ -8,6 +8,7 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { chalk } = require('../lib/chalk');
+const { config } = require('../lib/config');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
@@ -1031,6 +1032,15 @@ async function validateQuestion(question) {
       await jsonLoad.validateJSONAsync(options, schema);
     } catch (err) {
       errors.push(err.message);
+    }
+  }
+
+  if (question.externalGradingOptions?.timeout) {
+    if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
+      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+      warnings.push(
+        `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
+      );
     }
   }
 
