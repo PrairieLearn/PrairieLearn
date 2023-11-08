@@ -110,8 +110,9 @@ export function InstructorGradingJob({
                                 <a
                                   href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
                                     .grading_job.id}/file/job.tar.gz"
-                                  >job.tar.gz</a
-                                >
+                                  >
+                                  job.tar.gz
+                                </a>
                               </td>
                               <td>
                                 Contains all files necessary for grading; this is what is mounted to
