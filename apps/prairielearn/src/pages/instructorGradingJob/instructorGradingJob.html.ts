@@ -110,7 +110,7 @@ export function InstructorGradingJob({
                                 <a
                                   href="${resLocals.urlPrefix}/grading_job/${gradingJobQueryResult
                                     .grading_job.id}/file/job.tar.gz"
-                                  >
+                                >
                                   job.tar.gz
                                 </a>
                               </td>
