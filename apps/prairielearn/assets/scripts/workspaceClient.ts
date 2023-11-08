@@ -101,17 +101,10 @@ $(function () {
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
-    socket.emit(
-      'joinWorkspace',
-      {
-        token: socketToken,
-        workspace_id: workspaceId,
-      },
-      (msg) => {
-        console.log('joinWorkspace, msg =', msg);
-        setState(msg.state);
-      },
-    );
+    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg) => {
+      console.log('joinWorkspace, msg =', msg);
+      setState(msg.state);
+    });
   });
 
   // Only start the workspace when the page is first loaded, not on reconnects.
