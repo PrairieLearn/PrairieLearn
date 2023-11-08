@@ -17,6 +17,19 @@ const ConfigSchema = z.object({
   postgresqlHost: z.string().default('localhost'),
   postgresqlPoolSize: z.number().default(100),
   postgresqlIdleTimeoutMillis: z.number().default(30_000),
+  postgresqlSsl: z
+    .union([
+      z.boolean(),
+      // A subset of the options that can be provided to the `TLSSocket` constructor.
+      // https://node-postgres.com/features/ssl
+      z.object({
+        rejectUnauthorized: z.boolean().default(true),
+        ca: z.string().nullable().default(null),
+        key: z.string().nullable().default(null),
+        cert: z.string().nullable().default(null),
+      }),
+    ])
+    .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
@@ -55,6 +68,7 @@ const ConfigSchema = z.object({
   authUin: z.string().nullable().default('000000000'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
   sessionStoreExpireSeconds: z.number().default(86400),
+  sessionCookieNames: z.array(z.string()).default(['prairielearn_session']),
   sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -147,6 +161,7 @@ const ConfigSchema = z.object({
   externalGradingAutoScalingGroupName: z.string().nullable().default(null),
   externalGradingS3Bucket: z.string().default('prairielearn.dev.grading'),
   externalGradingDefaultTimeout: z.number().default(30), // seconds
+  externalGradingMaximumTimeout: z.number().default(60 * 10), // seconds
   externalGradingLoadAverageIntervalSec: z.number().default(30),
   externalGradingHistoryLoadIntervalSec: z.number().default(15 * 60),
   externalGradingCurrentCapacityFactor: z.number().default(1),
@@ -163,17 +178,6 @@ const ConfigSchema = z.object({
   workersCount: z.number().nullable().default(null),
   workersPerCpu: z.number().default(1),
   workersExecutionMode: z.enum(['container', 'native', 'disabled']).default('native'),
-  /**
-   * Controls how legacy v2 questions are executed.
-   *
-   * - 'inprocess' executes them in the main process.
-   * - 'subprocess' executes them in a subprocess via Python workers.
-   * - 'parallel-run' executes them in both the main process and a subprocess and
-   *   reports any differences in the results.
-   */
-  legacyQuestionExecutionMode: z
-    .enum(['inprocess', 'subprocess', 'parallel-run'])
-    .default('inprocess'),
   workerUseQueue: z.boolean().default(true),
   workerOverloadDelayMS: z.number().default(10_000),
   /**

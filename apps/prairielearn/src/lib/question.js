@@ -1583,8 +1583,13 @@ module.exports = {
   /**
    * Render all information needed for a question.
    *
+<<<<<<< HEAD
    * @param {?(number | string)} variant_id - The variant to render, or null if it should be generated.
    * @param {?string} variant_seed - Random seed for variant, or null if it should be generated.
+=======
+   * @param {string | null} variant_id - The variant to render, or null if it should be generated.
+   * @param {string | null} variant_seed - Random seed for variant, or null if it should be generated.
+>>>>>>> public-sharing
    * @param {Object} locals - The current locals structure to read/write.
    * @param {function} callback - A callback(err) function.
    */

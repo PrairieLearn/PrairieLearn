@@ -1,62 +1,35 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
-const { z } = require('zod');
-const _ = require('lodash');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
-const WorkspaceSchema = z.object({
-  id: z.string(),
+import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types';
+
+const WorkspaceWithContextSchema = z.object({
+  id: IdSchema,
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   time_in_state: z.string(),
-  workspace_host_id: z.string(),
-  workspace_host_hostname: z.string().optional(),
-  workspace_instance_id: z.string().optional(),
-  workspace_host_state: z.enum([
-    'launching',
-    'ready',
-    'draining',
-    'unhealthy',
-    'terminating',
-    'terminated',
-  ]),
-  workspace_host_time_in_state: z.string(),
   question_name: z.string(),
   course_instance_name: z.string().nullable(),
   course_name: z.string(),
   institution_name: z.string(),
 });
 
-/** @typedef {z.infer<typeof WorkspaceSchema>} Workspace */
+export const WorkspaceHostRowSchema = z.object({
+  workspace_host: WorkspaceHostSchema,
+  workspace_host_time_in_state: z.string(),
+  workspaces: z.array(WorkspaceWithContextSchema),
+});
+type WorkspaceHostRow = z.infer<typeof WorkspaceHostRowSchema>;
 
-/**
- * @typedef {object} AdministratorWorkspacesProps
- * @property {Workspace[]} workspaces
- * @property {number} workspaceLostHostCapacity
- * @property {Record<string, any>} resLocals
- */
-
-/**
- * @param {AdministratorWorkspacesProps} props
- * @returns {string}
- */
-function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLocals }) {
-  const workspacesByHost = _.groupBy(workspaces, 'workspace_host_id');
-  const workspaceHosts = Object.entries(workspacesByHost).map(
-    ([workspaceHostId, workspacesForHost]) => {
-      // Pick a representative workspace to grab host information from; this
-      // should be the same for all workspaces in a group.
-      const workspace = workspacesForHost[0];
-
-      return {
-        id: workspaceHostId,
-        hostname: workspace.workspace_host_hostname,
-        instance_id: workspace.workspace_instance_id,
-        state: workspace.workspace_host_state,
-        time_in_state: workspace.workspace_host_time_in_state,
-        workspaces: workspacesForHost,
-      };
-    },
-  );
-
+export function AdministratorWorkspaces({
+  workspaceHostRows,
+  workspaceLoadHostCapacity,
+  resLocals,
+}: {
+  workspaceHostRows: WorkspaceHostRow[];
+  workspaceLoadHostCapacity: number;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -90,7 +63,9 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
               </button>
             </div>
             <div class="list-group list-group-flush">
-              ${workspaceHosts.map((workspaceHost) => {
+              ${workspaceHostRows.map((workspaceHostRow) => {
+                const workspaceHost = workspaceHostRow.workspace_host;
+                const workspaces = workspaceHostRow.workspaces;
                 const instanceId = workspaceHost.instance_id;
                 return html`
                   <div class="list-group-item">
@@ -109,46 +84,58 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                           ? html`<span class="text-muted mr-2">(${instanceId})</span>`
                           : null}
                         ${WorkspaceHostState({ state: workspaceHost.state })}
-                        <span class="badge badge-secondary">${workspaceHost.time_in_state}</span>
+                        <span class="badge badge-secondary">
+                          ${workspaceHostRow.workspace_host_time_in_state}
+                        </span>
                       </div>
                       ${Capacity({
                         total: workspaceLoadHostCapacity,
-                        current: workspaceHost.workspaces.length,
+                        current: workspaces.length,
                       })}
                     </div>
                     <div id="workspaces-${workspaceHost.id}" class="collapse">
-                      <div class="list-group list-group my-2">
-                        ${workspaceHost.workspaces.map((workspace) => {
-                          const maybeCourseInstanceName = workspace.course_instance_name
-                            ? html`(<span title="Course instance"
-                                  >${workspace.course_instance_name}</span
-                                >)`
-                            : null;
-                          return html`
-                            <div class="list-group-item">
-                              <div class="d-flex align-items-center">
-                                <span class="mr-2" style="font-variant-numeric: tabular-nums;">
-                                  ${workspace.id}
-                                </span>
-                                <span> </span>
-                                ${WorkspaceState({ state: workspace.state })}
-                                <span class="badge badge-secondary">
-                                  ${workspace.time_in_state}
-                                </span>
-                              </div>
-                              <div class="text-muted text-small">
-                                <span class="text-monospace" title="Question"
-                                  >${workspace.question_name}</span
-                                >
-                                &bull;
-                                <span title="Course">${workspace.course_name}</span>
-                                ${maybeCourseInstanceName} &bull;
-                                <span title="Institution">${workspace.institution_name}</span>
-                              </div>
+                      ${workspaces.length === 0
+                        ? html`
+                            <div class="text-muted my-2">
+                              There are no workspaces running on this host.
                             </div>
-                          `;
-                        })}
-                      </div>
+                          `
+                        : html`
+                            <div class="list-group list-group my-2">
+                              ${workspaces.map((workspace) => {
+                                const maybeCourseInstanceName = workspace.course_instance_name
+                                  ? html`(<span title="Course instance"
+                                        >${workspace.course_instance_name}</span
+                                      >)`
+                                  : null;
+                                return html`
+                                  <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                      <span
+                                        class="mr-2"
+                                        style="font-variant-numeric: tabular-nums;"
+                                      >
+                                        ${workspace.id}
+                                      </span>
+                                      ${WorkspaceState({ state: workspace.state })}
+                                      <span class="badge badge-secondary">
+                                        ${workspace.time_in_state}
+                                      </span>
+                                    </div>
+                                    <div class="text-muted text-small">
+                                      <span class="text-monospace" title="Question"
+                                        >${workspace.question_name}</span
+                                      >
+                                      &bull;
+                                      <span title="Course">${workspace.course_name}</span>
+                                      ${maybeCourseInstanceName} &bull;
+                                      <span title="Institution">${workspace.institution_name}</span>
+                                    </div>
+                                  </div>
+                                `;
+                              })}
+                            </div>
+                          `}
                     </div>
                   </div>
                 `;
@@ -161,17 +148,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
   `.toString();
 }
 
-/**
- * @typedef {Object} CapacityProps
- * @property {number} total
- * @property {number} current
- */
-
-/**
- * @param {CapacityProps} props
- * @returns {import('@prairielearn/html').HtmlSafeString}
- */
-function Capacity({ total, current }) {
+function Capacity({ total, current }: { total: number; current: number }) {
   const capacity = (current / total) * 100;
   return html`
     <div class="d-flex flex-row align-items-center">
@@ -212,8 +189,3 @@ function WorkspaceHostState({ state }) {
   }
   return html`<span class="badge badge-${color} mr-2">${state}</span>`;
 }
-
-module.exports = {
-  WorkspaceSchema,
-  AdministratorWorkspaces,
-};

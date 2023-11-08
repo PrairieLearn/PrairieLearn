@@ -374,17 +374,17 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "singleAttemptQ", "points": 10},
-            {"id": "tryOncePerVar", "points": 10},
-            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-        ]
-    }
-],
-```
+  ```json
+  "zones": [
+      {
+          "questions": [
+              {"id": "singleAttemptQ", "points": 10},
+              {"id": "tryOncePerVar", "points": 10},
+              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
+          ]
+      }
+  ],
+  ```
 
 ## Limiting the rate at which answers can be graded
 
