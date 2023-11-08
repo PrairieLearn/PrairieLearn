@@ -1,11 +1,12 @@
-import asyncHandler from 'express-async-handler';
+import asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
 import { z } from 'zod';
+import { IdSchema } from '../lib/db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const ClientFingerprintSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   session_id: z.string(),
   user_id: z.string(),
   ip_address: z.string(),
