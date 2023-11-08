@@ -98,9 +98,6 @@ router.get(
         `S3 object ${grading_job.s3_bucket}/${grading_job.s3_root_key}/${file} has no body.`,
       );
     }
-    if (error instanceof NoSuchKey) {
-      res.status(404).send();
-    }
     try {
       return pipeline(s3Object.Body as stream.Readable, res);
     } catch (err) {
