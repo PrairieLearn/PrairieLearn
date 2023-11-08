@@ -174,7 +174,7 @@ export function InstructorGradingJob({
               gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
-                      $(function() => {
+                      $(() => {
                         const outputUrl = document.getElementById('job-output').dataset.outputUrl;
 
                         $.get(outputUrl)
