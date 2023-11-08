@@ -1713,7 +1713,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course/:course_id/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob'),
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
   );
 
   // This route is used to initiate a transfer of a question from a template course.
