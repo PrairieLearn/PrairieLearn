@@ -1,4 +1,3 @@
-import ERR from 'async-stacktrace';
 import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 import { S3, NoSuchKey } from '@aws-sdk/client-s3';
@@ -15,7 +14,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/:job_id',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
       sql.select_job,
       {
@@ -38,7 +37,7 @@ router.get(
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     res.send(InstructorGradingJob({ resLocals: res.locals, gradingJobQueryResult }));
   }),
@@ -46,14 +45,14 @@ router.get(
 
 router.get(
   '/:job_id/file/:file',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     const file = req.params.file;
     const allowList = res.locals.authz_data.has_course_permission_view
       ? ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json']
       : ['output.log', 'results.json'];
 
     if (allowList.indexOf(file) === -1) {
-      return next(new Error(`Unknown file ${file}`));
+      throw Error(`Unknown file ${file}`);
     }
 
     const gradingJobQueryResult = await sqldb.queryOptionalRow(
@@ -68,7 +67,7 @@ router.get(
       GradingJobQueryResultSchema,
     );
     if (gradingJobQueryResult === null) {
-      return next(error.make(404, 'Job not found'));
+      throw error.make(404, 'Job not found');
     }
     // If the grading job is associated with an assessment instance (through a
     // submission, a variant, and an instance question), then we need to check
@@ -77,36 +76,40 @@ router.get(
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-
+    console.log(gradingJobQueryResult);
     const grading_job = gradingJobQueryResult.grading_job;
+
     if (!grading_job.s3_bucket || !grading_job.s3_root_key) {
-      return next(new Error(`Job ${grading_job.id} does not have any files stored in S3.`));
+      throw new Error(`Job ${grading_job.id} does not have any files stored in S3.`);
     }
 
     res.attachment(file);
 
     const s3 = new S3(makeS3ClientConfig());
-    s3.getObject({
+    const s3Object = await s3.getObject({
       Bucket: grading_job.s3_bucket,
       Key: `${grading_job.s3_root_key}/${file}`,
-    })
-      .then((object) => {
-        if (object.Body === undefined) {
-          throw new Error(
-            `S3 object ${grading_job.s3_bucket}/${grading_job.s3_root_key}/${file} has no body.`,
-          );
-        }
-        return pipeline(object.Body as stream.Readable, res);
-      })
-      .catch((err) => {
-        if (err instanceof NoSuchKey) {
-          res.status(404).send();
-        } else {
-          ERR(err, next);
-        }
-      });
+    });
+
+    if (s3Object.Body === undefined) {
+      throw new Error(
+        `S3 object ${grading_job.s3_bucket}/${grading_job.s3_root_key}/${file} has no body.`,
+      );
+    }
+    if (error instanceof NoSuchKey) {
+      res.status(404).send();
+    }
+    try {
+      return pipeline(s3Object.Body as stream.Readable, res);
+    } catch (err) {
+      if (err instanceof NoSuchKey) {
+        res.status(404).send();
+      } else {
+        throw err;
+      }
+    }
   }),
 );
 

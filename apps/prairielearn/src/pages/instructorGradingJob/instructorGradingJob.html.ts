@@ -174,19 +174,21 @@ export function InstructorGradingJob({
               gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
-                      const outputUrl = document.getElementById('job-output').dataset.outputUrl;
+                      () => {
+                        const outputUrl = document.getElementById('job-output').dataset.outputUrl;
 
-                      $.get(outputUrl)
-                        .done(function (data) {
-                          $('#job-output-loading').hide();
-                          $('#job-output').text(data);
-                          $('#job-output').show();
-                        })
-                        .fail(function () {
-                          $('#job-output-loading').hide();
-                          $('#job-output').text('Unable to load grader results');
-                          $('#job-output').show();
-                        });
+                        $.get(outputUrl)
+                          .done(function (data) {
+                            $('#job-output-loading').hide();
+                            $('#job-output').text(data);
+                            $('#job-output').show();
+                          })
+                          .fail(function () {
+                            $('#job-output-loading').hide();
+                            $('#job-output').text('Unable to load grader results');
+                            $('#job-output').show();
+                          });
+                      };
                     </script>
                     <pre
                       class="bg-dark text-white rounded p-3 mb-0"
