@@ -1,3 +1,4 @@
+
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -25,6 +26,7 @@ const { callbackify } = require('node:util');
 const { flash } = require('@prairielearn/flash');
 const { features } = require('../../lib/features/index');
 const { getCanonicalHost } = require('../../lib/url');
+const { isEnterprise } = require('../../lib/license');
 
 router.post(
   '/test',
@@ -263,6 +265,8 @@ router.get('/', function (req, res, next) {
 
   res.locals.questionTestPath = questionTestPath;
   res.locals.questionTestCsrfToken = questionTestCsrfToken;
+
+  res.locals.isEnterprise = isEnterprise();
 
   async.series(
     [
