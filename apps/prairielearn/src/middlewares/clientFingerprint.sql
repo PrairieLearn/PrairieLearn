@@ -2,7 +2,7 @@
 SELECT
   id,
   user_id,
-  session_id,
+  user_session_id,
   ip_address,
   user_agent,
   accept,
@@ -12,7 +12,7 @@ FROM
   client_fingerprints
 WHERE
   user_id = $user_id
-  AND session_id = $session_id
+  AND user_session_id = $user_session_id
   AND ip_address = $ip_address
   AND user_agent = $user_agent
   AND accept = $accept
@@ -21,7 +21,7 @@ WHERE
 INSERT INTO
   client_fingerprints (
     user_id,
-    session_id,
+    user_session_id,
     ip_address,
     user_agent,
     accept_language,
@@ -30,7 +30,7 @@ INSERT INTO
 VALUES
   (
     $user_id,
-    $session_id,
+    $user_session_id,
     $ip_address,
     $user_agent,
     $accept_language,
