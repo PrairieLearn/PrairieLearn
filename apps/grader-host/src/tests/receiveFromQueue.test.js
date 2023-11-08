@@ -69,14 +69,13 @@ function fakeSqs(options = {}) {
   });
 }
 
-const TIMEOUT_OVERHEAD = 300;
+const VISIBILITY_TIMEOUT = 60;
 
 describe('queueReceiver', () => {
   beforeEach(() => {
     // Our config-loading system chokes when it's not running in AWS. Instead
     // of loading it, we'll just set the values we need for these tests.
-    config.visibilityTimeout = 60;
-    config.timeoutOverhead = TIMEOUT_OVERHEAD;
+    config.visibilityTimeout = VISIBILITY_TIMEOUT;
   });
 
   it('tries to receive a message from the correct queue url', (done) => {
@@ -159,7 +158,7 @@ describe('queueReceiver', () => {
         assert.isNull(err);
         assert.equal(sqs.changeMessageVisibility.callCount, 1);
         const params = sqs.changeMessageVisibility.args[0][0].input;
-        assert.equal(params.VisibilityTimeout, 60);
+        assert.equal(params.VisibilityTimeout, VISIBILITY_TIMEOUT);
         done();
       },
     );
