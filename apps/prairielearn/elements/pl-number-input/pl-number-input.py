@@ -244,11 +244,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["allow_fractions"] = allow_fractions
 
         # Find the true answer to be able to display it in the info popup
-        ans_true = None
         if show_correct_answer:
-            ans_true = format_true_ans(element, data, name)
-        if ans_true is not None:
-            info_params["a_tru"] = ans_true
+            html_params["a_tru"] = format_true_ans(element, data, name)
 
         info = chevron.render(template, info_params).strip()
 
@@ -320,17 +317,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
-        ans_true = None
         if show_correct_answer:
-            ans_true = format_true_ans(element, data, name)
-
-        if ans_true is None:
-            return ""
+            html_params["a_tru"] = format_true_ans(element, data, name)
 
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": ans_true,
             "suffix": suffix,
         }
 
