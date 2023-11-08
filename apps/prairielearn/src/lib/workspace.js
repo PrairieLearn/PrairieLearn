@@ -59,6 +59,28 @@ module.exports = {
     workspaceUtils.init(socketServer.io);
     socketServer.io
       .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .use((socket, next) => {
+        // TODO: these checks are temporarily disabled until we are reasonably
+        // sure that almost all clients are sending auth information.
+        //
+        // if (!socket.handshake.auth.workspace_id) {
+        //   next(new Error('No workspace_id provided'));
+        //   return;
+        // }
+        // if (
+        //   !socket.handshake.auth.token ||
+        //   !checkSignedToken(
+        //     socket.handshake.auth.token,
+        //     { workspace_id: socket.handshake.auth.workspace_id },
+        //     config.secretKey,
+        //   )
+        // ) {
+        //   next(new Error('Invalid token'));
+        //   return;
+        // }
+
+        next();
+      })
       .on('connection', module.exports.connection);
   },
 
@@ -69,7 +91,13 @@ module.exports = {
    */
   connection(socket) {
     socket.on('joinWorkspace', (msg, callback) => {
-      const workspace_id = msg.workspace_id;
+      // The middleware will have already ensured that this property exists and
+      // that the client possesses a token that is valid for this workspace ID.
+      //
+      // TODO: once all clients include a token in the handshake, we can remove
+      // the code that reads the workspace ID from the message.
+      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
+
       socket.join(`workspace-${workspace_id}`);
 
       sqldb.queryOneRow(sql.select_workspace, { workspace_id }, (err, result) => {
@@ -84,7 +112,13 @@ module.exports = {
     });
 
     socket.on('startWorkspace', (msg) => {
-      const workspace_id = msg.workspace_id;
+      // The middleware will have already ensured that this property exists and
+      // that the client possesses a token that is valid for this workspace ID.
+      //
+      // TODO: once all clients include a token in the handshake, we can remove
+      // the code that reads the workspace ID from the message.
+      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
+
       module.exports.startup(workspace_id).catch(async (err) => {
         logger.error(`Error starting workspace ${workspace_id}`, err);
         await workspaceUtils.updateWorkspaceState(
@@ -96,7 +130,13 @@ module.exports = {
     });
 
     socket.on('heartbeat', (msg, callback) => {
-      const workspace_id = msg.workspace_id;
+      // The middleware will have already ensured that this property exists and
+      // that the client possesses a token that is valid for this workspace ID.
+      //
+      // TODO: once all clients include a token in the handshake, we can remove
+      // the code that reads the workspace ID from the message.
+      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
+
       sqldb.queryOneRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, (err, result) => {
         if (ERR(err, callback)) return;
         const heartbeat_at = result.rows[0].heartbeat_at;
