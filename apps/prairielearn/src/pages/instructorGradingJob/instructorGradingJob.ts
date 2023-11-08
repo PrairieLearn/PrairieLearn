@@ -78,7 +78,7 @@ router.get(
     if (gradingJobQueryResult.aai && !gradingJobQueryResult.aai.authorized) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    console.log(gradingJobQueryResult);
+
     const grading_job = gradingJobQueryResult.grading_job;
 
     if (!grading_job.s3_bucket || !grading_job.s3_root_key) {
@@ -88,17 +88,17 @@ router.get(
     res.attachment(file);
 
     const s3 = new S3(makeS3ClientConfig());
-    const s3Object = await s3.getObject({
-      Bucket: grading_job.s3_bucket,
-      Key: `${grading_job.s3_root_key}/${file}`,
-    });
-
-    if (s3Object.Body === undefined) {
-      throw new Error(
-        `S3 object ${grading_job.s3_bucket}/${grading_job.s3_root_key}/${file} has no body.`,
-      );
-    }
     try {
+      const s3Object = await s3.getObject({
+        Bucket: grading_job.s3_bucket,
+        Key: `${grading_job.s3_root_key}/${file}`,
+      });
+
+      if (s3Object.Body === undefined) {
+        throw new Error(
+          `S3 object ${grading_job.s3_bucket}/${grading_job.s3_root_key}/${file} has no body.`,
+        );
+      }
       return pipeline(s3Object.Body as stream.Readable, res);
     } catch (err) {
       if (err instanceof NoSuchKey) {

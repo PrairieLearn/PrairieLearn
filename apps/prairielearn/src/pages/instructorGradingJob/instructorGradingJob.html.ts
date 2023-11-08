@@ -174,7 +174,7 @@ export function InstructorGradingJob({
               gradingJobQueryResult.grading_job.s3_root_key
                 ? html`
                     <script>
-                      () => {
+                      $(function() => {
                         const outputUrl = document.getElementById('job-output').dataset.outputUrl;
 
                         $.get(outputUrl)
@@ -188,7 +188,7 @@ export function InstructorGradingJob({
                             $('#job-output').text('Unable to load grader results');
                             $('#job-output').show();
                           });
-                      };
+                      });
                     </script>
                     <pre
                       class="bg-dark text-white rounded p-3 mb-0"
