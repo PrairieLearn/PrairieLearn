@@ -1,15 +1,14 @@
-// @ts-check
-const { SQSClient, GetQueueUrlCommand } = require('@aws-sdk/client-sqs');
-const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
-const { z } = require('zod');
-const {
+import { SQSClient, GetQueueUrlCommand } from '@aws-sdk/client-sqs';
+import { AutoScaling } from '@aws-sdk/client-auto-scaling';
+import { z } from 'zod';
+import {
   ConfigLoader,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
-} = require('@prairielearn/config');
+} from '@prairielearn/config';
 
-const logger = require('./logger');
-const { makeAwsClientConfig } = require('./aws');
+import logger = require('./logger');
+import { makeAwsClientConfig } from './aws';
 
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
@@ -86,9 +85,10 @@ function makeAutoScalingGroupConfigSource() {
       // but this client will really only be used once, typically at application
       // startup.
       // eslint-disable-next-line @prairielearn/aws-client-shared-config
-      var autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
-      var params = { InstanceIds: [existingConfig.instanceId] };
-      const data = await autoscaling.describeAutoScalingInstances(params);
+      const autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
+      const data = await autoscaling.describeAutoScalingInstances({
+        InstanceIds: [existingConfig.instanceId],
+      });
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
         logger.info('Not running inside an AutoScalingGroup');
         return {};
@@ -102,9 +102,10 @@ function makeAutoScalingGroupConfigSource() {
 }
 
 const loader = new ConfigLoader(ConfigSchema);
-module.exports.config = loader.config;
 
-module.exports.loadConfig = async function () {
+export const config = loader.config;
+
+export async function loadConfig() {
   await loader.loadAndValidate([
     makeProductionConfigSource(),
     makeImdsConfigSource(),
@@ -114,26 +115,26 @@ module.exports.loadConfig = async function () {
 
   await getQueueUrl('jobs');
   await getQueueUrl('results');
-};
+}
 
 /**
  * Will attempt to load the key [prefix]QueueUrl from config; if that's not
  * present, will use [prefix]QueueName to look up the queue URL with AWS.
  */
-async function getQueueUrl(prefix) {
+async function getQueueUrl(prefix: string) {
   const queueUrlKey = `${prefix}QueueUrl`;
   const queueNameKey = `${prefix}QueueName`;
-  if (module.exports.config[queueUrlKey]) {
-    logger.info(`Using queue url from config: ${module.exports.config[queueUrlKey]}`);
+  if (config[queueUrlKey]) {
+    logger.info(`Using queue url from config: ${config[queueUrlKey]}`);
     return;
   }
 
-  const queueName = module.exports.config[queueNameKey];
+  const queueName = config[queueNameKey];
   logger.info(`Loading url for queue "${queueName}"`);
   const sqs = new SQSClient(makeAwsClientConfig());
   try {
     const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
-    module.exports.config[queueUrlKey] = data.QueueUrl;
+    config[queueUrlKey] = data.QueueUrl;
     logger.info(`Loaded url for queue "${queueName}": ${data.QueueUrl}`);
   } catch (err) {
     logger.error(`Unable to load url for queue "${queueName}"`);
