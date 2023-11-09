@@ -317,14 +317,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
-        html_params = {
-            "answer": True,
-            "label": label,
-            "suffix": suffix,
-        }
-
+        html_params = {}
         if show_correct_answer:
-            html_params["a_tru"] = format_true_ans(element, data, name)
+            html_params = {
+                "answer": True,
+                "label": label,
+                "suffix": suffix,
+                "a_tru": format_true_ans(element, data, name),
+            }
 
         return chevron.render(template, html_params).strip()
 
