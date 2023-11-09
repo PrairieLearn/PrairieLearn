@@ -244,7 +244,7 @@ WITH
         v.number AS variant_number,
         s.id AS submission_id,
         s.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        s.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'submitted_answer',
           CASE
