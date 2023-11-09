@@ -27,11 +27,11 @@ export async function checkBelongsAsync(
   course_instance_id: string,
 ): Promise<void> {
   if (
-    sqldb.queryOptionalRow(
+    (await sqldb.queryOptionalRow(
       sql.check_belongs,
       { assessment_instance_id, course_instance_id },
       IdSchema,
-    ) == null
+    )) == null
   ) {
     throw new Error('access denied');
   }
