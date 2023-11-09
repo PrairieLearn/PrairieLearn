@@ -17,7 +17,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 
 import { config, setLocalsFromConfig } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
-import * as externalGrader from './externalGrader';
+const externalGrader = require('./externalGrader');
 import * as manualGrading from './manualGrading';
 import * as ltiOutcomes from '../lib/ltiOutcomes';
 import * as sqldb from '@prairielearn/postgres';
