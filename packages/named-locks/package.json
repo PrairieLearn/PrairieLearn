@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/named-locks",
-  "version": "1.5.5",
+  "version": "1.5.7",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.18.2",
+    "@types/node": "^18.18.8",
     "typescript": "^5.2.2"
   },
   "dependencies": {

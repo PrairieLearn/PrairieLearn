@@ -12,7 +12,6 @@ const { makeAwsClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
 const { createServerJob } = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
-const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
 const util = require('util');
 const chunks = require('../../lib/chunks');
@@ -110,11 +109,6 @@ module.exports.pullAndUpdate = async function (locals) {
         }
 
         await courseUtil.updateCourseCommitHashAsync(locals.course);
-
-        // Before erroring the job from sync errors, reload server.js files.
-        job.info('Reload question server.js files');
-        const coursePath = locals.course.path;
-        await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');
