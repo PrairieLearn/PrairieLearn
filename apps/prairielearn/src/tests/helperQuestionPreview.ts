@@ -15,21 +15,29 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 import helperQuestion = require('./helperQuestion');
 
+interface PreviewPageInfo {
+  siteUrl: string;
+  baseUrl: string;
+  courseBaseUrl: string;
+  courseInstanceBaseUrl: string;
+  questionBaseUrl: string;
+  questionPreviewTabUrl: string;
+  questionsUrl: string;
+  questionsUrlCourse: string;
+  isStudentPage: boolean;
+}
+
+interface QuestionInfo {
+  id: string;
+  qid: string;
+  type: string;
+  title: string;
+}
+
 export function testQuestionPreviews(
-  previewPageInfo: {
-    siteUrl: string;
-    baseUrl: string;
-    courseBaseUrl: string;
-    courseInstanceBaseUrl: string;
-    questionBaseUrl: string;
-    questionPreviewTabUrl: string;
-    questionsUrl: string;
-    questionsUrlCourse: string;
-    isStudentPage: boolean;
-  },
-  addNumbers,
-  addVectors,
-  downloadFile,
+  previewPageInfo: PreviewPageInfo,
+  addNumbers: QuestionInfo,
+  addVectors: QuestionInfo,
 ) {
   const locals: any = previewPageInfo;
   describe('1. submit correct answer to question addVectors', function () {
@@ -172,8 +180,12 @@ export function testQuestionPreviews(
       });
     });
   });
+}
 
-  describe('8. test downloading files', function () {
+export function testFileDownloads(previewPageInfo: PreviewPageInfo, downloadFile: QuestionInfo) {
+  const locals: any = previewPageInfo;
+
+  describe('Test downloading files', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];

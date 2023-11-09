@@ -1,4 +1,4 @@
-import { testQuestionPreviews } from './helperQuestionPreview';
+import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
 
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
@@ -188,21 +188,19 @@ describe('Instructor questions', function () {
   });
 
   describe('Test Question Previews', function () {
-    testQuestionPreviews(
-      {
-        siteUrl: siteUrl,
-        baseUrl: baseUrl,
-        courseBaseUrl: courseBaseUrl,
-        courseInstanceBaseUrl: courseInstanceBaseUrl,
-        questionBaseUrl: courseInstanceBaseUrl + '/question',
-        questionPreviewTabUrl: '/preview',
-        questionsUrl: courseInstanceBaseUrl + '/course_admin/questions',
-        questionsUrlCourse: courseBaseUrl + '/course_admin/questions',
-        isStudentPage: false,
-      },
-      addNumbers,
-      addVectors,
-      downloadFile,
-    );
+    const previewPageInfo = {
+      siteUrl: siteUrl,
+      baseUrl: baseUrl,
+      courseBaseUrl: courseBaseUrl,
+      courseInstanceBaseUrl: courseInstanceBaseUrl,
+      questionBaseUrl: courseInstanceBaseUrl + '/question',
+      questionPreviewTabUrl: '/preview',
+      questionsUrl: courseInstanceBaseUrl + '/course_admin/questions',
+      questionsUrlCourse: courseBaseUrl + '/course_admin/questions',
+      isStudentPage: false,
+    };
+
+    testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+    testFileDownloads(previewPageInfo, downloadFile);
   });
 });
