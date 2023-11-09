@@ -13,6 +13,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseBaseUrl = baseUrl + '/course/1';
@@ -192,11 +193,8 @@ describe('Instructor questions', function () {
       siteUrl: siteUrl,
       baseUrl: baseUrl,
       courseBaseUrl: courseBaseUrl,
-      courseInstanceBaseUrl: courseInstanceBaseUrl,
       questionBaseUrl: courseInstanceBaseUrl + '/question',
       questionPreviewTabUrl: '/preview',
-      questionsUrl: courseInstanceBaseUrl + '/course_admin/questions',
-      questionsUrlCourse: courseBaseUrl + '/course_admin/questions',
       isStudentPage: false,
     };
 
