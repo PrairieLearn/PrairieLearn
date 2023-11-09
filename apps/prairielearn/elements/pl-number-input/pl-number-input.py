@@ -317,7 +317,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     elif data["panel"] == "answer":
-        html_params = {}
         if show_correct_answer:
             html_params = {
                 "answer": True,
@@ -325,8 +324,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "suffix": suffix,
                 "a_tru": format_true_ans(element, data, name),
             }
-
-        return chevron.render(template, html_params).strip()
+            return chevron.render(template, html_params).strip()
+        return ""
 
     assert_never(data["panel"])
 
