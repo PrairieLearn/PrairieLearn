@@ -39,6 +39,7 @@ export function GradingPanel({
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
+  const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || (disable ? 'Next' : 'Skip');
 
@@ -79,32 +80,21 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${!resLocals.assessment_question.max_auto_points && !auto_points
+        <li class="list-group-item">
+          ${ManualPointsSection({
+            context,
+            disable,
+            manual_points,
+            rubric_settings_visible,
+            resLocals,
+          })}
+          ${!resLocals.rubric_data?.replace_auto_points ||
+          (!resLocals.assessment_question.max_auto_points && !auto_points)
+            ? RubricInputSection({ resLocals, disable })
+            : ''}
+        </li>
+        ${resLocals.assessment_question.max_auto_points || auto_points
           ? html`
-              <li class="list-group-item">
-                ${ManualPointsSection({
-                  context,
-                  disable,
-                  manual_points,
-                  rubric_settings_visible,
-                  resLocals,
-                })}
-                ${RubricInputSection({ resLocals, disable })}
-              </li>
-            `
-          : html`
-              <li class="list-group-item">
-                ${ManualPointsSection({
-                  context,
-                  disable,
-                  manual_points,
-                  rubric_settings_visible,
-                  resLocals,
-                })}
-                ${!resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable })
-                  : ''}
-              </li>
               <li class="list-group-item">
                 ${AutoPointsSection({ context, disable, auto_points, resLocals })}
               </li>
@@ -120,7 +110,8 @@ export function GradingPanel({
                   ? RubricInputSection({ resLocals, disable })
                   : ''}
               </li>
-            `}
+            `
+          : ''}
         <li class="form-group list-group-item">
           <label>
             Feedback:
@@ -134,21 +125,15 @@ export function GradingPanel({
 ${submission.feedback?.manual}</textarea
             >
             <small id="submission-feedback-help-${context}" class="form-text text-muted">
-              Markdown formatting, such as *emphasis* or &#96;code&#96;, is permitted and will be
-              used to format the feedback when presented to the student.
+              Markdown formatting, such as *<em>emphasis</em>* or &#96;<code>code</code>&#96;, is
+              permitted and will be used to format the feedback when presented to the student.
             </small>
           </label>
         </li>
         <li class="list-group-item d-flex align-items-center">
           ${!hide_back_to_question
             ? html`
-                <a
-                  role="button"
-                  class="btn btn-primary"
-                  href="${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance
-                    .assessment_id}/manual_grading/assessment_question/${resLocals.instance_question
-                    .assessment_question_id}"
-                >
+                <a role="button" class="btn btn-primary" href="${assessment_question_url}">
                   <i class="fas fa-arrow-left"></i>
                   Back to Question
                 </a>
@@ -171,9 +156,7 @@ ${submission.feedback?.manual}</textarea
               <a
                 role="button"
                 class="btn btn-secondary"
-                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance
-                  .assessment_id}/manual_grading/assessment_question/${resLocals.instance_question
-                  .assessment_question_id}/next_ungraded?prior_instance_question_id=${resLocals
+                href="${assessment_question_url}/next_ungraded?prior_instance_question_id=${resLocals
                   .instance_question.id}"
               >
                 ${skip_text}
