@@ -4,7 +4,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
 import * as path from 'path';
-import * as jsonStringifySafe from 'json-stringify-safe';
+const jsonStringifySafe = require('json-stringify-safe');
 import debugfn from 'debug';
 import * as ejs from 'ejs';
 import { differenceInMilliseconds, parseISO } from 'date-fns';
