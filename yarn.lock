@@ -2930,11 +2930,11 @@ __metadata:
     "@types/node": ^18.18.8
     "@types/tmp": ^0.2.5
     ajv: ^8.12.0
-    async: ^3.2.4
+    async: ^3.2.5
     async-stacktrace: ^0.0.2
     byline: ^5.0.0
     chai: ^4.3.10
-    dockerode: ^4.0.0
+    dockerode: ^3.3.5
     fs-extra: ^11.1.1
     logform: ^2.6.0
     mocha: ^10.2.0
@@ -3199,7 +3199,7 @@ __metadata:
     ajv: ^8.12.0
     ansi_up: ^5.2.1
     archiver: ^6.0.1
-    async: ^3.2.4
+    async: ^3.2.5
     async-mutex: ^0.4.0
     async-stacktrace: ^0.0.2
     axe-core: ^4.7.0
@@ -3227,7 +3227,7 @@ __metadata:
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
     detect-mocha: ^0.1.0
-    dockerode: ^4.0.0
+    dockerode: ^3.3.5
     dompurify: ^3.0.6
     dropzone: ^5.9.3
     ejs: ^3.1.9
@@ -3442,13 +3442,13 @@ __metadata:
     "@socket.io/redis-emitter": ^5.1.0
     "@types/node": ^18.18.8
     archiver: ^6.0.1
-    async: ^3.2.4
+    async: ^3.2.5
     async-mutex: ^0.4.0
     async-stacktrace: ^0.0.2
     body-parser: ^1.20.2
     chai: ^4.3.10
     debug: ^4.3.4
-    dockerode: ^4.0.0
+    dockerode: ^3.3.5
     express: ^4.18.2
     express-async-handler: ^1.2.0
     lodash: ^4.17.21
@@ -5734,10 +5734,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async@npm:^3.2.3, async@npm:^3.2.4":
-  version: 3.2.4
-  resolution: "async@npm:3.2.4"
-  checksum: 43d07459a4e1d09b84a20772414aa684ff4de085cbcaec6eea3c7a8f8150e8c62aa6cd4e699fe8ee93c3a5b324e777d34642531875a0817a35697522c1b02e89
+"async@npm:^3.2.3, async@npm:^3.2.4, async@npm:^3.2.5":
+  version: 3.2.5
+  resolution: "async@npm:3.2.5"
+  checksum: 5ec77f1312301dee02d62140a6b1f7ee0edd2a0f983b6fd2b0849b969f245225b990b47b8243e7b9ad16451a53e7f68e753700385b706198ced888beedba3af4
   languageName: node
   linkType: hard
 
@@ -7793,26 +7793,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"docker-modem@npm:^5.0.0":
-  version: 5.0.1
-  resolution: "docker-modem@npm:5.0.1"
+"docker-modem@npm:^3.0.0":
+  version: 3.0.8
+  resolution: "docker-modem@npm:3.0.8"
   dependencies:
     debug: ^4.1.1
     readable-stream: ^3.5.0
     split-ca: ^1.0.1
     ssh2: ^1.11.0
-  checksum: c760a5c3d03b24b10a1f6897ac9696d7719f96620189b552dcb8f7ab48366b091b7beab86934b27a68dc759b99c52f0df32cb4f356c5e3acb55d9924090a73b3
+  checksum: e3675c9b1ad800be8fb1cb9c5621fbef20a75bfedcd6e01b69808eadd7f0165681e4e30d1700897b788a67dbf4769964fcccd19c3d66f6d2499bb7aede6b34df
   languageName: node
   linkType: hard
 
-"dockerode@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "dockerode@npm:4.0.0"
+"dockerode@npm:^3.3.5":
+  version: 3.3.5
+  resolution: "dockerode@npm:3.3.5"
   dependencies:
     "@balena/dockerignore": ^1.0.2
-    docker-modem: ^5.0.0
+    docker-modem: ^3.0.0
     tar-fs: ~2.0.1
-  checksum: 115bdf856c6b3d6039f5514cf2ec20612ac1acad7857c0bf988d3201a6de374ef19464d90899926a60591a9b7c5ae53bea638c09b48fa96c90c6d1204a6c1c8c
+  checksum: 7f6650422b07fa7ea9d5801f04b1a432634446b5fe37b995b8302b953b64e93abf1bb4596c2fb574ba47aafee685ef2ab959cc86c9654add5a26d09541bbbcc6
   languageName: node
   linkType: hard
 

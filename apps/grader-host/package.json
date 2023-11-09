@@ -7,7 +7,7 @@
     "dev:no-watch": "ts-node --transpile-only src/index.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/index.js",
-    "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
+    "test": "mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.438.0",
@@ -23,11 +23,11 @@
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
     "ajv": "^8.12.0",
-    "async": "^3.2.4",
+    "async": "^3.2.5",
     "async-stacktrace": "^0.0.2",
     "byline": "^5.0.0",
     "chai": "^4.3.10",
-    "dockerode": "^4.0.0",
+    "dockerode": "^3.3.5",
     "fs-extra": "^11.1.1",
     "logform": "^2.6.0",
     "tmp": "^0.2.1",
