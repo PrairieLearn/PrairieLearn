@@ -40,6 +40,7 @@
             <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
             </td></tr>
+            <% if (instance_user) { %>
             <tr>
               <th>Fingerprint Changes</th>
               <td colspan="2">
@@ -84,7 +85,8 @@
                 <% } %>
               </td>
             </tr>
-
+            <% } %>
+            
             <tr>
               <th>Points</th>
               <td colspan="2">
