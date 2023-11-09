@@ -9,11 +9,7 @@ FROM
   LEFT JOIN users AS u on (u.user_id = js.user_id)
 WHERE
   c.id = $course_id
-  AND (
-    js.type = 'sync'
-    OR js.type = 'git_status'
-    OR js.type = 'images_sync'
-  )
+  AND js.type IN ('sync', 'git_status', 'images_sync')
 ORDER BY
   js.start_date DESC,
   js.id;
