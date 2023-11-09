@@ -1,18 +1,15 @@
-import { callbackify } from 'util';
+import { callbackify, promisify } from 'util';
+import { exec } from 'child_process';
 import * as fs from 'fs-extra';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 import { createServerJob } from './server-jobs';
 import { config } from './config';
 import * as chunks from './chunks';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
 import { Course, CourseSchema, IdSchema } from './db-types';
-import {
-  getCommitHashAsync,
-  getOrUpdateCourseCommitHashAsync,
-  updateCourseCommitHashAsync,
-} from './courseUtil';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -60,6 +57,54 @@ export function getLockNameForCoursePath(coursePath) {
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await sqldb.queryRow(sql.get_course_data, { course_id }, CourseSchema);
+}
+
+export async function getCommitHash(coursePath: string): Promise<string> {
+  try {
+    const { stdout } = await promisify(exec)('git rev-parse HEAD', {
+      cwd: coursePath,
+      env: process.env,
+    });
+    return stdout.trim();
+  } catch (err) {
+    throw error.makeWithData(`Could not get git status; exited with code ${err.code}`, {
+      stdout: err.stdout,
+      stderr: err.stderr,
+    });
+  }
+}
+
+/**
+ * Loads the current commit hash from disk and stores it in the database. This
+ * will also add the `commit_hash` property to the given course object.
+ */
+export async function updateCourseCommitHash(course: {
+  id: string;
+  path: string;
+}): Promise<string> {
+  const hash = await getCommitHash(course.path);
+  await sqldb.queryAsync(sql.update_course_commit_hash, {
+    course_id: course.id,
+    commit_hash: hash,
+  });
+  return hash;
+}
+
+/**
+ * If the provided course object contains a commit hash, that will be used;
+ * otherwise, the commit hash will be loaded from disk and stored in the
+ * database.
+ *
+ * This should only ever really need to happen at max once per course - in the
+ * future, the commit hash will already be in the course object and will be
+ * updated during course sync.
+ */
+export async function getOrUpdateCourseCommitHash(course: {
+  id: string;
+  path: string;
+  commit_hash?: string | null;
+}): Promise<string> {
+  return course.commit_hash ?? (await updateCourseCommitHash(course));
 }
 
 export async function pullAndUpdate({
@@ -139,7 +184,7 @@ export async function pullAndUpdate({
         } else {
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-          startGitHash = await getOrUpdateCourseCommitHashAsync({
+          startGitHash = await getOrUpdateCourseCommitHash({
             id: courseId,
             path,
             commit_hash,
@@ -164,7 +209,7 @@ export async function pullAndUpdate({
         // after we've synced the changes to the database and generated chunks. This
         // ensures that if the sync fails, we'll sync from the same starting commit
         // hash next time.
-        const endGitHash = await getCommitHashAsync(path);
+        const endGitHash = await getCommitHash(path);
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(path, courseId, job);
@@ -180,7 +225,7 @@ export async function pullAndUpdate({
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
 
-        await updateCourseCommitHashAsync({ id: courseId, path });
+        await updateCourseCommitHash({ id: courseId, path });
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');
