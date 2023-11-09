@@ -6,7 +6,7 @@ SELECT
 FROM
   job_sequences AS js
   JOIN pl_courses AS c ON (c.id = js.course_id)
-  JOIN users AS u on (u.user_id = js.user_id)
+  LEFT JOIN users AS u on (u.user_id = js.user_id)
 WHERE
   c.id = $course_id
   AND (
