@@ -2280,8 +2280,8 @@ if (require.main === module && config.startServer) {
           logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
           const { jobSequenceId, jobPromise } = await pullAndUpdate({
             courseId: argv['sync-course'],
-            authnUserId: '1',
-            userId: '1',
+            authnUserId: null,
+            userId: null,
           });
           logger.info(`Course sync job sequence ${jobSequenceId} created.`);
           logger.info(`Waiting for job to finish...`);
