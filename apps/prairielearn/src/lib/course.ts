@@ -9,7 +9,7 @@ import { createServerJob } from './server-jobs';
 import { config } from './config';
 import * as chunks from './chunks';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
-import { Course, CourseSchema, IdSchema } from './db-types';
+import { Course, CourseSchema, IdSchema, User, UserSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -38,20 +38,13 @@ export const checkBelongs = callbackify(checkBelongsAsync);
 /**
  * Return the name and UID (email) for every owner of the specified course.
  *
- * @param {string} course_id The ID of the course.
- * @returns {Promise<{ uid: string, name?: string }[]>}
+ * @param course_id The ID of the course.
  */
-export async function getCourseOwners(
-  course_id: string,
-): Promise<{ uid: string; name?: string }[]> {
-  const { rows } = await sqldb.queryAsync(sql.select_owners, { course_id });
-  return rows.map((row) => ({
-    uid: row.uid,
-    name: row.name,
-  }));
+export async function getCourseOwners(course_id: string): Promise<User[]> {
+  return await sqldb.queryRows(sql.select_owners, { course_id }, UserSchema);
 }
 
-export function getLockNameForCoursePath(coursePath) {
+export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }
 

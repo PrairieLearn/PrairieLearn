@@ -10,8 +10,7 @@ WHERE
 
 -- BLOCK select_owners
 SELECT
-  u.uid,
-  u.name
+  u.*
 FROM
   users AS u
   JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
