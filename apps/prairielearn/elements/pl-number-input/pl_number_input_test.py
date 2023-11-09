@@ -2,9 +2,7 @@ import importlib
 
 import pytest
 
-number_input = importlib.import_module(
-    "pl-number-input"
-)  # TODO To Reviewer: is there better way to import?
+number_input = importlib.import_module("pl-number-input")
 
 
 @pytest.mark.parametrize(

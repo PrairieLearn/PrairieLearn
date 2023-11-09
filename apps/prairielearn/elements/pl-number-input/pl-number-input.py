@@ -247,9 +247,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if show_correct_answer:
             html_params["a_tru"] = format_true_ans(element, data, name)
 
-        info = chevron.render(template, info_params).strip()
+        html_params["info"] = chevron.render(template, info_params).strip()
 
-        info_params.pop("format", None)
         # Within mustache, the shortformat generates the placeholder that is used as a placeholder inside of the numeric entry.
         # Here we opt to not generate the value, hence the placeholder is empty.
         # The placeholder text may be overriden by setting the 'placeholder' attribute in the pl-number-input HTML tag
@@ -257,13 +256,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # 'placeholder' attribute is set, override the placeholder text
             html_params["placeholder"] = pl.get_string_attrib(element, "placeholder")
         else:
+            info_params.pop("format", None)
             # 'placeholder' attribute not set, use default shortformat as placeholder text
             info_params["shortformat"] = pl.get_boolean_attrib(
                 element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
             )
             html_params["placeholder"] = chevron.render(template, info_params).strip()
-
-        html_params["info"] = info
 
         # Determine the title of the popup based on what information is being shown
         html_params["popup_title"] = "Number" if show_help_text else "Correct Answer"
