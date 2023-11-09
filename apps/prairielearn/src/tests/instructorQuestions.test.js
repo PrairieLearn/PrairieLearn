@@ -13,9 +13,12 @@ var sql = sqldb.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 
-const locals = {};
-
-
+const siteUrl = 'http://localhost:' + config.serverPort;
+const baseUrl = siteUrl + '/pl';
+const courseBaseUrl = baseUrl + '/course/1';
+const courseInstanceBaseUrl = baseUrl + '/course_instance/1/instructor';
+const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
+const questionsUrlCourse = courseBaseUrl + '/course_admin/questions';
 
 const addNumbers = {
   qid: 'addNumbers',
@@ -47,35 +50,36 @@ describe('Instructor questions', function () {
   var page, elemList, questionData;
 
   describe('the database', function () {
+    let questions;
     it('should contain questions', function (callback) {
       sqldb.query(sql.select_questions, [], function (err, result) {
         if (ERR(err, callback)) return;
         if (result.rowCount === 0) {
           return callback(new Error('no questions in DB'));
         }
-        locals.questions = result.rows;
+        questions = result.rows;
         callback(null);
       });
     });
     it('should contain the addNumbers question', function () {
-      const question = _.find(locals.questions, { directory: addNumbers.qid });
+      const question = _.find(questions, { directory: addNumbers.qid });
       assert.isDefined(question);
       addNumbers.id = question.id;
     });
     it('should contain the addVectors question', function () {
-      const question = _.find(locals.questions, { directory: addVectors.qid });
+      const question = _.find(questions, { directory: addVectors.qid });
       assert.isDefined(question);
       addVectors.id = question.id;
     });
     it('should contain the downloadFile question', function () {
-      const question = _.find(locals.questions, {
+      const question = _.find(questions, {
         directory: downloadFile.qid,
       });
       assert.isDefined(question);
       downloadFile.id = question.id;
     });
     it('should contain the differentiatePolynomial question', function () {
-      const question = _.find(locals.questions, {
+      const question = _.find(questions, {
         directory: differentiatePolynomial.qid,
       });
       assert.isDefined(question);
@@ -83,9 +87,10 @@ describe('Instructor questions', function () {
     });
   });
 
-  describe('GET ' + locals.questionsUrlCourse, function () {
+  describe('GET ' + questionsUrlCourse, function () {
+    let parsedPage;
     it('should load successfully', function (callback) {
-      request(locals.questionsUrlCourse, function (error, response, body) {
+      request(questionsUrlCourse, function (error, response, body) {
         if (error) {
           return callback(error);
         }
@@ -97,10 +102,10 @@ describe('Instructor questions', function () {
       });
     });
     it('should parse', function () {
-      locals.$ = cheerio.load(page);
+      parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = locals.$('#questionsTable').data('data');
+      questionData = parsedPage('#questionsTable').data('data');
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -132,9 +137,10 @@ describe('Instructor questions', function () {
     });
   });
 
-  describe('GET ' + locals.questionsUrl, function () {
+  describe('GET ' + questionsUrl, function () {
+    let parsedPage;
     it('should load successfully', function (callback) {
-      request(locals.questionsUrl, function (error, response, body) {
+      request(questionsUrl, function (error, response, body) {
         if (error) {
           return callback(error);
         }
@@ -146,10 +152,10 @@ describe('Instructor questions', function () {
       });
     });
     it('should parse', function () {
-      locals.$ = cheerio.load(page);
+      parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
-      questionData = locals.$('#questionsTable').data('data');
+      questionData = parsedPage('#questionsTable').data('data');
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -181,16 +187,22 @@ describe('Instructor questions', function () {
     });
   });
 
-  testQuestionPreviews({
-    siteUrl: 'http://localhost:' + config.serverPort,
-    baseUrl: locals.siteUrl + '/pl',
-    courseBaseUrl: locals.baseUrl + '/course/1',
-    courseInstanceBaseUrl: locals.baseUrl + '/course_instance/1/instructor',
-    questionBaseUrl: locals.courseInstanceBaseUrl + '/question',
-    questionPreviewTabUrl: '/preview',
-    questionsUrl: locals.courseInstanceBaseUrl + '/course_admin/questions',
-    questionsUrlCourse: locals.courseBaseUrl + '/course_admin/questions',
-    isStudentPage: false,
-  })
-
+  describe('Test Question Previews', function () {
+    testQuestionPreviews(
+      {
+        siteUrl: siteUrl,
+        baseUrl: baseUrl,
+        courseBaseUrl: courseBaseUrl,
+        courseInstanceBaseUrl: courseInstanceBaseUrl,
+        questionBaseUrl: courseInstanceBaseUrl + '/question',
+        questionPreviewTabUrl: '/preview',
+        questionsUrl: courseInstanceBaseUrl + '/course_admin/questions',
+        questionsUrlCourse: courseBaseUrl + '/course_admin/questions',
+        isStudentPage: false,
+      },
+      addNumbers,
+      addVectors,
+      downloadFile,
+    );
+  });
 });

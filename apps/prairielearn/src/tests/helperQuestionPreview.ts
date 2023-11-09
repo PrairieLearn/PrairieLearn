@@ -15,46 +15,29 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 import helperQuestion = require('./helperQuestion');
 
-
-const addNumbers = {
-    qid: 'addNumbers',
-    type: 'Freeform',
-    title: 'Add two numbers',
-  };
-  const addVectors = {
-    qid: 'addVectors',
-    type: 'Calculation',
-    title: 'Addition of vectors in Cartesian coordinates',
-  };
-  const downloadFile = {
-    qid: 'downloadFile',
-    type: 'Freeform',
-    title: 'File download example question',
-  };
-//   const differentiatePolynomial = {
-//     qid: 'differentiatePolynomial',
-//     type: 'Freeform',
-//     title: 'Differentiate a polynomial function of one variable',
-//   };
-
-export function testQuestionPreviews(previewPageInfo: {
-  siteUrl: string;
-  baseUrl: string;
-  courseBaseUrl: string;
-  courseInstanceBaseUrl: string;
-  questionBaseUrl: string;
-  questionPreviewTabUrl: string;
-  questionsUrl: string;
-  questionsUrlCourse: string;
-  isStudentPage: boolean;
-}) {
+export function testQuestionPreviews(
+  previewPageInfo: {
+    siteUrl: string;
+    baseUrl: string;
+    courseBaseUrl: string;
+    courseInstanceBaseUrl: string;
+    questionBaseUrl: string;
+    questionPreviewTabUrl: string;
+    questionsUrl: string;
+    questionsUrlCourse: string;
+    isStudentPage: boolean;
+  },
+  addNumbers,
+  addVectors,
+  downloadFile,
+) {
   const locals: any = previewPageInfo;
   describe('1. submit correct answer to question addVectors', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
+        locals.question = addVectors;
         locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
         locals.postAction = 'grade';
-        locals.question = addVectors;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
@@ -199,7 +182,7 @@ export function testQuestionPreviews(previewPageInfo: {
     });
     helperQuestion.getInstanceQuestion(locals);
     describe('downloading course text file', function () {
-        let elemList;
+      let elemList;
       it('should contain a link to clientFilesCourse/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesCourse"]');
         assert.lengthOf(elemList, 1);
@@ -223,7 +206,7 @@ export function testQuestionPreviews(previewPageInfo: {
       });
     });
     describe('downloading question text files', function () {
-        let elemList, page;
+      let elemList, page;
       it('should contain a force-download link to clientFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
@@ -266,7 +249,7 @@ export function testQuestionPreviews(previewPageInfo: {
       });
     });
     describe('downloading dynamic text file', function () {
-        let elemList, page;
+      let elemList, page;
       it('should contain a link to generatedFilesQuestion/data.txt', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
@@ -289,7 +272,7 @@ export function testQuestionPreviews(previewPageInfo: {
       });
     });
     describe('downloading dynamic image file', function () {
-        let elemList, page;
+      let elemList, page;
       it('should contain a link to generatedFilesQuestion/figure.png', function () {
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
