@@ -1,26 +1,14 @@
 import asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 import { IdSchema } from '../lib/db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const ClientFingerprintSchema = z.object({
-  id: IdSchema,
-  user_session_id: z.string(),
-  user_id: z.string(),
-  ip_address: z.string(),
-  user_agent: z.string(),
-  accept_language: z.string(),
-  accept: z.string(),
-  created_at: z.date(),
-});
 
 export default asyncHandler(async (req, res, next) => {
   const userSessionId = await sqldb.queryOptionalRow(
     sql.select_session_id,
     { session_id: req.session.id, user_id: res.locals.user.user_id },
-    z.string(),
+    IdSchema,
   );
   const params = {
     ip_address: req.ip,
@@ -31,19 +19,19 @@ export default asyncHandler(async (req, res, next) => {
     accept: req.headers['accept'],
   };
 
-  let client_fingerprint_id = (
-    await sqldb.queryOptionalRow(sql.select_client_fingerprint, params, ClientFingerprintSchema)
-  )?.id;
+  let client_fingerprint_id = await sqldb.queryOptionalRow(
+    sql.select_client_fingerprint,
+    params,
+    IdSchema,
+  );
 
   if (!client_fingerprint_id) {
-    client_fingerprint_id = (
-      await sqldb.queryOptionalRow(sql.insert_client_fingerprint, params, z.any())
-    ).id;
+    client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
+    console.log('insert fingerprint', client_fingerprint_id);
   }
-
   if (
     res.locals.assessment_instance &&
-    res.locals.assessment_instance?.last_client_fingerprint_id !== client_fingerprint_id
+    res.locals.assessment_instance?.last_client_fingerprint_id.toString() !== client_fingerprint_id
   ) {
     await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
       client_fingerprint_id,

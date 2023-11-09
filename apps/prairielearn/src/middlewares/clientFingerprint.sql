@@ -1,13 +1,6 @@
 --BLOCK select_client_fingerprint
 SELECT
-  id,
-  user_id,
-  user_session_id,
-  ip_address,
-  user_agent,
-  accept,
-  accept_language,
-  created_at
+  id
 FROM
   client_fingerprints
 WHERE
@@ -61,4 +54,3 @@ FROM
   user_sessions
 WHERE
   session_id = $session_id
-  AND user_id = $user_id
