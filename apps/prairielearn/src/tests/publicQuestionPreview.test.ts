@@ -10,7 +10,6 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseBaseUrl = baseUrl + '/course/1';
 
-
 const addNumbers = {
   id: '',
   qid: 'addNumbers',
@@ -43,14 +42,14 @@ describe('Public Question Preview', function () {
       z.string(),
     );
     addVectors.id = await sqldb.queryRow(
-        sql.select_question_id,
-        {
-          qid: addVectors.qid,
-        },
-        z.string(),
-      );
-      await sqldb.queryAsync(sql.update_shared_publicly, {question_id: addNumbers.id})
-      await sqldb.queryAsync(sql.update_shared_publicly, {question_id: addVectors.id})
+      sql.select_question_id,
+      {
+        qid: addVectors.qid,
+      },
+      z.string(),
+    );
+    await sqldb.queryAsync(sql.update_shared_publicly, { question_id: addNumbers.id });
+    await sqldb.queryAsync(sql.update_shared_publicly, { question_id: addVectors.id });
   });
 
   describe('Test Question Previews', function () {

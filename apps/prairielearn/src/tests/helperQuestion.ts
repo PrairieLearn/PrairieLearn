@@ -45,8 +45,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-        console.log(questionUrl);
-        const response = await fetch(questionUrl);
+      const response = await fetch(questionUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);

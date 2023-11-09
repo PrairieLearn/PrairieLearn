@@ -6,10 +6,8 @@ FROM
 WHERE
   qid = $qid;
 
-
 -- BLOCK update_shared_publicly
-UPDATE
-questions
+UPDATE questions
 SET
   shared_publicly = true
 WHERE

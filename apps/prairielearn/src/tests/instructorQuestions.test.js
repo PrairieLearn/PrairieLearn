@@ -13,7 +13,6 @@ var sql = sqldb.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 
-
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseBaseUrl = baseUrl + '/course/1';

@@ -21,4 +21,3 @@ FROM
   job_sequences
 WHERE
   id = $job_sequence_id;
-
