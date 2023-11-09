@@ -161,6 +161,7 @@ const ConfigSchema = z.object({
   externalGradingAutoScalingGroupName: z.string().nullable().default(null),
   externalGradingS3Bucket: z.string().default('prairielearn.dev.grading'),
   externalGradingDefaultTimeout: z.number().default(30), // seconds
+  externalGradingMaximumTimeout: z.number().default(60 * 10), // seconds
   externalGradingLoadAverageIntervalSec: z.number().default(30),
   externalGradingHistoryLoadIntervalSec: z.number().default(15 * 60),
   externalGradingCurrentCapacityFactor: z.number().default(1),

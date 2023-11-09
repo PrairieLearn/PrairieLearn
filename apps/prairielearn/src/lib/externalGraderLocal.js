@@ -23,7 +23,10 @@ class Grader {
 
     const dir = getDevJobDirectory(grading_job.id);
     const hostDir = getDevHostJobDirectory(grading_job.id);
-    const timeout = question.external_grading_timeout || config.externalGradingDefaultTimeout;
+    const timeout = Math.min(
+      question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+      config.externalGradingMaximumTimeout,
+    );
 
     const docker = new Docker();
 
