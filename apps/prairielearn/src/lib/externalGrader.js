@@ -4,6 +4,7 @@ import * as util from 'util';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+const assert = require('node:assert');
 
 import { config } from './config';
 import * as externalGradingSocket from './externalGradingSocket';
@@ -20,8 +21,20 @@ import {
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
+const GradingJobInfoSchema = z.object({
+  grading_job: GradingJobSchema,
+  submission: SubmissionSchema,
+  variant: VariantSchema,
+  question: QuestionSchema,
+  course: CourseSchema,
+});
+
 /** @typedef Grader
- * @property {(GradingJob, Submission, Variant, Question, Course) => import('events')} handleGradingRequest
+ * @property {(grading_job: z.infer<typeof GradingJobSchema>,
+ *             submission: z.infer<typeof SubmissionSchema>,
+ *             variant: z.infer<typeof VariantSchema>,
+ *             question: z.infer<typeof QuestionSchema>,
+ *             course: z.infer<typeof CourseSchema>) => import('events')} handleGradingRequest
  */
 
 /** @type {Grader | null} */
@@ -46,21 +59,11 @@ export async function beginGradingJobsAsync(grading_job_ids) {
 }
 export const beginGradingJobs = util.callbackify(beginGradingJobsAsync);
 
-const GradingJobInfoSchema = z.object({
-  grading_job: GradingJobSchema,
-  submission: SubmissionSchema,
-  variant: VariantSchema,
-  question: QuestionSchema,
-  course: CourseSchema,
-});
-
 /**
  *  @param {string} grading_job_id
  */
 export async function beginGradingJobAsync(grading_job_id) {
-  if (!grader) {
-    throw new Error('External grader not initialized');
-  }
+  assert(grader, 'External grader not initialized');
 
   const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
     sql.select_grading_job_info,
