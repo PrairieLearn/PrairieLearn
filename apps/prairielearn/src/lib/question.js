@@ -1332,7 +1332,7 @@ export async function startTestQuestion(
         authn_user_id,
       );
       success = success && result.success;
-      if (stats) {
+      if (result.stats) {
         stats.push(result.stats);
       }
     });
