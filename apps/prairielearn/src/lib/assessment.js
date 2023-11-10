@@ -118,7 +118,7 @@ export async function makeAssessmentInstance(
  * @param {string} assessment_instance_id - The assessment instance to grade.
  * @param {string} authn_user_id - The current authenticated user.
  */
-export async function updateAsync(assessment_instance_id, authn_user_id) {
+export async function update(assessment_instance_id, authn_user_id) {
   debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
@@ -144,8 +144,8 @@ export async function updateAsync(assessment_instance_id, authn_user_id) {
     // potentially long-running work inside of a transaction.
     await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
   }
+  return updated;
 }
-export const update = callbackify(updateAsync);
 
 /**
  * Grade all questions in an assessment instance and (optionally) close it.
