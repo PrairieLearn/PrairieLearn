@@ -10,7 +10,7 @@ import { flash } from '@prairielearn/flash';
 
 import { getInstitution } from '../../lib/institution';
 import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
-import { Lti13InstanceSchema } from '../../../lib/db-types';
+import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
 
@@ -74,14 +74,24 @@ router.get(
       ['display_order', 'platform'],
     );
 
-    // Handle the / (no id passed case)
-    if (typeof req.params.unsafe_lti13_instance_id === 'undefined' && lti13Instances.length > 0) {
-      return res.redirect(`lti13/${lti13Instances[0].id}`);
-    }
+    let paramInstance: Lti13Instance | undefined;
 
-    const paramInstance = lti13Instances.find(
-      ({ id }) => id === req.params.unsafe_lti13_instance_id,
-    );
+    // Handle the / (no id passed case)
+    if (typeof req.params.unsafe_lti13_instance_id === 'undefined') {
+      if (lti13Instances.length > 0) {
+        return res.redirect(
+          `/pl/institution/${institution.id}/admin/lti13/${lti13Instances[0].id}`,
+        );
+      }
+      // else continue through, the html.ts page handles the 0 instances case
+    } else {
+      // id passed should be valid
+      paramInstance = lti13Instances.find(({ id }) => id === req.params.unsafe_lti13_instance_id);
+
+      if (!paramInstance) {
+        throw error.make(404, `LTI 1.3 instance ${req.params.unsafe_lti13_instance_id} not found`);
+      }
+    }
 
     res.send(
       InstitutionAdminLti13({
