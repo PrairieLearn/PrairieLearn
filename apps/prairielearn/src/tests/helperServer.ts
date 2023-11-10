@@ -82,7 +82,7 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       debug('before(): initialize freeform server');
       await freeformServer.init();
 
-      await promisify(externalGrader.init)();
+      externalGrader.init();
       await promisify(externalGradingSocket.init)();
     } finally {
       debug('before(): completed');

@@ -228,7 +228,7 @@ export async function gradeAssessmentInstanceAsync(
   });
   if (externalGradingJobIds.length > 0) {
     // We need to submit these grading jobs to be graded
-    await promisify(externalGrader.beginGradingJobs)(externalGradingJobIds);
+    await externalGrader.beginGradingJobs(externalGradingJobIds);
   }
   // The `grading_needed` flag was set by the `assessment_instances_close`
   // sproc above. Once we've successfully graded every part of the
