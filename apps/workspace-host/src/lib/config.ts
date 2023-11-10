@@ -1,11 +1,10 @@
-// @ts-check
-const { z } = require('zod');
-const {
+import { z } from 'zod';
+import {
   ConfigLoader,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
-} = require('@prairielearn/config');
+} from '@prairielearn/config';
 
 const ConfigSchema = z.object({
   postgresqlUser: z.string().default('postgres'),
@@ -76,14 +75,12 @@ const ConfigSchema = z.object({
 
 const loader = new ConfigLoader(ConfigSchema);
 
-module.exports.config = loader.config;
+export const config = loader.config;
 
-module.exports.loadConfig = async function (paths) {
+export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
-};
-
-module.exports.ConfigSchema = ConfigSchema;
+}
