@@ -56,17 +56,22 @@ const PartialScoresSchema = z
   )
   .nullable();
 
+// Some historical cases of points and score ended up with NaN values stored in
+// the database. In these cases, manual grading will convert the NaN to zero, so
+// that the instructor can still have a chance to fix the issue.
+const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
+
 const SubmissionForScoreUpdateSchema = z.object({
   submission_id: IdSchema.nullable(),
   instance_question_id: IdSchema,
   assessment_instance_id: IdSchema,
-  max_points: z.number().nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
+  max_points: PointsSchema,
+  max_auto_points: PointsSchema,
+  max_manual_points: PointsSchema,
   manual_rubric_id: IdSchema.nullable(),
   partial_scores: PartialScoresSchema,
-  auto_points: z.number().nullable(),
-  manual_points: z.number().nullable(),
+  auto_points: PointsSchema,
+  manual_points: PointsSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
   modified_at_conflict: z.boolean(),
 });

@@ -6,7 +6,7 @@
     <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
   </div>
 <% } else { %>%>
-<form name="edit-question-points-form" method="POST" class="needs-validation">
+<form name="edit-question-points-form" method="POST">
   <input type="hidden" name="__action" value="edit_question_points">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
