@@ -701,6 +701,7 @@ SELECT
   el.client_fingerprint_id,
   cf.ip_address,
   cf.user_session_id,
+  cf.user_agent,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,

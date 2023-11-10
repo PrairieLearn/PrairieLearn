@@ -68,11 +68,11 @@
                             <% log.forEach(function(row) { %>
                               <% if (row.client_fingerprint_id) { %>
                                 <tr>
-                                  <td><%= row.event_name %></td>
+                                  <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
                                   <td class="text-nowrap"><%= row.formatted_date %></td>
                                   <td><%= row.client_fingerprint_id %></td>
                                   <td><%= row.ip_address %></td>
-                                  <td><%= row.session_id %></td>
+                                  <td><%= row.user_session_id %></td>
                                 </tr>
                               <%  } %>
                             <%  }) %>
@@ -366,7 +366,25 @@
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
-              <td><%= row.client_fingerprint_id %></td>
+              <td><a tabindex="0" class="btn btn-xs btn-secondary"
+                id="fingerprintPopover<%= row.client_fingerprint_id %>"
+                data-toggle="popover" data-container="body"
+                data-html="true" data-placement="auto" title="Fingerprint"
+                data-content="
+                  <div>
+                    IP Address: <%= row.ip_address %>
+                  </div>
+                  <div>
+                    Session ID: <%= row.user_session_id %>
+                  </div>
+                  <div>
+                    User Agent: <%= row.user_agent %>
+                  </div>
+                "
+                data-trigger="focus" onclick="$(this).popover({trigger: focus})">
+               <%= row.client_fingerprint_id %>
+                </a>
+              </td>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
               <td>
                 <% if (row.qid) { %>

@@ -32,6 +32,7 @@ const InstanceLogSchema = z.object({
   client_fingerprint_id: z.string().nullable(),
   ip_address: z.string().nullable(),
   user_session_id: z.string().nullable(),
+  user_agent: z.string().nullable(),
   formatted_date: z.string(),
   date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
