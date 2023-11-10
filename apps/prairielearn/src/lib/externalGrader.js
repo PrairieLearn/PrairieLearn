@@ -3,6 +3,7 @@ import * as async from 'async';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 const assert = require('node:assert');
 
 import { config } from './config';
@@ -105,6 +106,7 @@ export async function beginGradingJob(grading_job_id) {
   gradeRequest.on('submit', () => {
     updateJobSubmissionTime(grading_job.id).catch((err) => {
       logger.error('Error updating job submission time', err);
+      Sentry.captureException(err);
     });
   });
   gradeRequest.on('received', (receivedTime) => {
@@ -112,6 +114,7 @@ export async function beginGradingJob(grading_job_id) {
     // is handled by the SQS queue.
     updateJobReceivedTime(grading_job.id, receivedTime).catch((err) => {
       logger.error('Error updating job received time', err);
+      Sentry.captureException(err);
     });
   });
   gradeRequest.on('results', (gradingResult) => {
@@ -134,6 +137,7 @@ export async function beginGradingJob(grading_job_id) {
 function handleGraderError(grading_job_id, err) {
   logger.error(`Error processing external grading job ${grading_job_id}`);
   logger.error('handleGraderError', err);
+  Sentry.captureException(err);
   assessment
     .processGradingResult({
       gradingId: grading_job_id,
@@ -147,9 +151,10 @@ function handleGraderError(grading_job_id, err) {
         },
       },
     })
-    .catch((err) =>
-      logger.error(`Error processing results for grading job ${grading_job_id}`, err),
-    );
+    .catch((err) => {
+      logger.error(`Error processing results for grading job ${grading_job_id}`, err);
+      Sentry.captureException(err);
+    });
 }
 
 /**
