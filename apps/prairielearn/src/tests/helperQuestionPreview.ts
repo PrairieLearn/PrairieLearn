@@ -5,10 +5,9 @@ import helperQuestion = require('./helperQuestion');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-interface PreviewPageInfo {
+interface QuestionPreviewPageInfo {
   siteUrl: string;
   baseUrl: string;
-  courseBaseUrl: string;
   questionBaseUrl: string;
   questionPreviewTabUrl: string;
   isStudentPage: boolean;
@@ -22,7 +21,7 @@ interface QuestionInfo {
 }
 
 export function testQuestionPreviews(
-  previewPageInfo: PreviewPageInfo,
+  previewPageInfo: QuestionPreviewPageInfo,
   addNumbers: QuestionInfo,
   addVectors: QuestionInfo,
 ) {
@@ -169,7 +168,7 @@ export function testQuestionPreviews(
   });
 }
 
-export function testFileDownloads(previewPageInfo: PreviewPageInfo, downloadFile: QuestionInfo) {
+export function testFileDownloads(previewPageInfo: QuestionPreviewPageInfo, downloadFile: QuestionInfo) {
   const locals: any = previewPageInfo;
 
   describe('Test downloading files', function () {
