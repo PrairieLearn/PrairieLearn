@@ -6,14 +6,14 @@
     <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
   </div>
 <% } else { %>%>
-<form name="edit-question-score-perd-form" method="POST">
+<form name="edit-question-score-perc-form" method="POST" class="needs-validation">
   <input type="hidden" name="__action" value="edit_question_score_perc">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
   <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
   <div class="form-group">
     <div class="input-group">
-      <input type="text" class="form-control" name="score_perc" value="<%= instance_question.score_perc %>">
+      <input type="number" required step="any" class="form-control" name="score_perc" value="<%= instance_question.score_perc %>">
       <span class="input-group-addon">%</span>
     </div>
   </div>
