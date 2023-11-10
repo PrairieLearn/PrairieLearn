@@ -1177,11 +1177,7 @@ function testQuestion(
     (err) => {
       if (ERR(err, callback)) return;
       debug('_testQuestion()', 'returning');
-      const stats = {
-        generateDuration,
-        renderDuration,
-        gradeDuration,
-      };
+      const stats = { generateDuration, renderDuration, gradeDuration };
       callback(null, variant, expected_submission, test_submission, stats);
     },
   );
@@ -1352,17 +1348,17 @@ export async function startTestQuestion(
       });
 
       if (count === 0) {
-        job.verbose(`${label}: No data`);
+        job.verbose(`${label} No data`);
         return;
       }
 
       const avg = Math.round((sum / count) * 100) / 100;
-      job.info(`${label}: ${count} tests, min ${min}ms, max ${max}ms, avg ${avg}ms`);
+      job.info(`${label} ${count} tests, min ${min}ms, avg ${avg}ms, max ${max}ms`);
     }
 
-    printStats('Generate/prepare', 'generateDuration');
-    printStats('Render', 'renderDuration');
-    printStats('Parse/grade', 'gradeDuration');
+    printStats('Generate/prepare:', 'generateDuration');
+    printStats('Render:          ', 'renderDuration');
+    printStats('Parse/grade:     ', 'gradeDuration');
 
     if (!success) {
       throw new Error('Some tests failed. See the "Errors" page for details.');
