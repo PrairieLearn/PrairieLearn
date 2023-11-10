@@ -168,7 +168,10 @@ export function testQuestionPreviews(
   });
 }
 
-export function testFileDownloads(previewPageInfo: QuestionPreviewPageInfo, downloadFile: QuestionInfo) {
+export function testFileDownloads(
+  previewPageInfo: QuestionPreviewPageInfo,
+  downloadFile: QuestionInfo,
+) {
   const locals: any = previewPageInfo;
 
   describe('Test downloading files', function () {
