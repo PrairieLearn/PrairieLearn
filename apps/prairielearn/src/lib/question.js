@@ -1134,7 +1134,7 @@ function testQuestion(
           {
             question,
             course: variant_course,
-            urlPrefix: '/pl/course/1',
+            urlPrefix: `/pl/course/${variant_course.id}`,
             authz_data: {},
           },
           (err) => {
