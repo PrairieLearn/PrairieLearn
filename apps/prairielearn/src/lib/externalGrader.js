@@ -1,58 +1,73 @@
-const ERR = require('async-stacktrace');
-const async = require('async');
-const { config } = require('./config');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const externalGradingSocket = require('./externalGradingSocket');
+// @ts-check
+import * as async from 'async';
+import * as util from 'util';
+import { z } from 'zod';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from './config';
+import * as externalGradingSocket from './externalGradingSocket';
 const ExternalGraderSqs = require('./externalGraderSqs');
 const ExternalGraderLocal = require('./externalGraderLocal');
-const assessment = require('./assessment');
+import * as assessment from './assessment';
+import {
+  CourseSchema,
+  QuestionSchema,
+  GradingJobSchema,
+  SubmissionSchema,
+  VariantSchema,
+} from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports.init = function (callback) {
+/** @typedef Grader
+ * @property {(GradingJob, Submission, Variant, Question, Course) => import('events')} handleGradingRequest
+ */
+
+/** @type {Grader | null} */
+let grader = null;
+
+export function init() {
   if (config.externalGradingUseAws) {
     logger.verbose('External grader running on AWS');
-    module.exports.grader = new ExternalGraderSqs();
-    callback(null);
+    grader = new ExternalGraderSqs();
   } else {
     // local dev mode
     logger.verbose('External grader running locally');
-    module.exports.grader = new ExternalGraderLocal();
-    callback(null);
+    grader = new ExternalGraderLocal();
   }
-};
+}
 
-module.exports.beginGradingJob = function (grading_job_id, callback) {
-  const params = {
-    grading_job_id,
-  };
-  sqldb.queryOneRow(sql.select_grading_job_info, params, (err, result) => {
-    if (ERR(err, callback)) return;
-    const { grading_job, submission, variant, question, course } = result.rows[0];
+/**
+ * @param {string[]} grading_job_ids
+ */
+export async function beginGradingJobsAsync(grading_job_ids) {
+  await async.each(grading_job_ids, beginGradingJobAsync);
+}
+export const beginGradingJobs = util.callbackify(beginGradingJobsAsync);
 
-    module.exports._beginGradingJob(grading_job, submission, variant, question, course);
-    callback(null);
-  });
-};
+const GradingJobInfoSchema = z.object({
+  grading_job: GradingJobSchema,
+  submission: SubmissionSchema,
+  variant: VariantSchema,
+  question: QuestionSchema,
+  course: CourseSchema,
+});
 
-module.exports.beginGradingJobs = function (grading_job_ids, callback) {
-  async.each(
-    grading_job_ids,
-    (grading_job_id, callback) => {
-      module.exports.beginGradingJob(grading_job_id, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    },
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
+/**
+ *  @param {string} grading_job_id
+ */
+export async function beginGradingJobAsync(grading_job_id) {
+  if (!grader) {
+    throw new Error('External grader not initialized');
+  }
+
+  const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
+    sql.select_grading_job_info,
+    { grading_job_id },
+    GradingJobInfoSchema,
   );
-};
 
-module.exports._beginGradingJob = function (grading_job, submission, variant, question, course) {
   if (!question.external_grading_enabled) {
     logger.verbose('External grading disabled for job id: ' + grading_job.id);
 
@@ -79,7 +94,7 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
 
   logger.verbose(`Submitting external grading job ${grading_job.id}.`);
 
-  const gradeRequest = module.exports.grader.handleGradingRequest(
+  const gradeRequest = grader.handleGradingRequest(
     grading_job,
     submission,
     variant,
@@ -87,15 +102,15 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
     course,
   );
   gradeRequest.on('submit', () => {
-    updateJobSubmissionTime(grading_job.id, (err) => {
-      if (ERR(err, (err) => logger.error('Error updating job submission time', err))) return;
+    updateJobSubmissionTime(grading_job.id).catch((err) => {
+      logger.error('Error updating job submission time', err);
     });
   });
   gradeRequest.on('received', (receivedTime) => {
     // This event is only fired when running locally; this production, this
     // is handled by the SQS queue.
-    updateJobReceivedTime(grading_job.id, receivedTime, (err) => {
-      if (ERR(err, (err) => logger.errror('Error updating job received time', err))) return;
+    updateJobReceivedTime(grading_job.id, receivedTime).catch((err) => {
+      logger.error('Error updating job received time', err);
     });
   });
   gradeRequest.on('results', (gradingResult) => {
@@ -109,48 +124,53 @@ module.exports._beginGradingJob = function (grading_job, submission, variant, qu
   gradeRequest.on('error', (err) => {
     handleGraderError(grading_job.id, err);
   });
-};
+}
+export const beginGradingJob = util.callbackify(beginGradingJobAsync);
 
-function handleGraderError(jobId, err) {
-  logger.error(`Error processing external grading job ${jobId}`);
+/**
+ * @param {string} grading_job_id
+ * @param {Error} err
+ */
+function handleGraderError(grading_job_id, err) {
+  logger.error(`Error processing external grading job ${grading_job_id}`);
   logger.error('handleGraderError', err);
-  const gradingResult = {
-    gradingId: jobId,
-    grading: {
-      score: 0,
-      startTime: null,
-      endTime: null,
-      feedback: {
-        results: { succeeded: false, gradable: false },
-        message: err.toString(),
-      },
-    },
-  };
   assessment
-    .processGradingResult(gradingResult)
-    .catch((err) => logger.error(`Error processing results for grading job ${jobId}`, err));
+    .processGradingResult({
+      gradingId: grading_job_id,
+      grading: {
+        score: 0,
+        startTime: null,
+        endTime: null,
+        feedback: {
+          results: { succeeded: false, gradable: false },
+          message: err.toString(),
+        },
+      },
+    })
+    .catch((err) =>
+      logger.error(`Error processing results for grading job ${grading_job_id}`, err),
+    );
 }
 
-function updateJobSubmissionTime(grading_job_id, callback) {
-  var params = {
+/**
+ * @param {string} grading_job_id
+ */
+async function updateJobSubmissionTime(grading_job_id) {
+  await sqldb.queryAsync(sql.update_grading_submitted_time, {
     grading_job_id: grading_job_id,
     grading_submitted_at: new Date().toISOString(),
-  };
-  sqldb.query(sql.update_grading_submitted_time, params, (err, _result) => {
-    if (ERR(err, callback)) return;
-    externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
-    callback(null);
   });
+  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
-function updateJobReceivedTime(grading_job_id, receivedTime, callback) {
-  var params = {
+/**
+ * @param {string} grading_job_id
+ * @param {string} receivedTime
+ */
+async function updateJobReceivedTime(grading_job_id, receivedTime) {
+  await sqldb.queryAsync(sql.update_grading_received_time, {
     grading_job_id: grading_job_id,
     grading_received_at: receivedTime,
-  };
-  sqldb.query(sql.update_grading_received_time, params, (err, _result) => {
-    if (ERR(err, callback)) return;
-    externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
-    callback(null);
   });
+  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
