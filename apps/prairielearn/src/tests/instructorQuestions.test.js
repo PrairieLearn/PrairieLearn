@@ -15,10 +15,9 @@ const { idsEqual } = require('../lib/id');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const courseBaseUrl = baseUrl + '/course/1';
 const courseInstanceBaseUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
-const questionsUrlCourse = courseBaseUrl + '/course_admin/questions';
+const questionsUrlCourse = baseUrl + '/course/1/course_admin/questions';
 
 const addNumbers = {
   qid: 'addNumbers',
@@ -191,7 +190,6 @@ describe('Instructor questions', function () {
     const previewPageInfo = {
       siteUrl: siteUrl,
       baseUrl: baseUrl,
-      courseBaseUrl: courseBaseUrl,
       questionBaseUrl: courseInstanceBaseUrl + '/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,

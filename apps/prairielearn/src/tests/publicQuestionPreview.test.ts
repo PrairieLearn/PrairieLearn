@@ -8,7 +8,6 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const courseBaseUrl = baseUrl + '/course/1';
 
 const addNumbers = {
   id: '',
@@ -56,7 +55,6 @@ describe('Public Question Preview', function () {
     const previewPageInfo = {
       siteUrl: siteUrl,
       baseUrl: baseUrl,
-      courseBaseUrl: courseBaseUrl,
       questionBaseUrl: baseUrl + '/public/course/1/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,

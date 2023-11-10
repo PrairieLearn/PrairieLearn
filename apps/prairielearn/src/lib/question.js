@@ -1809,14 +1809,15 @@ function buildGradingJobStats(job) {
  * back to the client. This includes the submission panel by default, and if renderScorePanels is
  * set, also the side panels for score, navigation and the question footer.
  *
- * @param  {number}   submission_id        The id of the submission
- * @param  {number}   question_id          The id of the question (for authorization check)
- * @param  {number}   instance_question_id The id of the instance question (for authorization check)
- * @param  {number}   variant_id           The id of the variant (for authorization check)
- * @param  {String}   urlPrefix            URL prefix to be used when rendering
- * @param  {String}   questionContext      The rendering context of this question
- * @param  {String}   csrfToken            CSRF token for this question page
- * @param  {boolean}  renderScorePanels    If true, render all side panels, otherwise only the submission panel
+ * @param  {string | number} submission_id        The id of the submission
+ * @param  {string | number} question_id          The id of the question (for authorization check)
+ * @param  {string | number | null} instance_question_id The id of the instance question (for authorization check)
+ * @param  {string | number | null} variant_id           The id of the variant (for authorization check)
+ * @param  {String}  urlPrefix            URL prefix to be used when rendering
+ * @param  {String?} questionContext      The rendering context of this question
+ * @param  {String?} csrfToken            CSRF token for this question page
+ * @param  {boolean?} authorizedEdit       If true the user is authorized to edit the submission
+ * @param  {boolean} renderScorePanels    If true, render all side panels, otherwise only the submission panel
  * @param  {Function} callback             Receives an error or an object containing the panels that were rendered
  */
 export function renderPanelsForSubmission(
