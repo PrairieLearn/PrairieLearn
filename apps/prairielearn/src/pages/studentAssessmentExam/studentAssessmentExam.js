@@ -128,7 +128,7 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
-      assessment.makeAssessmentInstance(
+      const assessment_instance_id = await assessment.makeAssessmentInstance(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.assessment.group_work,
@@ -136,11 +136,8 @@ router.post(
         res.locals.authz_data.mode,
         res.locals.authz_result.time_limit_min,
         res.locals.req_date,
-        (err, assessment_instance_id) => {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-        },
       );
+      res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
     } else if (req.body.__action === 'join_group') {
       await groupAssessmentHelper.joinGroup(
         req.body.join_code,

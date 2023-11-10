@@ -91,7 +91,7 @@ export function renderText(assessment, urlPrefix) {
  * @param {?number} time_limit_min - The time limit for the new assessment instance.
  * @param {Date} date - The date of creation for the new assessment instance.
  */
-export async function makeAssessmentInstanceAsync(
+export async function makeAssessmentInstance(
   assessment_id,
   user_id,
   group_work,
@@ -110,29 +110,6 @@ export async function makeAssessmentInstanceAsync(
     date,
   ]);
   return result.rows[0].assessment_instance_id;
-}
-// This function has too many parameters to use util.callbackify.
-export function makeAssessmentInstance(
-  assessment_id,
-  user_id,
-  group_work,
-  authn_user_id,
-  mode,
-  time_limit_min,
-  date,
-  callback,
-) {
-  makeAssessmentInstanceAsync(
-    assessment_id,
-    user_id,
-    group_work,
-    authn_user_id,
-    mode,
-    time_limit_min,
-    date,
-  )
-    .then((result) => callback(null, result))
-    .catch((err) => callback(err));
 }
 
 /**
