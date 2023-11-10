@@ -8,7 +8,6 @@ WHERE
   AND user_session_id = $user_session_id
   AND ip_address = $ip_address
   AND user_agent = $user_agent
-  AND accept = $accept
   AND accept_language = $accept_language
   --BLOCK insert_client_fingerprint
 INSERT INTO
@@ -17,8 +16,7 @@ INSERT INTO
     user_session_id,
     ip_address,
     user_agent,
-    accept_language,
-    accept
+    accept_language
   )
 VALUES
   (
@@ -26,8 +24,7 @@ VALUES
     $user_session_id,
     $ip_address,
     $user_agent,
-    $accept_language,
-    $accept
+    $accept_language
   )
 RETURNING
   id

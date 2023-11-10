@@ -16,7 +16,6 @@ export default asyncHandler(async (req, res, next) => {
     user_session_id: userSessionId,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
-    accept: req.headers['accept'],
   };
 
   let client_fingerprint_id = await sqldb.queryOptionalRow(
@@ -27,7 +26,6 @@ export default asyncHandler(async (req, res, next) => {
 
   if (!client_fingerprint_id) {
     client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
-    console.log('insert fingerprint', client_fingerprint_id);
   }
   if (
     res.locals.assessment_instance &&

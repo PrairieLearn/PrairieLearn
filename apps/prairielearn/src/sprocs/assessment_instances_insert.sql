@@ -109,8 +109,8 @@ BEGIN
 
     -- ######################################################################
     -- Add a log entry for the original time limit of the assessment instance
-    INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id)
-    VALUES (true, assessment_instance_id, date_limit, authn_user_id);
+    INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id, client_fingerprint_id)
+    VALUES (true, assessment_instance_id, date_limit, authn_user_id, last_client_fingerprint_id);
 
     -- ######################################################################
     -- record the last access time
