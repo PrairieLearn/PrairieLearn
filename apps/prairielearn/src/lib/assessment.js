@@ -248,15 +248,10 @@ module.exports = {
             },
           );
         },
-        (callback) => {
+        async () => {
           if (externalGradingJobIds.length > 0) {
             // We need to submit these grading jobs to be graded
-            externalGrader.beginGradingJobs(externalGradingJobIds, (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          } else {
-            callback(null);
+            await externalGrader.beginGradingJobs(externalGradingJobIds);
           }
         },
         async () => {

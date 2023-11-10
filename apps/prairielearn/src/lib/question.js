@@ -707,7 +707,7 @@ export function gradeVariant(
       // data and grading_job might not be defined if we bailed out early above
       if (data && !data.broken && grading_job && grading_job.grading_method === 'External') {
         // We need to submit this external grading job.
-        externalGrader.beginGradingJob(grading_job.id, (err) => {
+        util.callbackify(externalGrader.beginGradingJob)(grading_job.id, (err) => {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -772,7 +772,7 @@ export function saveAndGradeSubmission(
       if (grading_job_id !== undefined) {
         // We need to submit this grading job now that the
         // transaction has been committed
-        externalGrader.beginGradingJob(grading_job_id, (err) => {
+        util.callbackify(externalGrader.beginGradingJob)(grading_job_id, (err) => {
           if (ERR(err, callback)) return;
           callback(null, submission_id);
         });

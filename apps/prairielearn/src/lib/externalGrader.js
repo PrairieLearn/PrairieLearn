@@ -1,6 +1,5 @@
 // @ts-check
 import * as async from 'async';
-import * as util from 'util';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -54,15 +53,14 @@ export function init() {
 /**
  * @param {string[]} grading_job_ids
  */
-export async function beginGradingJobsAsync(grading_job_ids) {
-  await async.each(grading_job_ids, beginGradingJobAsync);
+export async function beginGradingJobs(grading_job_ids) {
+  await async.each(grading_job_ids, beginGradingJob);
 }
-export const beginGradingJobs = util.callbackify(beginGradingJobsAsync);
 
 /**
  *  @param {string} grading_job_id
  */
-export async function beginGradingJobAsync(grading_job_id) {
+export async function beginGradingJob(grading_job_id) {
   assert(grader, 'External grader not initialized');
 
   const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
@@ -128,7 +126,6 @@ export async function beginGradingJobAsync(grading_job_id) {
     handleGraderError(grading_job.id, err);
   });
 }
-export const beginGradingJob = util.callbackify(beginGradingJobAsync);
 
 /**
  * @param {string} grading_job_id
