@@ -111,6 +111,7 @@ export async function makeAssessmentInstanceAsync(
   ]);
   return result.rows[0].assessment_instance_id;
 }
+// This function has too many parameters to use util.callbackify.
 export function makeAssessmentInstance(
   assessment_id,
   user_id,
@@ -252,6 +253,18 @@ export async function gradeAssessmentInstanceAsync(
 }
 export const gradeAssessmentInstance = callbackify(gradeAssessmentInstanceAsync);
 
+const AssessmentInfoSchema = z.object({
+  assessment_label: z.string(),
+  course_instance_id: IdSchema,
+  course_id: IdSchema,
+});
+
+const InstancesToGradeSchema = z.object({
+  assessment_instance_id: IdSchema,
+  instance_number: z.number(),
+  username: z.string(),
+});
+
 /**
  * Grade all assessment instances and (optionally) close them.
  *
@@ -269,12 +282,11 @@ export async function gradeAllAssessmentInstances(
   overrideGradeRate,
 ) {
   debug('gradeAllAssessmentInstances()');
-  const assessmentInfo = await sqldb.queryOneRowAsync(sql.select_assessment_info, {
-    assessment_id,
-  });
-  const assessment_label = assessmentInfo.rows[0].assessment_label;
-  const course_instance_id = assessmentInfo.rows[0].course_instance_id;
-  const course_id = assessmentInfo.rows[0].course_id;
+  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
+    sql.select_assessment_info,
+    { assessment_id },
+    AssessmentInfoSchema,
+  );
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -289,10 +301,13 @@ export async function gradeAllAssessmentInstances(
   serverJob.executeInBackground(async (job) => {
     job.info('Grading assessment instances for ' + assessment_label);
 
-    const instances = await sqldb.queryAsync(sql.select_instances_to_grade, { assessment_id });
-    const rows = instances.rows;
-    job.info(rows.length === 1 ? 'One instance found' : rows.length + ' instances found');
-    await async.eachSeries(rows, async (row) => {
+    const instances = await sqldb.queryRows(
+      sql.select_instances_to_grade,
+      { assessment_id },
+      InstancesToGradeSchema,
+    );
+    job.info(instances.length === 1 ? 'One instance found' : instances.length + ' instances found');
+    await async.eachSeries(instances, async (row) => {
       job.info(`Grading assessment instance #${row.instance_number} for ${row.username}`);
       const requireOpen = true;
       await gradeAssessmentInstanceAsync(
@@ -408,11 +423,13 @@ export async function processGradingResult(content) {
  * @param {string} course_instance_id - The course instance ID.
  */
 export async function updateAssessmentStatisticsForCourseInstance(course_instance_id) {
-  const result = await sqldb.queryAsync(sql.select_assessments_for_statistics_update, {
-    course_instance_id,
-  });
-  await async.eachLimit(result.rows, 3, async (row) => {
-    await module.exports.updateAssessmentStatistics(row.assessment_id);
+  const rows = await sqldb.queryRows(
+    sql.select_assessments_for_statistics_update,
+    { course_instance_id },
+    IdSchema,
+  );
+  await async.eachLimit(rows, 3, async (assessment_id) => {
+    await module.exports.updateAssessmentStatistics(assessment_id);
   });
 }
 
