@@ -1086,6 +1086,10 @@ function testQuestion(
 ) {
   debug('_testQuestion()');
 
+  let generateDuration;
+  let renderDuration;
+  let gradeDuration;
+
   let variant,
     question_course,
     expected_submission = null,
@@ -1100,6 +1104,7 @@ function testQuestion(
         const course_instance_id = (course_instance && course_instance.id) || null;
         const options = {};
         const require_open = true;
+        const generateStart = Date.now();
         ensureVariant(
           question.id,
           instance_question_id,
@@ -1112,6 +1117,8 @@ function testQuestion(
           options,
           require_open,
           (err, ret_variant) => {
+            const generateEnd = Date.now();
+            generateDuration = generateEnd - generateStart;
             if (ERR(err, callback)) return;
             variant = ret_variant;
             debug('_testQuestion()', 'created variant_id: :', variant.id);
@@ -1120,7 +1127,28 @@ function testQuestion(
         );
       },
       (callback) => {
+        const renderStart = Date.now();
+        getAndRenderVariant(
+          variant.id,
+          null,
+          {
+            question,
+            course: variant_course,
+            urlPrefix: '/pl/course/1',
+            authz_data: {},
+          },
+          (err) => {
+            const renderEnd = Date.now();
+            renderDuration = renderEnd - renderStart;
+            if (ERR(err, callback)) return;
+            debug('_testQuestion()', 'rendered variant');
+            callback(null);
+          },
+        );
+      },
+      (callback) => {
         if (variant.broken) return callback(null);
+        const gradeStart = Date.now();
         testVariant(
           variant,
           question,
@@ -1128,6 +1156,8 @@ function testQuestion(
           test_type,
           authn_user_id,
           (err, ret_expected_submission, ret_test_submission) => {
+            const gradeEnd = Date.now();
+            gradeDuration = gradeEnd - gradeStart;
             if (ERR(err, callback)) return;
             expected_submission = ret_expected_submission;
             test_submission = ret_test_submission;
@@ -1147,7 +1177,12 @@ function testQuestion(
     (err) => {
       if (ERR(err, callback)) return;
       debug('_testQuestion()', 'returning');
-      callback(null, variant, expected_submission, test_submission);
+      const stats = {
+        generateDuration,
+        renderDuration,
+        gradeDuration,
+      };
+      callback(null, variant, expected_submission, test_submission, stats);
     },
   );
 }
@@ -1164,9 +1199,8 @@ function testQuestion(
  * @param {Object} course - The course for the variant.
  * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
  * @param {string} authn_user_id - The currently authenticated user.
- * @param {function} callback - A callback(err, success) function.
  */
-function runTest(
+async function runTest(
   logger,
   showDetails,
   question,
@@ -1175,83 +1209,78 @@ function runTest(
   course,
   test_type,
   authn_user_id,
-  callback,
 ) {
   let variant,
     expected_submission,
     test_submission,
+    stats,
     success = true;
-  async.series(
-    [
-      (callback) => {
-        logger.verbose('Testing ' + question.qid);
-        testQuestion(
-          question,
-          group_work,
-          course_instance,
-          course,
-          test_type,
-          authn_user_id,
-          (err, ret_variant, ret_expected_submission, ret_test_submission) => {
-            if (ERR(err, callback)) return;
-            variant = ret_variant;
-            expected_submission = ret_expected_submission;
-            test_submission = ret_test_submission;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        if (!showDetails) return callback(null);
-        const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
-        const submissionKeys = [
-          'broken',
-          'correct',
-          'feedback',
-          'format_errors',
-          'gradable',
-          'grading_method',
-          'partial_scores',
-          'raw_submitted_answer',
-          'score',
-          'submitted_answer',
-          'true_answer',
-        ];
-        logger.verbose(
-          'variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '),
-        );
-        if (_.isObject(expected_submission)) {
-          logger.verbose(
-            'expected_submission:\n' +
-              jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
-          );
-        }
-        if (_.isObject(test_submission)) {
-          logger.verbose(
-            'test_submission:\n' +
-              jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
-          );
-        }
-        callback(null);
-      },
-      async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_issue_count_for_variant, {
-          variant_id: variant.id,
-        });
-
-        if (result.rows[0].count > 0) {
-          success = false;
-          logger.verbose(`ERROR: ${result.rows[0].count} issues encountered during test.`);
-        } else {
-          logger.verbose('Success: no issues during test');
-        }
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, success);
+  await async.series([
+    (callback) => {
+      logger.verbose('Testing ' + question.qid);
+      testQuestion(
+        question,
+        group_work,
+        course_instance,
+        course,
+        test_type,
+        authn_user_id,
+        (err, ret_variant, ret_expected_submission, ret_test_submission, ret_stats) => {
+          if (ERR(err, callback)) return;
+          variant = ret_variant;
+          expected_submission = ret_expected_submission;
+          test_submission = ret_test_submission;
+          stats = ret_stats;
+          callback(null);
+        },
+      );
     },
-  );
+    (callback) => {
+      if (!showDetails) return callback(null);
+      const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
+      const submissionKeys = [
+        'broken',
+        'correct',
+        'feedback',
+        'format_errors',
+        'gradable',
+        'grading_method',
+        'partial_scores',
+        'raw_submitted_answer',
+        'score',
+        'submitted_answer',
+        'true_answer',
+      ];
+      logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
+      if (_.isObject(expected_submission)) {
+        logger.verbose(
+          'expected_submission:\n' +
+            jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
+        );
+      }
+      if (_.isObject(test_submission)) {
+        logger.verbose(
+          'test_submission:\n' +
+            jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
+        );
+      }
+      callback(null);
+    },
+    async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_issue_count_for_variant, {
+        variant_id: variant.id,
+      });
+
+      if (result.rows[0].count > 0) {
+        success = false;
+        logger.verbose(`ERROR: ${result.rows[0].count} issues encountered during test.`);
+      } else {
+        logger.verbose('Success: no issues during test');
+      }
+    },
+  ]);
+
+  return { success, stats };
 }
 
 /**
@@ -1286,11 +1315,13 @@ export async function startTestQuestion(
     description: 'Test ' + question.qid,
   });
 
+  const stats = [];
+
   serverJob.executeInBackground(async (job) => {
-    await async.eachSeries(_.range(count * test_types.length), (iter, callback) => {
+    await async.eachSeries(_.range(count * test_types.length), async (iter) => {
       let type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
-      runTest(
+      const result = await runTest(
         job,
         showDetails,
         question,
@@ -1299,13 +1330,39 @@ export async function startTestQuestion(
         course,
         type,
         authn_user_id,
-        (err, ret_success) => {
-          if (ERR(err, callback)) return;
-          success = success && ret_success;
-          callback(null);
-        },
       );
+      success = success && result.success;
+      if (stats) {
+        stats.push(result.stats);
+      }
     });
+
+    function printStats(label, key) {
+      let min = Number.MAX_SAFE_INTEGER;
+      let max = 0;
+      let count = 0;
+      let sum = 0;
+      stats.forEach((stat) => {
+        const value = stat[key];
+        if (value == null) return;
+        count += 1;
+        sum += value;
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      });
+
+      if (count === 0) {
+        job.verbose(`${label}: No data`);
+        return;
+      }
+
+      const avg = Math.round((sum / count) * 100) / 100;
+      job.info(`${label}: ${count} tests, min ${min}ms, max ${max}ms, avg ${avg}ms`);
+    }
+
+    printStats('Generate/prepare', 'generateDuration');
+    printStats('Render', 'renderDuration');
+    printStats('Parse/grade', 'gradeDuration');
 
     if (!success) {
       throw new Error('Some tests failed. See the "Errors" page for details.');

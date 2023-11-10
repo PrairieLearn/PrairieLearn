@@ -476,6 +476,7 @@ module.exports = {
       if (!editPhases.includes(phase)) {
         if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
         if (!_.isEqual(data[prop], origData[prop])) {
+          console.log(data[prop], origData[prop]);
           return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
             data[prop],
           )}", original value: "${JSON.stringify(origData[prop])}"`;
