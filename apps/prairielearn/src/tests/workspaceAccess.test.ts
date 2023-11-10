@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 
-import { Config, config } from '../lib/config';
+import { config, type Config } from '../lib/config';
 import * as helperServer from './helperServer';
 
 import * as sqldb from '@prairielearn/postgres';
