@@ -17,7 +17,7 @@ export function InstitutionAdminLti13({
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
   resLocals: Record<string, any>;
-  platform_defaults: LTI13Platform;
+  platform_defaults: LTI13Platform[];
 }): string {
   return html`
     <!doctype html>
@@ -83,7 +83,7 @@ export function InstitutionAdminLti13({
 function LTI13Instance(
   instance: Lti13Instance | null,
   resLocals: Record<string, any>,
-  platform_defaults: LTI13Platform,
+  platform_defaults: LTI13Platform[],
 ) {
   if (instance) {
     return html`

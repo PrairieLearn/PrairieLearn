@@ -3,7 +3,7 @@ import asyncHandler = require('express-async-handler');
 import jose = require('node-jose');
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
-import { selectLti13Instance } from '../../../models/lti13Instance';
+import { selectLti13Instance } from '../../models/lti13Instance';
 import { cloneDeep } from 'lodash';
 
 const router = Router({ mergeParams: true });

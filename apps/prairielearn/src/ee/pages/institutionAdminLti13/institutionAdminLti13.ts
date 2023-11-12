@@ -22,7 +22,7 @@ type LTI13Platform = {
   display_order: number;
   issuer_params?: object;
   custom_fields?: object;
-}[];
+};
 
 export type { LTI13Platform };
 
@@ -48,7 +48,7 @@ router.get(
       Lti13InstanceSchema,
     );
 
-    const platform_defaults_hardcoded: LTI13Platform = [
+    const platform_defaults_hardcoded: LTI13Platform[] = [
       {
         platform: 'Unknown',
         display_order: 0,
