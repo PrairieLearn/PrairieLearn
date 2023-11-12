@@ -25,6 +25,8 @@ const exampleCourseId = 1;
 const exampleCourseSharingName = 'example-course';
 const sharingSetName = 'share-set-example';
 const sharedQuestionQid = 'element/numberInput';
+const publiclySharedQuestionQid = 'element/orderBlocks';
+let publiclySharedQuestionId;
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -50,7 +52,7 @@ async function accessSharedQuestionAssessment() {
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
     siteUrl +
-    assessmentsPage.$(`a:contains("Test of Importing Questions From Another Course")`).attr('href');
+    assessmentsPage.$(`a:contains("Test of Consuming Questions From Another Course")`).attr('href');
   const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
@@ -111,7 +113,7 @@ describe('Question Sharing', function () {
             qid: sharedQuestionQid,
           })
         ).rows[0].id;
-        const sharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}/settings`;
+        const sharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}`;
         const sharedQuestionPage = await helperClient.fetchCheerio(sharedQuestionUrl);
         assert(sharedQuestionPage.ok);
 
@@ -303,7 +305,49 @@ describe('Question Sharing', function () {
     });
   });
 
-  describe('Test syncing code succeeding once question is added to sharing set', function () {
+  describe('Test Sharing a Question Publicly', function () {
+    before('Get id for publicly shared question', async () => {
+      publiclySharedQuestionId = (
+        await sqldb.queryOneRowAsync(sql.get_question_id, {
+          course_id: exampleCourseId,
+          qid: publiclySharedQuestionQid,
+        })
+      ).rows[0].id;
+    });
+
+    step('Fail to Access Questions Not-yet shared publicly', async () => {
+      const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${publiclySharedQuestionId}`;
+      const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+      assert(!sharedQuestionSharedPage.ok);
+    });
+
+    step('Mark question as shared publicly', async () => {
+      const publiclySharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${publiclySharedQuestionId}/settings`;
+      const sharedQuestionSettingsPage = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      assert(sharedQuestionSettingsPage.ok);
+
+      const token = sharedQuestionSettingsPage.$('#test_csrf_token').text();
+      const resPost = await fetch(publiclySharedQuestionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'share_publicly',
+          __csrf_token: token,
+        }),
+      });
+
+      assert(resPost.ok);
+      const settingsPageResponse = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      assert(settingsPageResponse.text().includes('This question is publicly shared.'));
+    });
+
+    step('Successfully access publicly shared question through other course', async () => {
+      const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${publiclySharedQuestionId}`;
+      const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+      assert(sharedQuestionSharedPage.ok);
+    });
+  });
+
+  describe('Test syncing code succeeding once questions have been shared', function () {
     before('alter config to check sharing on sync', () => {
       config.checkSharingOnSync = true;
     });
@@ -318,12 +362,17 @@ describe('Question Sharing', function () {
     });
 
     step('Successfully access shared question', async () => {
-      let res = await accessSharedQuestionAssessment();
+      const res = await accessSharedQuestionAssessment();
       const sharedQuestionUrl =
         siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
+      const sharedQuestionRes = await helperClient.fetchCheerio(sharedQuestionUrl);
+      assert(sharedQuestionRes.ok);
 
-      res = await helperClient.fetchCheerio(sharedQuestionUrl);
-      assert(res.ok);
+      const publiclySharedQuestionUrl =
+        siteUrl +
+        res.$(`a:contains("Dragging blocks to form the solution of a problem")`).attr('href');
+      const publiclySharedQuestionRes = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      assert(publiclySharedQuestionRes.ok);
     });
   });
 });

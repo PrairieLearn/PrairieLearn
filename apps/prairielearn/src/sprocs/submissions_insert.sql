@@ -126,6 +126,11 @@ BEGIN
             requires_manual_grading = requires_manual_grading OR aq_manual_points > 0
         WHERE id = instance_question_id;
 
+        -- Update the stats, in particular the submission score array. Initial
+        -- updates only involve a null entry, which is updated after grading if
+        -- the submission is graded.
+        PERFORM instance_questions_calculate_stats(instance_question_id);
+
         UPDATE assessment_instances AS ai
         SET
             duration = ai.duration + delta,

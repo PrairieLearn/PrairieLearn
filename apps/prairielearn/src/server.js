@@ -1105,7 +1105,7 @@ module.exports.initExpress = function () {
 
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob'),
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/jobSequence',
@@ -1714,7 +1714,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course/:course_id/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob'),
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
   );
 
   // This route is used to initiate a transfer of a question from a template course.
@@ -2314,12 +2314,7 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => externalGrader.init(),
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),

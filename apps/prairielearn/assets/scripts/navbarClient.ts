@@ -4,12 +4,15 @@ import CookiesModule from 'js-cookie';
 const COOKIE_EXPIRATION_DAYS = 30;
 
 onDocumentReady(() => {
+  const usernameNav = document.getElementById('username-nav');
+  // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
+  if (!usernameNav) return;
+
   const Cookies = CookiesModule.withAttributes({
     path: '/',
     expires: COOKIE_EXPIRATION_DAYS,
   });
 
-  const usernameNav = document.getElementById('username-nav');
   const accessAsAdministrator = usernameNav.dataset.accessAsAdministrator === 'true';
   const viewType = usernameNav.dataset.viewType;
   const authnCourseRole = usernameNav.dataset.authnCourseRole;

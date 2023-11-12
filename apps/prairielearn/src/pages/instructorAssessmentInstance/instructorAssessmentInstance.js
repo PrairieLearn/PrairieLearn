@@ -34,6 +34,9 @@ const logCsvFilename = (locals) => {
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
     res.locals.logCsvFilename = logCsvFilename(res.locals);
     res.locals.assessment_instance_stats = (
       await sqldb.queryAsync(sql.assessment_instance_stats, {
@@ -67,6 +70,9 @@ router.get(
 router.get(
   '/:filename',
   asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
     if (req.params.filename === logCsvFilename(res.locals)) {
       const cursor = await assessment.selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
@@ -106,7 +112,7 @@ router.post(
   '/',
   asyncHandler(async (req, res, next) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      return next(error.make(403, 'Access denied (must be a student data editor)'));
+      throw error.make(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'edit_total_points') {

@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 3.1.1
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
 ## 3.1.0
 
 ### Minor Changes
