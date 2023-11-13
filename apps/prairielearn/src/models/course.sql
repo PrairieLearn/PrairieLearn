@@ -1,4 +1,4 @@
--- BLOCK select_course
+-- BLOCK select_course_by_id
 SELECT
   *
 FROM

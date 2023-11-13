@@ -2343,12 +2343,7 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => externalGrader.init(),
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),

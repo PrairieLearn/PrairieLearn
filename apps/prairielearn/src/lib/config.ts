@@ -1,13 +1,12 @@
-// @ts-check
-const { z } = require('zod');
-const {
+import { z } from 'zod';
+import {
   ConfigLoader,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
-} = require('@prairielearn/config');
+} from '@prairielearn/config';
 
-const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('./paths');
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -495,32 +494,30 @@ const ConfigSchema = z.object({
   stripeProductIds: z.record(z.string(), z.string()).default({}),
 });
 
-/** @typedef {z.infer<typeof ConfigSchema>} Config */
+export type Config = z.infer<typeof ConfigSchema>;
 
 const loader = new ConfigLoader(ConfigSchema);
 
-module.exports.config = loader.config;
+export const config = loader.config;
 
 /**
  * Attempts to load config from all our sources, including the given paths.
  *
- * @param {string[]} paths Paths to JSON config files to try to load.
+ * @param paths Paths to JSON config files to try to load.
  */
-module.exports.loadConfig = async function (paths) {
+export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
   ]);
-};
+}
 
-module.exports.ConfigSchema = ConfigSchema;
-
-module.exports.setLocalsFromConfig = (locals) => {
-  locals.homeUrl = module.exports.config.homeUrl;
-  locals.urlPrefix = module.exports.config.urlPrefix;
-  locals.plainUrlPrefix = module.exports.config.urlPrefix;
+export function setLocalsFromConfig(locals: Record<string, any>) {
+  locals.homeUrl = config.homeUrl;
+  locals.urlPrefix = config.urlPrefix;
+  locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = module.exports.config.devMode;
+  locals.devMode = config.devMode;
   locals.is_administrator = false;
-};
+}

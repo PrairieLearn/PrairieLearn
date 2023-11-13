@@ -62,7 +62,7 @@ describe('Public Question Preview', function () {
 
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
 
-    // TODO: implement file downloads for publicly shared questions
+    // TODO: implement file downloads for previews accessed through public urls
     // testFileDownloads(previewPageInfo, downloadFile);
   });
 });

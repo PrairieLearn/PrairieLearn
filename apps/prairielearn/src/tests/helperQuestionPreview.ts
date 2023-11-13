@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import request = require('request');
-import * as sqldb from '@prairielearn/postgres';
 import helperQuestion = require('./helperQuestion');
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
