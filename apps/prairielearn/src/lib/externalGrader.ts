@@ -4,7 +4,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import assert = require('node:assert');
-import type EventEmitter = require('node:events');
+import type { EventEmitter } from 'node:events';
 
 import { config } from './config';
 import * as externalGradingSocket from './externalGradingSocket';
