@@ -15,7 +15,7 @@ const { promisify } = require('util');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-class Grader {
+export class ExternalGraderLocal {
   handleGradingRequest(grading_job, submission, variant, question, course) {
     const emitter = new EventEmitter();
 
@@ -241,5 +241,3 @@ function getDevHostJobDirectory(jobId) {
     return getDevJobDirectory(jobId);
   }
 }
-
-module.exports = Grader;

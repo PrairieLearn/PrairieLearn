@@ -1,4 +1,3 @@
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
@@ -89,7 +88,7 @@ router.get(
         if (!checkPasswordOrRedirect(req, res)) return;
 
         const time_limit_min = null;
-        assessment.makeAssessmentInstance(
+        const assessment_instance_id = await assessment.makeAssessmentInstance(
           res.locals.assessment.id,
           res.locals.user.user_id,
           res.locals.assessment.group_work,
@@ -104,6 +103,8 @@ router.get(
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
           },
         );
+        debug('redirecting');
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
       }
     } else {
       debug('redirecting');
@@ -121,36 +122,30 @@ router.post(
         assessment_id: res.locals.assessment.id,
         user_id: res.locals.user.user_id,
       };
-      sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
-        if (ERR(err, next)) return;
-        if (result.rowCount === 0) {
-          // Before allowing the user to create a new assessment instance, we need
-          // to check if the current access rules require a password. If they do,
-          // we'll ensure that the password has already been entered before allowing
-          // students to create and start a new assessment instance.
-          if (!checkPasswordOrRedirect(req, res)) return;
-
-          const time_limit_min = null;
-          assessment.makeAssessmentInstance(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            res.locals.assessment.group_work,
-            res.locals.authn_user.user_id,
-            res.locals.authz_data.mode,
-            time_limit_min,
-            res.locals.authz_data.date,
-            res.locals.client_fingerprint_id,
-            (err, assessment_instance_id) => {
-              if (ERR(err, next)) return;
-              debug('redirecting');
-              res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-            },
-          );
-        } else {
-          debug('redirecting');
-          res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
-        }
-      });
+      const result = await sqldb.queryAsync(sql.find_single_assessment_instance, params);
+      if (result.rowCount === 0) {
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
+        if (!checkPasswordOrRedirect(req, res)) return;
+        const time_limit_min = null;
+        const assessment_instance_id = await assessment.makeAssessmentInstance(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+          res.locals.assessment.group_work,
+          res.locals.authn_user.user_id,
+          res.locals.authz_data.mode,
+          time_limit_min,
+          res.locals.authz_data.date,
+          res.locals.client_fingerprint_id,
+        );
+        debug('redirecting');
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+      } else {
+        debug('redirecting');
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+      }
     } else if (req.body.__action === 'join_group') {
       await groupAssessmentHelper.joinGroup(
         req.body.join_code,
