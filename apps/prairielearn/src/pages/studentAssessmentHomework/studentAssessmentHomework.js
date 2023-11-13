@@ -97,11 +97,6 @@ router.get(
           time_limit_min,
           res.locals.authz_data.date,
           res.locals.client_fingerprint_id,
-          (err, assessment_instance_id) => {
-            if (ERR(err, next)) return;
-            debug('redirecting');
-            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-          },
         );
         debug('redirecting');
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
