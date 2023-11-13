@@ -1,15 +1,15 @@
-// @ts-check
 import * as async from 'async';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-const assert = require('node:assert');
+import assert = require('node:assert');
+import type { EventEmitter } from 'node:events';
 
 import { config } from './config';
 import * as externalGradingSocket from './externalGradingSocket';
-const ExternalGraderSqs = require('./externalGraderSqs');
-const ExternalGraderLocal = require('./externalGraderLocal');
+import { ExternalGraderSqs } from './externalGraderSqs';
+import { ExternalGraderLocal } from './externalGraderLocal';
 import * as assessment from './assessment';
 import {
   CourseSchema,
@@ -17,6 +17,11 @@ import {
   GradingJobSchema,
   SubmissionSchema,
   VariantSchema,
+  type GradingJob,
+  type Submission,
+  type Variant,
+  type Question,
+  type Course,
 } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -29,18 +34,19 @@ const GradingJobInfoSchema = z.object({
   course: CourseSchema,
 });
 
-/** @typedef Grader
- * @property {(grading_job: z.infer<typeof GradingJobSchema>,
- *             submission: z.infer<typeof SubmissionSchema>,
- *             variant: z.infer<typeof VariantSchema>,
- *             question: z.infer<typeof QuestionSchema>,
- *             course: z.infer<typeof CourseSchema>) => import('events')} handleGradingRequest
- */
+interface Grader {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+  ): EventEmitter;
+}
 
-/** @type {Grader | null} */
-let grader = null;
+let grader: Grader | null = null;
 
-export function init() {
+export function init(): void {
   if (config.externalGradingUseAws) {
     logger.verbose('External grader running on AWS');
     grader = new ExternalGraderSqs();
@@ -51,17 +57,11 @@ export function init() {
   }
 }
 
-/**
- * @param {string[]} grading_job_ids
- */
-export async function beginGradingJobs(grading_job_ids) {
+export async function beginGradingJobs(grading_job_ids: string[]): Promise<void> {
   await async.each(grading_job_ids, beginGradingJob);
 }
 
-/**
- *  @param {string} grading_job_id
- */
-export async function beginGradingJob(grading_job_id) {
+export async function beginGradingJob(grading_job_id: string): Promise<void> {
   assert(grader, 'External grader not initialized');
 
   const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
@@ -74,7 +74,7 @@ export async function beginGradingJob(grading_job_id) {
     logger.verbose('External grading disabled for job id: ' + grading_job.id);
 
     // Make the grade 0
-    let ret = {
+    const ret = {
       gradingId: grading_job.id,
       grading: {
         score: 0,
@@ -109,7 +109,7 @@ export async function beginGradingJob(grading_job_id) {
       Sentry.captureException(err);
     });
   });
-  gradeRequest.on('received', (receivedTime) => {
+  gradeRequest.on('received', (receivedTime: string) => {
     // This event is only fired when running locally; this production, this
     // is handled by the SQS queue.
     updateJobReceivedTime(grading_job.id, receivedTime).catch((err) => {
@@ -117,7 +117,7 @@ export async function beginGradingJob(grading_job_id) {
       Sentry.captureException(err);
     });
   });
-  gradeRequest.on('results', (gradingResult) => {
+  gradeRequest.on('results', (gradingResult: Record<string, any>) => {
     // This event will only be fired when running locally; in production,
     // external grader results wil be delivered via SQS.
     assessment.processGradingResult(gradingResult).then(
@@ -125,16 +125,12 @@ export async function beginGradingJob(grading_job_id) {
       (err) => logger.error(`Error processing grading job ${grading_job.id}`, err),
     );
   });
-  gradeRequest.on('error', (err) => {
+  gradeRequest.on('error', (err: Error) => {
     handleGraderError(grading_job.id, err);
   });
 }
 
-/**
- * @param {string} grading_job_id
- * @param {Error} err
- */
-function handleGraderError(grading_job_id, err) {
+function handleGraderError(grading_job_id: string, err: Error): void {
   logger.error(`Error processing external grading job ${grading_job_id}`);
   logger.error('handleGraderError', err);
   Sentry.captureException(err);
@@ -157,10 +153,7 @@ function handleGraderError(grading_job_id, err) {
     });
 }
 
-/**
- * @param {string} grading_job_id
- */
-async function updateJobSubmissionTime(grading_job_id) {
+async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
   await sqldb.queryAsync(sql.update_grading_submitted_time, {
     grading_job_id: grading_job_id,
     grading_submitted_at: new Date().toISOString(),
@@ -168,11 +161,7 @@ async function updateJobSubmissionTime(grading_job_id) {
   externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
-/**
- * @param {string} grading_job_id
- * @param {string} receivedTime
- */
-async function updateJobReceivedTime(grading_job_id, receivedTime) {
+async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
   await sqldb.queryAsync(sql.update_grading_received_time, {
     grading_job_id: grading_job_id,
     grading_received_at: receivedTime,
