@@ -258,7 +258,11 @@ function pluralizeQuestionCount(count: number) {
   return count === 1 ? `${count} question` : `${count} questions`;
 }
 
-function formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled) {
+function formatEnrollmentCount(
+  enrollmentCount: number,
+  enrollmentLimit: number,
+  studentBillingEnabled: boolean,
+) {
   if (studentBillingEnabled) {
     const pluralizedEnrollments = enrollmentCount === 1 ? 'enrollment' : 'enrollments';
 
