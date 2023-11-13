@@ -45,7 +45,7 @@ export const InstanceLogSchema = z.object({
  */
 export async function checkBelongsAsync(assessment_instance_id, assessment_id) {
   if (
-    (await sqldb.queryRow(
+    (await sqldb.queryOptionalRow(
       sql.check_belongs,
       { assessment_instance_id, assessment_id },
       IdSchema,
