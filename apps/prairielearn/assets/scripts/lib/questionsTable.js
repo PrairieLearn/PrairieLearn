@@ -50,7 +50,7 @@ onDocumentReady(() => {
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
     }
-    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
+    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview"
       >${qidPrefix}${question.qid}</a
     >`;
     if (question.open_issue_count > 0) {
