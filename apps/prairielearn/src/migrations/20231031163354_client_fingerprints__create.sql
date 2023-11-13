@@ -4,7 +4,7 @@ CREATE TABLE
     user_id BIGINT REFERENCES users (user_id),
     user_session_id BIGINT REFERENCES user_sessions (id),
     ip_address INET NOT NULL,
-    user_agent VARCHAR(255) NOT NULL,
+    user_agent VARCHAR(255),
     accept_language VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT now()
   );
