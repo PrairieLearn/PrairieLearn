@@ -38,11 +38,6 @@ export const InstanceLogSchema = z.object({
 });
 
 /**
- * Assessment module.
- * @module assessment
- */
-
-/**
  * Check that an assessment_instance_id really belongs to the given assessment_id
  *
  * @param {string} assessment_instance_id - The assessment instance to check.
@@ -406,7 +401,7 @@ export async function updateAssessmentStatisticsForCourseInstance(course_instanc
     IdSchema,
   );
   await async.eachLimit(rows, 3, async (assessment_id) => {
-    await module.exports.updateAssessmentStatistics(assessment_id);
+    await updateAssessmentStatistics(assessment_id);
   });
 }
 
