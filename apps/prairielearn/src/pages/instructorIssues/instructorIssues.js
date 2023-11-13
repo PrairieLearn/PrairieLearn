@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const { parseISO, formatDistance } = require('date-fns');
 const express = require('express');
@@ -92,24 +92,23 @@ function parseRawQuery(str) {
   return filters;
 }
 
-router.get('/', function (req, res, next) {
-  if (!('q' in req.query)) {
-    req.query.q = 'is:open';
-  }
-  const filters = parseRawQuery(req.query.q);
-
-  var params = {
-    course_id: res.locals.course.id,
-  };
-  _.assign(params, filters);
-
-  sqldb.query(sql.issues_count, params, function (err, result) {
-    if (ERR(err, next)) return;
-    if (result.rowCount !== 2) {
-      return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!('q' in req.query)) {
+      req.query.q = 'is:open';
     }
-    res.locals.closedCount = result.rows[0].count;
-    res.locals.openCount = result.rows[1].count;
+
+    const counts = await sqldb.queryAsync(sql.issues_count, {
+      course_id: res.locals.course.id,
+    });
+
+    if (counts.rowCount !== 2) {
+      throw new Error('unable to obtain issue count, rowCount = ' + counts.rowCount);
+    }
+
+    res.locals.closedCount = counts.rows[0].count;
+    res.locals.openCount = counts.rows[1].count;
 
     var params = {
       course_id: res.locals.course.id,
@@ -119,154 +118,147 @@ router.get('/', function (req, res, next) {
     if (_.isInteger(Number(req.query.page))) {
       params.offset = (Number(req.query.page) - 1) * PAGE_SIZE;
     }
+
+    const filters = parseRawQuery(req.query.q);
     _.assign(params, filters);
 
-    sqldb.query(sql.select_issues, params, function (err, result) {
-      if (ERR(err, next)) return;
+    const issues = await sqldb.queryAsync(sql.select_issues, params);
 
-      // Set of IDs of course instances to which the effective user has access
-      const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce(
-        (acc, ci) => {
-          acc.add(ci.id);
-          return acc;
-        },
-        new Set(),
-      );
+    // Set of IDs of course instances to which the effective user has access
+    const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce(
+      (acc, ci) => {
+        acc.add(ci.id);
+        return acc;
+      },
+      new Set(),
+    );
 
-      res.locals.issueCount = result.rowCount ? result.rows[0].issue_count : 0;
+    res.locals.issueCount = issues.rowCount ? issues.rows[0].issue_count : 0;
 
-      _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
-      res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
+    _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
+    res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
 
-      result.rows.forEach((row) => {
-        // Add human-readable relative dates to each row
-        row.relative_date = formatDistance(parseISO(row.formatted_date), parseISO(row.now_date), {
-          addSuffix: true,
-        });
-
-        if (row.assessment) {
-          if (!row.course_instance_id) {
-            return next(
-              new Error(
-                `Issue id ${row.issue_id} is associated with an assessment but not a course instance`,
-              ),
-            );
-          }
-
-          // Each issue is associated with a question variant. If an issue is also
-          // associated with a course instance, then this question variant is from
-          // some assessment in that course instance. We can provide a link to this
-          // assessment, but we only want to do so if the effective user has access
-          // to the corresponding course instance.
-          //
-          // Add a flag to each row saying if the effective user has this access.
-          row.assessment.hide_link = !linkable_course_instance_ids.has(
-            parseInt(row.course_instance_id),
-          );
-
-          // If necessary, construct the URL prefix to the appropriate course instance
-          // (either if we are accessing the issue through the course page route, or if
-          // we are accessing the issue through a different course instance page route).
-          if (
-            !res.locals.course_instance ||
-            !idsEqual(res.locals.course_instance.id, row.course_instance_id)
-          ) {
-            row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
-          }
-        }
-
-        // There are three situations in which the issue need not be anonymized:
-        //
-        //  1) The issue is not associated with a course instance. The only way
-        //     for a user to generate an issue that is not associated with a course
-        //     instance is if they are an instructor, so there are no student data
-        //     to be protected in this case.
-        //
-        //  2) We are accessing this page through a course instance, the issue is
-        //     associated with the same course instance, and the user has student
-        //     data view access.
-        //
-        //  3) We are not accessing this page through the course instance
-        //     associated to the issue (i.e., we are accessing it through the
-        //     course or through a different course instance), and the user has
-        //     student data view access in the course instance associated to the
-        //     issue. This is distinguished from situation 2 above to ensure
-        //     effective user roles are taken into account.
-        //
-        // Otherwise, all issues must be anonymized.
-        row.show_user =
-          !row.course_instance_id ||
-          (res.locals.course_instance &&
-            idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
-            res.locals.authz_data.has_course_instance_permission_view) ||
-          ((!res.locals.course_instance ||
-            !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
-            _.some(
-              res.locals.authz_data.course_instances,
-              (ci) =>
-                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view,
-            ));
+    issues.rows.forEach((row) => {
+      // Add human-readable relative dates to each row
+      row.relative_date = formatDistance(parseISO(row.formatted_date), parseISO(row.now_date), {
+        addSuffix: true,
       });
 
-      res.locals.rows = result.rows;
+      if (row.assessment) {
+        if (!row.course_instance_id) {
+          throw new Error(
+            `Issue id ${row.issue_id} is associated with an assessment but not a course instance`,
+          );
+        }
 
-      res.locals.filterQuery = req.query.q;
-      res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
-      res.locals.filters = filters;
+        // Each issue is associated with a question variant. If an issue is also
+        // associated with a course instance, then this question variant is from
+        // some assessment in that course instance. We can provide a link to this
+        // assessment, but we only want to do so if the effective user has access
+        // to the corresponding course instance.
+        //
+        // Add a flag to each row saying if the effective user has this access.
+        row.assessment.hide_link = !linkable_course_instance_ids.has(
+          parseInt(row.course_instance_id),
+        );
 
-      res.locals.commonQueries = {};
-      _.assign(res.locals.commonQueries, formattedCommonQueries);
+        // If necessary, construct the URL prefix to the appropriate course instance
+        // (either if we are accessing the issue through the course page route, or if
+        // we are accessing the issue through a different course instance page route).
+        if (
+          !res.locals.course_instance ||
+          !idsEqual(res.locals.course_instance.id, row.course_instance_id)
+        ) {
+          row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
+        }
+      }
 
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      // There are three situations in which the issue need not be anonymized:
+      //
+      //  1) The issue is not associated with a course instance. The only way
+      //     for a user to generate an issue that is not associated with a course
+      //     instance is if they are an instructor, so there are no student data
+      //     to be protected in this case.
+      //
+      //  2) We are accessing this page through a course instance, the issue is
+      //     associated with the same course instance, and the user has student
+      //     data view access.
+      //
+      //  3) We are not accessing this page through the course instance
+      //     associated to the issue (i.e., we are accessing it through the
+      //     course or through a different course instance), and the user has
+      //     student data view access in the course instance associated to the
+      //     issue. This is distinguished from situation 2 above to ensure
+      //     effective user roles are taken into account.
+      //
+      // Otherwise, all issues must be anonymized.
+      row.show_user =
+        !row.course_instance_id ||
+        (res.locals.course_instance &&
+          idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
+          res.locals.authz_data.has_course_instance_permission_view) ||
+        ((!res.locals.course_instance ||
+          !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
+          _.some(
+            res.locals.authz_data.course_instances,
+            (ci) =>
+              idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view,
+          ));
     });
-  });
-});
 
-router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course editor)'));
-  }
+    res.locals.rows = issues.rows;
 
-  if (req.body.__action === 'open') {
-    let params = [
-      req.body.issue_id,
-      true, // open status
-      res.locals.course.id,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('issues_update_open', params, function (err, _result) {
-      if (ERR(err, next)) return;
+    res.locals.filterQuery = req.query.q;
+    res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
+    res.locals.filters = filters;
+
+    res.locals.commonQueries = {};
+    _.assign(res.locals.commonQueries, formattedCommonQueries);
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw error.make(403, 'Access denied (must be a course editor)');
+    }
+
+    if (req.body.__action === 'open') {
+      let params = [
+        req.body.issue_id,
+        true, // open status
+        res.locals.course.id,
+        res.locals.authn_user.user_id,
+      ];
+      await sqldb.callAsync('issues_update_open', params);
       res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'close') {
-    let params = [
-      req.body.issue_id,
-      false, // open status
-      res.locals.course.id,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('issues_update_open', params, function (err, _result) {
-      if (ERR(err, next)) return;
+    } else if (req.body.__action === 'close') {
+      let params = [
+        req.body.issue_id,
+        false, // open status
+        res.locals.course.id,
+        res.locals.authn_user.user_id,
+      ];
+      await sqldb.callAsync('issues_update_open', params);
       res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'close_all') {
-    let params = [
-      false, // open status
-      res.locals.course.id,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call('issues_update_open_all', params, function (err, _result) {
-      if (ERR(err, next)) return;
+    } else if (req.body.__action === 'close_all') {
+      let params = [
+        false, // open status
+        res.locals.course.id,
+        res.locals.authn_user.user_id,
+      ];
+      await sqldb.callAsync('issues_update_open_all', params);
       res.redirect(req.originalUrl);
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
+    } else {
+      throw error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
-    );
-  }
-});
+      });
+    }
+  }),
+);
 
 module.exports = router;
