@@ -3176,6 +3176,7 @@ __metadata:
     "@types/jquery": ^3.5.25
     "@types/js-cookie": ^3.0.5
     "@types/jsdom": ^21.1.4
+    "@types/json-stringify-safe": ^5.0.3
     "@types/klaw": ^3.0.5
     "@types/lodash": ^4.14.200
     "@types/loopbench": ^1.2.3
@@ -4707,6 +4708,13 @@ __metadata:
   version: 7.0.12
   resolution: "@types/json-schema@npm:7.0.12"
   checksum: 00239e97234eeb5ceefb0c1875d98ade6e922bfec39dd365ec6bd360b5c2f825e612ac4f6e5f1d13601b8b30f378f15e6faa805a3a732f4a1bbe61915163d293
+  languageName: node
+  linkType: hard
+
+"@types/json-stringify-safe@npm:^5.0.3":
+  version: 5.0.3
+  resolution: "@types/json-stringify-safe@npm:5.0.3"
+  checksum: 66826a59b53ce5a5becc9c05cd0bdadb7e2032e02803a9dd13137de134a0882a6c67ae334371ccff07a20b1d2b2c23fa3a81b5e23f40b27cfcf553c7cce06e35
   languageName: node
   linkType: hard
 
