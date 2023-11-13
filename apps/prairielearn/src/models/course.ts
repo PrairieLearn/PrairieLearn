@@ -5,7 +5,7 @@ const sql = loadSqlEquiv(__filename);
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(
-    sql.select_course,
+    sql.select_course_by_id,
     {
       course_id,
     },
