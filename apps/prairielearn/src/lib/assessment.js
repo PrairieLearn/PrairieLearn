@@ -101,6 +101,7 @@ export async function makeAssessmentInstance(
   mode,
   time_limit_min,
   date,
+  last_client_fingerprint_id,
 ) {
   const result = await sqldb.callOneRowAsync('assessment_instances_insert', [
     assessment_id,
