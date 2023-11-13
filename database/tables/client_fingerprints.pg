@@ -1,9 +1,9 @@
 columns
-    accept_language: text
-    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
-    id: bigint not null default nextval
-    ip_address: inet
-    user_agent: text
+    accept_language: character varying(255)
+    created_at: timestamp with time zone default now()
+    id: bigint not null default nextval('client_fingerprints_id_seq'::regclass)
+    ip_address: inet not null
+    user_agent: character varying(255)
     user_id: bigint
     user_session_id: bigint
 

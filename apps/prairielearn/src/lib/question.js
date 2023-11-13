@@ -874,6 +874,7 @@ function createTestSubmission(
           null, // mode
           variant.id,
           authn_user_id,
+          null, // client_fingerprint_id
         ];
         sqldb.callOneRow('submissions_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
