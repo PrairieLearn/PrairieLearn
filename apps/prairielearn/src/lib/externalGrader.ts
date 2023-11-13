@@ -8,8 +8,8 @@ import type { EventEmitter } from 'node:events';
 
 import { config } from './config';
 import * as externalGradingSocket from './externalGradingSocket';
-import ExternalGraderSqs = require('./externalGraderSqs');
-import ExternalGraderLocal = require('./externalGraderLocal');
+import { ExternalGraderSqs } from './externalGraderSqs';
+import { ExternalGraderLocal } from './externalGraderLocal';
 import * as assessment from './assessment';
 import {
   CourseSchema,
