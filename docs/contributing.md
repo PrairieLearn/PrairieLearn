@@ -9,7 +9,8 @@
 Next, clone your forked repository to your local machine and set up the main repository as an "upstream" repository:
 
 ```sh
-git clone git@github.com:$user_name/PrairieLearn.git
+git clone https://github.com/$user_name/PrairieLearn.git
+cd PrairieLearn
 git remote add upstream git@github.com:PrairieLearn/PrairieLearn.git
 ```
 
