@@ -400,15 +400,13 @@ export async function updateAssessmentStatisticsForCourseInstance(course_instanc
     { course_instance_id },
     IdSchema,
   );
-  await async.eachLimit(rows, 3, async (assessment_id) => {
-    await updateAssessmentStatistics(assessment_id);
-  });
+  await async.eachLimit(rows, 3, updateAssessmentStatistics);
 }
 
 /**
  * Updates statistics for an assessment, if needed.
  *
- * @param {number} assessment_id - The assessment ID.
+ * @param {string} assessment_id - The assessment ID.
  */
 export async function updateAssessmentStatistics(assessment_id) {
   await sqldb.runInTransactionAsync(async () => {
