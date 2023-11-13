@@ -5,13 +5,13 @@ const util = require('util');
 const async = require('async');
 const child_process = require('child_process');
 const { default: AnsiUp } = require('ansi_up');
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const sqldb = require('@prairielearn/postgres');
 const { checkSignedToken, generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('./config');
-const { sleep } = require('./sleep');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
