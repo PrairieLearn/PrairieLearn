@@ -3,7 +3,7 @@ import { Course, CourseSchema } from '../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 
-export async function selectCourse({ course_id }: { course_id: string }): Promise<Course> {
+export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(
     sql.select_course,
     {

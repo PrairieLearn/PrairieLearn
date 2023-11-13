@@ -1,5 +1,5 @@
-import { selectQuestion } from '../../models/question';
-import { selectCourse } from '../../models/course';
+import { selectQuestionById } from '../../models/question';
+import { selectCourseById } from '../../models/course';
 import { processSubmission } from '../../lib/questionPreview';
 import { IdSchema, UserSchema } from '../../lib/db-types';
 import { z } from 'zod';
@@ -18,8 +18,8 @@ const router = Router({ mergeParams: true });
 async function setLocals(req, res) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
-  res.locals.course = await selectCourse({ course_id: req.params.course_id });
-  res.locals.question = await selectQuestion({ question_id: req.params.question_id });
+  res.locals.course = await selectCourseById(req.params.course_id);
+  res.locals.question = await selectQuestionById(req.params.question_id);
   if (!res.locals.question.shared_publicly) {
     throw error.make(404, 'Not Found');
   }
@@ -41,7 +41,8 @@ router.post('/', function (req, res, next) {
           );
         });
       } else if (req.body.__action === 'report_issue') {
-        // we don't care about reporting issues for public facing previews
+        // we currently don't report issues for public facing previews
+        res.redirect(req.originalUrl);
       } else {
         next(
           error.make(400, 'unknown __action: ' + req.body.__action, {
