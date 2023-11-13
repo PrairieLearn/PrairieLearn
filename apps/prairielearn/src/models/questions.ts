@@ -1,7 +1,6 @@
 import sqldb = require('@prairielearn/postgres');
 import AnsiUp from 'ansi_up';
 import {
-  CourseInstance,
   TopicSchema,
   SharingSetSchema,
   AssessmentsFormatForQuestionSchema,
@@ -37,7 +36,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 export async function selectQuestionsForCourse(
   course_id: string | number,
-  course_instances: CourseInstance[],
+  course_instance_ids: string[],
 ): Promise<QuestionsPageDataAnsified[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
@@ -53,7 +52,7 @@ export async function selectQuestionsForCourse(
     sync_warnings_ansified: row.sync_warnings && ansiUp.ansi_to_html(row.sync_warnings),
     assessments:
       row.assessments?.filter((assessment) =>
-        course_instances.some((ci) => idsEqual(ci.id, assessment.course_instance_id)),
+        course_instance_ids.some((id) => idsEqual(id, assessment.course_instance_id)),
       ) ?? null,
   }));
   return questions;

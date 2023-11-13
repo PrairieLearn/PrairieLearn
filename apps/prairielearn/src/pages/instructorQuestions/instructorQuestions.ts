@@ -8,6 +8,7 @@ import fs = require('fs-extra');
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');
+import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -15,15 +16,23 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    const courseInstances = await selectAuthorizedCourseInstancesForCourse({
+      course_id: res.locals.course.id,
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+    });
+
     const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
       res.locals.course.id,
-      res.locals.authz_data.course_instances,
+      courseInstances.map((ci) => ci.id),
     );
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions: questions,
+        course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
