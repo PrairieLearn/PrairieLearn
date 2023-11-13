@@ -42,6 +42,7 @@ export const InstanceLogSchema = z.object({
  *
  * @param {string} assessment_instance_id - The assessment instance to check.
  * @param {string} assessment_id - The assessment it should belong to.
+ * @returns {Promise<void>} - Throws an error if the assessment instance doesn't belong to the assessment.
  */
 export async function checkBelongsAsync(assessment_instance_id, assessment_id) {
   if (
@@ -61,6 +62,7 @@ export const checkBelongs = callbackify(checkBelongsAsync);
  *
  * @param {Object} assessment - The assessment to render the text for.
  * @param {string} urlPrefix - The current server urlPrefix.
+ * @returns {string|null} The rendered text.
  */
 export function renderText(assessment, urlPrefix) {
   if (!assessment.text) return null;
@@ -85,6 +87,7 @@ export function renderText(assessment, urlPrefix) {
  * @param {string} mode - The mode for the new assessment instance.
  * @param {?number} time_limit_min - The time limit for the new assessment instance.
  * @param {Date} date - The date of creation for the new assessment instance.
+ * @returns {Promise<string>} The ID of the new assessment instance.
  */
 export async function makeAssessmentInstance(
   assessment_id,
@@ -112,6 +115,7 @@ export async function makeAssessmentInstance(
  *
  * @param {string} assessment_instance_id - The assessment instance to grade.
  * @param {string} authn_user_id - The current authenticated user.
+ * @returns {Promise<boolean>} Whether the assessment instance was updated.
  */
 export async function update(assessment_instance_id, authn_user_id) {
   debug('update()');
@@ -154,6 +158,7 @@ export async function update(assessment_instance_id, authn_user_id) {
  * @param {boolean} requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param {boolean} close - Whether to close the assessment instance after grading.
  * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
+ * @returns {Promise<void>}
  */
 export async function gradeAssessmentInstanceAsync(
   assessment_instance_id,
@@ -245,6 +250,7 @@ const InstancesToGradeSchema = z.object({
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} close - Whether to close the assessment instances after grading.
  * @param {boolean} overrideGradeRate - Whether to override grade rate limits.
+ * @returns {Promise<string>} The ID of the new job sequence.
  */
 export async function gradeAllAssessmentInstances(
   assessment_id,
@@ -299,6 +305,7 @@ export async function gradeAllAssessmentInstances(
  * Process the result of an external grading job.
  *
  * @param {Object} content - The grading job data to process.
+ * @returns {Promise<void>}
  */
 export async function processGradingResult(content) {
   try {
@@ -393,6 +400,7 @@ export async function processGradingResult(content) {
  * update is needed.
  *
  * @param {string} course_instance_id - The course instance ID.
+ * @returns {Promise<void>}
  */
 export async function updateAssessmentStatisticsForCourseInstance(course_instance_id) {
   const rows = await sqldb.queryRows(
@@ -407,6 +415,7 @@ export async function updateAssessmentStatisticsForCourseInstance(course_instanc
  * Updates statistics for an assessment, if needed.
  *
  * @param {string} assessment_id - The assessment ID.
+ * @returns {Promise<void>}
  */
 export async function updateAssessmentStatistics(assessment_id) {
   await sqldb.runInTransactionAsync(async () => {
@@ -442,6 +451,12 @@ export async function selectAssessmentInstanceLog(assessment_instance_id, includ
   );
 }
 
+/**
+ *
+ * @param {string} assessment_instance_id
+ * @param {boolean} include_files
+ * returns {Promise<sqldb.CursorIterator<z.infer<typeof InstanceLogSchema>>>} (Not using jsdoc since CursorIterator is not exported yet)
+ */
 export async function selectAssessmentInstanceLogCursor(assessment_instance_id, include_files) {
   return sqldb.queryValidatedCursor(
     sql.assessment_instance_log,
