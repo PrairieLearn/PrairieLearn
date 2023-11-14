@@ -37,14 +37,15 @@ export function NavbarCourseInstanceSwitcher({
   plainUrlPrefix,
 }: {
   course_instances: CourseInstanceWithShortName[];
-  current_course_instance_id: string;
+  current_course_instance_id: string | null;
   plainUrlPrefix: string;
 }) {
   return html`
     ${course_instances.map((ci) => {
+      const isActive = current_course_instance_id && idsEqual(ci.id, current_course_instance_id);
       return html`
         <a
-          class="dropdown-item ${idsEqual(ci.id, current_course_instance_id) ? 'active' : ''}"
+          class="dropdown-item ${isActive ? 'active' : ''}"
           href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/instance_admin"
         >
           ${ci.short_name}

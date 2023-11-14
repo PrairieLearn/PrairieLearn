@@ -23,6 +23,9 @@ onDocumentReady(() => {
     document
       .getElementById('navbarDropdownMenuInstanceAdminLink')
       ?.dispatchEvent(new Event('show-course-instance-switcher'));
+    document
+      .getElementById('navbarDropdownMenuInstanceChooseLink')
+      ?.dispatchEvent(new Event('show-course-instance-switcher'));
   });
 
   const Cookies = CookiesModule.withAttributes({

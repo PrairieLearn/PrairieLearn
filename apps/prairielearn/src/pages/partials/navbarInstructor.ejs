@@ -46,28 +46,26 @@
             <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
-            <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
-                <a
-                    class="nav-link dropdown-toggle dropdown-toggle-split"
-                    href="#"
-                    id="navbarDropdownMenuInstanceAdminLink"
-                    role="button"
-                    data-toggle="dropdown"
-                    aria-label="Change course instance"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    hx-get="/pl/navbar/course_instance/<%= course_instance.id %>/switcher"
-                    hx-trigger="show-course-instance-switcher once delay:200ms"
-                    hx-target="#navbarDropdownMenuInstanceAdmin"
-                ></a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
-                    <div class="d-flex justify-content-center">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="sr-only">Loading course instances...</span>
-                        </div>
+            <a
+                class="nav-link dropdown-toggle dropdown-toggle-split"
+                href="#"
+                id="navbarDropdownMenuInstanceAdminLink"
+                role="button"
+                data-toggle="dropdown"
+                aria-label="Change course instance"
+                aria-haspopup="true"
+                aria-expanded="false"
+                hx-get="/pl/navbar/course/<%= course.id %>/course_instance_switcher/<%= course_instance.id %>"
+                hx-trigger="show-course-instance-switcher once delay:200ms"
+                hx-target="#navbarDropdownMenuInstanceAdmin"
+            ></a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading course instances...</span>
                     </div>
                 </div>
-            <% } %>
+            </div>
         </li>
 
         <%# Instance non-admin %> 
@@ -93,18 +91,29 @@
             </li>
         <% } %>
     <% } else { %>
-        <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.course_instances && authz_data.course_instances.length > 0) { %>
-            <li class="navbar-text mx-2 no-select">/</li>
+        <li class="navbar-text mx-2 no-select">/</li>
 
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceChoose" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Choose course instance...
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChoose">
-                    <% authz_data.course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
-                    <% }); %>
+        <li class="nav-item dropdown" id="navbar-course-instance-switcher">
+            <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdownMenuInstanceChooseLink"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                hx-get="/pl/navbar/course/<%= course.id %>/course_instance_switcher"
+                hx-trigger="show-course-instance-switcher once delay:200ms"
+                hx-target="#navbarDropdownMenuInstanceChoose"
+            >
+                Choose course instance...
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChooseLink" id="navbarDropdownMenuInstanceChoose">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading course instances...</span>
+                    </div>
                 </div>
-            </li>
-        <% } %>
+            </div>
+        </li>
     <% } %>

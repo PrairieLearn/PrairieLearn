@@ -30,7 +30,7 @@ BEGIN
                     ELSE format_date_full_compact(d.end_date, ci.display_timezone)
                 END,
                 'has_course_instance_permission_view',
-                is_administrator OR cip.course_instance_role > 'None'
+                COALESCE(is_administrator OR cip.course_instance_role > 'None', FALSE)
             ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC
         )
     INTO

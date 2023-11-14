@@ -7,9 +7,10 @@ import { selectAuthorizedCourses } from '../../models/course';
 
 const router = Router();
 
-router.use('/course/:course_id/switcher', authzCourseOrInstance);
-router.use('/course_instance/:course_instance_id/switcher', authzCourseOrInstance);
+router.use('/course/:course_id', authzCourseOrInstance);
+router.use('/course_instance/:course_instance_id', authzCourseOrInstance);
 
+// Renders the course switcher for a specific course.
 router.get(
   '/course/:course_id/switcher',
   asyncHandler(async (req, res) => {
@@ -27,8 +28,10 @@ router.get(
   }),
 );
 
-router.get('/course_instance/:course_instance_id/switcher', [
-  require('../../middlewares/authzCourseOrInstance'),
+// Renders the course instance switcher for a particular course, optionally
+// with a particular course instance selected.
+router.get(
+  '/course/:course_id/course_instance_switcher/:course_instance_id?',
   asyncHandler(async (req, res) => {
     const course_instances = await selectAuthorizedCourseInstancesForCourse({
       course_id: res.locals.course.id,
@@ -40,11 +43,11 @@ router.get('/course_instance/:course_instance_id/switcher', [
     res.send(
       NavbarCourseInstanceSwitcher({
         course_instances,
-        current_course_instance_id: res.locals.course_instance.id,
+        current_course_instance_id: req.params.course_instance_id ?? null,
         plainUrlPrefix: res.locals.plainUrlPrefix,
       }),
     );
   }),
-]);
+);
 
 export default router;
