@@ -131,6 +131,7 @@
     "parse5": "^6.0.1",
     "passport": "^0.6.0",
     "passport-azure-ad": "^4.3.5",
+    "passport-openidconnect": "^0.1.1",
     "passport-saml": "^3.2.4",
     "pem": "^1.14.8",
     "pg": "^8.11.3",

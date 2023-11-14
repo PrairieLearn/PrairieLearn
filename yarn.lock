@@ -12622,7 +12622,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oauth@npm:0.9.15":
+"oauth@npm:0.9.15, oauth@npm:0.9.x":
   version: 0.9.15
   resolution: "oauth@npm:0.9.15"
   checksum: 957c0d8d85300398dcb0e293953650c0fc3facc795bee8228238414f19f59cef5fd4ee8d17a972c142924c10c5f6ec50ef80f77f4a6cc6e3c98f9d22c027801c
@@ -13020,6 +13020,16 @@ __metadata:
     passport: ^0.6.0
     valid-url: ^1.0.6
   checksum: cec9ea7e0e34d5c22cff8eb05ef97de9101d2ee1a508aceaa810181b4cc2433244d393c199fd45fc6bae0f862dc2dfd7dda75dbb89db7e86ea81b750a6e43298
+  languageName: node
+  linkType: hard
+
+"passport-openidconnect@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "passport-openidconnect@npm:0.1.1"
+  dependencies:
+    oauth: 0.9.x
+    passport-strategy: 1.x.x
+  checksum: 75fbe69b7d5d36b0957cda611a456896986030328c47c04e9603ed26ee4d50f075a055f9357429fa31fc9c64693f1016b2f6e65153df729ac1d5708859c6d659
   languageName: node
   linkType: hard
 
@@ -13455,6 +13465,7 @@ __metadata:
     eslint-plugin-no-floating-promise: ^1.0.2
     eslint-plugin-no-only-tests: ^3.1.0
     htmlhint: ^1.1.4
+    passport-openidconnect: ^0.1.1
     prettier: 3.0.3
     pyright: ^1.1.334
     s3rver: ^3.7.1

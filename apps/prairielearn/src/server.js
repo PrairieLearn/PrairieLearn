@@ -492,6 +492,11 @@ module.exports.initExpress = function () {
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
+  if (config.hasOid) {
+    app.use('/pl/oidlogin', require('./pages/authLoginOid/authLoginOid'));
+    app.use('/pl/oidcallback', require('./pages/authCallbackOid/authCallbackOid').default);
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin').default);
   if (config.devMode) {
@@ -2113,6 +2118,24 @@ if (require.main === module && config.startServer) {
         if (isEnterprise()) {
           const { strategy } = require('./ee/auth/saml/index');
           passport.use(strategy);
+        }
+      },
+      async () => {
+        if (config.hasOid) {
+          const { Strategy } = require('passport-openidconnect');
+          passport.use('oidconnect', new Strategy({
+            issuer: config.oidIssuer,
+            authorizationURL: config.oidAuthUrl,
+            tokenURL: config.oidTokenUrl,
+            userInfoURL: config.oidUserInfoUrl,
+            clientID: config.oidClientId,
+            clientSecret: config.oidClientSecret,
+            callbackURL: config.oidRedirectUrl,
+            scope: "openid profile"
+          }, (accessToken, refreshToken, params, profile, cb) => {
+            logger.log(params);
+            cb(null, profile);
+          }))
         }
       },
       async function () {
