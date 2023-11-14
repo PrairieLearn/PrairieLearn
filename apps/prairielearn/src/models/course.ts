@@ -1,6 +1,7 @@
 import { callValidatedOneRow, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { Course, CourseSchema } from '../lib/db-types';
 import { z } from 'zod';
+import { idsEqual } from '../lib/id';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -27,9 +28,13 @@ export async function selectCourseById(course_id: string): Promise<Course> {
 export async function selectAuthorizedCourses({
   user_id,
   is_administrator,
+  current_course,
+  authz_data_overrides,
 }: {
   user_id: string;
   is_administrator: boolean;
+  current_course: Course;
+  authz_data_overrides: any | null | undefined;
 }) {
   const { courses } = await callValidatedOneRow(
     'courses_with_staff_access',
@@ -38,16 +43,31 @@ export async function selectAuthorizedCourses({
       courses: z.array(CourseWithPermissionsSchema),
     }),
   );
+
+  // If any overrides are in place, we'll confine the user to the current course.
+  if (authz_data_overrides) {
+    return courses.filter((c) => idsEqual(c.id, current_course.id));
+  }
+
   return courses;
 }
 
 export async function selectEditableCourses({
   user_id,
   is_administrator,
+  current_course,
+  authz_data_overrides,
 }: {
   user_id: string;
   is_administrator: boolean;
+  current_course: Course;
+  authz_data_overrides: any | null | undefined;
 }) {
-  const courses = await selectAuthorizedCourses({ user_id, is_administrator });
+  const courses = await selectAuthorizedCourses({
+    user_id,
+    is_administrator,
+    current_course,
+    authz_data_overrides,
+  });
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }

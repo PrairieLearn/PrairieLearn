@@ -326,6 +326,8 @@ router.get('/', function (req, res, next) {
         res.locals.editable_courses = await selectEditableCourses({
           user_id: res.locals.user.user_id,
           is_administrator: res.locals.is_administrator,
+          current_course: res.locals.course,
+          authz_data_overrides: res.locals.authz_data.overrides,
         });
       },
     ],
