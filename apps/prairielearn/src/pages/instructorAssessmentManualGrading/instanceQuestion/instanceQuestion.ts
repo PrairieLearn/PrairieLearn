@@ -190,8 +190,8 @@ router.post(
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
-            auto_score_perc: body.use_score_perc ? body.score_auto_percent || null : null,
-            auto_points: body.use_score_perc ? null : body.score_auto_points || null,
+            auto_score_perc: body.use_score_perc ? body.score_auto_percent : null,
+            auto_points: body.use_score_perc ? null : body.score_auto_points,
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },

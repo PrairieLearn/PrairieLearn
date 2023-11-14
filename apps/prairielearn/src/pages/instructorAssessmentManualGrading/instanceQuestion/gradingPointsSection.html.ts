@@ -195,7 +195,9 @@ export function GradingPointsSection({
             id="js-${type}-score-value-input-points-${context}"
             class="form-control js-grading-score-input js-${type}-score-value-input-points"
             data-max-points="${max_points}"
-            name="score_${type}_points"
+            ${show_input_edit
+              ? html`data-hidden-input-name="score_${type}_points"`
+              : html`name="score_${type}_points"`}
             value="${Math.round(points * 100) / 100}"
             ${disable ? 'disabled' : ''}
           />
@@ -214,7 +216,9 @@ export function GradingPointsSection({
                   required
                   id="js-${type}-score-value-input-percentage-${context}"
                   class="form-control js-grading-score-input js-${type}-score-value-input-percentage"
-                  name="score_${type}_percent"
+                  ${show_input_edit
+                    ? html`data-hidden-input-name="score_${type}_percent"`
+                    : html`name="score_${type}_percent"`}
                   ${disable ? 'disabled' : ''}
                 />
                 <span class="input-group-append">
