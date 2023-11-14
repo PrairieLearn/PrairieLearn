@@ -3,7 +3,7 @@ import asyncHandler = require('express-async-handler');
 import authzCourseOrInstance = require('../../middlewares/authzCourseOrInstance');
 import { NavbarCourseInstanceSwitcher, NavbarCourseSwitcher } from './navbar.html';
 import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
-import { setTimeout } from 'timers/promises';
+import { selectAuthorizedCourses } from '../../models/course';
 
 const router = Router();
 
@@ -13,7 +13,17 @@ router.use('/course_instance/:course_instance_id/switcher', authzCourseOrInstanc
 router.get(
   '/course/:course_id/switcher',
   asyncHandler(async (req, res) => {
-    res.send(NavbarCourseSwitcher());
+    const courses = await selectAuthorizedCourses({
+      user_id: res.locals.user.user_id,
+      is_administrator: res.locals.is_administrator,
+    });
+    res.send(
+      NavbarCourseSwitcher({
+        courses,
+        current_course_id: res.locals.course.id,
+        plainUrlPrefix: res.locals.plainUrlPrefix,
+      }),
+    );
   }),
 );
 

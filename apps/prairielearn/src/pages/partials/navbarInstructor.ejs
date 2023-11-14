@@ -14,15 +14,22 @@
             aria-label="Change course"
             aria-haspopup="true"
             aria-expanded="false"
+            <% if (!authz_data.overrides) { %>
+            hx-get="/pl/navbar/course/<%= course.id %>/switcher"
+            hx-trigger="show-course-switcher once delay:200ms"
+            hx-target="#navbarDropdownMenuCourseAdmin"
+            <% } %>
         >
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
             <% if (authz_data.overrides) { %>
                 <span class="dropdown-item-text small">Effective users may not switch between courses</span>
             <% } else { %>
-                <% authz_data.authn_courses.forEach(function(c) { %>
-                    <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
-                <% }); %>
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="sr-only">Loading course instances...</span>
+                    </div>
+                </div>
             <% }%>
         </div>
     </li>
