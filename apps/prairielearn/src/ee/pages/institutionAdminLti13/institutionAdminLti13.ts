@@ -13,7 +13,7 @@ import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
 import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
-import { LTI13InstancePlatform } from './institutionAdminLti13.types';
+import { LTI13InstancePlatforms } from './institutionAdminLti13.types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -40,7 +40,7 @@ router.get(
       Lti13InstanceSchema,
     );
 
-    const platform_defaults_hardcoded: LTI13InstancePlatform = [
+    const platform_defaults_hardcoded: LTI13InstancePlatforms = [
       {
         platform: 'Unknown',
         display_order: 0,
@@ -62,7 +62,7 @@ router.get(
     ];
 
     const platform_defaults = sortBy(
-      [...platform_defaults_hardcoded, ...config.lti13InstancePlatformDefaults],
+      [...platform_defaults_hardcoded, ...config.lti13InstancePlatforms],
       ['display_order', 'platform'],
     );
 

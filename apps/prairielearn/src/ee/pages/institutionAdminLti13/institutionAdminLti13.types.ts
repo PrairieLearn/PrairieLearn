@@ -9,7 +9,7 @@ export interface LTI13Platform {
 };
 */
 
-export const LTI13InstancePlatformSchema = z
+export const LTI13InstancePlatformsSchema = z
   .array(
     z.object({
       platform: z.string(),
@@ -19,4 +19,5 @@ export const LTI13InstancePlatformSchema = z
     }),
   )
   .default([]);
-export type LTI13InstancePlatform = z.infer<typeof LTI13InstancePlatformSchema>;
+
+export type LTI13InstancePlatforms = z.infer<typeof LTI13InstancePlatformsSchema>;
