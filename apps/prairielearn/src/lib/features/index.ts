@@ -5,6 +5,7 @@ const featureNames = [
   'manual-grading-rubrics',
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
+  'lti13',
   // Can only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',

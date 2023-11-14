@@ -489,6 +489,7 @@ module.exports.initExpress = function () {
       app.use('/pl/azure_callback', require('./ee/auth/azure/callback').default);
     }
 
+    app.use('/pl/lti13_instance', require('./ee/routers/lti13').default);
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
@@ -1779,6 +1780,28 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
+  // Public course pages ///////////////////////////////////////////////
+
+  app.use('/pl/public/course/:course_id', [
+    function (req, res, next) {
+      res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
+      next();
+    },
+  ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'preview';
+      next();
+    },
+    require('./pages/shared/floatFormatters'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview'),
+  ]);
+
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
@@ -2314,12 +2337,7 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => externalGrader.init(),
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),
