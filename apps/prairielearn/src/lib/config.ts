@@ -280,7 +280,7 @@ const ConfigSchema = z.object({
    * OpenIDConnect login link configuration
    */
   oidLinkText: z.string().default("Sign in with Okta"),
-  oidLinkLogo: z.string().default("okta_logo.svg"),
+  oidLinkLogo: z.string().nullable().default(null),
   oidLinkColors: z
     .object({
       normal: z.object({

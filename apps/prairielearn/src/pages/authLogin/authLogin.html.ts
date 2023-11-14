@@ -174,7 +174,9 @@ function GoogleLoginButton() {
 function OpenIDCOnnectLoginButton() {
   return html`
     <a class="btn btn-oid d-block position-relative" href="/pl/oidlogin" role="button">
-      <img src="${assetPath('/images/'+config.oidLinkLogo)}" class="social-icon" />
+      ${config.oidLinkLogo != null
+        ? html`<img src="${config.oidLinkLogo}" class="social-icon" />`
+        : html`<span class="social-icon"></span>`}
       <span class="font-weight-bold">${config.oidLinkText}</span>
     </a>
   `;
@@ -222,6 +224,7 @@ export function AuthLogin({
         ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
+        ${config.hasOid ? OpenIDCOnnectLoginButton(): ''}
       </div>
       ${institutionAuthnProviders?.length
         ? html`
