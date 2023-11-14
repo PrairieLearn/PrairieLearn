@@ -125,7 +125,7 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.literal('modify_rubric_settings'),
     use_rubric: z
-      .literal('true')
+      .enum(['true', 'false'])
       .optional()
       .transform((val) => val === 'true'),
     replace_auto_points: z
