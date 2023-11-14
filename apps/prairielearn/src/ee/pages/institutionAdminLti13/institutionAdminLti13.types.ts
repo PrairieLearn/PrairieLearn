@@ -1,14 +1,6 @@
 import { z } from 'zod';
 
-/*
-export interface LTI13Platform {
-  platform: string;
-  display_order: number;
-  issuer_params?: object;
-  custom_fields?: object;
-};
-*/
-
+// also in config.ts as config.lti13InstancePlatforms
 export const LTI13InstancePlatformsSchema = z
   .array(
     z.object({
