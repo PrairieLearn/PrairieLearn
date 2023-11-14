@@ -13,6 +13,12 @@ import { selectEditableCourses } from '../models/course';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export async function setQuestionCopyTargets(res: Response) {
+  // Avoid querying for editable courses if we won't be able to copy this
+  // question anyways.
+  if (!res.locals.course.template_course) {
+    return;
+  }
+
   const editableCourses = await selectEditableCourses({
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
