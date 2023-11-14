@@ -154,6 +154,24 @@ module.exports = asyncHandler(async (req, res, next) => {
       if (req.path === '/pl/prairietest/auth') {
         query = '?service=PrairieTest';
       }
+
+      const loginUrl = `/pl/login${query}`;
+
+      // If this request is being made by HTMX, use the special `HX-Redirect`
+      // header to redirect the page as a whole, not just the response.
+      //
+      // Note that Node doesn't allow us to set headers if the response is a
+      // redirect, so we send this as a 200 response. HTMX will perform the
+      // redirect on the client.
+      //
+      // https://stackoverflow.com/questions/39997413/how-to-pass-headers-while-doing-res-redirect-in-express-js
+      console.log(req.get('HX-Request'));
+      if (req.get('HX-Request')) {
+        res.set('HX-Redirect', loginUrl);
+        res.send();
+        return;
+      }
+
       res.redirect(`/pl/login${query}`);
       return;
     }
