@@ -128,7 +128,10 @@ const PostBodySchema = z.union([
       .literal('true')
       .optional()
       .transform((val) => val === 'true'),
-    replace_auto_points: z.enum(['true', 'false']).transform((val) => val === 'true'),
+    replace_auto_points: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((val) => val === 'true'),
     starting_points: z.coerce.number(),
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
