@@ -117,7 +117,7 @@ export async function beginGradingJob(grading_job_id: string): Promise<void> {
       Sentry.captureException(err);
     });
   });
-  gradeRequest.on('results', (gradingResult: Record<string, any>) => {
+  gradeRequest.on('results', (gradingResult: assessment.GradingResultInput) => {
     // This event will only be fired when running locally; in production,
     // external grader results wil be delivered via SQS.
     assessment.processGradingResult(gradingResult).then(

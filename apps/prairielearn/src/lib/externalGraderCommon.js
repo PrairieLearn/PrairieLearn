@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -191,7 +192,9 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
- * @param {Object|string|Buffer} data - The grading results
+ * @param {string} jobId - The grading job ID
+ * @param {Object|string|Buffer} rawData - The grading results
+ * @returns {import('./assessment').GradingResultInput}
  */
 module.exports.makeGradingResult = function (jobId, rawData) {
   let data = rawData;
@@ -273,7 +276,7 @@ module.exports.makeGradingResult = function (jobId, rawData) {
       endTime: data.end_time || null,
       score,
       feedback: data,
-      format_errors: JSON.stringify({ _external_grader: format_errors }),
+      format_errors: { _external_grader: format_errors },
     },
   };
 };

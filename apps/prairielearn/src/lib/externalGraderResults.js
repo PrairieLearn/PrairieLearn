@@ -1,3 +1,5 @@
+import { IdSchema } from './db-types';
+
 // @ts-check
 const { S3 } = require('@aws-sdk/client-s3');
 const {
@@ -128,10 +130,11 @@ async function loadQueueUrl(sqs) {
 }
 
 async function processMessage(data) {
-  const jobId = Number.parseInt(data.jobId);
-  if (Number.isNaN(jobId)) {
+  const result = IdSchema.safeParse(data.jobId);
+  if (!result.success) {
     throw error.makeWithData('Message does not contain a valid grading job id.', data);
   }
+  const jobId = result.data;
 
   logger.verbose('Processing external grading job result message', {
     grading_job_id: jobId,
@@ -177,6 +180,10 @@ async function processMessage(data) {
   }
 }
 
+/**
+ * @param {string} jobId
+ * @param {Object|string|Buffer} data
+ */
 async function processResults(jobId, data) {
   await assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }
