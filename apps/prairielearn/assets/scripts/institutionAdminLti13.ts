@@ -7,6 +7,8 @@ onDocumentReady(() => {
   const platformSelector = document.querySelector<HTMLSelectElement>('#choosePlatform');
   const updateParams = document.querySelector<HTMLInputElement>('#update_params');
 
+  if (!platformSelector || !updateParams) return;
+
   platformSelector.addEventListener('change', () => {
     if (!updateParams.checked || platformSelector.value === 'Unknown') {
       return;
@@ -14,6 +16,8 @@ onDocumentReady(() => {
 
     const ip = document.querySelector<HTMLInputElement>('#issuer_params');
     const cf = document.querySelector<HTMLInputElement>('#custom_fields');
+
+    if (!ip || !cf) return;
 
     const platform_default = platformDefaults.find(
       ({ platform }) => platform === platformSelector.value,
