@@ -340,12 +340,6 @@ function resetRubricItemRowsListeners() {
     .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
 }
 
-function updateQueryObjects(parent, query, values, ignore = null) {
-  parent
-    .querySelectorAll(query)
-    .forEach((input) => (input !== ignore ? Object.assign(input, values) : null));
-}
-
 function roundPoints(points) {
   return Math.round(Number(points) * 100) / 100;
 }
@@ -358,13 +352,13 @@ function updatePointsView(sourceInput) {
 
     const auto_points =
       roundPoints(
-        sourceInput?.classList.contains('js-auto-score-value-input-percentage')
+        sourceInput?.classList?.contains('js-auto-score-value-input-percentage')
           ? (sourceInput?.value * max_auto_points) / 100
           : form.querySelector('.js-auto-score-value-input-points')?.value,
       ) || 0;
     const manual_points =
       roundPoints(
-        sourceInput?.classList.contains('js-manual-score-value-input-percentage')
+        sourceInput?.classList?.contains('js-manual-score-value-input-percentage')
           ? (sourceInput?.value * max_manual_points) / 100
           : form.querySelector('.js-manual-score-value-input-points')?.value,
       ) || 0;
@@ -373,37 +367,27 @@ function updatePointsView(sourceInput) {
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
 
-    updateQueryObjects(
-      form,
-      '.js-auto-score-value-input-points',
-      { value: auto_points },
-      sourceInput,
-    );
-    updateQueryObjects(
-      form,
-      '.js-auto-score-value-input-percentage',
-      { value: auto_perc },
-      sourceInput,
-    );
-    updateQueryObjects(
-      form,
-      '.js-manual-score-value-input-points',
-      { value: manual_points },
-      sourceInput,
-    );
-    updateQueryObjects(
-      form,
-      '.js-manual-score-value-input-percentage',
-      { value: manual_perc },
-      sourceInput,
-    );
+    form
+      .querySelectorAll('.js-auto-score-value-input-points')
+      .forEach((input) => input !== sourceInput && (input.value = auto_points));
+    form
+      .querySelectorAll('.js-auto-score-value-input-percentage')
+      .forEach((input) => input !== sourceInput && (input.value = auto_perc));
+    form
+      .querySelectorAll('.js-manual-score-value-input-points')
+      .forEach((input) => input !== sourceInput && (input.value = manual_points));
+    form
+      .querySelectorAll('.js-manual-score-value-input-percentage')
+      .forEach((input) => input !== sourceInput && (input.value = manual_perc));
 
-    updateQueryObjects(form, '.js-value-manual-points', { innerText: manual_points });
-    updateQueryObjects(form, '.js-value-auto-points', { innerText: auto_points });
-    updateQueryObjects(form, '.js-value-total-points', { innerText: points });
-    updateQueryObjects(form, '.js-value-manual-percentage', { innerText: manual_perc });
-    updateQueryObjects(form, '.js-value-auto-percentage', { innerText: auto_perc });
-    updateQueryObjects(form, '.js-value-total-percentage', { innerText: total_perc });
+    form.querySelectorAll('.js-value-manual-points').forEach((v) => (v.innerText = manual_points));
+    form.querySelectorAll('.js-value-auto-points').forEach((v) => (v.innerText = auto_points));
+    form.querySelectorAll('.js-value-total-points').forEach((v) => (v.innerText = points));
+    form
+      .querySelectorAll('.js-value-manual-percentage')
+      .forEach((v) => (v.innerText = manual_perc));
+    form.querySelectorAll('.js-value-auto-percentage').forEach((v) => (v.innerText = auto_perc));
+    form.querySelectorAll('.js-value-total-percentage').forEach((v) => (v.innerText = total_perc));
   });
 }
 
