@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
+import lti13Auth from '../auth/lti13/lti13auth';
 import asyncHandler = require('express-async-handler');
 import { features } from '../../lib/features';
 
@@ -20,6 +21,8 @@ router.use(
   }),
 );
 
+router.use('/:lti13_instance_id/auth', lti13Auth);
+// lti13InstancePages is a catch all for some small pages so put it last
 router.use('/:lti13_instance_id/', lti13InstancePages);
 
 export default router;
