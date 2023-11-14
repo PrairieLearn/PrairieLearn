@@ -245,7 +245,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # Find the true answer to be able to display it in the info popup
         if show_correct_answer:
-            html_params["a_tru"] = format_true_ans(element, data, name)
+            html_params["correct_answer"] = format_true_ans(element, data, name)
 
         html_params["info"] = chevron.render(template, info_params).strip()
 
@@ -300,7 +300,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
-            html_params["a_tru"] = format_true_ans(element, data, name)
+            html_params["correct_answer"] = format_true_ans(element, data, name)
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -320,7 +320,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "answer": True,
                 "label": label,
                 "suffix": suffix,
-                "a_tru": format_true_ans(element, data, name),
+                "correct_answer": format_true_ans(element, data, name),
             }
             return chevron.render(template, html_params).strip()
         return ""
