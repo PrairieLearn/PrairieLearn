@@ -1,3 +1,5 @@
+import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
+
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const { parseISO, formatDistance } = require('date-fns');
@@ -124,14 +126,18 @@ router.get(
 
     const issues = await sqldb.queryAsync(sql.select_issues, params);
 
-    // Set of IDs of course instances to which the effective user has access
-    const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce(
-      (acc, ci) => {
-        acc.add(ci.id);
-        return acc;
-      },
-      new Set(),
-    );
+    // Compute the IDs of the course instances to which the effective user has access.
+
+    const course_instances = await selectAuthorizedCourseInstancesForCourse({
+      course_id: res.locals.course.id,
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.is_administrator,
+    });
+    const linkable_course_instance_ids = course_instances.reduce((acc, ci) => {
+      acc.add(ci.id);
+      return acc;
+    }, new Set());
 
     res.locals.issueCount = issues.rowCount ? issues.rows[0].issue_count : 0;
 
@@ -199,8 +205,7 @@ router.get(
           res.locals.authz_data.has_course_instance_permission_view) ||
         ((!res.locals.course_instance ||
           !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
-          _.some(
-            res.locals.authz_data.course_instances,
+          course_instances.some(
             (ci) =>
               idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view,
           ));

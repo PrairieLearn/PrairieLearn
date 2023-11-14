@@ -37,8 +37,8 @@ router.get('/', function (req, res, next) {
       async () => {
         res.locals.course_instances = await selectAuthorizedCourseInstancesForCourse({
           course_id: res.locals.course.id,
-          user_id: res.locals.user.id,
-          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
           is_administrator: res.locals.is_administrator,
         });
       },

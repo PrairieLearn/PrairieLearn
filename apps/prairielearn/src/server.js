@@ -589,6 +589,8 @@ module.exports.initExpress = function () {
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
   ]);
 
+  app.use('/pl/navbar', require('./pages/navbar/navbar').default);
+
   app.use('/pl/workspace/:workspace_id', [
     (req, res, next) => {
       res.locals.workspace_id = req.params.workspace_id;
