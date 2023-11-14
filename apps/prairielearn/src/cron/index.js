@@ -6,11 +6,11 @@ const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
 const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielearn/opentelemetry');
 const Sentry = require('@prairielearn/sentry');
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const { config } = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
 const { logger } = require('@prairielearn/logger');
-const { sleep } = require('../lib/sleep');
 const namedLocks = require('@prairielearn/named-locks');
 
 const sqldb = require('@prairielearn/postgres');

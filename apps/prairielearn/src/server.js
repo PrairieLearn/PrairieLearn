@@ -489,6 +489,7 @@ module.exports.initExpress = function () {
       app.use('/pl/azure_callback', require('./ee/auth/azure/callback').default);
     }
 
+    app.use('/pl/lti13_instance', require('./ee/routers/lti13').default);
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
