@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { config } from '../lib/config';
 import fetch from 'node-fetch';
-import helperClient = require('./helperClient');
+import { fetchCheerio } from './helperClient';
 import helperServer = require('./helperServer');
 import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -34,7 +34,7 @@ function sharingPageUrl(courseId) {
 
 async function setSharingName(courseId, name) {
   const sharingUrl = sharingPageUrl(courseId);
-  const response = await helperClient.fetchCheerio(sharingUrl);
+  const response = await fetchCheerio(sharingUrl);
 
   const token = response.$('#test_csrf_token').text();
   return await fetch(sharingUrl, {
@@ -49,11 +49,11 @@ async function setSharingName(courseId, name) {
 
 async function accessSharedQuestionAssessment() {
   const assessmentsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/instance_admin/assessments`;
-  const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
+  const assessmentsPage = await fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
     siteUrl +
     assessmentsPage.$(`a:contains("Test of Consuming Questions From Another Course")`).attr('href');
-  const res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
+  const res = await fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
 }
@@ -114,12 +114,12 @@ describe('Question Sharing', function () {
           })
         ).rows[0].id;
         const sharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${questionId}`;
-        const sharedQuestionPage = await helperClient.fetchCheerio(sharedQuestionUrl);
+        const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
         assert(sharedQuestionPage.ok);
 
         // Question cannot be accessed through the consuming course, sharing permissions not yet set
         const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${questionId}/settings`;
-        const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+        const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
         assert(!sharedQuestionSharedPage.ok);
       },
     );
@@ -137,10 +137,9 @@ describe('Question Sharing', function () {
 
     step('Set test course sharing name', async () => {
       await setSharingName(testCourseId, testCourseSharingName);
-      const sharingPage = await fetch(sharingPageUrl(testCourseId));
+      const sharingPage = await fetchCheerio(sharingPageUrl(testCourseId));
       assert(sharingPage.ok);
-      const sharingPageText = await sharingPage.text();
-      assert(sharingPageText.includes(testCourseSharingName));
+      assert.include(sharingPage.$('[data-testid="sharing-name"]').text(), testCourseSharingName);
     });
 
     step('Fail if trying to set sharing name again.', async () => {
@@ -150,15 +149,17 @@ describe('Question Sharing', function () {
 
     step('Set example course sharing name', async () => {
       await setSharingName(exampleCourseId, exampleCourseSharingName);
-      const sharingPage = await fetch(sharingPageUrl(exampleCourseId));
+      const sharingPage = await fetchCheerio(sharingPageUrl(exampleCourseId));
       assert(sharingPage.ok);
-      const sharingPageText = await sharingPage.text();
-      assert(sharingPageText.includes(exampleCourseSharingName));
+      assert.include(
+        sharingPage.$('[data-testid="sharing-name"]').text(),
+        exampleCourseSharingName,
+      );
     });
 
     step('Generate and get sharing token for example course', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      let response = await helperClient.fetchCheerio(sharingUrl);
+      let response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
@@ -168,7 +169,7 @@ describe('Question Sharing', function () {
         }),
       });
 
-      response = await helperClient.fetchCheerio(sharingUrl);
+      response = await fetchCheerio(sharingUrl);
       const result = UUID_REGEXP.exec(response.text());
       exampleCourseSharingToken = result ? result[0] : null;
       assert(exampleCourseSharingToken != null);
@@ -176,7 +177,7 @@ describe('Question Sharing', function () {
 
     step('Get default sharing token for test course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const result = UUID_REGEXP.exec(response.text());
       testCourseSharingToken = result ? result[0] : null;
       assert(testCourseSharingToken != null);
@@ -184,7 +185,7 @@ describe('Question Sharing', function () {
 
     step('Create a sharing set', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
         method: 'POST',
@@ -198,7 +199,7 @@ describe('Question Sharing', function () {
 
     step('Attempt to create another sharing set with the same name', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const result = await fetch(sharingUrl, {
         method: 'POST',
@@ -213,7 +214,7 @@ describe('Question Sharing', function () {
 
     step('Share sharing set with test course', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
         method: 'POST',
@@ -224,17 +225,16 @@ describe('Question Sharing', function () {
           unsafe_course_sharing_token: testCourseSharingToken,
         }),
       });
-
       assert(res.ok);
-      const sharingPage = await fetch(sharingPageUrl(testCourseId));
+
+      const sharingPage = await fetchCheerio(sharingPageUrl(exampleCourseId));
       assert(sharingPage.ok);
-      const sharingPageText = await sharingPage.text();
-      assert(sharingPageText.includes('XC 101'));
+      assert.include(sharingPage.$('[data-testid="shared-with"]').text(), 'QA 101');
     });
 
     step('Attempt to share sharing set with invalid course token', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
         method: 'POST',
@@ -250,7 +250,7 @@ describe('Question Sharing', function () {
 
     step('Attempt to share sharing set with own course', async () => {
       const sharingUrl = sharingPageUrl(exampleCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
         method: 'POST',
@@ -266,7 +266,7 @@ describe('Question Sharing', function () {
 
     step('Attempt to share sharing set that does not belong to the course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
-      const response = await helperClient.fetchCheerio(sharingUrl);
+      const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
         method: 'POST',
@@ -286,7 +286,7 @@ describe('Question Sharing', function () {
         qid: sharedQuestionQid,
       });
       const questionSettingsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${result.rows[0].id}/settings`;
-      const resGet = await helperClient.fetchCheerio(questionSettingsUrl);
+      const resGet = await fetchCheerio(questionSettingsUrl);
       assert(resGet.ok);
 
       const token = resGet.$('#test_csrf_token').text();
@@ -298,10 +298,10 @@ describe('Question Sharing', function () {
           unsafe_sharing_set_id: '1',
         }),
       });
-
       assert(resPost.ok);
-      const settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
-      assert(settingsPageResponse.text().includes('share-set-example'));
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(settingsPageResponse.$('[data-testid="shared-with"]').text(), sharingSetName);
     });
   });
 
@@ -317,13 +317,13 @@ describe('Question Sharing', function () {
 
     step('Fail to Access Questions Not-yet shared publicly', async () => {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${publiclySharedQuestionId}`;
-      const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+      const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
     });
 
     step('Mark question as shared publicly', async () => {
       const publiclySharedQuestionUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/question/${publiclySharedQuestionId}/settings`;
-      const sharedQuestionSettingsPage = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      const sharedQuestionSettingsPage = await fetchCheerio(publiclySharedQuestionUrl);
       assert(sharedQuestionSettingsPage.ok);
 
       const token = sharedQuestionSettingsPage.$('#test_csrf_token').text();
@@ -334,15 +334,18 @@ describe('Question Sharing', function () {
           __csrf_token: token,
         }),
       });
-
       assert(resPost.ok);
-      const settingsPageResponse = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
-      assert(settingsPageResponse.text().includes('This question is publicly shared.'));
+
+      const settingsPageResponse = await fetchCheerio(publiclySharedQuestionUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        'This question is publicly shared.',
+      );
     });
 
     step('Successfully access publicly shared question through other course', async () => {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${publiclySharedQuestionId}`;
-      const sharedQuestionSharedPage = await helperClient.fetchCheerio(sharedQuestionSharedUrl);
+      const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(sharedQuestionSharedPage.ok);
     });
   });
@@ -365,13 +368,13 @@ describe('Question Sharing', function () {
       const res = await accessSharedQuestionAssessment();
       const sharedQuestionUrl =
         siteUrl + res.$(`a:contains("Input of real and complex numbers")`).attr('href');
-      const sharedQuestionRes = await helperClient.fetchCheerio(sharedQuestionUrl);
+      const sharedQuestionRes = await fetchCheerio(sharedQuestionUrl);
       assert(sharedQuestionRes.ok);
 
       const publiclySharedQuestionUrl =
         siteUrl +
         res.$(`a:contains("Dragging blocks to form the solution of a problem")`).attr('href');
-      const publiclySharedQuestionRes = await helperClient.fetchCheerio(publiclySharedQuestionUrl);
+      const publiclySharedQuestionRes = await fetchCheerio(publiclySharedQuestionUrl);
       assert(publiclySharedQuestionRes.ok);
     });
   });
