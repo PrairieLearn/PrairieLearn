@@ -262,9 +262,8 @@ export function AuthLoginUnsupportedProvider({
   const supportsShib = supportedProviders.some((p) => p.name === 'Shibboleth');
   const supportsGoogle = supportedProviders.some((p) => p.name === 'Google');
   const supportsAzure = supportedProviders.some((p) => p.name === 'Azure');
-  // const supportsOid = supportedProviders.some((p) => p.name === 'OID');
-  const supportsOid = true;
-
+  const supportsOid = supportedProviders.some((p) => p.name === 'OID');
+  
   const defaultProvider = supportedProviders.find((p) => p.is_default === true);
   const hasNonDefaultProviders = supportedProviders.find(
     (p) => p.name !== 'LTI' && p.is_default === false,
