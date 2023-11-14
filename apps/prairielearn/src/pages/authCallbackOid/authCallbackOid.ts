@@ -2,6 +2,7 @@
 import express = require('express');
 import asyncHandler = require('express-async-handler');
 import passport = require('passport');
+import { config } from '../../lib/config';
 
 import * as authnLib from '../../lib/authn';
 
@@ -34,9 +35,9 @@ router.get(
     const user = await authenticate(req, res);
 
     const authnParams = {
-      uid: user.upn,
-      name: user.displayName,
-      uin: null,
+      uid: user[config.oidUidKey ?? ""],
+      name: user[config.oidNameKey ?? ""],
+      uin: user[config.oidUinKey ?? ""],
       provider: 'OID',
     };
 

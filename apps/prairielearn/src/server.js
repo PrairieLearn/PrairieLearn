@@ -2132,8 +2132,7 @@ if (require.main === module && config.startServer) {
             clientSecret: config.oidClientSecret,
             callbackURL: config.oidRedirectUrl,
             scope: "openid profile"
-          }, (accessToken, refreshToken, params, profile, cb) => {
-            logger.log(params);
+          }, (issuer, profile, cb) => {
             cb(null, profile);
           }))
         }

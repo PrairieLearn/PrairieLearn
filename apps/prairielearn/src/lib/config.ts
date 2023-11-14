@@ -258,6 +258,10 @@ const ConfigSchema = z.object({
       focus: { shadow: 'rgba(255, 83, 0, 0.35)' },
     }),
   hasAzure: z.boolean().default(false),
+  /**
+   * OID config variables are used for configuring OpenIDConnect servers.
+   * Tested to work with Okta
+   */
   hasOid: z.boolean().default(false),
   oidIssuer: z.string().nullable().default(null),
   oidAuthUrl: z.string().nullable().default(null),
@@ -266,6 +270,12 @@ const ConfigSchema = z.object({
   oidClientId: z.string().nullable().default(null),
   oidClientSecret: z.string().nullable().default(null),
   oidRedirectUrl: z.string().nullable().default(null),
+  /**
+   * OID uid, name, and uin keys are defaults for Okta authentication
+   */
+  oidUidKey: z.string().default("username"),
+  oidNameKey: z.string().default("displayName"),
+  oidUinKey: z.string().default("id"),
   hasOauth: z.boolean().default(false),
   googleClientId: z.string().nullable().default(null),
   googleClientSecret: z.string().nullable().default(null),
