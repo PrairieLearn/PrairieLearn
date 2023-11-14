@@ -13,18 +13,10 @@ import { InstitutionAdminLti13 } from './institutionAdminLti13.html';
 import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
+import { LTI13InstancePlatform } from './institutionAdminLti13.types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
-
-type LTI13Platform = {
-  platform: string;
-  display_order: number;
-  issuer_params?: object;
-  custom_fields?: object;
-};
-
-export type { LTI13Platform };
 
 // Middleware to check for feature and access
 router.use(
@@ -48,7 +40,7 @@ router.get(
       Lti13InstanceSchema,
     );
 
-    const platform_defaults_hardcoded: LTI13Platform[] = [
+    const platform_defaults_hardcoded: LTI13InstancePlatform = [
       {
         platform: 'Unknown',
         display_order: 0,

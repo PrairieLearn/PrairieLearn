@@ -6,6 +6,8 @@ import {
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 
+import { LTI13InstancePlatformSchema } from '../ee/pages/institutionAdminLti13/institutionAdminLti13.types';
+
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
 
 const ConfigSchema = z.object({
@@ -269,6 +271,7 @@ const ConfigSchema = z.object({
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
+  /*
   lti13InstancePlatformDefaults: z
     .array(
       z.object({
@@ -278,8 +281,9 @@ const ConfigSchema = z.object({
         custom_fields: z.any().optional(),
       }),
     )
-    .optional()
     .default([]),
+  */
+  lti13InstancePlatforms: LTI13InstancePlatformSchema,
   filesRoot: z.string().default('/files'),
   /**
    * See the Express documentation for the `trust proxy` option:
