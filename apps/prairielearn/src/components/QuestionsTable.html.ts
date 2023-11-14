@@ -23,10 +23,10 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  showAddQuestionButton,
-  showSharingSets,
+  showAddQuestionButton = false,
+  showSharingSets = false,
   current_course_instance,
-  course_instances,
+  course_instances = [],
   qidPrefix,
   urlPrefix,
   plainUrlPrefix,
@@ -34,13 +34,13 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
-  qidPrefix?: string;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
+  qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;
-  __csrf_token?: string;
+  __csrf_token: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);

@@ -25,7 +25,6 @@ router.get(
       QuestionsPage({
         questions: questions,
         showAddQuestionButton: false,
-        qidPrefix: '@' + res.locals.course.sharing_name + '/',
         resLocals: res.locals,
       }),
     );

@@ -19,7 +19,7 @@ const QuestionsPageDataSchema = z.object({
   grading_method: z.string(),
   external_grading_image: z.string().nullable(),
   display_type: z.string(),
-  open_issue_count: z.string().optional(),
+  open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),

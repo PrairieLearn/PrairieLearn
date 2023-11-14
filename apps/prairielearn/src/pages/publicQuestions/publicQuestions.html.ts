@@ -6,12 +6,10 @@ import { QuestionsPageData } from '../../models/questions';
 export const QuestionsPage = ({
   questions,
   showAddQuestionButton,
-  qidPrefix,
   resLocals,
 }: {
   questions: QuestionsPageData[];
   showAddQuestionButton: boolean;
-  qidPrefix: string;
   resLocals;
 }) => {
   return html`
@@ -25,13 +23,24 @@ export const QuestionsPage = ({
       <body>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${QuestionsTable({
-            questions,
-            showAddQuestionButton,
-            qidPrefix,
-            urlPrefix: resLocals.urlPrefix,
-            plainUrlPrefix: resLocals.plainUrlPrefix,
-          })}
+          ${resLocals.course.sharing_name
+            ? QuestionsTable({
+                questions,
+                showAddQuestionButton,
+                qidPrefix: `@${resLocals.course.sharing_name}/`,
+                urlPrefix: resLocals.urlPrefix,
+                plainUrlPrefix: resLocals.plainUrlPrefix,
+                __csrf_token: resLocals.__csrf_token,
+              })
+            : html`<p>
+                This course doesn't have a sharing name set. If you are an administrator of this
+                course, please choose a sharing name on the
+                <a
+                  href="${resLocals.plainUrlPrefix}/course/${resLocals.course
+                    .id}/course_admin/sharing"
+                  >course sharing settings page</a
+                >.
+              </p>`}
         </main>
       </body>
     </html>
