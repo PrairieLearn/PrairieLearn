@@ -1,4 +1,4 @@
-import { io } from 'socket.io-client';
+import { Socket, io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
 import { mathjaxTypeset } from './lib/mathjax';
@@ -6,22 +6,30 @@ import { setupCountdown } from './lib/countdown';
 import { confirmOnUnload } from './lib/confirmOnUnload';
 
 onDocumentReady(() => {
-  const { gradingMethod } = document.querySelector<HTMLElement>('.question-container').dataset;
-  if (gradingMethod === 'External') {
+  const questionContainer = document.querySelector<HTMLElement>('.question-container');
+  if (questionContainer?.dataset.gradingMethod === 'External') {
     externalGradingLiveUpdate();
   }
+
+  const questionForm = document.querySelector<HTMLFormElement>('form.question-form');
+  if (questionForm) {
+    confirmOnUnload(questionForm);
+  }
+
   setupDynamicObjects();
-  confirmOnUnload(document.querySelector('form.question-form'));
   disableOnSubmit();
 });
 
 function externalGradingLiveUpdate() {
-  const { variantId, variantToken } =
-    document.querySelector<HTMLElement>('.question-container').dataset;
+  const questionContainer = document.querySelector<HTMLElement>('.question-container');
+
+  if (!questionContainer) return;
+
+  const { variantId, variantToken } = questionContainer.dataset;
 
   // Render initial grading states into the DOM
   let gradingPending = false;
-  document.querySelectorAll('[id^=submission-]').forEach((elem: HTMLElement) => {
+  document.querySelectorAll<HTMLElement>('[id^=submission-]').forEach((elem) => {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
@@ -40,7 +48,7 @@ function externalGradingLiveUpdate() {
   // By this point, it's safe to open a socket
   const socket = io('/external-grading');
 
-  socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
+  socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg: any) {
     handleStatusChange(socket, msg);
   });
 
@@ -49,16 +57,19 @@ function externalGradingLiveUpdate() {
   });
 }
 
-function handleStatusChange(socket, msg) {
-  msg.submissions.forEach((submission) => {
+function handleStatusChange(socket: Socket, msg: any) {
+  msg.submissions.forEach((submission: any) => {
     // Always update results
     updateStatus(submission);
 
     if (submission.grading_job_status === 'graded') {
+      const element = document.getElementById('submission-' + submission.id);
+
+      if (!element) return;
+
       // Check if this state is reflected in the DOM; it's possible this is
       // just a message from the initial data sync and that we already have
       // results in the DOM.
-      const element = document.getElementById('submission-' + submission.id);
       const status = element.dataset.gradingJobStatus;
       const gradingJobId = element.dataset.gradingJobId;
 
@@ -72,7 +83,11 @@ function handleStatusChange(socket, msg) {
   });
 }
 
-function fetchResults(socket, submissionId) {
+function fetchResults(socket: Socket, submissionId: string | number) {
+  const questionContainer = document.querySelector<HTMLElement>('.question-container');
+
+  if (!questionContainer) return;
+
   const {
     variantId,
     questionId,
@@ -82,7 +97,7 @@ function fetchResults(socket, submissionId) {
     questionContext,
     csrfToken,
     authorizedEdit,
-  } = document.querySelector<HTMLElement>('.question-container').dataset;
+  } = questionContainer.dataset;
 
   const modal = $('#submissionInfoModal-' + submissionId);
   const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
@@ -105,13 +120,15 @@ function fetchResults(socket, submissionId) {
       // question is open in preview mode (authz_result==undefined)
       authorized_edit: authorizedEdit,
     },
-    function (msg) {
+    function (msg: any) {
       // We're done with the socket for this incarnation of the page
       socket.close();
       if (msg.answerPanel) {
         const answerContainer = document.querySelector('.answer-body');
-        answerContainer.innerHTML = msg.answerPanel;
-        answerContainer.closest('.grading-block').classList.remove('d-none');
+        if (answerContainer) {
+          answerContainer.innerHTML = msg.answerPanel;
+          answerContainer.closest('.grading-block')?.classList.remove('d-none');
+        }
       }
       if (msg.submissionPanel) {
         // Using jQuery here because msg.submissionPanel may contain scripts
@@ -125,23 +142,35 @@ function fetchResults(socket, submissionId) {
         }
       }
       if (msg.questionScorePanel) {
-        document.getElementById('question-score-panel').outerHTML = msg.questionScorePanel;
+        const questionScorePanel = document.getElementById('question-score-panel');
+        if (questionScorePanel) {
+          questionScorePanel.outerHTML = msg.questionScorePanel;
+        }
       }
       if (msg.assessmentScorePanel) {
-        document.getElementById('assessment-score-panel').outerHTML = msg.assessmentScorePanel;
+        const assessmentScorePanel = document.getElementById('assessment-score-panel');
+        if (assessmentScorePanel) {
+          assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
+        }
       }
       if (msg.questionPanelFooter) {
-        document.getElementById('question-panel-footer').outerHTML = msg.questionPanelFooter;
+        const questionPanelFooter = document.getElementById('question-panel-footer');
+        if (questionPanelFooter) {
+          questionPanelFooter.outerHTML = msg.questionPanelFooter;
+        }
       }
       if (msg.questionNavNextButton) {
-        document.getElementById('question-nav-next').outerHTML = msg.questionNavNextButton;
+        const questionNavNextButton = document.getElementById('question-nav-next');
+        if (questionNavNextButton) {
+          questionNavNextButton.outerHTML = msg.questionNavNextButton;
+        }
       }
       setupDynamicObjects();
     },
   );
 }
 
-function updateStatus(submission) {
+function updateStatus(submission: any) {
   const display = document.getElementById('grading-status-' + submission.id);
   if (!display) return;
   let label;
@@ -187,7 +216,9 @@ function setupDynamicObjects() {
       initialServerRemainingMS: countdownData.serverRemainingMS,
       initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
       onTimerOut: () => {
-        document.querySelector<HTMLButtonElement>('.question-grade').disabled = false;
+        document.querySelectorAll<HTMLButtonElement>('.question-grade').forEach((gradeButton) => {
+          gradeButton.disabled = false;
+        });
         document
           .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
           .forEach((elem) => {
@@ -200,19 +231,22 @@ function setupDynamicObjects() {
 
 function disableOnSubmit() {
   const form = document.querySelector<HTMLFormElement>('form.question-form');
+
+  if (!form) return;
+
   form.addEventListener('submit', () => {
     if (!form.dataset.submitted) {
       form.dataset.submitted = 'true';
 
       // Since `.disabled` buttons don't POST, clone and hide as workaround
-      form.querySelectorAll('.disable-on-submit').forEach((element: HTMLButtonElement) => {
+      form.querySelectorAll<HTMLButtonElement>('.disable-on-submit').forEach((element) => {
         // Create disabled clone of button
         const clonedElement = element.cloneNode(true) as HTMLButtonElement;
         clonedElement.id = '';
         clonedElement.disabled = true;
 
         // Add it to the same position
-        element.parentNode.insertBefore(clonedElement, element);
+        element.parentNode?.insertBefore(clonedElement, element);
 
         // Hide actual submit button
         element.style.display = 'none';

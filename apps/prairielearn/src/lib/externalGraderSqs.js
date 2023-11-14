@@ -19,7 +19,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 let QUEUE_URL = null;
 
-class Grader {
+export class ExternalGraderSqs {
   handleGradingRequest(grading_job, submission, variant, question, course, configOverrides) {
     const config = _.cloneDeep(globalConfig);
     _.assign(config, configOverrides);
@@ -129,5 +129,3 @@ async function sendJobToQueue(jobId, question, config) {
     },
   ]);
 }
-
-module.exports = Grader;

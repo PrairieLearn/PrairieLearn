@@ -1,10 +1,14 @@
-// No typechecking as MathJax does not work well with that
-
 // Default to SVG, as lines were sometimes disappearing when using the CHTML renderer. Note that
 // some elements (e.g., pl-drawing) depend on an SVG output.
 const outputComponent = 'output/svg';
 
-const mathjaxPromise = new Promise((resolve) => {
+declare global {
+  interface Window {
+    MathJax: any;
+  }
+}
+
+const mathjaxPromise = new Promise<void>((resolve) => {
   window.MathJax = {
     options: {
       // We previously documented the `tex2jax_ignore` class, so we'll keep
@@ -33,7 +37,7 @@ const mathjaxPromise = new Promise((resolve) => {
       load: ['input/tex', 'ui/menu', outputComponent],
     },
     // Kept for compatibility reasons.
-    onReady: (cb) => {
+    onReady: (cb: any) => {
       mathjaxPromise.then(cb);
     },
     // Adds a custom function so that, regardless if Mathjax.typesetPromise() is accessed before or
@@ -67,7 +71,7 @@ export async function mathjaxTypeset() {
   return window.MathJax.typesetPromise();
 }
 
-export async function mathjaxConvert(value) {
+export async function mathjaxConvert(value: string) {
   await mathjaxPromise;
   return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
 }
