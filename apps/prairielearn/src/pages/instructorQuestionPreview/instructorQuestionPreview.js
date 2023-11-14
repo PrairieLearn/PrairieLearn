@@ -110,11 +110,11 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
+      async () => await setQuestionCopyTargets(res),
     ],
     (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
-      setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     },
   );

@@ -1,3 +1,5 @@
+import { selectEditableCourses } from '../../models/course';
+
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -319,6 +321,12 @@ router.get('/', function (req, res, next) {
           res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
           res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
         }
+      },
+      async () => {
+        res.locals.editable_courses = await selectEditableCourses({
+          user_id: res.locals.user.user_id,
+          is_administrator: res.locals.is_administrator,
+        });
       },
     ],
     (err) => {

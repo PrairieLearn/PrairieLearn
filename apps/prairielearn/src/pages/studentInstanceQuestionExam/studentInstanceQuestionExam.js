@@ -3,6 +3,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
+const async = require('async');
 
 const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
@@ -225,16 +226,30 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
-  const variant_id = null;
-  question.getAndRenderVariant(variant_id, null, res.locals, function (err) {
-    if (ERR(err, next)) return;
-    logPageView(req, res, (err) => {
+
+  async.series(
+    [
+      (callback) => {
+        const variant_id = null;
+        question.getAndRenderVariant(variant_id, null, res.locals, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      (callback) => {
+        logPageView(req, res, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      async () => await setQuestionCopyTargets(res),
+    ],
+    (err) => {
       if (ERR(err, next)) return;
       question.setRendererHeader(res);
-      setQuestionCopyTargets(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-  });
+    },
+  );
 });
 
 module.exports = router;

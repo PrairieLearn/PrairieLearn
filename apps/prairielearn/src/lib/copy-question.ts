@@ -8,11 +8,16 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types';
+import { selectEditableCourses } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function setQuestionCopyTargets(res: Response) {
-  res.locals.question_copy_targets = res.locals.authz_data.editable_courses.map((course) => {
+export async function setQuestionCopyTargets(res: Response) {
+  const editableCourses = await selectEditableCourses({
+    user_id: res.locals.user.user_id,
+    is_administrator: res.locals.is_administrator,
+  });
+  res.locals.question_copy_targets = editableCourses.map((course) => {
     const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
 
     // The question copy form will POST to a different URL for each course, so
