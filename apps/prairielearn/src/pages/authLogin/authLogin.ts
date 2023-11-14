@@ -86,6 +86,9 @@ router.get(
           case 'Shibboleth':
             url = '/pl/shibcallback';
             break;
+          case 'OID':
+            url = '/pl/oidlogin';
+            break;
           default:
             return null;
         }

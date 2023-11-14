@@ -48,6 +48,9 @@ export async function getSupportedAuthenticationProviders(): Promise<AuthnProvid
     if (row.name === 'Azure') {
       return config.hasAzure;
     }
+    if (row.name === 'OID') {
+      return config.hasOid;
+    }
 
     // Default to true for all other providers.
     return true;

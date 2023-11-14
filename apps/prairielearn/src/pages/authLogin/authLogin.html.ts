@@ -92,6 +92,24 @@ function LoginPageContainer({
             border-color: ${config.shibLinkColors.active.border};
             color: ${config.shibLinkColors.active.text};
           }
+          .btn-oid {
+            background-color: ${config.oidLinkColors.normal.background};
+            border-color: ${config.oidLinkColors.normal.border};
+            color: ${config.oidLinkColors.normal.text};
+          }
+          .btn-oid:hover {
+            background-color: ${config.oidLinkColors.hover.background};
+            border-color: ${config.oidLinkColors.hover.border};
+            color: ${config.oidLinkColors.hover.text};
+          }
+          .btn-oid:focus {
+            box-shadow: 0 0 0 0.2rem ${config.oidLinkColors.focus.shadow};
+          }
+          .btn-oid:active {
+            background-color: ${config.oidLinkColors.active.background};
+            border-color: ${config.oidLinkColors.active.border};
+            color: ${config.oidLinkColors.active.text};
+          }
           .institution-header {
             overflow: hidden;
             text-align: center;
@@ -149,6 +167,15 @@ function GoogleLoginButton() {
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login" role="button">
       <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
       <span class="font-weight-bold">Sign in with Google</span>
+    </a>
+  `;
+}
+
+function OpenIDCOnnectLoginButton() {
+  return html`
+    <a class="btn btn-oid d-block position-relative" href="/pl/oidlogin" role="button">
+      <img src="${assetPath('/images/'+config.oidLinkLogo)}" class="social-icon" />
+      <span class="font-weight-bold">${config.oidLinkText}</span>
     </a>
   `;
 }
@@ -232,6 +259,7 @@ export function AuthLoginUnsupportedProvider({
   const supportsShib = supportedProviders.some((p) => p.name === 'Shibboleth');
   const supportsGoogle = supportedProviders.some((p) => p.name === 'Google');
   const supportsAzure = supportedProviders.some((p) => p.name === 'Azure');
+  const supportsOid = supportedProviders.some((p) => p.name === 'OID');
 
   const defaultProvider = supportedProviders.find((p) => p.is_default === true);
   const hasNonDefaultProviders = supportedProviders.find(
@@ -246,6 +274,7 @@ export function AuthLoginUnsupportedProvider({
     defaultProvider?.name !== 'Shibboleth';
   const showGoogle = config.hasOauth && supportsGoogle && defaultProvider?.name !== 'Google';
   const showAzure = config.hasAzure && supportsAzure && defaultProvider?.name !== 'Azure';
+  const showOid = config.hasOid && supportsOid && defaultProvider?.name !== 'OID";'
 
   let defaultProviderButton: HtmlValue = null;
   switch (defaultProvider?.name) {
@@ -260,6 +289,10 @@ export function AuthLoginUnsupportedProvider({
       break;
     case 'Azure':
       defaultProviderButton = MicrosoftLoginButton();
+      break;
+    case 'OID':
+      defaultProviderButton = OpenIDCOnnectLoginButton();
+      break;
   }
 
   return LoginPageContainer({
@@ -291,6 +324,7 @@ export function AuthLoginUnsupportedProvider({
           showShib ? ShibLoginButton() : '',
           showGoogle ? GoogleLoginButton() : '',
           showAzure ? MicrosoftLoginButton() : '',
+          showOid ? OpenIDCOnnectLoginButton() : '',
         ]}
       </div>
     `,

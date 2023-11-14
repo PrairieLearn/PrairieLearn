@@ -276,6 +276,38 @@ const ConfigSchema = z.object({
   oidUidKey: z.string().default("username"),
   oidNameKey: z.string().default("displayName"),
   oidUinKey: z.string().default("id"),
+  /**
+   * OpenIDConnect login link configuration
+   */
+  oidLinkText: z.string().default("Sign in with Okta"),
+  oidLinkLogo: z.string().default("okta_logo.svg"),
+  oidLinkColors: z
+    .object({
+      normal: z.object({
+        background: z.string(),
+        border: z.string(),
+        text: z.string(),
+      }),
+      hover: z.object({
+        background: z.string(),
+        border: z.string(),
+        text: z.string(),
+      }),
+      active: z.object({
+        background: z.string(),
+        border: z.string(),
+        text: z.string(),
+      }),
+      focus: z.object({
+        shadow: z.string(),
+      }),
+    })
+    .default({
+      normal: { background: '#E84A27', border: '#E84A27', text: 'white' },
+      hover: { background: '#D04223', border: '#D04223', text: 'white' },
+      active: { background: '#B93B1F', border: '#B93B1F', text: 'white' },
+      focus: { shadow: 'rgba(255, 83, 0, 0.35)' },
+    }),
   hasOauth: z.boolean().default(false),
   googleClientId: z.string().nullable().default(null),
   googleClientSecret: z.string().nullable().default(null),
