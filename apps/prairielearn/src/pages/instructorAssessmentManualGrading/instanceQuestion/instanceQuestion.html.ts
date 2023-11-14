@@ -96,12 +96,12 @@ export function InstanceQuestion({
                 </div>
               </div>
 
-              <% if (file_list.length > 0) { %>
-              ${renderEjs(__filename, "<%- include('../../partials/attachFilePanel') %>", {
-                ...resLocals,
-                question_context: 'manual_grading',
-              })}
-              <% } %>
+              ${resLocals.file_list.length > 0
+                ? renderEjs(__filename, "<%- include('../../partials/attachFilePanel') %>", {
+                    ...resLocals,
+                    question_context: 'manual_grading',
+                  })
+                : ''}
               ${renderEjs(__filename, "<%- include('../../partials/instructorInfoPanel'); %>", {
                 ...resLocals,
                 question_context: 'manual_grading',
