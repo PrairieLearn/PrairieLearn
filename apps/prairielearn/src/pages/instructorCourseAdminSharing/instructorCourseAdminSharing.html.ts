@@ -147,7 +147,7 @@ export const InstructorSharing = ({
               <tbody>
                 <tr>
                   <th>Sharing Name</th>
-                  <td>
+                  <td data-testid="sharing-name">
                     ${sharingName !== null
                       ? sharingName
                       : html`
@@ -228,7 +228,7 @@ export const InstructorSharing = ({
                   (sharing_set) => html`
                     <tr>
                       <td class="align-middle">${sharing_set.name}</td>
-                      <td class="align-middle">
+                      <td class="align-middle" data-testid="shared-with">
                         ${sharing_set.shared_with.map(
                           (course_shared_with) => html`
                             <span class="badge color-gray1"> ${course_shared_with} </span>

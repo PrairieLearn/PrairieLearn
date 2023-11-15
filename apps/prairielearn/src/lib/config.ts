@@ -319,6 +319,16 @@ const ConfigSchema = z.object({
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
+  lti13InstancePlatforms: z
+    .array(
+      z.object({
+        platform: z.string(),
+        display_order: z.number().default(100),
+        issuer_params: z.any().optional(),
+        custom_fields: z.any().optional(),
+      }),
+    )
+    .default([]),
   filesRoot: z.string().default('/files'),
   /**
    * See the Express documentation for the `trust proxy` option:
