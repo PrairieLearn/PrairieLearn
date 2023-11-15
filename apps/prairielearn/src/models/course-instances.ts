@@ -46,9 +46,8 @@ export async function selectCourseInstancesWithStaffAccess({
   );
 
   // Retain only the course instances for which the authn user also has access.
+  const authnCourseIds = new Set(authnCourseInstances.map((c) => c.id));
   return authzCourseInstances.filter((authzCourseInstance) => {
-    return authnCourseInstances.some((authnCourseInstance) => {
-      return idsEqual(authzCourseInstance.id, authnCourseInstance.id);
-    });
+    return authnCourseIds.has(authzCourseInstance.id);
   });
 }
