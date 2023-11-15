@@ -15,9 +15,9 @@ router.get(
   '/course/:course_id/switcher',
   asyncHandler(async (req, res) => {
     const courses = await selectAuthorizedCourses({
+      course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
-      current_course: res.locals.course,
       authz_data_overrides: res.locals.authz_data.overrides,
     });
     res.send(

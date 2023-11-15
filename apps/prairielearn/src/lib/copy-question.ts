@@ -20,9 +20,9 @@ export async function setQuestionCopyTargets(res: Response) {
   }
 
   const editableCourses = await selectEditableCourses({
+    course_id: res.locals.course.id,
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
-    current_course: res.locals.course,
     authz_data_overrides: res.locals.authz_data.overrides,
   });
   res.locals.question_copy_targets = editableCourses.map((course) => {
