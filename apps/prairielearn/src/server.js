@@ -590,10 +590,14 @@ module.exports.initExpress = function () {
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
   ]);
 
-  app.use('/pl/navbar/course/:course_id/switcher', [
-    require('./middlewares/authzCourseOrInstance'),
+  // We deliberately omit the `authzCourseOrInstance` middleware here. The
+  // route handler will only ever display courses for which the user has staff
+  // access; the course ID in the URL is only used to determine which course
+  // is the currently selected one.
+  app.use(
+    '/pl/navbar/course/:course_id/switcher',
     require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
-  ]);
+  );
   app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
     require('./middlewares/authzCourseOrInstance'),
     require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
