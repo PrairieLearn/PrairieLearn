@@ -177,7 +177,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       // first set the preAuthUrl cookie for redirection after authn
       res.cookie('preAuthUrl', req.originalUrl);
 
-      res.redirect(`/pl/login${query}`);
+      res.redirect(loginUrl);
       return;
     }
   }
