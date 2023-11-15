@@ -174,6 +174,7 @@ export const QuestionSchema = z.object({
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
+  shared_publicly: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -229,6 +230,26 @@ export const WorkspaceLogSchema = z.object({
   workspace_id: IdSchema,
 });
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
+
+export const Lti13InstanceSchema = z.object({
+  id: IdSchema,
+  institution_id: IdSchema,
+  created_at: z.date(),
+  deleted_at: z.date().nullable(),
+  platform: z.string(),
+  name: z.string(),
+  tool_platform_name: z.string().nullable(),
+  keystore: z.any().nullable(),
+  issuer_params: z.any().nullable(),
+  client_params: z.any().nullable(),
+  custom_fields: z.any().nullable(),
+  access_tokenset: z.any().nullable(),
+  access_token_expires_at: z.date().nullable(),
+  uid_attribute: z.string().nullable(),
+  uin_attribute: z.string().nullable(),
+  name_attribute: z.string().nullable(),
+});
+export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
@@ -480,3 +501,86 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const SubmissionSchema = z.object({
+  auth_user_id: IdSchema.nullable(),
+  broken: z.boolean().nullable(),
+  correct: z.boolean().nullable(),
+  credit: z.number().nullable(),
+  date: DateFromISOString.nullable(),
+  duration: IntervalSchema.nullable(),
+  feedback: z.record(z.string(), z.any()).nullable(),
+  format_errors: z.record(z.string(), z.any()).nullable(),
+  gradable: z.boolean().nullable(),
+  graded_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
+  grading_requested_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  manual_rubric_grading_id: IdSchema.nullable(),
+  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  override_score: z.number().nullable(),
+  params: z.record(z.string(), z.any()).nullable(),
+  partial_scores: z.record(z.string(), z.number()).nullable(),
+  raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
+  regradable: z.boolean().nullable(),
+  score: z.number().nullable(),
+  submitted_answer: z.record(z.string(), z.any()).nullable(),
+  true_answer: z.record(z.string(), z.any()).nullable(),
+  v2_score: z.number().nullable(),
+  variant_id: IdSchema,
+});
+export type Submission = z.infer<typeof SubmissionSchema>;
+
+export const VariantSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  broken: z.boolean().nullable(),
+  course_id: IdSchema,
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString.nullable(),
+  duration: IntervalSchema.nullable(),
+  first_duration: IntervalSchema.nullable(),
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  num_tries: z.number(),
+  number: z.number().nullable(),
+  open: z.boolean().nullable(),
+  options: z.record(z.string(), z.any()).nullable(),
+  params: z.record(z.string(), z.any()).nullable(),
+  question_id: IdSchema,
+  true_answer: z.record(z.string(), z.any()).nullable(),
+  user_id: IdSchema.nullable(),
+  variant_seed: z.string().nullable(),
+  workspace_id: IdSchema.nullable(),
+});
+export type Variant = z.infer<typeof VariantSchema>;
+
+export const GradingJobSchema = z.object({
+  auth_user_id: IdSchema.nullable(),
+  auto_points: z.number().nullable(),
+  correct: z.boolean().nullable(),
+  date: DateFromISOString.nullable(),
+  feedback: z.record(z.string(), z.any()).nullable(),
+  gradable: z.boolean().nullable(),
+  graded_at: DateFromISOString.nullable(),
+  graded_by: IdSchema.nullable(),
+  grading_finished_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Internal', 'External', 'Manual']).nullable(),
+  grading_received_at: DateFromISOString.nullable(),
+  grading_request_canceled_at: DateFromISOString.nullable(),
+  grading_request_canceled_by: IdSchema.nullable(),
+  grading_requested_at: DateFromISOString.nullable(),
+  grading_started_at: DateFromISOString.nullable(),
+  grading_submitted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  manual_points: z.number().nullable(),
+  manual_rubric_grading_id: IdSchema.nullable(),
+  output: z.string().nullable(),
+  partial_scores: z.record(z.string(), z.any()).nullable(),
+  s3_bucket: z.string().nullable(),
+  s3_root_key: z.string().nullable(),
+  score: z.number().nullable(),
+  submission_id: IdSchema,
+  v2_score: z.number().nullable(),
+});
+export type GradingJob = z.infer<typeof GradingJobSchema>;

@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
@@ -24,6 +25,7 @@ const { callbackify } = require('node:util');
 const { flash } = require('@prairielearn/flash');
 const { features } = require('../../lib/features/index');
 const { getCanonicalHost } = require('../../lib/url');
+const { isEnterprise } = require('../../lib/license');
 
 router.post(
   '/test',
@@ -188,23 +190,47 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'sharing_set_add') {
     debug('Add question to sharing set');
-    features.enabledFromLocals('question-sharing', res.locals).then((questionSharingEnabled) => {
-      if (!questionSharingEnabled) {
-        next(error.make(403, 'Access denied (feature not available)'));
-      }
-      sqldb.queryZeroOrOneRow(
-        sql.sharing_set_add,
-        {
-          course_id: res.locals.course.id,
-          question_id: res.locals.question.id,
-          unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
-        },
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
-    });
+    features
+      .enabledFromLocals('question-sharing', res.locals)
+      .then((questionSharingEnabled) => {
+        if (!questionSharingEnabled) {
+          next(error.make(403, 'Access denied (feature not available)'));
+        }
+        sqldb.queryZeroOrOneRow(
+          sql.sharing_set_add,
+          {
+            course_id: res.locals.course.id,
+            question_id: res.locals.question.id,
+            unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+          },
+          (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+          },
+        );
+      })
+      .catch((err) => next(err));
+  } else if (req.body.__action === 'share_publicly') {
+    debug('Add question to sharing set');
+    features
+      .enabledFromLocals('question-sharing', res.locals)
+      .then((questionSharingEnabled) => {
+        if (!questionSharingEnabled) {
+          next(error.make(403, 'Access denied (feature not available)'));
+        }
+        sqldb.queryZeroOrOneRow(
+          sql.update_question_shared_publicly,
+          {
+            course_id: res.locals.course.id,
+            question_id: res.locals.question.id,
+          },
+          (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+          },
+        );
+      })
+      .catch((err) => next(err));
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
@@ -238,6 +264,8 @@ router.get('/', function (req, res, next) {
 
   res.locals.questionTestPath = questionTestPath;
   res.locals.questionTestCsrfToken = questionTestCsrfToken;
+
+  res.locals.isEnterprise = isEnterprise();
 
   async.series(
     [
@@ -278,12 +306,19 @@ router.get('/', function (req, res, next) {
         );
       },
       async () => {
-        let result = await sqldb.queryAsync(sql.select_sharing_sets, {
-          question_id: res.locals.question.id,
-          course_id: res.locals.course.id,
-        });
-        res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
-        res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
+        res.locals.sharing_enabled = await features.enabledFromLocals(
+          'question-sharing',
+          res.locals,
+        );
+
+        if (res.locals.sharing_enabled) {
+          let result = await sqldb.queryAsync(sql.select_sharing_sets, {
+            question_id: res.locals.question.id,
+            course_id: res.locals.course.id,
+          });
+          res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
+          res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
+        }
       },
     ],
     (err) => {

@@ -5,6 +5,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const sqldb = require('@prairielearn/postgres');
 const workspaceUtils = require('@prairielearn/workspace-utils');
+import { generateSignedToken } from '@prairielearn/signed-token';
 
 const { config } = require('../../lib/config');
 
@@ -33,6 +34,10 @@ router.get('/', (_req, res, _next) => {
       showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
       heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
       visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
+      socketToken: generateSignedToken(
+        { workspace_id: res.locals.workspace_id.toString() },
+        config.secretKey,
+      ),
       resLocals: res.locals,
     }),
   );
