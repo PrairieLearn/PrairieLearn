@@ -1,8 +1,8 @@
 const ERR = require('async-stacktrace');
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
-const { exec } = require('child_process');
-const { promisify } = require('util');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -10,7 +10,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {string} coursePath
  * @param {(err: Error, hash: string) => void} callback
  */
-function getCommitHash(coursePath, callback) {
+export function getCommitHash(coursePath, callback) {
   const execOptions = {
     cwd: coursePath,
     env: process.env,
@@ -29,8 +29,7 @@ function getCommitHash(coursePath, callback) {
     }
   });
 }
-module.exports.getCommitHash = getCommitHash;
-module.exports.getCommitHashAsync = promisify(getCommitHash);
+export const getCommitHashAsync = promisify(getCommitHash);
 
 /**
  * Loads the current commit hash from disk and stores it in the database. This
@@ -39,7 +38,7 @@ module.exports.getCommitHashAsync = promisify(getCommitHash);
  * @param {Object} course
  * @param {(err?: Error, commitHash: string) => void} callback
  */
-module.exports.updateCourseCommitHash = function (course, callback) {
+export function updateCourseCommitHash(course, callback) {
   getCommitHash(course.path, (err, hash) => {
     if (ERR(err, callback)) return;
     const params = {
@@ -51,9 +50,9 @@ module.exports.updateCourseCommitHash = function (course, callback) {
       callback(null, hash);
     });
   });
-};
+}
 
-module.exports.updateCourseCommitHashAsync = promisify(module.exports.updateCourseCommitHash);
+export const updateCourseCommitHashAsync = promisify(module.exports.updateCourseCommitHash);
 
 /**
  * If the provided course object contains a commit hash, that will be used;
@@ -67,7 +66,7 @@ module.exports.updateCourseCommitHashAsync = promisify(module.exports.updateCour
  * @param {Object} course
  * @param {(err?: Error, commitHash: string) => void} callback
  */
-module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
+export function getOrUpdateCourseCommitHash(course, callback) {
   if (course.commit_hash) {
     callback(null, course.commit_hash);
   } else {
@@ -76,8 +75,8 @@ module.exports.getOrUpdateCourseCommitHash = function (course, callback) {
       callback(null, hash);
     });
   }
-};
+}
 
-module.exports.getOrUpdateCourseCommitHashAsync = promisify(
+export const getOrUpdateCourseCommitHashAsync = promisify(
   module.exports.getOrUpdateCourseCommitHash,
 );

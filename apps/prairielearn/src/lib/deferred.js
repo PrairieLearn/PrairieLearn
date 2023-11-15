@@ -13,7 +13,7 @@
  * @template T
  * @returns {DeferredPromise<T>}
  */
-module.exports.deferredPromise = () => {
+export function deferredPromise() {
   let resolve, reject;
   const promise = new Promise((res, rej) => {
     resolve = res;
@@ -24,4 +24,4 @@ module.exports.deferredPromise = () => {
     reject,
     promise,
   };
-};
+}

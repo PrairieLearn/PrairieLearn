@@ -1,10 +1,10 @@
 //@ts-check
-const error = require('@prairielearn/error');
-const { flash } = require('@prairielearn/flash');
-const { z } = require('zod');
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import { z } from 'zod';
 const _ = require('lodash');
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const GroupConfigSchema = z.object({
@@ -90,10 +90,10 @@ const AssessmentLevelPermissionsSchema = z.object({
  * @param {string} assessmentId
  * @returns {Promise<GroupConfig>}
  */
-module.exports.getGroupConfig = async function (assessmentId) {
+export async function getGroupConfig(assessmentId) {
   let params = { assessment_id: assessmentId };
   return await sqldb.queryValidatedOneRow(sql.get_group_config, params, GroupConfigSchema);
-};
+}
 
 /**
  * Returns the group id for the user's current group in an assessment, if it exists.
@@ -103,21 +103,21 @@ module.exports.getGroupConfig = async function (assessmentId) {
  * @param {string} userId
  * @returns {Promise<string | null>}
  */
-module.exports.getGroupId = async function (assessmentId, userId) {
+export async function getGroupId(assessmentId, userId) {
   let params = { assessment_id: assessmentId, user_id: userId };
   return await sqldb.queryValidatedSingleColumnZeroOrOneRow(
     sql.get_group_id,
     params,
     GroupIdSchema,
   );
-};
+}
 
 /**
  * @param {string} groupId
  * @param {GroupConfig} groupConfig
  * @returns {Promise<GroupInfo>}
  */
-module.exports.getGroupInfo = async function (groupId, groupConfig) {
+export async function getGroupInfo(groupId, groupConfig) {
   const groupInfo = {};
 
   let params = { group_id: groupId };
@@ -141,7 +141,7 @@ module.exports.getGroupInfo = async function (groupId, groupConfig) {
   }
 
   return groupInfo;
-};
+}
 
 /**
  * A helper function to getGroupInfo that returns a data structure containing info about an
@@ -220,7 +220,7 @@ async function getRolesInfo(groupId, groupMembers) {
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, authnUserId) {
+export async function joinGroup(fullJoinCode, assessmentId, userId, authnUserId) {
   var splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
@@ -243,7 +243,7 @@ module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, a
       `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
     );
   }
-};
+}
 
 /**
  * @param {string} groupName
@@ -251,7 +251,7 @@ module.exports.joinGroup = async function (fullJoinCode, assessmentId, userId, a
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.createGroup = async function (groupName, assessmentId, userId, authnUserId) {
+export async function createGroup(groupName, assessmentId, userId, authnUserId) {
   if (groupName.length > 30) {
     flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
     return;
@@ -276,14 +276,14 @@ module.exports.createGroup = async function (groupName, assessmentId, userId, au
       `Failed to create the group ${groupName}. It is already taken. Please try another one.`,
     );
   }
-};
+}
 
 /**
  * @param {GroupInfo} groupInfo
  * @param {string} leavingUserId
  * @returns {GroupRoleAssignment[]}
  */
-module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavingUserId) {
+export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo.roleAssignments).flat();
 
@@ -349,14 +349,14 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
   }
 
   return groupRoleAssignmentUpdates;
-};
+}
 
 /**
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
+export async function leaveGroup(assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await module.exports.getGroupId(assessmentId, userId);
     if (groupId === null) {
@@ -403,21 +403,21 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
       authn_user_id: authnUserId,
     });
   });
-};
+}
 
 /**
  * @param {string} assessmentId
  * @param {string} userId
  * @returns {Promise<AssessmentLevelPermissions>}
  */
-module.exports.getAssessmentPermissions = async function (assessmentId, userId) {
+export async function getAssessmentPermissions(assessmentId, userId) {
   const params = { assessment_id: assessmentId, user_id: userId };
   return await sqldb.queryValidatedOneRow(
     sql.get_assessment_level_permissions,
     params,
     AssessmentLevelPermissionsSchema,
   );
-};
+}
 
 /**
  * Updates the role assignments of users in a group, given the output from groupRoleSelectTable.ejs.
@@ -427,7 +427,7 @@ module.exports.getAssessmentPermissions = async function (assessmentId, userId) 
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.updateGroupRoles = async function (requestBody, assessmentId, userId, authnUserId) {
+export async function updateGroupRoles(requestBody, assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await module.exports.getGroupId(assessmentId, userId);
     if (groupId === null) {
@@ -481,7 +481,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       authn_user_id: authnUserId,
     });
   });
-};
+}
 
 /**
  * Delete all groups for the given assessment.
@@ -489,9 +489,9 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
  * @param {string} assessmentId
  * @param {string} authnUserId
  */
-module.exports.deleteAllGroups = async function (assessmentId, authnUserId) {
+export async function deleteAllGroups(assessmentId, authnUserId) {
   await sqldb.queryAsync(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });
-};
+}

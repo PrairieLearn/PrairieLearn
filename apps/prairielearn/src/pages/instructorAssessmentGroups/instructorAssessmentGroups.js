@@ -1,21 +1,21 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { z } = require('zod');
-const error = require('@prairielearn/error');
-const { flash } = require('@prairielearn/flash');
-const sqldb = require('@prairielearn/postgres');
-const { html } = require('@prairielearn/html');
+import { z } from 'zod';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+import { html } from '@prairielearn/html';
 
-const sanitizeName = require('../../lib/sanitize-name');
-const groups = require('../../lib/groups');
-const groupUpdate = require('../../lib/group-update');
-const { GroupConfigSchema, IdSchema } = require('../../lib/db-types');
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import { deleteAllGroups } from '../../lib/groups';
+import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
+import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
@@ -25,7 +25,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    const prefix = sanitizeName.assessmentFilenamePrefix(
+    const prefix = assessmentFilenamePrefix(
       res.locals.assessment,
       res.locals.assessment_set,
       res.locals.course_instance,
@@ -94,7 +94,7 @@ router.post(
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
-      groupUpdate.uploadInstanceGroups(
+      uploadInstanceGroups(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -105,7 +105,7 @@ router.post(
         },
       );
     } else if (req.body.__action === 'auto_assessment_groups') {
-      groupUpdate.autoGroups(
+      autoGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
@@ -125,7 +125,7 @@ router.post(
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_all') {
-      await groups.deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
+      await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_group') {
       const assessment_id = res.locals.assessment.id;

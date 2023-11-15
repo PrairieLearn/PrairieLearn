@@ -1,9 +1,9 @@
 var ERR = require('async-stacktrace');
-var express = require('express');
+import express from 'express';
+
+import * as sqldb from '@prairielearn/postgres';
+
 var router = express.Router();
-
-var sqldb = require('@prairielearn/postgres');
-
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {

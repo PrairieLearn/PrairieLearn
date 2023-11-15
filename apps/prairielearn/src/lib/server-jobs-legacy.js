@@ -56,11 +56,11 @@ const sql = sqldb.loadSqlEquiv(__filename);
  *
  * @type {Record<string, AbstractJob>}
  */
-module.exports.liveJobs = {};
+export const liveJobs = {};
 
 /********************************************************************/
 
-class Job {
+export class Job {
   constructor(id, options) {
     this.id = id;
     this.options = options;
@@ -172,7 +172,7 @@ class Job {
 
 let heartbeatIntervalId = null;
 
-module.exports.init = function () {
+export function init() {
   socketServer.io.on('connection', module.exports.connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
@@ -185,9 +185,9 @@ module.exports.init = function () {
       logger.error('Error updating heartbeats for live server jobs', err);
     });
   }, config.serverJobHeartbeatIntervalSec * 1000);
-};
+}
 
-module.exports.stop = async function () {
+export async function stop() {
   // Wait until all jobs have finished.
   while (Object.keys(module.exports.liveJobs).length > 0) {
     await sleep(100);
@@ -198,9 +198,9 @@ module.exports.stop = async function () {
     clearInterval(heartbeatIntervalId);
     heartbeatIntervalId = null;
   }
-};
+}
 
-module.exports.connection = function (socket) {
+export function connection(socket) {
   socket.on('joinJob', function (msg, callback) {
     if (!_.has(msg, 'job_id')) {
       logger.error('socket.io joinJob called without job_id');
@@ -269,13 +269,13 @@ module.exports.connection = function (socket) {
       callback({ job_count: job_count });
     });
   });
-};
+}
 
 /**
  * @param {any} options
  * @param {(err: Error | null | undefined, job: Job) => void} callback
  */
-module.exports.createJob = function (options, callback) {
+export function createJob(options, callback) {
   options = _.assign(
     {
       course_id: null,
@@ -327,14 +327,14 @@ module.exports.createJob = function (options, callback) {
     }
     callback(null, job);
   });
-};
-module.exports.createJobAsync = async (options) => {
+}
+export async function createJobAsync(options) {
   // we write this explicitly so that typescript knows what's going on
   const job = await util.promisify(module.exports.createJob)(options);
   return job;
-};
+}
 
-module.exports.spawnJob = function (options, callback) {
+export function spawnJob(options, callback) {
   module.exports.createJob(options, function (err, job) {
     if (ERR(err, callback)) return;
 
@@ -374,10 +374,10 @@ module.exports.spawnJob = function (options, callback) {
 
     if (callback) callback(null, job);
   });
-};
-module.exports.spawnJobAsync = util.promisify(module.exports.spawnJob);
+}
+export const spawnJobAsync = util.promisify(module.exports.spawnJob);
 
-module.exports.errorAbandonedJobs = async function () {
+export async function errorAbandonedJobs() {
   const abandonedJobs = await sqldb.queryAsync(sql.select_abandoned_jobs, {
     timeout_secs: config.serverJobsAbandonedTimeoutSec,
   });
@@ -404,14 +404,14 @@ module.exports.errorAbandonedJobs = async function () {
   abandonedJobSequences.rows.forEach(function (row) {
     socketServer.io.to('jobSequence-' + row.id).emit('update');
   });
-};
+}
 
 /**
  *
  * @param {any} options
  * @param {Function} callback
  */
-module.exports.createJobSequence = function (options, callback) {
+export function createJobSequence(options, callback) {
   options = _.assign(
     {
       course_id: null,
@@ -442,19 +442,19 @@ module.exports.createJobSequence = function (options, callback) {
 
     callback(null, job_sequence_id);
   });
-};
-module.exports.createJobSequenceAsync = async (options) => {
+}
+export async function createJobSequenceAsync(options) {
   // we write this explicitly so that typescript knows what's going on
   const job_sequence_id = await util.promisify(module.exports.createJobSequence)(options);
   return job_sequence_id;
-};
+}
 
 /**
  *
  * @param {string} job_sequence_id
  * @param {Function | undefined} [callback]
  */
-module.exports.failJobSequence = function (job_sequence_id, callback) {
+export function failJobSequence(job_sequence_id, callback) {
   var params = {
     job_sequence_id,
   };
@@ -467,11 +467,11 @@ module.exports.failJobSequence = function (job_sequence_id, callback) {
       return callback?.(null);
     }
   });
-};
-module.exports.failJobSequenceAsync = async (job_sequence_id) => {
+}
+export async function failJobSequenceAsync(job_sequence_id) {
   // we write this explicitly so that typescript knows what's going on
   await util.promisify(module.exports.failJobSequence)(job_sequence_id);
-};
+}
 
 /**
  *
@@ -479,7 +479,7 @@ module.exports.failJobSequenceAsync = async (job_sequence_id) => {
  * @param {string | null} course_id
  * @param {(err: Error | null | undefined, jobSequence: any) => void} callback
  */
-module.exports.getJobSequence = function (job_sequence_id, course_id, callback) {
+export function getJobSequence(job_sequence_id, course_id, callback) {
   var params = {
     job_sequence_id: job_sequence_id,
     course_id: course_id,
@@ -503,8 +503,8 @@ module.exports.getJobSequence = function (job_sequence_id, course_id, callback) 
 
     callback(null, jobSequence);
   });
-};
-module.exports.getJobSequenceAsync = util.promisify(module.exports.getJobSequence);
+}
+export const getJobSequenceAsync = util.promisify(module.exports.getJobSequence);
 
 /**
  * Resolves with a job sequence, where each job's output has been turned into
@@ -514,7 +514,7 @@ module.exports.getJobSequenceAsync = util.promisify(module.exports.getJobSequenc
  * @param {any} course_id
  * @param {(err: Error | null, jobSequence: any) => void} callback
  */
-module.exports.getJobSequenceWithFormattedOutput = function (job_sequence_id, course_id, callback) {
+export function getJobSequenceWithFormattedOutput(job_sequence_id, course_id, callback) {
   module.exports.getJobSequence(job_sequence_id, course_id, (err, jobSequence) => {
     if (ERR(err, callback)) return;
 
@@ -528,10 +528,7 @@ module.exports.getJobSequenceWithFormattedOutput = function (job_sequence_id, co
 
     callback(null, jobSequence);
   });
-};
-module.exports.getJobSequenceWithFormattedOutputAsync = util.promisify(
+}
+export const getJobSequenceWithFormattedOutputAsync = util.promisify(
   module.exports.getJobSequenceWithFormattedOutput,
 );
-
-// Exported so others can use it as a type.
-module.exports.Job = Job;

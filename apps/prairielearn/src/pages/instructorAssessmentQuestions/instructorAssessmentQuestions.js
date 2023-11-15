@@ -1,14 +1,14 @@
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 const { default: AnsiUp } = require('ansi_up');
+
+import * as sqldb from '@prairielearn/postgres';
+
 const ansiUp = new AnsiUp();
-
-const sqldb = require('@prairielearn/postgres');
-
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
