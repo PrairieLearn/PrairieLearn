@@ -55,7 +55,7 @@ describe('migrateCookiesIfNeededMiddleware', () => {
     });
   });
 
-  it('rewrites cookies for the current request', async () => {
+  it('rewrites old cookies for the current request', async () => {
     const app = express();
     app.use(cookieParser());
     app.use(makeCookieMigrationMiddleware(false));
@@ -75,7 +75,59 @@ describe('migrateCookiesIfNeededMiddleware', () => {
 
       const body = await res.json();
       assert.equal(body.cookies.pl_authn, 'foo');
+      assert.equal(body.cookies.pl2_authn, 'foo');
       assert.equal(body.cookies.pl_authz_workspace_1234, 'bar');
+      assert.equal(body.cookies.pl2_authz_workspace_1234, 'bar');
+    });
+  });
+
+  it('rewrites new cookies for the current request', async () => {
+    const app = express();
+    app.use(cookieParser());
+    app.use(makeCookieMigrationMiddleware(false));
+    app.get('/', (req, res) => res.status(200).json({ cookies: req.cookies }));
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetch(url, {
+        headers: {
+          cookie: 'pl2_authn=foo; pl2_authz_workspace_1234=bar',
+        },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 200);
+
+      const header = res.headers.get('set-cookie');
+      assert.isNull(header);
+
+      const body = await res.json();
+      assert.equal(body.cookies.pl_authn, 'foo');
+      assert.equal(body.cookies.pl2_authn, 'foo');
+      assert.equal(body.cookies.pl_authz_workspace_1234, 'bar');
+      assert.equal(body.cookies.pl2_authz_workspace_1234, 'bar');
+    });
+  });
+
+  it('prefers the value of the new cookie if both are present', async () => {
+    const app = express();
+    app.use(cookieParser());
+    app.use(makeCookieMigrationMiddleware(false));
+    app.get('/', (req, res) => res.status(200).json({ cookies: req.cookies }));
+
+    await withServer(app, async ({ url }) => {
+      const res = await fetch(url, {
+        headers: {
+          cookie: 'pl_authn=foo; pl2_authn=bar',
+        },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 200);
+
+      const header = res.headers.get('set-cookie');
+      assert.isNull(header);
+
+      const body = await res.json();
+      assert.equal(body.cookies.pl_authn, 'bar');
+      assert.equal(body.cookies.pl2_authn, 'bar');
     });
   });
 });

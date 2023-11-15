@@ -104,6 +104,10 @@ export function makeCookieMigrationMiddleware(
         // If the old cookie isn't present, there's nothing to do.
         if (!(cookieMigration.oldName in req.cookies)) return;
 
+        // Rewrite the cookie for the current request in case we're configured to
+        // not propagate renames back to the client yet.
+        req.cookies[cookieMigration.newName] = req.cookies[cookieMigration.oldName];
+
         if (rewriteCookies) {
           didMigrate = true;
           res.cookie(cookieMigration.newName, req.cookies[cookieMigration.oldName], {
@@ -122,8 +126,14 @@ export function makeCookieMigrationMiddleware(
           oldNames.forEach((oldName) => {
             const newName = oldName.replace(oldRegexp, newPattern);
 
-            // If the cookie was already migrated, do nothing.
-            if (req.cookies[newName]) return;
+            // If the cookie was already migrated, we don't need to write
+            // anything back to the client. However, we'll overwrite the value
+            // of the old cookie in the current request so that application code
+            // is forward-compatible with the new cookie name.
+            if (req.cookies[newName]) {
+              req.cookies[oldName] = req.cookies[newName];
+              return;
+            }
 
             // Rewrite the cookie for the current request in case we're configured to
             // not propagate renames back to the client yet.
@@ -132,7 +142,7 @@ export function makeCookieMigrationMiddleware(
             if (rewriteCookies) {
               didMigrate = true;
               res.cookie(newName, req.cookies[oldName], {
-                ...cookieMigration.options,
+                ...(cookieMigration.options ?? {}),
                 secure: shouldSecureCookie(req),
               });
             }
