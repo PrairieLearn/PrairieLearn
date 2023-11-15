@@ -126,14 +126,9 @@ export function makeCookieMigrationMiddleware(
           oldNames.forEach((oldName) => {
             const newName = oldName.replace(oldRegexp, newPattern);
 
-            // If the cookie was already migrated, we don't need to write
-            // anything back to the client. However, we'll overwrite the value
-            // of the old cookie in the current request so that application code
-            // is forward-compatible with the new cookie name.
-            if (req.cookies[newName]) {
-              req.cookies[oldName] = req.cookies[newName];
-              return;
-            }
+            // If the cookie was already migrated, do nothing. We'll write this
+            // new value to the old cookie name for the current request below.
+            if (req.cookies[newName]) return;
 
             // Rewrite the cookie for the current request in case we're configured to
             // not propagate renames back to the client yet.
