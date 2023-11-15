@@ -28,6 +28,7 @@ router.get(
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
     const course_users = await sqldb.queryAsync(sql.select_course_users, {
@@ -73,6 +74,7 @@ router.post(
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
+        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
       });
       let course_instance = null;
       if (req.body.course_instance_id) {
@@ -292,6 +294,7 @@ ${given_cp_and_cip.join(',\n')}
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
+        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
       });
 
       if (req.body.course_instance_id) {
@@ -334,6 +337,7 @@ ${given_cp_and_cip.join(',\n')}
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
+        authn_is_administrator: res.locals.authz_data.authn_is_administrator,
       });
 
       if (req.body.course_instance_id) {

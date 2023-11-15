@@ -40,6 +40,7 @@ router.get('/', function (req, res, next) {
           user_id: res.locals.user.user_id,
           authn_user_id: res.locals.authn_user.user_id,
           is_administrator: res.locals.is_administrator,
+          authn_is_administrator: res.locals.authz_data.authn_is_administrator,
         });
       },
       (callback) => {

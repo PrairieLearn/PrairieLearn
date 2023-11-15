@@ -21,15 +21,17 @@ export async function selectAuthorizedCourseInstancesForCourse({
   user_id,
   authn_user_id,
   is_administrator,
+  authn_is_administrator,
 }: {
   course_id: string;
   user_id: string;
   authn_user_id: string;
   is_administrator: boolean;
+  authn_is_administrator: boolean;
 }) {
   const { course_instances: authnCourseInstances } = await callValidatedOneRow(
     'course_instances_with_staff_access',
-    [authn_user_id, is_administrator, course_id],
+    [authn_user_id, authn_is_administrator, course_id],
     CourseInstanceAuthzSchema,
   );
 
