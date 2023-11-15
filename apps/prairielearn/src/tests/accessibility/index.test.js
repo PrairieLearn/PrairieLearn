@@ -232,8 +232,7 @@ const SKIP_ROUTES = [
 
   // These are only HTML fragments rendered by HTMX; we can't test them as full
   // HTML documents.
-  '/pl/navbar/course/:course_id/switcher',
-  '/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?',
+  /^\/pl\/navbar\/course/,
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
