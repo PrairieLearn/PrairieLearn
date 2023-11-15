@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';
 import { generateSignedToken } from '@prairielearn/signed-token';
 import { Course, Question } from './db-types';
-import { selectEditableCourses } from '../models/course';
+import { selectCoursesWithEditAccess } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -19,7 +19,7 @@ export async function setQuestionCopyTargets(res: Response) {
     return;
   }
 
-  const editableCourses = await selectEditableCourses({
+  const editableCourses = await selectCoursesWithEditAccess({
     course_id: res.locals.course.id,
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,

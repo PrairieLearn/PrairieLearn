@@ -1,4 +1,4 @@
-import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const asyncHandler = require('express-async-handler');
 const express = require('express');
@@ -23,7 +23,7 @@ router.get(
       throw error.make(403, 'Access denied (must be course owner)');
     }
 
-    const course_instances = await selectAuthorizedCourseInstancesForCourse({
+    const course_instances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -69,7 +69,7 @@ router.post(
 
       // Verify the course instance id associated with the requested course instance
       // role is valid (should such a role have been requested)
-      const course_instances = await selectAuthorizedCourseInstancesForCourse({
+      const course_instances = await selectCourseInstancesWithStaffAccess({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
@@ -289,7 +289,7 @@ ${given_cp_and_cip.join(',\n')}
       // in the given course instance. We choose not to do this for the same
       // reason as above (see handler for course_permissions_update_role).
 
-      const course_instances = await selectAuthorizedCourseInstancesForCourse({
+      const course_instances = await selectCourseInstancesWithStaffAccess({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
@@ -332,7 +332,7 @@ ${given_cp_and_cip.join(',\n')}
       // member of the course staff. We choose not to do this for the same
       // reason as above (see handler for course_permissions_update_role).
 
-      const course_instances = await selectAuthorizedCourseInstancesForCourse({
+      const course_instances = await selectCourseInstancesWithStaffAccess({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,

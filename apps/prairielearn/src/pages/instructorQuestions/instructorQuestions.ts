@@ -8,7 +8,7 @@ import fs = require('fs-extra');
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');
-import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -16,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    const courseInstances = await selectAuthorizedCourseInstancesForCourse({
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,

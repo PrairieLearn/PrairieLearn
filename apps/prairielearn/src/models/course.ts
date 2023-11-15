@@ -25,7 +25,7 @@ export async function selectCourseById(course_id: string): Promise<Course> {
   );
 }
 
-export async function selectAuthorizedCourses({
+export async function selectCoursesWithStaffAccess({
   course_id,
   user_id,
   is_administrator,
@@ -53,7 +53,7 @@ export async function selectAuthorizedCourses({
   return courses;
 }
 
-export async function selectEditableCourses({
+export async function selectCoursesWithEditAccess({
   course_id,
   user_id,
   is_administrator,
@@ -64,7 +64,7 @@ export async function selectEditableCourses({
   is_administrator: boolean;
   authz_data_overrides: any | null | undefined;
 }) {
-  const courses = await selectAuthorizedCourses({
+  const courses = await selectCoursesWithStaffAccess({
     course_id,
     user_id,
     is_administrator,

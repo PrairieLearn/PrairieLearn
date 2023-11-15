@@ -1,4 +1,4 @@
-import { selectAuthorizedCourseInstancesForCourse } from '../../models/course-instances';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
@@ -128,7 +128,7 @@ router.get(
 
     // Compute the IDs of the course instances to which the effective user has access.
 
-    const course_instances = await selectAuthorizedCourseInstancesForCourse({
+    const course_instances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,

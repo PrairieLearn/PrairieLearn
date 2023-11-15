@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { NavbarCourseSwitcher } from './navbarCourseSwitcher.html';
-import { selectAuthorizedCourses } from '../../models/course';
+import { selectCoursesWithStaffAccess } from '../../models/course';
 
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courses = await selectAuthorizedCourses({
+    const courses = await selectCoursesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,

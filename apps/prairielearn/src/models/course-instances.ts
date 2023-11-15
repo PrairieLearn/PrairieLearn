@@ -16,7 +16,7 @@ const CourseInstanceAuthzSchema = z.object({
   ),
 });
 
-export async function selectAuthorizedCourseInstancesForCourse({
+export async function selectCourseInstancesWithStaffAccess({
   course_id,
   user_id,
   authn_user_id,

@@ -1,4 +1,4 @@
-import { selectEditableCourses } from '../../models/course';
+import { selectCoursesWithEditAccess } from '../../models/course';
 
 // @ts-check
 const ERR = require('async-stacktrace');
@@ -323,7 +323,7 @@ router.get('/', function (req, res, next) {
         }
       },
       async () => {
-        res.locals.editable_courses = await selectEditableCourses({
+        res.locals.editable_courses = await selectCoursesWithEditAccess({
           course_id: res.locals.course.id,
           user_id: res.locals.user.user_id,
           is_administrator: res.locals.is_administrator,
