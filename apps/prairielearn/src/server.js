@@ -590,7 +590,14 @@ module.exports.initExpress = function () {
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
   ]);
 
-  app.use('/pl/navbar', require('./pages/navbar/navbar').default);
+  app.use('/pl/navbar/course/:course_id/switcher', [
+    require('./middlewares/authzCourseOrInstance'),
+    require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
+  ]);
+  app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
+    require('./middlewares/authzCourseOrInstance'),
+    require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
+  ]);
 
   app.use('/pl/workspace/:workspace_id', [
     (req, res, next) => {
