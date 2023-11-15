@@ -27,19 +27,21 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  showAddQuestionButton,
-  showSharingSets,
+  showAddQuestionButton = false,
+  showSharingSets = false,
   current_course_instance,
-  course_instances,
+  course_instances = [],
+  qidPrefix,
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
 }: {
   questions: QuestionsPageDataAnsified[];
-  showAddQuestionButton: boolean;
-  showSharingSets: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstanceWithShortName[];
+  showAddQuestionButton?: boolean;
+  showSharingSets?: boolean;
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstanceWithShortName[];
+  qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
@@ -48,7 +50,7 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
+      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
       'questions-table-data',
     )}
 
