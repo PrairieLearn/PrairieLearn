@@ -252,10 +252,10 @@ const ConfigSchema = z.object({
       }),
     })
     .default({
-      normal: { background: '#3F59E4', border: '#3F59E4', text: 'white' },
-      hover: { background: '#1A31A9', border: '#1A31A9', text: 'white' },
-      active: { background: '#13299C', border: '#13299C', text: 'white' },
-      focus: { shadow: 'rgba(40, 64, 191, 0.35)' },
+      normal: { background: '#E84A27', border: '#E84A27', text: 'white' },
+      hover: { background: '#D04223', border: '#D04223', text: 'white' },
+      active: { background: '#B93B1F', border: '#B93B1F', text: 'white' },
+      focus: { shadow: 'rgba(255, 83, 0, 0.35)' },
     }),
   hasAzure: z.boolean().default(false),
   /**
@@ -280,7 +280,7 @@ const ConfigSchema = z.object({
    * OpenIDConnect login link configuration
    */
   oidLinkText: z.string().default("Sign in with Okta"),
-  oidLinkLogo: z.string().nullable().default(null),
+  oidLinkLogo: z.string().nullable().default("/images/okta_logo.svg"),
   oidLinkColors: z
     .object({
       normal: z.object({
@@ -303,10 +303,10 @@ const ConfigSchema = z.object({
       }),
     })
     .default({
-      normal: { background: '#E84A27', border: '#E84A27', text: 'white' },
-      hover: { background: '#D04223', border: '#D04223', text: 'white' },
-      active: { background: '#B93B1F', border: '#B93B1F', text: 'white' },
-      focus: { shadow: 'rgba(255, 83, 0, 0.35)' },
+      normal: { background: '#3F59E4', border: '#3F59E4', text: 'white' },
+      hover: { background: '#1A31A9', border: '#1A31A9', text: 'white' },
+      active: { background: '#13299C', border: '#13299C', text: 'white' },
+      focus: { shadow: 'rgba(40, 64, 191, 0.35)' },
     }),
   hasOauth: z.boolean().default(false),
   googleClientId: z.string().nullable().default(null),
