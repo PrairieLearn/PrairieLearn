@@ -542,30 +542,6 @@ function createCourseFiles(callback) {
           callback(null);
         });
       },
-      (callback) => {
-        const execOptions = {
-          cwd: courseLiveDir,
-          env: process.env,
-        };
-        exec(`git remote`, execOptions, (err, stdout, stderr) => {
-          if (ERR(err, callback)) return;
-          console.log('stdout', stdout);
-          console.log('stderr', stderr);
-          callback(null);
-        });
-      },
-      (callback) => {
-        const execOptions = {
-          cwd: courseDevDir,
-          env: process.env,
-        };
-        exec(`git remote`, execOptions, (err, stdout, stderr) => {
-          if (ERR(err, callback)) return;
-          console.log('stdout', stdout);
-          console.log('stderr', stderr);
-          callback(null);
-        });
-      },
     ],
     (err) => {
       if (ERR(err, callback)) return;
