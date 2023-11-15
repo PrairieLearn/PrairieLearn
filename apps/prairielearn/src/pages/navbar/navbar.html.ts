@@ -40,6 +40,12 @@ export function NavbarCourseInstanceSwitcher({
   current_course_instance_id: string | null;
   plainUrlPrefix: string;
 }) {
+  if (course_instances.length === 0) {
+    return html`
+      <button class="dropdown-item disabled" disabled>No course instances</button>
+    `.toString();
+  }
+
   return html`
     ${course_instances.map((ci) => {
       const isActive = current_course_instance_id && idsEqual(ci.id, current_course_instance_id);
