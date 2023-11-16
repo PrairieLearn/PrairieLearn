@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Express } from 'express';
 import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy } from 'openid-client';
 import passport = require('passport');
@@ -10,6 +10,7 @@ import error = require('@prairielearn/error');
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
+import { AuthenticateOptions } from 'passport-saml';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -154,7 +155,8 @@ router.post(
   }),
 );
 
-const validate: StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
+//const validate: StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
+const validate = async function (req, tokenSet, done) {
   //console.log("INSIDE FUNCTION");
   //console.log("tokenSet",tokenSet);
   //console.log("tokenSet.claims()",tokenSet.claims())
