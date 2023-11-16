@@ -1,4 +1,4 @@
-import { Request, Router } from 'express';
+import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy } from 'openid-client';
 import passport = require('passport');
@@ -69,7 +69,7 @@ router.post(
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     req.session.lti13_claims = await authenticate(req, res);
-    // If we get here, lti13_claims should be populated
+    // If we get here, auth succeeded and lti13_claims is populated
 
     //console.log(JSON.stringify(req.session.lti13_claims, null, 3));
 
@@ -114,8 +114,11 @@ router.post(
     // AUTHENTICATE
 
     console.log(userInfo);
-
     await authnLib.loadUser(req, res, userInfo);
+
+    // TODO represent user_id / sub / lti13_instance_id in lti13_users table
+    // TODO include which authorized CI they linked to (unneeded here?) to put in session
+
 
     /*
     await queryAsync(sql.update_lti13_users, {
@@ -154,7 +157,7 @@ router.post(
   }),
 );
 
-const validate = async function (req:Request, tokenSet, done) {
+const validate : StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
   //console.log("INSIDE FUNCTION");
   //console.log("tokenSet",tokenSet);
   //console.log("tokenSet.claims()",tokenSet.claims())
@@ -179,7 +182,7 @@ const validate = async function (req:Request, tokenSet, done) {
   LTI13Schema.parse(lti13_claims);
 
   // Check nonce to protect against reuse
-  const nonceKey = `lti13-nonce:${lti13_claims['nonce']}`;
+  const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cacheGet(nonceKey);
   if (cacheResult) {
     return done(error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again'));
