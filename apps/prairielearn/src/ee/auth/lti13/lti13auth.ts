@@ -21,7 +21,10 @@ router.use(
   asyncHandler(async (req, res, next) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    //console.log(req.method, req.path);
+    console.log(req.method, req.path);
+    //console.log(req.session);
+    //console.log(req.body);
+    //console.log(req.query);
 
     // Cache the passport setup, only do it once
     // Do we even need to cache this?
@@ -49,7 +52,18 @@ router.use(
   }),
 );
 
+const OIDCLaunchFlowSchema = z.object({
+  iss: z.string(),
+  login_hint: z.string(),
+  target_link_uri: z.string(),
+});
+
+// TODO Handle the GET case
 router.post('/login', (req, res, next) => {
+  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+
+  OIDCLaunchFlowSchema.parse(req.body);
+
   passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, {
     response_type: 'id_token',
     lti_message_hint: req.body.lti_message_hint,
@@ -69,6 +83,16 @@ router.post(
   '/callback',
   asyncHandler(async (req, res) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+
+    /* TODO Check if LTI 1.3 auth is enabled for this institution, ala
+
+        // Fetch this institution's attribute mappings.
+        const institutionId = req.params.institution_id;
+        const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
+        if (!institutionSamlProvider) {
+          throw error.make(404, 'Institution does not support SAML authentication');
+        }
+    */
 
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
@@ -187,7 +211,7 @@ const validate: StrategyVerifyCallbackReq = async function (req, tokenSet, done)
   if (cacheResult) {
     return done(error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again'));
   }
-  cacheSet(nonceKey, true, 5 * 60 * 1000); // 5 minutes
+  cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
 
   // Save parameters about the platform here
   // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
@@ -207,6 +231,12 @@ const validate: StrategyVerifyCallbackReq = async function (req, tokenSet, done)
 
 function authenticate(req, res): Promise<any> {
   return new Promise((resolve, reject) => {
+    const OIDCAuthResponseSchema = z.object({
+      state: z.string(),
+      id_token: z.string(),
+    });
+    OIDCAuthResponseSchema.parse(req.body);
+
     passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, (err, user, extra) => {
       if (err) {
         reject(err);
