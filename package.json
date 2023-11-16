@@ -41,8 +41,5 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "packageManager": "yarn@3.5.0",
-  "dependencies": {
-    "openid-client": "^5.6.1"
-  }
+  "packageManager": "yarn@3.5.0"
 }

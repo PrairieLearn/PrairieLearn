@@ -3283,6 +3283,7 @@ __metadata:
     oauth-signature: ^1.5.0
     object-hash: ^3.0.0
     on-finished: ^2.4.1
+    openid-client: ^5.6.1
     parse5: ^6.0.1
     passport: ^0.6.0
     passport-azure-ad: ^4.3.5
@@ -13481,7 +13482,6 @@ __metadata:
     eslint-plugin-no-floating-promise: ^1.0.2
     eslint-plugin-no-only-tests: ^3.1.0
     htmlhint: ^1.1.4
-    openid-client: ^5.6.1
     prettier: 3.0.3
     pyright: ^1.1.334
     s3rver: ^3.7.1
