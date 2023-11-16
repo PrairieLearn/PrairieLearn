@@ -1,15 +1,21 @@
-import { Router } from 'express';
+import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler = require('express-async-handler');
-import { Issuer, Strategy } from 'openid-client';
+import {
+  Issuer,
+  Strategy,
+  type StrategyVerifyCallbackReq,
+  type IdTokenClaims,
+} from 'openid-client';
 import passport = require('passport');
 import { z } from 'zod';
-import { get as _get } from 'lodash';
+import { get as _get, some as _some } from 'lodash';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
+import { getInstitutionAuthenticationProviders } from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -20,6 +26,13 @@ const lti13_issuers = {};
 router.use(
   asyncHandler(async (req, res, next) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+    const instAuthProviders = await getInstitutionAuthenticationProviders(
+      lti13_instance.institution_id,
+    );
+
+    if (!_some(instAuthProviders, ['name', 'LTI 1.3'])) {
+      throw error.make(404, 'Institution does not support LTI 1.3 authentication');
+    }
 
     console.log(req.method, req.path);
     //console.log(req.session);
@@ -52,47 +65,37 @@ router.use(
   }),
 );
 
-const OIDCLaunchFlowSchema = z.object({
-  iss: z.string(),
-  login_hint: z.string(),
-  target_link_uri: z.string(),
-});
-
-// TODO Handle the GET case
-router.post('/login', (req, res, next) => {
+function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
-  OIDCLaunchFlowSchema.parse(req.body);
+  const OIDCLaunchFlowSchema = z.object({
+    iss: z.string(),
+    login_hint: z.string(),
+    target_link_uri: z.string(),
+  });
+
+  const parameters = { ...req.body, ...req.query };
+  // Do I need to do something throwing an error in a synchronous function / callback?
+  OIDCLaunchFlowSchema.parse(parameters);
 
   passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, {
     response_type: 'id_token',
-    lti_message_hint: req.body.lti_message_hint,
-    login_hint: req.body.login_hint,
+    lti_message_hint: parameters.lti_message_hint,
+    login_hint: parameters.login_hint,
     prompt: 'none',
     response_mode: 'form_post',
     failWithError: true,
     failureMessage: true,
     failureRedirect: '/pl/error',
   } as passport.AuthenticateOptions)(req, res, next);
-  // Type assertion instead of type annotation allows extra properties
-  // 'response_type' is required but not in the base type
-  // https://stackoverflow.com/questions/31816061/why-am-i-getting-an-error-object-literal-may-only-specify-known-properties
-});
+}
 
+router.get('/login', launchFlow);
+router.post('/login', launchFlow);
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-
-    /* TODO Check if LTI 1.3 auth is enabled for this institution, ala
-
-        // Fetch this institution's attribute mappings.
-        const institutionId = req.params.institution_id;
-        const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
-        if (!institutionSamlProvider) {
-          throw error.make(404, 'Institution does not support SAML authentication');
-        }
-    */
 
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
@@ -144,32 +147,13 @@ router.post(
     await authnLib.loadUser(req, res, userInfo);
 
     // TODO represent user_id / sub / lti13_instance_id in lti13_users table
-    // TODO include which authorized CI they linked to (unneeded here?) to put in session
 
     /*
     await queryAsync(sql.update_lti13_users, {
       user_id: res.locals.authn_user.user_id,
-      pl_lti13_instance_id: req.params.lti13_instance_id,
+      lti13_instance_id: req.params.lti13_instance_id,
       sub: req.session.lti13_claims.sub,
     });
-    */
-
-    /*
-    // Identify course instance and redirect
-    const deployment_id =
-      req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
-    const context = req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'];
-
-    const CIparams = {
-      instance_id: lti13_instance.id,
-      deployment_id,
-      context_id: context.id,
-    };
-
-    const CIresult = await queryAsync(sql.get_course_instance, CIparams);
-
-    // TODO change this to req.session.lti13_authn.course_instance_id
-    req.session.authn_lti13_course_instance_id = CIresult.rows[0]?.course_instance_id;
     */
 
     // Get the target_link out of the LTI request and redirect
@@ -180,7 +164,11 @@ router.post(
   }),
 );
 
-const validate: StrategyVerifyCallbackReq = async function (req, tokenSet, done) {
+const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
+  req: Request,
+  tokenSet,
+  done,
+) {
   //const validate = async function (req, tokenSet, done) {
   //console.log("INSIDE FUNCTION");
   //console.log("tokenSet",tokenSet);
@@ -216,20 +204,16 @@ const validate: StrategyVerifyCallbackReq = async function (req, tokenSet, done)
   // Save parameters about the platform here
   // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
   const params = {
-    //lti13_instance_id: req.res.locals.lti13_instance.id,
     lti13_instance_id: req.params.lti13_instance_id,
     tool_platform_name:
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].name || null,
-    //    platform:
-    //      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform'].product_family_code ||
-    //      null,
+      (lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform'] as any).name || null,
   };
   await queryAsync(sql.verify_upsert, params);
 
   done(null, lti13_claims);
 };
 
-function authenticate(req, res): Promise<any> {
+function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     const OIDCAuthResponseSchema = z.object({
       state: z.string(),
