@@ -10,7 +10,7 @@ const debug = require('debug')('prairielearn:instructorFileEditor');
 import { contains } from '@prairielearn/path-utils';
 import * as serverJobs from '../../lib/server-jobs-legacy';
 import { createServerJob } from '../../lib/server-jobs';
-import namedLocks from '@prairielearn/named-locks';
+import * as namedLocks from '@prairielearn/named-locks';
 import * as syncFromDisk from '../../sync/syncFromDisk';
 import {
   getOrUpdateCourseCommitHashAsync,

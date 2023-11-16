@@ -18,7 +18,7 @@ import * as error from '@prairielearn/error';
 import * as fs from 'fs-extra';
 const async = require('async');
 const { v4: uuidv4 } = require('uuid');
-import * as sha256 from 'crypto-js/sha256';
+const sha256 = require('crypto-js/sha256');
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';
