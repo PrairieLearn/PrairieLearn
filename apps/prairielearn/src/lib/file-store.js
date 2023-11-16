@@ -117,7 +117,7 @@ export async function deleteFile(file_id, authn_user_id) {
  */
 export async function getStream(file_id) {
   debug(`getStream(): file_id=${file_id}`);
-  const file = await module.exports.get(file_id, 'stream');
+  const file = await getFile(file_id, 'stream');
   return file.contents;
 }
 
