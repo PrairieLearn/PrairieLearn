@@ -151,15 +151,12 @@ router.post(
     console.log(userInfo);
     await authnLib.loadUser(req, res, userInfo);
 
-    // TODO represent user_id / sub / lti13_instance_id in lti13_users table
-
-    /*
+    // Record the LTI user's subject id
     await queryAsync(sql.update_lti13_users, {
       user_id: res.locals.authn_user.user_id,
       lti13_instance_id: req.params.lti13_instance_id,
       sub: req.session.lti13_claims.sub,
     });
-    */
 
     // Get the target_link out of the LTI request and redirect
     const redirUrl =
