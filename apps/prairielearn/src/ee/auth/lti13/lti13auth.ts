@@ -51,7 +51,6 @@ router.use(
 
 router.post('/login', (req, res, next) => {
   passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, {
-    // @ts-expect-error Missing `response_type` on the type.
     response_type: 'id_token',
     lti_message_hint: req.body.lti_message_hint,
     login_hint: req.body.login_hint,
@@ -60,7 +59,10 @@ router.post('/login', (req, res, next) => {
     failWithError: true,
     failureMessage: true,
     failureRedirect: '/pl/error',
-  })(req, res, next);
+  } as passport.AuthenticateOptions)(req, res, next);
+  // Type assertion instead of type annotation allows extra properties
+  // 'response_type' is required but not in the base type
+  // https://stackoverflow.com/questions/31816061/why-am-i-getting-an-error-object-literal-may-only-specify-known-properties
 });
 
 router.post(
@@ -154,8 +156,8 @@ router.post(
   }),
 );
 
-//const validate: StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
-const validate = async function (req, tokenSet, done) {
+const validate: StrategyVerifyCallbackReq = async function (req, tokenSet, done) {
+  //const validate = async function (req, tokenSet, done) {
   //console.log("INSIDE FUNCTION");
   //console.log("tokenSet",tokenSet);
   //console.log("tokenSet.claims()",tokenSet.claims())
