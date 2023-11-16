@@ -1797,6 +1797,14 @@ module.exports.initExpress = function () {
     require('./pages/shared/floatFormatters'),
     require('./pages/publicQuestionPreview/publicQuestionPreview'),
   ]);
+  app.use('/pl/public/course/:course_id/questions', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_questions';
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    require('./pages/publicQuestions/publicQuestions'),
+  ]);
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
