@@ -1,4 +1,4 @@
-import { Router, Express } from 'express';
+import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy } from 'openid-client';
 import passport = require('passport');
@@ -10,7 +10,6 @@ import error = require('@prairielearn/error');
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
-import { AuthenticateOptions } from 'passport-saml';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
