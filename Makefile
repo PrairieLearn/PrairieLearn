@@ -31,7 +31,7 @@ start-executor:
 	@node apps/prairielearn/dist/executor.js
 
 update-database-description:
-	@yarn --cwd apps/prairielearn pg-describe postgres -o ../../database
+	cd apps/prairielearn && yarn pg-describe postgres -o ../../database
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:

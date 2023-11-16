@@ -14,7 +14,6 @@ columns
     open: boolean default true
     options: jsonb
     params: jsonb
-    qiid: text
     question_id: bigint not null
     true_answer: jsonb
     user_id: bigint
@@ -24,7 +23,6 @@ columns
 indexes
     variants_pkey: PRIMARY KEY (id) USING btree (id)
     variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
-    variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
     variants_workspace_id_key: USING btree (workspace_id)
 
 check constraints
