@@ -104,8 +104,10 @@ onDocumentReady(() => {
       Cookies.remove('pl_requested_course_role');
       Cookies.remove('pl_requested_course_instance_role');
     } else {
-      Cookies.set('pl_requested_course_role', authnCourseRole);
-      Cookies.set('pl_requested_course_instance_role', authnCourseInstanceRole);
+      if (authnCourseRole && authnCourseInstanceRole) {
+        Cookies.set('pl_requested_course_role', authnCourseRole);
+        Cookies.set('pl_requested_course_instance_role', authnCourseInstanceRole);
+      }
     }
 
     Cookies.set('pl_requested_data_changed', 'true');
@@ -134,6 +136,11 @@ onDocumentReady(() => {
   document.querySelectorAll<HTMLButtonElement>('.js-remove-override').forEach((element) => {
     element.addEventListener('click', () => {
       const cookieName = element.dataset.overrideCookie;
+
+      if (!cookieName) {
+        throw new Error('Missing override cookie name');
+      }
+
       Cookies.remove(cookieName);
       location.reload();
     });
@@ -144,9 +151,9 @@ onDocumentReady(() => {
 
   effectiveUidInput?.addEventListener('input', () => {
     if (effectiveUidInput.value.trim() !== '') {
-      effectiveUidButton.removeAttribute('disabled');
+      effectiveUidButton?.removeAttribute('disabled');
     } else {
-      effectiveUidButton.setAttribute('disabled', 'true');
+      effectiveUidButton?.setAttribute('disabled', 'true');
     }
   });
 
@@ -155,7 +162,7 @@ onDocumentReady(() => {
     ?.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      const effectiveUid = effectiveUidInput.value.trim();
+      const effectiveUid = effectiveUidInput?.value.trim();
       if (effectiveUid) {
         Cookies.set('pl_requested_uid', effectiveUid);
         Cookies.set('pl_requested_data_changed', 'true');

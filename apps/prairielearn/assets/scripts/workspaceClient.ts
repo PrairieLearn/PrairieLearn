@@ -101,7 +101,7 @@ $(function () {
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
-    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg) => {
+    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
       console.log('joinWorkspace, msg =', msg);
       setState(msg.state);
     });
@@ -118,7 +118,7 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
+      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg: any) => {
         console.log('heartbeat, msg =', msg);
       });
     }

@@ -25,7 +25,7 @@ SELECT
     when q.type = 'Freeform' then 'v3'
     else 'v2 (' || q.type || ')'
   end AS display_type,
-  coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
+  coalesce(issue_count.open_issue_count, 0)::int AS open_issue_count,
   row_to_json(top) AS topic,
   (
     SELECT
@@ -57,5 +57,39 @@ GROUP BY
   q.id,
   top.id,
   issue_count.open_issue_count
+ORDER BY
+  q.qid;
+
+-- BLOCK select_public_questions_for_course
+SELECT
+  q.id,
+  q.qid,
+  q.title,
+  q.grading_method,
+  q.external_grading_image,
+  case
+    when q.type = 'Freeform' then 'v3'
+    else 'v2 (' || q.type || ')'
+  end AS display_type,
+  row_to_json(top) AS topic,
+  (
+    SELECT
+      jsonb_agg(to_jsonb(tags))
+    FROM
+      question_tags AS qt
+      JOIN tags ON (tags.id = qt.tag_id)
+    WHERE
+      qt.question_id = q.id
+  ) AS tags
+FROM
+  questions AS q
+  JOIN topics AS top ON (top.id = q.topic_id)
+WHERE
+  q.course_id = $course_id
+  AND q.deleted_at IS NULL
+  AND q.shared_publicly
+GROUP BY
+  q.id,
+  top.id
 ORDER BY
   q.qid;
