@@ -1,14 +1,14 @@
-const path = require('path');
-const { contains } = require('@prairielearn/path-utils');
-const { html } = require('@prairielearn/html');
-const { encodePath, decodePath } = require('./uri-util');
+import path from 'path';
+import { contains } from '@prairielearn/path-utils';
+import { html } from '@prairielearn/html';
+import { encodePath, decodePath } from './uri-util';
 
 /**
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
  * the navPage. Created for use in instructor file views.
  */
-function getPaths(req, res, callback) {
+export function getPaths(req, res, callback) {
   let paths = {
     coursePath: res.locals.course.path,
     courseId: res.locals.course.id,
@@ -161,7 +161,3 @@ function getPaths(req, res, callback) {
 
   callback(null, paths);
 }
-
-module.exports = {
-  getPaths,
-};
