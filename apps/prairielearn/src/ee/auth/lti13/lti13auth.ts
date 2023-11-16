@@ -79,13 +79,13 @@ router.post(
 
     interface userInfoType {
       uid: string;
-      uin: string|null;
+      uin: string | null;
       name: string;
       provider: string;
       institution_id: string;
-    };
+    }
 
-    const userInfo:userInfoType = {
+    const userInfo: userInfoType = {
       uid: _get(req.session.lti13_claims, lti13_instance.uid_attribute || 'email'),
       uin: _get(req.session.lti13_claims, lti13_instance.uin_attribute || 'BROKEN'),
       name: _get(req.session.lti13_claims, lti13_instance.name_attribute || 'name'),
@@ -105,6 +105,7 @@ router.post(
       userInfo.uid = 'test-student@example.com';
     }
 
+    // Zod validation of userInfo here?
     /*
     if (!authUid || !authName) {
       throw new Error('Missing one or more attributes');
@@ -118,7 +119,6 @@ router.post(
 
     // TODO represent user_id / sub / lti13_instance_id in lti13_users table
     // TODO include which authorized CI they linked to (unneeded here?) to put in session
-
 
     /*
     await queryAsync(sql.update_lti13_users, {
@@ -144,20 +144,17 @@ router.post(
 
     // TODO change this to req.session.lti13_authn.course_instance_id
     req.session.authn_lti13_course_instance_id = CIresult.rows[0]?.course_instance_id;
-
-    /*
-    //
-    // Get the target_link out of the LTI request and redirect
-    //
-    const redirUrl =
-      req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
     */
-    const redirUrl = '/pl/';
+
+    // Get the target_link out of the LTI request and redirect
+    const redirUrl =
+      req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] ||
+      '/pl';
     res.redirect(redirUrl);
   }),
 );
 
-const validate : StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
+const validate: StrategyVerifyCallbackUserInfo = async function (req, tokenSet, done) {
   //console.log("INSIDE FUNCTION");
   //console.log("tokenSet",tokenSet);
   //console.log("tokenSet.claims()",tokenSet.claims())
