@@ -16,6 +16,13 @@ const CourseInstanceAuthzSchema = z.object({
   ),
 });
 
+/**
+ * Returns all course instances to which the given user has staff access.
+ *
+ * If the user is emulating another user, the results will be filtered to only
+ * include course instances to which both the authenticated user and the
+ * emulated user have access.
+ */
 export async function selectCourseInstancesWithStaffAccess({
   course_id,
   user_id,

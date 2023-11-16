@@ -20,10 +20,8 @@ export async function setQuestionCopyTargets(res: Response) {
   }
 
   const editableCourses = await selectCoursesWithEditAccess({
-    course_id: res.locals.course.id,
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
-    authz_data_overrides: res.locals.authz_data.overrides,
   });
   res.locals.question_copy_targets = editableCourses.map((course) => {
     const copyUrl = `/pl/course/${course.id}/copy_template_course_question`;
