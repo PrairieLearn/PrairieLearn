@@ -68,15 +68,19 @@ router.use(
 function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
+  const parameters = { ...req.body, ...req.query };
+
   const OIDCLaunchFlowSchema = z.object({
     iss: z.string(),
     login_hint: z.string(),
     target_link_uri: z.string(),
   });
 
-  const parameters = { ...req.body, ...req.query };
-  // Do I need to do something throwing an error in a synchronous function / callback?
-  OIDCLaunchFlowSchema.parse(parameters);
+  try {
+    OIDCLaunchFlowSchema.parse(parameters);
+  } catch (err) {
+    return next(err);
+  }
 
   passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, {
     response_type: 'id_token',
@@ -92,6 +96,7 @@ function launchFlow(req: Request, res: Response, next: NextFunction) {
 
 router.get('/login', launchFlow);
 router.post('/login', launchFlow);
+
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
@@ -191,7 +196,12 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
     sub: z.string(),
     'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
   });
-  LTI13Schema.parse(lti13_claims);
+
+  try {
+    LTI13Schema.parse(lti13_claims);
+  } catch (err) {
+    return done(err);
+  }
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
