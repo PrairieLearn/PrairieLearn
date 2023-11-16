@@ -273,6 +273,13 @@ describe('test file editor', function () {
 
     before('set up testing server', helperServer.before(courseDir));
 
+    before('update course repository in database', async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
+
     after('shut down testing server', helperServer.after);
 
     after('delete test course files', function (callback) {
@@ -303,7 +310,7 @@ describe('test file editor', function () {
     });
 
     describe('disallow edits outside course directory', function () {
-      badGet(badPathUrl);
+      badGet(badPathUrl, 500, false);
     });
 
     describe('verify file handlers', function () {
@@ -319,26 +326,35 @@ describe('test file editor', function () {
     after('shut down testing server', helperServer.after);
 
     describe('disallow edits inside exampleCourse', function () {
-      badGet(badExampleCoursePathUrl);
+      badGet(badExampleCoursePathUrl, 403, true);
     });
   });
 });
 
-function badGet(url) {
+function badGet(url, expected_status, should_parse) {
   describe(`GET to edit url with bad path`, function () {
-    it('should not load successfully', function (callback) {
+    it(`should load with status ${expected_status}`, function (callback) {
       locals.preStartTime = Date.now();
       request(url, function (error, response) {
         if (error) {
           return callback(error);
         }
         locals.postStartTime = Date.now();
-        if (response.statusCode !== 400) {
+        if (response.statusCode !== expected_status) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
       });
     });
+    if (should_parse) {
+      it('should parse', function () {
+        locals.$ = cheerio.load(page);
+      });
+      it('should not have an editor-form', function () {
+        elemList = locals.$('form[name="editor-form"]');
+        assert.lengthOf(elemList, 0);
+      });
+    }
   });
 }
 
