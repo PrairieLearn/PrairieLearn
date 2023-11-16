@@ -315,6 +315,13 @@ describe('test course editor', function () {
 
     before('set up testing server', helperServer.before(courseDir));
 
+    before('update course repository in database', async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
+
     after('shut down testing server', helperServer.after);
 
     after('delete test course files', function (callback) {

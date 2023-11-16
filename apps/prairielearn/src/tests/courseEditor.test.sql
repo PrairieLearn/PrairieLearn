@@ -121,3 +121,10 @@ SELECT
   *
 FROM
   assessment_errors;
+
+-- BLOCK update_course_repository
+UPDATE pl_courses AS c
+SET
+  repository = $course_repository
+WHERE
+  c.path = $course_path;
