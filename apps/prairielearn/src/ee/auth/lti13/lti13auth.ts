@@ -101,30 +101,28 @@ router.post(
   '/callback',
   asyncHandler(async (req, res) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+    console.log(lti13_instance);
 
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
-    //console.log(JSON.stringify(req.session.lti13_claims, null, 3));
+    console.log(JSON.stringify(req.session.lti13_claims, null, 2));
 
-    const institutionId = lti13_instance.institution_id;
+    const userInfoSchema = z.object({
+      uid: z.string(),
+      uin: z.string().nullable(),
+      name: z.string(),
+      provider: z.string(),
+      institution_id: z.string(),
+    });
+    type userInfo = z.infer<typeof userInfoSchema>;
 
-    console.log(lti13_instance);
-
-    interface userInfoType {
-      uid: string;
-      uin: string | null;
-      name: string;
-      provider: string;
-      institution_id: string;
-    }
-
-    const userInfo: userInfoType = {
+    const userInfo: userInfo = {
       uid: _get(req.session.lti13_claims, lti13_instance.uid_attribute || 'email'),
-      uin: _get(req.session.lti13_claims, lti13_instance.uin_attribute || 'BROKEN'),
+      uin: _get(req.session.lti13_claims, lti13_instance.uin_attribute || 'FIXME'),
       name: _get(req.session.lti13_claims, lti13_instance.name_attribute || 'name'),
       provider: 'LTI 1.3',
-      institution_id: institutionId,
+      institution_id: lti13_instance.institution_id,
     };
 
     // Test User does not send a uid, so maybe something to fall back to `sub` as UIN if no UID? (Anon)
@@ -139,22 +137,16 @@ router.post(
       userInfo.uid = 'test-student@example.com';
     }
 
-    // Zod validation of userInfo here?
-    /*
-    if (!authUid || !authName) {
-      throw new Error('Missing one or more attributes');
-    }
-    */
+    userInfoSchema.parse(userInfo);
 
     // AUTHENTICATE
-
-    console.log(userInfo);
+    //console.log(userInfo);
     await authnLib.loadUser(req, res, userInfo);
 
     // Record the LTI user's subject id
     await queryAsync(sql.update_lti13_users, {
       user_id: res.locals.authn_user.user_id,
-      lti13_instance_id: req.params.lti13_instance_id,
+      lti13_instance_id: lti13_instance.id,
       sub: req.session.lti13_claims.sub,
     });
 
