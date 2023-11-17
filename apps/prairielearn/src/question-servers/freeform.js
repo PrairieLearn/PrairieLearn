@@ -18,7 +18,7 @@ const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoad = require('../lib/json-load');
 const cache = require('../lib/cache');
-const courseUtil = require('../lib/courseUtil');
+const { getOrUpdateCourseCommitHash } = require('../lib/course');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
@@ -2034,7 +2034,7 @@ module.exports = {
 
   async getCacheKey(course, data, context) {
     try {
-      const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
+      const commitHash = await getOrUpdateCourseCommitHash(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
       return `question:${commitHash}-${dataHash}`;
     } catch (err) {

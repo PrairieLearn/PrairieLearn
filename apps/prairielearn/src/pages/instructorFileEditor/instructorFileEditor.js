@@ -13,7 +13,11 @@ const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
-const courseUtil = require('../../lib/courseUtil');
+const {
+  getCommitHash,
+  updateCourseCommitHash,
+  getOrUpdateCourseCommitHash,
+} = require('../../lib/course');
 const { config } = require('../../lib/config');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
@@ -479,7 +483,7 @@ async function saveAndSync(fileEdit, locals) {
         },
       },
       async () => {
-        const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+        const startGitHash = await getOrUpdateCourseCommitHash(locals.course);
 
         if (fileEdit.doPull) {
           await job.exec('git', ['fetch'], {
@@ -574,7 +578,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
+            const endGitHash = await getCommitHash(locals.course.path);
             const chunkChanges = await chunks.updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,
@@ -588,7 +592,7 @@ async function saveAndSync(fileEdit, locals) {
           // Note that we deliberately don't actually write the updated commit hash
           // to the database until after chunks have been updated. This ensures
           // that if the chunks update fails, we'll try again next time.
-          await courseUtil.updateCourseCommitHashAsync(locals.course);
+          await updateCourseCommitHash(locals.course);
 
           if (result.hadJsonErrors) {
             job.fail('One or more JSON files contained errors and were unable to be synced');
