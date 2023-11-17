@@ -4,7 +4,7 @@ const Docker = require('dockerode');
 import * as os from 'os';
 const EventEmitter = require('events');
 import * as fs from 'fs-extra';
-import * as byline from 'byline';
+const byline = require('byline');
 const execa = require('execa');
 
 import { logger } from '@prairielearn/logger';
