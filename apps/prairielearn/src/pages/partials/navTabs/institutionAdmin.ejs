@@ -18,3 +18,10 @@
     urlSuffix:      '/saml',
     iconClasses:    'fa fa-key',
     tabLabel:       'SAML'}) %>
+<% if (lti13_enabled) { %>
+    <%- include('navTab', {
+        activeSubPage:  'lti13',
+        urlSuffix:      '/lti13',
+        iconClasses:    'fa fa-school-flag',
+        tabLabel:       'LTI 1.3'}) %>
+<% } %>

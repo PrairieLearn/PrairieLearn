@@ -17,23 +17,27 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const ensureUpToDate = (locals, callback) => {
   debug('ensureUpToDate()');
-  assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) => {
-    if (ERR(err, callback)) return;
-
-    debug('updated:', updated);
-    if (!updated) return callback(null);
-
-    // we updated the assessment_instance, so reload it
-
-    debug('selecting assessment instance');
-    const params = { assessment_instance_id: locals.assessment_instance.id };
-    sqldb.queryOneRow(sql.select_assessment_instance, params, (err, result) => {
+  util.callbackify(assessment.update)(
+    locals.assessment_instance.id,
+    locals.authn_user.user_id,
+    (err, updated) => {
       if (ERR(err, callback)) return;
-      locals.assessment_instance = result.rows[0];
-      debug('selected assessment_instance.id:', locals.assessment_instance.id);
-      callback(null);
-    });
-  });
+
+      debug('updated:', updated);
+      if (!updated) return callback(null);
+
+      // we updated the assessment_instance, so reload it
+
+      debug('selecting assessment instance');
+      const params = { assessment_instance_id: locals.assessment_instance.id };
+      sqldb.queryOneRow(sql.select_assessment_instance, params, (err, result) => {
+        if (ERR(err, callback)) return;
+        locals.assessment_instance = result.rows[0];
+        debug('selected assessment_instance.id:', locals.assessment_instance.id);
+        callback(null);
+      });
+    },
+  );
 };
 const ensureUpToDateAsync = async (locals) => {
   await util.promisify(ensureUpToDate)(locals);
