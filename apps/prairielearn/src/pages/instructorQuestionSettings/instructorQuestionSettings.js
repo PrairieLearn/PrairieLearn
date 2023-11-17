@@ -194,7 +194,10 @@ router.post('/', function (req, res, next) {
       .enabledFromLocals('question-sharing', res.locals)
       .then((questionSharingEnabled) => {
         if (!questionSharingEnabled) {
-          next(error.make(403, 'Access denied (feature not available)'));
+          return next(error.make(403, 'Access denied (feature not available)'));
+        }
+        if (!res.locals.authz_data.has_course_permission_own) {
+          return next(error.make(403, 'Access denied (must be a course Owner)'));
         }
         sqldb.queryZeroOrOneRow(
           sql.sharing_set_add,
@@ -216,7 +219,10 @@ router.post('/', function (req, res, next) {
       .enabledFromLocals('question-sharing', res.locals)
       .then((questionSharingEnabled) => {
         if (!questionSharingEnabled) {
-          next(error.make(403, 'Access denied (feature not available)'));
+          return next(error.make(403, 'Access denied (feature not available)'));
+        }
+        if (!res.locals.authz_data.has_course_permission_own) {
+          return next(error.make(403, 'Access denied (must be a course Owner)'));
         }
         sqldb.queryZeroOrOneRow(
           sql.update_question_shared_publicly,
