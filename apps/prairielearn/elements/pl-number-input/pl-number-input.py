@@ -289,7 +289,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             submitted_answer = pl.from_json(submitted_answer)
 
             html_params["suffix"] = suffix
-            html_params["a_sub"] = ("{:" + custom_format + "}").format(submitted_answer)
+            html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
+                submitted_answer
+            )
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
