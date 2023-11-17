@@ -9,7 +9,8 @@ import { createServerJob } from './server-jobs';
 import { config } from './config';
 import * as chunks from './chunks';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
-import { Course, CourseSchema, IdSchema, User, UserSchema } from './db-types';
+import { IdSchema, User, UserSchema } from './db-types';
+import { selectCourseById } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -46,10 +47,6 @@ export async function getCourseOwners(course_id: string): Promise<User[]> {
 
 export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
-}
-
-export async function selectCourseById(course_id: string): Promise<Course> {
-  return await sqldb.queryRow(sql.get_course_data, { course_id }, CourseSchema);
 }
 
 export async function getCommitHash(coursePath: string): Promise<string> {
