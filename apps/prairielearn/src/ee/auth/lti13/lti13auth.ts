@@ -29,14 +29,13 @@ router.use(
       throw error.make(404, 'Institution does not support LTI 1.3 authentication');
     }
 
-    console.log(req.method, req.path);
+    //console.log(req.method, req.path);
     //console.log(req.session);
     //console.log(req.body);
     //console.log(req.query);
 
     // Cache the passport setup, only do it once
     // Do we even need to cache this?
-    // TODO: exported function to delete cached function on config update
     if (!(lti13_instance.id in lti13_issuers)) {
       console.log(`Initializing ${lti13_instance.id} in passport`);
 
@@ -102,36 +101,65 @@ router.post(
 
     console.log(JSON.stringify(req.session.lti13_claims, null, 2));
 
-    const userInfoSchema = z.object({
-      uid: z.string(),
-      uin: z.string().nullable(),
-      name: z.string(),
-      provider: z.string(),
-      institution_id: z.string(),
-    });
-    type userInfo = z.infer<typeof userInfoSchema>;
+    let uid: string;
+    let uin: string | null;
+    let name: string | null;
 
-    const userInfo: userInfo = {
-      uid: _get(req.session.lti13_claims, lti13_instance.uid_attribute || 'email'),
-      uin: _get(req.session.lti13_claims, lti13_instance.uin_attribute || 'FIXME'),
-      name: _get(req.session.lti13_claims, lti13_instance.name_attribute || 'name'),
+    // UID checking
+    if (!lti13_instance.uid_attribute) {
+      throw error.make(500, 'LTI 1.3 instance configuration missing required UID attribute');
+    } else {
+      uid = _get(req.session.lti13_claims, lti13_instance.uid_attribute);
+      if (!uid) {
+        // Canvas Student View does not include a uid but has a deterministic role, kind error message
+        if (
+          req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles']?.includes(
+            'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
+          )
+        ) {
+          throw error.make(
+            403,
+            `Student View / Test user not supported.
+            Use access modes within PrairieLearn to view as a student.`,
+          );
+        } else {
+          // Error about missing UID
+          throw error.make(
+            500,
+            `Missing UID data from LTI 1.3 login (claim ${lti13_instance.uid_attribute} missing or empty)`,
+          );
+        }
+      }
+    }
+
+    // UIN checking, if attribute defined value must be present
+    uin = null;
+    if (lti13_instance.uin_attribute) {
+      uin = _get(req.session.lti13_claims, lti13_instance.uin_attribute);
+      if (!uin) {
+        throw error.make(
+          500,
+          `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
+        );
+      }
+    }
+
+    // Name checking, not an error
+    name = null;
+    if (lti13_instance.name_attribute) {
+      name = _get(req.session.lti13_claims, lti13_instance.name_attribute);
+      if (!name) {
+        name = uid;
+      }
+    }
+
+    const userInfo = {
+      uid,
+      uin,
+      name,
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
     };
-
-    // Test User does not send a uid, so maybe something to fall back to `sub` as UIN if no UID? (Anon)
-    // Also, roles: http://purl.imsglobal.org/vocab/lti/system/person#TestUser
-    if (
-      req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles']?.includes(
-        'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
-      )
-    ) {
-      // Eventually error here with a note about switching to student view inside PL
-      // For now, hack something in so that dev makes it easy to toggle to a new student
-      userInfo.uid = 'test-student@example.com';
-    }
-
-    userInfoSchema.parse(userInfo);
     //console.log(userInfo);
 
     // AUTHENTICATE
@@ -188,6 +216,7 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
     return done(error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again'));
   }
   cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+  // Canvas OIDC logins expire after 3600 seconds
 
   // Save parameters about the platform back to the lti13_instance
   // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
@@ -222,6 +251,11 @@ function authenticate(req: Request, res: Response): Promise<any> {
       }
     }) as passport.AuthenticateCallback)(req, res);
   });
+}
+
+export function removeCachedInstance(instance_id: number|string) {
+  console.log(`removing instance_id ${instance_id}`);
+  delete lti13_issuers[`lti13_instance_${instance_id}`]
 }
 
 export default router;
