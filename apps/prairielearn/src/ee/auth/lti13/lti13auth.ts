@@ -152,7 +152,7 @@ router.post(
   }),
 );
 
-const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function(
+const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   req: Request,
   tokenSet,
   done,
