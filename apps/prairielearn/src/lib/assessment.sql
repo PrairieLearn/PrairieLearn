@@ -68,7 +68,7 @@ WITH
       ai.id = $assessment_instance_id
     RETURNING
       ai.id
-  ),
+  )
 INSERT INTO
   assessment_state_logs (open, assessment_instance_id, auth_user_id)
 SELECT
