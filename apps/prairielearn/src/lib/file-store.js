@@ -1,6 +1,6 @@
-const path = require('path');
-const fsPromises = require('fs').promises;
-const fs = require('fs');
+import * as path from 'path';
+import * as fsPromises from 'fs/promises';
+import * as fs from 'fs';
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as sqldb from '@prairielearn/postgres';
@@ -8,6 +8,7 @@ import { config } from './config';
 import { uploadToS3Async, getFromS3Async } from '../lib/aws';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
 const StorageTypes = Object.freeze({
   S3: 'S3',
   FileSystem: 'FileSystem',

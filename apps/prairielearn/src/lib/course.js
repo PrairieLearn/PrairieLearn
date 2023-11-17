@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 
 import * as sqldb from '@prairielearn/postgres';
 

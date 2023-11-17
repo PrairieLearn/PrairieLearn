@@ -1,5 +1,5 @@
 // @ts-check
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 const _ = require('lodash');
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
@@ -16,7 +16,7 @@ import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as error from '@prairielearn/error';
 import * as fs from 'fs-extra';
-const async = require('async');
+import * as async from 'async';
 const { v4: uuidv4 } = require('uuid');
 const sha256 = require('crypto-js/sha256');
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks';

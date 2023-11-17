@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import express from 'express';
 const asyncHandler = require('express-async-handler');
 const { default: AnsiUp } = require('ansi_up');
@@ -202,4 +202,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

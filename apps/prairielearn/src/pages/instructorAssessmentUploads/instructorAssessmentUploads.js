@@ -1,5 +1,5 @@
 // @ts-check
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 const debug = require('debug')('prairielearn:instructorAssessment');
@@ -62,4 +62,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

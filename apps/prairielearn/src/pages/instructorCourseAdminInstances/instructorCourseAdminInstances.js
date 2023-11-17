@@ -1,7 +1,7 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import express from 'express';
 import * as fs from 'fs-extra';
-const async = require('async');
+import async from 'async';
 const _ = require('lodash');
 import * as path from 'path';
 import * as sqldb from '@prairielearn/postgres';
@@ -102,4 +102,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

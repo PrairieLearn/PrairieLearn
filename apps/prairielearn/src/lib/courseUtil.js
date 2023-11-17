@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import { exec } from 'child_process';
@@ -52,7 +52,7 @@ export function updateCourseCommitHash(course, callback) {
   });
 }
 
-export const updateCourseCommitHashAsync = promisify(module.exports.updateCourseCommitHash);
+export const updateCourseCommitHashAsync = promisify(updateCourseCommitHash);
 
 /**
  * If the provided course object contains a commit hash, that will be used;
@@ -70,13 +70,11 @@ export function getOrUpdateCourseCommitHash(course, callback) {
   if (course.commit_hash) {
     callback(null, course.commit_hash);
   } else {
-    module.exports.updateCourseCommitHash(course, (err, hash) => {
+    updateCourseCommitHash(course, (err, hash) => {
       if (ERR(err, callback)) return;
       callback(null, hash);
     });
   }
 }
 
-export const getOrUpdateCourseCommitHashAsync = promisify(
-  module.exports.getOrUpdateCourseCommitHash,
-);
+export const getOrUpdateCourseCommitHashAsync = promisify(getOrUpdateCourseCommitHash);

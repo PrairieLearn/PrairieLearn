@@ -392,4 +392,4 @@ router.get(
   }),
 );
 
-module.exports = router;
+export default router;

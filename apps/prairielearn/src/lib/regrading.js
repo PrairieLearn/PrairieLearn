@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import * as async from 'async';
 import path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));

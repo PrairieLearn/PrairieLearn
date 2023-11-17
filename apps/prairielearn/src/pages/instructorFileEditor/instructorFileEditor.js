@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import express from 'express';
 const async = require('async');
 const error = require('@prairielearn/error');
@@ -603,4 +603,4 @@ async function saveAndSync(fileEdit, locals) {
   });
 }
 
-module.exports = router;
+export default router;

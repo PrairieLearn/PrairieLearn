@@ -358,24 +358,21 @@ export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
  */
 export async function leaveGroup(assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
-    const groupId = await module.exports.getGroupId(assessmentId, userId);
+    const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
         "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
-    const groupConfig = await module.exports.getGroupConfig(assessmentId);
+    const groupConfig = await getGroupConfig(assessmentId);
 
     if (groupConfig.has_roles) {
-      const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
+      const groupInfo = await getGroupInfo(groupId, groupConfig);
 
       // Reassign roles if there is more than 1 user
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
-        const groupRoleAssignmentUpdates = module.exports.getGroupRoleReassignmentsAfterLeave(
-          groupInfo,
-          userId,
-        );
+        const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
 
         await sqldb.queryAsync(sql.reassign_group_roles_after_leave, {
           assessment_id: assessmentId,
@@ -429,14 +426,14 @@ export async function getAssessmentPermissions(assessmentId, userId) {
  */
 export async function updateGroupRoles(requestBody, assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
-    const groupId = await module.exports.getGroupId(assessmentId, userId);
+    const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
         "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
 
-    const permissions = await module.exports.getAssessmentPermissions(assessmentId, userId);
+    const permissions = await getAssessmentPermissions(assessmentId, userId);
     if (!permissions.can_assign_roles_at_start) {
       throw error.make(
         403,
@@ -444,8 +441,8 @@ export async function updateGroupRoles(requestBody, assessmentId, userId, authnU
       );
     }
 
-    const groupConfig = await module.exports.getGroupConfig(assessmentId);
-    const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
+    const groupConfig = await getGroupConfig(assessmentId);
+    const groupInfo = await getGroupInfo(groupId, groupConfig);
 
     // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));

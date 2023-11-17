@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 import express from 'express';
 import path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -186,4 +186,5 @@ router.post('/', function (req, res, next) {
     );
   }
 });
-module.exports = router;
+
+export default router;
