@@ -5,19 +5,6 @@ SET
 WHERE
   id = $lti13_instance_id;
 
--- BLOCK get_course_instance
-SELECT
-  *
-FROM
-  lti13_course_instances AS lci
-WHERE
-  lti13_instance_id = $instance_id
-  AND deployment_id = $deployment_id
-  AND context_id = $context_id
-  AND deleted_at IS NULL
-LIMIT
-  1;
-
 -- BLOCK update_lti13_users
 INSERT INTO
   lti13_users (user_id, lti13_instance_id, sub)

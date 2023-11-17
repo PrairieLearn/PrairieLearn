@@ -1,11 +1,6 @@
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler = require('express-async-handler');
-import {
-  Issuer,
-  Strategy,
-  type StrategyVerifyCallbackReq,
-  type IdTokenClaims,
-} from 'openid-client';
+import { Issuer, Strategy, type StrategyVerifyCallbackReq, IdTokenClaims } from 'openid-client';
 import passport = require('passport');
 import { z } from 'zod';
 import { get as _get, some as _some } from 'lodash';
@@ -41,6 +36,7 @@ router.use(
 
     // Cache the passport setup, only do it once
     // Do we even need to cache this?
+    // TODO: exported function to delete cached function on config update
     if (!(lti13_instance.id in lti13_issuers)) {
       console.log(`Initializing ${lti13_instance.id} in passport`);
 
@@ -65,6 +61,8 @@ router.use(
   }),
 );
 
+router.get('/login', launchFlow);
+router.post('/login', launchFlow);
 function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
@@ -94,14 +92,10 @@ function launchFlow(req: Request, res: Response, next: NextFunction) {
   } as passport.AuthenticateOptions)(req, res, next);
 }
 
-router.get('/login', launchFlow);
-router.post('/login', launchFlow);
-
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-    console.log(lti13_instance);
 
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
@@ -138,9 +132,9 @@ router.post(
     }
 
     userInfoSchema.parse(userInfo);
+    //console.log(userInfo);
 
     // AUTHENTICATE
-    //console.log(userInfo);
     await authnLib.loadUser(req, res, userInfo);
 
     // Record the LTI user's subject id
@@ -158,16 +152,11 @@ router.post(
   }),
 );
 
-const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
+const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function(
   req: Request,
   tokenSet,
   done,
 ) {
-  //const validate = async function (req, tokenSet, done) {
-  //console.log("INSIDE FUNCTION");
-  //console.log("tokenSet",tokenSet);
-  //console.log("tokenSet.claims()",tokenSet.claims())
-
   const lti13_claims = tokenSet.claims();
 
   // Validate LTI 1.3
@@ -200,7 +189,7 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   }
   cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
 
-  // Save parameters about the platform here
+  // Save parameters about the platform back to the lti13_instance
   // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
   const params = {
     lti13_instance_id: req.params.lti13_instance_id,
@@ -209,18 +198,19 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   };
   await queryAsync(sql.verify_upsert, params);
 
-  done(null, lti13_claims);
+  return done(null, lti13_claims);
 };
 
 function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
+    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
     const OIDCAuthResponseSchema = z.object({
       state: z.string(),
       id_token: z.string(),
     });
     OIDCAuthResponseSchema.parse(req.body);
 
-    passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, (err, user, extra) => {
+    passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, ((err, user, extra) => {
       if (err) {
         reject(err);
       } else if (!user) {
@@ -230,7 +220,7 @@ function authenticate(req: Request, res: Response): Promise<any> {
       } else {
         resolve(user);
       }
-    })(req, res);
+    }) as passport.AuthenticateCallback)(req, res);
   });
 }
 
