@@ -92,11 +92,15 @@
                   <span class="badge color-green3">Public</span>
                   This question is publicly shared.
                 <% } else { %>
-                  Shared With:
-                  <% sharing_sets_in.forEach(function(sharing_set) { %>
-                    <span class="badge color-gray1"><%= sharing_set.name %></span>
-                  <% }); %>
-                  <% if (authz_data.has_course_permission_edit && !course.example_course) { %>
+                  <% if (sharing_sets_in.length === 0) { %>
+                    Not Shared
+                  <% } else { %>
+                    Shared With:
+                    <% sharing_sets_in.forEach(function(sharing_set) { %>
+                      <span class="badge color-gray1"><%= sharing_set.name %></span>
+                    <% }); %>
+                  <% } %>
+                  <% if (authz_data.has_course_permission_own && !course.example_course) { %>
                     <% if (sharing_sets_other.length > 0) { %>
                     <form name="sharing-set-add" method="POST" class="d-inline">
                       <input type="hidden" name="__action" value="sharing_set_add">
@@ -153,7 +157,7 @@
                               <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 Cancel
                               </button>
-                              <button class="btn btn-outline-primary" type="submit">
+                              <button class="btn btn-primary" type="submit">
                                 Publicly Share "<%= question.qid %>"
                               </button>
                             </form>

@@ -10,11 +10,17 @@ WHERE
 
 -- BLOCK select_owners
 SELECT
-  u.uid,
-  u.name
+  u.*
 FROM
   users AS u
   JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
 WHERE
   cp.course_role = 'Owner'
   AND cp.course_id = $course_id;
+
+-- BLOCK update_course_commit_hash
+UPDATE pl_courses
+SET
+  commit_hash = $commit_hash
+WHERE
+  id = $course_id;

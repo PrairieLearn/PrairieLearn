@@ -125,6 +125,7 @@ export const InstructorSharing = ({
   sharingSets: { name: string; id: string; shared_with: string[] }[];
   resLocals: Record<string, any>;
 }) => {
+  const isCourseOwner = resLocals.authz_data.has_course_permission_own;
   return html`
     <!doctype html>
     <html lang="en">
@@ -148,9 +149,9 @@ export const InstructorSharing = ({
                 <tr>
                   <th>Sharing Name</th>
                   <td data-testid="sharing-name">
-                    ${sharingName !== null
-                      ? sharingName
-                      : html`
+                    ${sharingName !== null ? sharingName : ''}
+                    ${!sharingName && isCourseOwner
+                      ? html`
                           <button
                             type="button"
                             class="btn btn-xs btn-secondary mx-2"
@@ -164,7 +165,8 @@ export const InstructorSharing = ({
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
                           ${chooseSharingNameModal(resLocals)}
-                        `}
+                        `
+                      : ''}
                   </td>
                 </tr>
                 <tr>
@@ -198,24 +200,26 @@ export const InstructorSharing = ({
                 <div class="col-auto">
                   <span class="text-white">Sharing Sets</span>
                 </div>
-                <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm ml-auto"
-                    id="courseSharingSetAdd"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-html="true"
-                    data-placement="auto"
-                    title="Create Sharing Set"
-                    data-content="${addSharingSetPopover(resLocals)}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
-                  >
-                    <i class="fas fa-plus" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Create Sharing Set</span>
-                  </button>
-                </div>
+                ${isCourseOwner
+                  ? html`<div class="col-auto">
+                      <button
+                        type="button"
+                        class="btn btn-light btn-sm ml-auto"
+                        id="courseSharingSetAdd"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Create Sharing Set"
+                        data-content="${addSharingSetPopover(resLocals)}"
+                        data-trigger="manual"
+                        onclick="$(this).popover('show')"
+                      >
+                        <i class="fas fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Create Sharing Set</span>
+                      </button>
+                    </div>`
+                  : ''}
               </div>
             </div>
             <table class="table table-sm table-hover table-striped">
@@ -233,25 +237,29 @@ export const InstructorSharing = ({
                           (course_shared_with) => html`
                             <span class="badge color-gray1"> ${course_shared_with} </span>
                           `,
-                        )}
-                        <div class="btn-group btn-group-sm" role="group">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-dark"
-                            id="addCourseToSS-${sharing_set.id}"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Add Course to Sharing Set"
-                            data-content="${addCourseToSharingSetPopover(resLocals, sharing_set)}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            Add...
-                            <i class="fas fa-plus" aria-hidden="true"></i>
-                          </button>
-                        </div>
+                        )}${isCourseOwner
+                          ? html` <div class="btn-group btn-group-sm" role="group">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-dark"
+                                id="addCourseToSS-${sharing_set.id}"
+                                data-toggle="popover"
+                                data-container="body"
+                                data-html="true"
+                                data-placement="auto"
+                                title="Add Course to Sharing Set"
+                                data-content="${addCourseToSharingSetPopover(
+                                  resLocals,
+                                  sharing_set,
+                                )}"
+                                data-trigger="manual"
+                                onclick="$(this).popover('show')"
+                              >
+                                Add...
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                              </button>
+                            </div>`
+                          : ''}
                       </td>
                     </tr>
                   `,

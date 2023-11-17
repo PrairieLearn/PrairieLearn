@@ -87,8 +87,8 @@ describe('Group based homework assess control on student side', function () {
         var max = result.rows[0]['maximum'];
         assert.equal(min, 3);
         assert.equal(max, 3);
+        callback(null);
       });
-      callback(null);
     });
   });
 
@@ -119,8 +119,8 @@ describe('Group based homework assess control on student side', function () {
         var max = result.rows[0]['maximum'];
         assert.equal(min, 2);
         assert.equal(max, 5);
+        callback(null);
       });
-      callback(null);
     });
   });
 
@@ -137,11 +137,10 @@ describe('Group based homework assess control on student side', function () {
         callback(null);
       });
     });
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       config.authUid = locals.groupCreator.uid;
       config.authName = locals.groupCreator.name;
       config.authUin = '00000001';
-      callback(null);
     });
   });
 
@@ -196,12 +195,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('9. the second user can join the group using code', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -251,12 +249,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('11. the third user can join the group using code', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -304,12 +301,11 @@ describe('Group based homework assess control on student side', function () {
     });
   });
   describe('13. the fourth user can not join the already full group', function () {
-    it('should be able to switch to the ungrouped student', function (callback) {
+    it('should be able to switch to the ungrouped student', function () {
       var student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -344,12 +340,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('14. start assessment as the third user', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -409,12 +404,11 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should be able to switch to 2nd group member', function (callback) {
+    it('should be able to switch to 2nd group member', function () {
       var student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should be able to access the assessment instance 1 as the 2nd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -422,12 +416,11 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should be able to switch to 3rd group member', function (callback) {
+    it('should be able to switch to 3rd group member', function () {
       var student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
-      callback(null);
     });
     it('should be able to access the assessment instance 1 as the 3rd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -489,12 +482,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('18. access control of student who are not in any group', function () {
-    it('should be able to switch to the ungrouped student', function (callback) {
+    it('should be able to switch to the ungrouped student', function () {
       var student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
-      callback(null);
     });
     it('should NOT be able to access the assessment instance 1 as a ungrouped student', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -503,12 +495,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('19. access control of student who are in a different group', function () {
-    it('should be able to switch to the student in the different group', function (callback) {
+    it('should be able to switch to the student in the different group', function () {
       var student = locals.studentUserInDiffGroup;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000005';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
