@@ -1,8 +1,11 @@
 // @ts-check
+import { selectCourseById } from '../../models/course';
+import { selectQuestionById } from '../../models/question';
+
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
@@ -18,6 +21,9 @@ router.get(
         body: req.body,
       });
     }
+    res.locals.course = selectCourseById(req.params.course_id);
+    res.locals.question = selectQuestionById(req.params.question_id);
+
     const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
     const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
 
