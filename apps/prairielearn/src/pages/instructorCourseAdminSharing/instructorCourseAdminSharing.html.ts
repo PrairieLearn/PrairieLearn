@@ -149,9 +149,8 @@ export const InstructorSharing = ({
                 <tr>
                   <th>Sharing Name</th>
                   <td data-testid="sharing-name">
-                    ${sharingName !== null
-                      ? sharingName
-                      : isCourseOwner
+                    ${sharingName !== null ? sharingName : ''}
+                    ${!sharingName && isCourseOwner
                       ? html`
                           <button
                             type="button"
