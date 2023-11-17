@@ -106,4 +106,7 @@ SELECT
 FROM
   jobs AS j
 WHERE
-  j.job_sequence_id = $job_sequence_id;
+  j.job_sequence_id = $job_sequence_id
+ORDER BY
+  j.number_in_sequence,
+  j.id;
