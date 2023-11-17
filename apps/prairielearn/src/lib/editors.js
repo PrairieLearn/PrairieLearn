@@ -7,10 +7,11 @@ import { createServerJob } from './server-jobs';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as syncFromDisk from '../sync/syncFromDisk';
 import {
-  getCommitHashAsync,
-  updateCourseCommitHashAsync,
-  getOrUpdateCourseCommitHashAsync,
-} from '../lib/courseUtil';
+  getLockNameForCoursePath,
+  getCommitHash,
+  updateCourseCommitHash,
+  getOrUpdateCourseCommitHash,
+} from '../lib/course';
 import { config } from './config';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -23,7 +24,6 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
 import { EXAMPLE_COURSE_PATH } from './paths';
 import { escapeRegExp } from '@prairielearn/sanitize';
 import * as sqldb from '@prairielearn/postgres';
-import { getLockNameForCoursePath } from './course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -32,8 +32,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {string} startGitHash
  * @param {import('./server-jobs').ServerJob} job
  */
-export async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await getCommitHashAsync(course.path);
+async function syncCourseFromDisk(course, startGitHash, job) {
+  const endGitHash = await getCommitHash(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
@@ -48,7 +48,7 @@ export async function syncCourseFromDisk(course, startGitHash, job) {
     logChunkChangesToJob(chunkChanges, job);
   }
 
-  await updateCourseCommitHashAsync(course);
+  await updateCourseCommitHash(course);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
@@ -121,7 +121,7 @@ export class Editor {
 
             const lockName = getLockNameForCoursePath(this.course.path);
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await getOrUpdateCourseCommitHashAsync(this.course);
+              const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
               if (config.fileEditorUseGit) {
                 await cleanAndResetRepository(this.course, gitEnv, job);

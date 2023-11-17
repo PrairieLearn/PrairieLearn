@@ -13,10 +13,11 @@ import { createServerJob } from '../../lib/server-jobs';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as syncFromDisk from '../../sync/syncFromDisk';
 import {
-  getOrUpdateCourseCommitHashAsync,
-  getCommitHashAsync,
-  updateCourseCommitHashAsync,
-} from '../../lib/courseUtil';
+  getOrUpdateCourseCommitHash,
+  getCommitHash,
+  updateCourseCommitHash,
+  getLockNameForCoursePath,
+} from '../../lib/course';
 import { config } from '../../lib/config';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 const { default: AnsiUp } = require('ansi_up');
@@ -29,7 +30,6 @@ import { decodePath } from '../../lib/uri-util';
 import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks';
 import { idsEqual } from '../../lib/id';
 import { getPaths } from '../../lib/instructorFiles';
-import { getLockNameForCoursePath } from '../../lib/course';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -480,8 +480,7 @@ async function saveAndSync(fileEdit, locals) {
         },
       },
       async () => {
-        const startGitHash = await getOrUpdateCourseCommitHashAsync(locals.course);
-
+        const startGitHash = await getOrUpdateCourseCommitHash(locals.course);
         if (fileEdit.doPull) {
           await job.exec('git', ['fetch'], {
             cwd: locals.course.path,
@@ -575,7 +574,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await getCommitHashAsync(locals.course.path);
+            const endGitHash = await getCommitHash(locals.course.path);
             const chunkChanges = await updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,
@@ -589,7 +588,7 @@ async function saveAndSync(fileEdit, locals) {
           // Note that we deliberately don't actually write the updated commit hash
           // to the database until after chunks have been updated. This ensures
           // that if the chunks update fails, we'll try again next time.
-          await updateCourseCommitHashAsync(locals.course);
+          await updateCourseCommitHash(locals.course);
 
           if (result.hadJsonErrors) {
             job.fail('One or more JSON files contained errors and were unable to be synced');

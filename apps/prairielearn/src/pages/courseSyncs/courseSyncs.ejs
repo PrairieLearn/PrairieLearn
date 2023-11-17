@@ -172,7 +172,7 @@
                 <td><%= job_sequence.number %></td>
                 <td><%= job_sequence.start_date_formatted %></td>
                 <td><%= job_sequence.description %></td>
-                <td><%= job_sequence.user_uid %></td>
+                <td><%= job_sequence.user_uid ?? '(System)' %></td>
                 <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
                 <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
