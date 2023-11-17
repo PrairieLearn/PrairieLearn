@@ -50,6 +50,51 @@ WHERE
   a.id = $assessment_id
   AND ai.open;
 
+-- BLOCK close_assessment_instance
+WITH
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      open = FALSE,
+      closed_at = CURRENT_TIMESTAMP,
+      duration = assessment_instances_duration (ai.id),
+      modified_at = now(),
+      -- Mark the assessment instance as in need of grading. We'll start
+      -- grading immediately, but in case the PrairieLearn process dies in
+      -- the middle of grading, the `autoFinishExams` cronjob will grade the
+      -- assessment instance at some point in the near future.
+      grading_needed = TRUE
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.id
+  ),
+INSERT INTO
+  assessment_state_logs (open, assessment_instance_id, auth_user_id)
+SELECT
+  FALSE,
+  updated_assessment_instance.id,
+  $authn_user_id
+FROM
+  updated_assessment_instance;
+
+-- BLOCK select_variants_for_assessment_instance_grading
+SELECT DISTINCT
+  ON (iq.id) to_jsonb(v.*) AS variant,
+  to_jsonb(q.*) AS question,
+  to_jsonb(vc.*) AS variant_course
+FROM
+  variants AS v
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN questions AS q ON (q.id = v.question_id)
+  JOIN pl_courses AS vc ON (vc.id = v.course_id)
+WHERE
+  ai.id = $assessment_instance_id
+ORDER BY
+  iq.id,
+  v.date DESC;
+
 -- BLOCK unset_grading_needed
 UPDATE assessment_instances AS ai
 SET
