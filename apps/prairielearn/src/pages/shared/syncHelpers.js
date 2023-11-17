@@ -10,14 +10,14 @@ const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const { makeAwsClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
 const { createServerJob } = require('../../lib/server-jobs');
-const course = require('../../lib/course');
+const { pullAndUpdateCourse } = require('../../lib/course');
 const util = require('util');
 const debug = require('debug')('prairielearn:syncHelpers');
 
 const docker = new Docker();
 
 module.exports.pullAndUpdate = async function (locals) {
-  const { jobSequenceId } = await course.pullAndUpdate({
+  const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
     userId: locals.user.user_id,
     authnUserId: locals.authz_data.authn_user.user_id,

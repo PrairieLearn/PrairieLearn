@@ -97,7 +97,7 @@ export async function getOrUpdateCourseCommitHash(course: {
   return course.commit_hash ?? (await updateCourseCommitHash(course));
 }
 
-export async function pullAndUpdate({
+export async function pullAndUpdateCourse({
   courseId,
   userId,
   authnUserId,

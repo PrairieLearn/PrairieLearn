@@ -70,7 +70,7 @@ const { features, featuresMiddleware } = require('./lib/features');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
-const { pullAndUpdate } = require('./lib/course');
+const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 
 process.on('warning', (e) => console.warn(e));
@@ -2309,7 +2309,7 @@ if (require.main === module && config.startServer) {
       async () => {
         if ('sync-course' in argv) {
           logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
-          const { jobSequenceId, jobPromise } = await pullAndUpdate({
+          const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
             courseId: argv['sync-course'],
             authnUserId: null,
             userId: null,
