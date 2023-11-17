@@ -102,7 +102,7 @@ export class Job {
       exit_signal: signal,
     };
     sqldb.queryZeroOrOneRow(sql.update_job_on_close, params, (err, result) => {
-      delete module.exports.liveJobs[this.id];
+      delete liveJobs[this.id];
 
       // Notify sockets.
       socketServer.io.to('job-' + this.id).emit('update');
@@ -146,7 +146,7 @@ export class Job {
       error_message: errMsg,
     };
     sqldb.queryZeroOrOneRow(sql.update_job_on_error, params, (err) => {
-      delete module.exports.liveJobs[this.id];
+      delete liveJobs[this.id];
 
       // Notify sockets.
       socketServer.io.to('job-' + this.id).emit('update');
@@ -173,12 +173,12 @@ export class Job {
 let heartbeatIntervalId = null;
 
 export function init() {
-  socketServer.io.on('connection', module.exports.connection);
+  socketServer.io.on('connection', connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
   // for this because we want this to run for every host.
   heartbeatIntervalId = setInterval(() => {
-    const jobIds = Object.keys(module.exports.liveJobs);
+    const jobIds = Object.keys(liveJobs);
     if (jobIds.length === 0) return;
 
     sqldb.queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
@@ -189,7 +189,7 @@ export function init() {
 
 export async function stop() {
   // Wait until all jobs have finished.
-  while (Object.keys(module.exports.liveJobs).length > 0) {
+  while (Object.keys(liveJobs).length > 0) {
     await sleep(100);
   }
 
@@ -223,8 +223,8 @@ export function connection(socket) {
 
       let output;
       const ansiUp = new AnsiUp();
-      if (module.exports.liveJobs[msg.job_id]) {
-        output = ansiUp.ansi_to_html(module.exports.liveJobs[msg.job_id].output);
+      if (liveJobs[msg.job_id]) {
+        output = ansiUp.ansi_to_html(liveJobs[msg.job_id].output);
       } else {
         output = ansiUp.ansi_to_html(result.rows[0].output);
       }
@@ -321,7 +321,7 @@ export function createJob(options, callback) {
     var job_id = result.rows[0].id;
 
     var job = new Job(job_id, options);
-    module.exports.liveJobs[job_id] = job;
+    liveJobs[job_id] = job;
     if (job.options.job_sequence_id != null) {
       socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
     }
@@ -330,12 +330,12 @@ export function createJob(options, callback) {
 }
 export async function createJobAsync(options) {
   // we write this explicitly so that typescript knows what's going on
-  const job = await util.promisify(module.exports.createJob)(options);
+  const job = await util.promisify(createJob)(options);
   return job;
 }
 
 export function spawnJob(options, callback) {
-  module.exports.createJob(options, function (err, job) {
+  createJob(options, function (err, job) {
     if (ERR(err, callback)) return;
 
     var spawnOptions = {
@@ -375,7 +375,7 @@ export function spawnJob(options, callback) {
     if (callback) callback(null, job);
   });
 }
-export const spawnJobAsync = util.promisify(module.exports.spawnJob);
+export const spawnJobAsync = util.promisify(spawnJob);
 
 export async function errorAbandonedJobs() {
   const abandonedJobs = await sqldb.queryAsync(sql.select_abandoned_jobs, {
@@ -445,7 +445,7 @@ export function createJobSequence(options, callback) {
 }
 export async function createJobSequenceAsync(options) {
   // we write this explicitly so that typescript knows what's going on
-  const job_sequence_id = await util.promisify(module.exports.createJobSequence)(options);
+  const job_sequence_id = await util.promisify(createJobSequence)(options);
   return job_sequence_id;
 }
 
@@ -470,7 +470,7 @@ export function failJobSequence(job_sequence_id, callback) {
 }
 export async function failJobSequenceAsync(job_sequence_id) {
   // we write this explicitly so that typescript knows what's going on
-  await util.promisify(module.exports.failJobSequence)(job_sequence_id);
+  await util.promisify(failJobSequence)(job_sequence_id);
 }
 
 /**
@@ -504,7 +504,7 @@ export function getJobSequence(job_sequence_id, course_id, callback) {
     callback(null, jobSequence);
   });
 }
-export const getJobSequenceAsync = util.promisify(module.exports.getJobSequence);
+export const getJobSequenceAsync = util.promisify(getJobSequence);
 
 /**
  * Resolves with a job sequence, where each job's output has been turned into
@@ -515,7 +515,7 @@ export const getJobSequenceAsync = util.promisify(module.exports.getJobSequence)
  * @param {(err: Error | null, jobSequence: any) => void} callback
  */
 export function getJobSequenceWithFormattedOutput(job_sequence_id, course_id, callback) {
-  module.exports.getJobSequence(job_sequence_id, course_id, (err, jobSequence) => {
+  getJobSequence(job_sequence_id, course_id, (err, jobSequence) => {
     if (ERR(err, callback)) return;
 
     (jobSequence.jobs ?? []).forEach((job) => {
@@ -530,5 +530,5 @@ export function getJobSequenceWithFormattedOutput(job_sequence_id, course_id, ca
   });
 }
 export const getJobSequenceWithFormattedOutputAsync = util.promisify(
-  module.exports.getJobSequenceWithFormattedOutput,
+  getJobSequenceWithFormattedOutput,
 );
