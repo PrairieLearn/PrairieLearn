@@ -253,9 +253,9 @@ function authenticate(req: Request, res: Response): Promise<any> {
   });
 }
 
-export function removeCachedInstance(instance_id: number|string) {
+export function removeCachedInstance(instance_id: number | string) {
   console.log(`removing instance_id ${instance_id}`);
-  delete lti13_issuers[`lti13_instance_${instance_id}`]
+  delete lti13_issuers[`lti13_instance_${instance_id}`];
 }
 
 export default router;
