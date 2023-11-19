@@ -36,6 +36,16 @@ router.use(
 
     // Cache the passport setup, only do it once
     // Do we even need to cache this?
+    /*
+        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/passport_strategy.js#L21
+
+        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/issuer.js#L33
+        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/client.js#L179
+
+        Constructors seem pretty benign
+
+        What if we stored these in the session?
+    */
     if (!(lti13_instance.id in lti13_issuers)) {
       console.log(`Initializing ${lti13_instance.id} in passport`);
 
@@ -44,6 +54,8 @@ router.use(
         lti13_instance.client_params,
         lti13_instance.keystore,
       );
+      console.log(lti13_issuers[lti13_instance.id]);
+      console.log(client);
       passport.use(
         `lti13_instance_${lti13_instance.id}`,
         new Strategy(
