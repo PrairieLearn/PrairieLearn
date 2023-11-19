@@ -6,7 +6,7 @@ const ERR = require('async-stacktrace');
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
 const serverJobs = require('./server-jobs-legacy');
-const courseUtil = require('./courseUtil');
+const { updateCourseCommitHash } = require('./course');
 const syncFromDisk = require('../sync/syncFromDisk');
 const opsbot = require('./opsbot');
 const chunks = require('./chunks');
@@ -491,7 +491,7 @@ module.exports = {
         job_sequence_id,
         authn_user.user_id,
         async () => {
-          await courseUtil.updateCourseCommitHashAsync(inserted_course);
+          await updateCourseCommitHash(inserted_course);
         },
       );
     };
