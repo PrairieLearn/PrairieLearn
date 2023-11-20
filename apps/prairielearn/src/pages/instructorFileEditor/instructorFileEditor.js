@@ -14,10 +14,11 @@ const { createServerJob } = require('../../lib/server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const {
+  getLockNameForCoursePath,
   getCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} = require('../../lib/course');
+} = require('../../models/course');
 const { config } = require('../../lib/config');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
@@ -30,7 +31,6 @@ const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { getPaths } = require('../../lib/instructorFiles');
-const { getLockNameForCoursePath } = require('../../lib/course');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

@@ -23,7 +23,7 @@ const {
   getCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} = require('./course');
+} = require('../models/course');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
