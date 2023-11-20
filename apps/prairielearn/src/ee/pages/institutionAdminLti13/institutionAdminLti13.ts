@@ -14,6 +14,7 @@ import { Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types';
 import { getCanonicalHost } from '../../../lib/url';
 import { config } from '../../../lib/config';
 import { LTI13InstancePlatforms } from './institutionAdminLti13.types';
+import { removeCachedInstance } from '../../auth/lti13/lti13auth';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -121,6 +122,7 @@ router.post(
         // true to include private keys
         keystore: keystore.toJSON(true),
       });
+      removeCachedInstance(req.params.unsafe_lti13_instance_id);
       flash('success', `Key ${kid} added.`);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_keys') {
@@ -129,6 +131,7 @@ router.post(
         institution_id: req.params.institution_id,
         keystore: null,
       });
+      removeCachedInstance(req.params.unsafe_lti13_instance_id);
       flash('success', `All keys deleted.`);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
@@ -150,6 +153,7 @@ router.post(
           // true to include private keys
           keystore: keystore.toJSON(true),
         });
+        removeCachedInstance(req.params.unsafe_lti13_instance_id);
         flash('success', `Key ${key.kid} deleted.`);
         return res.redirect(req.originalUrl);
       } else {
@@ -178,6 +182,7 @@ router.post(
         client_params,
         custom_fields: req.body.custom_fields,
       });
+      removeCachedInstance(req.params.unsafe_lti13_instance_id);
       flash('success', `Platform updated.`);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
@@ -217,6 +222,7 @@ router.post(
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
+      removeCachedInstance(req.params.unsafe_lti13_instance_id);
       flash('success', `Instance deleted.`);
       return res.redirect(req.originalUrl);
     } else {

@@ -30,7 +30,7 @@ router.use(
     }
 
     //console.log(req.method, req.path);
-    //console.log(req.session);
+    //console.log(JSON.stringify(req.session, null, 3));
     //console.log(req.body);
     //console.log(req.query);
 
@@ -54,8 +54,7 @@ router.use(
         lti13_instance.client_params,
         lti13_instance.keystore,
       );
-      console.log(lti13_issuers[lti13_instance.id]);
-      console.log(client);
+
       passport.use(
         `lti13_instance_${lti13_instance.id}`,
         new Strategy(
@@ -111,7 +110,7 @@ router.post(
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
-    console.log(JSON.stringify(req.session.lti13_claims, null, 2));
+    //console.log(JSON.stringify(req.session.lti13_claims, null, 2));
 
     let uid: string;
     let uin: string | null;
@@ -160,9 +159,6 @@ router.post(
     name = null;
     if (lti13_instance.name_attribute) {
       name = _get(req.session.lti13_claims, lti13_instance.name_attribute);
-      if (!name) {
-        name = uid;
-      }
     }
 
     const userInfo = {
@@ -172,12 +168,11 @@ router.post(
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
     };
-    //console.log(userInfo);
 
     // AUTHENTICATE
     await authnLib.loadUser(req, res, userInfo);
 
-    // Record the LTI user's subject id
+    // Record the LTI 1.3 user's subject id
     await queryAsync(sql.update_lti13_users, {
       user_id: res.locals.authn_user.user_id,
       lti13_instance_id: lti13_instance.id,
@@ -267,7 +262,7 @@ function authenticate(req: Request, res: Response): Promise<any> {
 
 export function removeCachedInstance(instance_id: number | string) {
   console.log(`removing instance_id ${instance_id}`);
-  delete lti13_issuers[`lti13_instance_${instance_id}`];
+  delete lti13_issuers[instance_id];
 }
 
 export default router;
