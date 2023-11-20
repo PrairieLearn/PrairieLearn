@@ -248,7 +248,6 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
 };
 
 async function authenticate(req: Request, res: Response): Promise<any> {
-
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
     // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
