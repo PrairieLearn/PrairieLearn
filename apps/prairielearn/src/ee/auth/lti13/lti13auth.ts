@@ -11,13 +11,12 @@ import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 import { getInstitutionAuthenticationProviders } from '../../lib/institution';
+import { Lti13Instance } from '../../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-const lti13_issuers = {};
-
-// Middleware to cache passport setup
+// Middleware to check access, setup passport for later functions
 router.use(
   asyncHandler(async (req, res, next) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
@@ -34,39 +33,22 @@ router.use(
     //console.log(req.body);
     //console.log(req.query);
 
-    // Cache the passport setup, only do it once
-    // Do we even need to cache this?
-    /*
-        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/passport_strategy.js#L21
+    res.locals.lti13_passport = new passport.Passport();
+    const issuer = new Issuer(lti13_instance.issuer_params);
+    const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/issuer.js#L33
-        https://github.com/panva/node-openid-client/blob/a84d022f195f82ca1c97f8f6b2567ebcef8738c3/lib/client.js#L179
+    res.locals.lti13_passport.use(
+      'lti13',
+      new Strategy(
+        {
+          client: client,
+          passReqToCallback: true,
+        },
+        // Passport verify function
+        validate,
+      ),
+    );
 
-        Constructors seem pretty benign
-
-        What if we stored these in the session?
-    */
-    if (!(lti13_instance.id in lti13_issuers)) {
-      console.log(`Initializing ${lti13_instance.id} in passport`);
-
-      lti13_issuers[lti13_instance.id] = new Issuer(lti13_instance.issuer_params);
-      const client = new lti13_issuers[lti13_instance.id].Client(
-        lti13_instance.client_params,
-        lti13_instance.keystore,
-      );
-
-      passport.use(
-        `lti13_instance_${lti13_instance.id}`,
-        new Strategy(
-          {
-            client: client,
-            passReqToCallback: true,
-          },
-          // Passport verify function
-          validate,
-        ),
-      );
-    }
     next();
   }),
 );
@@ -90,7 +72,7 @@ function launchFlow(req: Request, res: Response, next: NextFunction) {
     return next(err);
   }
 
-  passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, {
+  res.locals.lti13_passport.authenticate('lti13', {
     response_type: 'id_token',
     lti_message_hint: parameters.lti_message_hint,
     login_hint: parameters.login_hint,
@@ -246,7 +228,7 @@ function authenticate(req: Request, res: Response): Promise<any> {
     });
     OIDCAuthResponseSchema.parse(req.body);
 
-    passport.authenticate(`lti13_instance_${req.params.lti13_instance_id}`, ((err, user, extra) => {
+    res.locals.lti13_passport.authenticate(`lti13`, ((err, user, extra) => {
       if (err) {
         reject(err);
       } else if (!user) {
@@ -258,11 +240,6 @@ function authenticate(req: Request, res: Response): Promise<any> {
       }
     }) as passport.AuthenticateCallback)(req, res);
   });
-}
-
-export function removeCachedInstance(instance_id: number | string) {
-  console.log(`removing instance_id ${instance_id}`);
-  delete lti13_issuers[instance_id];
 }
 
 export default router;
