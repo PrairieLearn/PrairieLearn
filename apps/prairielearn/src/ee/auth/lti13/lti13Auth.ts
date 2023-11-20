@@ -36,6 +36,7 @@ router.use(
     //console.log(req.body);
     //console.log(req.query);
 
+    /*
     res.locals.lti13_passport = new passport.Passport();
     const issuer = new Issuer(lti13_instance.issuer_params);
     const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
@@ -51,14 +52,37 @@ router.use(
         validate,
       ),
     );
+    */
 
     next();
   }),
 );
 
+async function setupPassport(instance_id: string) {
+  const lti13_instance = await selectLti13Instance(instance_id);
+
+  const LP = new passport.Passport();
+  const issuer = new Issuer(lti13_instance.issuer_params);
+  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+
+  LP.use(
+    'lti13',
+    new Strategy(
+      {
+        client: client,
+        passReqToCallback: true,
+      },
+      // Passport verify function
+      validate,
+    ),
+  );
+
+  return LP;
+}
+
 router.get('/login', launchFlow);
 router.post('/login', launchFlow);
-function launchFlow(req: Request, res: Response, next: NextFunction) {
+async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
   const parameters = { ...req.body, ...req.query };
@@ -75,7 +99,8 @@ function launchFlow(req: Request, res: Response, next: NextFunction) {
     return next(err);
   }
 
-  res.locals.lti13_passport.authenticate('lti13', {
+  const myPassport = await setupPassport(req.params.lti13_instance_id);
+  myPassport.authenticate('lti13', {
     response_type: 'id_token',
     lti_message_hint: parameters.lti_message_hint,
     login_hint: parameters.login_hint,
@@ -222,7 +247,9 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   return done(null, lti13_claims);
 };
 
-function authenticate(req: Request, res: Response): Promise<any> {
+async function authenticate(req: Request, res: Response): Promise<any> {
+
+  const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
     // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
     const OIDCAuthResponseSchema = z.object({
@@ -231,7 +258,7 @@ function authenticate(req: Request, res: Response): Promise<any> {
     });
     OIDCAuthResponseSchema.parse(req.body);
 
-    res.locals.lti13_passport.authenticate(`lti13`, ((err, user, extra) => {
+    myPassport.authenticate(`lti13`, ((err, user, extra) => {
       if (err) {
         reject(err);
       } else if (!user) {
