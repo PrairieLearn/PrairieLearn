@@ -3,7 +3,7 @@ import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy, type StrategyVerifyCallbackReq, IdTokenClaims } from 'openid-client';
 import passport = require('passport');
 import { z } from 'zod';
-import { get as _get, some as _some } from 'lodash';
+import { get as _get } from 'lodash';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
@@ -11,7 +11,6 @@ import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 import { getInstitutionAuthenticationProviders } from '../../lib/institution';
-import { Lti13Instance } from '../../../lib/db-types';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -24,7 +23,11 @@ router.use(
       lti13_instance.institution_id,
     );
 
-    if (!_some(instAuthProviders, ['name', 'LTI 1.3'])) {
+    if (
+      !instAuthProviders.some((a) => {
+        return a.name === 'LTI 1.3';
+      })
+    ) {
       throw error.make(404, 'Institution does not support LTI 1.3 authentication');
     }
 
