@@ -9,7 +9,7 @@ import * as chunks from './chunks';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
 import { IdSchema, User, UserSchema } from './db-types';
 import {
-  getCommitHash,
+  getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
   selectCourseById,
@@ -151,7 +151,7 @@ export async function pullAndUpdateCourse({
         // after we've synced the changes to the database and generated chunks. This
         // ensures that if the sync fails, we'll sync from the same starting commit
         // hash next time.
-        const endGitHash = await getCommitHash(path);
+        const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(path, courseId, job);

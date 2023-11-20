@@ -20,7 +20,7 @@ const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
 const {
   getLockNameForCoursePath,
-  getCommitHash,
+  getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } = require('../models/course');
@@ -33,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('./server-jobs').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await getCommitHash(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 

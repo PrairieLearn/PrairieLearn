@@ -15,7 +15,7 @@ const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const {
   getLockNameForCoursePath,
-  getCommitHash,
+  getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } = require('../../models/course');
@@ -578,7 +578,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await getCommitHash(locals.course.path);
+            const endGitHash = await getCourseCommitHash(locals.course.path);
             const chunkChanges = await chunks.updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,

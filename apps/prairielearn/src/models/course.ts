@@ -20,7 +20,7 @@ export function getLockNameForCoursePath(coursePath: string): string {
   return `coursedir:${coursePath}`;
 }
 
-export async function getCommitHash(coursePath: string): Promise<string> {
+export async function getCourseCommitHash(coursePath: string): Promise<string> {
   try {
     const { stdout } = await promisify(exec)('git rev-parse HEAD', {
       cwd: coursePath,
@@ -43,7 +43,7 @@ export async function updateCourseCommitHash(course: {
   id: string;
   path: string;
 }): Promise<string> {
-  const hash = await getCommitHash(course.path);
+  const hash = await getCourseCommitHash(course.path);
   await queryAsync(sql.update_course_commit_hash, {
     course_id: course.id,
     commit_hash: hash,
