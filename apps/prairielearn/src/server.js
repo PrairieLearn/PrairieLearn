@@ -178,6 +178,15 @@ module.exports.initExpress = function () {
     next();
   });
 
+  app.get('/pl/nathan-load-balancer-testing', (req, res) => {
+    res.cookie('nathan_load_balancer_testing', 'abc123', {
+      httpOnly: true,
+      secure: 'auto',
+      domain: '.staging.prairielearn.com',
+    });
+    res.send('Set cookies!');
+  });
+
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
