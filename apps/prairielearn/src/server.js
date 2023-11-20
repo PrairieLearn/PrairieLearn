@@ -184,7 +184,7 @@ module.exports.initExpress = function () {
       secure: 'auto',
       domain: '.staging.prairielearn.com',
     });
-    res.send('Set cookies!');
+    res.json({ cookies: req.cookies });
   });
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
