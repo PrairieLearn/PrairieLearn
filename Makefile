@@ -52,6 +52,9 @@ test-python:
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
+check-dependencies:
+	@yarn depcruise apps/*/src apps/*/assets
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
