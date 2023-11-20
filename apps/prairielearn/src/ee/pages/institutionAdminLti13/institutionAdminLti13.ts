@@ -39,10 +39,6 @@ router.get(
       },
       Lti13InstanceSchema,
     );
-    function passportSetup(lti13_instance: Lti13Instance) {
-
-      return localPassport;
-    }
 
     const platform_defaults_hardcoded: LTI13InstancePlatforms = [
       {
