@@ -4,12 +4,12 @@
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-var requirejs = require('requirejs');
-var path = require('node:path');
+import requirejs from 'requirejs';
+import * as path from 'node:path';
 
-const { logger } = require('@prairielearn/logger');
+import { logger } from '@prairielearn/logger';
 
-const { APP_ROOT_PATH } = require('./paths');
+import { APP_ROOT_PATH } from './paths';
 
 requirejs.config({
   nodeRequire: require,

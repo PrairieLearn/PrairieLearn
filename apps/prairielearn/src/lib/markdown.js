@@ -1,12 +1,12 @@
-const unified = require('unified');
-const markdown = require('remark-parse');
-const raw = require('rehype-raw');
-const gfm = require('remark-gfm');
-const remark2rehype = require('remark-rehype');
-const math = require('remark-math');
-const stringify = require('rehype-stringify');
-const sanitize = require('rehype-sanitize');
-const visit = require('unist-util-visit');
+import unified from 'unified';
+import markdown from 'remark-parse';
+import raw from 'rehype-raw';
+import gfm from 'remark-gfm';
+import remark2rehype from 'remark-rehype';
+import math from 'remark-math';
+import stringify from 'rehype-stringify';
+import sanitize from 'rehype-sanitize';
+import visit from 'unist-util-visit';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -127,7 +127,7 @@ const questionProcessor = unified()
   .use(raw)
   .use(stringify);
 
-module.exports.processQuestion = function (html) {
+export function processQuestion(html) {
   return html.replace(regex, (_match, originalContents) => {
     // We'll handle escapes before we pass off the string to our Markdown pipeline
     const decodedContents = originalContents.replace(escapeRegex, (match, prefix, hashes) => {
@@ -136,16 +136,16 @@ module.exports.processQuestion = function (html) {
     const res = questionProcessor.processSync(decodedContents);
     return res.contents;
   });
-};
+}
 
-module.exports.processContent = async function (original) {
+export async function processContent(original) {
   return (await defaultProcessor.process(original)).contents;
-};
+}
 
 /**
  * This function is similar to `processContent`, except that if the content fits a single line
  * (paragrah) it will return the content without a `p` tag.
  */
-module.exports.processContentInline = async function (original) {
+export async function processContentInline(original) {
   return (await inlineProcessor.process(original)).contents;
-};
+}

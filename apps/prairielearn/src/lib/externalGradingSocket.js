@@ -1,27 +1,26 @@
-const ERR = require('async-stacktrace');
+import ERR from 'async-stacktrace';
 const _ = require('lodash');
+import { checkSignedToken } from '@prairielearn/signed-token';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
-const { config } = require('./config');
-const { checkSignedToken } = require('@prairielearn/signed-token');
-const question = require('./question');
-const { logger } = require('@prairielearn/logger');
+import { config } from './config';
+import * as question from './question';
 const socketServer = require('./socket-server');
-const sqldb = require('@prairielearn/postgres');
-const Sentry = require('@prairielearn/sentry');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports = {};
-
 // This module MUST be initialized after socket-server
-module.exports.init = function (callback) {
-  module.exports._namespace = socketServer.io.of('/external-grading');
-  module.exports._namespace.on('connection', module.exports.connection);
+export function init(callback) {
+  console.log(socketServer.io);
+  const _namespace = socketServer.io.of('/external-grading');
+  _namespace.on('connection', module.exports.connection);
 
   callback(null);
-};
+}
 
-module.exports.connection = function (socket) {
+export function connection(socket) {
   socket.on('init', (msg, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
       return callback(null);
@@ -32,7 +31,7 @@ module.exports.connection = function (socket) {
 
     socket.join(`variant-${msg.variant_id}`);
 
-    module.exports.getVariantSubmissionsStatus(msg.variant_id, (err, submissions) => {
+    getVariantSubmissionsStatus(msg.variant_id, (err, submissions) => {
       if (
         ERR(err, (err) => {
           logger.error('Error getting variant submissions status', err);
@@ -64,7 +63,7 @@ module.exports.connection = function (socket) {
       return callback(null);
     }
 
-    module.exports.renderPanelsForSubmission(
+    renderPanelsForSubmission(
       msg.submission_id,
       msg.question_id,
       msg.instance_question_id,
@@ -94,9 +93,9 @@ module.exports.connection = function (socket) {
       },
     );
   });
-};
+}
 
-module.exports.getVariantSubmissionsStatus = function (variant_id, callback) {
+export function getVariantSubmissionsStatus(variant_id, callback) {
   const params = {
     variant_id,
   };
@@ -104,9 +103,9 @@ module.exports.getVariantSubmissionsStatus = function (variant_id, callback) {
     if (ERR(err, callback)) return;
     callback(null, result.rows);
   });
-};
+}
 
-module.exports.gradingJobStatusUpdated = function (grading_job_id) {
+export function gradingJobStatusUpdated(grading_job_id) {
   const params = { grading_job_id };
   sqldb.queryOneRow(sql.select_submission_for_grading_job, params, (err, result) => {
     if (
@@ -121,13 +120,12 @@ module.exports.gradingJobStatusUpdated = function (grading_job_id) {
       variant_id: result.rows[0].variant_id,
       submissions: result.rows,
     };
-    module.exports._namespace
-      .to(`variant-${result.rows[0].variant_id}`)
-      .emit('change:status', eventData);
+    const _namespace = socketServer.io.of('/external-grading');
+    _namespace.to(`variant-${result.rows[0].variant_id}`).emit('change:status', eventData);
   });
-};
+}
 
-module.exports.renderPanelsForSubmission = function (
+export function renderPanelsForSubmission(
   submission_id,
   question_id,
   instance_question_id,
@@ -153,7 +151,7 @@ module.exports.renderPanelsForSubmission = function (
       callback(null, results);
     },
   );
-};
+}
 
 function ensureProps(data, props) {
   for (const prop of props) {

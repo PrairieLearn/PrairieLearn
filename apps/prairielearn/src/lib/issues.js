@@ -1,6 +1,6 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
-const { recursivelyTruncateStrings } = require('@prairielearn/sanitize');
+import * as sqldb from '@prairielearn/postgres';
+import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
 /**
  * @typedef {Object} IssueData
@@ -21,7 +21,7 @@ const { recursivelyTruncateStrings } = require('@prairielearn/sanitize');
  *
  * @param {IssueData} data
  */
-module.exports.insertIssue = async ({
+export async function insertIssue({
   variantId,
   studentMessage,
   instructorMessage,
@@ -30,7 +30,7 @@ module.exports.insertIssue = async ({
   courseData,
   systemData,
   authnUserId,
-}) => {
+}) {
   // Truncate all strings in the data objects to 1000 characters. This ensures
   // that we don't store too much unnecessary data. This data is here for
   // convenience, but it's not the source of truth: pretty much all of it
@@ -51,7 +51,7 @@ module.exports.insertIssue = async ({
     truncatedSystemData,
     authnUserId,
   ]);
-};
+}
 
 /**
  * Inserts an issue for a thrown error.
@@ -60,12 +60,12 @@ module.exports.insertIssue = async ({
  * @param {IssueForErrorData} data
  * @returns {Promise<void>}
  */
-module.exports.insertIssueForError = async (err, data) => {
-  return module.exports.insertIssue({
+export async function insertIssueForError(err, data) {
+  return insertIssue({
     ...data,
     manuallyReported: false,
     courseCaused: true,
     instructorMessage: err.toString(),
     systemData: { stack: err.stack, courseErrData: err.data },
   });
-};
+}

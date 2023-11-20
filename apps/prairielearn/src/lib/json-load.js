@@ -1,9 +1,9 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const util = require('util');
-const fs = require('fs');
-const jju = require('jju');
-const Ajv = require('ajv').default;
+import * as util from 'util';
+import * as fs from 'fs';
+import * as jju from 'jju';
+import Ajv from 'ajv';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv();
@@ -14,7 +14,7 @@ const ajv = new Ajv();
  * @param {string} jsonFilename The name of the file to read
  * @param {(err: Error | null, data?: any) => void} callback Invoked with the resolved JSON data or an error
  */
-module.exports.readJSON = function (jsonFilename, callback) {
+export function readJSON(jsonFilename, callback) {
   fs.readFile(jsonFilename, { encoding: 'utf8' }, function (err, data) {
     if (ERR(err, callback)) return;
     let json;
@@ -31,8 +31,8 @@ module.exports.readJSON = function (jsonFilename, callback) {
     }
     callback(null, json);
   });
-};
-module.exports.readJSONAsync = util.promisify(module.exports.readJSON);
+}
+export const readJSONAsync = util.promisify(module.exports.readJSON);
 
 /**
  * Validates an object with the specified JSON schema.
@@ -41,7 +41,7 @@ module.exports.readJSONAsync = util.promisify(module.exports.readJSON);
  * @param {object} schema The schema used to validate the object
  * @param {(err: Error | null, json?: any) => void} callback Invoked with the original JSON data or an error
  */
-module.exports.validateJSON = function (json, schema, callback) {
+export function validateJSON(json, schema, callback) {
   let valid;
   let validate;
   try {
@@ -62,7 +62,7 @@ module.exports.validateJSON = function (json, schema, callback) {
   } else {
     callback(null, json);
   }
-};
+}
 
 /**
  * Validates an object with the specified JSON schema.
@@ -71,7 +71,7 @@ module.exports.validateJSON = function (json, schema, callback) {
  * @param {object} schema The schema used to validate the object
  * @returns {Promise<any>} The original JSON, if valid
  */
-module.exports.validateJSONAsync = util.promisify(module.exports.validateJSON);
+export const validateJSONAsync = util.promisify(module.exports.validateJSON);
 
 /**
  * Reads and validates some type of `info.json` file.
@@ -80,8 +80,8 @@ module.exports.validateJSONAsync = util.promisify(module.exports.validateJSON);
  * @param {Object} schema The name of the schema file
  * @param {(err: Error | null, json?: any) => void} callback Invoked with the validated JSON or an error
  */
-module.exports.readInfoJSON = function (jsonFilename, schema, callback) {
-  module.exports.readJSON(jsonFilename, function (err, json) {
+export function readInfoJSON(jsonFilename, schema, callback) {
+  readJSON(jsonFilename, function (err, json) {
     if (err) {
       callback(err);
       return;
@@ -103,5 +103,5 @@ module.exports.readInfoJSON = function (jsonFilename, schema, callback) {
       return;
     }
   });
-};
-module.exports.readInfoJSONAsync = util.promisify(module.exports.readInfoJSON);
+}
+export const readInfoJSONAsync = util.promisify(module.exports.readInfoJSON);
