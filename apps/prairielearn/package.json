@@ -8,8 +8,8 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "mocha --parallel src/**/*.test.{js,ts}",
-    "test:dist": "mocha --parallel dist/**/*.test.js"
+    "test": "mocha --parallel -b src/**/*.test.{js,ts}",
+    "test:dist": "mocha -b dist/**/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.438.0",

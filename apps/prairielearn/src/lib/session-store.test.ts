@@ -11,7 +11,7 @@ describe('PostgresSessionStore', () => {
   before(helperDb.before);
   after(helperDb.after);
 
-  it('creates, updates, and destroys a session', async () => {
+  it('creates, updates, and destroys: a session', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
       const store = new PostgresSessionStore();
       let expiresAt = new Date(Date.now() + 10_000);
