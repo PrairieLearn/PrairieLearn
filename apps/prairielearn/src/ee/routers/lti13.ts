@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
-import lti13Auth from '../auth/lti13/lti13auth';
+import lti13Auth from '../auth/lti13/lti13Auth';
 import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
 import asyncHandler = require('express-async-handler');
 import { features } from '../../lib/features';
