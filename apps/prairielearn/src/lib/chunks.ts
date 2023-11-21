@@ -19,7 +19,7 @@ import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
 import { contains } from '@prairielearn/path-utils';
-import { getLockNameForCoursePath } from './course';
+import { getLockNameForCoursePath } from '../models/course';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

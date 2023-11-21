@@ -11,12 +11,12 @@ import { logger } from '@prairielearn/logger';
 
 import { APP_ROOT_PATH } from './paths';
 
-requirejs.config({
+export const config = requirejs.config({
   nodeRequire: require,
   baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 
-requirejs.onError = function (err) {
+export const onError = (requirejs.onError = function (err) {
   var data = {
     errorMsg: err.toString(),
     stack: err.stack,
@@ -27,6 +27,4 @@ requirejs.onError = function (err) {
     }
   }
   logger.error('requirejs load error', data);
-};
-
-module.exports = requirejs;
+});

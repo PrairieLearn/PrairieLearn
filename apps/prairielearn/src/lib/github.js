@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 const { v4: uuidv4 } = require('uuid');
 const _ = require('lodash');
-import ERR from 'async-stacktrace';
+const ERR = require('async-stacktrace');
 
 import { config } from './config';
 import { logger } from '@prairielearn/logger';

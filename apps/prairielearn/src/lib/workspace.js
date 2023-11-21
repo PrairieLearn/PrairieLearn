@@ -1,26 +1,26 @@
 // @ts-check
-import fetch from 'node-fetch';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as fsPromises from 'fs/promises';
-import * as fse from 'fs-extra';
-import * as async from 'async';
-import * as util from 'util';
+const fetch = require('node-fetch').default;
+const path = require('path');
+const fs = require('fs');
+const fsPromises = require('fs').promises;
+const fse = require('fs-extra');
+const async = require('async');
+const util = require('util');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import * as archiver from 'archiver';
+const archiver = require('archiver');
 const klaw = require('klaw');
 const { v4: uuidv4 } = require('uuid');
-import * as tmp from 'tmp-promise';
-import mustache from 'mustache';
-import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { contains } from '@prairielearn/path-utils';
+const tmp = require('tmp-promise');
+const mustache = require('mustache');
+const workspaceUtils = require('@prairielearn/workspace-utils');
+const { contains } = require('@prairielearn/path-utils');
 
-import { config } from './config';
-import { logger } from '@prairielearn/logger';
-import { io } from './socket-server';
-import { getRuntimeDirectoryForCourse, ensureChunksForCourseAsync } from './chunks';
-import { assignWorkspaceToHost } from './workspaceHost';
-import { insertIssue } from './issues';
+const { config } = require('./config');
+const { logger } = require('@prairielearn/logger');
+const socketServer = require('./socket-server');
+const chunks = require('./chunks');
+const workspaceHostUtils = require('./workspaceHost');
+const issues = require('./issues');
 
 const sqldb = require('@prairielearn/postgres');
 const ERR = require('async-stacktrace');
@@ -56,8 +56,9 @@ module.exports = {
   SubmissionFormatError,
 
   async init() {
-    workspaceUtils.init(io);
-    io.of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+    workspaceUtils.init(socketServer.io);
+    socketServer.io
+      .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
       .use((socket, next) => {
         // TODO: these checks are temporarily disabled until we are reasonably
         // sure that almost all clients are sending auth information.
@@ -339,8 +340,8 @@ module.exports = {
     const { workspace, variant, question, course } = (
       await sqldb.queryOneRowAsync(sql.select_workspace_data, { workspace_id })
     ).rows[0];
-    const course_path = getRuntimeDirectoryForCourse(course);
-    await ensureChunksForCourseAsync(course.id, {
+    const course_path = chunks.getRuntimeDirectoryForCourse(course);
+    await chunks.ensureChunksForCourseAsync(course.id, {
       type: 'question',
       questionId: question.id,
     });
@@ -537,7 +538,7 @@ module.exports = {
 
     if (fileGenerationErrors.length > 0) {
       const output = fileGenerationErrors.map((error) => `${error.file}: ${error.msg}`).join('\n');
-      insertIssue({
+      issues.insertIssue({
         variantId: variant.id,
         studentMessage: 'Error initializing workspace files',
         instructorMessage: 'Error initializing workspace files',
@@ -569,7 +570,7 @@ module.exports = {
   async assignHost(workspace_id) {
     if (!config.workspaceEnable) return;
 
-    const workspaceHostId = await assignWorkspaceToHost(
+    const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
       workspace_id,
       config.workspaceLoadHostCapacity,
     );
