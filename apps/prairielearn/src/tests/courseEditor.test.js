@@ -475,10 +475,16 @@ function createCourseFiles(callback) {
           cwd: '.',
           env: process.env,
         };
-        exec(`git init --bare ${courseOriginDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        // Ensure that the default branch is master, regardless of how git
+        // is configured on the host machine.
+        exec(
+          `git -c "init.defaultBranch=master" init --bare ${courseOriginDir}`,
+          execOptions,
+          (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+          },
+        );
       },
       (callback) => {
         const execOptions = {
