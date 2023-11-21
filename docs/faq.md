@@ -16,7 +16,7 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
 
 ```json
 "allowAccess": [

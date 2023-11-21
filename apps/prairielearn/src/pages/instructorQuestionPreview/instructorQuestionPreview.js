@@ -15,10 +15,10 @@ const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router();
 
-async function processIssue(req, res, callback) {
+async function processIssue(req, res) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    return callback(error.make(400, 'A description of the issue must be provided'));
+    throw error.make(400, 'A description of the issue must be provided');
   }
 
   const variantId = req.body.__variant_id;

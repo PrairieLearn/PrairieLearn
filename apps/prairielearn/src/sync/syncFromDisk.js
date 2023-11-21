@@ -19,7 +19,7 @@ const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
 const { chalk, chalkDim } = require('../lib/chalk');
-const { getLockNameForCoursePath } = require('../lib/course');
+const { getLockNameForCoursePath } = require('../models/course');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 

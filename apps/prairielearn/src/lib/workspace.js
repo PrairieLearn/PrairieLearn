@@ -35,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 /**
  * @typedef {Object} BufferWorkspaceFile
  * @property {string} name
- * @property {Buffer} buffer
+ * @property {Buffer | string} buffer
  */
 
 /**

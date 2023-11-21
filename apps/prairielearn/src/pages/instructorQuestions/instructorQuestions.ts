@@ -1,4 +1,4 @@
-import ERR from 'async-stacktrace';
+import ERR = require('async-stacktrace');
 import { Router } from 'express';
 import error = require('@prairielearn/error');
 import { logger } from '@prairielearn/logger';
