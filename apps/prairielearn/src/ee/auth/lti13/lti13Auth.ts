@@ -1,12 +1,12 @@
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler = require('express-async-handler');
 import { Issuer, Strategy, type StrategyVerifyCallbackReq, IdTokenClaims } from 'openid-client';
-import passport = require('passport');
+import * as passport from 'passport';
 import { z } from 'zod';
 import { get as _get } from 'lodash';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
