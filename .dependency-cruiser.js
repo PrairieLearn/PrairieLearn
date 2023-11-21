@@ -5,8 +5,12 @@ module.exports = {
       name: 'no-circular',
       severity: 'warn',
       comment: 'Circular dependencies.',
-      from: {},
-      to: { circular: true },
+      from: {
+        pathNot: [
+          '^apps/grader-host/src/lib/aws.ts$', // Has a circular dependency with config.ts that is properly handled
+        ],
+      },
+      to: { circular: true, pathNot: ['^apps/grader-host/src/lib/aws.ts$'] },
     },
     {
       name: 'no-orphans',
