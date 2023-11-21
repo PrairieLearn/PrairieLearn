@@ -1,5 +1,4 @@
 import { FeatureManager } from './manager';
-import { featuresMiddleware } from './middleware';
 
 const featureNames = [
   'manual-grading-rubrics',
@@ -15,4 +14,4 @@ const features = new FeatureManager(featureNames);
 
 export type FeatureName = (typeof featureNames)[number];
 
-export { features, featuresMiddleware };
+export { features };
