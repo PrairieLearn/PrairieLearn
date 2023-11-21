@@ -105,7 +105,7 @@ function enterpriseOnlyMiddleware(load) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {import('express').Application} The express "app" object that was created.
+ * @return {import('express').Express} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();

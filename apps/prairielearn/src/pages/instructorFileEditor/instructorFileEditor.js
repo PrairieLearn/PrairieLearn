@@ -14,10 +14,10 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as syncFromDisk from '../../sync/syncFromDisk';
 import {
   getOrUpdateCourseCommitHash,
-  getCommitHash,
+  getCourseCommitHash,
   updateCourseCommitHash,
   getLockNameForCoursePath,
-} from '../../lib/course';
+} from '../../models/course';
 import { config } from '../../lib/config';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
 const { default: AnsiUp } = require('ansi_up');
@@ -574,7 +574,7 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await getCommitHash(locals.course.path);
+            const endGitHash = await getCourseCommitHash(locals.course.path);
             const chunkChanges = await updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,

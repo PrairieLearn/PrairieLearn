@@ -308,7 +308,7 @@ router.get(
         '',
       );
       const prefix = `${dirname}/`;
-      archive.append(null, { name: prefix });
+      archive.append('', { name: prefix });
       archive.pipe(res);
 
       for await (const rows of cursor.iterate(100)) {
@@ -344,7 +344,7 @@ router.get(
         '',
       );
       const prefix = `${dirname}/`;
-      archive.append(null, { name: prefix });
+      archive.append('', { name: prefix });
       archive.pipe(res);
 
       for await (const rows of cursor.iterate(100)) {

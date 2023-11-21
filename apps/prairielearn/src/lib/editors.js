@@ -8,10 +8,10 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as syncFromDisk from '../sync/syncFromDisk';
 import {
   getLockNameForCoursePath,
-  getCommitHash,
+  getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} from '../lib/course';
+} from '../models/course';
 import { config } from './config';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -33,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('./server-jobs').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await getCommitHash(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
