@@ -3,7 +3,7 @@ module.exports = {
   forbidden: [
     {
       name: 'no-circular',
-      severity: 'warn',
+      severity: 'error',
       comment: 'Circular dependencies.',
       from: {},
       to: { circular: true },
