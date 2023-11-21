@@ -66,10 +66,13 @@ const lifecycleHooks = require('./lib/lifecycle-hooks');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { features, featuresMiddleware } = require('./lib/features');
+const { features } = require('./lib/features');
+const { featuresMiddleware } = require('./lib/features/middleware');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
+const { pullAndUpdateCourse } = require('./lib/course');
+const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -87,6 +90,7 @@ if ('h' in argv || 'help' in argv) {
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
+    --sync-course <course_id>           Synchronize a course and exit
 `;
 
   console.log(msg);
@@ -102,7 +106,7 @@ function enterpriseOnlyMiddleware(load) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {import('express').Application} The express "app" object that was created.
+ * @return {import('express').Express} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
@@ -2302,6 +2306,23 @@ if (require.main === module && config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
+      },
+      async () => {
+        if ('sync-course' in argv) {
+          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+          const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
+            courseId: argv['sync-course'],
+            authnUserId: null,
+            userId: null,
+          });
+          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+          logger.info(`Waiting for job to finish...`);
+          await jobPromise;
+          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
+          });
+          process.exit(0);
+        }
       },
       function (callback) {
         if (!config.initNewsItems) return callback(null);
