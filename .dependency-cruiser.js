@@ -72,9 +72,14 @@ module.exports = {
       comment: 'Depends on a devDependency.',
       from: {
         path: '(src)',
-        pathNot: ['.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$', 'src/tests/'],
+        pathNot: [
+          '.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$',
+          'src/tests/',
+          '.d.ts$',
+          'test-utils.ts$',
+        ],
       },
-      to: { dependencyTypes: ['npm-dev'] },
+      to: { dependencyTypes: ['npm-dev'], dependencyTypesNot: ['type-only'] },
     },
   ],
   options: {
