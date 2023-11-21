@@ -14,7 +14,7 @@ const Sentry = require('@prairielearn/sentry');
 const { makeS3ClientConfig, makeAwsClientConfig } = require('./aws');
 const { config } = require('./config');
 const externalGradingSocket = require('./externalGradingSocket');
-const assessment = require('./assessment');
+const { processGradingResult } = require('./externalGrader');
 const externalGraderCommon = require('./externalGraderCommon');
 const { deferredPromise } = require('./deferred');
 
@@ -178,5 +178,5 @@ async function processMessage(data) {
 }
 
 async function processResults(jobId, data) {
-  await assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
+  await processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }
