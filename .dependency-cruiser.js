@@ -62,9 +62,9 @@ module.exports = {
       severity: 'error',
       from: {
         // explicitly allow cypressResetDb and prepare-db to import from tests
-        pathNot: ['(src/tests)', '[.]test[.]ts'],
+        pathNot: ['(src/tests)', '[.]test[.][tj]s'],
       },
-      to: { path: ['(src/tests)', '[.]test[.]ts'] },
+      to: { path: ['(src/tests)', '[.]test[.][tj]s'] },
     },
     {
       name: 'not-to-dev-dep',
@@ -75,8 +75,8 @@ module.exports = {
         pathNot: [
           '.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$',
           'src/tests/',
-          '.d.ts$',
-          'test-utils.ts$',
+          '[.]d[.]ts$',
+          'test-utils[.]ts$',
         ],
       },
       to: { dependencyTypes: ['npm-dev'], dependencyTypesNot: ['type-only'] },
