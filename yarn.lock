@@ -2283,7 +2283,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/context-async-hooks@npm:^1.18.1":
+"@opentelemetry/context-async-hooks@npm:^1.17.1":
   version: 1.18.1
   resolution: "@opentelemetry/context-async-hooks@npm:1.18.1"
   peerDependencies:
@@ -3050,7 +3050,7 @@ __metadata:
   dependencies:
     "@grpc/grpc-js": ^1.9.9
     "@opentelemetry/api": ^1.6.0
-    "@opentelemetry/context-async-hooks": ^1.18.1
+    "@opentelemetry/context-async-hooks": ^1.17.1
     "@opentelemetry/core": ^1.17.1
     "@opentelemetry/exporter-jaeger": ^1.17.1
     "@opentelemetry/exporter-metrics-otlp-grpc": ^0.44.0

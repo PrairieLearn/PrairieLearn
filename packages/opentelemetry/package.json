@@ -36,7 +36,7 @@
     "@opentelemetry/semantic-conventions": "^1.17.1"
   },
   "devDependencies": {
-    "@opentelemetry/context-async-hooks": "^1.18.1",
+    "@opentelemetry/context-async-hooks": "^1.17.1",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^4.3.9",
     "@types/mocha": "^10.0.3",
