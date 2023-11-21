@@ -11,7 +11,7 @@ import * as externalGrader from './externalGrader';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
-import { IdSchema } from './db-types';
+import { CourseSchema, IdSchema, QuestionSchema, VariantSchema } from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -180,22 +180,30 @@ export async function gradeAssessmentInstanceAsync(
   // grading transaction has been accepted; collect those job ids here.
   const externalGradingJobIds: string[] = [];
 
-  if (requireOpen) {
-    await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+  if (requireOpen || close) {
+    await sqldb.runInTransactionAsync(async () => {
+      await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
+      await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+
+      if (close) {
+        // If we're supposed to close the assessment, do it *before* we
+        // we start grading. This avoids a race condition where the student
+        // makes an additional submission while grading is already in progress.
+        await sqldb.queryAsync(sql.close_assessment_instance, {
+          assessment_instance_id,
+          authn_user_id,
+        });
+      }
+    });
   }
 
-  if (close) {
-    // If we're supposed to close the assessment, do it *before* we
-    // we start grading. This avoids a race condition where the student
-    // makes an additional submission while grading is already in progress.
-    await sqldb.callAsync('assessment_instances_close', [assessment_instance_id, authn_user_id]);
-  }
-  const result = await sqldb.callAsync('variants_select_for_assessment_instance_grading', [
-    assessment_instance_id,
-  ]);
-  const rows = result.rows;
-  debug('gradeAssessmentInstance()', 'selected variants', 'count:', rows.length);
-  await async.eachSeries(rows, async (row) => {
+  const variants = await sqldb.queryRows(
+    sql.select_variants_for_assessment_instance_grading,
+    { assessment_instance_id },
+    z.object({ variant: VariantSchema, question: QuestionSchema, variant_course: CourseSchema }),
+  );
+  debug('gradeAssessmentInstance()', 'selected variants', 'count:', variants.length);
+  await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
     const gradingJobId = await promisify(question.gradeVariant)(
@@ -214,24 +222,22 @@ export async function gradeAssessmentInstanceAsync(
     // We need to submit these grading jobs to be graded
     await externalGrader.beginGradingJobs(externalGradingJobIds);
   }
-  // The `grading_needed` flag was set by the `assessment_instances_close`
-  // sproc above. Once we've successfully graded every part of the
-  // assessment instance, set the flag to false so that we don't try to
-  // grade it again in the future.
+  // The `grading_needed` flag was set by the closing query above. Once we've
+  // successfully graded every part of the assessment instance, set the flag to
+  // false so that we don't try to grade it again in the future.
   //
-  // This flag exists only to handle the case where we close the exam
-  // but then the PrairieLearn server crashes before we can grade it.
-  // In that case, the `autoFinishExams` cronjob will detect that the
-  // assessment instance hasn't been fully graded and will grade any
-  // ungraded portions of it.
+  // This flag exists only to handle the case where we close the exam but then
+  // the PrairieLearn server crashes before we can grade it. In that case, the
+  // `autoFinishExams` cronjob will detect that the assessment instance hasn't
+  // been fully graded and will grade any ungraded portions of it.
   //
-  // There's a potential race condition here where the `autoFinishExams`
-  // cronjob runs after `assessment_instances_close` but before the above
-  // calls to `gradeVariant` have finished. In that case, we'll
-  // concurrently try to grade the same variant twice. This shouldn't
-  // impact correctness, as `gradeVariant` is resilient to being run
-  // multiple times concurrently. The only bad thing that will happen
-  // is that we'll have wasted some work, but that's acceptable.
+  // There's a potential race condition here where the `autoFinishExams` cronjob
+  // runs after closing the instance but before the above calls to
+  // `gradeVariant` have finished. In that case, we'll concurrently try to grade
+  // the same variant twice. This shouldn't impact correctness, as
+  // `gradeVariant` is resilient to being run multiple times concurrently. The
+  // only bad thing that will happen is that we'll have wasted some work, but
+  // that's acceptable.
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
 export const gradeAssessmentInstance = callbackify(gradeAssessmentInstanceAsync);
