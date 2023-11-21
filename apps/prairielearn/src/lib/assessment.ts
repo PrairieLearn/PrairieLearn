@@ -1,4 +1,3 @@
-import _ = require('lodash');
 import * as async from 'async';
 import * as ejs from 'ejs';
 import * as path from 'path';
@@ -9,7 +8,6 @@ import { callbackify, promisify } from 'util';
 import * as error from '@prairielearn/error';
 import * as question from './question';
 import * as externalGrader from './externalGrader';
-import * as externalGradingSocket from './externalGradingSocket';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
@@ -312,101 +310,6 @@ export async function gradeAllAssessmentInstances(
   });
 
   return serverJob.jobSequenceId;
-}
-
-/**
- * Process the result of an external grading job.
- *
- * @param content - The grading job data to process.
- */
-export async function processGradingResult(content: any): Promise<void> {
-  try {
-    if (!_.isObject(content.grading)) {
-      throw error.makeWithData('invalid grading', { content: content });
-    }
-
-    if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
-      throw error.makeWithData('invalid grading.feedback', { content: content });
-    }
-
-    // There are two "succeeded" flags in the grading results. The first
-    // is at the top level and is set by `grader-host`; the second is in
-    // `results` and is set by course code.
-    //
-    // If the top-level flag is false, that means there was a serious
-    // error in the grading process and we should treat the submission
-    // as not gradable. This avoids penalizing students for issues outside
-    // their control.
-    const jobSucceeded = !!content.grading?.feedback?.succeeded;
-
-    const succeeded = !!(content.grading.feedback?.results?.succeeded ?? true);
-    if (!succeeded) {
-      content.grading.score = 0;
-    }
-
-    // The submission is only gradable if the job as a whole succeeded
-    // and the course code marked it as gradable. We default to true for
-    // backwards compatibility with graders that don't set this flag.
-    let gradable = jobSucceeded && !!(content.grading.feedback?.results?.gradable ?? true);
-
-    if (gradable) {
-      // We only care about the score if it is gradable.
-      if (typeof content.grading.score === 'undefined') {
-        content.grading.feedback = {
-          results: { succeeded: false, gradable: false },
-          message: 'Error parsing external grading results: score was not provided.',
-          original_feedback: content.grading.feedback,
-        };
-        content.grading.score = 0;
-        gradable = false;
-      }
-      if (!_(content.grading.score).isFinite()) {
-        content.grading.feedback = {
-          results: { succeeded: false, gradable: false },
-          message: 'Error parsing external grading results: score is not a number.',
-          original_feedback: content.grading.feedback,
-        };
-        content.grading.score = 0;
-        gradable = false;
-      }
-      if (content.grading.score < 0 || content.grading.score > 1) {
-        content.grading.feedback = {
-          results: { succeeded: false, gradable: false },
-          message: 'Error parsing external grading results: score is out of range.',
-          original_feedback: content.grading.feedback,
-        };
-        content.grading.score = 0;
-        gradable = false;
-      }
-    }
-
-    await sqldb.callAsync('grading_jobs_update_after_grading', [
-      content.gradingId,
-      content.grading.receivedTime,
-      content.grading.startTime,
-      content.grading.endTime,
-      null, // `submitted_answer`
-      content.grading.format_errors,
-      gradable,
-      false, // `broken`
-      null, // `params`
-      null, // `true_answer`
-      content.grading.feedback,
-      {}, // `partial_scores`
-      content.grading.score,
-      null, // `v2_score`: gross legacy, this can safely be null
-    ]);
-    const assessment_instance_id = await sqldb.queryOptionalRow(
-      sql.select_assessment_for_grading_job,
-      { grading_job_id: content.gradingId },
-      IdSchema,
-    );
-    if (assessment_instance_id != null) {
-      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
-    }
-  } finally {
-    externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
-  }
 }
 
 /**
