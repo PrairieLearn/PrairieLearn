@@ -19,7 +19,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 let QUEUE_URL = null;
 
-class Grader {
+export class ExternalGraderSqs {
   handleGradingRequest(grading_job, submission, variant, question, course, configOverrides) {
     const config = _.cloneDeep(globalConfig);
     _.assign(config, configOverrides);
@@ -109,7 +109,10 @@ async function sendJobToQueue(jobId, question, config) {
         entrypoint: question.external_grading_entrypoint,
         s3Bucket: config.externalGradingS3Bucket,
         s3RootKey: getS3RootKey(jobId),
-        timeout: question.external_grading_timeout || config.externalGradingDefaultTimeout,
+        timeout: Math.min(
+          question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+          config.externalGradingMaximumTimeout,
+        ),
         enableNetworking: question.external_grading_enable_networking || false,
         environment: question.external_grading_environment || {},
       };
@@ -126,5 +129,3 @@ async function sendJobToQueue(jobId, question, config) {
     },
   ]);
 }
-
-module.exports = Grader;

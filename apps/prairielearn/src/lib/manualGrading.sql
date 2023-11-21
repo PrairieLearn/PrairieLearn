@@ -13,8 +13,7 @@ WITH
       iq.id = $prior_instance_question_id
   )
 SELECT
-  iq.*,
-  COALESCE(g.name, u.name) AS user_or_group_name
+  iq.id
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -47,7 +46,7 @@ ORDER BY
   iq.assigned_grader NULLS LAST,
   -- Choose question that list after the prior if one exists (follow the order in the instance list)
   (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
-  user_or_group_name,
+  COALESCE(g.name, u.name),
   iq.id
 LIMIT
   1;
@@ -289,14 +288,15 @@ WITH
   )
 SELECT
   rgr.*,
-  gir.*
+  gir.applied_rubric_items,
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
   LEFT JOIN grading_items_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
 WHERE
-  rgr.rubric_settings_changed IS NOT FALSE
-  OR gir.rubric_items_changed IS NOT FALSE
+  rgr.rubric_settings_changed IS TRUE
+  OR gir.rubric_items_changed IS TRUE
 FOR NO KEY UPDATE OF
   iq;
 

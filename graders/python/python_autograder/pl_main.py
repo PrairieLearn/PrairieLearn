@@ -38,8 +38,6 @@ def add_files(results):
 
 if __name__ == "__main__":
     try:
-        from filenames.test import Test as test_case
-
         filenames_dir = os.environ.get("FILENAMES_DIR")
         base_dir = os.environ.get("MERGE_DIR")
 
@@ -49,6 +47,8 @@ if __name__ == "__main__":
         with open(join(filenames_dir, OUTPUT_FILE), "r") as output_f:
             output_fname = output_f.read()
         os.remove(join(filenames_dir, OUTPUT_FILE))
+
+        from filenames.test import Test as test_case
 
         # Update the working directory so tests may access local files
         prev_wd = os.getcwd()

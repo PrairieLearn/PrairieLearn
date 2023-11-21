@@ -3,7 +3,7 @@ const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
-const { config } = require('../lib/config');
+const { config } = require('./config');
 const { shouldSecureCookie } = require('../lib/cookie');
 const { InstitutionSchema, UserSchema } = require('./db-types');
 

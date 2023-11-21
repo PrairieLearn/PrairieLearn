@@ -7,6 +7,10 @@
     },
     "test": {
       "outputs": []
+    },
+    "test:dist": {
+      "dependsOn": ["build"],
+      "outputs": []
     }
   }
 }

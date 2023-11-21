@@ -24,6 +24,11 @@ router.post('/', function (req, res, next) {
   var signature = req.body.oauth_signature;
   delete parameters.oauth_signature;
 
+  const ltiRedirectUrl = config.ltiRedirectUrl;
+  if (!ltiRedirectUrl) {
+    return next(error.make(500, 'LTI not configured'));
+  }
+
   if (parameters.lti_message_type !== 'basic-lti-launch-request') {
     return next(error.make(500, 'Unsupported lti_message_type'));
   }
@@ -54,10 +59,10 @@ router.post('/', function (req, res, next) {
 
       var genSignature = oauthSignature.generate(
         'POST',
-        config.ltiRedirectUrl,
+        ltiRedirectUrl,
         parameters,
         ltiresult.secret,
-        null,
+        undefined,
         { encodeSignature: false },
       );
       if (genSignature !== signature) {

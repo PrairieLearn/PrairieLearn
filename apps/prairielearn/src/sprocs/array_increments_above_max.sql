@@ -9,7 +9,7 @@ DECLARE
     max_val double precision := 0;
 BEGIN
     FOR i in 1..coalesce(cardinality(data), 0) LOOP
-        increments[i] := greatest(0, data[i] - max_val);
+        increments[i] := CASE WHEN data[i] IS NULL THEN NULL ELSE greatest(0, data[i] - max_val) END CASE;
         max_val := greatest(max_val, data[i]);
     END LOOP;
 END;

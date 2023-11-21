@@ -112,11 +112,15 @@ export function createSessionMiddleware(options: SessionOptions) {
       }
     });
 
-    beforeEnd(res, next, async () => {
-      if (!req.session) {
+    let sessionPersisted = false;
+
+    async function persistSession(req: Request) {
+      if (!req.session || sessionPersisted) {
         // There is no session to do anything with.
         return;
       }
+
+      sessionPersisted = true;
 
       const isExistingSession = cookieSessionId && cookieSessionId === req.session.id;
       const hashChanged = hashSession(req.session) !== originalHash;
@@ -141,7 +145,27 @@ export function createSessionMiddleware(options: SessionOptions) {
           truncateExpirationDate(expirationDate),
         );
       }
+    }
+
+    // We'll attempt to persist the session at the end of the request. This
+    // hacky strategy is borrowed from `express-session`.
+    beforeEnd(res, next, async () => {
+      await persistSession(req);
     });
+
+    // We'll also attempt to persist the session before performing a redirect.
+    // This is necessary because browsers and `fetch()` implementations aren't
+    // required to wait for a response body to be received before following a
+    // redirect. So, we need to make sure that the session is persisted before
+    // we send the redirect response. This way, the subsequent GET will be able
+    // to load the latest session data.
+    const originalRedirect = res.redirect as any;
+    res.redirect = function redirect(...args: any[]) {
+      persistSession(req).then(
+        () => originalRedirect.apply(res, args),
+        (err) => next(err),
+      );
+    };
 
     next();
   });

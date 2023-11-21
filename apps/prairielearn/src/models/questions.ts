@@ -14,18 +14,18 @@ const QuestionsPageDataSchema = z.object({
   id: z.string(),
   qid: z.string(),
   title: z.string(),
-  sync_errors: z.string().nullable(),
-  sync_warnings: z.string().nullable(),
+  sync_errors: z.string().nullable().optional(),
+  sync_warnings: z.string().nullable().optional(),
   grading_method: z.string(),
   external_grading_image: z.string().nullable(),
   display_type: z.string(),
-  open_issue_count: z.string(),
+  open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
-  sharing_sets: z.array(SharingSetSchema).nullable(),
-  assessments: AssessmentsFormatForQuestionSchema.nullable(),
+  sharing_sets: z.array(SharingSetSchema).nullable().optional(),
+  assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
 });
-type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
+export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
 export interface QuestionsPageDataAnsified extends QuestionsPageData {
   sync_errors_ansified?: string | null;
@@ -57,4 +57,18 @@ export async function selectQuestionsForCourse(
       ) ?? null,
   }));
   return questions;
+}
+
+export async function selectPublicQuestionsForCourse(
+  course_id: string | number,
+): Promise<QuestionsPageData[]> {
+  const rows = await sqldb.queryRows(
+    sql.select_public_questions_for_course,
+    {
+      course_id: course_id,
+    },
+    QuestionsPageDataSchema,
+  );
+
+  return rows;
 }

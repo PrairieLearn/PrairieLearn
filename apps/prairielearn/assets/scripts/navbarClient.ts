@@ -4,6 +4,10 @@ import CookiesModule from 'js-cookie';
 const COOKIE_EXPIRATION_DAYS = 30;
 
 onDocumentReady(() => {
+  const usernameNav = document.getElementById('username-nav');
+  // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
+  if (!usernameNav) return;
+
   const Cookies = CookiesModule.withAttributes({
     path: '/',
     expires: COOKIE_EXPIRATION_DAYS,
@@ -11,7 +15,6 @@ onDocumentReady(() => {
     secure: location.protocol === 'https:',
   });
 
-  const usernameNav = document.getElementById('username-nav');
   const accessAsAdministrator = usernameNav.dataset.accessAsAdministrator === 'true';
   const viewType = usernameNav.dataset.viewType;
   const authnCourseRole = usernameNav.dataset.authnCourseRole;
@@ -103,8 +106,10 @@ onDocumentReady(() => {
       Cookies.remove('pl_requested_course_role');
       Cookies.remove('pl_requested_course_instance_role');
     } else {
-      Cookies.set('pl_requested_course_role', authnCourseRole);
-      Cookies.set('pl_requested_course_instance_role', authnCourseInstanceRole);
+      if (authnCourseRole && authnCourseInstanceRole) {
+        Cookies.set('pl_requested_course_role', authnCourseRole);
+        Cookies.set('pl_requested_course_instance_role', authnCourseInstanceRole);
+      }
     }
 
     Cookies.set('pl_requested_data_changed', 'true');
@@ -133,6 +138,11 @@ onDocumentReady(() => {
   document.querySelectorAll<HTMLButtonElement>('.js-remove-override').forEach((element) => {
     element.addEventListener('click', () => {
       const cookieName = element.dataset.overrideCookie;
+
+      if (!cookieName) {
+        throw new Error('Missing override cookie name');
+      }
+
       Cookies.remove(cookieName);
       location.reload();
     });
@@ -143,9 +153,9 @@ onDocumentReady(() => {
 
   effectiveUidInput?.addEventListener('input', () => {
     if (effectiveUidInput.value.trim() !== '') {
-      effectiveUidButton.removeAttribute('disabled');
+      effectiveUidButton?.removeAttribute('disabled');
     } else {
-      effectiveUidButton.setAttribute('disabled', 'true');
+      effectiveUidButton?.setAttribute('disabled', 'true');
     }
   });
 
@@ -154,7 +164,7 @@ onDocumentReady(() => {
     ?.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      const effectiveUid = effectiveUidInput.value.trim();
+      const effectiveUid = effectiveUidInput?.value.trim();
       if (effectiveUid) {
         Cookies.set('pl_requested_uid', effectiveUid);
         Cookies.set('pl_requested_data_changed', 'true');
