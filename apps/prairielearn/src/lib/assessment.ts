@@ -428,12 +428,14 @@ export async function processGradingResult(contentInput: GradingResultInput): Pr
       content.grading.score,
       null, // `v2_score`: gross legacy, this can safely be null
     ]);
-    const assessment_instance_id = await sqldb.queryRow(
+    const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },
       IdSchema,
     );
-    await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    if (assessment_instance_id != null) {
+      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    }
   } finally {
     externalGradingSocket.gradingJobStatusUpdated(contentInput.gradingId);
   }
