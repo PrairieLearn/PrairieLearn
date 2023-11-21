@@ -1,5 +1,5 @@
 // @ts-check
-import ERR from 'async-stacktrace';
+const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as path from 'path';

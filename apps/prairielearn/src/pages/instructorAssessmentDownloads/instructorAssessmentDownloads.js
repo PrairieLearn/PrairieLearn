@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import archiver from 'archiver';
+const archiver = require('archiver');
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 

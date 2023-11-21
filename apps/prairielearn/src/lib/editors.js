@@ -1,5 +1,5 @@
 // @ts-check
-import ERR from 'async-stacktrace';
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
