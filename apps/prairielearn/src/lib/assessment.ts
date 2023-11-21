@@ -182,6 +182,7 @@ export async function gradeAssessmentInstanceAsync(
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
+      await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
       await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
 
       if (close) {
