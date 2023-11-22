@@ -86,6 +86,9 @@ module.exports.uploadToS3Async = async function (
   } else {
     logger.verbose(`Uploaded buffer to s3://${s3Bucket}/${s3Path}`);
   }
+  // TODO: remove type case once the following are addressed:
+  // https://github.com/aws/aws-sdk-js-v3/issues/5513
+  // https://github.com/aws/aws-sdk-js-v3/pull/5512
   return /** @type {import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput} */ (res);
 };
 module.exports.uploadToS3 = util.callbackify(module.exports.uploadToS3Async);
