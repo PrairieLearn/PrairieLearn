@@ -16,7 +16,7 @@ BEGIN
     --  course instance role
     --
     SELECT
-        jsonb_agg(
+        coalesce(jsonb_agg(
             jsonb_build_object(
                 'short_name', ci.short_name,
                 'long_name', ci.long_name,
@@ -30,9 +30,9 @@ BEGIN
                     ELSE format_date_full_compact(d.end_date, ci.display_timezone)
                 END,
                 'has_course_instance_permission_view',
-                is_administrator OR cip.course_instance_role > 'None'
+                COALESCE(is_administrator OR cip.course_instance_role > 'None', FALSE)
             ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC
-        )
+        ), '[]'::jsonb)
     INTO
         course_instances_with_staff_access.course_instances
     FROM

@@ -1,29 +1,29 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const { logger } = require('@prairielearn/logger');
-const { contains } = require('@prairielearn/path-utils');
-const { createServerJob } = require('./server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const syncFromDisk = require('../sync/syncFromDisk');
-const { config } = require('./config');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const fs = require('fs-extra');
-const async = require('async');
-const { v4: uuidv4 } = require('uuid');
-const sha256 = require('crypto-js/sha256');
-const chunks = require('./chunks');
-const { EXAMPLE_COURSE_PATH } = require('./paths');
-const { escapeRegExp } = require('@prairielearn/sanitize');
-const sqldb = require('@prairielearn/postgres');
-const {
+import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import { createServerJob } from './server-jobs';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as syncFromDisk from '../sync/syncFromDisk';
+import {
   getLockNameForCoursePath,
   getCourseCommitHash,
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
-} = require('../models/course');
+} from '../models/course';
+import { config } from './config';
+import * as path from 'path';
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as error from '@prairielearn/error';
+import * as fs from 'fs-extra';
+import * as async from 'async';
+const { v4: uuidv4 } = require('uuid');
+const sha256 = require('crypto-js/sha256');
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
+import { EXAMPLE_COURSE_PATH } from './paths';
+import { escapeRegExp } from '@prairielearn/sanitize';
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -38,14 +38,14 @@ async function syncCourseFromDisk(course, startGitHash, job) {
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
   if (config.chunksGenerator) {
-    const chunkChanges = await chunks.updateChunksForCourse({
+    const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
       courseData: result.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
-    chunks.logChunkChangesToJob(chunkChanges, job);
+    logChunkChangesToJob(chunkChanges, job);
   }
 
   await updateCourseCommitHash(course);
@@ -55,7 +55,7 @@ async function syncCourseFromDisk(course, startGitHash, job) {
   }
 }
 
-async function cleanAndResetRepository(course, env, job) {
+export async function cleanAndResetRepository(course, env, job) {
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
     cwd: course.path,
@@ -63,7 +63,7 @@ async function cleanAndResetRepository(course, env, job) {
   });
 }
 
-class Editor {
+export class Editor {
   constructor(params) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
@@ -383,7 +383,7 @@ class Editor {
   }
 }
 
-class AssessmentCopyEditor extends Editor {
+export class AssessmentCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
@@ -438,7 +438,7 @@ class AssessmentCopyEditor extends Editor {
   }
 }
 
-class AssessmentDeleteEditor extends Editor {
+export class AssessmentDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
@@ -459,7 +459,7 @@ class AssessmentDeleteEditor extends Editor {
   }
 }
 
-class AssessmentRenameEditor extends Editor {
+export class AssessmentRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.tid_new = params.tid_new;
@@ -491,7 +491,7 @@ class AssessmentRenameEditor extends Editor {
   }
 }
 
-class AssessmentAddEditor extends Editor {
+export class AssessmentAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: add assessment`;
@@ -547,7 +547,7 @@ class AssessmentAddEditor extends Editor {
   }
 }
 
-class CourseInstanceCopyEditor extends Editor {
+export class CourseInstanceCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy course instance ${this.course_instance.short_name}`;
@@ -602,7 +602,7 @@ class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-class CourseInstanceDeleteEditor extends Editor {
+export class CourseInstanceDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete course instance ${this.course_instance.short_name}`;
@@ -618,7 +618,7 @@ class CourseInstanceDeleteEditor extends Editor {
   }
 }
 
-class CourseInstanceRenameEditor extends Editor {
+export class CourseInstanceRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.ciid_new = params.ciid_new;
@@ -648,7 +648,7 @@ class CourseInstanceRenameEditor extends Editor {
   }
 }
 
-class CourseInstanceAddEditor extends Editor {
+export class CourseInstanceAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add course instance`;
@@ -698,7 +698,7 @@ class CourseInstanceAddEditor extends Editor {
   }
 }
 
-class QuestionAddEditor extends Editor {
+export class QuestionAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add question`;
@@ -741,7 +741,7 @@ class QuestionAddEditor extends Editor {
   }
 }
 
-class QuestionDeleteEditor extends Editor {
+export class QuestionDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete question ${this.question.qid}`;
@@ -759,7 +759,7 @@ class QuestionDeleteEditor extends Editor {
   }
 }
 
-class QuestionRenameEditor extends Editor {
+export class QuestionRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.qid_new = params.qid_new;
@@ -834,7 +834,7 @@ class QuestionRenameEditor extends Editor {
   }
 }
 
-class QuestionCopyEditor extends Editor {
+export class QuestionCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy question ${this.question.qid}`;
@@ -882,7 +882,7 @@ class QuestionCopyEditor extends Editor {
   }
 }
 
-class QuestionTransferEditor extends Editor {
+export class QuestionTransferEditor extends Editor {
   constructor(params) {
     super(params);
     this.from_qid = params.from_qid;
@@ -937,7 +937,7 @@ class QuestionTransferEditor extends Editor {
   }
 }
 
-class FileDeleteEditor extends Editor {
+export class FileDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -995,7 +995,7 @@ class FileDeleteEditor extends Editor {
   }
 }
 
-class FileRenameEditor extends Editor {
+export class FileRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1085,7 +1085,7 @@ class FileRenameEditor extends Editor {
   }
 }
 
-class FileUploadEditor extends Editor {
+export class FileUploadEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1178,7 +1178,7 @@ class FileUploadEditor extends Editor {
   }
 }
 
-class CourseInfoEditor extends Editor {
+export class CourseInfoEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Create infoCourse.json`;
@@ -1208,23 +1208,3 @@ class CourseInfoEditor extends Editor {
     this.commitMessage = `create infoCourse.json`;
   }
 }
-
-module.exports = {
-  AssessmentCopyEditor,
-  AssessmentDeleteEditor,
-  AssessmentRenameEditor,
-  AssessmentAddEditor,
-  CourseInstanceCopyEditor,
-  CourseInstanceDeleteEditor,
-  CourseInstanceRenameEditor,
-  CourseInstanceAddEditor,
-  QuestionCopyEditor,
-  QuestionDeleteEditor,
-  QuestionRenameEditor,
-  QuestionAddEditor,
-  QuestionTransferEditor,
-  FileDeleteEditor,
-  FileRenameEditor,
-  FileUploadEditor,
-  CourseInfoEditor,
-};
