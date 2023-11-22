@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
-import express from 'express';
+import * as express from 'express';
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 import * as error from '@prairielearn/error';

@@ -2,9 +2,9 @@
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const ERR = require('async-stacktrace');
-import express from 'express';
+import * as express from 'express';
 import * as fs from 'fs-extra';
-import async from 'async';
+import * as async from 'async';
 const _ = require('lodash');
 import * as path from 'path';
 import * as sqldb from '@prairielearn/postgres';

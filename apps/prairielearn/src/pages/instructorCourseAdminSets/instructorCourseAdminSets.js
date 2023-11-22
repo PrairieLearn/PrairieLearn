@@ -1,6 +1,6 @@
 // @ts-check
 var ERR = require('async-stacktrace');
-import express from 'express';
+import * as express from 'express';
 
 import * as sqldb from '@prairielearn/postgres';
 
