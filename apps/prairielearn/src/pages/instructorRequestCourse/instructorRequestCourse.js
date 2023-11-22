@@ -18,7 +18,6 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // TODO: remove error display from template.
     const result = await sqldb.queryAsync(sql.get_requests, {
       user_id: res.locals.authn_user.user_id,
     });
