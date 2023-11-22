@@ -1,4 +1,6 @@
 // @ts-check
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
@@ -33,22 +35,22 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
+      async () => {
+        res.locals.course_instances = await selectCourseInstancesWithStaffAccess({
+          course_id: res.locals.course.id,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          is_administrator: res.locals.is_administrator,
+          authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+        });
+      },
       (callback) => {
-        if (!res.locals.authz_data || !res.locals.authz_data.course_instances) {
-          return callback(null);
-        }
         const params = {
           course_id: res.locals.course.id,
         };
-        // We use the list authz_data.course_instances rather than
-        // re-fetching the list of course instances, because we
-        // only want course instances which are accessible by both
-        // the authn user and the effective user, which is a bit
-        // complicated to compute. This is already computed in
-        // authz_data.course_instances.
         sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
           if (ERR(err, callback)) return;
-          res.locals.authz_data.course_instances.forEach((ci) => {
+          res.locals.course_instances.forEach((ci) => {
             var row = _.find(result.rows, (row) => idsEqual(row.course_instance_id, ci.id));
             ci.number = row?.number || 0;
           });

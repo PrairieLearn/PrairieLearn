@@ -66,7 +66,8 @@ const lifecycleHooks = require('./lib/lifecycle-hooks');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { features, featuresMiddleware } = require('./lib/features');
+const { features } = require('./lib/features');
+const { featuresMiddleware } = require('./lib/features/middleware');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
 const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
@@ -591,6 +592,19 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
+  ]);
+
+  // We deliberately omit the `authzCourseOrInstance` middleware here. The
+  // route handler will only ever display courses for which the user has staff
+  // access; the course ID in the URL is only used to determine which course
+  // is the currently selected one.
+  app.use(
+    '/pl/navbar/course/:course_id/switcher',
+    require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
+  );
+  app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
+    require('./middlewares/authzCourseOrInstance'),
+    require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
   ]);
 
   app.use('/pl/workspace/:workspace_id', [
