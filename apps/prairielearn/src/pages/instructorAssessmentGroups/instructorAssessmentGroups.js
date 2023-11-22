@@ -1,20 +1,21 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { z } = require('zod');
-const error = require('@prairielearn/error');
-const { flash } = require('@prairielearn/flash');
-const sqldb = require('@prairielearn/postgres');
+import { z } from 'zod';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+import { html } from '@prairielearn/html';
 
-const sanitizeName = require('../../lib/sanitize-name');
-const groups = require('../../lib/groups');
-const groupUpdate = require('../../lib/group-update');
-const { GroupConfigSchema, IdSchema } = require('../../lib/db-types');
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import { deleteAllGroups } from '../../lib/groups';
+import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
+import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
@@ -24,18 +25,18 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    const prefix = sanitizeName.assessmentFilenamePrefix(
+    const prefix = assessmentFilenamePrefix(
       res.locals.assessment,
       res.locals.assessment_set,
       res.locals.course_instance,
-      res.locals.course
+      res.locals.course,
     );
     res.locals.groupsCsvFilename = prefix + 'groups.csv';
 
     const groupConfig = await sqldb.queryOptionalRow(
       sql.config_info,
       { assessment_id: res.locals.assessment.id },
-      GroupConfigSchema
+      GroupConfigSchema,
     );
     res.locals.isGroup = !!groupConfig;
     if (!groupConfig) {
@@ -56,7 +57,7 @@ router.get(
         id: IdSchema,
         tid: z.string().nullable(),
         title: z.string().nullable(),
-      })
+      }),
     );
 
     res.locals.groups = await sqldb.queryRows(
@@ -69,7 +70,7 @@ router.get(
         name: z.string(),
         size: z.number(),
         uid_list: z.array(z.string()),
-      })
+      }),
     );
 
     res.locals.notAssigned = await sqldb.queryRows(
@@ -78,11 +79,11 @@ router.get(
         group_config_id: res.locals.config_info.id,
         course_instance_id: res.locals.config_info.course_instance_id,
       },
-      z.string()
+      z.string(),
     );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.post(
@@ -93,7 +94,7 @@ router.post(
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
-      groupUpdate.uploadInstanceGroups(
+      uploadInstanceGroups(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -101,10 +102,10 @@ router.post(
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        },
       );
     } else if (req.body.__action === 'auto_assessment_groups') {
-      groupUpdate.autoGroups(
+      autoGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
@@ -114,7 +115,7 @@ router.post(
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        },
       );
     } else if (req.body.__action === 'copy_assessment_groups') {
       await sqldb.callAsync('assessment_groups_copy', [
@@ -124,7 +125,7 @@ router.post(
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_all') {
-      await groups.deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
+      await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_group') {
       const assessment_id = res.locals.assessment.id;
@@ -154,7 +155,8 @@ router.post(
       if (notExist) {
         flash(
           'error',
-          `Could not create group. The following users do not exist: ${notExist.toString()}`
+          html`Could not create group. The following users do not exist:
+            <strong>${notExist.toString()}</strong>`,
         );
       }
 
@@ -162,7 +164,8 @@ router.post(
       if (inGroup) {
         flash(
           'error',
-          `Could not create group. The following users are already in another group: ${inGroup.toString()}`
+          html`Could not create group. The following users are already in another group:
+            <strong>${inGroup.toString()}</strong>`,
         );
       }
 
@@ -185,7 +188,7 @@ router.post(
         const uids = failedUids.join(', ');
         flash(
           'error',
-          `Failed to add the following users: ${uids}. Please check if the users exist.`
+          `Failed to add the following users: ${uids}. Please check if the users exist.`,
         );
       }
       res.redirect(req.originalUrl);
@@ -207,7 +210,7 @@ router.post(
         const uids = failedUids.join(', ');
         flash(
           'error',
-          `Failed to remove the following users: ${uids}. Please check if the users exist.`
+          `Failed to remove the following users: ${uids}. Please check if the users exist.`,
         );
       }
       res.redirect(req.originalUrl);
@@ -224,7 +227,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

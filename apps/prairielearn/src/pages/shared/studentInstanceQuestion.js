@@ -2,7 +2,7 @@ const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
 
-const fileStore = require('../../lib/file-store');
+import { uploadFile, deleteFile } from '../../lib/file-store';
 const { idsEqual } = require('../../lib/id');
 const issues = require('../../lib/issues');
 
@@ -22,7 +22,7 @@ module.exports.getValidVariantId = async (req, res) => {
     await sqldb.callOneRowAsync('variants_ensure_instance_question', params);
   } catch (e) {
     throw new Error(
-      `Client-provided __variant_id "${req.body.__variant_id}" does not belong to the authorized instance_question_id "${res.locals.instance_question_id}"`
+      `Client-provided __variant_id "${req.body.__variant_id}" does not belong to the authorized instance_question_id "${res.locals.instance_question_id}"`,
     );
   }
   return variant_id;
@@ -36,14 +36,14 @@ module.exports.processFileUpload = async (req, res) => {
   if (!req.file) {
     throw error.make(400, 'No file uploaded');
   }
-  await fileStore.upload(
+  await uploadFile(
     req.file.originalname,
     req.file.buffer,
     'student_upload',
     res.locals.assessment_instance.id,
     res.locals.instance_question.id,
     res.locals.user.user_id,
-    res.locals.authn_user.user_id
+    res.locals.authn_user.user_id,
   );
   const variant_id = await module.exports.getValidVariantId(req, res);
   return variant_id;
@@ -54,14 +54,14 @@ module.exports.processTextUpload = async (req, res) => {
   if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
   }
-  await fileStore.upload(
+  await uploadFile(
     req.body.filename,
     Buffer.from(req.body.contents),
     'student_upload',
     res.locals.assessment_instance.id,
     res.locals.instance_question.id,
     res.locals.user.user_id,
-    res.locals.authn_user.user_id
+    res.locals.authn_user.user_id,
   );
   const variant_id = await module.exports.getValidVariantId(req, res);
   return variant_id;
@@ -82,7 +82,7 @@ module.exports.processDeleteFile = async (req, res) => {
     throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await fileStore.delete(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.user_id);
 
   const variant_id = await module.exports.getValidVariantId(req, res);
   return variant_id;

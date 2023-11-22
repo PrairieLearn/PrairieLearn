@@ -39,14 +39,13 @@ docker-compose.override.yml
 ## Config
 /config.json
 /apps/prairielearn/config.json
+/apps/workspace-host/config.json
+/apps/grader-host/config.json
 
 ## Generated HTML
 
 ### mkdocs
 /site/
-
-### jsdoc
-/docs/code-docs/
 
 ## Runtime artifacts
 
@@ -59,7 +58,7 @@ docker-compose.override.yml
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
 
-## Yarn 
+## Yarn
 node_modules
 yarn-error.log
 .pnp.*
@@ -76,6 +75,7 @@ yarn-error.log
 __pycache__/
 *.py[cod]
 *$py.class
+.coverage
 
 ### R
 .Rproj.user

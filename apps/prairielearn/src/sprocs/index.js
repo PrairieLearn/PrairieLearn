@@ -11,8 +11,7 @@ module.exports.init = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
   async.eachSeries(
     [
-      'array_dot.sql',
-      'array_product.sql',
+      'scores_to_points_array.sql',
       'array_increments_above_max.sql',
       'array_and_number.sql',
       'array_avg.sql',
@@ -95,7 +94,6 @@ module.exports.init = function (callback) {
       'submissions_insert.sql',
       'submissions_update_parsing.sql',
       'assessment_instances_update.sql',
-      'assessment_instances_close.sql',
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
       'grading_jobs_insert.sql',
@@ -122,7 +120,6 @@ module.exports.init = function (callback) {
       'variants_ensure_question.sql',
       'variants_insert.sql',
       'variants_select_submission_for_grading.sql',
-      'variants_select_for_assessment_instance_grading.sql',
       'variants_update_after_grading.sql',
       'variants_ensure_open.sql',
       'grader_loads_current.sql',
@@ -151,10 +148,6 @@ module.exports.init = function (callback) {
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'workspace_hosts_assign_workspace.sql',
-      'workspace_hosts_recapture_draining.sql',
-      'workspace_hosts_drain_extra.sql',
-      'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
     ],
@@ -173,6 +166,6 @@ module.exports.init = function (callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully completed DB stored procedure initialization');
       callback(null);
-    }
+    },
   );
 };

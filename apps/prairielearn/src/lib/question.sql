@@ -62,7 +62,6 @@ SELECT
   s.override_score,
   s.regradable,
   s.score,
-  s.sid,
   s.v2_score,
   s.variant_id,
   s.manual_rubric_grading_id,
@@ -195,6 +194,7 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(ci) AS course_instance,
+  to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
   to_jsonb(ci) AS course_instance,
   lgj.id AS grading_job_id,
@@ -239,10 +239,8 @@ WHERE
   s.id = $submission_id
   AND q.id = $question_id
   AND (
-    CASE
-      WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL
-      ELSE iq.id = $instance_question_id::BIGINT
-    END
+    $instance_question_id::BIGINT IS NULL
+    OR iq.id = $instance_question_id::BIGINT
   )
   AND v.id = $variant_id;
 

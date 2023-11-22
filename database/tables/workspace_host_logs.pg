@@ -1,0 +1,13 @@
+columns
+    date: timestamp with time zone not null default now()
+    id: bigint not null default nextval('workspace_host_logs_id_seq'::regclass)
+    message: text
+    state: enum_workspace_host_state
+    workspace_host_id: bigint not null
+
+indexes
+    workspace_host_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    workspace_host_logs_workspace_host_id_idx: USING btree (workspace_host_id)
+
+foreign-key constraints
+    workspace_host_logs_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE

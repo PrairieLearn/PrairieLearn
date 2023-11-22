@@ -30,7 +30,7 @@ describe('Course element extensions', function () {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
         _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
-        'could not load all extensions'
+        'could not load all extensions',
       );
     };
 
@@ -66,11 +66,11 @@ describe('Course element extensions', function () {
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensions(
         path.join(TEST_COURSE_PATH, 'elementExtensions'),
-        path.join(TEST_COURSE_PATH, 'elementExtensions')
+        path.join(TEST_COURSE_PATH, 'elementExtensions'),
       );
       assert.isEmpty(
         extensions,
-        'non-zero number of extensions were loaded from a course without extensions'
+        'non-zero number of extensions were loaded from a course without extensions',
       );
     });
   });
@@ -91,6 +91,8 @@ describe('Course element extensions', function () {
 
     const incJs = 'extendable-element/extension-cssjs/extension-cssjs.js';
     const incCss = 'extendable-element/extension-cssjs/extension-cssjs.css';
+    const incDynamicJs = 'd3/dist/d3.min.js';
+    const incDynamicJsKey = 'd3';
     const incImg =
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
@@ -108,9 +110,29 @@ describe('Course element extensions', function () {
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
-      const html = response.$.html();
-      assert.isTrue(html.includes(incJs), 'page did not load extension javascript');
-      assert.isTrue(html.includes(incCss), 'page did not load extension css');
+      const page$ = response.$;
+      assert.lengthOf(
+        page$(`script[src$="${incJs}"]`),
+        1,
+        'page did not load extension javascript',
+      );
+      assert.lengthOf(
+        page$(`link[rel="stylesheet"][href$="${incCss}"]`),
+        1,
+        'page did not load extension css',
+      );
+
+      const importMap = page$('script[type="importmap"]').html();
+      const importMapData = JSON.parse(importMap);
+      assert.property(
+        importMapData.imports,
+        incDynamicJsKey,
+        'importmap did not include dynamic extension js',
+      );
+      assert.equal(
+        importMapData.imports[incDynamicJsKey].slice(-incDynamicJs.length),
+        incDynamicJs,
+      );
     });
     step('check the question page for a client-side image', async () => {
       let questionUrl =
@@ -118,19 +140,10 @@ describe('Course element extensions', function () {
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
-      const images = response.$('img');
-      let found_image = null;
-      for (let i = 0; i < images.length; i++) {
-        if (images[i].attribs.src.includes(incImg)) {
-          found_image = images[i];
-          break;
-        }
-      }
-      assert(found_image !== null, 'could not find image on page');
+      const image = Array.from(response.$('img')).find((img) => img.attribs.src.includes(incImg));
+      assert(image != null, 'could not find image on page');
 
-      const image_response = await helperClient.fetchCheerio(
-        locals.siteUrl + found_image.attribs.src
-      );
+      const image_response = await helperClient.fetchCheerio(locals.siteUrl + image.attribs.src);
       assert.isTrue(image_response.ok, 'could not fetch image');
     });
   });

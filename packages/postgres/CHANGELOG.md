@@ -1,5 +1,59 @@
 # @prairielearn/postgres
 
+## 1.8.0
+
+### Minor Changes
+
+- 3d1c40c16: Export CursorIterator and QueryParams types
+
+## 1.7.9
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
+## 1.7.8
+
+### Patch Changes
+
+- 8dd894623: Upgrade all dependencies
+
+## 1.7.7
+
+### Patch Changes
+
+- bd0053577: Upgrade all dependencies
+
+## 1.7.6
+
+### Patch Changes
+
+- f03853d90: Upgrade all dependencies
+
+## 1.7.5
+
+### Patch Changes
+
+- 6cad75197: Upgrade all dependencies
+
+## 1.7.4
+
+### Patch Changes
+
+- 10cc07dcc: Upgrade all dependencies
+
+## 1.7.3
+
+### Patch Changes
+
+- 098f581da: Upgrade all dependencies
+
+## 1.7.2
+
+### Patch Changes
+
+- 2b003b4d9: Upgrade all dependencies
+
 ## 1.7.1
 
 ### Patch Changes

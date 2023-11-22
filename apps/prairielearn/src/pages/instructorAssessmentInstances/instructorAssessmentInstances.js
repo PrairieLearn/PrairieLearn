@@ -1,15 +1,20 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const util = require('node:util');
+import * as util from 'node:util';
 
-const error = require('@prairielearn/error');
-const regrading = require('../../lib/regrading');
-const assessment = require('../../lib/assessment');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import { regradeAssessmentInstance } from '../../lib/regrading';
+import {
+  checkBelongs,
+  gradeAssessmentInstance,
+  gradeAllAssessmentInstances,
+} from '../../lib/assessment';
+import * as sqldb from '@prairielearn/postgres';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/raw_data.json', function (req, res, next) {
@@ -54,13 +59,13 @@ router.post('/', function (req, res, next) {
   if (req.body.__action === 'close') {
     const assessment_id = res.locals.assessment.id;
     const assessment_instance_id = req.body.assessment_instance_id;
-    assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
+    checkBelongs(assessment_instance_id, assessment_id, (err) => {
       if (ERR(err, next)) return;
 
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
-      assessment.gradeAssessmentInstance(
+      gradeAssessmentInstance(
         assessment_instance_id,
         res.locals.authn_user.user_id,
         requireOpen,
@@ -69,13 +74,13 @@ router.post('/', function (req, res, next) {
         function (err) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify({}));
-        }
+        },
       );
     });
   } else if (req.body.__action === 'delete') {
     const assessment_id = res.locals.assessment.id;
     const assessment_instance_id = req.body.assessment_instance_id;
-    assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
+    checkBelongs(assessment_instance_id, assessment_id, (err) => {
       if (ERR(err, next)) return;
 
       const params = [assessment_instance_id, res.locals.authn_user.user_id];
@@ -88,7 +93,7 @@ router.post('/', function (req, res, next) {
     const assessment_id = res.locals.assessment.id;
     const close = req.body.__action === 'close_all';
     const overrideGradeRate = true;
-    util.callbackify(assessment.gradeAllAssessmentInstances)(
+    util.callbackify(gradeAllAssessmentInstances)(
       assessment_id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
@@ -97,7 +102,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      }
+      },
     );
   } else if (req.body.__action === 'delete_all') {
     const params = [res.locals.assessment.id, res.locals.authn_user.user_id];
@@ -108,17 +113,17 @@ router.post('/', function (req, res, next) {
   } else if (req.body.__action === 'regrade') {
     const assessment_id = res.locals.assessment.id;
     const assessment_instance_id = req.body.assessment_instance_id;
-    assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
+    checkBelongs(assessment_instance_id, assessment_id, (err) => {
       if (ERR(err, next)) return;
 
-      regrading.regradeAssessmentInstance(
+      regradeAssessmentInstance(
         assessment_instance_id,
         res.locals.user.user_id,
-        res.locals.authn_user.id,
+        res.locals.authn_user.user_id,
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        }
+        },
       );
     });
   } else if (req.body.__action === 'set_time_limit') {
@@ -178,8 +183,9 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
-module.exports = router;
+
+export default router;

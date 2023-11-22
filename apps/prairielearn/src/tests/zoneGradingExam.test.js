@@ -1,14 +1,12 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
+const { assert } = require('chai');
+const fetch = require('node-fetch').default;
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
-
-var res, page, elemList;
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -156,62 +154,41 @@ describe('Zone grading exam assessment', function () {
     });
 
     describe('startExam-4. GET to assessments URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentsUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should parse', function () {
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentsUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
-      it('should contain E5', function () {
-        elemList = locals.$('td a:contains("Exam to test per-zone grading")');
+      it('should contain the correct link for E5', function () {
+        const elemList = locals.$('td a:contains("Exam to test per-zone grading")');
         assert.lengthOf(elemList, 1);
-      });
-      it('should have the correct link for E5', function () {
+
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/',
         );
       });
     });
 
     describe('startExam-5. GET to assessment URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should parse', function () {
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       it('should contain "Exam 5"', function () {
-        elemList = locals.$('p.lead strong:contains("Exam 5")');
+        const elemList = locals.$('p.lead strong:contains("Exam 5")');
         assert.lengthOf(elemList, 1);
       });
       it('should contain "QA 101"', function () {
-        elemList = locals.$('p.lead strong:contains("QA 101")');
+        const elemList = locals.$('p.lead strong:contains("QA 101")');
         assert.lengthOf(elemList, 1);
       });
       it('should have a CSRF token', function () {
-        elemList = locals.$('form input[name="__csrf_token"]');
+        const elemList = locals.$('form input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -220,34 +197,26 @@ describe('Zone grading exam assessment', function () {
     });
 
     describe('startExam-6. POST to assessment URL', function () {
-      it('should load successfully', function (callback) {
-        var form = {
-          __action: 'new_instance',
-          __csrf_token: locals.__csrf_token,
-        };
+      it('should load successfully', async () => {
         locals.preStartTime = Date.now();
-        request.post(
-          { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            locals.postStartTime = Date.now();
-            if (response.statusCode !== 200) {
-              return callback(new Error('bad status: ' + response.statusCode));
-            }
-            res = response;
-            page = body;
-            callback(null);
-          }
-        );
-      });
-      it('should parse', function () {
+
+        const res = await fetch(locals.assessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: locals.__csrf_token,
+          }),
+        });
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
-      });
-      it('should redirect to the correct path', function () {
-        locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+
+        // Check that we redirected to the correct URL
+        const url = new URL(res.url);
+        locals.assessmentInstanceUrl = locals.siteUrl + url.pathname;
+        assert.equal(url.pathname, '/pl/course_instance/1/assessment_instance/1');
+
+        locals.postStartTime = Date.now();
       });
       it('should create one assessment_instance', function (callback) {
         sqldb.query(sql.select_assessment_instances, [], function (err, result) {
@@ -268,8 +237,8 @@ describe('Zone grading exam assessment', function () {
           if (result.rowCount !== questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
-              )
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+              ),
             );
           }
           locals.instance_questions = result.rows;
@@ -285,27 +254,17 @@ describe('Zone grading exam assessment', function () {
     });
 
     describe('startExam-7. GET to assessment_instance URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentInstanceUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
-      });
-      it('should parse', function () {
+      it('should load successfully', async () => {
+        const res = await fetch(locals.assessmentInstanceUrl);
+        assert.equal(res.status, 200);
+        const page = await res.text();
         locals.$ = cheerio.load(page);
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
           const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
           question.url = locals.siteUrl + urlTail;
-          elemList = locals.$(`td a[href="${urlTail}"]`);
+          const elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);
         });
       });
@@ -315,28 +274,22 @@ describe('Zone grading exam assessment', function () {
   zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 
       startAssessment();
 
       zoneGradingTest.forEach(function (questionTest, iQuestionTest) {
-        describe(`${
-          questionTest.action
-        } answer number #${iQuestionTest + 1} for question ${questionTest.qid} with score ${questionTest.score}`, function () {
+        describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
+          questionTest.qid
+        } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
               if (questionTest.action === 'check-closed') {

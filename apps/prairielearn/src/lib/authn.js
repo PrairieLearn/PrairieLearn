@@ -3,7 +3,8 @@ const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
-const { config } = require('../lib/config');
+const { config } = require('./config');
+const { shouldSecureCookie } = require('../lib/cookie');
 const { InstitutionSchema, UserSchema } = require('./db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -20,6 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string | null} [name]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
+ * @property {number | string | null} [institution_id]
  */
 /**
  * @param {import('express').Request} req
@@ -34,11 +36,22 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
   if ('user_id' in authnParams) {
     user_id = authnParams.user_id;
   } else {
-    let params = [authnParams.uid, authnParams.name, authnParams.uin, authnParams.provider];
+    let params = [
+      authnParams.uid,
+      authnParams.name,
+      authnParams.uin,
+      authnParams.provider,
+      authnParams.institution_id,
+    ];
 
     let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
+    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    if (result === 'invalid_authn_provider') {
+      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`);
+      return;
+    }
   }
 
   const selectedUser = await sqldb.queryOptionalRow(
@@ -50,12 +63,18 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
       is_administrator: z.boolean(),
       is_instructor: z.boolean(),
       news_item_notification_count: z.number(),
-    })
+    }),
   );
 
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
   }
+
+  // The session store will pick this up and store it in the `user_sessions.user_id` column.
+  req.session.user_id = user_id;
+
+  // Our authentication middleware will read this value.
+  req.session.authn_provider_name = authnParams.provider;
 
   if (options.pl_authn_cookie) {
     var tokenData = {
@@ -66,8 +85,12 @@ module.exports.loadUser = async (req, res, authnParams, optionsParams = {}) => {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
-      secure: true,
+      secure: shouldSecureCookie(req),
     });
+
+    // After explicitly authenticating, clear the cookie that disables
+    // automatic authentication.
+    res.clearCookie('pl_disable_auto_authn');
   }
 
   if (options.redirect) {

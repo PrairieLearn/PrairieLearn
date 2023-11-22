@@ -1,22 +1,23 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { pipeline } = require('node:stream/promises');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { stringifyStream } = require('@prairielearn/csv');
+import * as express from 'express';
+import { pipeline } from 'node:stream/promises';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { stringifyStream } from '@prairielearn/csv';
 
-const sanitizeName = require('../../lib/sanitize-name');
-const assessment = require('../../lib/assessment');
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import { updateAssessmentStatistics } from '../../lib/assessment';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
-  const prefix = sanitizeName.assessmentFilenamePrefix(
+  const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
-    locals.course
+    locals.course,
   );
   locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
 };
@@ -27,7 +28,7 @@ router.get(
     setFilenames(res.locals);
 
     // make sure statistics are up to date
-    await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+    await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
     const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -52,7 +53,7 @@ router.get(
     res.locals.questions = questionResult.rows;
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  })
+  }),
 );
 
 router.get(
@@ -118,7 +119,7 @@ router.get(
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-  })
+  }),
 );
 
 router.post(
@@ -139,7 +140,7 @@ router.post(
         body: req.body,
       });
     }
-  })
+  }),
 );
 
-module.exports = router;
+export default router;

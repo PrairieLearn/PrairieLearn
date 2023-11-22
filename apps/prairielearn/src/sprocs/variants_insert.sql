@@ -83,18 +83,6 @@ BEGIN
         real_user_id := user_id;
     END IF;
 
-    -- check consistency of question_id and course_id
-    SELECT q.id
-    INTO real_question_id
-    FROM
-        questions AS q
-    WHERE
-        q.id = real_question_id
-        -- TODO: when implementing question sharing, make sure the question has been shared with the course_id
-        -- instead of requiring the question being created in the course that created it.
-        AND q.course_id = variant_course_id;
-    IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
-
     -- check consistency of course_instance_id and course_id
     IF real_course_instance_id IS NOT NULL THEN
         PERFORM *
@@ -122,14 +110,42 @@ BEGIN
         INTO workspace_id;
     END IF;
 
-    INSERT INTO variants
-        (instance_question_id, question_id,      course_instance_id, user_id, group_id,
-        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, course_id)
+    INSERT INTO
+      variants (
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id,
+        group_id,
+        number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        broken_at,
+        authn_user_id,
+        workspace_id,
+        course_id
+      )
     VALUES
-        (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
-        new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, variant_course_id)
+      (
+        instance_question_id,
+        real_question_id,
+        real_course_instance_id,
+        real_user_id,
+        real_group_id,
+        new_number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        CASE WHEN broken THEN NOW() ELSE NULL END,
+        authn_user_id,
+        workspace_id,
+        variant_course_id
+      )
     RETURNING id
     INTO variant_id;
 

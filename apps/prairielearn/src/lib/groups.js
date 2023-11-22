@@ -1,10 +1,10 @@
 //@ts-check
-const ERR = require('async-stacktrace');
-const error = require('@prairielearn/error');
-const z = require('zod');
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import { z } from 'zod';
 const _ = require('lodash');
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const GroupConfigSchema = z.object({
@@ -90,10 +90,10 @@ const AssessmentLevelPermissionsSchema = z.object({
  * @param {string} assessmentId
  * @returns {Promise<GroupConfig>}
  */
-module.exports.getGroupConfig = async function (assessmentId) {
+export async function getGroupConfig(assessmentId) {
   let params = { assessment_id: assessmentId };
   return await sqldb.queryValidatedOneRow(sql.get_group_config, params, GroupConfigSchema);
-};
+}
 
 /**
  * Returns the group id for the user's current group in an assessment, if it exists.
@@ -103,21 +103,21 @@ module.exports.getGroupConfig = async function (assessmentId) {
  * @param {string} userId
  * @returns {Promise<string | null>}
  */
-module.exports.getGroupId = async function (assessmentId, userId) {
+export async function getGroupId(assessmentId, userId) {
   let params = { assessment_id: assessmentId, user_id: userId };
   return await sqldb.queryValidatedSingleColumnZeroOrOneRow(
     sql.get_group_id,
     params,
-    GroupIdSchema
+    GroupIdSchema,
   );
-};
+}
 
 /**
  * @param {string} groupId
  * @param {GroupConfig} groupConfig
  * @returns {Promise<GroupInfo>}
  */
-module.exports.getGroupInfo = async function (groupId, groupConfig) {
+export async function getGroupInfo(groupId, groupConfig) {
   const groupInfo = {};
 
   let params = { group_id: groupId };
@@ -141,7 +141,7 @@ module.exports.getGroupInfo = async function (groupId, groupConfig) {
   }
 
   return groupInfo;
-};
+}
 
 /**
  * A helper function to getGroupInfo that returns a data structure containing info about an
@@ -159,7 +159,7 @@ async function getRolesInfo(groupId, groupMembers) {
   let result = await sqldb.queryValidatedRows(
     sql.get_role_assignments,
     params,
-    RoleAssignmentSchema
+    RoleAssignmentSchema,
   );
   let roleAssignments = {}; // {uid: [{role_name, group_role_id, user_id}]}
   result.forEach(({ uid, role_name, group_role_id, user_id }) => {
@@ -176,13 +176,13 @@ async function getRolesInfo(groupId, groupMembers) {
   rolesInfo.groupRoles = await sqldb.queryValidatedRows(
     sql.get_group_roles,
     params,
-    GroupRoleSchema
+    GroupRoleSchema,
   );
 
   // Identify errors for any roles where count is not between max and min (if they exist)
   rolesInfo.validationErrors = rolesInfo.groupRoles.filter(
     (role) =>
-      (role.minimum && role.count < role.minimum) || (role.maximum && role.count > role.maximum)
+      (role.minimum && role.count < role.minimum) || (role.maximum && role.count > role.maximum),
   );
 
   // Identify any disabled roles based on group size, role minimums
@@ -200,7 +200,7 @@ async function getRolesInfo(groupId, groupMembers) {
   // Check if any users have too many roles
   if (groupSize >= minimumRolesToFill) {
     rolesInfo.rolesAreBalanced = Object.values(roleAssignments).every(
-      (roles) => roles.length === 1
+      (roles) => roles.length === 1,
     );
   } else {
     rolesInfo.rolesAreBalanced = true;
@@ -208,106 +208,82 @@ async function getRolesInfo(groupId, groupMembers) {
 
   // Check if users have no roles
   rolesInfo.usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined
+    (member) => roleAssignments[member.uid] === undefined,
   );
 
   return rolesInfo;
 }
 
 /**
- * @param {string} joinCode
+ * @param {string} fullJoinCode
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
- * @param {Function} callback
  */
-module.exports.joinGroup = function (joinCode, assessmentId, userId, authnUserId, callback) {
-  var splitJoinCode = joinCode.split('-');
-  const validJoinCode = splitJoinCode.length === 2;
-  if (validJoinCode) {
-    const group_name = splitJoinCode[0];
-    const join_code = splitJoinCode[1].toUpperCase();
-    if (join_code.length !== 4) {
-      callback(new Error('invalid length of join code'));
-      return;
-    }
-    let params = [assessmentId, userId, authnUserId, group_name, join_code];
-    sqldb.call('group_users_insert', params, function (err, _result) {
-      if (err) {
-        let params = {
-          assessment_id: assessmentId,
-        };
-        sqldb.query(sql.get_group_config, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const permissions = result.rows[0];
-          callback(null, false, permissions);
-          return;
-        });
-      } else {
-        callback(null, true);
-      }
-    });
-  } else {
+export async function joinGroup(fullJoinCode, assessmentId, userId, authnUserId) {
+  var splitJoinCode = fullJoinCode.split('-');
+  if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
-    let params = {
-      assessment_id: assessmentId,
-    };
-    sqldb.query(sql.get_group_config, params, function (err, result) {
-      if (ERR(err, callback)) return;
-      const groupConfig = result.rows[0];
-      callback(null, false, groupConfig);
-    });
+    flash('error', 'The join code has an incorrect format');
+    return;
   }
-};
+  const groupName = splitJoinCode[0];
+  const joinCode = splitJoinCode[1].toUpperCase();
+  try {
+    await sqldb.callAsync('group_users_insert', [
+      assessmentId,
+      userId,
+      authnUserId,
+      groupName,
+      joinCode,
+    ]);
+  } catch (err) {
+    flash(
+      'error',
+      `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
+    );
+  }
+}
 
 /**
  * @param {string} groupName
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
- * @param {Function} callback
  */
-module.exports.createGroup = function (groupName, assessmentId, userId, authnUserId, callback) {
-  let params = {
-    assessment_id: assessmentId,
-    user_id: userId,
-    authn_user_id: authnUserId,
-    group_name: groupName,
-  };
-  //alphanumeric characters only
-  let invalidGroupName = true;
-  const letters = /^[0-9a-zA-Z]+$/;
-  if (groupName.length <= 30 && groupName.match(letters)) {
-    invalidGroupName = false;
-    sqldb.query(sql.create_group, params, function (err, _result) {
-      if (!err) {
-        callback(null, true);
-      } else {
-        sqldb.query(sql.get_group_config, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const groupConfig = result.rows[0];
-          const uniqueGroupName = true;
-          callback(null, false, uniqueGroupName, null, groupConfig);
-        });
-      }
-    });
+export async function createGroup(groupName, assessmentId, userId, authnUserId) {
+  if (groupName.length > 30) {
+    flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
+    return;
   }
-  if (invalidGroupName) {
-    sqldb.query(sql.get_group_config, params, function (err, result) {
-      if (ERR(err, callback)) return;
-      const groupConfig = result.rows[0];
-      const invalidGroupName = true;
-      callback(null, false, null, invalidGroupName, groupConfig);
-    });
+  if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
+    flash(
+      'error',
+      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+    );
+    return;
   }
-};
+  try {
+    await sqldb.queryAsync(sql.create_group, {
+      assessment_id: assessmentId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      group_name: groupName,
+    });
+  } catch (err) {
+    flash(
+      'error',
+      `Failed to create the group ${groupName}. It is already taken. Please try another one.`,
+    );
+  }
+}
 
 /**
  * @param {GroupInfo} groupInfo
  * @param {string} leavingUserId
  * @returns {GroupRoleAssignment[]}
  */
-module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavingUserId) {
+export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo.roleAssignments).flat();
 
@@ -320,7 +296,7 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
       (role) =>
         (role.minimum ?? 0) > 0 &&
         role.count <= (role.minimum ?? 0) &&
-        leavingUserRoleIds.includes(role.id)
+        leavingUserRoleIds.includes(role.id),
     )
     .map((role) => role.id);
 
@@ -334,7 +310,7 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         m.user_id !== leavingUserId.toString() &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => user_id === m.user_id) === undefined
+        groupRoleAssignmentUpdates.find(({ user_id }) => user_id === m.user_id) === undefined,
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -360,8 +336,8 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
       (m) =>
         m.user_id !== leavingUserId.toString() &&
         !groupRoleAssignmentUpdates.some(
-          (u) => u.group_role_id === roleId && u.user_id === m.user_id
-        )
+          (u) => u.group_role_id === roleId && u.user_id === m.user_id,
+        ),
     )?.user_id;
     if (assigneeUserId !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -373,33 +349,30 @@ module.exports.getGroupRoleReassignmentsAfterLeave = function (groupInfo, leavin
   }
 
   return groupRoleAssignmentUpdates;
-};
+}
 
 /**
  * @param {string} assessmentId
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
+export async function leaveGroup(assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
-    const groupId = await module.exports.getGroupId(assessmentId, userId);
+    const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs"
+        "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
-    const groupConfig = await module.exports.getGroupConfig(assessmentId);
+    const groupConfig = await getGroupConfig(assessmentId);
 
     if (groupConfig.has_roles) {
-      const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
+      const groupInfo = await getGroupInfo(groupId, groupConfig);
 
       // Reassign roles if there is more than 1 user
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
-        const groupRoleAssignmentUpdates = module.exports.getGroupRoleReassignmentsAfterLeave(
-          groupInfo,
-          userId
-        );
+        const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
 
         await sqldb.queryAsync(sql.reassign_group_roles_after_leave, {
           assessment_id: assessmentId,
@@ -409,7 +382,7 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
 
         // Groups with low enough size should only use required roles
         const minRolesToFill = _.sum(
-          groupInfo.rolesInfo.groupRoles.map((role) => role.minimum ?? 0)
+          groupInfo.rolesInfo.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
           await sqldb.queryAsync(sql.delete_non_required_roles, {
@@ -427,21 +400,21 @@ module.exports.leaveGroup = async function (assessmentId, userId, authnUserId) {
       authn_user_id: authnUserId,
     });
   });
-};
+}
 
 /**
  * @param {string} assessmentId
  * @param {string} userId
  * @returns {Promise<AssessmentLevelPermissions>}
  */
-module.exports.getAssessmentPermissions = async function (assessmentId, userId) {
+export async function getAssessmentPermissions(assessmentId, userId) {
   const params = { assessment_id: assessmentId, user_id: userId };
   return await sqldb.queryValidatedOneRow(
     sql.get_assessment_level_permissions,
     params,
-    AssessmentLevelPermissionsSchema
+    AssessmentLevelPermissionsSchema,
   );
-};
+}
 
 /**
  * Updates the role assignments of users in a group, given the output from groupRoleSelectTable.ejs.
@@ -451,25 +424,25 @@ module.exports.getAssessmentPermissions = async function (assessmentId, userId) 
  * @param {string} userId
  * @param {string} authnUserId
  */
-module.exports.updateGroupRoles = async function (requestBody, assessmentId, userId, authnUserId) {
+export async function updateGroupRoles(requestBody, assessmentId, userId, authnUserId) {
   await sqldb.runInTransactionAsync(async () => {
-    const groupId = await module.exports.getGroupId(assessmentId, userId);
+    const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
       throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs"
+        "Couldn't access the user's group ID with the provided assessment and user IDs",
       );
     }
 
-    const permissions = await module.exports.getAssessmentPermissions(assessmentId, userId);
+    const permissions = await getAssessmentPermissions(assessmentId, userId);
     if (!permissions.can_assign_roles_at_start) {
       throw error.make(
         403,
-        'User does not have permission to assign roles at the start of this assessment'
+        'User does not have permission to assign roles at the start of this assessment',
       );
     }
 
-    const groupConfig = await module.exports.getGroupConfig(assessmentId);
-    const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
+    const groupConfig = await getGroupConfig(assessmentId);
+    const groupInfo = await getGroupInfo(groupId, groupConfig);
 
     // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
@@ -488,7 +461,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       .filter((role) => role.can_assign_roles_at_start)
       .map((role) => role.id);
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
-      assignerRoleIds.includes(roleAssignment.group_role_id)
+      assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
       roleAssignments.push({
@@ -505,7 +478,7 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
       authn_user_id: authnUserId,
     });
   });
-};
+}
 
 /**
  * Delete all groups for the given assessment.
@@ -513,9 +486,9 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
  * @param {string} assessmentId
  * @param {string} authnUserId
  */
-module.exports.deleteAllGroups = async function (assessmentId, authnUserId) {
+export async function deleteAllGroups(assessmentId, authnUserId) {
   await sqldb.queryAsync(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });
-};
+}

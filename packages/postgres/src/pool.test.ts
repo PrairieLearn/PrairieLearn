@@ -31,7 +31,7 @@ describe('@prairielearn/postgres', function () {
     await postgresTestUtils.createDatabase();
     await queryAsync(
       'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
-      {}
+      {},
     );
     await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
   });
@@ -58,7 +58,7 @@ describe('@prairielearn/postgres', function () {
       const rows = await queryRows(
         'SELECT * FROM workspaces WHERE id <= $1;',
         [10],
-        WorkspaceSchema
+        WorkspaceSchema,
       );
       assert.lengthOf(rows, 10);
     });
@@ -109,7 +109,7 @@ describe('@prairielearn/postgres', function () {
       const row = await queryOptionalRow(
         'SELECT * FROM workspaces WHERE id = $1;',
         [1],
-        WorkspaceSchema
+        WorkspaceSchema,
       );
       assert.isNotNull(row);
       assert.equal(row?.id, '1');
@@ -118,7 +118,7 @@ describe('@prairielearn/postgres', function () {
     it('handles missing result', async () => {
       const row = await queryOptionalRow(
         'SELECT * FROM workspaces WHERE id = -1;',
-        WorkspaceSchema
+        WorkspaceSchema,
       );
       assert.isNull(row);
     });
@@ -196,7 +196,7 @@ describe('@prairielearn/postgres', function () {
         const cursor = await queryValidatedCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
           {},
-          WorkspaceSchema
+          WorkspaceSchema,
         );
         const allRows = [];
         for await (const rows of cursor.iterate(10)) {
@@ -212,7 +212,7 @@ describe('@prairielearn/postgres', function () {
         const cursor = await queryValidatedCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
           {},
-          BadWorkspaceSchema
+          BadWorkspaceSchema,
         );
 
         async function readAllRows() {
@@ -234,7 +234,7 @@ describe('@prairielearn/postgres', function () {
         const cursor = await queryValidatedCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
           {},
-          WorkspaceSchema
+          WorkspaceSchema,
         );
         const stream = cursor.stream(1);
         const allRows = [];
@@ -249,7 +249,7 @@ describe('@prairielearn/postgres', function () {
         const cursor = await queryValidatedCursor(
           'SELECT * FROM workspaces ORDER BY id ASC;',
           {},
-          BadWorkspaceSchema
+          BadWorkspaceSchema,
         );
         const stream = cursor.stream(1);
 

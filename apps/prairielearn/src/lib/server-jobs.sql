@@ -86,7 +86,8 @@ WITH
     SET
       finish_date = CURRENT_TIMESTAMP,
       status = $status::enum_job_status,
-      output = $output
+      output = $output,
+      data = $data::jsonb
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status
@@ -98,3 +99,14 @@ SET
 WHERE
   js.id = $job_sequence_id
   AND js.status = 'Running'::enum_job_status;
+
+-- BLOCK select_job_output
+SELECT
+  j.*
+FROM
+  jobs AS j
+WHERE
+  j.job_sequence_id = $job_sequence_id
+ORDER BY
+  j.number_in_sequence,
+  j.id;

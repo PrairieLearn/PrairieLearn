@@ -27,7 +27,7 @@ describe('editor library', () => {
   it('gets details for assessment info file', () => {
     const details = /** @type {import('../lib/editorUtil').AssessmentInfo} */ (
       editor.getDetailsForFile(
-        'courseInstances/testinstance/assessments/testassessment/infoAssessment.json'
+        'courseInstances/testinstance/assessments/testassessment/infoAssessment.json',
       )
     );
     assert.equal(details.type, 'assessment');

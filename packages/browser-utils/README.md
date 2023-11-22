@@ -30,7 +30,7 @@ const elements = parseHTML(
   html`
     <div>Hello, world</div>
     <div>Goodbye, world</div>
-  `
+  `,
 );
 const div = parseHTMLElement(document, html`<div>Hello, world</div>`);
 ```
@@ -56,6 +56,38 @@ import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 onDocumentReady(() => {
   const data = decodeData<string[]>('courses-data');
   console.log(data);
+});
+```
+
+### `templateFromAttributes`
+
+This function simplifies the common pattern of taking attributes from one HTML element and using them as the content of other HTML elements. This is often done with modals that need to display information about a specific entity.
+
+Consider the following simplified markup:
+
+```html
+<button class="js-delete-course" data-course-name="CS 123">Delete course</button>
+
+<div class="modal" id="deleteCourseModal">
+  <p>Are you sure you want to delete course <strong class="js-course-name"></strong>?</p>
+  <button type="button">Cancel</button>
+  <button type="button">Delete <span class="js-course-name"></span></button>
+</div>
+```
+
+The following JavaScript will "template" the value from `data-course-name` on the button into the elements with the `.js-course-name` in the modal.
+
+```ts
+import { templateFromAttributes } from '@prairielearn/browser-utils';
+
+const modal = document.querySelector('#deleteCourseModal');
+document.querySelectorAll('.js-delete-course').forEach((el) => {
+  el.addEventListener('click', (e) => {
+    const button = e.target;
+    templateFromAttributes(e.currentTarget, modal, {
+      'data-course-name': '.js-course-name',
+    });
+  });
 });
 ```
 

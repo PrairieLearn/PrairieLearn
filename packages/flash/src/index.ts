@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Request, Response, NextFunction } from 'express';
+import { HtmlSafeString, html } from '@prairielearn/html';
 
 const als = new AsyncLocalStorage<FlashStorage>();
 
@@ -17,11 +18,12 @@ export function flashMiddleware() {
   };
 }
 
-export function flash(): FlashMessage[];
-export function flash(type: FlashMessageType): FlashMessage[];
-export function flash(type: FlashMessageType[]): FlashMessage[];
-export function flash(type: FlashMessageType, message: string): void;
-export function flash(type?: FlashMessageType | FlashMessageType[], message?: string) {
+export function flash(type?: FlashMessageType | FlashMessageType[]): FlashMessage[];
+export function flash(type: FlashMessageType, message: string | HtmlSafeString): void;
+export function flash(
+  type?: FlashMessageType | FlashMessageType[],
+  message?: string | HtmlSafeString,
+) {
   const flashStorage = als.getStore();
   if (!flashStorage) {
     throw new Error('flash() must be called within a request');
@@ -50,7 +52,7 @@ export function flash(type?: FlashMessageType | FlashMessageType[], message?: st
 }
 
 interface FlashStorage {
-  add(type: FlashMessageType, message: string): void;
+  add(type: FlashMessageType, message: string | HtmlSafeString): void;
   get(type: FlashMessageType): FlashMessage[] | null;
   getAll(): FlashMessage[];
   clear(type: FlashMessageType): void;
@@ -65,9 +67,9 @@ function makeFlashStorage(req: Request): FlashStorage {
   const session = req.session as any;
 
   return {
-    add(type: FlashMessageType, message: string) {
+    add(type: FlashMessageType, message: string | HtmlSafeString) {
       session.flash ??= [];
-      session.flash.push({ type, message });
+      session.flash.push({ type, message: html`${message}`.toString() });
     },
     get(type: FlashMessageType) {
       const messages = session.flash ?? [];

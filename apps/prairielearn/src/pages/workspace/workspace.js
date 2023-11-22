@@ -5,6 +5,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const sqldb = require('@prairielearn/postgres');
 const workspaceUtils = require('@prairielearn/workspace-utils');
+import { generateSignedToken } from '@prairielearn/signed-token';
 
 const { config } = require('../../lib/config');
 
@@ -33,8 +34,12 @@ router.get('/', (_req, res, _next) => {
       showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
       heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
       visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
+      socketToken: generateSignedToken(
+        { workspace_id: res.locals.workspace_id.toString() },
+        config.secretKey,
+      ),
       resLocals: res.locals,
-    })
+    }),
   );
 });
 
@@ -55,14 +60,14 @@ router.post(
       await workspaceUtils.updateWorkspaceState(
         workspace_id,
         'uninitialized',
-        'Resetting container'
+        'Resetting container',
       );
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
       return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
-  })
+  }),
 );
 
 module.exports = router;

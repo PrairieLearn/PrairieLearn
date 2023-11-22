@@ -81,4 +81,5 @@ export {
   deepReadDirSync,
   Integrations,
   Handlers,
+  runWithAsyncContext,
 } from '@sentry/node';

@@ -1,24 +1,25 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const async = require('async');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as async from 'async';
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { config } = require('../../lib/config');
-const QR = require('qrcode-svg');
+import QR from 'qrcode-svg';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
 
-const sqldb = require('@prairielearn/postgres');
-
-const sql = sqldb.loadSqlEquiv(__filename);
-
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const {
+import {
   AssessmentCopyEditor,
   AssessmentRenameEditor,
   AssessmentDeleteEditor,
-} = require('../../lib/editors');
-const { encodePath } = require('../../lib/uri-util');
+} from '../../lib/editors';
+import { encodePath } from '../../lib/uri-util';
+import { getCanonicalHost } from '../../lib/url';
+
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');
@@ -33,20 +34,20 @@ router.get('/', function (req, res, next) {
             if (ERR(err, callback)) return;
             res.locals.tids = result.rows[0].tids;
             callback(null);
-          }
+          },
         );
       },
     ],
     function (err) {
       if (ERR(err, next)) return;
-      const host = config.serverCanonicalHost || `${req.protocol}://${req.headers.host}`;
+      const host = getCanonicalHost(req);
       res.locals.studentLink = new URL(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
           res.locals.course_instance.id +
           '/assessment/' +
           res.locals.assessment.id,
-        host
+        host,
       ).href;
       res.locals.studentLinkQRCode = new QR({
         content: res.locals.studentLink,
@@ -59,11 +60,11 @@ router.get('/', function (req, res, next) {
           res.locals.course_instance.short_name,
           'assessments',
           res.locals.assessment.tid,
-          'infoAssessment.json'
-        )
+          'infoAssessment.json',
+        ),
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
@@ -81,7 +82,7 @@ router.post('/', function (req, res, next) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`
+            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
@@ -91,10 +92,14 @@ router.post('/', function (req, res, next) {
             },
             (err, result) => {
               if (ERR(err, next)) return;
-              res.redirect(
-                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings'
+              flash(
+                'success',
+                'Assessment copied successfully. You are now viewing your copy of the assessment.',
               );
-            }
+              res.redirect(
+                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings',
+              );
+            },
           );
         }
       });
@@ -120,8 +125,8 @@ router.post('/', function (req, res, next) {
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
-        )
+          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+        ),
       );
     }
     let tid_new;
@@ -155,9 +160,9 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
 
-module.exports = router;
+export default router;

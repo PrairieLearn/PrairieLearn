@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
@@ -28,7 +27,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   };
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam9, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
@@ -79,11 +78,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     const questionUrl = response.$('a:contains("Question 1")').attr('href');
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
 
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name="time-limit-finish-form"]'
-    );
+    context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
   step('simulate a time limit expiration', async () => {

@@ -1,14 +1,15 @@
-const express = require('express');
-const router = express.Router();
-
-const path = require('path');
+//@ts-check
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const async = require('async');
 const ERR = require('async-stacktrace');
-const { CourseInfoEditor } = require('../../lib/editors');
-const { logger } = require('@prairielearn/logger');
-const error = require('@prairielearn/error');
+import { CourseInfoEditor } from '../../lib/editors';
+import { logger } from '@prairielearn/logger';
+import * as error from '@prairielearn/error';
+
+const router = express.Router();
 
 router.get('/', function (req, res, next) {
   debug('GET /');
@@ -44,14 +45,14 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 });
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course) {
     return next(
-      error.make(403, 'Access denied (must be course editor and must not be example course)')
+      error.make(403, 'Access denied (must be course editor and must not be example course)'),
     );
   }
 
@@ -76,9 +77,9 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
 
-module.exports = router;
+export default router;

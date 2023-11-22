@@ -5,6 +5,7 @@ const genericPool = require('generic-pool');
 const { v4: uuidv4 } = require('uuid');
 const Sentry = require('@prairielearn/sentry');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { setTimeout: sleep } = require('node:timers/promises');
 
 const { logger } = require('@prairielearn/logger');
 const { config } = require('../config');
@@ -12,7 +13,6 @@ const load = require('../load');
 const { CodeCallerContainer, init: initCodeCallerDocker } = require('./code-caller-container');
 const { CodeCallerNative } = require('./code-caller-native');
 const { FunctionMissingError } = require('./code-caller-shared');
-const { sleep } = require('../sleep');
 
 /**
  * This module maintains a pool of CodeCaller workers, which are used any
@@ -110,7 +110,7 @@ module.exports = {
       {
         min: numWorkers,
         max: numWorkers,
-      }
+      },
     );
 
     pool.on('factoryCreateError', (err) => {

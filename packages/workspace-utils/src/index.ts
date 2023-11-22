@@ -1,27 +1,28 @@
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { contains } from '@prairielearn/path-utils';
 import type { Server as SocketIOServer } from 'socket.io';
+import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import path from 'path';
 
 const sql = loadSqlEquiv(__filename);
 
-let socketIoServer: SocketIOServer | null = null;
+export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
 
-export function init(io: SocketIOServer) {
+let socketIoServer: SocketIOServer | SocketIOEmitter | null = null;
+
+export function init(io: SocketIOServer | SocketIOEmitter) {
   socketIoServer = io;
 }
 
 function emitMessageForWorkspace(workspaceId: string | number, event: string, ...args: any[]) {
-  getWorkspaceSocketNamespace()
+  if (!socketIoServer) throw new Error('SocketIO server not initialized.');
+
+  socketIoServer
+    .of(WORKSPACE_SOCKET_NAMESPACE)
     .to(`workspace-${workspaceId}`)
     .emit(event, ...args);
-}
-
-export function getWorkspaceSocketNamespace() {
-  if (!socketIoServer) throw new Error('socket.io server not initialized');
-  return socketIoServer.of('/workspace');
 }
 
 /**
@@ -34,7 +35,7 @@ export function getWorkspaceSocketNamespace() {
 export async function updateWorkspaceMessage(
   workspace_id: string | number,
   message: string,
-  toDatabase = true
+  toDatabase = true,
 ): Promise<void> {
   if (toDatabase) await queryAsync(sql.update_workspace_message, { workspace_id, message });
   emitMessageForWorkspace(workspace_id, 'change:message', {
@@ -53,7 +54,7 @@ export async function updateWorkspaceMessage(
 export async function updateWorkspaceState(
   workspace_id: string | number,
   state: string,
-  message = ''
+  message = '',
 ): Promise<void> {
   // TODO: add locking
   await queryAsync(sql.update_workspace_state, { workspace_id, state, message });
@@ -72,7 +73,7 @@ interface GradedFilesLimits {
 export async function getWorkspaceGradedFiles(
   workspaceDir: string,
   gradedFiles: string[],
-  limits: GradedFilesLimits
+  limits: GradedFilesLimits,
 ): Promise<Entry[]> {
   const files = (
     await fg(gradedFiles, {
@@ -91,7 +92,7 @@ export async function getWorkspaceGradedFiles(
     throw new Error(
       `Workspace files exceed limit of ${filesize(limits.maxSize, {
         base: 2,
-      })}.`
+      })}.`,
     );
   }
 

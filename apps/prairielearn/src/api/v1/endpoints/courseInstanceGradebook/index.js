@@ -14,7 +14,7 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     res.status(200).send(result.rows[0].item);
-  })
+  }),
 );
 
 module.exports = router;

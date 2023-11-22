@@ -3,11 +3,12 @@ import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
+import { Job, JobSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -28,24 +29,38 @@ interface ServerJobExecOptions {
 }
 
 export interface ServerJob {
+  fail(msg: string): never;
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
   jobSequenceId: string;
   execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
 
+/**
+ * Internal error subclass so we can identify when `fail()` is called.
+ */
+class ServerJobAbortError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ServerJobAbortError';
+  }
+}
+
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
+  public data: Record<string, unknown> = {};
   private started = false;
   private finished = false;
   public output = '';
@@ -53,6 +68,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
     this.jobId = jobId;
+  }
+
+  fail(msg: string): never {
+    this.error(msg);
+    throw new ServerJobAbortError(msg);
   }
 
   error(msg: string) {
@@ -96,10 +116,19 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
+   * sequence has completed, even if an error is encountered.
+   */
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+    this.checkAndMarkStarted();
+    await this.executeInternal(fn, false);
+  }
+
+  /**
+   * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
   }
@@ -124,7 +153,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private async executeInternal(
     fn: ServerJobExecutionFunction,
-    shouldThrow: boolean
+    shouldThrow: boolean,
   ): Promise<void> {
     try {
       await fn(this);
@@ -150,7 +179,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
     socketServer.io
-      .to('job-' + this.jobId)
+      ?.to('job-' + this.jobId)
       .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
@@ -159,7 +188,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     if (this.finished) return;
     this.finished = true;
 
-    if (err) {
+    // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
+    // any details about the error object itself, as `fail` will have already
+    // printed the message. This error is just used as a form of control flow.
+    if (err && !(err instanceof ServerJobAbortError)) {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
@@ -179,12 +211,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
+      data: this.data,
       status: err ? 'Error' : 'Success',
     });
 
     // Notify sockets.
-    socketServer.io.to('job-' + this.jobId).emit('update');
-    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
+    socketServer.io?.to('job-' + this.jobId).emit('update');
+    socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
   }
 }
 
@@ -207,10 +240,14 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     z.object({
       job_sequence_id: z.string(),
       job_id: z.string(),
-    })
+    }),
   );
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
   return serverJob;
+}
+
+export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
+  return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
 }

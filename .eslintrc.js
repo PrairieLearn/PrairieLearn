@@ -7,10 +7,11 @@ module.exports = {
     'eslint:recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/stylistic',
+    'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha'],
+  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -61,6 +62,10 @@ module.exports = {
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
 
+    // These rules are implemented in `packages/eslint-plugin-prairielearn`.
+    '@prairielearn/aws-client-mandatory-config': 'error',
+    '@prairielearn/aws-client-shared-config': 'error',
+
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [
       'error',
@@ -75,6 +80,10 @@ module.exports = {
 
     // Look, sometimes we just want to use `any`.
     '@typescript-eslint/no-explicit-any': 'off',
+
+    // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+    // TODO: fix the violations so we can enable this rule.
+    '@typescript-eslint/no-dynamic-delete': 'off',
   },
   overrides: [
     {

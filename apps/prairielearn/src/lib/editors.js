@@ -1,26 +1,30 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const { logger } = require('@prairielearn/logger');
-const { contains } = require('@prairielearn/path-utils');
-const { createServerJob } = require('./server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const syncFromDisk = require('../sync/syncFromDisk');
-const courseUtil = require('../lib/courseUtil');
-const requireFrontend = require('../lib/require-frontend');
-const { config } = require('../lib/config');
-const path = require('path');
+import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import { createServerJob } from './server-jobs';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as syncFromDisk from '../sync/syncFromDisk';
+import {
+  getLockNameForCoursePath,
+  getCourseCommitHash,
+  updateCourseCommitHash,
+  getOrUpdateCourseCommitHash,
+} from '../models/course';
+import { config } from './config';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const fs = require('fs-extra');
-const async = require('async');
+import * as error from '@prairielearn/error';
+import * as fs from 'fs-extra';
+import * as async from 'async';
 const { v4: uuidv4 } = require('uuid');
 const sha256 = require('crypto-js/sha256');
-const util = require('util');
-const chunks = require('./chunks');
-const { EXAMPLE_COURSE_PATH } = require('./paths');
-const { escapeRegExp } = require('@prairielearn/sanitize');
-const sqldb = require('@prairielearn/postgres');
+import { updateChunksForCourse, logChunkChangesToJob } from './chunks';
+import { EXAMPLE_COURSE_PATH } from './paths';
+import { escapeRegExp } from '@prairielearn/sanitize';
+import * as sqldb from '@prairielearn/postgres';
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -29,31 +33,29 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('./server-jobs').ServerJob} job
  */
 async function syncCourseFromDisk(course, startGitHash, job) {
-  const endGitHash = await courseUtil.getCommitHashAsync(course.path);
+  const endGitHash = await getCourseCommitHash(course.path);
 
   const result = await syncFromDisk.syncDiskToSqlWithLock(course.path, course.id, job);
 
   if (config.chunksGenerator) {
-    const chunkChanges = await chunks.updateChunksForCourse({
+    const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
       courseData: result.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
-    chunks.logChunkChangesToJob(chunkChanges, job);
+    logChunkChangesToJob(chunkChanges, job);
   }
 
-  await courseUtil.updateCourseCommitHashAsync(course);
+  await updateCourseCommitHash(course);
 
   if (result.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
-
-  await util.promisify(requireFrontend.undefQuestionServers)(course.path, job);
 }
 
-async function cleanAndResetRepository(course, env, job) {
+export async function cleanAndResetRepository(course, env, job) {
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
     cwd: course.path,
@@ -61,7 +63,7 @@ async function cleanAndResetRepository(course, env, job) {
   });
 }
 
-class Editor {
+export class Editor {
   constructor(params) {
     this.authz_data = params.locals.authz_data;
     this.course = params.locals.course;
@@ -107,18 +109,19 @@ class Editor {
           });
           jobSequenceId = serverJob.jobSequenceId;
 
-          // We deliberately use `execute` instead of `executeInBackground` here
-          // because we want edits to complete during the request during which
-          // they are made.
-          await serverJob.execute(async (job) => {
+          // We deliberately use `executeUnsafe` here because we want to wait
+          // for the edit to complete during the request during which it was
+          // made. We use `executeUnsafe` instead of `execute` because we want
+          // errors to be thrown and handled by the caller.
+          await serverJob.executeUnsafe(async (job) => {
             const gitEnv = process.env;
             if (config.gitSshCommand != null) {
               gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
             }
 
-            const lockName = `coursedir:${this.course.path}`;
+            const lockName = getLockNameForCoursePath(this.course.path);
             await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {
-              const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(this.course);
+              const startGitHash = await getOrUpdateCourseCommitHash(this.course);
 
               if (config.fileEditorUseGit) {
                 await cleanAndResetRepository(this.course, gitEnv, job);
@@ -159,7 +162,7 @@ class Editor {
                   {
                     cwd: this.course.path,
                     env: gitEnv,
-                  }
+                  },
                 );
               } catch (err) {
                 await cleanAndResetRepository(this.course, gitEnv, job);
@@ -167,10 +170,16 @@ class Editor {
               }
 
               try {
+                job.data.pushAttempted = true;
+
                 await job.exec('git', ['push'], {
                   cwd: this.course.path,
                   env: gitEnv,
                 });
+
+                // We'll look for this flag on the `editError` page to know if
+                // we need to display instructions to recover from a failed push.
+                job.data.pushSucceeded = true;
               } finally {
                 // Regardless of whether we error, we'll do a clean and reset:
                 //
@@ -181,14 +190,21 @@ class Editor {
                 await cleanAndResetRepository(this.course, gitEnv, job);
               }
 
+              job.data.syncAttempted = true;
+
               await syncCourseFromDisk(this.course, startGitHash, job);
+
+              // As with `job.data.pushSucceeded` above, we'll check this flag
+              // on the `editError` page to know if syncing failed so we can
+              // display appropriate instructions.
+              job.data.syncSucceeded = true;
             });
           });
         },
       ],
       (err) => {
         callback(err, jobSequenceId);
-      }
+      },
     );
   }
 
@@ -235,16 +251,16 @@ class Editor {
   async getExistingShortNames(rootDirectory, infoFile) {
     let files = [];
     const walk = async (relativeDir) => {
-      const directories = fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
+      const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
         // If the directory doesn't exist, then we have nothing to load
         if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return [];
+          return /** @type {string[]} */ ([]);
         }
         throw err;
       });
 
       // For each subdirectory, try to find an Info file
-      async.each(directories, async (dir) => {
+      await async.each(directories, async (dir) => {
         // Relative path to the current folder
         const subdirPath = path.join(relativeDir, dir);
         // Absolute path to the info file
@@ -367,7 +383,7 @@ class Editor {
   }
 }
 
-class AssessmentCopyEditor extends Editor {
+export class AssessmentCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: copy assessment ${this.assessment.tid}`;
@@ -379,7 +395,7 @@ class AssessmentCopyEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
 
     debug('Get all existing long names');
@@ -396,7 +412,7 @@ class AssessmentCopyEditor extends Editor {
       this.assessment.tid,
       oldNamesShort,
       this.assessment.title,
-      oldNamesLong
+      oldNamesLong,
     );
     const tid = names.shortName;
     const assessmentTitle = names.longName;
@@ -422,7 +438,7 @@ class AssessmentCopyEditor extends Editor {
   }
 }
 
-class AssessmentDeleteEditor extends Editor {
+export class AssessmentDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: delete assessment ${this.assessment.tid}`;
@@ -434,7 +450,7 @@ class AssessmentDeleteEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
     await fs.remove(path.join(deletePath, this.assessment.tid));
     await this.removeEmptyPrecedingSubfolders(deletePath, this.assessment.tid);
@@ -443,7 +459,7 @@ class AssessmentDeleteEditor extends Editor {
   }
 }
 
-class AssessmentRenameEditor extends Editor {
+export class AssessmentRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.tid_new = params.tid_new;
@@ -463,7 +479,7 @@ class AssessmentRenameEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
     const oldPath = path.join(basePath, this.assessment.tid);
     const newPath = path.join(basePath, this.tid_new);
@@ -475,7 +491,7 @@ class AssessmentRenameEditor extends Editor {
   }
 }
 
-class AssessmentAddEditor extends Editor {
+export class AssessmentAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `${this.course_instance.short_name}: add assessment`;
@@ -487,7 +503,7 @@ class AssessmentAddEditor extends Editor {
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
-      'assessments'
+      'assessments',
     );
 
     debug('Get all existing long names');
@@ -531,7 +547,7 @@ class AssessmentAddEditor extends Editor {
   }
 }
 
-class CourseInstanceCopyEditor extends Editor {
+export class CourseInstanceCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy course instance ${this.course_instance.short_name}`;
@@ -550,7 +566,7 @@ class CourseInstanceCopyEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
-      'infoCourseInstance.json'
+      'infoCourseInstance.json',
     );
 
     debug(`Generate short_name and long_name`);
@@ -558,7 +574,7 @@ class CourseInstanceCopyEditor extends Editor {
       this.course_instance.short_name,
       oldNamesShort,
       this.course_instance.long_name,
-      oldNamesLong
+      oldNamesLong,
     );
     this.short_name = names.shortName;
     this.long_name = names.longName;
@@ -573,7 +589,7 @@ class CourseInstanceCopyEditor extends Editor {
 
     debug(`Read infoCourseInstance.json`);
     const infoJson = await fs.readJson(
-      path.join(this.courseInstancePath, 'infoCourseInstance.json')
+      path.join(this.courseInstancePath, 'infoCourseInstance.json'),
     );
 
     debug(`Write infoCourseInstance.json with new longName and uuid`);
@@ -586,7 +602,7 @@ class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-class CourseInstanceDeleteEditor extends Editor {
+export class CourseInstanceDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete course instance ${this.course_instance.short_name}`;
@@ -602,7 +618,7 @@ class CourseInstanceDeleteEditor extends Editor {
   }
 }
 
-class CourseInstanceRenameEditor extends Editor {
+export class CourseInstanceRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.ciid_new = params.ciid_new;
@@ -624,7 +640,7 @@ class CourseInstanceRenameEditor extends Editor {
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
-      this.course_instance.short_name
+      this.course_instance.short_name,
     );
 
     this.pathsToAdd = [oldPath, newPath];
@@ -632,7 +648,7 @@ class CourseInstanceRenameEditor extends Editor {
   }
 }
 
-class CourseInstanceAddEditor extends Editor {
+export class CourseInstanceAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add course instance`;
@@ -651,7 +667,7 @@ class CourseInstanceAddEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
       courseInstancesPath,
-      'infoCourseInstance.json'
+      'infoCourseInstance.json',
     );
 
     debug(`Generate short_name and long_name`);
@@ -682,7 +698,7 @@ class CourseInstanceAddEditor extends Editor {
   }
 }
 
-class QuestionAddEditor extends Editor {
+export class QuestionAddEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Add question`;
@@ -725,7 +741,7 @@ class QuestionAddEditor extends Editor {
   }
 }
 
-class QuestionDeleteEditor extends Editor {
+export class QuestionDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Delete question ${this.question.qid}`;
@@ -736,14 +752,14 @@ class QuestionDeleteEditor extends Editor {
     await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'questions'),
-      this.question.qid
+      this.question.qid,
     );
     this.pathsToAdd = [path.join(this.course.path, 'questions', this.question.qid)];
     this.commitMessage = `delete question ${this.question.qid}`;
   }
 }
 
-class QuestionRenameEditor extends Editor {
+export class QuestionRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.qid_new = params.qid_new;
@@ -776,7 +792,7 @@ class QuestionRenameEditor extends Editor {
     const assessments = result.rows;
 
     debug(
-      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`
+      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
       let infoPath = path.join(
@@ -785,7 +801,7 @@ class QuestionRenameEditor extends Editor {
         assessment.course_instance_directory,
         'assessments',
         assessment.assessment_directory,
-        'infoAssessment.json'
+        'infoAssessment.json',
       );
       this.pathsToAdd.push(infoPath);
 
@@ -818,7 +834,7 @@ class QuestionRenameEditor extends Editor {
   }
 }
 
-class QuestionCopyEditor extends Editor {
+export class QuestionCopyEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Copy question ${this.question.qid}`;
@@ -842,7 +858,7 @@ class QuestionCopyEditor extends Editor {
       this.question.qid,
       oldNamesShort,
       this.question.title,
-      oldNamesLong
+      oldNamesLong,
     );
     this.qid = names.shortName;
     this.questionTitle = names.longName;
@@ -866,7 +882,7 @@ class QuestionCopyEditor extends Editor {
   }
 }
 
-class QuestionTransferEditor extends Editor {
+export class QuestionTransferEditor extends Editor {
   constructor(params) {
     super(params);
     this.from_qid = params.from_qid;
@@ -921,7 +937,7 @@ class QuestionTransferEditor extends Editor {
   }
 }
 
-class FileDeleteEditor extends Editor {
+export class FileDeleteEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -933,7 +949,7 @@ class FileDeleteEditor extends Editor {
     }
     this.description = `${this.prefix}delete ${path.relative(
       this.container.rootPath,
-      this.deletePath
+      this.deletePath,
     )}`;
   }
 
@@ -945,13 +961,13 @@ class FileDeleteEditor extends Editor {
         `<p>The path of the file to delete</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.deletePath)
+      contains(invalidRootPath, this.deletePath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -959,7 +975,7 @@ class FileDeleteEditor extends Editor {
         `<p>The path of the file to delete</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
@@ -979,7 +995,7 @@ class FileDeleteEditor extends Editor {
   }
 }
 
-class FileRenameEditor extends Editor {
+export class FileRenameEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -992,7 +1008,7 @@ class FileRenameEditor extends Editor {
     }
     this.description = `${this.prefix}rename ${path.relative(
       this.container.rootPath,
-      this.oldPath
+      this.oldPath,
     )} to ${path.relative(this.container.rootPath, this.newPath)}`;
   }
 
@@ -1004,7 +1020,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's old path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
@@ -1015,7 +1031,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's new path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
@@ -1023,7 +1039,7 @@ class FileRenameEditor extends Editor {
     let found;
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.oldPath)
+      contains(invalidRootPath, this.oldPath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1031,13 +1047,13 @@ class FileRenameEditor extends Editor {
         `<p>The file's old path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
 
     found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.newPath)
+      contains(invalidRootPath, this.newPath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1045,7 +1061,7 @@ class FileRenameEditor extends Editor {
         `<p>The file's new path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
@@ -1069,7 +1085,7 @@ class FileRenameEditor extends Editor {
   }
 }
 
-class FileUploadEditor extends Editor {
+export class FileUploadEditor extends Editor {
   constructor(params) {
     super(params);
     this.container = params.container;
@@ -1082,7 +1098,7 @@ class FileUploadEditor extends Editor {
     }
     this.description = `${this.prefix}upload ${path.relative(
       this.container.rootPath,
-      this.filePath
+      this.filePath,
     )}`;
   }
 
@@ -1124,13 +1140,13 @@ class FileUploadEditor extends Editor {
         `<p>The file path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
           `<p>must be inside the root directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`,
       );
       return callback(err);
     }
 
     const found = this.container.invalidRootPaths.find((invalidRootPath) =>
-      contains(invalidRootPath, this.filePath)
+      contains(invalidRootPath, this.filePath),
     );
     if (found) {
       const err = error.makeWithInfo(
@@ -1138,7 +1154,7 @@ class FileUploadEditor extends Editor {
         `<p>The file path</p>` +
           `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.filePath}</pre></div>` +
           `<p>must <em>not</em> be inside the directory</p>` +
-          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`
+          `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`,
       );
       return callback(err);
     }
@@ -1162,7 +1178,7 @@ class FileUploadEditor extends Editor {
   }
 }
 
-class CourseInfoEditor extends Editor {
+export class CourseInfoEditor extends Editor {
   constructor(params) {
     super(params);
     this.description = `Create infoCourse.json`;
@@ -1192,23 +1208,3 @@ class CourseInfoEditor extends Editor {
     this.commitMessage = `create infoCourse.json`;
   }
 }
-
-module.exports = {
-  AssessmentCopyEditor,
-  AssessmentDeleteEditor,
-  AssessmentRenameEditor,
-  AssessmentAddEditor,
-  CourseInstanceCopyEditor,
-  CourseInstanceDeleteEditor,
-  CourseInstanceRenameEditor,
-  CourseInstanceAddEditor,
-  QuestionCopyEditor,
-  QuestionDeleteEditor,
-  QuestionRenameEditor,
-  QuestionAddEditor,
-  QuestionTransferEditor,
-  FileDeleteEditor,
-  FileRenameEditor,
-  FileUploadEditor,
-  CourseInfoEditor,
-};
