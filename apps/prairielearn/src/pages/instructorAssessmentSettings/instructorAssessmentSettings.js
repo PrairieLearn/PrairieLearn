@@ -1,6 +1,7 @@
-import ERR from 'async-stacktrace';
-import async from 'async';
-import express from 'express';
+// @ts-check
+const ERR = require('async-stacktrace');
+import * as async from 'async';
+import * as express from 'express';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import QR from 'qrcode-svg';

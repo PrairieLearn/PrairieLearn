@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
@@ -125,11 +126,11 @@ router.post('/', function (req, res, next) {
       sqldb.call('assessment_instances_update_score_perc', params, function (err, _result) {
         if (ERR(err, next)) return;
 
-        params = {
+        let queryParams = {
           assessment_instance_id: req.body.assessment_instance_id,
         };
 
-        sqldb.query(sql.assessment_instance_score, params, function (err, result) {
+        sqldb.query(sql.assessment_instance_score, queryParams, function (err, result) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify(result.rows));
         });

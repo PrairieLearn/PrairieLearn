@@ -1,5 +1,6 @@
-import ERR from 'async-stacktrace';
-import express from 'express';
+// @ts-check
+const ERR = require('async-stacktrace');
+import * as express from 'express';
 const async = require('async');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
@@ -124,7 +125,7 @@ router.get('/*', (req, res, next) => {
     ],
     (err) => {
       if (ERR(err, next)) return;
-      if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
+      if (fileEdit.jobSequence?.status === 'Running') {
         debug('Job sequence is still running - redirect to status page');
         res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
         return;
@@ -142,7 +143,7 @@ router.get('/*', (req, res, next) => {
         }
       }
 
-      if ('jobSequence' in fileEdit) {
+      if (fileEdit.jobSequence) {
         // New case: single job for the entire operation. We check the flag
         // we would have set when the job executed to determine if the push
         // succeeded or not.

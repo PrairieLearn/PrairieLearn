@@ -46,7 +46,7 @@ export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
  *
  * @param {string} s3Bucket - The S3 bucket name.
  * @param {string} s3Path - The S3 destination path.
- * @param {string} localPath - The local source path.
+ * @param {string | null} localPath - The local source path.
  * @param {boolean=} isDirectory - Whether the upload source is a directory (defaults to false).
  * @param {Buffer | null} buffer - A file buffer if local source path falsy.
  */
@@ -86,7 +86,10 @@ export async function uploadToS3Async(
   } else {
     logger.verbose(`Uploaded buffer to s3://${s3Bucket}/${s3Path}`);
   }
-  return res;
+  // TODO: remove type case once the following are addressed:
+  // https://github.com/aws/aws-sdk-js-v3/issues/5513
+  // https://github.com/aws/aws-sdk-js-v3/pull/5512
+  return /** @type {import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput} */ (res);
 }
 export const uploadToS3 = util.callbackify(uploadToS3Async);
 

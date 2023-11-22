@@ -1,3 +1,4 @@
+// @ts-check
 import { logger } from '@prairielearn/logger';
 
 const atob = (s) => String.fromCharCode(...Buffer.from(s, 'base64'));
@@ -10,7 +11,7 @@ export function b64EncodeUnicode(str) {
   try {
     return btoa(
       encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode('0x' + p1);
+        return String.fromCharCode(parseInt('0x' + p1, 16));
       }),
     );
   } catch (e) {

@@ -1,8 +1,9 @@
-import ERR from 'async-stacktrace';
-import express from 'express';
-import path from 'path';
+// @ts-check
+const ERR = require('async-stacktrace');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import util from 'node:util';
+import * as util from 'node:util';
 
 import * as error from '@prairielearn/error';
 import { regradeAssessmentInstance } from '../../lib/regrading';

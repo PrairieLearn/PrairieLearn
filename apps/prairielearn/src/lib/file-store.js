@@ -1,3 +1,4 @@
+// @ts-check
 import * as path from 'path';
 import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
@@ -29,7 +30,7 @@ const StorageTypes = Object.freeze({
  */
 export async function uploadFile(
   display_filename,
-  buffer,
+  contents,
   type,
   assessment_instance_id,
   instance_question_id,
@@ -53,7 +54,7 @@ export async function uploadFile(
       storage_filename,
       null,
       false,
-      buffer,
+      contents,
     );
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
@@ -74,7 +75,7 @@ export async function uploadFile(
     debug(`upload() : mkdir ${dir}`);
     await fsPromises.mkdir(dir, { recursive: true, mode: 0o700 });
     debug(`upload(): writeFile ${filename}`);
-    await fsPromises.writeFile(filename, buffer, { mode: 0o600 });
+    await fsPromises.writeFile(filename, contents, { mode: 0o600 });
   } else {
     throw new Error(`Unknown storage type: ${storage_type}`);
   }
@@ -113,8 +114,8 @@ export async function deleteFile(file_id, authn_user_id) {
 /**
  * Option of returning a stream instead of a file
  *
- * @param {string} file_id - The file to get.
- * @return {stream} - Requested file stream.
+ * @param {number | string} file_id - The file to get.
+ * @return {Promise<(import('stream'))>} - Requested file stream.
  */
 export async function getStream(file_id) {
   debug(`getStream(): file_id=${file_id}`);
@@ -125,8 +126,8 @@ export async function getStream(file_id) {
 /**
  * Get a file from the file store.
  *
- * @param {number} file_id - The file to get.
- * @return {object} An object with a buffer (of the file contents) and a file object.
+ * @param {number | string} file_id - The file to get.
+ * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
  */
 export async function getFile(file_id, data_type = 'buffer') {
   debug(`get(): file_id=${file_id}`);

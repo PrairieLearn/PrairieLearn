@@ -1,7 +1,8 @@
-import express from 'express';
-import path from 'path';
+//@ts-check
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-import fs from 'fs-extra';
+import * as fs from 'fs-extra';
 const async = require('async');
 const ERR = require('async-stacktrace');
 import { CourseInfoEditor } from '../../lib/editors';

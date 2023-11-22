@@ -1,4 +1,5 @@
-import express from 'express';
+// @ts-check
+import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
 const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';

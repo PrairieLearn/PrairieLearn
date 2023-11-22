@@ -1,3 +1,4 @@
+// @ts-check
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 import { stringify } from '@prairielearn/csv';

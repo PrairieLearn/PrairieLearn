@@ -1,5 +1,6 @@
-import ERR from 'async-stacktrace';
-import express from 'express';
+// @ts-check
+const ERR = require('async-stacktrace');
+import * as express from 'express';
 const asyncHandler = require('express-async-handler');
 const { default: AnsiUp } = require('ansi_up');
 import * as error from '@prairielearn/error';

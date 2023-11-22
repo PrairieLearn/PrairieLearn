@@ -1,7 +1,8 @@
-import ERR from 'async-stacktrace';
+// @ts-check
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
-import async from 'async';
-import fs from 'fs-extra';
+import * as async from 'async';
+const fs = require('fs-extra');
 import * as path from 'path';
 
 import { logger } from '@prairielearn/logger';
@@ -191,7 +192,7 @@ export function buildDirectory(dir, submission, variant, question, course, callb
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
- * @param {Object|string|Buffer} data - The grading results
+ * @param {Object|string|Buffer} rawData - The grading results
  */
 export function makeGradingResult(jobId, rawData) {
   let data = rawData;
@@ -203,7 +204,6 @@ export function makeGradingResult(jobId, rawData) {
   } else if (_.isObject(rawData)) {
     data = JSON.stringify(rawData);
   }
-
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(data.replace(/\0/g, '\ufffd'));

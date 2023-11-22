@@ -1,3 +1,4 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import express from 'express';
 import { pipeline } from 'node:stream/promises';

@@ -1,3 +1,4 @@
+// @ts-check
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
 const ERR = require('async-stacktrace');

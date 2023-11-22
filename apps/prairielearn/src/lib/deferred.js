@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @template T
  * @typedef {Object} DeferredPromise
@@ -19,6 +20,9 @@ export function deferredPromise() {
     resolve = res;
     reject = rej;
   });
+  if (resolve === undefined || reject === undefined) {
+    throw new Error('resolve or reject is undefined');
+  }
   return {
     resolve,
     reject,

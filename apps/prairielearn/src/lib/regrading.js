@@ -1,6 +1,7 @@
-import ERR from 'async-stacktrace';
+// @ts-check
+const ERR = require('async-stacktrace');
 import * as async from 'async';
-import path from 'path';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 import { logger } from '@prairielearn/logger';
