@@ -1,10 +1,10 @@
 // @ts-check
-const { logger } = require('@prairielearn/logger');
+import { logger } from '@prairielearn/logger';
 
 const atob = (s) => String.fromCharCode(...Buffer.from(s, 'base64'));
 const btoa = (s) => Buffer.from(s.split('').map((c) => c.charCodeAt(0))).toString('base64');
 
-module.exports.b64EncodeUnicode = function (str) {
+export function b64EncodeUnicode(str) {
   // (1) use encodeURIComponent to get percent-encoded UTF-8
   // (2) convert percent encodings to raw bytes
   // (3) convert raw bytes to Base64
@@ -18,9 +18,9 @@ module.exports.b64EncodeUnicode = function (str) {
     logger.error(`b64EncodeUnicode: returning empty string because failed to encode ${str}`);
     return '';
   }
-};
+}
 
-module.exports.b64DecodeUnicode = function (str) {
+export function b64DecodeUnicode(str) {
   // Going backwards: from bytestream, to percent-encoding, to original string.
   try {
     return decodeURIComponent(
@@ -35,4 +35,4 @@ module.exports.b64DecodeUnicode = function (str) {
     logger.error(`b64DecodeUnicode: returning empty string because failed to decode ${str}`);
     return '';
   }
-};
+}

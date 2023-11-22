@@ -1,13 +1,14 @@
 // @ts-check
-const path = require('path');
-const fsPromises = require('fs').promises;
-const fs = require('fs');
+import * as path from 'path';
+import * as fsPromises from 'fs/promises';
+import * as fs from 'fs';
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const sqldb = require('@prairielearn/postgres');
-const { config } = require('./config');
+import * as sqldb from '@prairielearn/postgres';
+import { config } from './config';
+import { uploadToS3Async, getFromS3Async } from '../lib/aws';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const { uploadToS3Async, getFromS3Async } = require('../lib/aws');
 
 const StorageTypes = Object.freeze({
   S3: 'S3',
@@ -27,7 +28,7 @@ const StorageTypes = Object.freeze({
  * @param {string} [storage_type] - AWS 'S3' or 'FileSystem' storage options.
  * @return {Promise<number>} The file_id of the newly created file.
  */
-module.exports.upload = async (
+export async function uploadFile(
   display_filename,
   contents,
   type,
@@ -36,7 +37,7 @@ module.exports.upload = async (
   user_id,
   authn_user_id,
   storage_type,
-) => {
+) {
   storage_type = storage_type || config.fileStoreStorageTypeDefault;
   debug(`upload(): storage_type=${storage_type}`);
 
@@ -93,7 +94,7 @@ module.exports.upload = async (
   debug('upload(): inserted files row into DB');
 
   return result.rows[0].file_id;
-};
+}
 
 /**
  * Soft-delete a file from the file store, leaving the physical file on disk.
@@ -101,14 +102,14 @@ module.exports.upload = async (
  * @param {number} file_id - The file to delete.
  * @param {number} authn_user_id - The current authenticated user.
  */
-module.exports.delete = async (file_id, authn_user_id) => {
+export async function deleteFile(file_id, authn_user_id) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
   const params = [file_id, authn_user_id];
   await sqldb.callAsync('files_delete', params);
   debug('delete(): soft-deleted row in DB');
-};
+}
 
 /**
  * Option of returning a stream instead of a file
@@ -116,11 +117,11 @@ module.exports.delete = async (file_id, authn_user_id) => {
  * @param {number | string} file_id - The file to get.
  * @return {Promise<(import('stream'))>} - Requested file stream.
  */
-module.exports.getStream = async (file_id) => {
+export async function getStream(file_id) {
   debug(`getStream(): file_id=${file_id}`);
-  const file = await module.exports.get(file_id, 'stream');
+  const file = await getFile(file_id, 'stream');
   return file.contents;
-};
+}
 
 /**
  * Get a file from the file store.
@@ -128,7 +129,7 @@ module.exports.getStream = async (file_id) => {
  * @param {number | string} file_id - The file to get.
  * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
  */
-module.exports.get = async (file_id, data_type = 'buffer') => {
+export async function getFile(file_id, data_type = 'buffer') {
   debug(`get(): file_id=${file_id}`);
   const params = { file_id };
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
@@ -188,4 +189,4 @@ module.exports.get = async (file_id, data_type = 'buffer') => {
     contents: buffer || readStream,
     file: result.rows[0],
   };
-};
+}
