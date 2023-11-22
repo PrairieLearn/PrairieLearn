@@ -1,8 +1,12 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { CourseInstance } from '../lib/db-types';
+import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
+
+// TODO: Once our `course_instances_with_staff_access` sproc is returning full
+// course instance rows, use the full `CourseInstance` type here.
+type CourseInstanceWithShortName = Pick<CourseInstance, 'id' | 'short_name'>;
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -23,19 +27,21 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  showAddQuestionButton,
-  showSharingSets,
+  showAddQuestionButton = false,
+  showSharingSets = false,
   current_course_instance,
-  course_instances,
+  course_instances = [],
+  qidPrefix,
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
 }: {
   questions: QuestionsPageDataAnsified[];
-  showAddQuestionButton: boolean;
-  showSharingSets: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstance[];
+  showAddQuestionButton?: boolean;
+  showSharingSets?: boolean;
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstanceWithShortName[];
+  qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
@@ -44,7 +50,7 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
+      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
       'questions-table-data',
     )}
 

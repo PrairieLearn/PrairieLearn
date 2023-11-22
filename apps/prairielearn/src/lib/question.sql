@@ -62,7 +62,6 @@ SELECT
   s.override_score,
   s.regradable,
   s.score,
-  s.sid,
   s.v2_score,
   s.variant_id,
   s.manual_rubric_grading_id,

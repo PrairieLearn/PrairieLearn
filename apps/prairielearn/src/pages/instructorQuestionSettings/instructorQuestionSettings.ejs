@@ -87,16 +87,20 @@
             <% if (sharing_enabled) { %>
             <tr>
               <th class="align-middle">Sharing</th>
-              <td>
+              <td data-testid="shared-with">
                 <% if (question.shared_publicly) { %>
                   <span class="badge color-green3">Public</span>
                   This question is publicly shared.
                 <% } else { %>
-                  Shared With:
-                  <% sharing_sets_in.forEach(function(sharing_set) { %>
-                    <span class="badge color-gray1"><%= sharing_set.name %></span>
-                  <% }); %>
-                  <% if (authz_data.has_course_permission_edit && !course.example_course) { %>
+                  <% if (sharing_sets_in.length === 0) { %>
+                    Not Shared
+                  <% } else { %>
+                    Shared With:
+                    <% sharing_sets_in.forEach(function(sharing_set) { %>
+                      <span class="badge color-gray1"><%= sharing_set.name %></span>
+                    <% }); %>
+                  <% } %>
+                  <% if (authz_data.has_course_permission_own && !course.example_course) { %>
                     <% if (sharing_sets_other.length > 0) { %>
                     <form name="sharing-set-add" method="POST" class="d-inline">
                       <input type="hidden" name="__action" value="sharing_set_add">
@@ -153,7 +157,7 @@
                               <button type="button" class="btn btn-secondary" data-dismiss="modal">
                                 Cancel
                               </button>
-                              <button class="btn btn-outline-primary" type="submit">
+                              <button class="btn btn-primary" type="submit">
                                 Publicly Share "<%= question.qid %>"
                               </button>
                             </form>
@@ -189,11 +193,11 @@
           We only want to show the card footer if it will have something inside. Since it is easy
           to make a mistake when merging logical conditions, we will simply "or" them all.
         -->
-        <% if ((authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view) ||
+        <% if ((editable_courses && (editable_courses.length > 0) && authz_data.has_course_permission_view) ||
                ((authz_data.has_course_permission_edit) && (! course.example_course))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view && question.course_id === course.id) { %>
+            <% if (editable_courses && (editable_courses.length > 0) && authz_data.has_course_permission_view && question.course_id === course.id) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>

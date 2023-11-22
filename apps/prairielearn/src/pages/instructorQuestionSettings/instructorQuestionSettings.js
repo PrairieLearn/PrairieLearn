@@ -1,3 +1,5 @@
+import { selectCoursesWithEditAccess } from '../../models/course';
+
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -194,7 +196,10 @@ router.post('/', function (req, res, next) {
       .enabledFromLocals('question-sharing', res.locals)
       .then((questionSharingEnabled) => {
         if (!questionSharingEnabled) {
-          next(error.make(403, 'Access denied (feature not available)'));
+          return next(error.make(403, 'Access denied (feature not available)'));
+        }
+        if (!res.locals.authz_data.has_course_permission_own) {
+          return next(error.make(403, 'Access denied (must be a course Owner)'));
         }
         sqldb.queryZeroOrOneRow(
           sql.sharing_set_add,
@@ -216,7 +221,10 @@ router.post('/', function (req, res, next) {
       .enabledFromLocals('question-sharing', res.locals)
       .then((questionSharingEnabled) => {
         if (!questionSharingEnabled) {
-          next(error.make(403, 'Access denied (feature not available)'));
+          return next(error.make(403, 'Access denied (feature not available)'));
+        }
+        if (!res.locals.authz_data.has_course_permission_own) {
+          return next(error.make(403, 'Access denied (must be a course Owner)'));
         }
         sqldb.queryZeroOrOneRow(
           sql.update_question_shared_publicly,
@@ -319,6 +327,12 @@ router.get('/', function (req, res, next) {
           res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
           res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
         }
+      },
+      async () => {
+        res.locals.editable_courses = await selectCoursesWithEditAccess({
+          user_id: res.locals.user.user_id,
+          is_administrator: res.locals.is_administrator,
+        });
       },
     ],
     (err) => {

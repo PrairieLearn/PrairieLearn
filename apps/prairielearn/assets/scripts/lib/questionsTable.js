@@ -5,7 +5,7 @@ import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix } =
+  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
     decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
@@ -50,8 +50,8 @@ onDocumentReady(() => {
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
     }
-    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
-      >${question.qid}</a
+    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview"
+      >${qidPrefix}${question.qid}</a
     >`;
     if (question.open_issue_count > 0) {
       text += html`<a

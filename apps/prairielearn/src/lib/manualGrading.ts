@@ -19,12 +19,13 @@ import {
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-interface AppliedRubricItem {
+const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */
-  rubric_item_id: string;
+  rubric_item_id: IdSchema,
   /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
-  score?: number | null;
-}
+  score: z.coerce.number().nullish(),
+});
+type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
 const RubricDataSchema = RubricSchema.extend({
   rubric_items: z.array(
@@ -54,19 +55,23 @@ const PartialScoresSchema = z
       .passthrough(),
   )
   .nullable();
-type PartialScores = z.infer<typeof PartialScoresSchema>;
+
+// Some historical cases of points and score ended up with NaN values stored in
+// the database. In these cases, manual grading will convert the NaN to zero, so
+// that the instructor can still have a chance to fix the issue.
+const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
 
 const SubmissionForScoreUpdateSchema = z.object({
   submission_id: IdSchema.nullable(),
   instance_question_id: IdSchema,
   assessment_instance_id: IdSchema,
-  max_points: z.number().nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
+  max_points: PointsSchema,
+  max_auto_points: PointsSchema,
+  max_manual_points: PointsSchema,
   manual_rubric_id: IdSchema.nullable(),
   partial_scores: PartialScoresSchema,
-  auto_points: z.number().nullable(),
-  manual_points: z.number().nullable(),
+  auto_points: PointsSchema,
+  manual_points: PointsSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
   modified_at_conflict: z.boolean(),
 });
@@ -398,30 +403,33 @@ async function insertRubricGrading(
   });
 }
 
-interface InstanceQuestionScoreInput {
+const InstanceQuestionScoreInputSchema = z.object({
   /** The manual points to assign to the instance question. */
-  manual_points?: number | null;
+  manual_points: z.coerce.number().nullish(),
   /** The percentage of manual points to assign to the instance question. */
-  manual_score_perc?: number | null;
+  manual_score_perc: z.coerce.number().nullish(),
   /** The auto points to assign to the instance question. */
-  auto_points?: number | null;
+  auto_points: z.coerce.number().nullish(),
   /** The percentage of auto points to assign to the instance question. */
-  auto_score_perc?: number | null;
+  auto_score_perc: z.coerce.number().nullish(),
   /** The total points to assign to the instance question. If provided, the manual points are assigned this value minus the question's auto points. */
-  points?: number | null;
+  points: z.coerce.number().nullish(),
   /** The percentage of total points to assign to the instance question. If provided, the manual points are assigned the equivalent of points for this value minus the question's auto points. */
-  score_perc?: number | null;
+  score_perc: z.coerce.number().nullish(),
   /** Feedback data to be provided to the student. Freeform, though usually contains a `manual` field for markdown-based comments. */
-  feedback?: Record<string, any> | null;
+  feedback: z.record(z.string(), z.any()).nullish(),
   /** Partial scores associated to individual elements. Must match the format accepted by individual elements. If provided, auto_points are computed based on this value. */
-  partial_scores?: PartialScores | null;
+  partial_scores: PartialScoresSchema.nullish(),
   /** Rubric items associated to the grading of manual points. If provided, overrides manual points. */
-  manual_rubric_data?: {
-    rubric_id: string;
-    applied_rubric_items?: AppliedRubricItem[] | null;
-    adjust_points?: number | null;
-  };
-}
+  manual_rubric_data: z
+    .object({
+      rubric_id: IdSchema,
+      applied_rubric_items: AppliedRubricItemSchema.array().nullish(),
+      adjust_points: z.coerce.number().nullish(),
+    })
+    .nullish(),
+});
+type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
 
 /** Manually updates the score of an instance question.
  * @param assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
@@ -446,6 +454,8 @@ export async function updateInstanceQuestionScore(
       { assessment_id, instance_question_id, submission_id, check_modified_at },
       SubmissionForScoreUpdateSchema,
     );
+
+    score = InstanceQuestionScoreInputSchema.parse(score);
 
     let new_points: number | null = null;
     let new_score_perc: number | null = null;
