@@ -1,3 +1,4 @@
+//@ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');

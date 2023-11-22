@@ -1,4 +1,4 @@
-// @ts-check
+//@ts-check
 const { Octokit } = require('@octokit/rest');
 const { v4: uuidv4 } = require('uuid');
 const Sentry = require('@prairielearn/sentry');
