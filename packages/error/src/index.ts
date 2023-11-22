@@ -62,11 +62,11 @@ export function newMessage(err: any, newMsg: string): ErrorWithData {
  * @param param.status Status code to set on the new error.
  * @param param.message Message to add to the new error.
  * @param param.data Data to set on the new error.
- * @returns
+ * @returns The augmented error.
  */
 export function augmentError(
   err: any,
-  { status, message, data }: { status?: number; message?: string; data?: any }
+  { status, message, data }: { status?: number; message?: string; data?: any },
 ): ErrorWithStatusAndData {
   let newErr: ErrorWithStatusAndData;
   if (err instanceof Error) {
