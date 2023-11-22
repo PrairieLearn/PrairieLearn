@@ -17,17 +17,6 @@
         <%- include('../partials/navbar', {navPage: 'requestCourse'}); %>
         <main id="content" class="container">
 
-            <% if (typeof error_message !== 'undefined') { %>
-                <div class="card mb-4">
-                    <div class="card-header bg-danger text-white d-flex align-items-center">
-                        Error
-                    </div>
-                    <div class="card-body">
-                        <%- error_message  %>
-                    </div>
-                </div>
-            <% } /* error message */ %>
-
             <!-- Previous Course Requests -->
             <% if (course_requests.length > 0) { %>
                 <div class="card mb-4">
@@ -42,6 +31,7 @@
                                     <th>Title</th>
                                     <th>Status</th>
                                     <th>Details</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 <% course_requests.forEach(function(req, i) { %>
@@ -56,7 +46,7 @@
                         </table>
                     </div>
                 </div>
-            <% } /* non-zero course requests */ %>
+            <% } %>
 
             <!-- New Request -->
             <div class="card mb-4">
