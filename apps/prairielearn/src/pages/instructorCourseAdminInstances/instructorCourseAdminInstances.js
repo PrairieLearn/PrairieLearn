@@ -1,23 +1,22 @@
+// @ts-check
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
-
-var sqldb = require('@prairielearn/postgres');
-
-var sql = sqldb.loadSqlEquiv(__filename);
-
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const { CourseInstanceAddEditor } = require('../../lib/editors');
-const { idsEqual } = require('../../lib/id');
-
-const fs = require('fs-extra');
-const async = require('async');
+const ERR = require('async-stacktrace');
+import * as express from 'express';
+import * as fs from 'fs-extra';
+import * as async from 'async';
 const _ = require('lodash');
+import * as path from 'path';
+import * as sqldb from '@prairielearn/postgres';
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import { CourseInstanceAddEditor } from '../../lib/editors';
+import { idsEqual } from '../../lib/id';
+
+var router = express.Router();
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   async.series(
@@ -106,4 +105,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;
