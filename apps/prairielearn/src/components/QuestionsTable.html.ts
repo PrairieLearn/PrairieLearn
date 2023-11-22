@@ -1,8 +1,12 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { CourseInstance } from '../lib/db-types';
+import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
+
+// TODO: Once our `course_instances_with_staff_access` sproc is returning full
+// course instance rows, use the full `CourseInstance` type here.
+type CourseInstanceWithShortName = Pick<CourseInstance, 'id' | 'short_name'>;
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -36,7 +40,7 @@ export function QuestionsTable({
   showAddQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
-  course_instances?: CourseInstance[];
+  course_instances?: CourseInstanceWithShortName[];
   qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;

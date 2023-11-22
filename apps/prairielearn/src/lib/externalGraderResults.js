@@ -14,7 +14,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { makeS3ClientConfig, makeAwsClientConfig } from './aws';
 import { config } from './config';
 import { gradingJobStatusUpdated } from './externalGradingSocket';
-import * as assessment from './assessment';
+import { processGradingResult } from './externalGrader';
 import * as externalGraderCommon from './externalGraderCommon';
 import { deferredPromise } from './deferred';
 
@@ -178,5 +178,5 @@ async function processMessage(data) {
 }
 
 async function processResults(jobId, data) {
-  await assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
+  await processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }
