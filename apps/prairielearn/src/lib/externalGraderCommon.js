@@ -192,7 +192,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
- * @param {Object|string|Buffer} data - The grading results
+ * @param {Object|string|Buffer} rawData - The grading results
  */
 module.exports.makeGradingResult = function (jobId, rawData) {
   let data = rawData;

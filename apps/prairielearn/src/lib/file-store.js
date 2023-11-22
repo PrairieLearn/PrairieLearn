@@ -18,7 +18,7 @@ const StorageTypes = Object.freeze({
  * Upload a file into the file store.
  *
  * @param {string} display_filename - The display_filename of the file.
- * @param {Buffer} buffer - The file contents.
+ * @param {Buffer} contents - The file contents.
  * @param {string} type - The file type.
  * @param {number|null} assessment_instance_id - The assessment instance for the file.
  * @param {number|null} instance_question_id - The instance question for the file.
@@ -29,7 +29,7 @@ const StorageTypes = Object.freeze({
  */
 module.exports.upload = async (
   display_filename,
-  buffer,
+  contents,
   type,
   assessment_instance_id,
   instance_question_id,
@@ -53,7 +53,7 @@ module.exports.upload = async (
       storage_filename,
       null,
       false,
-      buffer,
+      contents,
     );
     debug('upload() : uploaded to ' + res.Location);
   } else if (storage_type === StorageTypes.FileSystem) {
@@ -74,7 +74,7 @@ module.exports.upload = async (
     debug(`upload() : mkdir ${dir}`);
     await fsPromises.mkdir(dir, { recursive: true, mode: 0o700 });
     debug(`upload(): writeFile ${filename}`);
-    await fsPromises.writeFile(filename, buffer, { mode: 0o600 });
+    await fsPromises.writeFile(filename, contents, { mode: 0o600 });
   } else {
     throw new Error(`Unknown storage type: ${storage_type}`);
   }
@@ -125,7 +125,7 @@ module.exports.getStream = async (file_id) => {
 /**
  * Get a file from the file store.
  *
- * @param {number} file_id - The file to get.
+ * @param {number | string} file_id - The file to get.
  * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
  */
 module.exports.get = async (file_id, data_type = 'buffer') => {
