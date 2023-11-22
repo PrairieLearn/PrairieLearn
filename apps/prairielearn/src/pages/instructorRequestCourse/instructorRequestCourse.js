@@ -82,22 +82,6 @@ router.post(
       error = true;
     }
 
-    const conflictingCourseOwnersResult = await sqldb.queryAsync(
-      sql.get_conflicting_course_owners,
-      { short_name: short_name.trim().toLowerCase() },
-    );
-
-    const courseOwners = conflictingCourseOwnersResult.rows;
-
-    if (courseOwners.length > 0) {
-      // If the course already exists, display an error message containing the owners.
-      flash(
-        'error',
-        `The requested course (${short_name}) already exists. Please contact the owners of that course to request access to it.`,
-      );
-      error = true;
-    }
-
     if (error) {
       res.redirect(req.originalUrl);
       return;
