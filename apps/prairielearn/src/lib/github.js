@@ -1,3 +1,4 @@
+//@ts-check
 const { Octokit } = require('@octokit/rest');
 const { v4: uuidv4 } = require('uuid');
 const _ = require('lodash');
@@ -174,7 +175,7 @@ module.exports = {
    * @param {string} job_sequence_id
    * @param {string} user_id
    * @param {(job: import('./server-jobs-legacy').Job) => Promise<void>} func
-   * @returns
+   * @returns {Promise<void>}
    */
   _runJobAsync: function (options, job_sequence_id, user_id, func) {
     return new Promise((resolve, reject) => {
@@ -391,6 +392,9 @@ module.exports = {
       }
 
       // Insert the course into the courses table
+      /**
+       * @type {object}
+       */
       let inserted_course;
       await module.exports._runJobAsync(
         { type: 'update_courses', description: 'Adding course to database' },
@@ -420,7 +424,7 @@ module.exports = {
         authn_user.user_id,
         async () => {
           const sql_params = {
-            course_id: inserted_course.id,
+            course_id: inserted_course?.id,
             course_request_id: options.course_request_id,
           };
           await sqldb.queryOneRowAsync(sql.set_course_owner_permission, sql_params);
@@ -433,18 +437,20 @@ module.exports = {
       if (config.gitSshCommand != null) {
         git_env.GIT_SSH_COMMAND = config.gitSshCommand;
       }
+      if (inserted_course === undefined) throw new Error('inserted_course is undefined');
       await module.exports._runJobCommandAsync(
         {
           type: 'clone_from_git',
           description: 'Clone from remote git repository',
           command: 'git',
-          arguments: ['clone', inserted_course.repository, inserted_course.path],
+          arguments: ['clone', inserted_course?.repository, inserted_course?.path],
           env: git_env,
         },
         job_sequence_id,
         authn_user.user_id,
       );
       let sync_result;
+      if (inserted_course.path === null) return;
       await module.exports._runJobAsync(
         {
           type: 'sync_from_disk',

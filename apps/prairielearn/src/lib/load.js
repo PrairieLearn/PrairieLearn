@@ -1,3 +1,4 @@
+//@ts-check
 const _ = require('lodash');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -110,7 +111,7 @@ class LoadEstimator {
     debug(`LoadEstimator._warnOldJobs(): jobType = ${this.jobType}`);
     if (!this.warnOnOldJobs) return;
     const nowMS = Date.now();
-    _.forEach(this.currentJobs, (info, id) => {
+    _.forEach(this.currentJobs, (/** @type {object} */ info, id) => {
       if (nowMS - info.startMS > config.maxResponseTimeSec * 1000 && !info.warned) {
         const details = {
           jobType: this.jobType,
