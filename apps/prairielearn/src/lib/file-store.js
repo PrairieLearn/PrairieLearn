@@ -113,7 +113,7 @@ module.exports.delete = async (file_id, authn_user_id) => {
 /**
  * Option of returning a stream instead of a file
  *
- * @param {number} file_id - The file to get.
+ * @param {number | string} file_id - The file to get.
  * @return {Promise<(import('stream'))>} - Requested file stream.
  */
 module.exports.getStream = async (file_id) => {
