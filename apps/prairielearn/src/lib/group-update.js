@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const streamifier = require('streamifier');
@@ -100,60 +101,62 @@ module.exports = {
                   let uid = json.uid || json.UID || json.Uid || null;
                   updateList.push([groupName, uid]);
                 })
-                .then(() => {
-                  let params = [assessment_id, updateList, authn_user_id];
-                  sqldb.call('assessment_groups_update', params, (err, result) => {
-                    const allCount = updateList.length;
-                    let successCount = 0,
-                      errorCount = 0;
-                    if (err) {
-                      job.verbose(String(err)); //server error
-                      errorCount = allCount; //all failed
-                    } else {
-                      const notExist = result.rows[0].not_exist_user;
-                      const inGroup = result.rows[0].already_in_group;
-                      if (notExist) {
-                        job.verbose(`----------------------------------------`);
+                .then(
+                  () => {
+                    let params = [assessment_id, updateList, authn_user_id];
+                    sqldb.call('assessment_groups_update', params, (err, result) => {
+                      const allCount = updateList.length;
+                      let successCount = 0,
+                        errorCount = 0;
+                      if (err) {
+                        job.verbose(String(err)); //server error
+                        errorCount = allCount; //all failed
+                      } else {
+                        const notExist = result.rows[0].not_exist_user;
+                        const inGroup = result.rows[0].already_in_group;
+                        if (notExist) {
+                          job.verbose(`----------------------------------------`);
+                          job.verbose(
+                            `ERROR: The following users do not exist. Please check their uids first.`,
+                          );
+                          notExist.forEach((user) => {
+                            job.verbose(user);
+                          });
+                          errorCount += notExist.length;
+                        }
+                        if (inGroup) {
+                          job.verbose(`----------------------------------------`);
+                          job.verbose(`ERROR: The following users are already in a group.`);
+                          inGroup.forEach((user) => {
+                            job.verbose(user);
+                          });
+                          errorCount += inGroup.length;
+                        }
+                        successCount = allCount - errorCount;
+                      }
+                      job.verbose(`----------------------------------------`);
+                      namedLocks.releaseLock(lock, (lockErr) => {
+                        if (lockErr) {
+                          job.fail(`ERROR: The lock ${lockName} was not released successfully`);
+                          return;
+                        }
+                      });
+                      job.verbose(`Released lock ${lockName}`);
+                      if (errorCount === 0) {
                         job.verbose(
-                          `ERROR: The following users do not exist. Please check their uids first.`,
+                          `Successfully updated groups for ${successCount} students, with no errors`,
                         );
-                        notExist.forEach((user) => {
-                          job.verbose(user);
-                        });
-                        errorCount += notExist.length;
-                      }
-                      if (inGroup) {
-                        job.verbose(`----------------------------------------`);
-                        job.verbose(`ERROR: The following users are already in a group.`);
-                        inGroup.forEach((user) => {
-                          job.verbose(user);
-                        });
-                        errorCount += inGroup.length;
-                      }
-                      successCount = allCount - errorCount;
-                    }
-                    job.verbose(`----------------------------------------`);
-                    namedLocks.releaseLock(lock, (lockErr) => {
-                      if (lockErr) {
-                        job.fail(`ERROR: The lock ${lockName} was not released successfully`);
-                        return;
+                        job.succeed();
+                      } else {
+                        job.verbose(`Successfully updated groups for ${successCount} students`);
+                        job.fail(`Error updating ${errorCount} students`);
                       }
                     });
-                    job.verbose(`Released lock ${lockName}`);
-                    if (errorCount === 0) {
-                      job.verbose(
-                        `Successfully updated groups for ${successCount} students, with no errors`,
-                      );
-                      job.succeed();
-                    } else {
-                      job.verbose(`Successfully updated groups for ${successCount} students`);
-                      job.fail(`Error updating ${errorCount} students`);
-                    }
-                  });
-                })
-                .catch((err) => {
-                  job.fail(error.newMessage(err, 'Error processing CSV'));
-                });
+                  },
+                  (err) => {
+                    job.fail(error.newMessage(err, 'Error processing CSV'));
+                  },
+                );
             }
           });
         });

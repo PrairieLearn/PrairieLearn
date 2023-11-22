@@ -46,7 +46,7 @@ module.exports.makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
  *
  * @param {string} s3Bucket - The S3 bucket name.
  * @param {string} s3Path - The S3 destination path.
- * @param {string} localPath - The local source path.
+ * @param {string | null} localPath - The local source path.
  * @param {boolean=} isDirectory - Whether the upload source is a directory (defaults to false).
  * @param {Buffer | null} buffer - A file buffer if local source path falsy.
  */
@@ -86,7 +86,7 @@ module.exports.uploadToS3Async = async function (
   } else {
     logger.verbose(`Uploaded buffer to s3://${s3Bucket}/${s3Path}`);
   }
-  return res;
+  return /** @type {import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput} */ (res);
 };
 module.exports.uploadToS3 = util.callbackify(module.exports.uploadToS3Async);
 

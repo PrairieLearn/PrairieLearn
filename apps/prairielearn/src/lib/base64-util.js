@@ -1,3 +1,4 @@
+// @ts-check
 const { logger } = require('@prairielearn/logger');
 
 const atob = (s) => String.fromCharCode(...Buffer.from(s, 'base64'));
@@ -10,7 +11,7 @@ module.exports.b64EncodeUnicode = function (str) {
   try {
     return btoa(
       encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode('0x' + p1);
+        return String.fromCharCode(parseInt('0x' + p1, 16));
       }),
     );
   } catch (e) {

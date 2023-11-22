@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const express = require('express');

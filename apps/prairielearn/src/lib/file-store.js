@@ -1,3 +1,4 @@
+// @ts-check
 const path = require('path');
 const fsPromises = require('fs').promises;
 const fs = require('fs');
@@ -17,7 +18,7 @@ const StorageTypes = Object.freeze({
  * Upload a file into the file store.
  *
  * @param {string} display_filename - The display_filename of the file.
- * @param {Buffer} contents - The file contents.
+ * @param {Buffer} buffer - The file contents.
  * @param {string} type - The file type.
  * @param {number|null} assessment_instance_id - The assessment instance for the file.
  * @param {number|null} instance_question_id - The instance question for the file.
@@ -112,8 +113,8 @@ module.exports.delete = async (file_id, authn_user_id) => {
 /**
  * Option of returning a stream instead of a file
  *
- * @param {string} file_id - The file to get.
- * @return {stream} - Requested file stream.
+ * @param {number} file_id - The file to get.
+ * @return {Promise<(import('stream'))>} - Requested file stream.
  */
 module.exports.getStream = async (file_id) => {
   debug(`getStream(): file_id=${file_id}`);
@@ -125,7 +126,7 @@ module.exports.getStream = async (file_id) => {
  * Get a file from the file store.
  *
  * @param {number} file_id - The file to get.
- * @return {object} An object with a buffer (of the file contents) and a file object.
+ * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
  */
 module.exports.get = async (file_id, data_type = 'buffer') => {
   debug(`get(): file_id=${file_id}`);
