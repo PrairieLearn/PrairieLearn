@@ -211,9 +211,8 @@ module.exports = {
       if (branches.length !== 1) {
         throw new Error(`New repo has ${branches.length} branches, expected one.`);
       }
-      // TODO: use local variable instead of `options`?
-      options.branch = branches[0].name || config.githubMainBranch;
-      job.info(`Main branch for new repository: "${options.branch}"`);
+      const branch = branches[0].name;
+      job.info(`Main branch for new repository: "${branch}"`);
 
       // Update the infoCourse.json file by grabbing the original and JSON editing it.
       logger.info('Updating infoCourse.json');
@@ -282,7 +281,7 @@ module.exports = {
           options.display_timezone,
           options.path,
           `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`,
-          options.branch,
+          branch,
           authn_user.user_id,
         ])
       ).rows[0];
