@@ -1,4 +1,4 @@
-//ts-check
+//@ts-check
 /**
  * Require frontend modules.
  *
