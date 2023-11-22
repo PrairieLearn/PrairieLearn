@@ -2892,6 +2892,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/express-test-utils@workspace:^, @prairielearn/express-test-utils@workspace:packages/express-test-utils":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
+  dependencies:
+    "@types/express": ^4.17.20
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/flash@workspace:^, @prairielearn/flash@workspace:packages/flash":
   version: 0.0.0-use.local
   resolution: "@prairielearn/flash@workspace:packages/flash"
@@ -3142,6 +3150,7 @@ __metadata:
     "@prairielearn/csv": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/error": "workspace:^"
+    "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/flash": "workspace:^"
     "@prairielearn/html": "workspace:^"
     "@prairielearn/html-ejs": "workspace:^"
@@ -3170,6 +3179,7 @@ __metadata:
     "@types/byline": ^4.2.36
     "@types/chai": ^4.3.9
     "@types/chai-as-promised": ^7.1.7
+    "@types/cookie-parser": ^1.4.5
     "@types/crypto-js": ^4.2.1
     "@types/dockerode": ^3.3.21
     "@types/express": ^4.17.20
@@ -3318,6 +3328,7 @@ __metadata:
     requirejs: ^2.3.6
     search-string: ^3.1.0
     serve-favicon: ^2.5.0
+    set-cookie-parser: ^2.6.0
     showdown: ^2.1.0
     socket.io: ^4.7.2
     socket.io-adapter: ^2.5.2
@@ -3386,6 +3397,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/session@workspace:packages/session"
   dependencies:
+    "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.9
     "@types/cookie": ^0.5.3
@@ -4548,6 +4560,15 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: 4dee3d966fb527b98f0cbbdcf6977c9193fc3204ed539b7522fe5e64dfa45f9017bdda4ffb1f760062262fce7701a0ee1c2f6ce2e50af36c74d4e37052303172
+  languageName: node
+  linkType: hard
+
+"@types/cookie-parser@npm:^1.4.5":
+  version: 1.4.5
+  resolution: "@types/cookie-parser@npm:1.4.5"
+  dependencies:
+    "@types/express": "*"
+  checksum: 45855721706d6a57bb0441db11fb59db407414ea83a0000a0df80d19230447cc3bcc43c436397bfb8998ec78db222265fa8083456b00c5b5054a0c03d06f0086
   languageName: node
   linkType: hard
 
