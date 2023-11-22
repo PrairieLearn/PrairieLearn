@@ -46,8 +46,6 @@ module.exports = asyncHandler(async (req, res, next) => {
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
   res.locals.institution = result.rows[0].institution;
-  const authn_courses = result.rows[0].courses || [];
-  const authn_course_instances = result.rows[0].course_instances || [];
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),
@@ -58,8 +56,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     authn_has_course_permission_view: permissions_course.has_course_permission_view,
     authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
-    authn_courses: authn_courses,
-    authn_course_instances: authn_course_instances,
     user: _.cloneDeep(res.locals.authn_user),
     mode: result.rows[0].mode,
     is_administrator: res.locals.is_administrator,
@@ -68,11 +64,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     has_course_permission_view: permissions_course.has_course_permission_view,
     has_course_permission_edit: permissions_course.has_course_permission_edit,
     has_course_permission_own: permissions_course.has_course_permission_own,
-    courses: authn_courses,
-    course_instances: authn_course_instances,
-    editable_courses: authn_courses.filter(
-      (course) => course.permissions_course.has_course_permission_edit,
-    ),
   };
   res.locals.user = res.locals.authz_data.user;
   if (isCourseInstance) {
@@ -332,10 +323,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     res.locals.authz_data.has_course_permission_edit = false;
     res.locals.authz_data.has_course_permission_own = false;
 
-    res.locals.authz_data.courses = [];
-    res.locals.authz_data.course_instances = [];
-    res.locals.authz_data.editable_courses = [];
-
     if (isCourseInstance) {
       res.locals.authz_data.course_instance_role = 'None';
       res.locals.authz_data.has_course_instance_permission_view = false;
@@ -569,35 +556,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     effectiveResult.rows[0].permissions_course.has_course_permission_edit;
   res.locals.authz_data.has_course_permission_own =
     effectiveResult.rows[0].permissions_course.has_course_permission_own;
-
-  // Effective users are confined to one course, so we discard all other
-  // courses from the list of those to which the effective user has staff
-  // access.
-  //
-  // Note that courses[0].permissions_course and course.permissions_course
-  // will not, in general, be the same. Requested course and course instance
-  // roles are ignored when generating the former but not when generating
-  // the latter. So, we also replace permissions_course for the course that
-  // remains in the list (the current course) with what it should be.
-  //
-  // We then update editable_courses as usual.
-  res.locals.authz_data.courses = (effectiveResult.rows[0].courses || []).filter((course) =>
-    idsEqual(course.id, effectiveResult.rows[0].course.id),
-  );
-  res.locals.authz_data.courses.forEach(
-    (course) =>
-      (course.permissions_course = _.cloneDeep(effectiveResult.rows[0].permissions_course)),
-  );
-  res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(
-    (course) => course.permissions_course.has_course_permission_edit,
-  );
-
-  // Use the course_instances for the effective user, but keeping only
-  // those ones for which the authn user also has access.
-  res.locals.authz_data.course_instances = effectiveResult.rows[0].course_instances || [];
-  res.locals.authz_data.course_instances = res.locals.authz_data.course_instances.filter((ci) =>
-    res.locals.authz_data.authn_course_instances.some((authn_ci) => idsEqual(authn_ci.id, ci.id)),
-  );
 
   if (isCourseInstance) {
     res.locals.authz_data.course_instance_role =

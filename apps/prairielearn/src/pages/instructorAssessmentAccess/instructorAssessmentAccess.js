@@ -1,12 +1,13 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../../lib/config';
+import * as sqldb from '@prairielearn/postgres';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
@@ -23,4 +24,4 @@ router.get('/', function (req, res, next) {
   });
 });
 
-module.exports = router;
+export default router;

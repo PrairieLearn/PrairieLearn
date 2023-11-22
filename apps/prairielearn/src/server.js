@@ -595,6 +595,19 @@ module.exports.initExpress = function () {
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
   ]);
 
+  // We deliberately omit the `authzCourseOrInstance` middleware here. The
+  // route handler will only ever display courses for which the user has staff
+  // access; the course ID in the URL is only used to determine which course
+  // is the currently selected one.
+  app.use(
+    '/pl/navbar/course/:course_id/switcher',
+    require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
+  );
+  app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
+    require('./middlewares/authzCourseOrInstance'),
+    require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
+  ]);
+
   app.use('/pl/workspace/:workspace_id', [
     (req, res, next) => {
       res.locals.workspace_id = req.params.workspace_id;
@@ -845,7 +858,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorAssessmentSettings/instructorAssessmentSettings'),
+    require('./pages/instructorAssessmentSettings/instructorAssessmentSettings').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions',
@@ -854,7 +867,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'questions';
         next();
       },
-      require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+      require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions').default,
     ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
@@ -862,14 +875,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'groups';
       next();
     },
-    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function (req, res, next) {
       res.locals.navSubPage = 'access';
       next();
     },
-    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
+    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics',
@@ -878,7 +891,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'assessment_statistics';
         next();
       },
-      require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
+      require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics').default,
     ],
   );
   app.use(
@@ -890,7 +903,8 @@ module.exports.initExpress = function () {
       },
       require('./pages/shared/assessmentStatDescriptions'),
       require('./pages/shared/floatFormatters'),
-      require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
+      require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics')
+        .default,
     ],
   );
   app.use(
@@ -900,7 +914,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'downloads';
         next();
       },
-      require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
+      require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads').default,
     ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
@@ -908,7 +922,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'uploads';
       next();
     },
-    require('./pages/instructorAssessmentUploads/instructorAssessmentUploads'),
+    require('./pages/instructorAssessmentUploads/instructorAssessmentUploads').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading',
@@ -917,7 +931,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'regrading';
         next();
       },
-      require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
+      require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading').default,
     ],
   );
   app.use(
@@ -927,7 +941,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'instances';
         next();
       },
-      require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
+      require('./pages/instructorAssessmentInstances/instructorAssessmentInstances').default,
     ],
   );
   app.use(
@@ -937,7 +951,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_edit';
         next();
       },
-      require('./pages/instructorFileEditor/instructorFileEditor'),
+      require('./pages/instructorFileEditor/instructorFileEditor').default,
     ],
   );
   app.use(
@@ -1037,7 +1051,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
       require('./pages/shared/floatFormatters'),
-      require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
+      require('./pages/instructorAssessmentInstance/instructorAssessmentInstance').default,
     ],
   );
 
@@ -1094,7 +1108,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', [
     function (req, res, next) {
@@ -1141,7 +1155,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
     function (req, res, next) {
@@ -1162,14 +1176,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sets';
       next();
     },
-    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
+    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
       next();
     },
-    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/issues', [
     function (req, res, next) {
@@ -1211,7 +1225,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', [
     function (req, res, next) {
@@ -1265,14 +1279,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'assessments';
       next();
     },
-    require('./pages/instructorAssessments/instructorAssessments'),
+    require('./pages/instructorAssessments/instructorAssessments').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
-    require('./pages/instructorGradebook/instructorGradebook'),
+    require('./pages/instructorGradebook/instructorGradebook').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
     function (req, res, next) {
@@ -1286,7 +1300,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', [
     function (req, res, next) {
@@ -1593,7 +1607,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/file_view', [
     function (req, res, next) {
@@ -1625,7 +1639,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/sharing', [
     function (req, res, next) {
@@ -1646,14 +1660,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sets';
       next();
     },
-    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
+    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
       next();
     },
-    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/issues', [
     function (req, res, next) {
@@ -1695,7 +1709,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/file_view', [
     function (req, res, next) {

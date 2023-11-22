@@ -193,11 +193,11 @@
           We only want to show the card footer if it will have something inside. Since it is easy
           to make a mistake when merging logical conditions, we will simply "or" them all.
         -->
-        <% if ((authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view) ||
+        <% if ((editable_courses && (editable_courses.length > 0) && authz_data.has_course_permission_view) ||
                ((authz_data.has_course_permission_edit) && (! course.example_course))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view && question.course_id === course.id) { %>
+            <% if (editable_courses && (editable_courses.length > 0) && authz_data.has_course_permission_view && question.course_id === course.id) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>
