@@ -8,11 +8,10 @@ import { callbackify, promisify } from 'util';
 import * as error from '@prairielearn/error';
 import * as question from './question';
 import * as externalGrader from './externalGrader';
-import * as externalGradingSocket from './externalGradingSocket';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
-import { DateFromISOString, IdSchema } from './db-types';
+import { CourseSchema, IdSchema, QuestionSchema, VariantSchema } from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -181,22 +180,30 @@ export async function gradeAssessmentInstanceAsync(
   // grading transaction has been accepted; collect those job ids here.
   const externalGradingJobIds: string[] = [];
 
-  if (requireOpen) {
-    await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+  if (requireOpen || close) {
+    await sqldb.runInTransactionAsync(async () => {
+      await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
+      await sqldb.callAsync('assessment_instances_ensure_open', [assessment_instance_id]);
+
+      if (close) {
+        // If we're supposed to close the assessment, do it *before* we
+        // we start grading. This avoids a race condition where the student
+        // makes an additional submission while grading is already in progress.
+        await sqldb.queryAsync(sql.close_assessment_instance, {
+          assessment_instance_id,
+          authn_user_id,
+        });
+      }
+    });
   }
 
-  if (close) {
-    // If we're supposed to close the assessment, do it *before* we
-    // we start grading. This avoids a race condition where the student
-    // makes an additional submission while grading is already in progress.
-    await sqldb.callAsync('assessment_instances_close', [assessment_instance_id, authn_user_id]);
-  }
-  const result = await sqldb.callAsync('variants_select_for_assessment_instance_grading', [
-    assessment_instance_id,
-  ]);
-  const rows = result.rows;
-  debug('gradeAssessmentInstance()', 'selected variants', 'count:', rows.length);
-  await async.eachSeries(rows, async (row) => {
+  const variants = await sqldb.queryRows(
+    sql.select_variants_for_assessment_instance_grading,
+    { assessment_instance_id },
+    z.object({ variant: VariantSchema, question: QuestionSchema, variant_course: CourseSchema }),
+  );
+  debug('gradeAssessmentInstance()', 'selected variants', 'count:', variants.length);
+  await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
     const gradingJobId = await promisify(question.gradeVariant)(
@@ -215,24 +222,22 @@ export async function gradeAssessmentInstanceAsync(
     // We need to submit these grading jobs to be graded
     await externalGrader.beginGradingJobs(externalGradingJobIds);
   }
-  // The `grading_needed` flag was set by the `assessment_instances_close`
-  // sproc above. Once we've successfully graded every part of the
-  // assessment instance, set the flag to false so that we don't try to
-  // grade it again in the future.
+  // The `grading_needed` flag was set by the closing query above. Once we've
+  // successfully graded every part of the assessment instance, set the flag to
+  // false so that we don't try to grade it again in the future.
   //
-  // This flag exists only to handle the case where we close the exam
-  // but then the PrairieLearn server crashes before we can grade it.
-  // In that case, the `autoFinishExams` cronjob will detect that the
-  // assessment instance hasn't been fully graded and will grade any
-  // ungraded portions of it.
+  // This flag exists only to handle the case where we close the exam but then
+  // the PrairieLearn server crashes before we can grade it. In that case, the
+  // `autoFinishExams` cronjob will detect that the assessment instance hasn't
+  // been fully graded and will grade any ungraded portions of it.
   //
-  // There's a potential race condition here where the `autoFinishExams`
-  // cronjob runs after `assessment_instances_close` but before the above
-  // calls to `gradeVariant` have finished. In that case, we'll
-  // concurrently try to grade the same variant twice. This shouldn't
-  // impact correctness, as `gradeVariant` is resilient to being run
-  // multiple times concurrently. The only bad thing that will happen
-  // is that we'll have wasted some work, but that's acceptable.
+  // There's a potential race condition here where the `autoFinishExams` cronjob
+  // runs after closing the instance but before the above calls to
+  // `gradeVariant` have finished. In that case, we'll concurrently try to grade
+  // the same variant twice. This shouldn't impact correctness, as
+  // `gradeVariant` is resilient to being run multiple times concurrently. The
+  // only bad thing that will happen is that we'll have wasted some work, but
+  // that's acceptable.
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
 export const gradeAssessmentInstance = callbackify(gradeAssessmentInstanceAsync);
@@ -306,139 +311,6 @@ export async function gradeAllAssessmentInstances(
   });
 
   return serverJob.jobSequenceId;
-}
-
-export const GradingResultSchema = z.object({
-  gradingId: z.string(),
-  grading: z.object({
-    receivedTime: DateFromISOString.nullish(),
-    startTime: DateFromISOString.nullish(),
-    endTime: DateFromISOString.nullish(),
-    format_errors: z.record(z.string(), z.any()).nullish(),
-    score: z.coerce
-      .number()
-      .refine((val) => val >= 0 && val <= 1, 'Score is out of range, must be between 0 and 1')
-      .optional(),
-    feedback: z.object({
-      succeeded: z
-        .boolean()
-        .nullish()
-        .transform((val) => val ?? true),
-      message: z.string().nullish(),
-      results: z
-        .object({
-          succeeded: z
-            .boolean()
-            .nullish()
-            .transform((val) => val ?? true),
-          gradable: z
-            .boolean()
-            .nullish()
-            .transform((val) => val ?? true),
-          score: z.coerce.number().nullish(),
-        })
-        .passthrough()
-        .optional()
-        .default({ succeeded: true, gradable: true }),
-      original_feedback: z.record(z.string(), z.any()).nullish(),
-    }),
-  }),
-});
-export type GradingResultInput = z.input<typeof GradingResultSchema>;
-export type GradingResult = z.infer<typeof GradingResultSchema>;
-
-/**
- * Process the result of an external grading job.
- *
- * @param contentInput - The grading job data to process.
- */
-export async function processGradingResult(contentInput: GradingResultInput): Promise<void> {
-  try {
-    const parseResult = GradingResultSchema.safeParse(contentInput);
-    const content: GradingResult = parseResult.success
-      ? parseResult.data
-      : {
-          ...contentInput,
-          grading: {
-            ...contentInput?.grading,
-            receivedTime: DateFromISOString.nullable()
-              .catch(null)
-              .parse(contentInput?.grading?.receivedTime),
-            startTime: DateFromISOString.nullable()
-              .catch(null)
-              .parse(contentInput?.grading?.startTime),
-            endTime: DateFromISOString.nullable()
-              .catch(null)
-              .parse(contentInput?.grading?.endTime),
-            score: 0,
-            feedback: {
-              succeeded: false,
-              results: { succeeded: false, gradable: false },
-              message: `Error parsing external grading results: ${parseResult.error.message}.`,
-              original_feedback: contentInput?.grading?.feedback,
-            },
-          },
-        };
-
-    // There are two "succeeded" flags in the grading results. The first
-    // is at the top level and is set by `grader-host`; the second is in
-    // `results` and is set by course code.
-    //
-    // If the top-level flag is false, that means there was a serious
-    // error in the grading process and we should treat the submission
-    // as not gradable. This avoids penalizing students for issues outside
-    // their control.
-    const jobSucceeded = content.grading.feedback.succeeded;
-
-    const succeeded = content.grading.feedback.results.succeeded;
-    if (!succeeded) {
-      content.grading.score = 0;
-    }
-
-    // The submission is only gradable if the job as a whole succeeded
-    // and the course code marked it as gradable. We default to true for
-    // backwards compatibility with graders that don't set this flag.
-    let gradable = jobSucceeded && content.grading.feedback.results.gradable;
-
-    // We only care about the score if it is gradable.
-    if (gradable && content.grading.score == null) {
-      content.grading.feedback = {
-        succeeded: true,
-        results: { succeeded: false, gradable: false },
-        message: 'Error parsing external grading results: score was not provided.',
-        original_feedback: content.grading.feedback,
-      };
-      content.grading.score = 0;
-      gradable = false;
-    }
-
-    await sqldb.callAsync('grading_jobs_update_after_grading', [
-      content.gradingId,
-      content.grading.receivedTime,
-      content.grading.startTime,
-      content.grading.endTime,
-      null, // `submitted_answer`
-      content.grading.format_errors,
-      gradable,
-      false, // `broken`
-      null, // `params`
-      null, // `true_answer`
-      content.grading.feedback,
-      {}, // `partial_scores`
-      content.grading.score,
-      null, // `v2_score`: gross legacy, this can safely be null
-    ]);
-    const assessment_instance_id = await sqldb.queryOptionalRow(
-      sql.select_assessment_for_grading_job,
-      { grading_job_id: content.gradingId },
-      IdSchema,
-    );
-    if (assessment_instance_id != null) {
-      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
-    }
-  } finally {
-    externalGradingSocket.gradingJobStatusUpdated(contentInput.gradingId);
-  }
 }
 
 /**

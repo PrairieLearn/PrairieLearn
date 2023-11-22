@@ -1,21 +1,21 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const async = require('async');
+import * as async from 'async';
 const fs = require('fs-extra');
-const path = require('path');
+import * as path from 'path';
 
-const { logger } = require('@prairielearn/logger');
-const { contains } = require('@prairielearn/path-utils');
-const chunks = require('./chunks');
+import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
+import { getRuntimeDirectoryForCourse } from './chunks';
 
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.
  */
-module.exports.getJobDirectory = function (jobId) {
+export function getJobDirectory(jobId) {
   return `/jobs/job_${jobId}`;
-};
+}
 
 /**
  * Constructs a directory of files to be used for grading.
@@ -26,8 +26,8 @@ module.exports.getJobDirectory = function (jobId) {
  * @param {any} question
  * @param {any} course
  */
-module.exports.buildDirectory = function (dir, submission, variant, question, course, callback) {
-  const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+export function buildDirectory(dir, submission, variant, question, course, callback) {
+  const coursePath = getRuntimeDirectoryForCourse(course);
   async.series(
     [
       (callback) => {
@@ -184,7 +184,7 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
       callback(null);
     },
   );
-};
+}
 
 /**
  * Generates an object that can be passed to assessment.processGradingResult.
@@ -194,9 +194,9 @@ module.exports.buildDirectory = function (dir, submission, variant, question, co
  *
  * @param {string} jobId - The grading job ID
  * @param {Object|string|Buffer} rawData - The grading results
- * @returns {import('./assessment').GradingResultInput}
+ * @returns {import('./externalGrader').GradingResultInput}
  */
-module.exports.makeGradingResult = function (jobId, rawData) {
+export function makeGradingResult(jobId, rawData) {
   let data = rawData;
 
   // Convert objects or buffers to strings so that we can remove null bytes,
@@ -206,7 +206,6 @@ module.exports.makeGradingResult = function (jobId, rawData) {
   } else if (_.isObject(rawData)) {
     data = JSON.stringify(rawData);
   }
-
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(data.replace(/\0/g, '\ufffd'));
@@ -279,7 +278,7 @@ module.exports.makeGradingResult = function (jobId, rawData) {
       format_errors: { _external_grader: format_errors },
     },
   };
-};
+}
 
 function makeGradingFailureWithMessage(jobId, data, message) {
   return {
