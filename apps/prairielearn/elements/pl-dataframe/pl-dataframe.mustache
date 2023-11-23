@@ -1,0 +1,42 @@
+{{#show_python}}
+<div id="pl-dataframe-{{uuid}}" class="card mb-4">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item" role="presentation"><a class="nav-link active" data-toggle="tab" href="#table-{{uuid}}">Table</a></li>
+      <li class="nav-item" role="presentation"><a class="nav-link" data-toggle="tab" href="#code-{{uuid}}">Code</a></li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+      <div id="table-{{uuid}}" role="tabpanel" class="tab-pane show active">
+{{/show_python}}
+
+        <div>
+{{{frame_html}}}
+
+{{#num_rows}}
+{{#num_cols}}
+          <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
+{{/num_cols}}
+{{/num_rows}}
+        </div>
+
+{{#show_python}}
+      </div>
+
+      <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
+<!-- Don't unindent this, will cause formatting issues -->
+<pl-code language="python" copy-code-button="True">
+from pandas import DataFrame, Timestamp
+from numpy import nan
+
+{{{varname}}} = DataFrame(
+{{{code_string}}}
+)
+</pl-code>
+      </div>
+    </div>
+  </div>
+</div>
+{{/show_python}}

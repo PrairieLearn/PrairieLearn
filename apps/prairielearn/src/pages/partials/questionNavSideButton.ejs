@@ -1,0 +1,34 @@
+<%
+let classes = ['btn', 'text-white', 'mb-3'];
+if (question.id && !question.sequence_locked) {
+  classes.push('btn-primary');
+}
+else {
+  if (question.sequence_locked) {
+    classes.push('btn-secondary', 'pl-sequence-locked');
+  }
+  else {
+    classes.push('btn-primary', 'disabled');
+  }
+}
+let classes_str = classes.join(' ');
+%>
+<a
+  id="<%= button.id %>"
+  class="<%= classes_str %>"
+  <% if (question.id && !question.sequence_locked) { %>
+    href="<%= urlPrefix %>/instance_question/<%= question.id %>/"
+  <% } else { %>
+    <% if (question.sequence_locked) { %>
+      tabindex="0" role="button"
+      data-toggle="popover" data-trigger="focus" data-container="body"
+      data-html="true"
+      data-content="You must score at least <b><%= advance_score_perc %>%</b> on a submission to this question in order to unlock the next. If you run out of attempts, the next question will unlock automatically."
+    <% } %>
+  <% } %>
+>
+  <%= button.label %>
+  <% if (question.sequence_locked) { %>
+    <i class="fas fa-lock ml-1" aria-label="Locked"></i>
+  <% } %>
+</a>

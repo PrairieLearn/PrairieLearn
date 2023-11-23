@@ -1,0 +1,72 @@
+<%
+    const navTrace = [];
+
+    // e.g. "hello_world" => "Hello World"
+    function displayFriendlyPage(page) {
+      return page
+        .toLowerCase()
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.substring(1))
+        .join(' ');
+    }
+
+    // If pageTitle is defined, use it,
+    // otherwise, generate lowest-level page name from navSubPage
+    var displayedTitle = "";
+    if (typeof pageTitle !== 'undefined') {
+      displayedTitle = pageTitle;
+    } else if (typeof navSubPage !== 'undefined') {
+      displayedTitle = displayFriendlyPage(navSubPage);
+    }
+    if (displayedTitle) navTrace.push(displayedTitle);
+
+    // If pageNote is defined, add it in parenthesis
+    // after the first navTrace entry
+    if (navTrace.length > 0 && typeof pageNote !== 'undefined') {
+      navTrace[0] += ' (' + pageNote + ')';
+    }
+
+    if (typeof assessment !== 'undefined' && typeof assessment_set !== 'undefined') {
+      var assessment_abbreviation = `${assessment_set.abbreviation}${assessment.number}`;
+      // Possibilities need to be enumerated because
+      // instance_question_info.question_number is formatted differently
+      // for homework and exams.
+      if (typeof instance_question_info !== 'undefined') {
+        if (assessment.type == "Homework") {
+          navTrace.push(instance_question_info.question_number);
+        } else if (assessment.type == "Exam") {
+          navTrace.push(`${assessment_abbreviation}.${instance_question_info.question_number}`);
+        }
+      } else {
+        navTrace.push(assessment_abbreviation);
+      }
+    }
+
+    // If page is associated with a particular course,
+    // always display the short name, e.g. QA 101
+    const navPageIgnore = ['error'];
+    if (typeof course !== 'undefined') {
+        var courseName = course.short_name;
+        // If an instructor is viewing, always display the
+        // short course instance name, e.g. fa19
+        if (typeof navbarType !== 'undefined'
+        && navbarType == 'instructor'
+        && typeof course_instance !== 'undefined') {
+            courseName += ', ' + course_instance.short_name;
+        }
+        navTrace.push(courseName);
+    } else if (typeof navPage !== 'undefined' && !navPageIgnore.includes(navPage)) {
+        navTrace.push(displayFriendlyPage(navPage));
+    }
+%>
+<title>
+  <% if (config.titleOverride) { %>
+    <%= config.titleOverride %>
+  <% } else { %>
+    <% if (config.devMode) { %>[DEV]<% } %>    
+    <% if (navTrace.length > 0) { %>
+        <%= navTrace.join(" - ") + " | " %>
+    <% } %>
+    PrairieLearn
+  <% } %>
+</title>

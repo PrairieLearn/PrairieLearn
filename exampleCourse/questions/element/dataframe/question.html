@@ -1,0 +1,40 @@
+<pl-question-panel>
+  <p>
+    The following examples below were created to show the capabilities of the <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-dataframe"><code>pl-dataframe</code></a> element,
+    which allows formatting and rendering of pandas DataFrames, e.g. <a
+      href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html"><code>pd.DataFrame()</code></a>, inside
+    the <code>server.py</code> to be displayed on the question page.
+  </p>
+</pl-question-panel>
+
+<p>
+  Here is an example with a Pandas DataFrame input. Note that if you are setting a value in
+  <code>data["params"]</code> to a DataFrame, you can use PrairieLearn's built-in <code>pl.to_json()</code>
+  function.
+  We've set <code>show-dtype="true"</code> and <code>display-language="python"</code>
+</p>
+<pl-dataframe params-name="df" show-dtype="true" display-language="python"></pl-dataframe>
+<p>
+  By default, a Pandas DataFrame will display its index column and header row, as well as a postscript label with
+  the table dimensions. You can toggle these with attributes on the <code>pl-dataframe</code> tag.
+  Here, we've set the following:
+  <code>show-header="false" show-index="false" show-dimensions="false" show-dtype="none" digits="4" display-variable-name="data_frame" width="10_000"</code>:
+</p>
+<pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4" display-variable-name="data_frame"
+  width="10_000"></pl-dataframe>
+<p>
+  Here's another Pandas DataFrame. This DataFrame has timestamps and uses the new encoding rule in
+  <code>pl.to_json()</code> by setting the keyword argument <code>df_encoding_version=2</code>.
+  We also set <code>show-python="false"</code> to hide the tab showing code for reproducing the dataframe.
+</p>
+<pl-dataframe params-name="df2" show-dimensions="true" show-dtype="true" display-language="python" digits="2"
+  show-python="false"></pl-dataframe>
+
+<p>
+  Here's a Pandas DataFrame with equivalent R types at the bottom, done by setting <code>show-dtype="r"</code>.
+  This DataFrame uses the default indexing, and thus the display is changed to being 1-indexed to comply
+  with the convention in R.
+</p>
+<pl-dataframe params-name="dft" show-dimensions="true" show-dtype="true" display-language="r" digits="2"
+  show-python="false"></pl-dataframe>

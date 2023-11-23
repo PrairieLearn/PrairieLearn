@@ -1,0 +1,18 @@
+# https://editorconfig.org/
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+[Makefile]
+indent_style = tab
+
+[*.{js,ts,json,mjs,cjs,mts,cts,sql,yml,html,css}]
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_style = space
+indent_size = 4
+

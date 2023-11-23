@@ -1,0 +1,17 @@
+{
+    "uuid": "b0eba3d7-e1f0-4f47-8af6-f16f251ba92F",
+    "title": "Autograder Demo: Sales Tax in C++",
+    "topic": "Autograder",
+    "tags": [
+        "jonatan", "code",  "c++"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-c",
+        "timeout": 10,
+        "entrypoint": "python3 /grade/tests/test.py"
+    }
+}

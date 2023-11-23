@@ -1,4 +1,5 @@
 columns
+    advance_score_perc: double precision
     assessment_id: bigint not null
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
     number: integer

@@ -1,0 +1,65 @@
+{
+    "uuid": "754dac56-fc1f-4888-a74a-1b365fd48379",
+    "type": "Homework",
+    "title": "Homework template including extra credit",
+    "set": "Homework",
+    "module": "AnotherModule",
+    "number": "2",
+    "allowAccess": [
+      {
+          "comment": "Set end date for 100% credit",
+          "mode": "Public",
+          "credit": 100,
+          "startDate": "2021-01-01T00:00:01",
+          "endDate": "2023-11-15T23:59:59"
+      },
+      {
+          "comment": "Set later end date for reduced credit",
+          "mode": "Public",
+          "credit": 50,
+          "startDate": "2021-01-01T00:00:01",
+          "endDate": "2023-11-30T23:59:59"
+      },
+      {
+          "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
+          "mode": "Public",
+          "credit": 0,
+          "startDate": "2021-01-01T00:00:01",
+          "endDate": "2023-12-31T23:59:59"
+      }
+    ],
+    "maxPoints": 24,
+    "maxBonusPoints": 3,
+    "zones": [
+        {
+            "title": "Zone 1: Fundamental questions",
+            "bestQuestions": 2,
+            "questions": [
+                {"id": "demo/calculation",          "points": 1, "maxPoints": 3},
+                {"id": "demo/randomCheckbox",       "points": 1, "maxPoints": 3},
+                {"id": "demo/randomPlot",           "points": 1, "maxPoints": 3},
+                {"id": "demo/randomFakeData",       "points": 1, "maxPoints": 3},
+                {"id": "demo/randomZippedFile",     "points": 1, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Zone 2: Intermediate questions",
+            "maxPoints": 6,
+            "questions": [
+                {"id": "demo/annotated/engCentroid", "points": 1, "maxPoints": 3},
+                {"id": "demo/annotated/engLogic",    "points": 1, "maxPoints": 3},
+                {"id": "workshop/PeriodicTable1",    "points": 1, "maxPoints": 3}
+           ]
+        },
+        {
+            "title": "Zone 3: Advanced questions",
+            "questions": [
+                {"id": "demo/annotated/mathProof",             "points": 3, "maxPoints": 3},
+                {"id": "demo/computeNumber-fromDataFrame",     "points": 1, "maxPoints": 6},
+                {"id": "demo/computeNumber-fromArray",         "points": 1, "maxPoints": 6},
+                {"id": "demo/computeRotationMatrix",           "points": 1, "maxPoints": 6}
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong></p> <p>This assessment organizes questions into zones with varying degrees of difficulty. Instructors may find it helpful to use zones to organize questions by topic, difficulty or other categories. However, zones are not required. </p> <p>Here is the breakdown of points for this assessment:</p><p><ul><li>In zone 1, only the two questions with the highest scores will count towards the total points. Since each question in this zone has maximum points equal to 2, the maximum points for this zone is equal to 6.</li><li>Zone 2 has 9 points available, but the maximum points is set to 6.</li><li>Zone 3 has 21 points available.</li></ul></p><p> Note that the overall assignment has maximum of 24 points, hence students will only need to get 12 out of the 21 points in zone 3 to achieve 100% credit.</p><p>In addition, this assessment allows students to get 3 bonus points. If they get 15 points for zone 3, they will have a total of 27/24 points, giving them 112% credit.</p> <p> All questions included in this assessment are designed as <i>drilling for mastery</i>. Read more <a href='https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md' target='_blank'>here</a>.</small> </p>"
+}

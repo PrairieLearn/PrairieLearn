@@ -1,0 +1,3 @@
+<li class="nav-item">
+    <a class="nav-link <% if (navSubPage == activeSubPage || (Array.isArray(activeSubPage) && activeSubPage.includes(navSubPage))) { %>active text-dark<% } else { %>text-secondary<% } %>" href="<%= urlPrefix %><%= urlSuffix %>"><i class="mr-1 <%= iconClasses %>"></i> <%= tabLabel %></a>
+</li>

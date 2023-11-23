@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.travis.yml$
+^local
+^\.codecov\.yml$
+^.editorconfig$
+.*\.tar\.gz$
+^GPATH
+^GRTAGS
+^GTAGS

@@ -4,6 +4,7 @@
     "title": "Miscellaneous homework",
     "set": "Homework",
     "number": "2",
+    "module": "Module1",
     "allowAccess": [
         {
             "mode": "Public",

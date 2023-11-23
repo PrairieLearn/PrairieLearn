@@ -1,0 +1,23 @@
+{
+  "name": "@prairielearn/aws-imds",
+  "version": "1.0.10",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/aws-imds"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "*",
+    "@types/node": "^18.18.8",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "zod": "^3.22.4"
+  }
+}

@@ -1,0 +1,12 @@
+{
+    "uuid": "6d65eff5-b7c6-4b8f-bc18-ab5e7cbea2fa",
+    "shortName": "Fa18",
+    "longName": "Fall 2018",
+    "allowAccess": [
+        {
+            "institution": "Any",
+            "startDate": "1800-01-19T00:00:01",
+            "endDate": "2400-05-13T23:59:59"
+        }
+    ]
+}

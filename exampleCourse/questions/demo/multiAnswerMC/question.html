@@ -1,0 +1,23 @@
+<pl-question-panel>
+    <p>
+        Integer review: Which of these mathematical statements are true?
+    </p>
+</pl-question-panel>
+
+<pl-checkbox answers-name="ans" partial-credit="true" partial-credit-method="COV" max-select="3">
+    <pl-answer correct="true">If an integer is divisible by 4, it must be divisible by 2.</pl-answer>
+    <pl-answer>If an integer is divisible by 2, it must be divisible by 4.</pl-answer>
+    <pl-answer>An integer divided by an integer is always an integer.</pl-answer>
+    <pl-answer>The number 3.5 is an integer.</pl-answer>
+</pl-checkbox>
+
+<pl-question-panel>
+    <p><i>
+        This example question shows how we can use the Coverage (COV) grading scheme in a
+        multiple-choice question where only one option is correct, but multiple options can be
+        selected. In this question, COV grading gives a nonzero amount of credit to any valid
+        submission that includes the correct option. Notice also that at most 3 options can be
+        selected; we accomplish this by setting <code>max-select="3"</code> in the <code>pl-checkbox</code>
+        attributes.
+    </i></p>
+</pl-question-panel>

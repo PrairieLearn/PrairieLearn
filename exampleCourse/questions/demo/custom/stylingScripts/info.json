@@ -3,7 +3,7 @@
     "title": "Demo: Custom question styles and scripts",
     "topic": "Custom",
     "type": "v3",
-    "tags": ["Sp20", "nnytko2", "v3"],
+    "tags": ["Sp20", "nnytko2"],
     "dependencies": {
         "clientFilesQuestionStyles": [ "style.css" ],
         "clientFilesQuestionScripts": [ "script.js" ]

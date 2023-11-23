@@ -3,9 +3,8 @@
     "title": "Autograder demo: Square method in Java",
     "topic": "Autograder",
     "tags": [
-        "v3",
         "jonatan",
-        "short-coding"
+        "code"
     ],
     "type": "v3",
     "singleVariant": true,

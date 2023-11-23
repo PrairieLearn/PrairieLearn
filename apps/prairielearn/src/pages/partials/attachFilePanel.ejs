@@ -1,0 +1,121 @@
+<div class="card mb-4" id="attach-file-panel">
+  <div class="card-header bg-secondary text-white">
+    <i class="fas fa-paperclip"></i>
+    Personal Notes
+  </div>
+  <table class="table table-sm">
+    <tbody>
+    <% if (file_list.length == 0) { %>
+    <tr><td><i>No attached notes</i></td></tr>
+    <% } else { %>
+      <% file_list.forEach(function(file, iFile) { %>
+      <tr>
+        <td style="word-break:break-all;">
+          <a class="attached-file" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
+            <%= file.display_filename %>
+          </a>
+        </td>
+        <% if (assessment_instance.open && authz_result.active && authz_result.authorized_edit) { %>
+        <td style="width:1%; text-align:right;">
+          <% if (file.type == 'student_upload') { %>
+          <a id="attachFileDeleteButton<%= iFile %>"
+             tabindex="0" class="btn btn-xs btn-secondary attachFileDeleteButton" role="button"
+             data-toggle="popover" data-container="body"
+             data-html="true" data-placement="auto" title="Confirm delete"
+             data-content="<%= include('attachFileDeleteForm',
+                           {id: 'attachFileDeleteButton' + iFile,
+                           variant: (typeof variant != 'undefined') ? variant : null,
+                           file}); %>"
+             data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="far fa-trash-alt"></i>
+          </a>
+          <% } %>
+        </td>
+        <% } %>
+      </tr>
+      <% }); %>
+    <% } %>
+    </tbody>
+  </table>
+
+  <% if (locals.question_context !== 'manual_grading') { %>
+  <div class="card-footer">
+    <% if (!assessment_instance.open || !authz_result.active) { %>
+    <p class="small mb-0">
+      Notes can't be added or deleted because the assessment is closed.
+    </p>
+    <% } else if (!authz_result.authorized_edit) { /* assessment_instance is open */ %>
+    <div class="alert alert-warning mt-2" role="alert">
+      You are viewing the
+      <% if (locals.question) { %>question instance<% } else { %>assessment instance<% } %>
+      of a different user and so are not authorized to add or delete personal notes.
+    </div>
+    <% } else { /* assessment_instance is open and authorized_edit is true */ %>
+    <!-- UPLOAD FILE -->
+    <div>
+      <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachFileCollapse" aria-expanded="false" aria-controls="attachFileCollapse">
+        Attach a file <i class="far fa-caret-square-down"></i>
+      </button>
+      <div class="collapse" id="attachFileCollapse">
+        <form class="attach-file-form mb-3" name="attach-file-form" method="POST" enctype="multipart/form-data">
+          <p class="small mt-3">
+            Attached files will be saved here for your reference. These files act as personal notes and can be used for your own review purposes. They are not used for grading.
+          </p>
+          <div class="form-group">
+            <div class="custom-file">
+              <input type="file" name="file" class="custom-file-input" id="attachFileInput">
+              <label class="custom-file-label" for="attachFileInput">Choose file</label>
+              <small id="emailHelp" class="form-text text-muted">Max file size: <%= config.fileUploadMaxBytesFormatted %></small>
+            </div>
+          </div>
+          <div class="form-group mb-0">
+            <input type="hidden" name="__action" value="attach_file">
+            <% if (typeof variant != 'undefined') { %>
+            <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+            <% } %>
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button type="submit" class="btn btn-primary" disabled>Attach file</button>
+          </div>
+        </form>
+
+        <script>
+          $(() => {
+            // Only enable the "submit" button if a file is selected.
+            const form = document.querySelector('form.attach-file-form');
+            const fileInput = form.querySelector('#attachFileInput');
+            const submitButton = form.querySelector('button[type="submit"]');
+            fileInput.addEventListener('change', (e) => {
+              submitButton.disabled = (fileInput.files.length === 0);
+            })
+          });
+        </script>
+      </div>
+    </div>
+
+    <!-- UPLOAD TEXT -->
+    <div>
+      <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachTextCollapse" aria-expanded="false" aria-controls="attachTextCollapse">
+        Add text note <i class="far fa-caret-square-down"></i>
+      </button>
+      <div class="collapse" id="attachTextCollapse">
+        <form method="POST" class="attach-text-form">
+          <p class="small mt-3">
+            Attached personal notes will be saved here for your reference. These notes can be used for your own review purposes. They are not used for grading.
+          </p>
+          <input class="form-control" aria-label="Text filename" name="filename" value="notes.txt">
+          <div class="form-group">
+            <textarea class="form-control" rows="5" aria-label="Text contents" name="contents" placeholder="Type or paste text here"></textarea>
+          </div>
+          <% if (typeof variant != 'undefined') { %>
+          <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+          <% } %>
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <button class="btn btn-small btn-primary" name="__action" value="attach_text">Add note</button>
+        </form>
+      </div>
+    </div>
+    <!-- END OF FILES -->
+    <% } %>
+  </div>
+  <% } %>
+</div>

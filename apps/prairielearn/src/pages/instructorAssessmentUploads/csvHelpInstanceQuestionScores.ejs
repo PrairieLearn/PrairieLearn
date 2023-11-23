@@ -1,0 +1,31 @@
+<p>
+  Upload a CSV file in the format of
+  the <code><i>&lt;assessment&gt;</i>_submissions_for_manual_grading.csv</code>
+  file from the Downloads page. See the
+  <a href="https://prairielearn.readthedocs.io/en/latest/manualGrading/">Manual Grading documentation</a>.
+</p>
+<p>
+  Alternatively, the CSV file can be in the format:
+</p>
+<pre class="ml-4">uid,instance,qid,score_perc,feedback
+mwest@illinois.edu,1,addTwoNumbers,34.5,The second step was wrong
+zilles@illinois.edu,1,matrixMultiply,100,Great job!
+zilles@illinois.edu,1,addTwoNumbers,78.92,</pre>
+<p>
+  The <code>instance</code> column indicates which assessment instance
+  to modify. The total scores for the assessments will be
+  automatically recalculated. The feedback will be attached to the
+  most recent student submission. To change the per-question points,
+  replace the <code>score_perc</code> column above with
+  a <code>points</code> column.
+</p>
+<p>
+  By default the updates above change the manual portion of the grades
+  for the instance question, in such a way that the sum of the new
+  manual portion with the existing autograding portion matches the
+  total listed in the <code>points</code> or <code>score_perc</code>
+  columns above. It is, however, possible to replace these columns
+  with <code>manual_points</code> and <code>auto_points</code>
+  (or <code>manual_score_perc</code> and <code>auto_score_perc</code>)
+  for more fine-tuned change of grade components.
+</p>

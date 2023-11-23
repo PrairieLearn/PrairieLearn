@@ -1,0 +1,49 @@
+{
+  "name": "@prairielearn/workspace-host",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev:no-watch": "ts-node --transpile-only src/interface.js",
+    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "start": "node dist/interface.js",
+    "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ecr": "^3.438.0",
+    "@aws-sdk/client-s3": "^3.440.0",
+    "@aws-sdk/credential-providers": "^3.438.0",
+    "@aws-sdk/lib-storage": "^3.440.0",
+    "@prairielearn/aws": "workspace:^",
+    "@prairielearn/config": "workspace:^",
+    "@prairielearn/docker-utils": "workspace:^",
+    "@prairielearn/logger": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/sentry": "workspace:^",
+    "@prairielearn/workspace-utils": "workspace:^",
+    "@socket.io/redis-adapter": "^8.2.1",
+    "@socket.io/redis-emitter": "^5.1.0",
+    "archiver": "^6.0.1",
+    "async": "^3.2.5",
+    "async-mutex": "^0.4.0",
+    "async-stacktrace": "^0.0.2",
+    "body-parser": "^1.20.2",
+    "debug": "^4.3.4",
+    "dockerode": "^3.3.5",
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.1",
+    "yargs-parser": "^21.1.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^18.18.8",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "typescript-cp": "^0.1.9"
+  }
+}

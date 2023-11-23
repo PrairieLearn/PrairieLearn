@@ -1,9 +1,13 @@
 columns
     auth_user_id: bigint
+    auto_points: double precision
     date: timestamp with time zone default CURRENT_TIMESTAMP
     grading_job_id: bigint
     id: bigint not null default nextval('question_score_logs_id_seq'::regclass)
     instance_question_id: bigint not null
+    manual_points: double precision
+    max_auto_points: double precision
+    max_manual_points: double precision
     max_points: double precision
     points: double precision
     score_perc: double precision

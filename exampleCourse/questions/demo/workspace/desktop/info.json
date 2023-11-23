@@ -1,0 +1,20 @@
+{
+    "uuid": "4c12d197-9068-4dcb-8359-8048d61bdc28",
+    "title": "Workspace demo: GUI Desktop",
+    "topic": "Workspace",
+    "tags": [
+        "fa21",
+        "nnytko2"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-desktop",
+        "port": 8080,
+        "home": "/home/prairielearner",
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ]
+    }
+}

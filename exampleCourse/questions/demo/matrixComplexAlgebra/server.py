@@ -1,14 +1,14 @@
 import numpy as np
 import prairielearn as pl
 
-def generate(data):
 
+def generate(data):
     # Dimensions
     nInnerMin = 2
     nMax = 5
-    nRows = np.random.randint(1,nMax+1)
-    nInner = np.random.randint(nInnerMin,nMax+1)
-    nCols = np.random.randint(1,nMax+1)
+    nRows = np.random.randint(1, nMax + 1)
+    nInner = np.random.randint(nInnerMin, nMax + 1)
+    nCols = np.random.randint(1, nMax + 1)
 
     # Number of digits after the decimal
     nDigits = 1
@@ -17,12 +17,12 @@ def generate(data):
     numMax = 10
 
     # The two matrices to be multiplied
-    Are = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
-    Aim = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
-    Bre = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
-    Bim = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
-    A = Are + Aim*1j
-    B = Bre + Bim*1j
+    Are = np.random.random_integers(-numMax, numMax, (nRows, nInner)) / (10**nDigits)
+    Aim = np.random.random_integers(-numMax, numMax, (nRows, nInner)) / (10**nDigits)
+    Bre = np.random.random_integers(-numMax, numMax, (nInner, nCols)) / (10**nDigits)
+    Bim = np.random.random_integers(-numMax, numMax, (nInner, nCols)) / (10**nDigits)
+    A = Are + Aim * 1j
+    B = Bre + Bim * 1j
 
     # Product of these two matrices
     C = A.dot(B)

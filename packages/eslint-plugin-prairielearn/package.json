@@ -1,0 +1,19 @@
+{
+  "name": "@prairielearn/eslint-plugin",
+  "version": "1.0.3",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^18.18.8",
+    "typescript": "^5.2.2"
+  }
+}

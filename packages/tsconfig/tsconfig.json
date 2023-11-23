@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "target": "ES2020",
+    // We don't yet make extensive use of ES Modules, so compile
+    // `import`/`export` down to CommonJS.
+    "module": "CommonJS",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // Checking the types for *all* our dependencies is unnecessarily slow in
+    // CI, so we'll only check the types our code actually refers to.
+    "skipLibCheck": true
+  }
+}

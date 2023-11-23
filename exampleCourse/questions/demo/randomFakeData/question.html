@@ -1,0 +1,25 @@
+<pl-question-panel>
+  <p>4 employees at {{params.company}} were having lunch when they realized that they were all born in the same year.
+    Their birthdays are:</p>
+  <ul>
+    {{#params.employees}}
+    <li><strong>{{name}}</strong>: {{birthday}}</li>
+    {{/params.employees}}
+  </ul>
+  <p>Who is the youngest?</p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="ans">
+  <pl-answer correct="true">
+    {{params.youngest}}
+  </pl-answer>
+  <pl-answer correct="false">
+    {{params.employee1}}
+  </pl-answer>
+  <pl-answer correct="false">
+    {{params.employee2}}
+  </pl-answer>
+  <pl-answer correct="false">
+    {{params.employee3}}
+  </pl-answer>
+</pl-multiple-choice>

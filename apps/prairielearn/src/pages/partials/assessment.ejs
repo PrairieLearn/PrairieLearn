@@ -1,0 +1,9 @@
+<% if (assessment.hide_link) { %>
+<span class="badge color-<%= assessment.color %> color-hover">
+  <%= assessment.label %>
+</span>
+<% } else { %>
+<a href="<%= assessment.urlPrefix || urlPrefix %>/assessment/<%= assessment.assessment_id %>" class="badge color-<%= assessment.color %> color-hover" onclick="event.stopPropagation();">
+  <%= assessment.label %>
+</a>
+<% } %>

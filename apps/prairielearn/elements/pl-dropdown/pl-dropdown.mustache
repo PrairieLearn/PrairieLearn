@@ -1,0 +1,58 @@
+
+{{#question}}
+    <span class="d-inline-block form-group form-inline">
+        <select name="{{answers-name}}" class="form-control" {{^editable}}disabled{{/editable}}>
+            {{#options}}
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
+            {{/options}}
+        </select>
+        {{#has_submission}}
+            {{#correct}}
+                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            {{/correct}}
+            {{^correct}}
+                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            {{/correct}}
+        {{/has_submission}}
+    </span>
+{{/question}}
+
+{{#submission}}
+    <span class="d-inline-block">
+
+        {{^parse-error}}
+            <code class="user-output">{{{submitted-answer}}}</code>
+
+            {{#display-score-badge}}
+                {{#correct}}
+                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                {{/correct}}
+                {{^correct}}
+                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                {{/correct}}
+            {{/display-score-badge}}
+        {{/parse-error}}
+
+        {{#parse-error}}
+            <script>
+              $(function(){
+                  $('#pl-dropdown-popover-button-{{uuid}}').popover({ sanitize: false });
+              });
+            </script>
+            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+            <button id="pl-dropdown-popover-button-{{uuid}}" class="btn btn-sm btn-secondary small border ml-1"
+                    data-placement="auto" data-trigger="focus" data-toggle="popover"
+                    data-html="true" title="Format Error" data-container="body"
+                    data-content="{{parse-error}}">
+              Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </button>
+        {{/parse-error}}
+    </span>
+{{/submission}}
+
+
+{{#answer}}
+    <span class="d-inline-block">
+        <code class="user-output">{{{correct-answer}}}</code>
+    </span>
+{{/answer}}

@@ -1,0 +1,7 @@
+{
+  "controller": "pl-file-preview.py",
+  "dependencies": {
+    "elementScripts": ["pl-file-preview.js"],
+    "elementStyles": ["pl-file-preview.css"]
+  }
+}

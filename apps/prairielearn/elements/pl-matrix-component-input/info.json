@@ -1,0 +1,7 @@
+{
+  "controller": "pl-matrix-component-input.py",
+  "dependencies": {
+    "nodeModulesScripts": ["clipboard/dist/clipboard.min.js"],
+    "elementStyles": ["pl-matrix-component-input.css"]
+  }
+}

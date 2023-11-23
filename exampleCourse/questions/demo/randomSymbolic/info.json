@@ -1,7 +1,7 @@
 {
     "uuid": "16620404-1340-41ef-9897-20687adebaf8",
-    "title": "Demo: Randomized symbolic calculations",
-    "topic": "Demo",
-    "tags": ["tbretl", "v3"],
+    "title": "Template pl-symbolic-input: Randomized symbolic calculations",
+    "topic": "Template",
+    "tags": ["tbretl"],
     "type": "v3"
 }

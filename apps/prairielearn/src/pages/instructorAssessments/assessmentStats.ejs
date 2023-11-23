@@ -1,0 +1,63 @@
+<td class="text-center align-middle score-stat-number" style="white-space: nowrap;">
+  <% if (row.needs_statistics_update) { %>
+    <div class="spinner-border spinner-border-sm" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+  <% } else { %>
+    <%= row.score_stat_number %>
+  <% } %>
+</td>
+
+<td class="text-center align-middle score-stat-score-hist" style="white-space: nowrap;">
+  <% if (row.needs_statistics_update) { %>
+    <div class="spinner-border spinner-border-sm" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+  <% } else { %>
+    <% if (row.score_stat_number > 0) { %>
+    <div id="scoreHist<%= row.id %>" class="miniHist d-inline-block"></div>
+    <script>
+      $(function() {
+          var data = [<%= row.score_stat_hist %>];
+          var options = {
+              width: 60,
+              height: 20,
+          };
+          histmini("#scoreHist<%= row.id %>", data, options);
+      });
+    </script>
+    <% } else { %>
+    &mdash;
+    <% } %>
+  <% } %>
+</td>
+
+<td class="text-center align-middle score-stat-mean" style="white-space: nowrap;">
+  <% if (row.needs_statistics_update) { %>
+    <div class="spinner-border spinner-border-sm" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+  <% } else { %>
+    <% if (row.score_stat_number > 0) { %>
+    <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
+      <%- include('../partials/scorebar', {score: Math.round(row.score_stat_mean)}); %>
+    </div>
+    <% } else { %>
+    &mdash;
+    <% } %>
+  <% } %>
+</td>
+
+<td class="text-center align-middle duration-stat-mean" style="white-space: nowrap;">
+  <% if (row.needs_statistics_update) { %>
+    <div class="spinner-border spinner-border-sm" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+  <% } else { %>
+    <% if (row.score_stat_number > 0) { %>
+    <%= row.duration_stat_mean_formatted %>
+    <% } else { %>
+    &mdash;
+    <% } %>
+  <% } %>
+</td>

@@ -14,7 +14,7 @@ Create a question with a decision tree. Think about ways to create dynamic versi
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example1](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211638/preview)
+- [workshop/Lesson5_example1](https://us.prairielearn.com/pl/course_instance/4970/instructor/question/8211638/preview)
 
 #### Example 2:
 
@@ -28,7 +28,7 @@ Your question should provide the Google Matrix in the form of a graph like the c
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example2](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211639/preview)
+- [workshop/Lesson5_example2](https://us.prairielearn.com/pl/course_instance/4970/instructor/question/8211639/preview)
 
 ## pl-drawing
 
@@ -36,13 +36,13 @@ Your question should provide the Google Matrix in the form of a graph like the c
 
 Write a question that uses the drawing canvas to collect input from student. Take a look at the `pl-drawing` [documentation](https://prairielearn.readthedocs.io/en/latest/pl-drawing/) before you start writing questions.
 
- In this example, ask students to add a vector providing the position and direction.
+In this example, ask students to add a vector providing the position and direction.
 
 ![](figs/canvas.png)
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example3](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211641/preview)
+- [workshop/Lesson5_example3](https://us.prairielearn.com/pl/course_instance/4970/instructor/question/8211641/preview)
 
 #### Example 4:
 
@@ -50,4 +50,4 @@ Add a shape to the drawing canvas, and ask students to mark the centroid using a
 
 **PrairieLearn implementation:**
 
-- [demo/drawing/centroid](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/4942650/preview)
+- [demo/drawing/centroid](https://us.prairielearn.com/pl/course_instance/4970/instructor/question/4942650/preview)

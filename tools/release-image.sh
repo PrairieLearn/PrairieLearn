@@ -42,12 +42,4 @@ if [ -z "${t}" ]; then
 fi
 
 cd images/$1/
-docker build -t prairielearn/$1 .
-
-if [ $? -ne 0 ]; then
-  echo "ERR: building image failed. skipping upload." >& 2
-  exit 4
-fi
-
-docker tag prairielearn/$1 prairielearn/$1:${t}
-docker push prairielearn/$1:${t}
+docker buildx build --push --platform linux/arm64/v8,linux/amd64 -t prairielearn/$1:${t} .

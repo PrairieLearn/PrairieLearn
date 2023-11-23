@@ -9,7 +9,7 @@ columns
 
 indexes
     chunks_pkey: PRIMARY KEY (id) USING btree (id)
-    chunks_unique_values_key: UNIQUE USING btree (type, course_id, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint))
+    chunks_unique_values_key: UNIQUE USING btree (course_id, type, COALESCE(question_id, '-1'::integer::bigint), COALESCE(course_instance_id, '-1'::integer::bigint), COALESCE(assessment_id, '-1'::integer::bigint))
     chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
 
 foreign-key constraints

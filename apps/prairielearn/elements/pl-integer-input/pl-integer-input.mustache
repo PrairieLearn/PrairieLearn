@@ -1,0 +1,149 @@
+{{#question}}
+<script>
+    $(function(){
+        $('#pl-integer-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+
+{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+    <span id="pl-integer-input-{{uuid}}" class="input-group pl-integer-input">
+        {{#label}}
+        <span class="input-group-prepend">
+            <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
+        </span>
+        {{/label}}
+        <input
+            name="{{name}}"
+            type="text"
+            inputmode={{#use_numeric}}"numeric"{{/use_numeric}}{{^use_numeric}}"text"{{/use_numeric}}
+            autocomplete="off"
+            class="form-control pl-integer-input-input"
+            size="{{size}}"
+            {{^editable}}disabled{{/editable}}
+            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix"
+            placeholder="{{placeholder}}"
+        />
+        <span class="input-group-append">
+            {{#suffix}}
+            <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
+            {{/suffix}}
+
+            {{#show_info}}
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Integer" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </a>
+            {{/show_info}}
+            {{#correct}}
+                <span class="input-group-text">
+                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                </span>
+            {{/correct}}
+            {{#partial}}
+                <span class="input-group-text">
+                    <span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+                </span>
+            {{/partial}}
+            {{#incorrect}}
+                <span class="input-group-text">
+                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                </span>
+            {{/incorrect}}
+            {{#parse_error}}
+                <a role="button"
+                   class="btn btn-light border d-flex align-items-center text-danger"
+                   data-toggle="popover"
+                   data-html="true"
+                   title="Format Error"
+                   data-placement="auto"
+                   data-trigger="focus"
+                   tabindex="0"
+                   data-content="{{parse_error}}">
+                    <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                </a>
+            {{/parse_error}}
+        </span>
+    </span>
+{{#inline}}</span>{{/inline}}
+{{/question}}
+
+
+{{#submission}}
+{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#error}}
+
+<script>
+    $(function(){
+        $('#pl-integer-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+<span id="pl-integer-input-submission-{{uuid}}">
+
+{{#parse_error}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+
+    <a href="javascript:void(0);" role="button" class="badge text-danger badge-invalid btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></a>
+{{/parse_error}}
+{{#missing_input}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+
+    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
+
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+{{/missing_input}}
+
+</span>
+
+{{/error}}
+{{^error}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
+<samp>{{a_sub}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/error}}
+{{#inline}}</span>{{/inline}}
+{{/submission}}
+
+{{#answer}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
+<samp>{{a_tru}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/answer}}
+
+{{#format}}
+<p>
+Your answer must be an integer{{^default_base}} in base {{base}}{{/default_base}}{{#zero_base}} in base 10. You may also use an integer in base 16 with the prefix <code>0x</code> (e.g., 0x1a), in base 2 with the prefix <code>0b</code> (e.g. 0b1101), or in base 8 with the prefix <code>0o</code> (e.g., 0o777){{/zero_base}}.
+It must not contain a decimal, though it may contain underscores (which are ignored).
+No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted.
+Scientific notation is not accepted.
+</p>
+{{/format}}
+
+{{#format_error}}
+    <p> Invalid format:
+        {{#format_error_message}}
+            {{{ format_error_message }}}
+        {{/format_error_message}}
+        {{^format_error_message}}
+            the submitted answer could not be interpreted as an integer{{^default_base}} in base {{base}}{{/default_base}}.  No symbolic input, fractions, or scientific notation are allowed.
+        {{/format_error_message}}
+    </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output mr-2">1</code> <code class="user-output mr-2">-100</code>{{#zero_base}} <code class="user-output mr-2">0x1a</code> <code class="user-output mr-2">-0b0110</code>{{/zero_base}} </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output mr-2">6+9</code> <code class="user-output mr-2">3.7</code> <code class="user-output mr-2">3*pi</code> <code class="user-output mr-2">6e19</code>{{^zero_base}} <code class="user-output mr-2">0x1a</code> <code class="user-output mr-2">-0b0110</code>{{/zero_base}} </p>
+    <hr>
+    <small>
+        <p> The submitted answer must be formatted as an integer{{^default_base}} in base {{base}}{{/default_base}}. </p>
+    </small>
+{{/format_error}}

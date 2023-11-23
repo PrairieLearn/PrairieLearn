@@ -6,4 +6,5 @@ columns
 
 indexes
     time_series_pkey: PRIMARY KEY (id) USING btree (id)
+    time_series_date_idx: USING btree (date)
     time_series_name_date_idx: USING btree (name, date)

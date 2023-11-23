@@ -6,6 +6,13 @@
         "useNewQuestionRenderer": true
     },
     "assessmentSets": [],
+    "assessmentModules": [
+        {"name": "Module1", "heading": "Module 1"},
+        {"name": "Module2", "heading": "Module 2"},
+        {"name": "Module3", "heading": "Module 3"},
+        {"name": "Module4", "heading": "Module 4"},
+        {"name": "Module5", "heading": "Module 5"}
+    ],
     "topics": [
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
         {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},

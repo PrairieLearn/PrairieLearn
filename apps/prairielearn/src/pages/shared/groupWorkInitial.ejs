@@ -1,0 +1,35 @@
+<div class="container-fluid">
+  <div class="row">
+      <% if (groupConfig.student_authz_create) { %>
+      <div class="col-sm bg-light py-4 px-4 border">
+        <form id="create-form" name="create-form" method="POST">
+          <h6>Group name</h6>
+          <input type="text" class="form-control" id="groupNameInput" name="groupName" maxlength="30" placeholder="e.g. teamOne" aria-describedby="groupNameHelp">
+          <small id="groupNameHelp" class="form-text text-muted">Group names can only contain letters and numbers, with maximum length of 30 characters.</small>
+          <div class="mt-4 d-flex justify-content-center">
+            <div class="form-group mb-0">
+              <input type="hidden" name="__action" value="create_group">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Create new group</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <% } %>
+      <% if (groupConfig.student_authz_join) { %>
+      <div class="col-sm bg-light py-4 px-4 border">
+        <form id="joingroup-form" name="joingroup-form" method="POST">
+          <h6>Join code</h6>
+          <input type="text" class="form-control" id="joinCodeInput" name="join_code" placeholder="abcd-1234">
+          <div class="mt-4 d-flex justify-content-center">
+            <div class="form-group mb-0">
+              <input type="hidden" name="__action" value="join_group">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Join group</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <% } %>
+  </div>
+</div>

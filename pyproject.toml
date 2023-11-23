@@ -1,0 +1,108 @@
+[tool.flake8]
+filename = [
+    "./apps/prairielearn/elements/**/*.py",
+    "./apps/prairielearn/python/*.py",
+    "./graders/**/*.py",
+    "./exampleCourse/**/*.py",
+    "./testCourse/**/*.py"
+]
+exclude = [
+    # These files are intentionally not parseable as Python.
+    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
+    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
+]
+per-file-ignores = [
+    # Files related to the Python autograder will often intentionally appear
+    # broken in isolation. We'll allow specific errors in these files to
+    # account for that.
+    #
+    # - F401: module imported but unused
+    # - F821: undefined name
+    # - F841: local variable name is assigned to but never used
+    # - E999: SyntaxError
+    "exampleCourse/questions/**/tests/setup_code.py: F401, F821",
+    "exampleCourse/questions/**/tests/initial_code.py: F401, F821, E999",
+    "exampleCourse/questions/**/tests/leading_code.py: F401, F821, F841",
+    "exampleCourse/questions/**/tests/trailing_code.py: F821, E999",
+    "exampleCourse/questions/**/tests/ans.py: F821",
+    # Questions commonly use "ambiguous variable names" to represent specific
+    # concepts, e.g. I for an identity matrix. We'll allow these to be used in
+    # questions.
+    "exampleCourse/questions/**/*.py: E741",
+    # The zygote specifically uses imports in strange places to facilitate the
+    # preloading of commonly-used modules.
+    "zygote.py: E402, F401"
+]
+ignore = ["E501"]
+
+
+# Black compatibility
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+extend-exclude = '''
+(
+    ^\/tools\/|\/node_modules\/
+    # The following Python files are intentionally invalid
+    | ^\/exampleCourse\/questions\/demo\/autograder\/codeUpload\/submitted_code_samples\/fib_error_binary_file\/fib.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/codeUpload\/submitted_code_samples\/fib_error_large_text_file\/fib.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/python\/leadingTrailing\/tests\/trailing_code.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/python\/square\/tests\/initial_code.py
+)
+'''
+
+[tool.isort]
+profile = "black"
+skip_glob = ["tools/*", "node_modules/*"]
+
+[tool.pyright]
+include = [
+    "./apps/prairielearn/elements/pl-answer-panel",
+    "./apps/prairielearn/elements/pl-big-o-input",
+    "./apps/prairielearn/elements/pl-card",
+    "./apps/prairielearn/elements/pl-code",
+    "./apps/prairielearn/elements/pl-dataframe",
+    "./apps/prairielearn/elements/pl-external-grader-results",
+    "./apps/prairielearn/elements/pl-external-grader-variables",
+    "./apps/prairielearn/elements/pl-figure",
+    "./apps/prairielearn/elements/pl-file-download",
+    "./apps/prairielearn/elements/pl-file-preview",
+    "./apps/prairielearn/elements/pl-file-upload",
+    "./apps/prairielearn/elements/pl-graph",
+    "./apps/prairielearn/elements/pl-hidden-hints",
+    "./apps/prairielearn/elements/pl-hide-in-manual-grading",
+    "./apps/prairielearn/elements/pl-hide-in-panel",
+    "./apps/prairielearn/elements/pl-integer-input",
+    "./apps/prairielearn/elements/pl-manual-grading-only",
+    "./apps/prairielearn/elements/pl-matrix-latex",
+    "./apps/prairielearn/elements/pl-number-input",
+    "./apps/prairielearn/elements/pl-overlay",
+    "./apps/prairielearn/elements/pl-order-blocks",
+    "./apps/prairielearn/elements/pl-python-variable",
+    "./apps/prairielearn/elements/pl-question-panel",
+    "./apps/prairielearn/elements/pl-string-input",
+    "./apps/prairielearn/elements/pl-submission-panel",
+    "./apps/prairielearn/elements/pl-symbolic-input",
+    "./apps/prairielearn/elements/pl-template",
+    "./apps/prairielearn/elements/pl-units-input",
+    "./apps/prairielearn/elements/pl-variable-output",
+    "./apps/prairielearn/elements/pl-workspace",
+    "./apps/prairielearn/elements/pl-xss-safe",
+    "./apps/prairielearn/python/check_data_test.py",
+    "./apps/prairielearn/python/check_data.py",
+    "./apps/prairielearn/python/colors_test.py",
+    "./apps/prairielearn/python/colors.py",
+    "./apps/prairielearn/python/conftest.py",
+    "./apps/prairielearn/python/prairielearn_test.py",
+    "./apps/prairielearn/python/prairielearn.py",
+    "./apps/prairielearn/python/python_helper_sympy_test.py",
+    "./apps/prairielearn/python/python_helper_sympy.py",
+    "./apps/prairielearn/python/question_phases.py",
+    "./apps/prairielearn/python/traverse_test.py",
+    "./apps/prairielearn/python/traverse.py",
+    "./apps/prairielearn/python/zygote_utils.py",
+    "./apps/prairielearn/python/zygote_utils_test.py",
+]
+extraPaths = ["./apps/prairielearn/python"]
+pythonVersion = "3.10"

@@ -1,0 +1,24 @@
+{
+    "uuid": "8374f97a-64a7-4419-9235-759f7728b1f8",
+    "type": "Exam",
+    "title": "Exam with honor code disabled",
+    "set": "Exam",
+    "number": "13",
+    "requireHonorCode": false,
+    "allowAccess": [
+    	{
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Questions",
+            "questions": [
+                {"id": "addNumbers",       "points": [5, 3, 1]}
+            ]
+        }
+    ]
+}

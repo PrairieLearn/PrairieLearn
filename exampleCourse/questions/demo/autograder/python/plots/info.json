@@ -3,10 +3,9 @@
     "title": "Autograder demo: Checking Matplotlib plots",
     "topic": "Autograder",
     "tags": [
-        "v3",
         "sp20",
         "nnytko2",
-        "short-coding"
+        "code"
     ],
     "type": "v3",
     "singleVariant": true,

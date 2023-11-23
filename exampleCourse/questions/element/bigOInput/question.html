@@ -1,0 +1,158 @@
+<div class="card my-2">
+    <div class="card-header">
+        An example with constant complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(1)$.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q1" variable="n" correct-answer="1"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s1" variable="n" correct-answer="1" type="theta"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t1" variable="n" correct-answer="1" type="omega"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r1" variable="n" correct-answer="1" type="little-o"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m1" variable="n" correct-answer="1" type="little-omega"></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with logarithmic complexity. Uses $m$ as the input variable.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(\log m)$. We've set <code>placeholder="expression in terms of m"</code> to change the
+                placeholder text.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q2" variable="m" correct-answer="log(m)"
+            placeholder="expression in terms of m"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s2" variable="m" correct-answer="log(m)" type="theta"
+            placeholder="expression in terms of m"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t2" variable="m" correct-answer="log(m)" type="omega"
+            placeholder="expression in terms of m"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r2" variable="m" correct-answer="log(m)" type="little-o"
+            placeholder="expression in terms of m"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m2" variable="m" correct-answer="log(m)" type="little-omega"
+            placeholder="expression in terms of m"></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with linear complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(n)$. Here, we've set <code>display="block"</code> to widen the input box.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q3" variable="n" correct-answer="n" display="block"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s3" variable="n" correct-answer="n" type="theta" display="block"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t3" variable="n" correct-answer="n" type="omega" display="block"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r3" variable="n" correct-answer="n" type="little-o"
+            display="block"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m3" variable="n" correct-answer="n" type="little-omega"
+            display="block"></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with nearly linear complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(n \log^2 n)$. Here, we've set <code>size="5"</code> to shrink the input box and
+                <code>placeholder=""</code> to hide the placeholder text.
+            </p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q4" variable="n" correct-answer="n * (log(n)**2)" size="5"
+            placeholder=""></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s4" variable="n" correct-answer="n * (log(n)**2)" type="theta" size="5"
+            placeholder=""></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t4" variable="n" correct-answer="n * (log(n)**2)" type="omega" size="5"
+            placeholder=""></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r4" variable="n" correct-answer="n * (log(n)**2)" type="little-o" size="5"
+            placeholder=""></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m4" variable="n" correct-answer="n * (log(n)**2)" type="little-omega" size="5"
+            placeholder=""></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with polynomial complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(n^2)$. Here we've set <code>show-help-text="false"</code> to hide the help popup.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q5" variable="n" correct-answer="n**2" show-help-text="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s5" variable="n" correct-answer="n**2" type="theta"
+            show-help-text="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t5" variable="n" correct-answer="n**2" type="omega"
+            show-help-text="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r5" variable="n" correct-answer="n**2" type="little-o"
+            show-help-text="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m5" variable="n" correct-answer="n**2" type="little-omega"
+            show-help-text="false"></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with exponential complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(2^n)$. We set <code>allow-blank="true"</code> to allow blank inputs.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q6" variable="n" correct-answer="2**n" allow-blank="true"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s6" variable="n" correct-answer="2**n" type="theta" allow-blank="true"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t6" variable="n" correct-answer="2**n" type="omega" allow-blank="true"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r6" variable="n" correct-answer="2**n" type="little-o" allow-blank="true"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m6" variable="n" correct-answer="2**n" type="little-omega" allow-blank="true"></pl-big-o-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example with factorial complexity.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Submit $O(n!)$. We set <code>show-score="false"</code> to hide the score badge.</p>
+        </pl-question-panel>
+        <pl-big-o-input answers-name="q7" variable="n" correct-answer="n!" show-score="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="s7" variable="n" correct-answer="n!" type="theta" show-score="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="t7" variable="n" correct-answer="n!" type="omega" show-score="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="r7" variable="n" correct-answer="n!" type="little-o" show-score="false"></pl-big-o-input>
+        <br><br>
+        <pl-big-o-input answers-name="m7" variable="n" correct-answer="n!" type="little-omega" show-score="false"></pl-big-o-input>
+    </div>
+</div>

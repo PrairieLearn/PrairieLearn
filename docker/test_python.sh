@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
+make -s -C /PrairieLearn test-python
