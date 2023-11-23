@@ -401,6 +401,7 @@ const FILE_UUID_REGEX =
  * @property {string[]} clientTemplates
  * @property {string} template
  * @property {"Internal" | "External" | "Manual"} gradingMethod
+ * @property {number} manualPercentage
  * @property {boolean} singleVariant
  * @property {boolean} showCorrectAnswer
  * @property {boolean} partialCredit

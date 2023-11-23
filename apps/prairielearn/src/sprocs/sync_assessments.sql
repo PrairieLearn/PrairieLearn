@@ -29,7 +29,7 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
-    question_grading_method enum_grading_method;
+    question_manual_percentage double precision;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
 BEGIN
@@ -373,23 +373,6 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
-                    IF (assessment_question->>'has_split_points')::boolean THEN
-                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
-                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
-                    ELSE
-                        SELECT grading_method INTO question_grading_method
-                        FROM questions q
-                        WHERE q.id = (assessment_question->>'question_id')::bigint;
-
-                        IF FOUND AND question_grading_method = 'Manual' THEN
-                            computed_manual_points := (assessment_question->>'max_points')::double precision;
-                            computed_max_auto_points := 0;
-                        ELSE
-                            computed_manual_points := 0;
-                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
-                        END IF;
-                    END IF;
-
                     IF (assessment_question->>'question_id')::bigint IS NULL THEN
                         -- During local dev, if a shared question is not present we can insert dummy values
                         -- into the questions table to enable sync success. This code should never
@@ -402,6 +385,18 @@ BEGIN
                         VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
+                    END IF;
+
+                    IF (assessment_question->>'has_split_points')::boolean THEN
+                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                    ELSE
+                        SELECT manual_percentage INTO question_manual_percentage
+                        FROM questions q
+                        WHERE q.id = new_question_id;
+
+                        computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_percentage / 100;
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
                     END IF;
 
                     INSERT INTO assessment_questions AS aq (
