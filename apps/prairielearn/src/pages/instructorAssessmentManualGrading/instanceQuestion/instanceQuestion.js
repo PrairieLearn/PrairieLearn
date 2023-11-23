@@ -58,7 +58,7 @@ async function prepareLocalsForRender(query, resLocals) {
       GradingJobDataSchema,
     );
     if (conflict_grading_job != null) {
-      await manualGrading.populateManualGradingData(resLocals.conflict_grading_job);
+      await manualGrading.populateManualGradingData(conflict_grading_job);
     }
   }
 
