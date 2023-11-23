@@ -6,7 +6,7 @@ const router = express.Router();
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
-const { getQuestionCourse } = require('../../lib/question');
+const { getQuestionCourse } = require('../../lib/question-variant');
 
 router.get(
   '/*',
