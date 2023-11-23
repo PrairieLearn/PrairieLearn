@@ -70,7 +70,6 @@ module.exports.init = function (callback) {
       'courses_insert.sql',
       'courses_update_column.sql',
       'courses_delete.sql',
-      'courses_with_staff_access.sql',
       'course_instances_with_staff_access.sql',
       'course_instances_select_graders.sql',
       'select_or_insert_course_by_path.sql',
