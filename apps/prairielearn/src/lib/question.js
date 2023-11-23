@@ -1147,7 +1147,7 @@ function testQuestion(
         );
       },
       (callback) => {
-        if (variant.broken) return callback(null);
+        if (variant.broken_at) return callback(null);
         const gradeStart = Date.now();
         testVariant(
           variant,
@@ -1233,7 +1233,7 @@ async function runTest(
     },
     (callback) => {
       if (!showDetails) return callback(null);
-      const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
+      const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
       const submissionKeys = [
         'broken',
         'correct',
@@ -1568,7 +1568,7 @@ function buildLocals(
   // ID is coerced to a string so that it matches what we get back from the client
   locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
 
-  if (variant.broken) {
+  if (variant.broken_at) {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
     locals.showTryAgainButton = true;

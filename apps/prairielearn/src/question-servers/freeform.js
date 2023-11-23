@@ -1123,7 +1123,7 @@ module.exports = {
 
   async prepareAsync(question, course, variant) {
     return instrumented('freeform.prepare', async () => {
-      if (variant.broken) throw new Error('attemped to prepare broken variant');
+      if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
       const context = await module.exports.getContext(question, course);
       const data = {
@@ -1186,7 +1186,7 @@ module.exports = {
   async renderPanel(panel, codeCaller, variant, submission, course, locals, context) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
-    if (variant.broken) {
+    if (variant.broken_at) {
       return {
         courseIssues: [],
         html: 'Broken question due to error in question code',
@@ -1744,7 +1744,7 @@ module.exports = {
   async fileAsync(filename, variant, question, course) {
     return instrumented('freeform.file', async (span) => {
       debug('file()');
-      if (variant.broken) throw new Error('attemped to get a file for a broken variant');
+      if (variant.broken_at) throw new Error('attempted to get a file for a broken variant');
 
       const context = await module.exports.getContext(question, course);
 
@@ -1798,7 +1798,7 @@ module.exports = {
   async parseAsync(submission, variant, question, course) {
     return instrumented('freeform.parse', async () => {
       debug('parse()');
-      if (variant.broken) throw new Error('attemped to parse broken variant');
+      if (variant.broken_at) throw new Error('attempted to parse broken variant');
 
       const context = await module.exports.getContext(question, course);
       const data = {
@@ -1851,8 +1851,8 @@ module.exports = {
   async gradeAsync(submission, variant, question, question_course) {
     return instrumented('freeform.grade', async () => {
       debug('grade()');
-      if (variant.broken) throw new Error('attemped to grade broken variant');
-      if (submission.broken) throw new Error('attemped to grade broken submission');
+      if (variant.broken_at) throw new Error('attempted to grade broken variant');
+      if (submission.broken) throw new Error('attempted to grade broken submission');
 
       const context = await module.exports.getContext(question, question_course);
       let data = {
@@ -1909,7 +1909,7 @@ module.exports = {
   async testAsync(variant, question, course, test_type) {
     return instrumented('freeform.test', async () => {
       debug('test()');
-      if (variant.broken) throw new Error('attemped to test broken variant');
+      if (variant.broken_at) throw new Error('attemped to test broken variant');
 
       const context = await module.exports.getContext(question, course);
       let data = {

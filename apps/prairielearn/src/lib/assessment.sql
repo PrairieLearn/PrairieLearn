@@ -262,6 +262,32 @@ WITH
     UNION
     (
       SELECT
+        2.5 AS event_order,
+        'Broken variant'::TEXT AS event_name,
+        'red3'::TEXT AS event_color,
+        v.broken_at,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid AS qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        NULL::INTEGER AS submission_id,
+        NULL::JSONB AS data
+      FROM
+        variants AS v
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.user_id = v.broken_by)
+      WHERE
+        v.broken_at IS NOT NULL
+        AND iq.assessment_instance_id = ai_id
+    )
+    UNION
+    (
+      SELECT
         3 AS event_order,
         'Submission'::TEXT AS event_name,
         'blue3'::TEXT AS event_color,

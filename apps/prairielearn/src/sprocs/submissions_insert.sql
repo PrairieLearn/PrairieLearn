@@ -58,7 +58,7 @@ BEGIN
     -- ######################################################################
     -- make sure everything is ok
 
-    IF variant.broken THEN
+    IF variant.broken_at IS NOT NULL THEN
         RAISE EXCEPTION 'variant is broken: %', variant_id;
     END IF;
 

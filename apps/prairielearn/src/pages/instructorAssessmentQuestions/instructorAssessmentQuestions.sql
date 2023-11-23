@@ -114,3 +114,22 @@ ORDER BY
   z.number,
   z.id,
   aq.number;
+
+-- BLOCK mark_all_variants_broken
+UPDATE variants AS v
+SET
+  broken_at = CURRENT_TIMESTAMP,
+  broken_by = $authn_user_id
+WHERE
+  id IN (
+    SELECT
+      v.id
+    FROM
+      variants v
+      JOIN instance_questions iq ON v.instance_question_id = iq.id
+      JOIN assessment_questions aq ON iq.assessment_question_id = aq.id
+    WHERE
+      v.open = true
+      AND v.broken_at IS NULL
+      AND aq.id = $assessment_question_id
+  );

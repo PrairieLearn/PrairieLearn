@@ -1,0 +1,17 @@
+<p>
+  This will mark <b><%= assessmentInstanceOwner %></b>'s current variants of this question as broken,
+  meaning that <b>any unsubmitted attempt will be lost.</b>
+  It is designed for cases where a broken question is being fixed or replaced.
+</p>
+<p>
+  <b><%= assessmentInstanceOwner %></b> will receive a new variant of their question upon reloading.
+</p>
+<form name="break-form" method="POST">
+  <input type="hidden" name="__action" value="break_variant">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="__instance_question_id" value="<%= instance_question.id %>">
+  <button type="button" class="btn btn-secondary" onclick="$('#row<%= iRow %>PopoverBreak').popover('hide')">
+    Cancel
+  </button>
+  <button type="submit" class="btn btn-danger">Mark as broken</button>
+</form>

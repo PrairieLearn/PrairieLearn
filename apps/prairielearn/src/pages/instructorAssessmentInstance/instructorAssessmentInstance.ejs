@@ -13,6 +13,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
+    <% var assessmentInstanceOwner = assessment.group_work ? group.name : instance_user.name; %>
     <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
@@ -126,8 +127,8 @@
               <th class="text-center" colspan="2">
                 Percentage score
               </th>
-              <th>
-              </th>
+              <th><%# Manual grading column %></th>
+              <th><%# Actions column %></th>
             </tr>
           </thead>
           <tbody>
@@ -223,6 +224,34 @@
                 <% if (authz_data.has_course_instance_permission_edit && instance_question.status !== 'unanswered') { %>
                 <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">Manual grading</a>
                 <% } %>
+              </td>
+              <td class="text-right">
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Action <span class="caret"></span>
+                  </button>
+
+                  <div id="row<%= i_instance_question %>PopoverBreak"
+                        tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                        data-html="true" data-placement="auto" title="Confirm mark as broken"
+                        data-content="<%= include('popoverBreakVariant', {
+                          iRow: i_instance_question,
+                          instance_question: instance_question,
+                          assessmentInstanceOwner: assessmentInstanceOwner,
+                        }) %>">
+                  </div>
+
+                  <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
+                  <div class="dropdown-menu dropdown-menu-right" onclick="window.event.preventDefault();">
+
+                    <% if (authz_data.has_instructor_edit) { %>
+                    <a class="dropdown-item" onclick="$('#row<%= i_instance_question %>PopoverBreak').popover('show')" href="#">
+                      <i class="fa fa-times mr-1 text-danger" aria-hidden="true"></i> Mark as broken
+                    </a>
+                    <% } %>
+
+                  </div>
+                </div>
               </td>
             </tr>
             <% }); %>

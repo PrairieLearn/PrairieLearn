@@ -19,6 +19,11 @@
     });
   </script>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar'); %>
     <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
@@ -30,7 +35,7 @@
 
         <div class="table-responsive">
           <%
-          var nTableCols = 9;
+          var nTableCols = 11;
 
           // If at least one question has a nonzero unlock score, display the Advance Score column
           const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
@@ -52,10 +57,11 @@
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              <% questions.forEach(function(question, i) { %>
+              <% questions.forEach(function(question, iRow) { %>
               <% if (question.start_new_zone) { %>
               <tr>
                 <th colspan="<%= nTableCols %>">
@@ -155,7 +161,7 @@
                       width: 60,
                       height: 20,
                     };
-                    histmini("#attemptsHist<%= i %>", data, options);
+                    histmini("#attemptsHist<%= iRow %>", data, options);
                   });
                 </script>
                 <td>
@@ -164,6 +170,30 @@
                   <%- include('../partials/assessment', {assessment: assessment}); %>
                   <% }); %>
                   <% } %>
+                </td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
+
+                    <div id="row<%= iRow %>PopoverBreak"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm mark as broken"
+                         data-content="<%= include('popoverBreakVariants', {iRow: iRow, question: question}) %>">
+                    </div>
+
+                    <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
+                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverBreak').popover('show')" href="#">
+                        <i class="fa fa-times mr-1 text-danger" aria-hidden="true"></i> Mark as broken
+                      </a>
+                      <% } %>
+
+                    </div>
+                  </div>
                 </td>
               </tr>
               <% }); %>
