@@ -2317,12 +2317,7 @@ if (require.main === module && config.startServer) {
           throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-      },
-      function (callback) {
-        sprocs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await sprocs.init();
       },
       async () => {
         if ('sync-course' in argv) {
