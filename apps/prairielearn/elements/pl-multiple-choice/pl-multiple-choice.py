@@ -429,7 +429,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     display_answers = []
     correct_answer = None
     for i, answer in enumerate(answers_to_display):
-        #TODO replace with a fancy key generator function off of the web.
+        # TODO replace with a fancy key generator function off of the web.
         keyed_answer = {
             "key": pl.index2key(i),
             "html": answer.html,
