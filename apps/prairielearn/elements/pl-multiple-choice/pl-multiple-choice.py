@@ -537,7 +537,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if parse_error is None:
             submitted_answer = next(
                 filter(lambda a: a["key"] == submitted_key, answers),
-                SUBMITTED_ANSWER_BLANK
+                SUBMITTED_ANSWER_BLANK,
             )
             html_params["submitted_key"] = submitted_key
             html_params["submitted_answer"] = submitted_answer

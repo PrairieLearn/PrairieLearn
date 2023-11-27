@@ -105,8 +105,9 @@ def grade_answer_parameterized(
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
+    # If there is no submitted answer, we shouldn't do anything. Issues with blank
+    # answers should be handled in parse.
     if question_name not in data["submitted_answers"]:
-        data["format_errors"][question_name] = "No answer was submitted"
         return
 
     submitted_answer = data["submitted_answers"][question_name]
