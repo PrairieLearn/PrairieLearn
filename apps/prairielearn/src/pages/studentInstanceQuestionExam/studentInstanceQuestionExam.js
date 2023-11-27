@@ -7,7 +7,8 @@ const async = require('async');
 
 const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
-const question = require('../../lib/question');
+const grading = require('../../lib/grading');
+const questionRender = require('../../lib/question-render');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
@@ -60,7 +61,7 @@ function processSubmission(req, res, callback) {
       const variant = result.rows[0];
       if (req.body.__action === 'grade') {
         const overrideRateLimits = false;
-        question.saveAndGradeSubmission(
+        grading.saveAndGradeSubmission(
           submission,
           variant,
           res.locals.question,
@@ -72,7 +73,7 @@ function processSubmission(req, res, callback) {
           },
         );
       } else if (req.body.__action === 'save') {
-        question.saveSubmission(
+        grading.saveSubmission(
           submission,
           variant,
           res.locals.question,
@@ -207,7 +208,7 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  question.renderPanelsForSubmission(
+  questionRender.renderPanelsForSubmission(
     req.params.submission_id,
     res.locals.question.id,
     res.locals.instance_question.id,
@@ -231,7 +232,7 @@ router.get('/', function (req, res, next) {
     [
       (callback) => {
         const variant_id = null;
-        question.getAndRenderVariant(variant_id, null, res.locals, (err) => {
+        questionRender.getAndRenderVariant(variant_id, null, res.locals, (err) => {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -246,7 +247,7 @@ router.get('/', function (req, res, next) {
     ],
     (err) => {
       if (ERR(err, next)) return;
-      question.setRendererHeader(res);
+      questionRender.setRendererHeader(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     },
   );
