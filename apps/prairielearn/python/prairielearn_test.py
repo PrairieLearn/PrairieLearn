@@ -304,7 +304,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["format_errors"] = dict()
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
-    assert question_data["submitted_answers"][question_name]["score"] == 0
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
 
 
 @pytest.mark.repeat(100)
