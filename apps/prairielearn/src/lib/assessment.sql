@@ -274,6 +274,7 @@ WITH
         v.id AS variant_id,
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
+        v.id AS log_id,
         NULL::JSONB AS data
       FROM
         variants AS v
@@ -283,7 +284,7 @@ WITH
         LEFT JOIN users AS u ON (u.user_id = v.broken_by)
       WHERE
         v.broken_at IS NOT NULL
-        AND iq.assessment_instance_id = ai_id
+        AND iq.assessment_instance_id = $assessment_instance_id
     )
     UNION
     (

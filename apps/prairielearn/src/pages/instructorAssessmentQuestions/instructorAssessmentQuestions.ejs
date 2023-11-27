@@ -177,21 +177,24 @@
                       Action <span class="caret"></span>
                     </button>
 
-                    <div id="row<%= iRow %>PopoverBreak"
-                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Confirm mark as broken"
-                         data-content="<%= include('popoverBreakVariants', {iRow: iRow, question: question}) %>">
+                    <div
+                      id="row<%= iRow %>PopoverBreak"
+                      tabindex="0"
+                      data-toggle="popover"
+                      data-trigger="manual"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Confirm mark as broken"
+                      data-content="<%= include('popoverBreakVariants', {iRow: iRow, question: question}) %>">
                     </div>
 
-                    <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
-                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverBreak').popover('show')" href="#">
-                        <i class="fa fa-times mr-1 text-danger" aria-hidden="true"></i> Mark as broken
-                      </a>
+                    <div class="dropdown-menu">
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
+                        <button class="dropdown-item" onclick="$('#row<%= iRow %>PopoverBreak').popover('show')">
+                          Mark as broken
+                        </button>
                       <% } %>
-
                     </div>
                   </div>
                 </td>
