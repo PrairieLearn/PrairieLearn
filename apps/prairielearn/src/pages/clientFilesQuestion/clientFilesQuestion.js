@@ -21,8 +21,8 @@ router.get(
         body: req.body,
       });
     }
-    res.locals.course = selectCourseById(req.params.course_id);
-    res.locals.question = selectQuestionById(req.params.question_id);
+    res.locals.course = await selectCourseById(req.params.course_id);
+    res.locals.question = await selectQuestionById(req.params.question_id);
 
     const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
     const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
