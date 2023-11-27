@@ -1,3 +1,4 @@
+//@ts-check
 const _ = require('lodash');
 
 module.exports = {

@@ -8,7 +8,6 @@ import {
 } from '@prairielearn/config';
 
 import logger = require('./logger');
-import { makeAwsClientConfig } from './aws';
 
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
@@ -84,6 +83,7 @@ function makeAutoScalingGroupConfigSource() {
       // clients to avoid spamming the IMDS API when creating lots of clients,
       // but this client will really only be used once, typically at application
       // startup.
+      //
       // eslint-disable-next-line @prairielearn/aws-client-shared-config
       const autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
       const data = await autoscaling.describeAutoScalingInstances({
@@ -101,6 +101,47 @@ function makeAutoScalingGroupConfigSource() {
   };
 }
 
+function makeQueueUrlConfigSource() {
+  return {
+    async load(existingConfig) {
+      if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
+
+      const queuePrefixes = ['jobs', 'results'] as const;
+      const queueUrlConfig: Record<string, string> = {};
+
+      // As above, we avoid the use of `makeAwsClientConfig` here because that
+      // can't yet access the `awsRegion` config value. We also don't care
+      // about reusing credentials here, since this client will only be used
+      // once at application startup.
+      //
+      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      const sqs = new SQSClient({ region: existingConfig.awsRegion });
+
+      for (const prefix of queuePrefixes) {
+        const queueUrlKey = `${prefix}QueueUrl`;
+        const queueNameKey = `${prefix}QueueName`;
+        if (existingConfig[queueUrlKey]) {
+          logger.info(`Using queue url from config: ${existingConfig[queueUrlKey]}`);
+          continue;
+        }
+
+        const queueName = existingConfig[queueNameKey];
+        logger.info(`Loading url for queue "${queueName}"`);
+        const { QueueUrl } = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+
+        if (!QueueUrl) {
+          throw new Error(`Failed to load url for queue "${queueName}"`);
+        }
+
+        queueUrlConfig[queueUrlKey] = QueueUrl;
+        logger.info(`Loaded url for queue "${queueName}": ${QueueUrl}`);
+      }
+
+      return queueUrlConfig;
+    },
+  };
+}
+
 const loader = new ConfigLoader(ConfigSchema);
 
 export const config = loader.config;
@@ -111,33 +152,6 @@ export async function loadConfig() {
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),
     makeAutoScalingGroupConfigSource(),
+    makeQueueUrlConfigSource(),
   ]);
-
-  await getQueueUrl('jobs');
-  await getQueueUrl('results');
-}
-
-/**
- * Will attempt to load the key [prefix]QueueUrl from config; if that's not
- * present, will use [prefix]QueueName to look up the queue URL with AWS.
- */
-async function getQueueUrl(prefix: string) {
-  const queueUrlKey = `${prefix}QueueUrl`;
-  const queueNameKey = `${prefix}QueueName`;
-  if (config[queueUrlKey]) {
-    logger.info(`Using queue url from config: ${config[queueUrlKey]}`);
-    return;
-  }
-
-  const queueName = config[queueNameKey];
-  logger.info(`Loading url for queue "${queueName}"`);
-  const sqs = new SQSClient(makeAwsClientConfig());
-  try {
-    const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
-    config[queueUrlKey] = data.QueueUrl;
-    logger.info(`Loaded url for queue "${queueName}": ${data.QueueUrl}`);
-  } catch (err) {
-    logger.error(`Unable to load url for queue "${queueName}"`);
-    throw err;
-  }
 }
