@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var question = require('../../lib/question');
+var question = require('../../lib/question-variant');
 var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
