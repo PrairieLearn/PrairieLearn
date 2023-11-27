@@ -1,3 +1,4 @@
+//@ts-check
 const { logger } = require('@prairielearn/logger');
 const path = require('path');
 

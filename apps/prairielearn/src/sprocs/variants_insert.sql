@@ -110,14 +110,42 @@ BEGIN
         INTO workspace_id;
     END IF;
 
-    INSERT INTO variants
-        (instance_question_id, question_id,      course_instance_id, user_id, group_id,
-        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, course_id)
+    INSERT INTO
+      variants (
+        instance_question_id,
+        question_id,
+        course_instance_id,
+        user_id,
+        group_id,
+        number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        broken_at,
+        authn_user_id,
+        workspace_id,
+        course_id
+      )
     VALUES
-        (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
-        new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, variant_course_id)
+      (
+        instance_question_id,
+        real_question_id,
+        real_course_instance_id,
+        real_user_id,
+        real_group_id,
+        new_number,
+        variant_seed,
+        params,
+        true_answer,
+        options,
+        broken,
+        CASE WHEN broken THEN NOW() ELSE NULL END,
+        authn_user_id,
+        workspace_id,
+        variant_course_id
+      )
     RETURNING id
     INTO variant_id;
 

@@ -21,6 +21,7 @@
     "uid-safe": "^2.1.5"
   },
   "devDependencies": {
+    "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^4.3.9",
     "@types/cookie": "^0.5.3",

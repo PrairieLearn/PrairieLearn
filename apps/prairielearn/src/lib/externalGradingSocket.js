@@ -1,9 +1,10 @@
+//@ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 
 const { config } = require('./config');
 const { checkSignedToken } = require('@prairielearn/signed-token');
-const question = require('./question');
+const { renderPanelsForSubmission } = require('./question-render');
 const { logger } = require('@prairielearn/logger');
 const socketServer = require('./socket-server');
 const sqldb = require('@prairielearn/postgres');
@@ -64,7 +65,7 @@ module.exports.connection = function (socket) {
       return callback(null);
     }
 
-    module.exports.renderPanelsForSubmission(
+    renderPanelsForSubmission(
       msg.submission_id,
       msg.question_id,
       msg.instance_question_id,
@@ -73,6 +74,7 @@ module.exports.connection = function (socket) {
       msg.question_context,
       msg.csrf_token,
       msg.authorized_edit,
+      true, // renderScorePanels
       (err, panels) => {
         if (
           ERR(err, (err) => {
@@ -125,34 +127,6 @@ module.exports.gradingJobStatusUpdated = function (grading_job_id) {
       .to(`variant-${result.rows[0].variant_id}`)
       .emit('change:status', eventData);
   });
-};
-
-module.exports.renderPanelsForSubmission = function (
-  submission_id,
-  question_id,
-  instance_question_id,
-  variant_id,
-  urlPrefix,
-  questionContext,
-  csrfToken,
-  authorizedEdit,
-  callback,
-) {
-  question.renderPanelsForSubmission(
-    submission_id,
-    question_id,
-    instance_question_id,
-    variant_id,
-    urlPrefix,
-    questionContext,
-    csrfToken,
-    authorizedEdit,
-    true, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, callback)) return;
-      callback(null, results);
-    },
-  );
 };
 
 function ensureProps(data, props) {
