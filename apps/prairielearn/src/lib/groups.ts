@@ -1,10 +1,11 @@
-//@ts-check
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { z } from 'zod';
-const _ = require('lodash');
+import _ = require('lodash');
 
 import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from './id';
+import { IdSchema } from './db-types';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const GroupConfigSchema = z.object({
@@ -21,8 +22,7 @@ const GroupConfigSchema = z.object({
   student_authz_join: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
 });
-
-const GroupIdSchema = z.string();
+type GroupConfig = z.infer<typeof GroupConfigSchema>;
 
 const GroupMemberSchema = z.object({
   uid: z.string(),
@@ -30,6 +30,7 @@ const GroupMemberSchema = z.object({
   group_name: z.string(),
   join_code: z.string(),
 });
+type GroupMember = z.infer<typeof GroupMemberSchema>;
 
 const RoleAssignmentSchema = z.object({
   user_id: z.string(),
@@ -37,6 +38,7 @@ const RoleAssignmentSchema = z.object({
   role_name: z.string(),
   group_role_id: z.string(),
 });
+type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
 const GroupRoleSchema = z.object({
   id: z.string(),
@@ -47,97 +49,83 @@ const GroupRoleSchema = z.object({
   can_assign_roles_at_start: z.boolean(),
   can_assign_roles_during_assessment: z.boolean(),
 });
+type GroupRole = z.infer<typeof GroupRoleSchema>;
 
 const AssessmentLevelPermissionsSchema = z.object({
   can_assign_roles_at_start: z.boolean().nullable(),
   can_assign_roles_during_assessment: z.boolean().nullable(),
 });
+type AssessmentLevelPermissions = z.infer<typeof AssessmentLevelPermissionsSchema>;
 
-/** @typedef {z.infer<GroupConfigSchema>} GroupConfig */
-/** @typedef {z.infer<GroupMemberSchema>} GroupMember */
-/** @typedef {z.infer<GroupRoleSchema>} GroupRole */
-/** @typedef {z.infer<AssessmentLevelPermissionsSchema>} AssessmentLevelPermissions */
+interface RolesInfo {
+  roleAssignments: Record<string, RoleAssignment[]>;
+  groupRoles: GroupRole[];
+  validationErrors: GroupRole[];
+  disabledRoles: string[];
+  rolesAreBalanced: boolean;
+  usersWithoutRoles: GroupMember[];
+}
 
-/**
- * @typedef {Object} RolesInfo
- * @property {Object} roleAssignments
- * @property {GroupRole[]} groupRoles
- * @property {GroupRole[]} validationErrors
- * @property {string[]} disabledRoles
- * @property {boolean} rolesAreBalanced
- * @property {GroupMember[]} usersWithoutRoles
- */
+interface GroupInfo {
+  groupMembers: GroupMember[];
+  groupSize: number;
+  groupName: string;
+  joinCode: string;
+  start: boolean;
+  rolesInfo?: RolesInfo;
+}
 
-/**
- * @typedef {Object} GroupInfo
- * @property {GroupMember[]} groupMembers
- * @property {number} groupSize
- * @property {string} groupName
- * @property {string} joinCode
- * @property {boolean} start
- * @property {RolesInfo} rolesInfo
- */
-
-/**
- * @typedef {Object} GroupRoleAssignment
- * @property {string} group_role_id
- * @property {string} user_id
- */
+interface GroupRoleAssignment {
+  group_role_id: string;
+  user_id: string;
+}
 
 /**
  * Gets the group config info for a given assessment id.
- *
- * @param {string} assessmentId
- * @returns {Promise<GroupConfig>}
  */
-export async function getGroupConfig(assessmentId) {
-  let params = { assessment_id: assessmentId };
-  return await sqldb.queryValidatedOneRow(sql.get_group_config, params, GroupConfigSchema);
+export async function getGroupConfig(assessmentId: string): Promise<GroupConfig> {
+  return await sqldb.queryRow(
+    sql.get_group_config,
+    { assessment_id: assessmentId },
+    GroupConfigSchema,
+  );
 }
 
 /**
  * Returns the group id for the user's current group in an assessment, if it exists.
  * Used in checking whether the user is in a group or not.
- *
- * @param {string} assessmentId
- * @param {string} userId
- * @returns {Promise<string | null>}
  */
-export async function getGroupId(assessmentId, userId) {
-  let params = { assessment_id: assessmentId, user_id: userId };
-  return await sqldb.queryValidatedSingleColumnZeroOrOneRow(
+export async function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
+  return await sqldb.queryOptionalRow(
     sql.get_group_id,
-    params,
-    GroupIdSchema,
+    { assessment_id: assessmentId, user_id: userId },
+    IdSchema,
   );
 }
 
-/**
- * @param {string} groupId
- * @param {GroupConfig} groupConfig
- * @returns {Promise<GroupInfo>}
- */
-export async function getGroupInfo(groupId, groupConfig) {
-  const groupInfo = {};
-
-  let params = { group_id: groupId };
-  let result = await sqldb.queryValidatedRows(sql.get_group_members, params, GroupMemberSchema);
-  groupInfo.groupMembers = result;
-  groupInfo.groupSize = result.length;
-  groupInfo.groupName = result[0].group_name;
-  groupInfo.joinCode = groupInfo.groupName + '-' + groupInfo.groupMembers[0].join_code;
-  const needSize = (groupConfig.minimum ?? 0) - groupInfo.groupSize;
+export async function getGroupInfo(groupId: string, groupConfig: GroupConfig): Promise<GroupInfo> {
+  const result = await sqldb.queryRows(
+    sql.get_group_members,
+    { group_id: groupId },
+    GroupMemberSchema,
+  );
+  const needSize = (groupConfig.minimum ?? 0) - result.length;
+  const groupInfo: GroupInfo = {
+    groupMembers: result,
+    groupSize: result.length,
+    groupName: result[0].group_name,
+    joinCode: result[0].group_name + '-' + result[0].join_code,
+    start: needSize <= 0,
+  };
 
   if (groupConfig.has_roles) {
     const rolesInfo = await getRolesInfo(groupId, groupInfo.groupMembers);
     groupInfo.start =
-      needSize <= 0 &&
+      groupInfo.start &&
       rolesInfo.rolesAreBalanced &&
       rolesInfo.validationErrors.length === 0 &&
       rolesInfo.usersWithoutRoles.length === 0;
     groupInfo.rolesInfo = rolesInfo;
-  } else {
-    groupInfo.start = needSize <= 0;
   }
 
   return groupInfo;
@@ -146,82 +134,63 @@ export async function getGroupInfo(groupId, groupConfig) {
 /**
  * A helper function to getGroupInfo that returns a data structure containing info about an
  * assessment's group roles.
- *
- * @param {string} groupId
- * @param {GroupMember[]} groupMembers
- * @returns {Promise<RolesInfo>}
  */
-async function getRolesInfo(groupId, groupMembers) {
-  const rolesInfo = {};
-
+async function getRolesInfo(groupId: string, groupMembers: GroupMember[]): Promise<RolesInfo> {
   // Get the current role assignments of the group
-  let params = { group_id: groupId };
-  let result = await sqldb.queryValidatedRows(
+  const result = await sqldb.queryRows(
     sql.get_role_assignments,
-    params,
+    { group_id: groupId },
     RoleAssignmentSchema,
   );
-  let roleAssignments = {}; // {uid: [{role_name, group_role_id, user_id}]}
-  result.forEach(({ uid, role_name, group_role_id, user_id }) => {
-    if (uid in roleAssignments) {
-      roleAssignments[uid].push({ role_name, group_role_id, user_id });
-    } else {
-      roleAssignments[uid] = [{ role_name, group_role_id, user_id }];
-    }
-  });
-  rolesInfo.roleAssignments = roleAssignments;
+  const roleAssignments = _.groupBy(result, 'uid');
 
   // Get info on all group roles for the assessment
-  params = { group_id: groupId };
-  rolesInfo.groupRoles = await sqldb.queryValidatedRows(
+  const groupRoles = await sqldb.queryRows(
     sql.get_group_roles,
-    params,
+    { group_id: groupId },
     GroupRoleSchema,
   );
 
   // Identify errors for any roles where count is not between max and min (if they exist)
-  rolesInfo.validationErrors = rolesInfo.groupRoles.filter(
+  const validationErrors = groupRoles.filter(
     (role) =>
       (role.minimum && role.count < role.minimum) || (role.maximum && role.count > role.maximum),
   );
 
   // Identify any disabled roles based on group size, role minimums
-  let minimumRolesToFill = 0;
-  let optionalRoleNames = [];
-  rolesInfo.groupRoles.forEach((role) => {
-    if ((role.minimum ?? 0) === 0) {
-      optionalRoleNames.push(role.role_name);
-    }
-    minimumRolesToFill += role.minimum ?? 0;
-  });
-  let groupSize = groupMembers.length;
-  rolesInfo.disabledRoles = groupSize <= minimumRolesToFill ? optionalRoleNames : [];
+  const minimumRolesToFill = _.sum(groupRoles.map((role) => role.minimum ?? 0));
+  const optionalRoleNames = groupRoles
+    .filter((role) => (role.minimum ?? 0) === 0)
+    .map((role) => role.role_name);
+  const disabledRoles = groupMembers.length <= minimumRolesToFill ? optionalRoleNames : [];
 
   // Check if any users have too many roles
-  if (groupSize >= minimumRolesToFill) {
-    rolesInfo.rolesAreBalanced = Object.values(roleAssignments).every(
-      (roles) => roles.length === 1,
-    );
-  } else {
-    rolesInfo.rolesAreBalanced = true;
-  }
+  const rolesAreBalanced =
+    groupMembers.length < minimumRolesToFill ||
+    Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  rolesInfo.usersWithoutRoles = groupMembers.filter(
+  const usersWithoutRoles = groupMembers.filter(
     (member) => roleAssignments[member.uid] === undefined,
   );
 
-  return rolesInfo;
+  return {
+    roleAssignments,
+    groupRoles,
+    validationErrors,
+    disabledRoles,
+    rolesAreBalanced,
+    usersWithoutRoles,
+  };
 }
 
-/**
- * @param {string} fullJoinCode
- * @param {string} assessmentId
- * @param {string} userId
- * @param {string} authnUserId
- */
-export async function joinGroup(fullJoinCode, assessmentId, userId, authnUserId) {
-  var splitJoinCode = fullJoinCode.split('-');
+export async function joinGroup(
+  fullJoinCode: string,
+  assessmentId: string,
+  userId: string,
+  authnUserId: string,
+): Promise<void> {
+  const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
     flash('error', 'The join code has an incorrect format');
@@ -245,13 +214,12 @@ export async function joinGroup(fullJoinCode, assessmentId, userId, authnUserId)
   }
 }
 
-/**
- * @param {string} groupName
- * @param {string} assessmentId
- * @param {string} userId
- * @param {string} authnUserId
- */
-export async function createGroup(groupName, assessmentId, userId, authnUserId) {
+export async function createGroup(
+  groupName: string,
+  assessmentId: string,
+  userId: string,
+  authnUserId: string,
+): Promise<void> {
   if (groupName.length > 30) {
     flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
     return;
@@ -283,34 +251,39 @@ export async function createGroup(groupName, assessmentId, userId, authnUserId) 
  * @param {string} leavingUserId
  * @returns {GroupRoleAssignment[]}
  */
-export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
+export function getGroupRoleReassignmentsAfterLeave(
+  groupInfo: GroupInfo,
+  leavingUserId: string,
+): GroupRoleAssignment[] {
   // Get the roleIds of the leaving user that need to be re-assigned to other users
-  const groupRoleAssignments = Object.values(groupInfo.rolesInfo.roleAssignments).flat();
+  const groupRoleAssignments = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {}).flat();
 
   const leavingUserRoleIds = groupRoleAssignments
-    .filter(({ user_id }) => user_id === leavingUserId.toString())
+    .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
     .map(({ group_role_id }) => group_role_id);
 
-  const roleIdsToReassign = groupInfo.rolesInfo.groupRoles
-    .filter(
-      (role) =>
-        (role.minimum ?? 0) > 0 &&
-        role.count <= (role.minimum ?? 0) &&
-        leavingUserRoleIds.includes(role.id),
-    )
-    .map((role) => role.id);
+  const roleIdsToReassign =
+    groupInfo.rolesInfo?.groupRoles
+      .filter(
+        (role) =>
+          (role.minimum ?? 0) > 0 &&
+          role.count <= (role.minimum ?? 0) &&
+          leavingUserRoleIds.includes(role.id),
+      )
+      .map((role) => role.id) ?? [];
 
   // Get group user to group role assignments, excluding the leaving user
   const groupRoleAssignmentUpdates = groupRoleAssignments
-    .filter(({ user_id }) => user_id !== leavingUserId.toString())
+    .filter(({ user_id }) => !idsEqual(user_id, leavingUserId))
     .map(({ user_id, group_role_id }) => ({ user_id, group_role_id }));
 
   for (const roleId of roleIdsToReassign) {
     // First, try to give the role to a user with no roles
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
-        m.user_id !== leavingUserId.toString() &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => user_id === m.user_id) === undefined,
+        !idsEqual(m.user_id, leavingUserId) &&
+        groupRoleAssignmentUpdates.find(({ user_id }) => idsEqual(user_id, m.user_id)) ===
+          undefined,
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -323,7 +296,8 @@ export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
     // Next, try to find a user with a non-required role and replace that role
     const idxToUpdate = groupRoleAssignmentUpdates.findIndex(({ group_role_id }) => {
       const roleMin =
-        groupInfo.rolesInfo.groupRoles.find((role) => role.id === group_role_id)?.minimum ?? 0;
+        groupInfo.rolesInfo?.groupRoles.find((role) => idsEqual(role.id, group_role_id))?.minimum ??
+        0;
       return roleMin === 0;
     });
     if (idxToUpdate !== -1) {
@@ -334,9 +308,9 @@ export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
     // Finally, try to give the role to a user that doesn't already have it
     const assigneeUserId = groupInfo.groupMembers.find(
       (m) =>
-        m.user_id !== leavingUserId.toString() &&
+        !idsEqual(m.user_id, leavingUserId) &&
         !groupRoleAssignmentUpdates.some(
-          (u) => u.group_role_id === roleId && u.user_id === m.user_id,
+          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.user_id),
         ),
     )?.user_id;
     if (assigneeUserId !== undefined) {
@@ -351,12 +325,11 @@ export function getGroupRoleReassignmentsAfterLeave(groupInfo, leavingUserId) {
   return groupRoleAssignmentUpdates;
 }
 
-/**
- * @param {string} assessmentId
- * @param {string} userId
- * @param {string} authnUserId
- */
-export async function leaveGroup(assessmentId, userId, authnUserId) {
+export async function leaveGroup(
+  assessmentId: string,
+  userId: string,
+  authnUserId: string,
+): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
@@ -382,7 +355,7 @@ export async function leaveGroup(assessmentId, userId, authnUserId) {
 
         // Groups with low enough size should only use required roles
         const minRolesToFill = _.sum(
-          groupInfo.rolesInfo.groupRoles.map((role) => role.minimum ?? 0),
+          groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
           await sqldb.queryAsync(sql.delete_non_required_roles, {
@@ -402,29 +375,26 @@ export async function leaveGroup(assessmentId, userId, authnUserId) {
   });
 }
 
-/**
- * @param {string} assessmentId
- * @param {string} userId
- * @returns {Promise<AssessmentLevelPermissions>}
- */
-export async function getAssessmentPermissions(assessmentId, userId) {
-  const params = { assessment_id: assessmentId, user_id: userId };
-  return await sqldb.queryValidatedOneRow(
+export async function getAssessmentPermissions(
+  assessmentId: string,
+  userId: string,
+): Promise<AssessmentLevelPermissions> {
+  return await sqldb.queryRow(
     sql.get_assessment_level_permissions,
-    params,
+    { assessment_id: assessmentId, user_id: userId },
     AssessmentLevelPermissionsSchema,
   );
 }
 
 /**
  * Updates the role assignments of users in a group, given the output from groupRoleSelectTable.ejs.
- *
- * @param {Object} requestBody
- * @param {string} assessmentId
- * @param {string} userId
- * @param {string} authnUserId
  */
-export async function updateGroupRoles(requestBody, assessmentId, userId, authnUserId) {
+export async function updateGroupRoles(
+  requestBody: Record<string, any>,
+  assessmentId: string,
+  userId: string,
+  authnUserId: string,
+) {
   await sqldb.runInTransactionAsync(async () => {
     const groupId = await getGroupId(assessmentId, userId);
     if (groupId === null) {
@@ -446,20 +416,20 @@ export async function updateGroupRoles(requestBody, assessmentId, userId, authnU
 
     // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
-    let roleAssignments = [];
-    for (const roleKey of roleKeys) {
+    const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
-      roleAssignments.push({
+      return {
         group_id: groupId,
         user_id: userId,
         group_role_id: roleId,
-      });
-    }
+      };
+    });
 
     // If no one is being given a role with assigner permissions, give that role to the current user
-    const assignerRoleIds = groupInfo.rolesInfo.groupRoles
-      .filter((role) => role.can_assign_roles_at_start)
-      .map((role) => role.id);
+    const assignerRoleIds =
+      groupInfo.rolesInfo?.groupRoles
+        .filter((role) => role.can_assign_roles_at_start)
+        .map((role) => role.id) ?? [];
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
@@ -482,11 +452,8 @@ export async function updateGroupRoles(requestBody, assessmentId, userId, authnU
 
 /**
  * Delete all groups for the given assessment.
- *
- * @param {string} assessmentId
- * @param {string} authnUserId
  */
-export async function deleteAllGroups(assessmentId, authnUserId) {
+export async function deleteAllGroups(assessmentId: string, authnUserId: string) {
   await sqldb.queryAsync(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,

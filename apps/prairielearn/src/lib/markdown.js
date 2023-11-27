@@ -1,3 +1,4 @@
+//@ts-check
 const unified = require('unified');
 const markdown = require('remark-parse');
 const raw = require('rehype-raw');
@@ -17,6 +18,7 @@ const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
 const visitCodeBlock = (ast, _vFile) => {
   return visit(ast, 'code', (node, index, parent) => {
+    // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.lang & node.value do not exist on type Node<Data>.
     let { lang, value } = node;
     const attrs = [];
 
@@ -38,10 +40,9 @@ const visitCodeBlock = (ast, _vFile) => {
       type: 'html',
       value: `<pl-code ${attrs.join(' ')}>${value}</pl-code>`,
     };
+    parent?.children.splice(index, 1, html);
 
-    parent.children.splice(index, 1, html);
-
-    return node;
+    return;
   });
 };
 
@@ -53,10 +54,12 @@ const visitCodeBlock = (ast, _vFile) => {
  */
 const visitCheckSingleParagraph = (ast, _vFile) => {
   return visit(ast, 'root', (node, _index, _parent) => {
+    // @ts-expect-error - TODO: resolve after converting file to TypeScript
     if (node.children.length === 1 && node.children[0].tagName === 'p') {
+      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.children does not exist on type Node<Data>.
       node.children = node.children[0].children;
     }
-    return node;
+    return;
   });
 };
 
@@ -73,10 +76,11 @@ const visitMathBlock = (ast, _vFile) => {
     const endFence = node.type === 'math' ? '\n$$' : '$';
     const text = {
       type: 'text',
+      // @ts-expect-error - TODO: resolve after converting file to TypeScript. Currently, node.value does not exist on type Node<Data>.
       value: startFence + node.value + endFence,
     };
-    parent.children.splice(index, 1, text);
-    return node;
+    parent?.children.splice(index, 1, text);
+    return;
   });
 };
 

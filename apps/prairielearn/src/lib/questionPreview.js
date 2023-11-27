@@ -1,8 +1,9 @@
+//@ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
-const question = require('./question');
+const grading = require('./grading');
 
 export function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
@@ -40,7 +41,7 @@ export function processSubmission(req, res, callback) {
       const variant = result.rows[0];
       if (req.body.__action === 'grade') {
         const overrideRateLimits = true;
-        question.saveAndGradeSubmission(
+        grading.saveAndGradeSubmission(
           submission,
           variant,
           res.locals.question,
@@ -52,7 +53,7 @@ export function processSubmission(req, res, callback) {
           },
         );
       } else if (req.body.__action === 'save') {
-        question.saveSubmission(
+        grading.saveSubmission(
           submission,
           variant,
           res.locals.question,

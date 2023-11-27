@@ -1322,8 +1322,8 @@ module.exports = {
       // parent functions don't actually return things. So we'll just stick it
       // in the `locals` object that the parent will be able to read from.
       //
-      // See the `setRendererHeader` function in `lib/question` for where this
-      // is actually used.
+      // See the `setRendererHeader` function in `lib/question-render`
+      // for where this is actually used.
       locals.question_renderer = context.renderer;
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
