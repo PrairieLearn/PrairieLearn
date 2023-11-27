@@ -194,6 +194,8 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Check dependency structure
+        run: make check-dependencies
 
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
