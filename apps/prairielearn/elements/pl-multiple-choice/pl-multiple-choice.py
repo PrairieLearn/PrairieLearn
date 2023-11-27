@@ -161,7 +161,6 @@ def get_nota_aota_attrib(
             element, name, default != AotaNotaType.FALSE
         )
         return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
-        # TODO add specific attrib not found exception and catch it here
     except Exception:
         pass
 
@@ -546,7 +545,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
-            # TODO possibly remove extra display parameter
             if feedback is not None:
                 html_params["display_feedback"] = True
                 html_params["feedback"] = feedback
