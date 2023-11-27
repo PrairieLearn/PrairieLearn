@@ -19,7 +19,7 @@ export async function fetchCheerio(
   options: RequestInit & { form?: Record<string, any> } = {},
 ): Promise<
   Omit<Response, 'text'> & {
-    text: () => string;
+    text: () => Promise<string>;
     $: cheerio.CheerioAPI;
   }
 > {
@@ -39,7 +39,7 @@ export async function fetchCheerio(
     // version of this code patched this so consumers can use it as "normal",
     // but the new function was created as not async. This behaviour is kept for
     // backwards compatibility.
-    text: { value: () => text },
+    text: { value: () => Promise.resolve(text) },
     $: { value: cheerio.load(text) },
   });
 }

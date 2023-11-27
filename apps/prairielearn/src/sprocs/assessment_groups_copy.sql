@@ -32,14 +32,22 @@ BEGIN
     RETURNING id INTO temp_old_group_config_id;
 
     -- soft delete the old groups
-    UPDATE groups g
-    SET deleted_at = NOW()
-    WHERE g.group_config_id = temp_old_group_config_id;
-
+    WITH deleted_groups AS (
+      UPDATE groups g
+      SET deleted_at = NOW()
+      WHERE g.group_config_id = temp_old_group_config_id
+    )
     INSERT INTO group_logs 
-        (authn_user_id, group_id, action)
-    VALUES 
-        (assessment_groups_copy.authn_user_id, temp_old_group_config_id, 'delete');
+      (
+        authn_user_id,
+        group_id,
+        action
+      )
+    SELECT
+      assessment_groups_copy.authn_user_id,
+      dg.id,
+      'delete'
+    FROM deleted_groups AS dg;
 
     -- add a new group config
     INSERT INTO group_configs(assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave)

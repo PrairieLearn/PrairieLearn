@@ -13,7 +13,6 @@ var page, form, elemList;
 const helperServer = require('./helperServer');
 
 const locals = {};
-locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
