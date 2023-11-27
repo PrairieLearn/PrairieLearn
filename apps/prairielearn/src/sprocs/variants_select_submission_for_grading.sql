@@ -6,7 +6,7 @@ CREATE FUNCTION
 AS $$
 DECLARE
     instance_question_id BIGINT;
-    manual_percentage DOUBLE PRECISION;
+    manual_perc DOUBLE PRECISION;
     max_auto_points DOUBLE PRECISION;
     max_manual_points DOUBLE PRECISION;
 BEGIN
@@ -14,12 +14,12 @@ BEGIN
 
     SELECT
       v.instance_question_id,
-      COALESCE(q.manual_percentage, CASE WHEN q.grading_method = 'Manual' THEN 100 ELSE 0 END),
+      COALESCE(q.manual_perc, CASE WHEN q.grading_method = 'Manual' THEN 100 ELSE 0 END),
       aq.max_auto_points,
       aq.max_manual_points
     INTO 
       instance_question_id,
-      manual_percentage,
+      manual_perc,
       max_auto_points,
       max_manual_points
     FROM
@@ -38,7 +38,7 @@ BEGIN
     -- verification step to ensure students don't manually post a
     -- `grade` action.
     IF instance_question_id IS NULL THEN
-        IF manual_percentage >= 100 THEN RETURN; END IF;
+        IF manual_perc >= 100 THEN RETURN; END IF;
     ELSE
         IF max_auto_points = 0 AND max_manual_points != 0 THEN RETURN; END IF;
     END IF;

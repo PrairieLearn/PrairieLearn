@@ -1,2 +1,2 @@
 ALTER TABLE questions
-ADD COLUMN manual_percentage DOUBLE PRECISION;
+ADD COLUMN manual_perc DOUBLE PRECISION;

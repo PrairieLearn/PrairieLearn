@@ -29,7 +29,7 @@ function getParamsForQuestion(q) {
     client_files: q.clientFiles || [],
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
-    manual_percentage: q.manualPercentage ?? (q.gradingMethod === 'Manual' ? 100 : 0),
+    manual_perc: q.manualPerc ?? (q.gradingMethod === 'Manual' ? 100 : 0),
     single_variant: !!q.singleVariant,
     show_correct_answer: q.showCorrectAnswer === undefined ? true : q.showCorrectAnswer,
     external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,

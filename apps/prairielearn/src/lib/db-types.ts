@@ -169,7 +169,7 @@ export const QuestionSchema = z.object({
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual']),
-  manual_percentage: z.number().nullable(),
+  manual_perc: z.number().nullable(),
   id: IdSchema,
   number: z.number().nullable(),
   options: z.any().nullable(),

@@ -66,7 +66,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                       |
 | `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                         |
 | `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`) |
-| `manualPercentage`       | number  | The percentage of the question's worth that is manually graded. (Optional; defaults to `100` if the grading method is `Manual`, and 0 otherwise)                       |
+| `manualPerc`             | number  | The percentage of the question's worth that is manually graded. (Optional; defaults to `100` if the grading method is `Manual`, and 0 otherwise)                       |
 | `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                               |
 | `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                      |
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |

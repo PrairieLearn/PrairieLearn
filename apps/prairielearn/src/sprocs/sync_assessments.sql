@@ -29,7 +29,7 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
-    question_manual_percentage double precision;
+    question_manual_perc double precision;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
 BEGIN
@@ -391,11 +391,11 @@ BEGIN
                         computed_manual_points := (assessment_question->>'manual_points')::double precision;
                         computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                     ELSE
-                        SELECT manual_percentage INTO question_manual_percentage
+                        SELECT manual_perc INTO question_manual_perc
                         FROM questions q
                         WHERE q.id = new_question_id;
 
-                        computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_percentage / 100;
+                        computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_perc / 100;
                         computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
                     END IF;
 

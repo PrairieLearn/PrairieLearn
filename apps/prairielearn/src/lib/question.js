@@ -1581,7 +1581,7 @@ function buildLocals(
   if (
     assessment_question
       ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question?.manual_percentage ?? (question?.grading_method === 'Manual' ? 100 : 0) < 100
+      : question?.manual_perc ?? (question?.grading_method === 'Manual' ? 100 : 0) < 100
   ) {
     locals.showGradeButton = false;
   }

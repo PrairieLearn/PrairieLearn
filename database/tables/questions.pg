@@ -13,7 +13,7 @@ columns
     external_grading_timeout: integer
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
     id: bigint not null default nextval('questions_id_seq'::regclass)
-    manual_percentage: double precision
+    manual_perc: double precision
     number: integer
     options: jsonb
     partial_credit: boolean default true
