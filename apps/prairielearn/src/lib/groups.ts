@@ -5,6 +5,7 @@ import _ = require('lodash');
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';
+import { IdSchema } from './db-types';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const GroupConfigSchema = z.object({
@@ -22,8 +23,6 @@ const GroupConfigSchema = z.object({
   student_authz_leave: z.boolean().nullable(),
 });
 type GroupConfig = z.infer<typeof GroupConfigSchema>;
-
-const GroupIdSchema = z.string();
 
 const GroupMemberSchema = z.object({
   uid: z.string(),
@@ -100,7 +99,7 @@ export async function getGroupId(assessmentId: string, userId: string): Promise<
   return await sqldb.queryOptionalRow(
     sql.get_group_id,
     { assessment_id: assessmentId, user_id: userId },
-    GroupIdSchema,
+    IdSchema,
   );
 }
 
