@@ -21,8 +21,12 @@ router.get(
         body: req.body,
       });
     }
-    res.locals.course = await selectCourseById(req.params.course_id);
-    res.locals.question = await selectQuestionById(req.params.question_id);
+
+    if (res.locals.public) {
+      res.locals.course = await selectCourseById(req.params.course_id);
+      res.locals.question = await selectQuestionById(req.params.question_id);
+    }
+
     if (res.locals.public && !res.locals.question.shared_publicly) {
       throw error.make(404, 'Not Found');
     }
