@@ -1,2 +1,0 @@
-ALTER TABLE questions
-ADD COLUMN manual_perc DOUBLE PRECISION;
