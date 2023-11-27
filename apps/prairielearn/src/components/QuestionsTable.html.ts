@@ -4,10 +4,6 @@ import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
 
-// TODO: Once our `course_instances_with_staff_access` sproc is returning full
-// course instance rows, use the full `CourseInstance` type here.
-type CourseInstanceWithShortName = Pick<CourseInstance, 'id' | 'short_name'>;
-
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
@@ -40,7 +36,7 @@ export function QuestionsTable({
   showAddQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
-  course_instances?: CourseInstanceWithShortName[];
+  course_instances?: CourseInstance[];
   qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;

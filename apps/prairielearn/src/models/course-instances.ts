@@ -1,20 +1,16 @@
-import { callValidatedOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { z } from 'zod';
-import { IdSchema } from '../lib/db-types';
+import { CourseInstanceSchema } from '../lib/db-types';
 import { idsEqual } from '../lib/id';
 
-const CourseInstanceAuthzSchema = z.object({
-  course_instances: z.array(
-    z.object({
-      short_name: z.string().nullable(),
-      long_name: z.string().nullable(),
-      id: IdSchema,
-      formatted_start_date: z.string(),
-      formatted_end_date: z.string(),
-      has_course_instance_permission_view: z.boolean(),
-    }),
-  ),
+const sql = loadSqlEquiv(__filename);
+
+const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
+  formatted_start_date: z.string(),
+  formatted_end_date: z.string(),
+  has_course_instance_permission_view: z.boolean(),
 });
+export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
 /**
  * Returns all course instances to which the given user has staff access.
@@ -36,9 +32,9 @@ export async function selectCourseInstancesWithStaffAccess({
   is_administrator: boolean;
   authn_is_administrator: boolean;
 }) {
-  const { course_instances: authnCourseInstances } = await callValidatedOneRow(
-    'course_instances_with_staff_access',
-    [authn_user_id, authn_is_administrator, course_id],
+  const authnCourseInstances = await queryRows(
+    sql.select_course_instances_with_staff_access,
+    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id },
     CourseInstanceAuthzSchema,
   );
 
@@ -46,9 +42,9 @@ export async function selectCourseInstancesWithStaffAccess({
     return authnCourseInstances;
   }
 
-  const { course_instances: authzCourseInstances } = await callValidatedOneRow(
-    'course_instances_with_staff_access',
-    [user_id, is_administrator, course_id],
+  const authzCourseInstances = await queryRows(
+    sql.select_course_instances_with_staff_access,
+    { user_id, is_administrator, course_id },
     CourseInstanceAuthzSchema,
   );
 
