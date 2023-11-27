@@ -9,11 +9,8 @@
   </head>
   <script>
     $(() => {
-        $('[data-toggle="popover"]').popover({
+        $('.js-sync-popover[data-toggle="popover"]').popover({
             sanitize: false,
-            container: 'body',
-            html: true,
-            trigger: 'hover',
         }).on("show.bs.popover", function() {
             $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
         });
@@ -105,15 +102,29 @@
                 </td>
                 <td class="align-middle">
                   <% if (row.sync_errors) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_errors_ansified %></pre>">
-                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Errors"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= row.sync_errors_ansified %></pre>"
+                    >
+                      <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                    </button>
                   <% } else if (row.sync_warnings) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_warnings_ansified %></pre>">
-                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                  </button>
+                    <button
+                      class="btn btn-xs mr-1 js-sync-popover"
+                      data-toggle="popover"
+                      data-trigger="hover"
+                      data-container="body"
+                      data-html="true"
+                      data-title="Sync Warnings"
+                      data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3 mb-0&quot;><%= row.sync_warnings_ansified %></pre>"
+                    >
+                      <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                    </button>
                   <% } %>
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %>
                   <% if (row.group_work) { %>
