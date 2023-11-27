@@ -1827,27 +1827,36 @@ module.exports.initExpress = function () {
     require('./pages/publicQuestions/publicQuestions'),
   ]);
 
-    // Client files for questions
-    app.use(
-      '/pl/public/course/:course_id/question/:question_id/clientFilesCourse',
-      require('./pages/clientFilesCourse/clientFilesCourse'),
-    );
-    app.use('/pl/public/course/:course_id/question/:question_id/clientFilesQuestion', [
-      // require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]);
+  // Client files for questions
+  app.use('/pl/public/course/:course_id/question/:question_id/clientFilesCourse', [
+    function (req, res, next) {
+      res.locals.public = true;
+      next();
+    },
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/clientFilesQuestion', [
+    function (req, res, next) {
+      res.locals.public = true;
+      next();
+    },
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+  ]);
 
-    // generatedFiles
-    app.use('/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion', [
-      // require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]);
+  // generatedFiles
+  app.use('/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion', [
+    function (req, res, next) {
+      res.locals.public = true;
+      next();
+    },
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+  ]);
 
-    // TODO: implement
-    // // Submission files
-    // app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
-    //   require('./pages/submissionFile/submissionFile'),
-    // ]);
+  // TODO: implement
+  // // Submission files
+  // app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+  //   require('./pages/submissionFile/submissionFile'),
+  // ]);
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////

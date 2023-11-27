@@ -1,6 +1,6 @@
 import { selectCourseById } from '../../models/course';
 import { selectQuestionById } from '../../models/question';
-
+const error = require('@prairielearn/error');
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router({ mergeParams: true });
@@ -11,9 +11,17 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/variant/:variant_id/*', function (req, res, next) {
-  Promise.all([selectCourseById(req.params.course_id), selectQuestionById(req.params.question_id)]).then(([course, questionData]) => {
+  Promise.all([
+    selectCourseById(req.params.course_id),
+    selectQuestionById(req.params.question_id),
+  ]).then(([course, questionData]) => {
     res.locals.course = course;
     res.locals.question = questionData;
+
+    if (res.locals.public && !res.locals.question.shared_publicly) {
+      return next(error.make(404, 'Not Found'));
+    }
+
     var variant_id = req.params.variant_id;
     var filename = req.params[0];
     var params = {

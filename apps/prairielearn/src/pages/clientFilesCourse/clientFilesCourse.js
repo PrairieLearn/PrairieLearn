@@ -1,4 +1,3 @@
-
 import { selectCourseById } from '../../models/course';
 import { selectQuestionById } from '../../models/question';
 
@@ -11,12 +10,18 @@ const chunks = require('../../lib/chunks');
 const ERR = require('async-stacktrace');
 
 router.get('/*', function (req, res, next) {
-  // TODO hack if the locals doesn't have the stuff on it, assume a public URL and check if the question is publicly shared
-  Promise.all([selectCourseById(req.params.course_id), selectQuestionById(req.params.question_id)]).then(([course, question]) => {
+  Promise.all([
+    selectCourseById(req.params.course_id),
+    selectQuestionById(req.params.question_id),
+  ]).then(([course, question]) => {
     // console.log('reslocals course', res.locals.course);
     // console.log('models course', course)
     res.locals.course = course;
     res.locals.question = question;
+    if (res.locals.public && !res.locals.question.shared_publicly) {
+      return next(error.make(404, 'Not Found'));
+    }
+
     const filename = req.params[0];
     if (!filename) {
       return next(

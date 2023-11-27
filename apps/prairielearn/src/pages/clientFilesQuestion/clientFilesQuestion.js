@@ -23,6 +23,9 @@ router.get(
     }
     res.locals.course = await selectCourseById(req.params.course_id);
     res.locals.question = await selectQuestionById(req.params.question_id);
+    if (res.locals.public && !res.locals.question.shared_publicly) {
+      throw error.make(404, 'Not Found');
+    }
 
     const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
     const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
