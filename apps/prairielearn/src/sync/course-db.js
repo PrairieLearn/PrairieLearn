@@ -284,6 +284,7 @@ const FILE_UUID_REGEX =
  * @property {number} maxPoints
  * @property {number} manualPoints
  * @property {number} maxAutoPoints
+ * @property {number} manualPerc
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
@@ -302,6 +303,7 @@ const FILE_UUID_REGEX =
  * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
+ * @property {number} manualPerc
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
@@ -1124,7 +1126,7 @@ async function validateAssessment(assessment, questions) {
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number, manualPerc: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
@@ -1144,6 +1146,7 @@ async function validateAssessment(assessment, questions) {
             maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+            manualPerc: alternative.manualPerc ?? zoneQuestion.manualPerc,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1155,6 +1158,7 @@ async function validateAssessment(assessment, questions) {
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
+            manualPerc: zoneQuestion.manualPerc,
           },
         ];
       } else {
@@ -1177,6 +1181,16 @@ async function validateAssessment(assessment, questions) {
         ) {
           errors.push(
             'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+          );
+        }
+        if (
+          alternative.manualPerc !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "autoPoints", "manualPoints" or "maxAutoPoints" for a question if "manualPerc" is specified',
           );
         }
         if (assessment.type === 'Exam') {

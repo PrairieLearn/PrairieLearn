@@ -29,7 +29,7 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
-    question_manual_perc double precision;
+    manual_perc double precision;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
 BEGIN
@@ -387,21 +387,19 @@ BEGIN
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
 
-                    IF (assessment_question->>'has_split_points')::boolean THEN
-                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
-                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
-                    ELSE
-                        SELECT manual_perc INTO question_manual_perc
+                    manual_perc := assessment_question->>'manual_perc'::double precision;
+                    IF manual_perc IS NULL THEN
+                        SELECT manual_perc INTO manual_perc
                         FROM questions q
                         WHERE q.id = new_question_id;
-
-                        computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_perc / 100;
-                        computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
                     END IF;
+                    computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_perc / 100;
+                    computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
 
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
+                        manual_perc,
                         max_manual_points,
                         max_auto_points,
                         init_points,
@@ -418,7 +416,8 @@ BEGIN
                         effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        (assessment_question->>'max_points')::double precision,
+                        manual_perc,
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
@@ -437,6 +436,7 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
+                        manual_perc = EXCLUDED.manual_perc,
                         max_manual_points = EXCLUDED.max_manual_points,
                         max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
