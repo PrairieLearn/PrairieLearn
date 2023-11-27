@@ -32,7 +32,9 @@
     "dockerode": "^3.3.5",
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
+    "ioredis": "^5.3.2",
     "lodash": "^4.17.21",
+    "node-fetch": "2.7.0",
     "uuid": "^9.0.1",
     "yargs-parser": "^21.1.1",
     "zod": "^3.22.4"
