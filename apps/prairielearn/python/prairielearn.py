@@ -2,17 +2,19 @@ import collections
 import html
 import importlib
 import importlib.util
+import itertools as it
 import json
 import math
 import numbers
 import os
 import random
 import re
+import string
 import unicodedata
 import uuid
 from enum import Enum
 from io import StringIO
-from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
+from typing import Any, Callable, Generator, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -1812,6 +1814,17 @@ def index2key(i):
         key = chr(ord("a") + i)
 
     return key
+
+
+def iter_keys() -> Generator[str, None, None]:
+    """
+    from:
+    https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603
+    """
+    ascii_set = string.ascii_lowercase
+    for size in it.count(1):
+        for s in it.product(ascii_set, repeat=size):
+            yield "".join(s)
 
 
 def is_int_json_serializable(n: int) -> bool:

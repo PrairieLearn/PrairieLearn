@@ -1,3 +1,4 @@
+import itertools as it
 import json
 import pathlib
 import random
@@ -436,10 +437,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None
-    for i, answer in enumerate(answers_to_display):
+    for key, answer in zip(pl.iter_keys(), answers_to_display):
         # TODO replace with a fancy key generator function off of the web.
         keyed_answer = {
-            "key": pl.index2key(i),
+            "key": key,
             "html": answer.html,
             "feedback": answer.feedback,
             "score": answer.score,
@@ -626,7 +627,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         raise ValueError("could not determine correct_key")
 
     number_answers = len(data["params"][name])
-    all_keys = list(map(pl.index2key, range(number_answers)))
+    all_keys = list(it.islice(pl.iter_keys(), number_answers))
     incorrect_keys = list(set(all_keys) - {correct_key})
 
     result = data["test_type"]
