@@ -55,6 +55,8 @@ EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 
+MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
+
 
 def categorize_options(
     element: lxml.html.HtmlElement, data: pl.QuestionData
@@ -64,6 +66,7 @@ def categorize_options(
     incorrect_answers = []
     index_counter = count(0)
 
+    # First, check internal HTML for answer choices
     for child in element:
         if child.tag in {"pl-answer", "pl_answer"}:
             pl.check_attribs(
@@ -104,6 +107,7 @@ def categorize_options(
                 f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
             )
 
+    # Next, check JSON file for answer choices
     file_path = pl.get_string_attrib(element, "external-json", EXTERNAL_JSON_DEFAULT)
     if file_path is not None:
         correct_attrib = pl.get_string_attrib(
@@ -122,19 +126,21 @@ def categorize_options(
 
         with open(json_file, mode="r", encoding="utf-8") as f:
             obj = json.load(f)
-            for text in obj.get(correct_attrib, []):
-                correct_answers.append(
-                    AnswerTuple(
-                        next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
-                    )
-                )
 
-            for text in obj.get(incorrect_attrib, []):
-                incorrect_answers.append(
-                    AnswerTuple(
-                        next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
-                    )
+        # TODO allow feedback and partial credit to be set in answers from a JSON file.
+        for text in obj.get(correct_attrib, []):
+            correct_answers.append(
+                AnswerTuple(
+                    next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
                 )
+            )
+
+        for text in obj.get(incorrect_attrib, []):
+            incorrect_answers.append(
+                AnswerTuple(
+                    next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
+                )
+            )
 
     return correct_answers, incorrect_answers
 
@@ -142,11 +148,14 @@ def categorize_options(
 def get_nota_aota_attrib(
     element: lxml.html.HtmlElement, name: str, default: AotaNotaType
 ) -> AotaNotaType:
-    # NOTA and AOTA used to be boolean values, but are changed to
-    # special strings. To ensure backwards compatibility, values
-    # interpreted as true or false are assumed to be older
-    # interpretations. If the value cannot be interpreted as boolean,
-    # the string representation is used.
+    """
+    NOTA and AOTA used to be boolean values, but are changed to
+    special strings. To ensure backwards compatibility, values
+    interpreted as true or false are assumed to be older
+    interpretations. If the value cannot be interpreted as boolean,
+    the string representation is used.
+    """
+
     try:
         boolean_value = pl.get_boolean_attrib(
             element, name, default != AotaNotaType.FALSE
@@ -484,12 +493,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if should_display and display_score:
                 score_type, _ = pl.determine_score_params(score)
                 answer_html[score_type] = True
-                # if score >= 1:
-                #     answer_html[AotaNotaType.CORRECT] = True
-                # elif score > 0:
-                #     answer_html['partial'] = True
-                # else:
-                #     answer_html[AotaNotaType.INCORRECT] = True
+
             answerset.append(answer_html)
 
         html_params = {
@@ -512,19 +516,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-            # try:
-            #     score = float(score)
-            #     if score >= 1:
-            #         html_params[AotaNotaType.CORRECT] = True
-            #     elif score > 0:
-            #         html_params['partial'] = math.floor(score * 100)
-            #     else:
-            #         print(score_type, score_value)
-            #         html_params[AotaNotaType.INCORRECT] = True
-            # except Exception:
-            #     raise ValueError('invalid score' + score)
-
-        with open("pl-multiple-choice.mustache", "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -554,22 +546,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
-                # try:
-                #     score = float(score)
-                #     if score >= 1:
-                #         html_params[AotaNotaType.CORRECT] = True
-                #     elif score > 0:
-                #         html_params['partial'] = math.floor(score * 100)
-                #     else:
-                #         html_params[AotaNotaType.INCORRECT] = True
-                # except Exception:
-                #     raise ValueError('invalid score' + score)
             # TODO possibly remove extra display parameter
             if feedback is not None:
                 html_params["display_feedback"] = True
                 html_params["feedback"] = feedback
 
-        with open("pl-multiple-choice.mustache", "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -589,7 +571,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),
         }
-        with open("pl-multiple-choice.mustache", "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
