@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('@prairielearn/error');
-const question = require('../../lib/question');
+const { startTestQuestion } = require('../../lib/question-testing');
 const sqldb = require('@prairielearn/postgres');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -46,7 +46,7 @@ router.post(
       const count = 1;
       const showDetails = true;
       const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
-      const jobSequenceId = await question.startTestQuestion(
+      const jobSequenceId = await startTestQuestion(
         count,
         showDetails,
         res.locals.question,
@@ -66,7 +66,7 @@ router.post(
         const assessmentGroupWork = res.locals.assessment
           ? res.locals.assessment.group_work
           : false;
-        const jobSequenceId = await question.startTestQuestion(
+        const jobSequenceId = await startTestQuestion(
           count,
           showDetails,
           res.locals.question,

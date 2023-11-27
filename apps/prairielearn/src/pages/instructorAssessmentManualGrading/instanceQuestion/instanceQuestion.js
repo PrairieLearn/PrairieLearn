@@ -7,7 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import * as question from '../../../lib/question';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render';
 import * as manualGrading from '../../../lib/manualGrading';
 import { features } from '../../../lib/features/index';
 import { IdSchema, UserSchema } from '../../../lib/db-types';
@@ -39,7 +39,7 @@ async function prepareLocalsForRender(query, resLocals) {
     throw error.make(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
-  await util.promisify(question.getAndRenderVariant)(variant_with_submission_id, null, resLocals);
+  await util.promisify(getAndRenderVariant)(variant_with_submission_id, null, resLocals);
 
   const rubric_settings_visible = await features.enabledFromLocals(
     'manual-grading-rubrics',
@@ -84,7 +84,7 @@ router.get(
 router.get(
   '/variant/:variant_id/submission/:submission_id',
   asyncHandler(async (req, res) => {
-    const results = await util.promisify(question.renderPanelsForSubmission)(
+    const results = await util.promisify(renderPanelsForSubmission)(
       req.params.submission_id,
       res.locals.question.id,
       res.locals.instance_question.id,

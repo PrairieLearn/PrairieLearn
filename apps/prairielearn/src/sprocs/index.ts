@@ -1,15 +1,14 @@
-const ERR = require('async-stacktrace');
-const fs = require('fs');
-const path = require('path');
-const async = require('async');
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { eachSeries } from 'async';
 
-const error = require('@prairielearn/error');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+import { queryAsync } from '@prairielearn/postgres';
 
-module.exports.init = function (callback) {
+export async function init() {
   logger.verbose('Starting DB stored procedure initialization');
-  async.eachSeries(
+  await eachSeries(
     [
       'scores_to_points_array.sql',
       'array_increments_above_max.sql',
@@ -70,8 +69,6 @@ module.exports.init = function (callback) {
       'courses_insert.sql',
       'courses_update_column.sql',
       'courses_delete.sql',
-      'courses_with_staff_access.sql',
-      'course_instances_with_staff_access.sql',
       'course_instances_select_graders.sql',
       'select_or_insert_course_by_path.sql',
       'assessment_instances_delete.sql',
@@ -92,7 +89,6 @@ module.exports.init = function (callback) {
       'submissions_lock.sql',
       'submissions_select.sql',
       'submissions_insert.sql',
-      'submissions_update_parsing.sql',
       'assessment_instances_update.sql',
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
@@ -107,7 +103,6 @@ module.exports.init = function (callback) {
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',
       'users_randomly_generate.sql',
-      'dump_to_csv.sql',
       'grading_jobs_stats_day.sql',
       'files_insert.sql',
       'files_delete.sql',
@@ -151,21 +146,15 @@ module.exports.init = function (callback) {
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
     ],
-    function (filename, callback) {
+    async (filename) => {
       logger.verbose('Loading ' + filename);
-      fs.readFile(path.join(__dirname, filename), 'utf8', function (err, sql) {
-        if (ERR(err, callback)) return;
-        sqldb.query(sql, [], function (err, _result) {
-          if (err) error.addData(err, { sqlFile: filename });
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      });
-    },
-    function (err) {
-      if (ERR(err, callback)) return;
-      logger.verbose('Successfully completed DB stored procedure initialization');
-      callback(null);
+      try {
+        const sql = await readFile(join(__dirname, filename), 'utf8');
+        await queryAsync(sql, []);
+      } catch (err) {
+        throw error.addData(err, { sqlFile: filename });
+      }
     },
   );
-};
+  logger.verbose('Successfully completed DB stored procedure initialization');
+}
