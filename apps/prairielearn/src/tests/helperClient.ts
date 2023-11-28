@@ -19,7 +19,7 @@ export async function fetchCheerio(
   options: RequestInit & { form?: Record<string, any> } = {},
 ): Promise<
   Omit<Response, 'text'> & {
-    text: () => string;
+    text: () => Promise<string>;
     $: cheerio.CheerioAPI;
   }
 > {
@@ -35,13 +35,20 @@ export async function fetchCheerio(
   const text = await response.text();
   // Create a new object with the same properties (via accessors) but additional/changed fields
   return Object.create(response, {
-    // response.text() can only be called once, which we already did. A previous
-    // version of this code patched this so consumers can use it as "normal",
-    // but the new function was created as not async. This behaviour is kept for
-    // backwards compatibility.
-    text: { value: () => text },
+    text: { value: () => Promise.resolve(text) },
     $: { value: cheerio.load(text) },
   });
+}
+
+/**
+ * Gets the test CSRF token from the page.
+ */
+export function getCSRFToken($: cheerio.CheerioAPI): string {
+  const csrfTokenSpan = $('span#test_csrf_token');
+  assert.lengthOf(csrfTokenSpan, 1);
+  const csrfToken = csrfTokenSpan.text();
+  assert.isString(csrfToken);
+  return csrfToken as string;
 }
 
 /**

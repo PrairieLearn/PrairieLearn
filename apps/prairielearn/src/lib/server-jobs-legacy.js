@@ -1,17 +1,17 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const util = require('util');
-const async = require('async');
-const child_process = require('child_process');
+import * as util from 'util';
+import * as async from 'async';
+import * as child_process from 'child_process';
 const { default: AnsiUp } = require('ansi_up');
 const { setTimeout: sleep } = require('node:timers/promises');
 
-const { logger } = require('@prairielearn/logger');
-const socketServer = require('./socket-server');
-const sqldb = require('@prairielearn/postgres');
-const { checkSignedToken, generateSignedToken } = require('@prairielearn/signed-token');
-const { config } = require('./config');
+import { logger } from '@prairielearn/logger';
+import * as socketServer from './socket-server';
+import * as sqldb from '@prairielearn/postgres';
+import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
+import { config } from './config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
