@@ -1,8 +1,8 @@
 //@ts-check
-const { logger } = require('@prairielearn/logger');
-const path = require('path');
+import { logger } from '@prairielearn/logger';
+import * as path from 'path';
 
-module.exports.encodePath = function (originalPath) {
+export function encodePath(originalPath) {
   try {
     let encodedPath = [];
     path
@@ -16,9 +16,9 @@ module.exports.encodePath = function (originalPath) {
     logger.error(`encodePath: returning empty string because failed to encode ${originalPath}`);
     return '';
   }
-};
+}
 
-module.exports.decodePath = function (originalPath) {
+export function decodePath(originalPath) {
   try {
     let decodedPath = [];
     originalPath.split(path.sep).forEach((dir) => {
@@ -29,4 +29,4 @@ module.exports.decodePath = function (originalPath) {
     logger.error(`decodePath: returning empty string because failed to decode ${originalPath}`);
     return '';
   }
-};
+}
