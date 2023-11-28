@@ -65,21 +65,21 @@ An assessment is broken down in to a list of zones, like this:
         "title": "Easy questions",
         "comment": "These are new questions created for this exam",
         "questions": [
-            {"id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5]}
+            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
+            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
         ]
     },
     {
         "title": "Hard questions",
         "comment": "These are new questions created for this exam",
         "questions": [
-            {"id": "hardQV1", "autoPoints": 10},
-            {"id": "reallyHardQ", "autoPoints": [10, 10, 10]},
+            {"id": "hardQV1", "points": 10},
+            {"id": "reallyHardQ", "points": [10, 10, 10]},
             {
                 "numberChoose": 1,
-                "autoPoints": 5,
+                "points": 5,
                 "alternatives": [
-                    {"id": "FirstAltQ", "autoPoints": 10},
+                    {"id": "FirstAltQ", "points": 10},
                     {"id": "SecondAltQ"}
                 ]
             }
@@ -89,8 +89,8 @@ An assessment is broken down in to a list of zones, like this:
         "title": "Manually graded questions",
         "comment": "These are questions that include manual grading components",
         "questions": [
-            {"id": "essayQ", "manualPoints": 10},
-            {"id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15},
+            {"id": "essayQ", "points": 10, "manualPerc": 100},
+            {"id": "autoPlusManualQ", "points": [25, 22, 20], "manualPerc": 60},
         ]
     }
 ],
@@ -108,16 +108,17 @@ An assessment is broken down in to a list of zones, like this:
 
 ### Points for individual questions
 
-Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](manualGrading.md)). The distribution of these points may be set by one of these alternatives:
+Each question is assigned a maximum number of points, which varies depending on the assessment type. These points are split into two components: _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](manualGrading.md)). The distribution of these points is determined by the manual percentage setting, which may be set using the `manualPerc` attribute either in the question, or overridden by the same setting in the assessment, as in the example above.
 
-- By using `points` to specify the total number of points applied to the question. In this case, the manual points are based on the question's `manualPerc` setting as a percentage of the total points, and the auto points correspond to the remaining points. If the question does not have an explicit `manualPerc`, its value is determined by the `gradingMethod` value: 100% if the method is `Manual`, or 0% if the method is `Internal` or `External`.
-- By using explicit values for `manualPoints` for manual points and `autoPoints` for auto points. In this case, the total number of points is the sum of these two values. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0. To avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question.
+The manual percentage is used to determine the number of manual points based on the total number of points for the question. For example, if `manualPerc` is set to 50, then the number of manual points is half of the total number of points for the question. If `manualPerc` is set to 100, then all points are manual points. If `manualPerc` is set to 0, then all points are auto points. If `manualPerc` is not set, then the number of manual points is determined based on the `gradingMethod` setting for the question. If the method is `Manual`, then all points are manual points (equivalent to setting `manualPerc` to 100). If the method is `Internal` or `External`, then all points are auto points (equivalent to setting `manualPerc` to 0).
+
+It is also possible to use explicit values in `manualPoints` for manual points and `autoPoints` for auto points. In this case, the total number of points is the sum of these two values. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0. To avoid ambiguity, it is an error to use `points` and either `autoPoints` or `manualPoints`, or `manualPerc` and either `autoPoints` or `manualPoints`, in the same question.
 
 For Exam-type assessments, points can be set to a single value (in which case a single attempt is allowed), or using an array of values, where each value corresponds to an attempt. If a list of values is used, the manual points (if not explicitly set) are based on the percentage of the first attempt.
 
-For Homework-type assessments, the number of auto points must be a single value, and it corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and full auto points. It is also possible to set a value to `maxPoints` (if `points` are set) or `maxAutoPoints` (if `autoPoints` are set). If this value is used, then once a student gets a correct answer with the full value of auto points, the student is able to get additional points for a new attempt, typically with a new question variant. Every new correct answer adds up the value of auto points, up to a maximum of `maxAutoPoints`. Answers with partial credit do not accumulate, and their partial points are added only to previous correct answers. For example, if `autoPoints` is 3 and `maxAutoPoints` is 12, then each correct answer adds 3 points to the question, up to a maximum total of 12 points. If `maxPoints` is used, then manual points are computed based on this value.
+For Homework-type assessments, the number of points must be a single value, and it corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and a full score in the automated grading component. It is also possible to set a value to `maxPoints` (or `maxAutoPoints`, if `autoPoints` are set). If `maxPoints` is used, then manual points are computed based on this value. If this value is used, then once a student gets a correct answer with the full automated score, the student is able to get additional points for a new attempt, typically with a new question variant. Every new correct answer adds up the value of the auto points component, up to a maximum of `maxPoints` (without the manual component). Answers with partial credit do not accumulate, and their partial points are added only to previous correct answers. For example, if `points` is 3 and `maxPoints` is 12, with no manual points, then each correct answer adds 3 points to the question, up to a maximum total of 12 points.
 
-By default, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if there are 3 auto points and the maximum auto points is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct; and so on. If any answer is incorrect or partially correct, the value is reset to 3 points. To disable this behavior, use `"constantQuestionValue": true` in the assessment settings, like this:
+By default, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if there are 3 points and the maximum points is 30 (assuming no manual points), then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct; and so on. If any answer is incorrect or partially correct, the value is reset to 3 points. To disable this behavior, use `"constantQuestionValue": true` in the assessment settings, like this:
 
 ```json
 "constantQuestionValue": true,
@@ -367,7 +368,7 @@ Note that after the exam has closed and been graded, more information about poin
 
 The number of times each student will be allowed to attempt each question can be set in different ways, depending on the type of question and assessment.
 
-For assessments with type "Exam", each student will only be presented with a single variant of each question. The number of attempts will be determined by the `points` or `autoPoints` setting: if there is a single value there will be a single attempt at the question; if it is set to a list of points, then there will be one attempt for each value in that list. In other words, the number of attempts is determined based on the number of values in the list of points.
+For assessments with type "Exam", each student will only be presented with a single variant of each question. The number of attempts will be determined by the `points` setting: if there is a single value there will be a single attempt at the question; if it is set to a list of points, then there will be one attempt for each value in that list. In other words, the number of attempts is determined based on the number of values in the list of points.
 
 For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
 

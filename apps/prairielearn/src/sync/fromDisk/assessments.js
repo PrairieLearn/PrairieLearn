@@ -205,9 +205,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           }
 
           const maxPoints =
-            alternative.maxPoints ?? Array.isArray(alternative.points)
-              ? alternative.points[0]
-              : alternative.points ?? 0;
+            alternative.maxPoints ??
+            (Array.isArray(alternative.points) ? alternative.points[0] : alternative.points);
+          // If maxPoints is 0, and we have split points, we assume the question is auto-graded only (manual percentage is 0%)
           alternative.manualPerc = (alternative.manualPoints ?? 0) / (maxPoints || 1);
         }
 

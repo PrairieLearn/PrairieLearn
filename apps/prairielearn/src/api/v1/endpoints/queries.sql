@@ -235,6 +235,10 @@ WITH
       aq.max_points AS assessment_question_max_points,
       aq.max_auto_points AS assessment_question_max_auto_points,
       aq.max_manual_points AS assessment_question_max_manual_points,
+      COALESCE(
+        aq.manual_perc,
+        100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_auto_points, 0), 1)
+      ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
       iq.auto_points AS instance_question_auto_points,
       iq.manual_points AS instance_question_manual_points,
@@ -290,6 +294,10 @@ WITH
       aq.max_points AS assessment_question_max_points,
       aq.max_auto_points AS assessment_question_max_auto_points,
       aq.max_manual_points AS assessment_question_max_manual_points,
+      COALESCE(
+        aq.manual_perc,
+        100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_auto_points, 0), 1)
+      ) AS assessment_question_manual_perc,
       iq.points AS instance_question_points,
       iq.auto_points AS instance_question_auto_points,
       iq.manual_points AS instance_question_manual_points,
