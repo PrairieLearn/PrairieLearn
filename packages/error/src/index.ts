@@ -1,18 +1,18 @@
 import _ from 'lodash';
 
-interface ErrorWithData extends Error {
+export interface ErrorWithData extends Error {
   data: any;
 }
 
-interface ErrorWithInfo extends Error {
+export interface ErrorWithInfo extends Error {
   info: string;
 }
 
-interface ErrorWithStatus extends Error {
+export interface ErrorWithStatus extends Error {
   status: number;
 }
 
-interface ErrorWithStatusAndData extends ErrorWithData, ErrorWithStatus {}
+export interface ErrorWithStatusAndData extends ErrorWithData, ErrorWithStatus {}
 
 // TODO: rename all functions include "error" in the name so that they can
 // be more easily imported as named imports.
