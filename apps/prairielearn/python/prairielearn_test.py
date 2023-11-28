@@ -1,3 +1,4 @@
+import itertools as it
 import json
 import math
 import string
@@ -325,3 +326,28 @@ def test_get_uuid() -> None:
 
     # Assert that the first character is a valid hex letter.
     assert pl_uuid[0] in set("abcdef")
+
+
+@pytest.mark.parametrize(
+    "length, expected_output",
+    [
+        (1, ["a"]),
+        (2, ["a", "b"]),
+        (4, ["a", "b", "c", "d"]),
+    ],
+)
+def test_iter_keys(length: int, expected_output: list[str]) -> None:
+    assert list(it.islice(pl.iter_keys(), length)) == expected_output
+
+@pytest.mark.parametrize(
+    "idx, expected_output",
+    [
+        (0, "a"),
+        (1, "b"),
+        (3, "d"),
+        (26, "aa"),
+        (27, "ab")
+    ],
+)
+def test_index2key(idx: int, expected_output: str) -> None:
+    assert pl.index2key(idx) == expected_output
