@@ -14,7 +14,7 @@ import * as externalGradingSocket from './externalGradingSocket';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
-import { IdSchema } from './db-types';
+import { ClientFingerprintSchema, IdSchema } from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -31,10 +31,8 @@ export const InstanceLogSchema = z.object({
   variant_number: z.number().nullable(),
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
-  client_fingerprint_id: z.string().nullable(),
-  ip_address: z.string().nullable(),
-  user_session_id: z.string().nullable(),
-  user_agent: z.string().nullable(),
+  client_fingerprint: ClientFingerprintSchema.nullable(),
+  client_fingerprint_number: z.number().optional(),
   formatted_date: z.string(),
   date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
@@ -450,11 +448,25 @@ export async function updateAssessmentStatistics(assessment_id) {
  * @returns {Promise<Array<z.infer<typeof InstanceLogSchema>>>} the results of the log query.
  */
 export async function selectAssessmentInstanceLog(assessment_instance_id, include_files) {
-  return sqldb.queryRows(
+  const log = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
+  let fingerprintNumbers = {};
+  const logWithNumbers = log.map((row) => {
+    if (row.client_fingerprint) {
+      if (!fingerprintNumbers[row.client_fingerprint.id]) {
+        fingerprintNumbers[row.client_fingerprint.id] = Object.keys(fingerprintNumbers).length + 1;
+        console.log(fingerprintNumbers);
+      }
+    }
+    return {
+      ...row,
+      client_fingerprint_number: fingerprintNumbers[row.client_fingerprint?.id] || null,
+    };
+  });
+  return logWithNumbers;
 }
 
 /**

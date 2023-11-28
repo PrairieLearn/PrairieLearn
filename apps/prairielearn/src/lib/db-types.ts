@@ -564,3 +564,14 @@ export const GradingJobSchema = z.object({
   v2_score: z.number().nullable(),
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
+
+export const ClientFingerprintSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+  user_session_id: IdSchema.optional(),
+  // TODO: Replace this string type for ip address with an ip address schema that matches the SQL type.
+  ip_address: z.string().optional(),
+  user_agent: z.string().optional(),
+  accept_language: z.string().optional(),
+  created_at: DateFromISOString,
+});

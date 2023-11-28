@@ -5,15 +5,15 @@ import { IdSchema } from '../lib/db-types';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export default asyncHandler(async (req, res, next) => {
-  const userSessionId = await sqldb.queryOptionalRow(
+  const user_session_id = await sqldb.queryOptionalRow(
     sql.select_session_id,
-    { session_id: req.session.id, user_id: res.locals.user.user_id },
+    { user_session_id: req.session.id },
     IdSchema,
   );
   const params = {
     ip_address: req.ip,
     user_id: res.locals.authn_user.user_id,
-    user_session_id: userSessionId,
+    user_session_id: user_session_id,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
   };
@@ -29,7 +29,8 @@ export default asyncHandler(async (req, res, next) => {
   }
   if (
     res.locals.assessment_instance &&
-    res.locals.assessment_instance?.last_client_fingerprint_id.toString() !== client_fingerprint_id
+    IdSchema.parse(res.locals.assessment_instance?.last_client_fingerprint_id) !==
+      client_fingerprint_id
   ) {
     await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
       client_fingerprint_id,

@@ -45,44 +45,11 @@
               <th>Fingerprint Changes</th>
               <td colspan="2">
                 <%= assessment_instance.client_fingerprint_id_change_count %>
-                <% if (assessment_instance.client_fingerprint_id_change_count > 0) { %>
-                  <div class="btn btn-xs" role="button"
-                      data-toggle="modal" data-target="#fingerprintChangeModal"><i class="fa fa-question-circle"></i></div>
-                  <div class="modal fade" id="fingerprintChangeModal" tabindex="-1" role="dialog" aria-labelledby="fingerprintChangeModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg overflow-hidden" role="document">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title">Client Fingerprint Changes</h5>
-                          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                          </button>
-                        </div>
-                        <table class="table table-sm">
-                          <tr>
-                            <th>Event</th>
-                            <th class="text-nowrap">Time</th>
-                            <th>Fingerprint ID</th>
-                            <th>IP address</th>
-                            <th>Session ID</th>
-                          </tr>
-                            <% log.forEach(function(row) { %>
-                              <% if (row.client_fingerprint_id) { %>
-                                <tr>
-                                  <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
-                                  <td class="text-nowrap"><%= row.formatted_date %></td>
-                                  <td><%= row.client_fingerprint_id %></td>
-                                  <td><%= row.ip_address %></td>
-                                  <td><%= row.user_session_id %></td>
-                                </tr>
-                              <%  } %>
-                            <%  }) %>
-                        </table>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        </div>
-                      </div>
-                    </div>
-                <% } %>
+                <a tabindex="0" class="btn btn-xs" role="button"
+                      data-toggle="popover" data-trigger="focus" data-container="body"
+                      data-html="true" title="Client Fingerprint Changes"
+                      data-content="Client fingerprints are a record of a user's ip address, user agent and sesssion that are tracked during an assessment. While some changes might during an assessment, a high number of changes could be an indication of cheating."
+                  ><i class="fa fa-question-circle"></i></a>
               </td>
             </tr>
             <% } %>
@@ -366,25 +333,29 @@
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
+              <% if (row.client_fingerprint) { %>
               <td><a tabindex="0" class="btn btn-xs btn-secondary"
-                id="fingerprintPopover<%= row.client_fingerprint_id %>"
+                id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
                 data-html="true" data-placement="auto" title="Fingerprint"
                 data-content="
                   <div>
-                    IP Address: <%= row.ip_address %>
+                    IP Address: <%= row.client_fingerprint?.ip_address %>
                   </div>
                   <div>
-                    Session ID: <%= row.user_session_id %>
+                    Session ID: <%= row.client_fingerprint?.user_session_id %>
                   </div>
                   <div>
-                    User Agent: <%= row.user_agent %>
+                    User Agent: <%= row.client_fingerprint?.user_agent %>
                   </div>
                 "
                 data-trigger="focus" onclick="$(this).popover({trigger: focus})">
-               <%= row.client_fingerprint_id %>
+               <%= row.client_fingerprint_number %>
                 </a>
               </td>
+              <% } else { %>
+              <td>&mdash;</td>
+              <% } %>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
               <td>
                 <% if (row.qid) { %>

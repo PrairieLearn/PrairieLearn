@@ -268,10 +268,13 @@
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button>
               </th>
-              <th data-field="client_fingerprint_id_changes"
+              <th data-field="client_fingerprint_id_change_count"
                   data-sortable="true"
                   data-class="text-center align-middle"
-                  data-switchable="true">Fingerprint Changes</th>
+                  data-switchable="true">Client Fingerprint Changes
+                <button class="btn btn-xs" type="button" title="Show fingerprint changes help" data-toggle="modal" data-target="#fingerprint-changes-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+              </th>
               <% } %>
               <th data-field="number"
                   data-visible="false"
@@ -346,6 +349,25 @@
                   <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
                   <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
                 </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="fingerprint-changes-help" tabindex="-1" role="dialog" aria-labelledby="fingerprint-help-title">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Client Fingerprints</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                  Client fingerprints are a record of a user's ip address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login.
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>

@@ -8,8 +8,9 @@ WHERE
   AND user_session_id = $user_session_id
   AND ip_address = $ip_address
   AND user_agent = $user_agent
-  AND accept_language = $accept_language
-  --BLOCK insert_client_fingerprint
+  AND accept_language = $accept_language;
+
+--BLOCK insert_client_fingerprint
 INSERT INTO
   client_fingerprints (
     user_id,
@@ -27,8 +28,9 @@ VALUES
     $accept_language
   )
 RETURNING
-  id
-  --BLOCK update_assessment_instance_fingerprint
+  id;
+
+--BLOCK update_assessment_instance_fingerprint
 UPDATE assessment_instances AS ai
 SET
   last_client_fingerprint_id = $client_fingerprint_id,
@@ -43,11 +45,12 @@ WHERE
       group_users
     WHERE
       group_id = ai.group_id
-  )
-  --BLOCK select_session_id
+  );
+
+--BLOCK select_session_id
 SELECT
   id
 FROM
   user_sessions
 WHERE
-  session_id = $session_id
+  session_id = $user_session_id
