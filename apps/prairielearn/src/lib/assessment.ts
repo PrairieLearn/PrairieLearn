@@ -383,13 +383,10 @@ export async function selectAssessmentInstanceLog(
     if (row.client_fingerprint) {
       if (!fingerprintNumbers[row.client_fingerprint.id]) {
         fingerprintNumbers[row.client_fingerprint.id] = Object.keys(fingerprintNumbers).length + 1;
-        console.log(fingerprintNumbers);
       }
+      row.client_fingerprint_number = fingerprintNumbers[row.client_fingerprint.id];
     }
-    return {
-      ...row,
-      client_fingerprint_number: fingerprintNumbers[row.client_fingerprint?.id] || null,
-    };
+    return row;
   });
   return logWithNumbers;
 }
