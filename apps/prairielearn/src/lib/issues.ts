@@ -3,8 +3,7 @@ import { callbackify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
-import type { ErrorWithData } from '@prairielearn/error';
-import type { Variant } from './db-types';
+import { Variant } from './db-types';
 
 interface IssueForErrorData {
   variantId: string;
@@ -18,6 +17,10 @@ interface IssueData extends IssueForErrorData {
   manuallyReported: boolean;
   courseCaused: boolean;
   systemData: Record<string, any>;
+}
+
+interface ErrorMaybeWithData extends Error {
+  data?: any;
 }
 
 /**
@@ -59,7 +62,7 @@ export async function insertIssue({
  * Inserts an issue for a thrown error.
  */
 export async function insertIssueForError(
-  err: Error | ErrorWithData,
+  err: ErrorMaybeWithData,
   data: IssueForErrorData,
 ): Promise<void> {
   return insertIssue({
@@ -67,7 +70,7 @@ export async function insertIssueForError(
     manuallyReported: false,
     courseCaused: true,
     instructorMessage: err.toString(),
-    systemData: { stack: err.stack, courseErrData: 'data' in err ? err.data : undefined },
+    systemData: { stack: err.stack, courseErrData: err.data },
   });
 }
 
@@ -81,7 +84,7 @@ export async function insertIssueForError(
  * @param courseData - Arbitrary data to be associated with the issues.
  */
 export async function writeCourseIssuesAsync(
-  courseIssues: (Error | ErrorWithData)[],
+  courseIssues: ErrorMaybeWithData[],
   variant: Variant,
   authn_user_id: string | null,
   studentMessage: string | null,
