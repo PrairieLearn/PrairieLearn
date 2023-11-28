@@ -7,9 +7,9 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { config } from './config';
 import { logger } from '@prairielearn/logger';
 import { updateCourseCommitHash } from '../models/course';
-import * as syncFromDisk from '../sync/syncFromDisk';
-import * as opsbot from './opsbot';
-import * as chunks from './chunks';
+import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { sendCourseRequestMessage } from './opsbot';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
 import { createServerJob } from './server-jobs';
 
 const sqldb = require('@prairielearn/postgres');
@@ -281,21 +281,17 @@ export async function createCourseRepoJob(options, authn_user) {
     });
 
     logger.info('Sync git repository to database');
-    const sync_result = await syncFromDisk.syncDiskToSqlAsync(
-      inserted_course.path,
-      inserted_course.id,
-      job,
-    );
+    const sync_result = await syncDiskToSqlAsync(inserted_course.path, inserted_course.id, job);
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {
       logger.info('Create course chunks');
-      const chunkChanges = await chunks.updateChunksForCourse({
+      const chunkChanges = await updateChunksForCourse({
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
         courseData: sync_result.courseData,
       });
-      chunks.logChunkChangesToJob(chunkChanges, job);
+      logChunkChangesToJob(chunkChanges, job);
     }
 
     logger.info('Update course commit hash');
@@ -325,7 +321,7 @@ export async function createCourseRepoJob(options, authn_user) {
       });
 
       try {
-        await opsbot.sendCourseRequestMessage(
+        await sendCourseRequestMessage(
           `*Failed to create course "${options.short_name}"*\n\n` +
             '```\n' +
             `${err.message.trim()}\n` +
