@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
+    "async": "^3.2.5",
     "chalk": "^4.1.2",
     "diff": "^5.1.0",
     "fs-extra": "^11.1.1",
