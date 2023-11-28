@@ -104,7 +104,7 @@ describe('Question Sharing', function () {
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment();
-        assert(!res.text().includes(sharedQuestionQid));
+        assert(!(await res.text()).includes(sharedQuestionQid));
 
         // Question can be accessed through the owning course
         const questionId = (
@@ -170,7 +170,7 @@ describe('Question Sharing', function () {
       });
 
       response = await fetchCheerio(sharingUrl);
-      const result = UUID_REGEXP.exec(response.text());
+      const result = UUID_REGEXP.exec(await response.text());
       exampleCourseSharingToken = result ? result[0] : null;
       assert(exampleCourseSharingToken != null);
     });
@@ -178,7 +178,7 @@ describe('Question Sharing', function () {
     step('Get default sharing token for test course', async () => {
       const sharingUrl = sharingPageUrl(testCourseId);
       const response = await fetchCheerio(sharingUrl);
-      const result = UUID_REGEXP.exec(response.text());
+      const result = UUID_REGEXP.exec(await response.text());
       testCourseSharingToken = result ? result[0] : null;
       assert(testCourseSharingToken != null);
     });
