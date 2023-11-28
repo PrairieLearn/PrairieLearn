@@ -1,10 +1,22 @@
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
-import { Course, CourseSchema } from '../lib/db-types';
+import { z } from 'zod';
+import { loadSqlEquiv, queryRow, queryAsync, queryRows } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
+import { Course, CourseSchema } from '../lib/db-types';
+
 const sql = loadSqlEquiv(__filename);
+
+const CourseWithPermissionsSchema = CourseSchema.extend({
+  permissions_course: z.object({
+    course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+    has_course_permission_own: z.boolean(),
+    has_course_permission_edit: z.boolean(),
+    has_course_permission_view: z.boolean(),
+    has_course_permission_preview: z.boolean(),
+  }),
+});
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(
@@ -66,4 +78,47 @@ export async function getOrUpdateCourseCommitHash(course: {
   commit_hash?: string | null;
 }): Promise<string> {
   return course.commit_hash ?? (await updateCourseCommitHash(course));
+}
+
+/**
+ * Returns all courses to which the given user has staff access.
+ *
+ * Note that this does not take into account any effective user overrides that
+ * may be in place. It is the caller's responsibility to further restrict
+ * the results if necessary.
+ */
+export async function selectCoursesWithStaffAccess({
+  user_id,
+  is_administrator,
+}: {
+  user_id: string;
+  is_administrator: boolean;
+}) {
+  const courses = await queryRows(
+    sql.select_courses_with_staff_access,
+    { user_id, is_administrator },
+    CourseWithPermissionsSchema,
+  );
+  return courses;
+}
+
+/**
+ * Returns all courses to which the given user has edit access.
+ *
+ * Note that this does not take into account any effective user overrides that
+ * may be in place. It is the caller's responsibility to further restrict
+ * the results if necessary.
+ */
+export async function selectCoursesWithEditAccess({
+  user_id,
+  is_administrator,
+}: {
+  user_id: string;
+  is_administrator: boolean;
+}) {
+  const courses = await selectCoursesWithStaffAccess({
+    user_id,
+    is_administrator,
+  });
+  return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }

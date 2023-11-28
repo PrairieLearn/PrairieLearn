@@ -1,4 +1,5 @@
-import ERR from 'async-stacktrace';
+//@ts-check
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
@@ -6,14 +7,13 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config';
-import * as question from './question';
+import { renderPanelsForSubmission } from './question-render';
 const socketServer = require('./socket-server');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 // This module MUST be initialized after socket-server
 export function init(callback) {
-  console.log(socketServer.io);
   const _namespace = socketServer.io.of('/external-grading');
   _namespace.on('connection', module.exports.connection);
 
@@ -72,6 +72,7 @@ export function connection(socket) {
       msg.question_context,
       msg.csrf_token,
       msg.authorized_edit,
+      true, // renderScorePanels
       (err, panels) => {
         if (
           ERR(err, (err) => {
@@ -123,34 +124,6 @@ export function gradingJobStatusUpdated(grading_job_id) {
     const _namespace = socketServer.io.of('/external-grading');
     _namespace.to(`variant-${result.rows[0].variant_id}`).emit('change:status', eventData);
   });
-}
-
-export function renderPanelsForSubmission(
-  submission_id,
-  question_id,
-  instance_question_id,
-  variant_id,
-  urlPrefix,
-  questionContext,
-  csrfToken,
-  authorizedEdit,
-  callback,
-) {
-  question.renderPanelsForSubmission(
-    submission_id,
-    question_id,
-    instance_question_id,
-    variant_id,
-    urlPrefix,
-    questionContext,
-    csrfToken,
-    authorizedEdit,
-    true, // renderScorePanels
-    (err, results) => {
-      if (ERR(err, callback)) return;
-      callback(null, results);
-    },
-  );
 }
 
 function ensureProps(data, props) {

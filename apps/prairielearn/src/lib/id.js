@@ -1,3 +1,4 @@
+//@ts-check
 /**
  * This is a semantic layer on top of the `==` operator that should only
  * be used when comparing IDs.

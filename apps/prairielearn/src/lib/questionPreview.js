@@ -1,8 +1,9 @@
-import ERR from 'async-stacktrace';
+//@ts-check
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
-import { saveAndGradeSubmission, saveSubmission } from './question';
+import { saveAndGradeSubmission, saveSubmission } from './grading';
 
 export function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;

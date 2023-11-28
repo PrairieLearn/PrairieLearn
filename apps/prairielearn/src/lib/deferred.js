@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @template T
  * @typedef {Object} DeferredPromise
@@ -13,15 +14,18 @@
  * @template T
  * @returns {DeferredPromise<T>}
  */
-module.exports.deferredPromise = () => {
+export function deferredPromise() {
   let resolve, reject;
   const promise = new Promise((res, rej) => {
     resolve = res;
     reject = rej;
   });
+  if (resolve === undefined || reject === undefined) {
+    throw new Error('resolve or reject is undefined');
+  }
   return {
     resolve,
     reject,
     promise,
   };
-};
+}

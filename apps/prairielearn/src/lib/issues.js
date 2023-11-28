@@ -1,4 +1,6 @@
 // @ts-check
+import * as async from 'async';
+import { callbackify } from 'util';
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
@@ -69,3 +71,31 @@ export async function insertIssueForError(err, data) {
     systemData: { stack: err.stack, courseErrData: err.data },
   });
 }
+
+/**
+ * Write a list of course issues for a variant.
+ * @protected
+ *
+ * @param {Array} courseIssues - List of issue objects for to be written.
+ * @param {Object} variant - The variant associated with the issues.
+ * @param {string} authn_user_id - The currently authenticated user.
+ * @param {string} studentMessage - The message to display to the student.
+ * @param {Object} courseData - Arbitrary data to be associated with the issues.
+ */
+export async function writeCourseIssuesAsync(
+  courseIssues,
+  variant,
+  authn_user_id,
+  studentMessage,
+  courseData,
+) {
+  await async.eachSeries(courseIssues, async (courseErr) => {
+    await insertIssueForError(courseErr, {
+      variantId: variant.id,
+      studentMessage,
+      courseData,
+      authnUserId: authn_user_id,
+    });
+  });
+}
+export const writeCourseIssues = callbackify(writeCourseIssuesAsync);

@@ -8,7 +8,7 @@ const { default: AnsiUp } = require('ansi_up');
 const { setTimeout: sleep } = require('node:timers/promises');
 
 import { logger } from '@prairielearn/logger';
-import { io } from './socket-server';
+import * as socketServer from './socket-server';
 import * as sqldb from '@prairielearn/postgres';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 import { config } from './config';
@@ -71,7 +71,9 @@ export class Job {
     this.output += text;
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    io.to('job-' + this.id).emit('change:output', { job_id: this.id, output: ansifiedOutput });
+    socketServer.io
+      .to('job-' + this.id)
+      .emit('change:output', { job_id: this.id, output: ansifiedOutput });
   }
   error(msg) {
     this.addToOutput(msg + '\n');
@@ -103,9 +105,9 @@ export class Job {
       delete liveJobs[this.id];
 
       // Notify sockets.
-      io.to('job-' + this.id).emit('update');
+      socketServer.io.to('job-' + this.id).emit('update');
       if (this.options.job_sequence_id != null) {
-        io.to(`jobSequence-${this.options.job_sequence_id}`).emit('update');
+        socketServer.io.to(`jobSequence-${this.options.job_sequence_id}`).emit('update');
       }
 
       // Invoke callbacks.
@@ -147,9 +149,9 @@ export class Job {
       delete liveJobs[this.id];
 
       // Notify sockets.
-      io.to('job-' + this.id).emit('update');
+      socketServer.io.to('job-' + this.id).emit('update');
       if (this.options.job_sequence_id != null) {
-        io.to('jobSequence-' + this.options.job_sequence_id).emit('update');
+        socketServer.io.to('jobSequence-' + this.options.job_sequence_id).emit('update');
       }
 
       // Invoke callbacks.
@@ -171,7 +173,7 @@ export class Job {
 let heartbeatIntervalId = null;
 
 export function init() {
-  io.on('connection', connection);
+  socketServer.io.on('connection', connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
   // for this because we want this to run for every host.
@@ -321,7 +323,7 @@ export function createJob(options, callback) {
     var job = new Job(job_id, options);
     liveJobs[job_id] = job;
     if (job.options.job_sequence_id != null) {
-      io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+      socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
     }
     callback(null, job);
   });
@@ -391,16 +393,16 @@ export async function errorAbandonedJobs() {
     } catch (err) {
       logger.error('errorAbandonedJobs: error updating job on error', err);
     } finally {
-      io.to('job-' + row.id).emit('update');
+      socketServer.io.to('job-' + row.id).emit('update');
       if (row.job_sequence_id != null) {
-        io.to('jobSequence-' + row.job_sequence_id).emit('update');
+        socketServer.io.to('jobSequence-' + row.job_sequence_id).emit('update');
       }
     }
   });
 
   const abandonedJobSequences = await sqldb.queryAsync(sql.error_abandoned_job_sequences, {});
   abandonedJobSequences.rows.forEach(function (row) {
-    io.to('jobSequence-' + row.id).emit('update');
+    socketServer.io.to('jobSequence-' + row.id).emit('update');
   });
 }
 
@@ -457,7 +459,7 @@ export function failJobSequence(job_sequence_id, callback) {
     job_sequence_id,
   };
   sqldb.query(sql.fail_job_sequence, params, function (err, _result) {
-    io.to('jobSequence-' + job_sequence_id).emit('update');
+    socketServer.io.to('jobSequence-' + job_sequence_id).emit('update');
     if (ERR(err, () => {})) {
       logger.error('error failing job_sequence_id ' + job_sequence_id + ' with error', err);
       return callback?.(err);

@@ -4,10 +4,10 @@ import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
 import { parse as parseSetCookie } from 'set-cookie-parser';
 import asyncHandler from 'express-async-handler';
+import { withServer } from '@prairielearn/express-test-utils';
 
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
-import { withServer } from './test-utils';
 
 const TEST_SECRET = 'test-secret';
 

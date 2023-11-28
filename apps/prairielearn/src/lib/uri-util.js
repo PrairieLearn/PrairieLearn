@@ -1,3 +1,4 @@
+//@ts-check
 import { logger } from '@prairielearn/logger';
 import * as path from 'path';
 

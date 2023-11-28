@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * Replace special characters in string with underscores.
  *
@@ -15,7 +17,7 @@ export function sanitizeString(s) {
  * @return {String} The sanitized prefix string.
  */
 export function courseFilenamePrefix(course) {
-  const prefix = this.sanitizeString(course.short_name) + '_';
+  const prefix = sanitizeString(course.short_name) + '_';
   return prefix;
 }
 
@@ -27,8 +29,7 @@ export function courseFilenamePrefix(course) {
  * @return {String} The sanitized prefix string.
  */
 export function courseInstanceFilenamePrefix(course_instance, course) {
-  const prefix =
-    this.courseFilenamePrefix(course) + this.sanitizeString(course_instance.short_name) + '_';
+  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
   return prefix;
 }
 
@@ -43,9 +44,9 @@ export function courseInstanceFilenamePrefix(course_instance, course) {
  */
 export function assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) {
   const prefix =
-    this.courseInstanceFilenamePrefix(course_instance, course) +
-    this.sanitizeString(assessment_set.abbreviation) +
-    this.sanitizeString(assessment.number) +
+    courseInstanceFilenamePrefix(course_instance, course) +
+    sanitizeString(assessment_set.abbreviation) +
+    sanitizeString(assessment.number) +
     '_';
   return prefix;
 }
@@ -58,6 +59,6 @@ export function assessmentFilenamePrefix(assessment, assessment_set, course_inst
  * @return {String} The sanitized prefix string.
  */
 export function questionFilenamePrefix(question, course) {
-  const prefix = this.courseFilenamePrefix(course) + this.sanitizeString(question.qid) + '_';
+  const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid) + '_';
   return prefix;
 }
