@@ -5,19 +5,19 @@
  * Note: Do not use to require backend modules, as they should be CommonJS
  * modules and not AMD modules.
  */
-import requirejs from 'requirejs';
-import * as path from 'node:path';
+var requirejs = require('requirejs');
+var path = require('node:path');
 
-import { logger } from '@prairielearn/logger';
+const { logger } = require('@prairielearn/logger');
 
-import { APP_ROOT_PATH } from './paths';
+const { APP_ROOT_PATH } = require('./paths');
 
-export const config = requirejs.config({
+requirejs.config({
   nodeRequire: require,
   baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 
-export const onError = (requirejs.onError = function (err) {
+requirejs.onError = function (err) {
   var data = {
     errorMsg: err.toString(),
     stack: err.stack,
@@ -28,4 +28,6 @@ export const onError = (requirejs.onError = function (err) {
     }
   }
   logger.error('requirejs load error', data);
-});
+};
+
+module.exports = requirejs;
