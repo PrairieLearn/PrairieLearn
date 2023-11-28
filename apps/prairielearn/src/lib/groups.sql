@@ -169,7 +169,8 @@ FROM
   JOIN group_users AS gu ON gu.group_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
-  AND gu.user_id = $user_id;
+  AND gu.user_id = $user_id
+  AND g.deleted_at IS NULL;
 
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur
