@@ -5,7 +5,7 @@ import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix } =
+  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
     decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
@@ -33,25 +33,31 @@ onDocumentReady(() => {
     var text = '';
     if (question.sync_errors) {
       text += html`<button
-        class="btn btn-xs mr-1"
+        class="btn btn-xs mr-1 js-sync-popover"
         data-toggle="popover"
+        data-trigger="hover"
+        data-container="body"
+        data-html="true"
         data-title="Sync Errors"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_errors_ansified}</pre>'
+        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
       >
         <i class="fa fa-times text-danger" aria-hidden="true"></i>
       </button>`;
     } else if (question.sync_warnings) {
       text += html`<button
-        class="btn btn-xs mr-1"
+        class="btn btn-xs mr-1 js-sync-popover"
         data-toggle="popover"
+        data-trigger="hover"
+        data-container="body"
+        data-html="true"
         data-title="Sync Warnings"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3">${question.sync_warnings_ansified}</pre>'
+        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
       >
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
     }
-    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/"
-      >${question.qid}</a
+    text += html`<a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview"
+      >${qidPrefix}${question.qid}</a
     >`;
     if (question.open_issue_count > 0) {
       text += html`<a
@@ -163,12 +169,9 @@ onDocumentReady(() => {
     },
     onPreBody: function () {},
     onResetView: function () {
-      $('[data-toggle="popover"]')
+      $('.js-sync-popover[data-toggle="popover"]')
         .popover({
           sanitize: false,
-          container: 'body',
-          html: true,
-          trigger: 'hover',
         })
         .on('show.bs.popover', function () {
           $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');

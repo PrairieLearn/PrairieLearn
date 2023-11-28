@@ -19,7 +19,7 @@ export const GradingJobQueryResultSchema = z.object({
   formatted_grading_received_at: z.string().nullable(),
   formatted_grading_started_at: z.string().nullable(),
   formatted_grading_finished_at: z.string().nullable(),
-  formatted_graded_at: z.string(),
+  formatted_graded_at: z.string().nullable(),
   question_qid: z.string(),
   user_uid: z.string(),
   course_instance_short_name: z.string(),

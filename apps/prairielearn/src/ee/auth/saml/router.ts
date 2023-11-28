@@ -1,4 +1,4 @@
-import ERR from 'async-stacktrace';
+import ERR = require('async-stacktrace');
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import passport = require('passport');

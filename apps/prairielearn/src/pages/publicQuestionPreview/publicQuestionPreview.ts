@@ -9,8 +9,13 @@ import { Router } from 'express';
 import async = require('async');
 import path = require('path');
 import error = require('@prairielearn/error');
-import question = require('../../lib/question');
 import LogPageView = require('../../middlewares/logPageView');
+import {
+  getAndRenderVariant,
+  renderPanelsForSubmission,
+  setRendererHeader,
+} from '../../lib/question-render';
+
 const logPageView = LogPageView(path.basename(__filename, '.ts'));
 
 const router = Router({ mergeParams: true });
@@ -58,7 +63,7 @@ router.post('/', function (req, res, next) {
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   setLocals(req, res)
     .then(() => {
-      question.renderPanelsForSubmission(
+      renderPanelsForSubmission(
         req.params.submission_id,
         res.locals.question.id,
         null, // instance_question_id,
@@ -85,7 +90,7 @@ router.get('/', function (req, res, next) {
       return async.series(
         [
           (callback) => {
-            question.getAndRenderVariant(variant_id, variant_seed, res.locals, function (err) {
+            getAndRenderVariant(variant_id, variant_seed, res.locals, function (err) {
               if (ERR(err, callback)) return;
               callback(null);
             });
@@ -99,8 +104,8 @@ router.get('/', function (req, res, next) {
         ],
         (err) => {
           if (ERR(err, next)) return;
-          question.setRendererHeader(res);
-          res.render(__filename.replace(/\.ts$/, '.ejs'), res.locals);
+          setRendererHeader(res);
+          res.render(__filename.replace(/\.(js|ts)$/, '.ejs'), res.locals);
         },
       );
     })

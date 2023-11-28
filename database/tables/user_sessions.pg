@@ -4,6 +4,7 @@ columns
     data: jsonb not null
     expires_at: timestamp with time zone not null
     id: bigint not null default nextval('user_sessions_id_seq'::regclass)
+    revoked_at: timestamp with time zone
     session_id: text not null
     updated_at: timestamp with time zone not null default now()
     user_id: bigint

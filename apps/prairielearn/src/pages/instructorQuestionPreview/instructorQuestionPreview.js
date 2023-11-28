@@ -6,7 +6,11 @@ const path = require('path');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
-const question = require('../../lib/question');
+const {
+  getAndRenderVariant,
+  renderPanelsForSubmission,
+  setRendererHeader,
+} = require('../../lib/question-render');
 const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
@@ -15,10 +19,10 @@ const { processSubmission } = require('../../lib/questionPreview');
 
 const router = express.Router();
 
-async function processIssue(req, res, callback) {
+async function processIssue(req, res) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    return callback(error.make(400, 'A description of the issue must be provided'));
+    throw error.make(400, 'A description of the issue must be provided');
   }
 
   const variantId = req.body.__variant_id;
@@ -70,7 +74,7 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  question.renderPanelsForSubmission(
+  renderPanelsForSubmission(
     req.params.submission_id,
     res.locals.question.id,
     null, // instance_question_id,
@@ -94,15 +98,10 @@ router.get('/', function (req, res, next) {
     [
       (callback) => {
         // req.query.variant_id might be undefined, which will generate a new variant
-        question.getAndRenderVariant(
-          req.query.variant_id,
-          variant_seed,
-          res.locals,
-          function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       (callback) => {
         logPageView(req, res, (err) => {
@@ -110,11 +109,11 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
+      async () => await setQuestionCopyTargets(res),
     ],
     (err) => {
       if (ERR(err, next)) return;
-      question.setRendererHeader(res);
-      setQuestionCopyTargets(res);
+      setRendererHeader(res);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     },
   );

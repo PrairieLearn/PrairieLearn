@@ -13,9 +13,9 @@ var sql = sqldb.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
 const { TEST_COURSE_PATH } = require('../lib/paths');
+const { fetchCheerio } = require('./helperClient');
 
 const locals = {};
-locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
@@ -68,7 +68,7 @@ describe('Group based homework assess control on student side', function () {
     });
     it('should have a CSRF token', function () {
       const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
+      assert.lengthOf(elemList, 4);
       // there are 6 occurrences of the same csrf, we will pick the first one
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -87,8 +87,8 @@ describe('Group based homework assess control on student side', function () {
         var max = result.rows[0]['maximum'];
         assert.equal(min, 3);
         assert.equal(max, 3);
+        callback(null);
       });
-      callback(null);
     });
   });
 
@@ -101,7 +101,7 @@ describe('Group based homework assess control on student side', function () {
     });
     it('should have a CSRF token', function () {
       const elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
+      assert.lengthOf(elemList, 4);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
@@ -119,8 +119,8 @@ describe('Group based homework assess control on student side', function () {
         var max = result.rows[0]['maximum'];
         assert.equal(min, 2);
         assert.equal(max, 5);
+        callback(null);
       });
-      callback(null);
     });
   });
 
@@ -137,11 +137,10 @@ describe('Group based homework assess control on student side', function () {
         callback(null);
       });
     });
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       config.authUid = locals.groupCreator.uid;
       config.authName = locals.groupCreator.name;
       config.authUin = '00000001';
-      callback(null);
     });
   });
 
@@ -173,6 +172,18 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
+    it('should not be able to create a second group', async () => {
+      const response = await fetchCookie(fetchCheerio)(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'create_group',
+          __csrf_token: locals.__csrf_token,
+          groupName: 'secondgroup',
+        }),
+      });
+      assert.equal(response.status, 200);
+      assert.lengthOf(response.$('.alert:contains(You are already in a group)'), 1);
+    });
   });
 
   describe('8. the group information after 1 user join the group', function () {
@@ -196,12 +207,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('9. the second user can join the group using code', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -251,12 +261,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('11. the third user can join the group using code', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -304,12 +313,11 @@ describe('Group based homework assess control on student side', function () {
     });
   });
   describe('13. the fourth user can not join the already full group', function () {
-    it('should be able to switch to the ungrouped student', function (callback) {
+    it('should be able to switch to the ungrouped student', function () {
       var student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -343,13 +351,89 @@ describe('Group based homework assess control on student side', function () {
     });
   });
 
+  describe('13.5. The fourth user can create another group', () => {
+    it('should be able to switch to the ungrouped student', function () {
+      var student = locals.studentUserNotGrouped;
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000004';
+    });
+    it('should load assessment page successfully', async () => {
+      const response = await fetch(locals.assessmentUrl);
+      assert.equal(response.status, 200);
+      const page = await response.text();
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      const elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+    it('should be able to create a group', async () => {
+      locals.group_name = 'groupBBCCDD';
+      const response = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'create_group',
+          __csrf_token: locals.__csrf_token,
+          groupName: locals.group_name,
+        }),
+      });
+      assert.equal(response.status, 200);
+      const page = await response.text();
+      locals.$ = cheerio.load(page);
+    });
+    it('should contain the 4-character join code', function () {
+      const elemList = locals.$('#join-code');
+      locals.joinCode = elemList.text();
+      assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
+    });
+  });
+
+  describe('13.75. The first user cannot join the second group', () => {
+    it('should be able to switch user', function () {
+      var student = locals.studentUsers[0];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000001';
+    });
+    it('should load assessment page successfully', async () => {
+      const response = await fetch(locals.assessmentUrl);
+      assert.equal(response.status, 200);
+      const page = await response.text();
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      const elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+    it('should NOT be able to join group', async () => {
+      const response = await fetchCookie(fetch)(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'join_group',
+          __csrf_token: locals.__csrf_token,
+          join_code: locals.joinCode,
+        }),
+      });
+      assert.equal(response.status, 200);
+      const page = await response.text();
+      locals.$ = cheerio.load(page);
+      assert.lengthOf(locals.$('.alert:contains(You are already in another group)'), 1);
+    });
+  });
+
   describe('14. start assessment as the third user', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       var student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);
@@ -409,12 +493,11 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should be able to switch to 2nd group member', function (callback) {
+    it('should be able to switch to 2nd group member', function () {
       var student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should be able to access the assessment instance 1 as the 2nd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -422,12 +505,11 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should be able to switch to 3rd group member', function (callback) {
+    it('should be able to switch to 3rd group member', function () {
       var student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
-      callback(null);
     });
     it('should be able to access the assessment instance 1 as the 3rd group member', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -489,12 +571,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('18. access control of student who are not in any group', function () {
-    it('should be able to switch to the ungrouped student', function (callback) {
+    it('should be able to switch to the ungrouped student', function () {
       var student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
-      callback(null);
     });
     it('should NOT be able to access the assessment instance 1 as a ungrouped student', async () => {
       const response = await fetch(locals.assessmentInstanceURL);
@@ -503,12 +584,11 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('19. access control of student who are in a different group', function () {
-    it('should be able to switch to the student in the different group', function (callback) {
+    it('should be able to switch to the student in the different group', function () {
       var student = locals.studentUserInDiffGroup;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000005';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl);

@@ -21,7 +21,6 @@ columns
     raw_submitted_answer: jsonb
     regradable: boolean default false
     score: double precision
-    sid: text
     submitted_answer: jsonb
     true_answer: jsonb
     v2_score: double precision
@@ -29,7 +28,6 @@ columns
 
 indexes
     submissions_pkey: PRIMARY KEY (id) USING btree (id)
-    submissions_sid_key: UNIQUE (sid) USING btree (sid)
     submissions_date_idx: USING btree (date)
     submissions_variant_id_idx: USING btree (variant_id)
 
