@@ -29,7 +29,7 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
-    manual_perc double precision;
+    computed_manual_perc double precision;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
 BEGIN
@@ -387,13 +387,13 @@ BEGIN
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
 
-                    manual_perc := assessment_question->>'manual_perc'::double precision;
-                    IF manual_perc IS NULL THEN
-                        SELECT manual_perc INTO manual_perc
+                    computed_manual_perc := (assessment_question->>'manual_perc')::double precision;
+                    IF computed_manual_perc IS NULL THEN
+                        SELECT manual_perc INTO computed_manual_perc
                         FROM questions q
                         WHERE q.id = new_question_id;
                     END IF;
-                    computed_manual_points := (assessment_question->>'max_points')::double precision * question_manual_perc / 100;
+                    computed_manual_points := (assessment_question->>'max_points')::double precision * computed_manual_perc / 100;
                     computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
 
                     INSERT INTO assessment_questions AS aq (
@@ -417,7 +417,7 @@ BEGIN
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
-                        manual_perc,
+                        computed_manual_perc,
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
