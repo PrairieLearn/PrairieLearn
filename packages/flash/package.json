@@ -13,13 +13,14 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@prairielearn/html": "workspace:^"
+    "@prairielearn/html": "workspace:^",
+    "@types/express": "^4.17.20"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/express": "^4.17.20",
     "@types/express-session": "^1.17.9",
     "@types/node": "^18.18.8",
+    "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

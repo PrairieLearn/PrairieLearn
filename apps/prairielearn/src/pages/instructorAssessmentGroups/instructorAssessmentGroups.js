@@ -47,19 +47,6 @@ router.get(
     res.locals.config_info.defaultMin = groupConfig.minimum || 2;
     res.locals.config_info.defaultMax = groupConfig.maximum || 5;
 
-    res.locals.assessment_list_rows = await sqldb.queryRows(
-      sql.assessment_list,
-      {
-        assessment_id: res.locals.assessment.id,
-        course_instance_id: res.locals.config_info.course_instance_id,
-      },
-      z.object({
-        id: IdSchema,
-        tid: z.string().nullable(),
-        title: z.string().nullable(),
-      }),
-    );
-
     res.locals.groups = await sqldb.queryRows(
       sql.select_group_users,
       {
@@ -117,13 +104,6 @@ router.post(
           res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         },
       );
-    } else if (req.body.__action === 'copy_assessment_groups') {
-      await sqldb.callAsync('assessment_groups_copy', [
-        res.locals.assessment.id,
-        req.body.copy_assessment_id,
-        res.locals.authn_user.user_id,
-      ]);
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_all') {
       await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
