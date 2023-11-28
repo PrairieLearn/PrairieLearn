@@ -136,7 +136,6 @@ export async function init() {
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'assessment_groups_update.sql',
-      'assessment_groups_copy.sql',
       'assessment_groups_add_member.sql',
       'assessment_groups_delete_member.sql',
       'assessment_groups_delete_group.sql',
