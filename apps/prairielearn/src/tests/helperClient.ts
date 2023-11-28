@@ -45,6 +45,17 @@ export async function fetchCheerio(
 }
 
 /**
+ * Gets the test CSRF token from the page.
+ */
+export function getCSRFToken($: cheerio.CheerioAPI): string {
+  const csrfTokenSpan = $('span#test_csrf_token');
+  assert.lengthOf(csrfTokenSpan, 1);
+  const csrfToken = csrfTokenSpan.text();
+  assert.isString(csrfToken);
+  return csrfToken as string;
+}
+
+/**
  * Utility function that extracts a CSRF token from a `__csrf_token` input
  * that is a descendent of the `parentSelector`, if one is specified.
  * The token will also be persisted to `context.__csrf_token`.

@@ -236,6 +236,8 @@ export async function createGroup(
     return;
   }
 
+  // This is technically susceptible to race conditions. That won't be an
+  // issue once we have a unique constraint for group membership.
   const existingGroupId = await getGroupId(assessmentId, userId);
   if (existingGroupId != null) {
     flash('error', 'You are already in a group.');

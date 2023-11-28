@@ -11,9 +11,11 @@ import * as sqldb from '@prairielearn/postgres';
 import { html } from '@prairielearn/html';
 
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
-import { deleteAllGroups } from '../../lib/groups';
+import { deleteAllGroups, getGroupId } from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
+import { selectUserByUid } from '../../models/user';
+import { idsEqual } from '../../lib/id';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -175,8 +177,22 @@ router.post(
       const group_id = req.body.group_id;
       const uids = req.body.add_member_uids;
       const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      let failedUids = [];
+      const failedUids = [];
+      const duplicateUids = [];
       for (const uid of uidlist) {
+        // Check if the user is already in another group for this assessment.
+        // If so, we'll display a special error message for them.
+        // If we can't find a user for a given UID, fall through to the sproc,
+        // which will handle this case.
+        const user = await selectUserByUid(uid);
+        if (user) {
+          const existingGroupId = await getGroupId(assessment_id, user.user_id);
+          if (existingGroupId != null && !idsEqual(existingGroupId, group_id)) {
+            duplicateUids.push(uid);
+            continue;
+          }
+        }
+
         let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];
         try {
           await sqldb.callAsync('assessment_groups_add_member', params);
@@ -189,6 +205,13 @@ router.post(
         flash(
           'error',
           `Failed to add the following users: ${uids}. Please check if the users exist.`,
+        );
+      }
+      if (duplicateUids.length > 0) {
+        const uids = duplicateUids.join(', ');
+        flash(
+          'error',
+          `Failed to add the following users: ${uids}. They are already in another group.`,
         );
       }
       res.redirect(req.originalUrl);
