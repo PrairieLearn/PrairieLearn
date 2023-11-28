@@ -393,8 +393,8 @@ BEGIN
                         FROM questions q
                         WHERE q.id = new_question_id;
                     END IF;
-                    computed_manual_points := (assessment_question->>'max_points')::double precision * computed_manual_perc / 100;
-                    computed_max_auto_points := (assessment_question->>'max_points')::double precision - computed_manual_points;
+                    computed_manual_points := ROUND((assessment_question->>'max_points')::numeric * computed_manual_perc::numeric / 100, 2);
+                    computed_max_auto_points := ROUND((assessment_question->>'max_points')::numeric - computed_manual_points::numeric, 2);
 
                     INSERT INTO assessment_questions AS aq (
                         number,
