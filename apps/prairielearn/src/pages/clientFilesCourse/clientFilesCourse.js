@@ -1,46 +1,40 @@
+// @ts-check
 import { selectCourseById } from '../../models/course';
 import { selectQuestionById } from '../../models/question';
 
+const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
-const ERR = require('async-stacktrace');
 
-router.get('/*', function (req, res, next) {
-  console.log('course id', req.params.course_id);
-  Promise.all(
-    res.locals.public
-      ? [selectCourseById(req.params.course_id), selectQuestionById(req.params.question_id)]
-      : [Promise.resolve(res.locals.course), Promise.resolve(res.locals.question)],
-  )
-    .then(([course, question]) => {
-      res.locals.course = course;
-      res.locals.question = question;
-      if (res.locals.public && !res.locals.question.shared_publicly) {
-        return next(error.make(404, 'Not Found'));
-      }
+router.get(
+  '/*',
+  asyncHandler(async function (req, res) {
+    if (res.locals.public) {
+      res.locals.course = await selectCourseById(req.params.course_id);
+      res.locals.question = await selectQuestionById(req.params.question_id);
+    }
 
-      const filename = req.params[0];
-      if (!filename) {
-        return next(
-          error.make(400, 'No filename provided within clientFilesCourse directory', {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
-      }
-      const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-      chunks.ensureChunksForCourse(res.locals.course.id, { type: 'clientFilesCourse' }, (err) => {
-        if (ERR(err, next)) return;
+    if (res.locals.public && !res.locals.question.shared_publicly) {
+      throw error.make(404, 'Not Found');
+    }
 
-        const clientFilesDir = path.join(coursePath, 'clientFilesCourse');
-        res.sendFile(filename, { root: clientFilesDir });
+    const filename = req.params[0];
+    if (!filename) {
+      throw error.make(400, 'No filename provided within clientFilesCourse directory', {
+        locals: res.locals,
+        body: req.body,
       });
-    })
-    .catch((err) => next(err));
-});
+    }
+    const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
+    await chunks.ensureChunksForCourseAsync(res.locals.course.id, { type: 'clientFilesCourse' });
+
+    const clientFilesDir = path.join(coursePath, 'clientFilesCourse');
+    res.sendFile(filename, { root: clientFilesDir });
+  }),
+);
 
 module.exports = router;
