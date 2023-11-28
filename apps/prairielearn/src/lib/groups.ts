@@ -196,8 +196,19 @@ export async function joinGroup(
     flash('error', 'The join code has an incorrect format');
     return;
   }
+
   const groupName = splitJoinCode[0];
   const joinCode = splitJoinCode[1].toUpperCase();
+
+  // This is a best-effort check to produce a nice error message. Even if this
+  // fails due to a race condition, the `group_users_insert` sproc below will
+  // validate that the user isn't already in a group.
+  const existingGroupId = await getGroupId(assessmentId, userId);
+  if (existingGroupId != null) {
+    flash('error', 'You are already in another group.');
+    return;
+  }
+
   try {
     await sqldb.callAsync('group_users_insert', [
       assessmentId,
@@ -207,10 +218,6 @@ export async function joinGroup(
       joinCode,
     ]);
   } catch (err) {
-    // TODO: more precise error message. Specifically, if the user is already
-    // a member of another group, we should tell them. In general, this pattern
-    // of unconditionally rendering a flash message after an error isn't great.
-    // We should be handling only known errors here.
     flash(
       'error',
       `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,
@@ -252,8 +259,6 @@ export async function createGroup(
       group_name: groupName,
     });
   } catch (err) {
-    // TODO: as above, add a more precise error message when group creation failed.
-    // We also shouldn't be blindly handling every single error here.
     flash(
       'error',
       `Failed to create the group ${groupName}. It is already taken. Please try another one.`,

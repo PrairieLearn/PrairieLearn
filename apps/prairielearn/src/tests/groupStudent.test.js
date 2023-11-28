@@ -424,7 +424,7 @@ describe('Group based homework assess control on student side', function () {
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-      assert.lengthOf(locals.$('.alert:contains(It is already full)'), 1);
+      assert.lengthOf(locals.$('.alert:contains(You are already in another group)'), 1);
     });
   });
 
