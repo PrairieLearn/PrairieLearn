@@ -84,7 +84,7 @@ export async function insertIssueForError(
  * @param courseData - Arbitrary data to be associated with the issues.
  */
 export async function writeCourseIssuesAsync(
-  courseIssues: ErrorMaybeWithData[] | null,
+  courseIssues: ErrorMaybeWithData[],
   variant: Variant,
   authn_user_id: string | null,
   studentMessage: string | null,
