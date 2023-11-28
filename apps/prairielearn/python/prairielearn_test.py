@@ -339,15 +339,10 @@ def test_get_uuid() -> None:
 def test_iter_keys(length: int, expected_output: list[str]) -> None:
     assert list(it.islice(pl.iter_keys(), length)) == expected_output
 
+
 @pytest.mark.parametrize(
     "idx, expected_output",
-    [
-        (0, "a"),
-        (1, "b"),
-        (3, "d"),
-        (26, "aa"),
-        (27, "ab")
-    ],
+    [(0, "a"), (1, "b"), (3, "d"), (26, "aa"), (27, "ab")],
 )
 def test_index2key(idx: int, expected_output: str) -> None:
     assert pl.index2key(idx) == expected_output
