@@ -12,10 +12,13 @@ const socketServer = require('./socket-server');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
+/** @type {import('socket.io').Namespace} */
+let namespace;
+
 // This module MUST be initialized after socket-server
 export function init(callback) {
-  const _namespace = socketServer.io.of('/external-grading');
-  _namespace.on('connection', connection);
+  namespace = socketServer.io.of('/external-grading');
+  namespace.on('connection', connection);
 
   callback(null);
 }
@@ -124,8 +127,7 @@ export function gradingJobStatusUpdated(grading_job_id) {
       variant_id: result.rows[0].variant_id,
       submissions: result.rows,
     };
-    const _namespace = socketServer.io.of('/external-grading');
-    _namespace.to(`variant-${result.rows[0].variant_id}`).emit('change:status', eventData);
+    namespace.to(`variant-${result.rows[0].variant_id}`).emit('change:status', eventData);
   });
 }
 
