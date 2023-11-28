@@ -384,7 +384,7 @@
           "minimum": 0,
           "maximum": 100
         },
-            "alternatives": {
+        "alternatives": {
           "description": "Array of question alternatives to choose from.",
           "type": "array",
           "minItems": 1,
