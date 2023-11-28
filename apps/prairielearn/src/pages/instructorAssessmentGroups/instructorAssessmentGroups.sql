@@ -7,20 +7,6 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK assessment_list
-SELECT
-  id,
-  tid,
-  title
-FROM
-  assessments
-WHERE
-  group_work
-  AND id != $assessment_id
-  AND course_instance_id = $course_instance_id
-ORDER BY
-  tid;
-
 -- BLOCK select_group_users
 WITH
   assessment_groups AS (
