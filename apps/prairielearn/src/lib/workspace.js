@@ -94,7 +94,7 @@ module.exports = {
     const workspace_id = socket.handshake.auth.workspace_id;
 
     socket.on('joinWorkspace', (...args) => {
-      // Backwards compatibility with clients who may still be sending a message.
+      // Forwards compatibility with clients who may no longer be sending a message.
       // TODO: remove this in the future once all clients have been updated.
       const callback = args.at(-1);
 
@@ -123,7 +123,7 @@ module.exports = {
     });
 
     socket.on('heartbeat', (...args) => {
-      // Backwards compatibility with clients who may still be sending a message.
+      // Forwards compatibility with clients who may no longer be sending a message.
       // TODO: remove this in the future once all clients have been updated.
       const callback = args.at(-1);
 
