@@ -35,10 +35,6 @@ export async function fetchCheerio(
   const text = await response.text();
   // Create a new object with the same properties (via accessors) but additional/changed fields
   return Object.create(response, {
-    // response.text() can only be called once, which we already did. A previous
-    // version of this code patched this so consumers can use it as "normal",
-    // but the new function was created as not async. This behaviour is kept for
-    // backwards compatibility.
     text: { value: () => Promise.resolve(text) },
     $: { value: cheerio.load(text) },
   });
