@@ -68,7 +68,7 @@ describe('assessment instance group synchronization test', function () {
     });
     it('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
+      assert.lengthOf(elemList, 4);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
