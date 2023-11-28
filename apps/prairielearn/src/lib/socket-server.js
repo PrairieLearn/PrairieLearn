@@ -41,8 +41,18 @@ function attachEventListeners(client, type) {
   });
 }
 
-export let io, pub, sub;
+/** @type {Server} */
+export let io;
 
+/** @type {Redis} */
+let pub;
+
+/** @type {Redis} */
+let sub;
+
+/**
+ * @param {import('http').Server} server
+ */
 export async function init(server) {
   debug('init(): creating socket server');
   io = new Server(server);
@@ -52,11 +62,11 @@ export async function init(server) {
     pub = new Redis(config.redisUrl);
     sub = new Redis(config.redisUrl);
 
-    attachEventListeners(module.exports.pub, 'pub');
-    attachEventListeners(module.exports.sub, 'sub');
+    attachEventListeners(pub, 'pub');
+    attachEventListeners(sub, 'sub');
 
     debug('init(): initializing redis socket adapter');
-    module.exports.io.adapter(createAdapter(module.exports.pub, module.exports.sub));
+    io.adapter(createAdapter(pub, sub));
   }
 }
 

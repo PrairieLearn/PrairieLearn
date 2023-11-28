@@ -15,11 +15,14 @@ const sql = sqldb.loadSqlEquiv(__filename);
 // This module MUST be initialized after socket-server
 export function init(callback) {
   const _namespace = socketServer.io.of('/external-grading');
-  _namespace.on('connection', module.exports.connection);
+  _namespace.on('connection', connection);
 
   callback(null);
 }
 
+/**
+ * @param {import('socket.io').Socket} socket
+ */
 export function connection(socket) {
   socket.on('init', (msg, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token'])) {

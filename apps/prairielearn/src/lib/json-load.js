@@ -32,7 +32,7 @@ export function readJSON(jsonFilename, callback) {
     callback(null, json);
   });
 }
-export const readJSONAsync = util.promisify(module.exports.readJSON);
+export const readJSONAsync = util.promisify(readJSON);
 
 /**
  * Validates an object with the specified JSON schema.
@@ -71,7 +71,7 @@ export function validateJSON(json, schema, callback) {
  * @param {object} schema The schema used to validate the object
  * @returns {Promise<any>} The original JSON, if valid
  */
-export const validateJSONAsync = util.promisify(module.exports.validateJSON);
+export const validateJSONAsync = util.promisify(validateJSON);
 
 /**
  * Reads and validates some type of `info.json` file.
@@ -87,7 +87,7 @@ export function readInfoJSON(jsonFilename, schema, callback) {
       return;
     }
     if (schema) {
-      module.exports.validateJSON(json, schema, function (err, json) {
+      validateJSON(json, schema, function (err, json) {
         if (err) {
           ERR(
             new Error("Error validating file '" + jsonFilename + "' against schema: " + err),
@@ -104,4 +104,4 @@ export function readInfoJSON(jsonFilename, schema, callback) {
     }
   });
 }
-export const readInfoJSONAsync = util.promisify(module.exports.readInfoJSON);
+export const readInfoJSONAsync = util.promisify(readInfoJSON);
