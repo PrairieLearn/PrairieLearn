@@ -10,7 +10,7 @@ const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
 const { getQuestionCourse } = require('../../lib/question-variant');
 
-module.exports = function (options={publicEndpoint: false}) {
+module.exports = function (options = { publicEndpoint: false }) {
   const router = express.Router({ mergeParams: true });
   router.get(
     '/*',
