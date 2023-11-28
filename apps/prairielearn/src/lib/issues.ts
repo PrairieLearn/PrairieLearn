@@ -1,4 +1,4 @@
-import { eachSeries } from 'async';
+import * as async from 'async';
 import { callbackify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -90,7 +90,7 @@ export async function writeCourseIssuesAsync(
   studentMessage: string | null,
   courseData: Record<string, any>,
 ) {
-  await eachSeries(courseIssues, async (courseErr) => {
+  await async.eachSeries(courseIssues, async (courseErr) => {
     await insertIssueForError(courseErr, {
       variantId: variant.id,
       studentMessage,
