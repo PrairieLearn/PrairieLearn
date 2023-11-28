@@ -1001,7 +1001,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion')(),
     ],
   );
 
@@ -1361,7 +1361,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion')(),
     ],
   );
 
@@ -1516,7 +1516,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion')(),
   );
 
   // generatedFiles
@@ -1763,7 +1763,7 @@ module.exports.initExpress = function () {
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion')(),
   ]);
 
   // generatedFiles
@@ -1835,13 +1835,10 @@ module.exports.initExpress = function () {
     },
     require('./pages/clientFilesCourse/clientFilesCourse'),
   ]);
-  app.use('/pl/public/course/:course_id/question/:question_id/clientFilesQuestion', [
-    function (req, res, next) {
-      res.locals.public = true;
-      next();
-    },
-    require('./pages/clientFilesQuestion/clientFilesQuestion'),
-  ]);
+  app.use(
+    '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion',
+    require('./pages/clientFilesQuestion/clientFilesQuestion')({ publicEndpoint: true }),
+  );
 
   // generatedFiles
   app.use('/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion', [
@@ -1854,7 +1851,7 @@ module.exports.initExpress = function () {
 
   // TODO: implement
   // // Submission files
-  // app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+  // app.use('/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file', [
   //   require('./pages/submissionFile/submissionFile'),
   // ]);
 
