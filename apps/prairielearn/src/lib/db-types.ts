@@ -391,6 +391,7 @@ export const AssessmentQuestionSchema = z.object({
   last_submission_score_hist: z.array(z.number()).nullable(),
   last_submission_score_variance: z.number().nullable(),
   manual_rubric_id: IdSchema.nullable(),
+  manual_perc: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_points: z.number().nullable(),
