@@ -121,7 +121,7 @@ describe('Instructor force-breaking variants', () => {
     const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
     const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
 
-    const breakVariantsResponse = await fetch(assessmentQuestionsUrl, {
+    const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'break_variants',
@@ -144,7 +144,7 @@ describe('Instructor force-breaking variants', () => {
     const instanceResponse = await fetchCheerio(instanceUrl);
     const csrfToken = getCSRFToken(instanceResponse.$);
 
-    const breakVariantsResponse = await fetch(instanceUrl, {
+    const breakVariantsResponse = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'break_variants',
