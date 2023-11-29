@@ -17,10 +17,10 @@ module.exports = function (options = { publicEndpoint: false }) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
         res.locals.question = await selectQuestionById(req.params.question_id);
-      }
-
-      if (options.publicEndpoint && !res.locals.question.shared_publicly) {
-        throw error.make(404, 'Not Found');
+        
+        if (!res.locals.question.shared_publicly) {
+          throw error.make(404, 'Not Found');
+        }
       }
 
       const filename = req.params[0];

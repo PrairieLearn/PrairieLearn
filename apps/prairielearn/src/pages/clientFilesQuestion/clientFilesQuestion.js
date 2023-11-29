@@ -26,21 +26,19 @@ module.exports = function (options = { publicEndpoint: false }) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
         res.locals.question = await selectQuestionById(req.params.question_id);
-      }
 
-      if (options.publicEndpoint && !res.locals.question.shared_publicly) {
-        throw error.make(404, 'Not Found');
+        if (!res.locals.question.shared_publicly) {
+          throw error.make(404, 'Not Found');
+        }
       }
 
       const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
       const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
 
-      /** @type {chunks.QuestionChunk} */
-      const chunk = {
+      await chunks.ensureChunksForCourseAsync(question_course.id, {
         type: 'question',
         questionId: res.locals.question.id,
-      };
-      await chunks.ensureChunksForCourseAsync(question_course.id, chunk);
+      });
 
       const clientFilesDir = path.join(
         coursePath,

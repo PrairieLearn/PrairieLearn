@@ -20,23 +20,22 @@ module.exports = function (options = { publicEndpoint: false }) {
       if (options.publicEndpoint) {
         res.locals.course = await selectCourseById(req.params.course_id);
         res.locals.question = await selectQuestionById(req.params.question_id);
-      }
-
-      if (options.publicEndpoint && !res.locals.question.shared_publicly) {
-        throw error.make(404, 'Not Found');
+        
+        if (!res.locals.question.shared_publicly) {
+          throw error.make(404, 'Not Found');
+        }
       }
 
       var variant_id = req.params.variant_id;
       var filename = req.params[0];
-      var params = {
+      const result = await sqldb.queryOneRowAsync(sql.select_variant, {
         // The instance question generally won't be present if this is used on
         // an instructor route.
         has_instance_question: !!res.locals.instance_question,
         instance_question_id: res.locals.instance_question?.id,
         question_id: res.locals.question.id,
         variant_id: variant_id,
-      };
-      const result = await sqldb.queryOneRowAsync(sql.select_variant, params);
+      });
       const variant = result.rows[0];
 
       const fileData = await promisify(question.getFile)(
