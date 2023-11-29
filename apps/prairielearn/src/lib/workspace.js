@@ -14,6 +14,7 @@ const tmp = require('tmp-promise');
 const mustache = require('mustache');
 const workspaceUtils = require('@prairielearn/workspace-utils');
 const { contains } = require('@prairielearn/path-utils');
+const { checkSignedToken } = require('@prairielearn/signed-token');
 
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
@@ -60,24 +61,22 @@ module.exports = {
     socketServer.io
       .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
       .use((socket, next) => {
-        // TODO: these checks are temporarily disabled until we are reasonably
-        // sure that almost all clients are sending auth information.
-        //
-        // if (!socket.handshake.auth.workspace_id) {
-        //   next(new Error('No workspace_id provided'));
-        //   return;
-        // }
-        // if (
-        //   !socket.handshake.auth.token ||
-        //   !checkSignedToken(
-        //     socket.handshake.auth.token,
-        //     { workspace_id: socket.handshake.auth.workspace_id },
-        //     config.secretKey,
-        //   )
-        // ) {
-        //   next(new Error('Invalid token'));
-        //   return;
-        // }
+        if (!socket.handshake.auth.workspace_id) {
+          next(new Error('No workspace_id provided'));
+          return;
+        }
+
+        if (
+          !socket.handshake.auth.token ||
+          !checkSignedToken(
+            socket.handshake.auth.token,
+            { workspace_id: socket.handshake.auth.workspace_id },
+            config.secretKey,
+          )
+        ) {
+          next(new Error('Invalid token'));
+          return;
+        }
 
         next();
       })
@@ -90,13 +89,14 @@ module.exports = {
    * @param {import('socket.io').Socket} socket
    */
   connection(socket) {
-    socket.on('joinWorkspace', (msg, callback) => {
-      // The middleware will have already ensured that this property exists and
-      // that the client possesses a token that is valid for this workspace ID.
-      //
-      // TODO: once all clients include a token in the handshake, we can remove
-      // the code that reads the workspace ID from the message.
-      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
+    // The middleware will have already ensured that this property exists and
+    // that the client possesses a token that is valid for this workspace ID.
+    const workspace_id = socket.handshake.auth.workspace_id;
+
+    socket.on('joinWorkspace', (...args) => {
+      // Forwards compatibility with clients who may no longer be sending a message.
+      // TODO: remove this in the future once all clients have been updated.
+      const callback = args.at(-1);
 
       socket.join(`workspace-${workspace_id}`);
 
@@ -111,14 +111,7 @@ module.exports = {
       });
     });
 
-    socket.on('startWorkspace', (msg) => {
-      // The middleware will have already ensured that this property exists and
-      // that the client possesses a token that is valid for this workspace ID.
-      //
-      // TODO: once all clients include a token in the handshake, we can remove
-      // the code that reads the workspace ID from the message.
-      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
-
+    socket.on('startWorkspace', () => {
       module.exports.startup(workspace_id).catch(async (err) => {
         logger.error(`Error starting workspace ${workspace_id}`, err);
         await workspaceUtils.updateWorkspaceState(
@@ -129,13 +122,10 @@ module.exports = {
       });
     });
 
-    socket.on('heartbeat', (msg, callback) => {
-      // The middleware will have already ensured that this property exists and
-      // that the client possesses a token that is valid for this workspace ID.
-      //
-      // TODO: once all clients include a token in the handshake, we can remove
-      // the code that reads the workspace ID from the message.
-      const workspace_id = socket.handshake.auth.workspace_id ?? msg.workspace_id;
+    socket.on('heartbeat', (...args) => {
+      // Forwards compatibility with clients who may no longer be sending a message.
+      // TODO: remove this in the future once all clients have been updated.
+      const callback = args.at(-1);
 
       sqldb.queryOneRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, (err, result) => {
         if (ERR(err, callback)) return;
