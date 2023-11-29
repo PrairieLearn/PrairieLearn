@@ -329,7 +329,7 @@
             </tr>
           </thead>
           <tbody>
-            <% log.forEach(function(row) { %>
+            <% log.forEach(function(rowm, index) { %>
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
@@ -337,7 +337,7 @@
               <td><a tabindex="0" class="btn btn-xs btn-secondary"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
-                data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_id %>"
+                data-html="true" data-placement="auto" title="Fingerprint <%= index %>"
                 data-content="
                   <div>
                     IP Address: <%= row.client_fingerprint?.ip_address %>

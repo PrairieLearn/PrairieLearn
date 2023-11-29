@@ -10,6 +10,7 @@ export default asyncHandler(async (req, res, next) => {
     { user_session_id: req.session.id },
     IdSchema,
   );
+
   const params = {
     ip_address: req.ip,
     user_id: res.locals.authn_user.user_id,
@@ -17,7 +18,6 @@ export default asyncHandler(async (req, res, next) => {
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
   };
-
   let client_fingerprint_id = await sqldb.queryOptionalRow(
     sql.select_client_fingerprint,
     params,
