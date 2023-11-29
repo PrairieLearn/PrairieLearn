@@ -337,7 +337,7 @@
               <td><a tabindex="0" class="btn btn-xs btn-secondary"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
-                data-html="true" data-placement="auto" title="Fingerprint"
+                data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_id %>"
                 data-content="
                   <div>
                     IP Address: <%= row.client_fingerprint?.ip_address %>
