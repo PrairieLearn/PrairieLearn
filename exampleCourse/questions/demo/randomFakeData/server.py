@@ -6,17 +6,11 @@ from faker import Faker
 
 def generate(data):
     fake = Faker()
-    # Start with `set` to ensure uniqueness
-    birthdays = set()
-
-    year = 2000
-    while len(birthdays) < 4:
-        birthdays.add(
-            fake.date_between(datetime.date(year, 1, 1), datetime.date(year, 12, 31))
-        )
 
     # Once sorted, the first birthday belongs to the youngest employee
-    birthdays = sorted(birthdays)
+    start = datetime.date(2000, 1, 1)
+    end = datetime.date(2000, 12, 31)
+    birthdays = sorted(fake.unique.date_between(start, end) for _ in range(4))
 
     employees = []
 
