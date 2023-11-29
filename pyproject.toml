@@ -106,4 +106,4 @@ include = [
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
-reportUnnecessaryTypeIgnoreComment = true
+reportUnnecessaryTypeIgnoreComment = "error"
