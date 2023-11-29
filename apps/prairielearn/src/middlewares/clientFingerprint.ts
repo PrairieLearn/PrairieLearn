@@ -27,16 +27,18 @@ export default asyncHandler(async (req, res, next) => {
   if (!client_fingerprint_id) {
     client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
   }
-  if (
-    res.locals.assessment_instance &&
-    IdSchema.parse(res.locals.assessment_instance?.last_client_fingerprint_id) !==
-      client_fingerprint_id
-  ) {
-    await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
-      client_fingerprint_id,
-      assessment_instance_id: res.locals.assessment_instance?.id,
-      authn_user_id: res.locals.authn_user.user_id,
-    });
+  if (res.locals.assessment_instance) {
+    if (
+      res.locals.assessment_instance.last_client_fingerprint_id &&
+      IdSchema.parse(res.locals.assessment_instance?.last_client_fingerprint_id) !==
+        client_fingerprint_id
+    ) {
+      await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
+        client_fingerprint_id,
+        assessment_instance_id: res.locals.assessment_instance?.id,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+    }
   }
 
   res.locals.client_fingerprint_id = client_fingerprint_id;

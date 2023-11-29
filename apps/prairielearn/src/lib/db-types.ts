@@ -588,10 +588,10 @@ export type GradingJob = z.infer<typeof GradingJobSchema>;
 export const ClientFingerprintSchema = z.object({
   id: IdSchema,
   user_id: IdSchema,
-  user_session_id: IdSchema.optional(),
-  ip_address: z.string().optional(),
-  user_agent: z.string().optional(),
-  accept_language: z.string().optional(),
+  user_session_id: IdSchema.nullable(),
+  ip_address: z.string().nullable(),
+  user_agent: z.string().nullable(),
+  accept_language: z.string().nullable(),
   created_at: DateFromISOString,
 });
 
