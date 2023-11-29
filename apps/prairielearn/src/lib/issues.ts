@@ -1,27 +1,30 @@
-// @ts-check
 import * as async from 'async';
 import { callbackify } from 'util';
+
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
+import { Variant } from './db-types';
 
-/**
- * @typedef {Object} IssueData
- * @property {number | string} variantId
- * @property {string | null} studentMessage
- * @property {string | null} instructorMessage
- * @property {boolean} manuallyReported
- * @property {boolean} courseCaused
- * @property {Object} courseData
- * @property {Object} systemData
- * @property {number | string | null} authnUserId
- */
+interface IssueForErrorData {
+  variantId: string;
+  studentMessage: string | null;
+  courseData: Record<string, any>;
+  authnUserId: string | null;
+}
 
-/** @typedef {Omit<IssueData, 'manuallyReported' | 'courseCaused' | 'instructorMessage' |'systemData'>} IssueForErrorData */
+interface IssueData extends IssueForErrorData {
+  instructorMessage: string | null;
+  manuallyReported: boolean;
+  courseCaused: boolean;
+  systemData: Record<string, any>;
+}
+
+interface ErrorMaybeWithData extends Error {
+  data?: any;
+}
 
 /**
  * Inserts an issue.
- *
- * @param {IssueData} data
  */
 export async function insertIssue({
   variantId,
@@ -32,7 +35,7 @@ export async function insertIssue({
   courseData,
   systemData,
   authnUserId,
-}) {
+}: IssueData): Promise<void> {
   // Truncate all strings in the data objects to 1000 characters. This ensures
   // that we don't store too much unnecessary data. This data is here for
   // convenience, but it's not the source of truth: pretty much all of it
@@ -57,12 +60,11 @@ export async function insertIssue({
 
 /**
  * Inserts an issue for a thrown error.
- *
- * @param {any} err
- * @param {IssueForErrorData} data
- * @returns {Promise<void>}
  */
-export async function insertIssueForError(err, data) {
+export async function insertIssueForError(
+  err: ErrorMaybeWithData,
+  data: IssueForErrorData,
+): Promise<void> {
   return insertIssue({
     ...data,
     manuallyReported: false,
@@ -74,20 +76,19 @@ export async function insertIssueForError(err, data) {
 
 /**
  * Write a list of course issues for a variant.
- * @protected
  *
- * @param {Array} courseIssues - List of issue objects for to be written.
- * @param {Object} variant - The variant associated with the issues.
- * @param {string} authn_user_id - The currently authenticated user.
- * @param {string} studentMessage - The message to display to the student.
- * @param {Object} courseData - Arbitrary data to be associated with the issues.
+ * @param courseIssues - List of issue objects for to be written.
+ * @param variant - The variant associated with the issues.
+ * @param authn_user_id - The currently authenticated user.
+ * @param studentMessage - The message to display to the student.
+ * @param courseData - Arbitrary data to be associated with the issues.
  */
 export async function writeCourseIssuesAsync(
-  courseIssues,
-  variant,
-  authn_user_id,
-  studentMessage,
-  courseData,
+  courseIssues: ErrorMaybeWithData[],
+  variant: Variant,
+  authn_user_id: string | null,
+  studentMessage: string | null,
+  courseData: Record<string, any>,
 ) {
   await async.eachSeries(courseIssues, async (courseErr) => {
     await insertIssueForError(courseErr, {
