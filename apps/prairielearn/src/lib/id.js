@@ -24,7 +24,7 @@
  * @param {string | number} id1
  * @param {string | number} id2
  */
-module.exports.idsEqual = function idsEqual(id1, id2) {
+export function idsEqual(id1, id2) {
   // eslint-disable-next-line eqeqeq
   return id1 == id2;
-};
+}

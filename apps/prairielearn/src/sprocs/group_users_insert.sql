@@ -41,6 +41,23 @@ BEGIN
     WHERE g.id = cur_group_id
     FOR NO KEY UPDATE OF g;
 
+    -- Ensure the user isn't a member of any other groups for this assessment.
+    -- For now we have to do this check manually; in the future we'll add and
+    -- rely on a unique constraint.
+    PERFORM 1
+    FROM
+      group_users AS gu
+      JOIN groups AS g ON (g.id = gu.group_id)
+      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+    WHERE
+      gu.user_id = arg_user_id
+      AND gc.assessment_id = arg_assessment_id
+      AND g.deleted_at IS NULL;
+
+    IF FOUND THEN
+        RAISE EXCEPTION 'User is already a member of a group for this assessment';
+    END IF;
+
     -- count the group size and compare with the max size
     SELECT
         COUNT(DISTINCT gu.user_id), AVG(gc.maximum)
