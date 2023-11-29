@@ -30,7 +30,6 @@ export default asyncHandler(async (req, res, next) => {
   }
   if (res.locals.assessment_instance) {
     if (
-      res.locals.assessment_instance.last_client_fingerprint_id &&
       !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
     ) {
       await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
