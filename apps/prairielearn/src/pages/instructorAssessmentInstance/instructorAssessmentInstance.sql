@@ -104,4 +104,5 @@ WHERE
       v.open = true
       AND v.broken_at IS NULL
       AND iq.id = $instance_question_id
+      AND iq.assessment_instance_id = $assessment_instance_id
   );

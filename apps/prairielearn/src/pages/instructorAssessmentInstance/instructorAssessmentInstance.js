@@ -109,7 +109,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
@@ -164,20 +164,18 @@ router.post(
         );
       }
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'break_variant') {
-      // TODO: validate that the instance question belongs to the current assessment instance.
+    } else if (req.body.__action === 'break_variants') {
       await sqldb.queryAsync(sql.mark_variant_broken, {
+        assessment_instance_id: res.locals.assessment_instance.id,
         instance_question_id: req.body.instance_question_id,
         authn_user_id: res.locals.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      throw error.make(400, `unknown __action: ${req.body.__action}`, {
+        locals: res.locals,
+        body: req.body,
+      });
     }
   }),
 );

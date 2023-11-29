@@ -124,7 +124,7 @@ describe('Instructor force-breaking variants', () => {
     const breakVariantsResponse = await fetch(assessmentQuestionsUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __action: 'break',
+        __action: 'break_variants',
         __csrf_token: csrfToken,
         assessment_question_id: partialCredit1AssessmentQuestionId,
       }),
@@ -147,7 +147,7 @@ describe('Instructor force-breaking variants', () => {
     const breakVariantsResponse = await fetch(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __action: 'break_variant',
+        __action: 'break_variants',
         __csrf_token: csrfToken,
         instance_question_id: instanceQuestion,
       }),

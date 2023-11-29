@@ -7,7 +7,7 @@
   Students will receive a new variant of their question upon reloading.
 </p>
 <form name="break-form" method="POST">
-  <input type="hidden" name="__action" value="break">
+  <input type="hidden" name="__action" value="break_variants">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="assessment_question_id" value="<%= question.id %>">
   <button type="button" class="btn btn-secondary" onclick="$('#row<%= iRow %>PopoverBreakButton').popover('hide')">

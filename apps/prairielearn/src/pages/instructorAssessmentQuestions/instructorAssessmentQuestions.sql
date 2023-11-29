@@ -132,4 +132,5 @@ WHERE
       v.open = true
       AND v.broken_at IS NULL
       AND aq.id = $assessment_question_id
+      AND aq.assessment_id = $assessment_id
   );
