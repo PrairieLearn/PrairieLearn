@@ -23,7 +23,8 @@ WITH
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id
+      id,
+      group_config_id
   ),
   create_log AS (
     INSERT INTO
@@ -53,10 +54,11 @@ WITH
   ),
   join_group AS (
     INSERT INTO
-      group_users (user_id, group_id)
+      group_users (user_id, group_id, group_config_id)
     SELECT
       $user_id,
-      cg.id
+      cg.id,
+      cg.group_config_id
     FROM
       create_group AS cg
   ),
