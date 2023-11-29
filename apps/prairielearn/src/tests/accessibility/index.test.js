@@ -213,6 +213,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
   '/pl/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
+  '/pl/public/course/:course_id/question/:question_id/preview/variant/:variant_id/submission/:submission_id',
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
@@ -228,6 +229,10 @@ const SKIP_ROUTES = [
   '/pl/administrator/batchedMigrations/:batched_migration_id',
   '/pl/administrator/features/:feature',
   '/pl/administrator/features/:feature/modal',
+
+  // These are only HTML fragments rendered by HTMX; we can't test them as full
+  // HTML documents.
+  /^\/pl\/navbar\/course/,
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
@@ -314,6 +319,11 @@ describe('accessibility', () => {
       assessment_id: questionGalleryAssessmentResult.rows[0].id,
       question_id: codeElementQuestionResult.rows[0].id,
     };
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE questions SET shared_publicly = true WHERE id = $question_id',
+      { question_id: routeParams.question_id },
+    );
   });
   after('shut down testing server', helperServer.after);
 

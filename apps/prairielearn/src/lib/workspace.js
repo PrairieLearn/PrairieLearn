@@ -14,6 +14,7 @@ const tmp = require('tmp-promise');
 const mustache = require('mustache');
 const workspaceUtils = require('@prairielearn/workspace-utils');
 const { contains } = require('@prairielearn/path-utils');
+const { checkSignedToken } = require('@prairielearn/signed-token');
 
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
@@ -35,7 +36,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 /**
  * @typedef {Object} BufferWorkspaceFile
  * @property {string} name
- * @property {Buffer} buffer
+ * @property {Buffer | string} buffer
  */
 
 /**
@@ -59,6 +60,26 @@ module.exports = {
     workspaceUtils.init(socketServer.io);
     socketServer.io
       .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
+      .use((socket, next) => {
+        if (!socket.handshake.auth.workspace_id) {
+          next(new Error('No workspace_id provided'));
+          return;
+        }
+
+        if (
+          !socket.handshake.auth.token ||
+          !checkSignedToken(
+            socket.handshake.auth.token,
+            { workspace_id: socket.handshake.auth.workspace_id },
+            config.secretKey,
+          )
+        ) {
+          next(new Error('Invalid token'));
+          return;
+        }
+
+        next();
+      })
       .on('connection', module.exports.connection);
   },
 
@@ -68,8 +89,15 @@ module.exports = {
    * @param {import('socket.io').Socket} socket
    */
   connection(socket) {
-    socket.on('joinWorkspace', (msg, callback) => {
-      const workspace_id = msg.workspace_id;
+    // The middleware will have already ensured that this property exists and
+    // that the client possesses a token that is valid for this workspace ID.
+    const workspace_id = socket.handshake.auth.workspace_id;
+
+    socket.on('joinWorkspace', (...args) => {
+      // Forwards compatibility with clients who may no longer be sending a message.
+      // TODO: remove this in the future once all clients have been updated.
+      const callback = args.at(-1);
+
       socket.join(`workspace-${workspace_id}`);
 
       sqldb.queryOneRow(sql.select_workspace, { workspace_id }, (err, result) => {
@@ -83,8 +111,7 @@ module.exports = {
       });
     });
 
-    socket.on('startWorkspace', (msg) => {
-      const workspace_id = msg.workspace_id;
+    socket.on('startWorkspace', () => {
       module.exports.startup(workspace_id).catch(async (err) => {
         logger.error(`Error starting workspace ${workspace_id}`, err);
         await workspaceUtils.updateWorkspaceState(
@@ -95,8 +122,11 @@ module.exports = {
       });
     });
 
-    socket.on('heartbeat', (msg, callback) => {
-      const workspace_id = msg.workspace_id;
+    socket.on('heartbeat', (...args) => {
+      // Forwards compatibility with clients who may no longer be sending a message.
+      // TODO: remove this in the future once all clients have been updated.
+      const callback = args.at(-1);
+
       sqldb.queryOneRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, (err, result) => {
         if (ERR(err, callback)) return;
         const heartbeat_at = result.rows[0].heartbeat_at;

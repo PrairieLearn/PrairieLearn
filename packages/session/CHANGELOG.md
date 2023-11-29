@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 1.3.1
+
+### Patch Changes
+
+- 1523b97b0: Upgrade all dependencies
+
 ## 1.3.0
 
 ### Minor Changes

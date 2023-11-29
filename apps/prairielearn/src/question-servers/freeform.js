@@ -18,7 +18,7 @@ const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoad = require('../lib/json-load');
 const cache = require('../lib/cache');
-const courseUtil = require('../lib/courseUtil');
+const { getOrUpdateCourseCommitHash } = require('../models/course');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
@@ -1322,8 +1322,8 @@ module.exports = {
       // parent functions don't actually return things. So we'll just stick it
       // in the `locals` object that the parent will be able to read from.
       //
-      // See the `setRendererHeader` function in `lib/question` for where this
-      // is actually used.
+      // See the `setRendererHeader` function in `lib/question-render`
+      // for where this is actually used.
       locals.question_renderer = context.renderer;
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
@@ -2034,7 +2034,7 @@ module.exports = {
 
   async getCacheKey(course, data, context) {
     try {
-      const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
+      const commitHash = await getOrUpdateCourseCommitHash(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
       return `question:${commitHash}-${dataHash}`;
     } catch (err) {

@@ -3,11 +3,12 @@ import execa = require('execa');
 import { z } from 'zod';
 import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryValidatedOneRow, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
+import { Job, JobSchema } from './db-types';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -178,7 +179,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
     socketServer.io
-      .to('job-' + this.jobId)
+      ?.to('job-' + this.jobId)
       .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
@@ -215,8 +216,8 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     });
 
     // Notify sockets.
-    socketServer.io.to('job-' + this.jobId).emit('update');
-    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
+    socketServer.io?.to('job-' + this.jobId).emit('update');
+    socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
   }
 }
 
@@ -245,4 +246,8 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
   return serverJob;
+}
+
+export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
+  return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
 }

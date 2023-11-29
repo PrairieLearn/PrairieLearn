@@ -47,9 +47,6 @@ docker-compose.override.yml
 ### mkdocs
 /site/
 
-### jsdoc
-/docs/code-docs/
-
 ## Runtime artifacts
 
 ### Logs

@@ -17,6 +17,7 @@ $(function () {
     trigger: 'focus',
   });
 
+  const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
     document.body,
@@ -29,7 +30,12 @@ $(function () {
     30 * 60,
   );
 
-  const socket = io('/workspace');
+  const socket = io('/workspace', {
+    auth: {
+      token: socketToken,
+      workspace_id: workspaceId,
+    },
+  });
   const loadingFrame = document.getElementById('loading') as HTMLDivElement;
   const stoppedFrame = document.getElementById('stopped') as HTMLDivElement;
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
@@ -93,13 +99,17 @@ $(function () {
     setMessage(msg.message);
   });
 
+  // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
-    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg) => {
+    // TODO: remove second argument once all servers no longer require it.
+    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
       console.log('joinWorkspace, msg =', msg);
       setState(msg.state);
     });
   });
 
+  // Only start the workspace when the page is first loaded, not on reconnects.
+  // TODO: remove second argument once all servers no longer require it.
   socket.emit('startWorkspace', { workspace_id: workspaceId });
 
   let lastVisibleTime = Date.now();
@@ -110,7 +120,8 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
+      // TODO: remove second argument once all servers no longer require it.
+      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg: any) => {
         console.log('heartbeat, msg =', msg);
       });
     }

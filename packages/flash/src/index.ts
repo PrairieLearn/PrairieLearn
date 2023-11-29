@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { HtmlSafeString, html } from '@prairielearn/html';
 
 const als = new AsyncLocalStorage<FlashStorage>();

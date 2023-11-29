@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/signed-token",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/debug": "^4.1.10",
-    "@types/node": "^18.18.7",
+    "@types/node": "^18.18.8",
     "mocha": "^10.2.0",
     "typescript": "^5.2.2"
   },

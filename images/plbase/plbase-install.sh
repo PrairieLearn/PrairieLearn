@@ -9,6 +9,7 @@ dnf update -y
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 dnf -y install \
+    bash-completion \
     gcc \
     gcc-c++ \
     git \

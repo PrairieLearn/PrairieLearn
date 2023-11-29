@@ -1,6 +1,7 @@
 columns
     authn_user_id: bigint
     broken: boolean default false
+    broken_at: timestamp with time zone
     course_id: bigint not null
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
@@ -14,7 +15,6 @@ columns
     open: boolean default true
     options: jsonb
     params: jsonb
-    qiid: text
     question_id: bigint not null
     true_answer: jsonb
     user_id: bigint
@@ -24,7 +24,6 @@ columns
 indexes
     variants_pkey: PRIMARY KEY (id) USING btree (id)
     variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
-    variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
     variants_workspace_id_key: USING btree (workspace_id)
 
 check constraints
