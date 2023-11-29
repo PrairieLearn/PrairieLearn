@@ -1843,12 +1843,6 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion')({ publicEndpoint: true }),
   );
 
-  // TODO: implement
-  // // Submission files
-  // app.use('/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file', [
-  //   require('./pages/submissionFile/submissionFile'),
-  // ]);
-
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
