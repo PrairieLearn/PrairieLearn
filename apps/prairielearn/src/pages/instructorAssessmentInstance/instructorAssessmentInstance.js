@@ -165,8 +165,9 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'break_variant') {
+      // TODO: validate that the instance question belongs to the current assessment instance.
       await sqldb.queryAsync(sql.mark_variant_broken, {
-        instance_question_id: req.body.__instance_question_id,
+        instance_question_id: req.body.instance_question_id,
         authn_user_id: res.locals.authn_user.user_id,
       });
       res.redirect(req.originalUrl);

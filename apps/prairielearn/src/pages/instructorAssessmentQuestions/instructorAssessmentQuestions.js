@@ -32,8 +32,9 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'break') {
+    // TODO: validate that the assessment question is in the current assessment.
     var params = {
-      assessment_question_id: req.body.__assessment_question_id,
+      assessment_question_id: req.body.assessment_question_id,
       authn_user_id: res.locals.authn_user.user_id,
     };
     sqldb.query(sql.mark_all_variants_broken, params, function (err, _result) {
