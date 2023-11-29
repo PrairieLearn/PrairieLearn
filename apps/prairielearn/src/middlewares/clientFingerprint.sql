@@ -47,10 +47,10 @@ WHERE
       group_id = ai.group_id
   );
 
---BLOCK select_session_id
+--BLOCK select_user_session_id
 SELECT
   id
 FROM
   user_sessions
 WHERE
-  session_id = $user_session_id
+  session_id = $session_id

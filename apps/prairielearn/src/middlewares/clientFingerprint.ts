@@ -1,13 +1,14 @@
 import asyncHandler = require('express-async-handler');
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../lib/db-types';
+import { idsEqual } from '../lib/id';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export default asyncHandler(async (req, res, next) => {
   const user_session_id = await sqldb.queryOptionalRow(
-    sql.select_session_id,
-    { user_session_id: req.session.id },
+    sql.select_user_session_id,
+    { session_id: req.session.id },
     IdSchema,
   );
 
@@ -30,8 +31,7 @@ export default asyncHandler(async (req, res, next) => {
   if (res.locals.assessment_instance) {
     if (
       res.locals.assessment_instance.last_client_fingerprint_id &&
-      IdSchema.parse(res.locals.assessment_instance?.last_client_fingerprint_id) !==
-        client_fingerprint_id
+      !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
     ) {
       await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
         client_fingerprint_id,

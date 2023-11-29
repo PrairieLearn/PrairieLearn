@@ -84,7 +84,6 @@ SELECT
         ai.id DESC
     )
   ) = 1 AS highest_score,
-  ai.last_client_fingerprint_id,
   ai.client_fingerprint_id_change_count
 FROM
   assessments AS a

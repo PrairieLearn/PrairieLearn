@@ -9,10 +9,6 @@ CREATE TABLE
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
--- add client_fingerprint_id to user_sessions
-ALTER TABLE user_sessions
-ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE CASCADE;
-
 -- add client_fingerprint_id to page_view_logs
 ALTER TABLE page_view_logs
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE CASCADE;

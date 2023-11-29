@@ -379,16 +379,17 @@ export async function selectAssessmentInstanceLog(
     InstanceLogSchema,
   );
   const fingerprintNumbers = {};
-  const logWithNumbers = log.map((row) => {
+  let i = 1;
+  log.forEach((row) => {
     if (row.client_fingerprint) {
       if (!fingerprintNumbers[row.client_fingerprint.id]) {
-        fingerprintNumbers[row.client_fingerprint.id] = Object.keys(fingerprintNumbers).length + 1;
+        fingerprintNumbers[row.client_fingerprint.id] = i;
+        i++;
       }
       row.client_fingerprint_number = fingerprintNumbers[row.client_fingerprint.id];
     }
-    return row;
   });
-  return logWithNumbers;
+  return log;
 }
 
 export async function selectAssessmentInstanceLogCursor(

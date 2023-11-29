@@ -48,7 +48,7 @@
                 <a tabindex="0" class="btn btn-xs" role="button"
                       data-toggle="popover" data-trigger="focus" data-container="body"
                       data-html="true" title="Client Fingerprint Changes"
-                      data-content="Client fingerprints are a record of a user's ip address, user agent and sesssion that are tracked during an assessment. While some changes might during an assessment, a high number of changes could be an indication of cheating."
+                      data-content="Client fingerprints are a record of a user's ip address, user agent and sesssion. These attributes are tracked while a user is accessing an exam. The amount of times that those attributes change while accessing the exam are displayed here. While some changes may occur during an assessment, a high number of changes could be an indication of multiple people using the same login. "
                   ><i class="fa fa-question-circle"></i></a>
               </td>
             </tr>
@@ -321,7 +321,7 @@
             <tr>
               <th>Time</th>
               <th>User</th>
-              <th>Fingerprint ID</th>
+              <th>Fingerprint</th>
               <th>Event</th>
               <th>Instructor question</th>
               <th>Student question</th>
@@ -337,7 +337,7 @@
               <td><a tabindex="0" class="btn btn-xs btn-secondary"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
-                data-html="true" data-placement="auto" title="Fingerprint <%= index %>"
+                data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_number%>"
                 data-content="
                   <div>
                     IP Address: <%= row.client_fingerprint?.ip_address %>
@@ -349,7 +349,7 @@
                     User Agent: <%= row.client_fingerprint?.user_agent %>
                   </div>
                 "
-                data-trigger="focus" onclick="$(this).popover({trigger: focus})">
+                data-trigger="focus" >
                <%= row.client_fingerprint_number %>
                 </a>
               </td>

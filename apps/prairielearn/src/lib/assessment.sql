@@ -546,7 +546,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
-        client_fingerprint_id AS client_fingerprint_id,
+        asl.client_fingerprint_id AS client_fingerprint_id,
         CASE
           WHEN asl.open THEN jsonb_build_object(
             'date_limit',

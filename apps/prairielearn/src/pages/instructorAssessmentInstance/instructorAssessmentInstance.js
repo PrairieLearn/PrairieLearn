@@ -93,7 +93,7 @@ router.get(
           return [
             record.date_iso8601,
             record.auth_user_uid,
-            record.client_fingerprint_id,
+            record.client_fingerprint_number,
             record.event_name,
             record.instructor_question_number == null
               ? null
