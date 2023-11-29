@@ -120,17 +120,12 @@ UPDATE variants AS v
 SET
   broken_at = CURRENT_TIMESTAMP,
   broken_by = $authn_user_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
 WHERE
-  id IN (
-    SELECT
-      v.id
-    FROM
-      variants v
-      JOIN instance_questions iq ON v.instance_question_id = iq.id
-      JOIN assessment_questions aq ON iq.assessment_question_id = aq.id
-    WHERE
-      v.open = true
-      AND v.broken_at IS NULL
-      AND aq.id = $assessment_question_id
-      AND aq.assessment_id = $assessment_id
-  );
+  v.instance_question_id = iq.id
+  AND v.open = true
+  AND v.broken_at IS NULL
+  AND aq.id = $assessment_question_id
+  AND aq.assessment_id = $assessment_id;

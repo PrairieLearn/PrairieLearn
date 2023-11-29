@@ -265,7 +265,7 @@ WITH
         2.5 AS event_order,
         'Broken variant'::TEXT AS event_name,
         'red3'::TEXT AS event_color,
-        v.broken_at,
+        v.broken_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid AS qid,
