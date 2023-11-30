@@ -83,7 +83,7 @@ router.get(
         columns: [
           'Time',
           'Auth user',
-          'Fingerprint ID',
+          'Fingerprint',
           'Event',
           'Instructor question',
           'Student question',
