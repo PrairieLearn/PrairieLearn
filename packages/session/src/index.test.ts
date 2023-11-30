@@ -482,7 +482,7 @@ describe('session middleware', () => {
       // There should not be a cookie.
       assert.isNull(res.headers.get('set-cookie'));
 
-      // Even though the cookies wasn't set, we should still have persisted the
+      // Even though the cookie wasn't set, we should still have persisted the
       // session to the store.
       const originalSessionId = await res.text();
       assert.isNotNull(await store.get(originalSessionId));
