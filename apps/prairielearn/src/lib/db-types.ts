@@ -590,7 +590,7 @@ export const ClientFingerprintSchema = z.object({
   id: IdSchema,
   user_id: IdSchema,
   user_session_id: IdSchema,
-  ip_address: z.string().nullable(),
+  ip_address: z.string(),
   user_agent: z.string().nullable(),
   accept_language: z.string().nullable(),
   created_at: DateFromISOString,
