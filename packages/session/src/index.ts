@@ -25,7 +25,6 @@ declare global {
 export interface SessionOptions {
   secret: string | string[];
   store: SessionStore;
-  canSetCookie?: (req: Request) => boolean;
   cookie?: {
     /**
      * If multiple names are provided, the first one is used as the primary
@@ -67,8 +66,6 @@ export function createSessionMiddleware(options: SessionOptions) {
     const originalHash = hashSession(req.session);
     const originalExpirationDate = req.session.getExpirationDate();
 
-    const canSetCookie = options.canSetCookie?.(req) ?? true;
-
     onHeaders(res, () => {
       if (!req.session) {
         if (cookieSessionId) {
@@ -97,7 +94,7 @@ export function createSessionMiddleware(options: SessionOptions) {
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (canSetCookie && (isNewSession || didExpirationChange || needsRotation)) {
+      if (isNewSession || didExpirationChange || needsRotation) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
         res.cookie(primaryCookieName, signedSessionId, {
           secure: secureCookie,
@@ -123,23 +120,14 @@ export function createSessionMiddleware(options: SessionOptions) {
       const hashChanged = hashSession(req.session) !== originalHash;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (
-        (hashChanged && isExistingSession) ||
-        (canSetCookie && (!isExistingSession || didExpirationChange))
-      ) {
-        // Only update the expiration date in the store if we were actually
-        // able to update the cookie too.
-        const expirationDate = canSetCookie
-          ? req.session.getExpirationDate()
-          : originalExpirationDate;
-
+      if ((hashChanged && isExistingSession) || !isExistingSession || didExpirationChange) {
         await store.set(
           req.session.id,
           req.session,
           // Cookies only support second-level resolution. To ensure consistency
           // between the cookie and the store, truncate the expiration date to
           // the nearest second.
-          truncateExpirationDate(expirationDate),
+          truncateExpirationDate(req.session.getExpirationDate()),
         );
       }
     }
