@@ -131,6 +131,7 @@ export function createSessionMiddleware(options: SessionOptions) {
       // a cookie to reflect the updated expiration date.
       const hashChanged = hashSession(req.session) !== originalHash;
       const expirationChanged =
+        originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
       if (hashChanged || expirationChanged) {
         await store.set(
           req.session.id,
