@@ -1437,6 +1437,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
       require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/clientFingerprint').default,
       require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ],
@@ -1452,6 +1453,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
@@ -1460,6 +1462,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),

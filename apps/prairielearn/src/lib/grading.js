@@ -157,6 +157,7 @@ export function saveSubmission(submission, variant, question, variant_course, ca
           submission.mode,
           submission.variant_id,
           submission.auth_user_id,
+          submission.client_fingerprint_id,
         ];
         sqldb.callOneRow('submissions_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
