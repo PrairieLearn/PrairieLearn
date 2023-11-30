@@ -3,15 +3,19 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import * as error from '@prairielearn/error';
 import assert = require('node:assert');
+import _ = require('lodash');
 import type { EventEmitter } from 'node:events';
+import { promisify } from 'node:util';
 
+import * as ltiOutcomes from './ltiOutcomes';
 import { config } from './config';
 import * as externalGradingSocket from './externalGradingSocket';
 import { ExternalGraderSqs } from './externalGraderSqs';
 import { ExternalGraderLocal } from './externalGraderLocal';
-import * as assessment from './assessment';
 import {
+  IdSchema,
   CourseSchema,
   QuestionSchema,
   GradingJobSchema,
@@ -86,11 +90,9 @@ export async function beginGradingJob(grading_job_id: string): Promise<void> {
     };
 
     // Send the grade out for processing and display
-    assessment
-      .processGradingResult(ret)
-      .catch((err) =>
-        logger.error(`Error processing results for grading job ${grading_job.id}`, err),
-      );
+    processGradingResult(ret).catch((err) =>
+      logger.error(`Error processing results for grading job ${grading_job.id}`, err),
+    );
     return;
   }
 
@@ -120,7 +122,7 @@ export async function beginGradingJob(grading_job_id: string): Promise<void> {
   gradeRequest.on('results', (gradingResult: Record<string, any>) => {
     // This event will only be fired when running locally; in production,
     // external grader results wil be delivered via SQS.
-    assessment.processGradingResult(gradingResult).then(
+    processGradingResult(gradingResult).then(
       () => logger.verbose(`Successfully processed grading job ${grading_job.id}`),
       (err) => logger.error(`Error processing grading job ${grading_job.id}`, err),
     );
@@ -134,23 +136,21 @@ function handleGraderError(grading_job_id: string, err: Error): void {
   logger.error(`Error processing external grading job ${grading_job_id}`);
   logger.error('handleGraderError', err);
   Sentry.captureException(err);
-  assessment
-    .processGradingResult({
-      gradingId: grading_job_id,
-      grading: {
-        score: 0,
-        startTime: null,
-        endTime: null,
-        feedback: {
-          results: { succeeded: false, gradable: false },
-          message: err.toString(),
-        },
+  processGradingResult({
+    gradingId: grading_job_id,
+    grading: {
+      score: 0,
+      startTime: null,
+      endTime: null,
+      feedback: {
+        results: { succeeded: false, gradable: false },
+        message: err.toString(),
       },
-    })
-    .catch((err) => {
-      logger.error(`Error processing results for grading job ${grading_job_id}`, err);
-      Sentry.captureException(err);
-    });
+    },
+  }).catch((err) => {
+    logger.error(`Error processing results for grading job ${grading_job_id}`, err);
+    Sentry.captureException(err);
+  });
 }
 
 async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
@@ -167,4 +167,99 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
     grading_received_at: receivedTime,
   });
   externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
+}
+
+/**
+ * Process the result of an external grading job.
+ *
+ * @param content - The grading job data to process.
+ */
+export async function processGradingResult(content: any): Promise<void> {
+  try {
+    if (!_.isObject(content.grading)) {
+      throw error.makeWithData('invalid grading', { content: content });
+    }
+
+    if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
+      throw error.makeWithData('invalid grading.feedback', { content: content });
+    }
+
+    // There are two "succeeded" flags in the grading results. The first
+    // is at the top level and is set by `grader-host`; the second is in
+    // `results` and is set by course code.
+    //
+    // If the top-level flag is false, that means there was a serious
+    // error in the grading process and we should treat the submission
+    // as not gradable. This avoids penalizing students for issues outside
+    // their control.
+    const jobSucceeded = !!content.grading?.feedback?.succeeded;
+
+    const succeeded = !!(content.grading.feedback?.results?.succeeded ?? true);
+    if (!succeeded) {
+      content.grading.score = 0;
+    }
+
+    // The submission is only gradable if the job as a whole succeeded
+    // and the course code marked it as gradable. We default to true for
+    // backwards compatibility with graders that don't set this flag.
+    let gradable = jobSucceeded && !!(content.grading.feedback?.results?.gradable ?? true);
+
+    if (gradable) {
+      // We only care about the score if it is gradable.
+      if (typeof content.grading.score === 'undefined') {
+        content.grading.feedback = {
+          results: { succeeded: false, gradable: false },
+          message: 'Error parsing external grading results: score was not provided.',
+          original_feedback: content.grading.feedback,
+        };
+        content.grading.score = 0;
+        gradable = false;
+      }
+      if (!_(content.grading.score).isFinite()) {
+        content.grading.feedback = {
+          results: { succeeded: false, gradable: false },
+          message: 'Error parsing external grading results: score is not a number.',
+          original_feedback: content.grading.feedback,
+        };
+        content.grading.score = 0;
+        gradable = false;
+      }
+      if (content.grading.score < 0 || content.grading.score > 1) {
+        content.grading.feedback = {
+          results: { succeeded: false, gradable: false },
+          message: 'Error parsing external grading results: score is out of range.',
+          original_feedback: content.grading.feedback,
+        };
+        content.grading.score = 0;
+        gradable = false;
+      }
+    }
+
+    await sqldb.callAsync('grading_jobs_update_after_grading', [
+      content.gradingId,
+      content.grading.receivedTime,
+      content.grading.startTime,
+      content.grading.endTime,
+      null, // `submitted_answer`
+      content.grading.format_errors,
+      gradable,
+      false, // `broken`
+      null, // `params`
+      null, // `true_answer`
+      content.grading.feedback,
+      {}, // `partial_scores`
+      content.grading.score,
+      null, // `v2_score`: gross legacy, this can safely be null
+    ]);
+    const assessment_instance_id = await sqldb.queryOptionalRow(
+      sql.select_assessment_for_grading_job,
+      { grading_job_id: content.gradingId },
+      IdSchema,
+    );
+    if (assessment_instance_id != null) {
+      await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    }
+  } finally {
+    externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
+  }
 }

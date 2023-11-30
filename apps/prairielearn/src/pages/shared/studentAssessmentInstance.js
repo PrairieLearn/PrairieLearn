@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-const fileStore = require('../../lib/file-store');
+import { uploadFile, deleteFile } from '../../lib/file-store';
 const { idsEqual } = require('../../lib/id');
 
 module.exports.processFileUpload = async (req, res) => {
@@ -8,7 +8,7 @@ module.exports.processFileUpload = async (req, res) => {
   if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
   }
-  await fileStore.upload(
+  await uploadFile(
     req.file.originalname,
     req.file.buffer,
     'student_upload',
@@ -24,7 +24,7 @@ module.exports.processTextUpload = async (req, res) => {
   if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
   }
-  await fileStore.upload(
+  await uploadFile(
     req.body.filename,
     Buffer.from(req.body.contents),
     'student_upload',
@@ -50,5 +50,5 @@ module.exports.processDeleteFile = async (req, res) => {
     throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await fileStore.delete(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.user_id);
 };

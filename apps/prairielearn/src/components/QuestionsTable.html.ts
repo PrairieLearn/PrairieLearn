@@ -1,6 +1,6 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { CourseInstance } from '../lib/db-types';
+import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
 

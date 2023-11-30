@@ -1,3 +1,5 @@
+import { selectCoursesWithEditAccess } from '../../models/course';
+
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -5,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('@prairielearn/error');
-const question = require('../../lib/question');
+const { startTestQuestion } = require('../../lib/question-testing');
 const sqldb = require('@prairielearn/postgres');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -44,7 +46,7 @@ router.post(
       const count = 1;
       const showDetails = true;
       const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
-      const jobSequenceId = await question.startTestQuestion(
+      const jobSequenceId = await startTestQuestion(
         count,
         showDetails,
         res.locals.question,
@@ -64,7 +66,7 @@ router.post(
         const assessmentGroupWork = res.locals.assessment
           ? res.locals.assessment.group_work
           : false;
-        const jobSequenceId = await question.startTestQuestion(
+        const jobSequenceId = await startTestQuestion(
           count,
           showDetails,
           res.locals.question,
@@ -325,6 +327,12 @@ router.get('/', function (req, res, next) {
           res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set);
           res.locals.sharing_sets_other = result.rows.filter((row) => !row.in_set);
         }
+      },
+      async () => {
+        res.locals.editable_courses = await selectCoursesWithEditAccess({
+          user_id: res.locals.user.user_id,
+          is_administrator: res.locals.is_administrator,
+        });
       },
     ],
     (err) => {
