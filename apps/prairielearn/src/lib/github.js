@@ -50,25 +50,30 @@ async function createRepoFromTemplateAsync(client, repo, template) {
 
   // The above call will complete before the repo itself is actually ready to use,
   // so poll for a bit until all the files are finally copied in.
-  let repo_up = false;
-  const poll_time_ms = 100;
-  while (!repo_up) {
+  //
+  // We'll try for up to 30 seconds, polling every second.
+  for (let i = 0; i < 30; i++) {
     try {
       // If the repo is not ready yet, this will fail with "repo is empty"
       await client.repos.getContent({
         owner: config.githubCourseOwner,
         repo: repo,
-        path: '/',
+        path: '',
       });
-      repo_up = true;
+      return;
     } catch (err) {
-      logger.debug(`${repo} is not ready yet, polling again in ${poll_time_ms} ms`);
-    }
+      // We'll get a 404 if the repo is not ready yet. If we get any other
+      // error, then something unexpected happened and we should bail out.
+      if (err.status !== 404) {
+        throw err;
+      }
 
-    if (!repo_up) {
-      await sleep(poll_time_ms);
+      await sleep(1000);
     }
   }
+
+  // If we get here, the repo didn't become ready in time.
+  throw new Error('Repository contents were not ready after 30 seconds.');
 }
 
 /**
@@ -331,6 +336,9 @@ export async function createCourseRepoJob(options, authn_user) {
         logger.error('Error sending course request message to Slack', err);
         Sentry.captureException(err);
       }
+
+      // Throw the error again so that the server job will be marked as failed.
+      throw err;
     }
   });
 
