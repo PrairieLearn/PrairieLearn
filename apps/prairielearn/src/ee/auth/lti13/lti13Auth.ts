@@ -15,7 +15,7 @@ import { getInstitutionAuthenticationProviders } from '../../lib/institution';
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-// Middleware to check access, setup passport for later functions
+// Middleware to check access
 router.use(
   asyncHandler(async (req, res, next) => {
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
@@ -35,60 +35,9 @@ router.use(
   }),
 );
 
-async function setupPassport(lti13_instance_id: string) {
-  const lti13_instance = await selectLti13Instance(lti13_instance_id);
-
-  const localPassport = new passport.Passport();
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-  localPassport.use(
-    'lti13',
-    new Strategy(
-      {
-        client: client,
-        passReqToCallback: true,
-      },
-      // Passport verify function
-      validate,
-    ),
-  );
-
-  return localPassport;
-}
-
+// Express routes
 router.get('/login', launchFlow);
 router.post('/login', launchFlow);
-async function launchFlow(req: Request, res: Response, next: NextFunction) {
-  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-
-  const parameters = { ...req.body, ...req.query };
-
-  const OIDCLaunchFlowSchema = z.object({
-    iss: z.string(),
-    login_hint: z.string(),
-    target_link_uri: z.string(),
-  });
-
-  try {
-    OIDCLaunchFlowSchema.parse(parameters);
-  } catch (err) {
-    return next(err);
-  }
-
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  myPassport.authenticate('lti13', {
-    response_type: 'id_token',
-    lti_message_hint: parameters.lti_message_hint,
-    login_hint: parameters.login_hint,
-    prompt: 'none',
-    response_mode: 'form_post',
-    failWithError: true,
-    failureMessage: true,
-    failureRedirect: '/pl/error',
-  } as passport.AuthenticateOptions)(req, res, next);
-}
-
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
@@ -172,6 +121,88 @@ router.post(
   }),
 );
 
+export default router;
+
+//
+// Helper functions
+//
+
+async function authenticate(req: Request, res: Response): Promise<any> {
+  const myPassport = await setupPassport(req.params.lti13_instance_id);
+  return new Promise((resolve, reject) => {
+    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
+    const OIDCAuthResponseSchema = z.object({
+      state: z.string(),
+      id_token: z.string(),
+    });
+    OIDCAuthResponseSchema.parse(req.body);
+
+    myPassport.authenticate(`lti13`, ((err, user, extra) => {
+      if (err) {
+        reject(err);
+      } else if (!user) {
+        // The authentication libraries under openid-connect will fail (silently) if the key length
+        // is too small, like with the Canvas development keys. It triggers that error in PL here.
+        reject(new Error(`Authentication failed, before user validation. ${extra}`));
+      } else {
+        resolve(user);
+      }
+    }) as passport.AuthenticateCallback)(req, res);
+  });
+}
+
+async function launchFlow(req: Request, res: Response, next: NextFunction) {
+  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+
+  const parameters = { ...req.body, ...req.query };
+
+  const OIDCLaunchFlowSchema = z.object({
+    iss: z.string(),
+    login_hint: z.string(),
+    target_link_uri: z.string(),
+  });
+
+  try {
+    OIDCLaunchFlowSchema.parse(parameters);
+  } catch (err) {
+    return next(err);
+  }
+
+  const myPassport = await setupPassport(req.params.lti13_instance_id);
+  myPassport.authenticate('lti13', {
+    response_type: 'id_token',
+    lti_message_hint: parameters.lti_message_hint,
+    login_hint: parameters.login_hint,
+    prompt: 'none',
+    response_mode: 'form_post',
+    failWithError: true,
+    failureMessage: true,
+    failureRedirect: '/pl/error',
+  } as passport.AuthenticateOptions)(req, res, next);
+}
+
+async function setupPassport(lti13_instance_id: string) {
+  const lti13_instance = await selectLti13Instance(lti13_instance_id);
+
+  const localPassport = new passport.Passport();
+  const issuer = new Issuer(lti13_instance.issuer_params);
+  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+
+  localPassport.use(
+    'lti13',
+    new Strategy(
+      {
+        client: client,
+        passReqToCallback: true,
+      },
+      // Passport verify function
+      validate,
+    ),
+  );
+
+  return localPassport;
+}
+
 const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   req: Request,
   tokenSet,
@@ -221,29 +252,3 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
 
   return done(null, lti13_claims);
 };
-
-async function authenticate(req: Request, res: Response): Promise<any> {
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  return new Promise((resolve, reject) => {
-    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-    const OIDCAuthResponseSchema = z.object({
-      state: z.string(),
-      id_token: z.string(),
-    });
-    OIDCAuthResponseSchema.parse(req.body);
-
-    myPassport.authenticate(`lti13`, ((err, user, extra) => {
-      if (err) {
-        reject(err);
-      } else if (!user) {
-        // The authentication libraries under openid-connect will fail (silently) if the key length
-        // is too small, like with the Canvas development keys. It triggers that error in PL here.
-        reject(new Error(`Authentication failed, before user validation. ${extra}`));
-      } else {
-        resolve(user);
-      }
-    }) as passport.AuthenticateCallback)(req, res);
-  });
-}
-
-export default router;
