@@ -24,8 +24,8 @@ VALUES
     $user_id,
     $user_session_id,
     $ip_address,
-    $user_agent,
-    $accept_language
+    $user_agent::VARCHAR(255),
+    $accept_language::VARCHAR(255)
   )
 RETURNING
   id;
