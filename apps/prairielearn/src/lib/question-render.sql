@@ -125,14 +125,6 @@ WHERE
 ORDER BY
   s.date DESC;
 
--- BLOCK select_issue_count_for_variant
-SELECT
-  COUNT(*)::int
-FROM
-  issues AS i
-WHERE
-  i.variant_id = $variant_id;
-
 -- BLOCK select_submission_info
 WITH
   next_iq AS (
@@ -243,31 +235,3 @@ WHERE
     OR iq.id = $instance_question_id::BIGINT
   )
   AND v.id = $variant_id;
-
--- BLOCK select_assessment_for_submission
-SELECT
-  ai.id AS assessment_instance_id
-FROM
-  submissions AS s
-  JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-WHERE
-  s.id = $submission_id;
-
--- BLOCK select_workspace_id
-SELECT
-  w.id AS workspace_id
-FROM
-  variants AS v
-  JOIN workspaces AS w ON (v.workspace_id = w.id)
-WHERE
-  v.id = $variant_id;
-
--- BLOCK select_question_course
-SELECT
-  to_jsonb(c.*) AS course
-FROM
-  pl_courses AS c
-WHERE
-  c.id = $question_course_id;

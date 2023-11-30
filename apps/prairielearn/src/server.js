@@ -73,6 +73,7 @@ const { createSessionMiddleware } = require('@prairielearn/session');
 const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
+const { makeCookieMigrationMiddleware } = require('./lib/cookie');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -401,6 +402,7 @@ module.exports.initExpress = function () {
   ]);
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
+    makeCookieMigrationMiddleware(config.rewriteCookies),
     (req, res, next) => {
       // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
@@ -420,6 +422,7 @@ module.exports.initExpress = function () {
   });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
+  app.use(makeCookieMigrationMiddleware(config.rewriteCookies));
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
@@ -1425,8 +1428,8 @@ module.exports.initExpress = function () {
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./middlewares/logPageView')('studentAssessment'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/logPageView')('studentAssessment'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
   ]);
@@ -1434,8 +1437,8 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
-      require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ],
   );
@@ -1449,16 +1452,16 @@ module.exports.initExpress = function () {
   );
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
@@ -2315,12 +2318,7 @@ if (require.main === module && config.startServer) {
           throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-      },
-      function (callback) {
-        sprocs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await sprocs.init();
       },
       async () => {
         if ('sync-course' in argv) {

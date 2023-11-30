@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import * as question from './question';
+import { gradeVariant } from './grading';
 import * as externalGrader from './externalGrader';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
@@ -206,7 +206,7 @@ export async function gradeAssessmentInstanceAsync(
   await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
-    const gradingJobId = await promisify(question.gradeVariant)(
+    const gradingJobId = await promisify(gradeVariant)(
       row.variant,
       check_submission_id,
       row.question,

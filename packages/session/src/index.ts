@@ -11,7 +11,13 @@ import {
   getSessionCookie,
   getSessionIdFromCookie,
 } from './cookie';
-import { type Session, generateSessionId, loadSession, hashSession } from './session';
+import {
+  type Session,
+  generateSessionId,
+  loadSession,
+  hashSession,
+  truncateExpirationDate,
+} from './session';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -25,7 +31,6 @@ declare global {
 export interface SessionOptions {
   secret: string | string[];
   store: SessionStore;
-  canSetCookie?: (req: Request) => boolean;
   cookie?: {
     /**
      * If multiple names are provided, the first one is used as the primary
@@ -67,8 +72,6 @@ export function createSessionMiddleware(options: SessionOptions) {
     const originalHash = hashSession(req.session);
     const originalExpirationDate = req.session.getExpirationDate();
 
-    const canSetCookie = options.canSetCookie?.(req) ?? true;
-
     onHeaders(res, () => {
       if (!req.session) {
         if (cookieSessionId) {
@@ -100,7 +103,7 @@ export function createSessionMiddleware(options: SessionOptions) {
       const isNewSession = !cookieSessionId || cookieSessionId !== req.session.id;
       const didExpirationChange =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (canSetCookie && (isNewSession || didExpirationChange || needsRotation)) {
+      if (isNewSession || didExpirationChange || needsRotation) {
         const signedSessionId = signSessionId(req.session.id, secrets[0]);
         res.cookie(primaryCookieName, signedSessionId, {
           secure: secureCookie,
@@ -122,27 +125,24 @@ export function createSessionMiddleware(options: SessionOptions) {
 
       sessionPersisted = true;
 
-      const isExistingSession = cookieSessionId && cookieSessionId === req.session.id;
+      // If this is a new session, we would have already persisted it to the
+      // store, so we don't need to take that into consideration here.
+      //
+      // If the hash of the session data changed, we'll unconditionally persist
+      // the updated data to the store. However, if the hash didn't change, we
+      // only want to persist it if the expiration changed *and* if we can set
+      // a cookie to reflect the updated expiration date.
       const hashChanged = hashSession(req.session) !== originalHash;
-      const didExpirationChange =
+      const expirationChanged =
         originalExpirationDate.getTime() !== req.session.getExpirationDate().getTime();
-      if (
-        (hashChanged && isExistingSession) ||
-        (canSetCookie && (!isExistingSession || didExpirationChange))
-      ) {
-        // Only update the expiration date in the store if we were actually
-        // able to update the cookie too.
-        const expirationDate = canSetCookie
-          ? req.session.getExpirationDate()
-          : originalExpirationDate;
-
+      if (hashChanged || expirationChanged) {
         await store.set(
           req.session.id,
           req.session,
           // Cookies only support second-level resolution. To ensure consistency
           // between the cookie and the store, truncate the expiration date to
           // the nearest second.
-          truncateExpirationDate(expirationDate),
+          truncateExpirationDate(req.session.getExpirationDate()),
         );
       }
     }
@@ -185,10 +185,4 @@ function getCookieNames(cookieName: string | string[] | undefined): string[] {
 
 function signSessionId(sessionId: string, secret: string): string {
   return signature.sign(sessionId, secret);
-}
-
-function truncateExpirationDate(date: Date) {
-  const time = date.getTime();
-  const truncatedTime = Math.floor(time / 1000) * 1000;
-  return new Date(truncatedTime);
 }

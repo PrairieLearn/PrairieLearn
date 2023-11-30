@@ -1,13 +1,13 @@
 // @ts-check
-const {
+import {
   AutoScalingClient,
   CompleteLifecycleActionCommand,
   DescribeAutoScalingInstancesCommand,
-} = require('@aws-sdk/client-auto-scaling');
-const { logger } = require('@prairielearn/logger');
+} from '@aws-sdk/client-auto-scaling';
+import { logger } from '@prairielearn/logger';
 
-const { makeAwsClientConfig } = require('./aws');
-const { config } = require('./config');
+import { makeAwsClientConfig } from './aws';
+import { config } from './config';
 
 /**
  * Gets the lifecycle state of the current EC2 instance.
@@ -25,7 +25,7 @@ async function getInstanceLifecycleState(client) {
   return res.AutoScalingInstances?.[0]?.LifecycleState;
 }
 
-module.exports.completeInstanceLaunch = async function () {
+export async function completeInstanceLaunch() {
   if (
     !config.runningInEc2 ||
     !config.autoScalingGroupName ||
@@ -55,9 +55,9 @@ module.exports.completeInstanceLaunch = async function () {
     }),
   );
   logger.info('Completed Auto Scaling lifecycle action for instance launch');
-};
+}
 
-module.exports.completeInstanceTermination = async function () {
+export async function completeInstanceTermination() {
   if (
     !config.runningInEc2 ||
     !config.autoScalingGroupName ||
@@ -86,4 +86,4 @@ module.exports.completeInstanceTermination = async function () {
     }),
   );
   logger.info('Completed Auto Scaling lifecycle action for instance termination');
-};
+}

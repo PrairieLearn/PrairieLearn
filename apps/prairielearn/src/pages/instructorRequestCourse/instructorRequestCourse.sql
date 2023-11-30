@@ -33,29 +33,6 @@ SELECT
       AND LOWER(BTRIM(cr.short_name)) = LOWER(BTRIM($short_name))
   ) AS has_existing_request;
 
--- BLOCK get_conflicting_course_owners
-WITH
-  select_conflicting_courses AS (
-    SELECT
-      c.id
-    FROM
-      pl_courses AS c
-    WHERE
-      LOWER(BTRIM(c.short_name)) = $short_name
-    LIMIT
-      1
-  )
-SELECT
-  u.name,
-  u.uid
-FROM
-  select_conflicting_courses as cc
-  LEFT JOIN course_permissions AS cp ON (
-    cc.id = cp.course_id
-    AND cp.course_role = 'Owner'
-  )
-  LEFT JOIN users AS u ON u.user_id = cp.user_id;
-
 -- BLOCK get_existing_owner_course_settings
 SELECT
   co.institution_id,

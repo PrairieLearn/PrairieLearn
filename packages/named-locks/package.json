@@ -17,6 +17,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/postgres": "workspace:^",
+    "pg": "^8.11.3"
   }
 }

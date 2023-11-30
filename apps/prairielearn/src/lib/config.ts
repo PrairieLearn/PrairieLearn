@@ -151,7 +151,6 @@ const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
-  githubMainBranch: z.string().default('master'),
   gitSshCommand: z.string().nullable().default(null),
   externalGradingUseAws: z.boolean().default(false),
   externalGradingJobsQueueName: z.string().default('grading_jobs_dev'),
@@ -503,6 +502,18 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  /**
+   * PrairieLearn is currently in the process of migrating to new cookie names.
+   * This is necessary so that we can re-scope them to a specific domain. We
+   * have middleware that will automatically rewrite the old cookie names to
+   * the new ones, which is currently disabled until we also deploy code that
+   * sets the new cookies with domains. When that code is in place, we can
+   * toggle this setting to `true`.
+   *
+   * Note that the middleware also provides forward compatibility so that old
+   * versions of PrairieLearn can still function with the new cookie names.
+   */
+  rewriteCookies: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
