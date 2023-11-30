@@ -7,18 +7,29 @@
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
   <script>
-    $(() => {
-        $('.js-sync-popover[data-toggle="popover"]').popover({
-            sanitize: false,
-        }).on("show.bs.popover", function() {
-            $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
-        });;
-    });
   </script>
   <body>
     <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
+      $(() => {
+        $('[data-toggle="popover"]').popover({ sanitize: false });
+
+        // Prevent the dropdown menu from closing when the popover is opened.
+        $('.js-mark-variant-as-broken[data-toggle="popover"]').on('click', (e) => {
+          e.stopPropagation();
+        });
+
+        // Hide all popovers when the dropdown menu is closed.
+        $('.js-question-actions').on('hide.bs.dropdown', () => {
+          $('.js-mark-variant-as-broken[data-toggle="popover"]').popover("hide");
+        });
+
+        $('.js-sync-popover[data-toggle="popover"]')
+          .popover({
+            sanitize: false,
+          })
+          .on('show.bs.popover', function () {
+            $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+          });
       });
     </script>
     <%- include('../partials/navbar'); %>
@@ -183,7 +194,7 @@
                   <% } %>
                 </td>
                 <td class="text-right">
-                  <div class="dropdown">
+                  <div class="dropdown js-question-actions">
                     <button type="button" class="btn btn-secondary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
@@ -192,7 +203,7 @@
                       <% if (authz_data.has_course_instance_permission_edit) { %>
                         <button
                           id="row<%= iRow %>PopoverBreakButton"
-                          class="dropdown-item"
+                          class="dropdown-item js-mark-variant-as-broken"
                           data-toggle="popover"
                           data-trigger="click"
                           data-container="body"
