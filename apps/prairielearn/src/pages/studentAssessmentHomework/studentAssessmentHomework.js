@@ -124,6 +124,7 @@ router.post(
         // we'll ensure that the password has already been entered before allowing
         // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
+
         const time_limit_min = null;
         const assessment_instance_id = await assessment.makeAssessmentInstance(
           res.locals.assessment.id,

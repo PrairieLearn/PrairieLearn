@@ -7,8 +7,8 @@ WHERE
   user_id = $user_id
   AND user_session_id = $user_session_id
   AND ip_address = $ip_address
-  AND user_agent = $user_agent
-  AND accept_language = $accept_language;
+  AND user_agent = $user_agent::VARCHAR(255)
+  AND accept_language = $accept_language::VARCHAR(255);
 
 --BLOCK insert_client_fingerprint
 INSERT INTO
