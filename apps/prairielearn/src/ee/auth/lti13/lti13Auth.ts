@@ -31,41 +31,18 @@ router.use(
       throw error.make(404, 'Institution does not support LTI 1.3 authentication');
     }
 
-    //console.log(req.method, req.path);
-    //console.log(JSON.stringify(req.session, null, 3));
-    //console.log(req.body);
-    //console.log(req.query);
-
-    /*
-    res.locals.lti13_passport = new passport.Passport();
-    const issuer = new Issuer(lti13_instance.issuer_params);
-    const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-    res.locals.lti13_passport.use(
-      'lti13',
-      new Strategy(
-        {
-          client: client,
-          passReqToCallback: true,
-        },
-        // Passport verify function
-        validate,
-      ),
-    );
-    */
-
     next();
   }),
 );
 
-async function setupPassport(instance_id: string) {
-  const lti13_instance = await selectLti13Instance(instance_id);
+async function setupPassport(lti13_instance_id: string) {
+  const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  const LP = new passport.Passport();
+  const localPassport = new passport.Passport();
   const issuer = new Issuer(lti13_instance.issuer_params);
   const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-  LP.use(
+  localPassport.use(
     'lti13',
     new Strategy(
       {
@@ -77,7 +54,7 @@ async function setupPassport(instance_id: string) {
     ),
   );
 
-  return LP;
+  return localPassport;
 }
 
 router.get('/login', launchFlow);
@@ -120,8 +97,6 @@ router.post(
     req.session.lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
-    //console.log(JSON.stringify(req.session.lti13_claims, null, 2));
-
     let uid: string;
     let uin: string | null;
     let name: string | null;
@@ -132,7 +107,7 @@ router.post(
     } else {
       uid = _get(req.session.lti13_claims, lti13_instance.uid_attribute);
       if (!uid) {
-        // Canvas Student View does not include a uid but has a deterministic role, kind error message
+        // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (
           req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles']?.includes(
             'http://purl.imsglobal.org/vocab/lti/system/person#TestUser',
