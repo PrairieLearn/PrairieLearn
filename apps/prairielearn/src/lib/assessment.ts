@@ -372,7 +372,7 @@ export async function selectAssessmentInstanceLog(
   assessment_instance_id: string,
   include_files: boolean,
 ): Promise<InstanceLogEntry[]> {
-  const log = await sqldb.queryRows(
+  const log: InstanceLogEntry[] = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,
