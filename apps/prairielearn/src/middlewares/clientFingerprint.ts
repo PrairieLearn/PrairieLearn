@@ -18,6 +18,7 @@ export default asyncHandler(async (req, res, next) => {
 
   const params = {
     ip_address: req.ip,
+    // We are passing the authn user id here. However, we are checking in the SQL query 'update_assessment_instance_fingerprint' that the authn user is the owner of the assessment. This will keep us from inadvertently recording a fingerprint change for an instructor viewing the assessment instance.
     user_id: res.locals.authn_user.user_id,
     user_session_id: user_session_id,
     user_agent: req.headers['user-agent'],
