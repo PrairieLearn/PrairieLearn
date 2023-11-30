@@ -1423,9 +1423,9 @@ module.exports = {
               clientFilesCourseScripts: {},
             };
 
-            // Question dependencies are checked via schema on sync-time, so
-            // there's no need for sanity checks here.
             for (let type in question.dependencies) {
+              if (!_.has(dependencies, type)) continue;
+
               for (let dep of question.dependencies[type]) {
                 if (!_.includes(dependencies[type], dep)) {
                   dependencies[type].push(dep);
@@ -1493,6 +1493,8 @@ module.exports = {
               }
 
               for (const type in elementDependencies) {
+                if (!_.has(dependencies, type)) continue;
+
                 for (const dep of elementDependencies[type]) {
                   if (!_.includes(dependencies[type], dep)) {
                     dependencies[type].push(dep);
@@ -1560,6 +1562,8 @@ module.exports = {
                   }
 
                   for (const type in extension) {
+                    if (!_.has(dependencies, type)) continue;
+
                     for (const dep of extension[type]) {
                       if (!_.includes(dependencies[type], dep)) {
                         dependencies[type].push(dep);
