@@ -482,10 +482,10 @@ describe('session middleware', () => {
       // There should not be a cookie.
       assert.isNull(res.headers.get('set-cookie'));
 
-      // Since the cookie wasn't set, the session should not have been persisted
-      // to the store.
+      // Even though the cookie wasn't set, we should still have persisted the
+      // session to the store.
       const originalSessionId = await res.text();
-      assert.isNull(await store.get(originalSessionId));
+      assert.isNotNull(await store.get(originalSessionId));
 
       // Now fetch from the correct domain.
       res = await fetchWithCookies(url, {
@@ -688,6 +688,32 @@ describe('session middleware', () => {
 
       // Ensure that the legacy session is migrated to a new session.
       assert.equal(newSessionId, legacySessionId);
+    });
+  });
+
+  it('persists the session immediately after creation', async () => {
+    const store = new MemoryStore();
+
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get(
+      '/',
+      asyncHandler(async (req, res) => {
+        const persistedSession = await store.get(req.session.id);
+        res.status(persistedSession == null ? 500 : 200).send();
+      }),
+    );
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
     });
   });
 });
