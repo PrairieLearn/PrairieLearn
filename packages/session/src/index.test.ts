@@ -611,4 +611,30 @@ describe('session middleware', () => {
       assert.equal(newSessionId, legacySessionId);
     });
   });
+
+  it('persists the session immediately after creation', async () => {
+    const store = new MemoryStore();
+
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get(
+      '/',
+      asyncHandler(async (req, res) => {
+        const persistedSession = await store.get(req.session.id);
+        res.status(persistedSession == null ? 500 : 200).send();
+      }),
+    );
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
+    });
+  });
 });
