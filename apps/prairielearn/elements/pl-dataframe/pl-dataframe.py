@@ -35,7 +35,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
         return "integer"
     elif pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
         return "character"
-    elif pd.api.types.is_categorical_dtype(s):
+    elif isinstance(s, pd.CategoricalDtype):
         # Check if ordered
         if s.cat.ordered:
             return "ordered factor"
@@ -142,7 +142,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
-        other = descriptors.style.applymap(lambda v: "font-weight: bold;")
+        other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )
