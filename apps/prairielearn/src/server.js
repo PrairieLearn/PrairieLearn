@@ -1427,7 +1427,6 @@ module.exports.initExpress = function () {
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),

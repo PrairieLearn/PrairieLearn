@@ -34,7 +34,10 @@ RETURNING
 UPDATE assessment_instances AS ai
 SET
   last_client_fingerprint_id = $client_fingerprint_id,
-  client_fingerprint_id_change_count = client_fingerprint_id_change_count + 1
+  client_fingerprint_id_change_count = CASE
+    WHEN ai.last_client_fingerprint_id IS NULL THEN 0
+    ELSE client_fingerprint_id_change_count + 1
+  END
 WHERE
   ai.id = $assessment_instance_id
   AND ai.user_id = $authn_user_id

@@ -505,6 +505,7 @@ export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  client_fingerprint_id: IdSchema.nullable(),
   correct: z.boolean().nullable(),
   credit: z.number().nullable(),
   date: DateFromISOString.nullable(),

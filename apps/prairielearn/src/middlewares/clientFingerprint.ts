@@ -6,6 +6,10 @@ import { idsEqual } from '../lib/id';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export default asyncHandler(async (req, res, next) => {
+  if (!res.locals.assessment_instance) {
+    throw new Error('Assessment Instance is not pressent');
+  }
+
   const user_session_id = await sqldb.queryOptionalRow(
     sql.select_user_session_id,
     { session_id: req.session.id },
@@ -28,16 +32,14 @@ export default asyncHandler(async (req, res, next) => {
   if (!client_fingerprint_id) {
     client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
   }
-  if (res.locals.assessment_instance) {
-    if (
-      !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
-    ) {
-      await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
-        client_fingerprint_id,
-        assessment_instance_id: res.locals.assessment_instance?.id,
-        authn_user_id: res.locals.authn_user.user_id,
-      });
-    }
+  if (
+    !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
+  ) {
+    await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
+      client_fingerprint_id,
+      assessment_instance_id: res.locals.assessment_instance?.id,
+      authn_user_id: res.locals.authn_user.user_id,
+    });
   }
 
   res.locals.client_fingerprint_id = client_fingerprint_id;
