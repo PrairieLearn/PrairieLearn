@@ -5,7 +5,7 @@ columns
     ip_address: inet not null
     user_agent: character varying(255)
     user_id: bigint
-    user_session_id: bigint
+    user_session_id: bigint not null
 
 indexes
     client_fingerprints_pkey: PRIMARY KEY (id) USING btree (id)

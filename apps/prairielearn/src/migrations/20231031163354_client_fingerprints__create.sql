@@ -2,7 +2,7 @@ CREATE TABLE
   client_fingerprints (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users (user_id),
-    user_session_id BIGINT REFERENCES user_sessions (id),
+    user_session_id BIGINT NOT NULL REFERENCES user_sessions (id),
     ip_address INET NOT NULL,
     user_agent VARCHAR(255),
     accept_language VARCHAR(255),
