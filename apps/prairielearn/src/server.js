@@ -290,12 +290,16 @@ module.exports.initExpress = function () {
       const name = item.split('=')[0].trim();
       return (
         name !== 'pl_authn' &&
+        name !== 'pl2_authn' &&
         name !== 'pl_assessmentpw' &&
+        name !== 'pl2_assessmentpw' &&
         name !== 'connect.sid' &&
         name !== 'prairielearn_session' &&
+        name !== 'pl2_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
-        !name.startsWith('pl_authz_workspace_')
+        !name.startsWith('pl_authz_workspace_') &&
+        !name.startsWith('pl2_authz_workspace_')
       );
     });
 

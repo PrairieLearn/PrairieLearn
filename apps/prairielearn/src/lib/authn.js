@@ -81,8 +81,8 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       user_id: user_id,
       authn_provider_name: authnParams.provider || null,
     };
-    var pl_authn = generateSignedToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
+    var pl2_authn = generateSignedToken(tokenData, config.secretKey);
+    res.cookie('pl2_authn', pl2_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
       secure: shouldSecureCookie(req),
@@ -93,14 +93,18 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
     // automatic authentication.
     res.clearCookie('pl_disable_auto_authn');
     res.clearCookie('pl_disable_auto_authn', { domain: config.cookieDomain });
+    res.clearCookie('pl2_disable_auto_authn');
+    res.clearCookie('pl2_disable_auto_authn', { domain: config.cookieDomain });
   }
 
   if (options.redirect) {
     let redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
+    if ('pl2_pre_auth_url' in req.cookies) {
+      redirUrl = req.cookies.pl2_pre_auth_url;
       res.clearCookie('preAuthUrl');
       res.clearCookie('preAuthUrl', { domain: config.cookieDomain });
+      res.clearCookie('pl2_pre_auth_url');
+      res.clearCookie('pl2_pre_auth_url', { domain: config.cookieDomain });
     }
     res.redirect(redirUrl);
     return;
@@ -115,7 +119,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
+  const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;

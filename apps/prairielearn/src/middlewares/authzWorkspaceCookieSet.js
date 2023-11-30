@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
   // middlewares/authzWorkspaceCookieCheck.js
 
   const workspace_id = res.locals.workspace_id;
-  const cookieName = `pl_authz_workspace_${workspace_id}`;
+  const cookieName = `pl2_authz_workspace_${workspace_id}`;
   const tokenData = {
     workspace_id: res.locals.workspace_id,
   };

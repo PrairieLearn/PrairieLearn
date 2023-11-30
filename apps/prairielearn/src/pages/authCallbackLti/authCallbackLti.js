@@ -134,7 +134,7 @@ router.post('/', function (req, res, next) {
           authn_provider_name: 'LTI',
         };
         var pl_authn = generateSignedToken(tokenData, config.secretKey);
-        res.cookie('pl_authn', pl_authn, {
+        res.cookie('pl2_authn', pl_authn, {
           maxAge: config.authnCookieMaxAgeMilliseconds,
           httpOnly: true,
           secure: shouldSecureCookie(req),

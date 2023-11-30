@@ -97,45 +97,47 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];
-  if (req.cookies.pl_requested_uid) {
+  if (req.cookies.pl2_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
-    if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
+    if (req.cookies.pl2_requested_uid === res.locals.authn_user.uid) {
       res.clearCookie('pl_requested_uid');
       res.clearCookie('pl_requested_uid', { domain: config.cookieDomain });
+      res.clearCookie('pl2_requested_uid');
+      res.clearCookie('pl2_requested_uid', { domain: config.cookieDomain });
     } else {
       overrides.push({
         name: 'UID',
-        value: req.cookies.pl_requested_uid,
-        cookie: 'pl_requested_uid',
+        value: req.cookies.pl2_requested_uid,
+        cookie: 'pl2_requested_uid',
       });
     }
   }
-  if (req.cookies.pl_requested_course_role) {
+  if (req.cookies.pl2_requested_course_role) {
     overrides.push({
       name: 'Course role',
-      value: req.cookies.pl_requested_course_role,
-      cookie: 'pl_requested_course_role',
+      value: req.cookies.pl2_requested_course_role,
+      cookie: 'pl2_requested_course_role',
     });
   }
-  if (req.cookies.pl_requested_course_instance_role) {
+  if (req.cookies.pl2_requested_course_instance_role) {
     overrides.push({
       name: 'Course instance role',
-      value: req.cookies.pl_requested_course_instance_role,
-      cookie: 'pl_requested_course_instance_role',
+      value: req.cookies.pl2_requested_course_instance_role,
+      cookie: 'pl2_requested_course_instance_role',
     });
   }
-  if (req.cookies.pl_requested_mode) {
+  if (req.cookies.pl2_requested_mode) {
     overrides.push({
       name: 'Mode',
-      value: req.cookies.pl_requested_mode,
-      cookie: 'pl_requested_mode',
+      value: req.cookies.pl2_requested_mode,
+      cookie: 'pl2_requested_mode',
     });
   }
-  if (req.cookies.pl_requested_date) {
+  if (req.cookies.pl2_requested_date) {
     overrides.push({
       name: 'Date',
-      value: req.cookies.pl_requested_date,
-      cookie: 'pl_requested_date',
+      value: req.cookies.pl2_requested_date,
+      cookie: 'pl2_requested_date',
     });
   }
   if (overrides.length === 0) {
@@ -164,6 +166,10 @@ module.exports = asyncHandler(async (req, res, next) => {
       debug(`clearing cookie: ${override.cookie}`);
       res.clearCookie(override.cookie);
       res.clearCookie(override.cookie, { domain: config.cookieDomain });
+
+      const oldName = override.cookie.replace(/^pl2_/, 'pl_');
+      res.clearCookie(oldName);
+      res.clearCookie(oldName, { domain: config.cookieDomain });
     });
 
     let err = error.make(403, 'Access denied');
@@ -185,9 +191,9 @@ module.exports = asyncHandler(async (req, res, next) => {
   let user_with_requested_uid_has_instructor_access_to_course_instance = false;
 
   // Verify requested UID
-  if (req.cookies.pl_requested_uid) {
+  if (req.cookies.pl2_requested_uid) {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_user, {
-      uid: req.cookies.pl_requested_uid,
+      uid: req.cookies.pl2_requested_uid,
       course_instance_id: isCourseInstance ? res.locals.course_instance.id : null,
     });
 
@@ -203,7 +209,7 @@ module.exports = asyncHandler(async (req, res, next) => {
       err.info = html`
         <p>
           You have tried to change the effective user to one with uid
-          <code>${req.cookies.pl_requested_uid}</code>, when no such user exists. All requested
+          <code>${req.cookies.pl2_requested_uid}</code>, when no such user exists. All requested
           changes to the effective user have been removed.
         </p>
       `.toString();
@@ -265,10 +271,10 @@ module.exports = asyncHandler(async (req, res, next) => {
   }
 
   let req_date = res.locals.req_date;
-  if (req.cookies.pl_requested_date) {
-    req_date = parseISO(req.cookies.pl_requested_date);
+  if (req.cookies.pl2_requested_date) {
+    req_date = parseISO(req.cookies.pl2_requested_date);
     if (!isValid(req_date)) {
-      debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
+      debug(`requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date}`);
       overrides.forEach((override) => {
         debug(`clearing cookie: ${override.cookie}`);
         res.clearCookie(override.cookie);
@@ -279,8 +285,8 @@ module.exports = asyncHandler(async (req, res, next) => {
       err.info = html`
         <p>
           You have requested an invalid effective date:
-          <code>${req.cookies.pl_requested_date}</code>. All requested changes to the effective user
-          have been removed.
+          <code>${req.cookies.pl2_requested_date}</code>. All requested changes to the effective
+          user have been removed.
         </p>
       `.toString();
       throw err;
@@ -297,9 +303,9 @@ module.exports = asyncHandler(async (req, res, next) => {
     allow_example_course_override: false,
     ip: req.ip,
     req_date: req_date,
-    req_mode: req.cookies.pl_requested_mode || res.locals.authz_data.mode,
-    req_course_role: req.cookies.pl_requested_course_role || null,
-    req_course_instance_role: req.cookies.pl_requested_course_instance_role || null,
+    req_mode: req.cookies.pl2_requested_mode || res.locals.authz_data.mode,
+    req_course_role: req.cookies.pl2_requested_course_role || null,
+    req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
   };
 
   const effectiveResult = await sqldb.queryZeroOrOneRowAsync(

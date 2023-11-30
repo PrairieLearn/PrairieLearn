@@ -89,65 +89,74 @@ router.post('/', function (req, res, next) {
   if (req.body.__action === 'reset') {
     res.clearCookie('pl_requested_uid');
     res.clearCookie('pl_requested_uid', { domain: config.cookieDomain });
+    res.clearCookie('pl2_requested_uid');
+    res.clearCookie('pl2_requested_uid', { domain: config.cookieDomain });
     res.clearCookie('pl_requested_course_role');
     res.clearCookie('pl_requested_course_role', { domain: config.cookieDomain });
+    res.clearCookie('pl2_requested_course_role');
+    res.clearCookie('pl2_requested_course_role', { domain: config.cookieDomain });
     res.clearCookie('pl_requested_course_instance_role');
     res.clearCookie('pl_requested_course_instance_role', { domain: config.cookieDomain });
+    res.clearCookie('pl2_requested_course_instance_role');
+    res.clearCookie('pl2_requested_course_instance_role', { domain: config.cookieDomain });
     res.clearCookie('pl_requested_mode');
     res.clearCookie('pl_requested_mode', { domain: config.cookieDomain });
+    res.clearCookie('pl2_requested_mode');
+    res.clearCookie('pl2_requested_mode', { domain: config.cookieDomain });
     res.clearCookie('pl_requested_date');
     res.clearCookie('pl_requested_date', { domain: config.cookieDomain });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.clearCookie('pl2_requested_date');
+    res.clearCookie('pl2_requested_date', { domain: config.cookieDomain });
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {
-    res.cookie('pl_requested_uid', req.body.pl_requested_uid, {
+    res.cookie('pl2_requested_uid', req.body.pl_requested_uid, {
       domain: config.cookieDomain,
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseRole') {
-    res.cookie('pl_requested_course_role', req.body.pl_requested_course_role, {
+    res.cookie('pl2_requested_course_role', req.body.pl_requested_course_role, {
       domain: config.cookieDomain,
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseInstanceRole') {
-    res.cookie('pl_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
+    res.cookie('pl2_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
       domain: config.cookieDomain,
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeMode') {
-    res.cookie('pl_requested_mode', req.body.pl_requested_mode, {
+    res.cookie('pl2_requested_mode', req.body.pl_requested_mode, {
       domain: config.cookieDomain,
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
-    debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
     let date = parseISO(req.body.pl_requested_date);
     if (!isValid(date)) {
       return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
-    res.cookie('pl_requested_date', date.toISOString(), {
+    res.cookie('pl2_requested_date', date.toISOString(), {
       domain: config.cookieDomain,
       maxAge: 60 * 60 * 1000,
     });
-    res.cookie('pl_requested_data_changed', 'true', {
+    res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
     res.redirect(req.originalUrl);

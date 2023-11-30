@@ -11,7 +11,7 @@ module.exports = function (err, req, res, next) {
   if (err.status !== 403) return next(err);
 
   // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.js)
-  if (!res.locals.pl_requested_data_changed) return next(err);
+  if (!res.locals.pl2_requested_data_changed) return next(err);
 
   // skip if we don't have user data
   if (res.locals?.authn_user?.user_id == null) return next(err);

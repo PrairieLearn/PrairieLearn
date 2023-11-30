@@ -11,6 +11,8 @@ export function shouldSecureCookie(req: Request): boolean {
   return !config.devMode || req.protocol === 'https';
 }
 
+const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;
+
 // Note that the session cookie isn't represented here; it's handled independently
 // by the `@prairielearn/session` package, which has built-in support for migrating
 // from one cookie name to another.
@@ -21,6 +23,13 @@ const COOKIES_TO_MIGRATE = [
     options: {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
+    },
+  },
+  {
+    oldName: 'pl_access_as_administrator',
+    newName: 'pl2_access_as_administrator',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
     },
   },
   {
@@ -47,26 +56,44 @@ const COOKIES_TO_MIGRATE = [
   {
     oldName: 'pl_requested_data_changed',
     newName: 'pl2_requested_data_changed',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldName: 'pl_requested_uid',
     newName: 'pl2_requested_uid',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldName: 'pl_requested_course_role',
     newName: 'pl2_requested_course_role',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldName: 'pl_requested_course_instance_role',
     newName: 'pl2_requested_course_instance_role',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldName: 'pl_requested_mode',
     newName: 'pl2_requested_mode',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldName: 'pl_requested_date',
     newName: 'pl2_requested_date',
+    options: {
+      maxAge: THIRTY_DAYS_IN_MILLISECONDS,
+    },
   },
   {
     oldRegexp: /pl_authz_workspace_(\d+)/,
