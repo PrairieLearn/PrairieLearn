@@ -196,8 +196,19 @@ export async function joinGroup(
     flash('error', 'The join code has an incorrect format');
     return;
   }
+
   const groupName = splitJoinCode[0];
   const joinCode = splitJoinCode[1].toUpperCase();
+
+  // This is a best-effort check to produce a nice error message. Even if this
+  // fails due to a race condition, the `group_users_insert` sproc below will
+  // validate that the user isn't already in a group.
+  const existingGroupId = await getGroupId(assessmentId, userId);
+  if (existingGroupId != null) {
+    flash('error', 'You are already in another group.');
+    return;
+  }
+
   try {
     await sqldb.callAsync('group_users_insert', [
       assessmentId,
@@ -231,6 +242,15 @@ export async function createGroup(
     );
     return;
   }
+
+  // This is technically susceptible to race conditions. That won't be an
+  // issue once we have a unique constraint for group membership.
+  const existingGroupId = await getGroupId(assessmentId, userId);
+  if (existingGroupId != null) {
+    flash('error', 'You are already in a group.');
+    return;
+  }
+
   try {
     await sqldb.queryAsync(sql.create_group, {
       assessment_id: assessmentId,

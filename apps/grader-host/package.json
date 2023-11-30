@@ -10,12 +10,12 @@
     "test": "mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.438.0",
-    "@aws-sdk/client-ecr": "^3.438.0",
-    "@aws-sdk/client-s3": "^3.440.0",
-    "@aws-sdk/client-sqs": "^3.438.0",
-    "@aws-sdk/credential-providers": "^3.438.0",
-    "@aws-sdk/lib-storage": "^3.440.0",
+    "@aws-sdk/client-auto-scaling": "^3.462.0",
+    "@aws-sdk/client-ecr": "^3.462.0",
+    "@aws-sdk/client-s3": "^3.462.0",
+    "@aws-sdk/client-sqs": "^3.462.0",
+    "@aws-sdk/credential-providers": "^3.462.0",
+    "@aws-sdk/lib-storage": "^3.462.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -32,6 +32,7 @@
     "logform": "^2.6.0",
     "tmp": "^0.2.1",
     "winston": "^3.11.0",
+    "winston-transport": "^4.6.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
