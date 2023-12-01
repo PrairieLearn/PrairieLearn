@@ -21,7 +21,7 @@ Pint==0.22
 psutil==5.9.6
 PuLP==2.7.0
 pycryptodome==3.19.0
-Pygments==2.16.1
+Pygments==2.17.2
 pygments-ansi-color==0.3.0
 pygraphviz==1.6
 pyquaternion==0.9.9
