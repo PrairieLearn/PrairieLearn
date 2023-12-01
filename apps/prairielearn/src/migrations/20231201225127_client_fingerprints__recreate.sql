@@ -31,7 +31,7 @@ CREATE TABLE
     user_agent VARCHAR(255),
     accept_language VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (
+    UNIQUE NULLS NOT DISTINCT (
       user_id,
       user_session_id,
       ip_address,

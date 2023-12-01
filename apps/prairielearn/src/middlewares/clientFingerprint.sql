@@ -27,6 +27,17 @@ VALUES
     $user_agent::VARCHAR(255),
     $accept_language::VARCHAR(255)
   )
+ON CONFLICT (
+  user_id,
+  user_session_id,
+  ip_address,
+  user_agent,
+  accept_language
+) DO
+UPDATE
+SET
+  -- Force an update so that `RETURNING` will actually return the row.
+  accept_language = EXCLUDED.accept_language
 RETURNING
   id;
 

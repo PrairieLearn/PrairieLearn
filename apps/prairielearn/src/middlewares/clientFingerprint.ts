@@ -7,7 +7,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 export default asyncHandler(async (req, res, next) => {
   if (!res.locals.assessment_instance) {
-    throw new Error('Assessment Instance is not pressent');
+    throw new Error('Assessment Instance is not present');
   }
 
   const user_session_id = await sqldb.queryOptionalRow(
@@ -28,6 +28,7 @@ export default asyncHandler(async (req, res, next) => {
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],
   };
+
   let client_fingerprint_id = await sqldb.queryOptionalRow(
     sql.select_client_fingerprint,
     params,
@@ -37,6 +38,7 @@ export default asyncHandler(async (req, res, next) => {
   if (!client_fingerprint_id) {
     client_fingerprint_id = await sqldb.queryRow(sql.insert_client_fingerprint, params, IdSchema);
   }
+
   if (
     !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
   ) {
