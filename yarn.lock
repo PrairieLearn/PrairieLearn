@@ -3425,7 +3425,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.9
     "@types/cookie": ^0.5.3
-    "@types/cookie-signature": ^1.1.1
+    "@types/cookie-signature": ^1.1.2
     "@types/express": ^4.17.20
     "@types/node": ^18.18.8
     "@types/node-fetch": ^2.6.8
@@ -4683,12 +4683,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie-signature@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@types/cookie-signature@npm:1.1.1"
+"@types/cookie-signature@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@types/cookie-signature@npm:1.1.2"
   dependencies:
     "@types/node": "*"
-  checksum: dd4dd0aec0a9f5f1e14665d8dcb8d6ed9443898f776deb362537e729a6fd544174c74dab43fc0c10f0af0769500a79248a3fcf01ea66bbd16b0802f2d95f34f6
+  checksum: 552c10e75ca0bbb57e087ccda8ef55eb1d844029c5835d87ce73f8afadd46b58d931193682be9ad51798fe8886f0b4d3003d049abaa6653c70c6c13a770084f5
   languageName: node
   linkType: hard
 
