@@ -505,6 +505,7 @@ export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  client_fingerprint_id: IdSchema.nullable(),
   correct: z.boolean().nullable(),
   credit: z.number().nullable(),
   date: DateFromISOString.nullable(),
@@ -584,6 +585,16 @@ export const GradingJobSchema = z.object({
   v2_score: z.number().nullable(),
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
+
+export const ClientFingerprintSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+  user_session_id: IdSchema,
+  ip_address: z.string(),
+  user_agent: z.string().nullable(),
+  accept_language: z.string().nullable(),
+  created_at: DateFromISOString,
+});
 
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
