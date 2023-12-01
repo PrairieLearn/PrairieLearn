@@ -149,13 +149,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
-              ? question.forceMaxPoints
-              : false,
+                ? question.forceMaxPoints
+                : false,
             triesPerVariant: _.has(alternative, 'triesPerVariant')
               ? alternative.triesPerVariant
               : _.has(question, 'triesPerVariant')
-              ? question.triesPerVariant
-              : 1,
+                ? question.triesPerVariant
+                : 1,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
