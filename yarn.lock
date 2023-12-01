@@ -3201,7 +3201,7 @@ __metadata:
     "@types/byline": ^4.2.36
     "@types/chai": ^4.3.9
     "@types/chai-as-promised": ^7.1.7
-    "@types/cookie-parser": ^1.4.5
+    "@types/cookie-parser": ^1.4.6
     "@types/crypto-js": ^4.2.1
     "@types/dockerode": ^3.3.21
     "@types/express": ^4.17.20
@@ -4674,12 +4674,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie-parser@npm:^1.4.5":
-  version: 1.4.5
-  resolution: "@types/cookie-parser@npm:1.4.5"
+"@types/cookie-parser@npm:^1.4.6":
+  version: 1.4.6
+  resolution: "@types/cookie-parser@npm:1.4.6"
   dependencies:
     "@types/express": "*"
-  checksum: 45855721706d6a57bb0441db11fb59db407414ea83a0000a0df80d19230447cc3bcc43c436397bfb8998ec78db222265fa8083456b00c5b5054a0c03d06f0086
+  checksum: b1bbb17bc4189c0e953d4996b3b58bfa20161c27db21f98353e237032e7559aec733735d8902c283300e0a4cded20e62b1a5086af608608ef30a45387e080360
   languageName: node
   linkType: hard
 
