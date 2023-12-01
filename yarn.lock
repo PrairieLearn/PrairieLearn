@@ -3214,7 +3214,7 @@ __metadata:
     "@types/js-cookie": ^3.0.5
     "@types/jsdom": ^21.1.4
     "@types/json-stringify-safe": ^5.0.3
-    "@types/klaw": ^3.0.5
+    "@types/klaw": ^3.0.6
     "@types/lodash": ^4.14.200
     "@types/loopbench": ^1.2.3
     "@types/memorystream": ^0.3.3
@@ -4925,12 +4925,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/klaw@npm:^3.0.5":
-  version: 3.0.5
-  resolution: "@types/klaw@npm:3.0.5"
+"@types/klaw@npm:^3.0.6":
+  version: 3.0.6
+  resolution: "@types/klaw@npm:3.0.6"
   dependencies:
     "@types/node": "*"
-  checksum: 5db035b88c48c2dcfe5cb43979ab89247e6abb2eb7e6aa3a9eeaaab56cae9b70e73c0cadd14b9a749d264fc68041ee4a3facbbbd821535cd68376c3d65a95bab
+  checksum: 71a761016e7e0d4c80ff593c5fbc560907b701860a45ed7d4fef9d160b57458ed515d93d700716c0fb968e5d9c0bd9e8cb13d1be00d716a2b78c4ee5a1d74c17
   languageName: node
   linkType: hard
 
