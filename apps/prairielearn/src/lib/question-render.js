@@ -310,6 +310,7 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
             locals.question_course,
             options,
             require_open,
+            locals.client_fingerprint_id,
             (err, variant) => {
               if (ERR(err, callback)) return;
               locals.variant = variant;
