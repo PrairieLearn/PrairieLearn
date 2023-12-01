@@ -221,7 +221,7 @@
     "@types/request": "^2.48.12",
     "@types/streamifier": "^0.1.2",
     "@types/tar": "^6.1.7",
-    "@types/tmp": "^0.2.5",
+    "@types/tmp": "^0.2.6",
     "@types/unzipper": "^0.10.9",
     "@types/uuid": "^9.0.6",
     "axe-core": "^4.7.0",
