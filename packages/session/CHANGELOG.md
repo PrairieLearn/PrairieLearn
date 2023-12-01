@@ -1,5 +1,15 @@
 # @prairielearn/session
 
+## 2.0.0
+
+### Major Changes
+
+- bcab4e950: Remove `canSetCookie` option
+
+### Minor Changes
+
+- 83778d1a0: Immediately persist newly-created sessions to store
+
 ## 1.3.1
 
 ### Patch Changes

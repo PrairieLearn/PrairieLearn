@@ -28,6 +28,19 @@ export async function loadSession(
 
   const session = makeSession(sessionId, req, store, expiresAt, maxAge);
 
+  if (sessionStoreData == null) {
+    // Immediately persis the new session to the store so that it's assigned
+    // an ID and available to query later on in the same request.
+    await store.set(
+      sessionId,
+      session,
+      // Cookies only support second-level resolution. To ensure consistency
+      // between the cookie and the store, truncate the expiration date to
+      // the nearest second.
+      truncateExpirationDate(session.getExpirationDate()),
+    );
+  }
+
   // Copy session data into the session object.
   if (sessionStoreData != null) {
     const { data } = sessionStoreData;
@@ -83,16 +96,7 @@ export function makeSession(
 }
 
 export function hashSession(session: Session): string {
-  const str = JSON.stringify(session, function (key, val) {
-    // ignore cookie property on the root object
-    if (this === session && key === 'cookie') {
-      return;
-    }
-
-    return val;
-  });
-
-  // hash
+  const str = JSON.stringify(session);
   return crypto.createHash('sha1').update(str, 'utf8').digest('hex');
 }
 
@@ -103,4 +107,10 @@ function defineStaticProperty<T>(obj: object, name: string, fn: T) {
     writable: false,
     value: fn,
   });
+}
+
+export function truncateExpirationDate(date: Date) {
+  const time = date.getTime();
+  const truncatedTime = Math.floor(time / 1000) * 1000;
+  return new Date(truncatedTime);
 }
