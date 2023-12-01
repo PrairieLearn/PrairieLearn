@@ -350,7 +350,7 @@ export class PostgresPool {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryWithClientAsync(client, sql, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
         sql,
         sqlParams: params,
@@ -557,7 +557,7 @@ export class PostgresPool {
     debug('queryZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError(`Incorrect rowCount: ${result.rowCount}`, {
         sql,
         sqlParams: params,
@@ -623,7 +623,7 @@ export class PostgresPool {
     debug('callZeroOrOneRow()', 'function:', functionName);
     debug('callZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.callAsync(functionName, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError('Incorrect rowCount: ' + result.rowCount, {
         functionName,
         sqlParams: params,
@@ -701,7 +701,7 @@ export class PostgresPool {
     debug('callWithClientZeroOrOneRow()', 'function:', functionName);
     debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.callWithClientAsync(client, functionName, params);
-    if (result.rowCount > 1) {
+    if (result.rowCount == null || result.rowCount > 1) {
       throw new PostgresError('Incorrect rowCount: ' + result.rowCount, {
         functionName,
         sqlParams: params,
