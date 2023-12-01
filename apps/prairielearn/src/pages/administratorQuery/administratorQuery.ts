@@ -117,7 +117,7 @@ router.post(
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
       params.result = {
-        rowCount: result.rowCount,
+        rowCount: result.rowCount ?? 0,
         columns: result.fields.map((f) => f.name),
         rows: result.rows,
       };
