@@ -20,3 +20,4 @@ referenced by
     assessment_state_logs: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
     page_view_logs: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
+    variants: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL

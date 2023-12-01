@@ -176,6 +176,7 @@ function makeAndInsertVariant(
   question_course,
   options,
   require_open,
+  client_fingerprint_id,
   callback,
 ) {
   selectQuestion(question_id, instance_question_id, (err, question) => {
@@ -196,6 +197,7 @@ function makeAndInsertVariant(
         group_work,
         require_open,
         variant_course.id,
+        client_fingerprint_id,
       ];
       sqldb.callOneRow('variants_insert', params, (err, result) => {
         if (ERR(err, callback)) return;
@@ -233,6 +235,7 @@ function makeAndInsertVariant(
  * @param {Object} question_course - The course for the question.
  * @param {Object} options - Options controlling the creation: options = {variant_seed}
  * @param {boolean} require_open - If true, only use an existing variant if it is open.
+ * @param {?string} client_fingerprint_id - The client fingerprint for this variant. Can be null.
  * @param {function} callback - A callback(err, variant) function.
  */
 export function ensureVariant(
@@ -246,6 +249,7 @@ export function ensureVariant(
   question_course,
   options,
   require_open,
+  client_fingerprint_id,
   callback,
 ) {
   if (instance_question_id != null) {
@@ -270,6 +274,7 @@ export function ensureVariant(
         question_course,
         options,
         require_open,
+        client_fingerprint_id,
         (err, variant) => {
           if (ERR(err, callback)) return;
           debug(
@@ -293,6 +298,7 @@ export function ensureVariant(
       question_course,
       options,
       require_open,
+      client_fingerprint_id,
       (err, variant) => {
         if (ERR(err, callback)) return;
         callback(null, variant);
