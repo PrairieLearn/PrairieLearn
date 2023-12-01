@@ -3233,7 +3233,7 @@ __metadata:
     "@types/pg": ^8.10.7
     "@types/request": ^2.48.12
     "@types/streamifier": ^0.1.2
-    "@types/tar": ^6.1.7
+    "@types/tar": ^6.1.10
     "@types/tmp": ^0.2.5
     "@types/unzipper": ^0.10.9
     "@types/uuid": ^9.0.6
@@ -5272,13 +5272,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tar@npm:^6.1.7":
-  version: 6.1.7
-  resolution: "@types/tar@npm:6.1.7"
+"@types/tar@npm:^6.1.10":
+  version: 6.1.10
+  resolution: "@types/tar@npm:6.1.10"
   dependencies:
     "@types/node": "*"
     minipass: ^4.0.0
-  checksum: 74a346c86eb9fd1d7849b675e019ec784accf2f4a2abedc607e5449809f5205db6c31a7c0e7ac34e1ae5beabc3d260dbf82d7829398791397b971a56de4028b9
+  checksum: 82d46f1246e830b98833ed94fbdfbcb3ffb8a5d7173609622d56c9326124523a3cc541607876c63a6ab9117eb59fb37ef8a6284b194164ab1d1d8c03a8ba59c6
   languageName: node
   linkType: hard
 

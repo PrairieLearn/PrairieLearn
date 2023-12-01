@@ -220,7 +220,7 @@
     "@types/pg": "^8.10.7",
     "@types/request": "^2.48.12",
     "@types/streamifier": "^0.1.2",
-    "@types/tar": "^6.1.7",
+    "@types/tar": "^6.1.10",
     "@types/tmp": "^0.2.5",
     "@types/unzipper": "^0.10.9",
     "@types/uuid": "^9.0.6",
