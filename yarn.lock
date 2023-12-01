@@ -3207,7 +3207,7 @@ __metadata:
     "@types/express": ^4.17.20
     "@types/express-list-endpoints": ^6.0.3
     "@types/express-session": ^1.17.9
-    "@types/folder-hash": ^4.0.3
+    "@types/folder-hash": ^4.0.4
     "@types/fs-extra": ^11.0.3
     "@types/jju": ^1.4.5
     "@types/jquery": ^3.5.25
@@ -4817,10 +4817,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/folder-hash@npm:^4.0.3":
-  version: 4.0.3
-  resolution: "@types/folder-hash@npm:4.0.3"
-  checksum: bd60b400470d4e748204299eab43c87100a33fcd2d475acb7d45ccde3ddd9b931f7ddcce2d9dc52221da5bdb274370141e57bbb8e25492b30a6f8ddae2eb40c2
+"@types/folder-hash@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "@types/folder-hash@npm:4.0.4"
+  checksum: 69ea717701c11a62f1cac9e85f5fddd6d80c7bf4d63edfa7b19f43756483ff6b8ad73ae18d0d618670a9dfda0e4568a4be9958da54dde8178d9f5594bfcd4c47
   languageName: node
   linkType: hard
 
