@@ -215,7 +215,7 @@
     "@types/oauth-signature": "^1.5.2",
     "@types/object-hash": "^3.0.5",
     "@types/passport": "^1.0.14",
-    "@types/passport-azure-ad": "^4.3.3",
+    "@types/passport-azure-ad": "^4.3.5",
     "@types/pem": "^1.14.3",
     "@types/pg": "^8.10.7",
     "@types/request": "^2.48.12",

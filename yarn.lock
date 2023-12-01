@@ -3228,7 +3228,7 @@ __metadata:
     "@types/oauth-signature": ^1.5.2
     "@types/object-hash": ^3.0.5
     "@types/passport": ^1.0.14
-    "@types/passport-azure-ad": ^4.3.3
+    "@types/passport-azure-ad": ^4.3.5
     "@types/pem": ^1.14.3
     "@types/pg": ^8.10.7
     "@types/request": ^2.48.12
@@ -5100,13 +5100,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/passport-azure-ad@npm:^4.3.3":
-  version: 4.3.3
-  resolution: "@types/passport-azure-ad@npm:4.3.3"
+"@types/passport-azure-ad@npm:^4.3.5":
+  version: 4.3.5
+  resolution: "@types/passport-azure-ad@npm:4.3.5"
   dependencies:
     "@types/express": "*"
     "@types/passport": "*"
-  checksum: a2668718f66b6ff0a8f24d28f5bd9f730b97e8d9534f9f69f7f3509fc54c0c5945064b054a7da534b04dc31703f53ec176a32e4fdd5dda1e504c888f896704d8
+  checksum: 68c7c8354ce19ab0a262a5318eb4d505ac972506b46e5977f2761a79c73e27351a8feb510c6f89b82a264fa13d040c176cfa7c92990e93ba245bcc7f1ff7641d
   languageName: node
   linkType: hard
 
