@@ -3194,7 +3194,7 @@ __metadata:
     "@sentry/tracing": ^7.77.0
     "@socket.io/redis-adapter": ^8.2.1
     "@swc/core": ^1.3.82
-    "@types/archiver": ^6.0.1
+    "@types/archiver": ^6.0.2
     "@types/async": ^3.2.22
     "@types/body-parser": ^1.19.4
     "@types/bootstrap": ^5.2.8
@@ -4598,12 +4598,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/archiver@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "@types/archiver@npm:6.0.1"
+"@types/archiver@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "@types/archiver@npm:6.0.2"
   dependencies:
     "@types/readdir-glob": "*"
-  checksum: 384d81ff7c78d289e410efee360adcfc2bf41a9f376637282d61e2ce3d73d8ecbe2b76250342ffe6aeac638350811fba28c4b6beb6e5ee179a52be433ebbe5fb
+  checksum: 4bef71e5b95863be9880339275ad92c2513dd78d56587653614dc5a74af1d078f5f5926ec996de06e7071a1003e0c2764d0e9d2bb0893a2ffb14ab1718eaf5ca
   languageName: node
   linkType: hard
 
