@@ -331,7 +331,7 @@ describe('effective user', function () {
     await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_rolePreviewer',
+        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Previewer',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.isTrue(response.ok);
@@ -340,7 +340,7 @@ describe('effective user', function () {
   step('instructor cannot request higher course role', async () => {
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_roleEditor',
+        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=Editor',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.equal(response.status, 403);
@@ -381,7 +381,7 @@ describe('effective user', function () {
   step('instructor can request no role and be granted access to student page', async () => {
     const headers = {
       cookie:
-        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_roleNone; pl2_requested_course_instance_role=None',
+        'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
       headers,
@@ -394,7 +394,7 @@ describe('effective user', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_roleNone; pl2_requested_course_instance_role=None',
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
@@ -406,7 +406,7 @@ describe('effective user', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_roleNone',
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None',
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
         headers,
@@ -420,7 +420,7 @@ describe('effective user', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_roleNone',
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_course_role=None',
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.isTrue(response.ok);
