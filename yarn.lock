@@ -2828,7 +2828,7 @@ __metadata:
     "@prairielearn/tsconfig": "*"
     "@types/fs-extra": ^11.0.3
     "@types/lodash": ^4.14.200
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     fs-extra: ^11.1.1
@@ -2846,7 +2846,7 @@ __metadata:
   resolution: "@prairielearn/csv@workspace:packages/csv"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/multipipe": ^3.0.3
     "@types/node": ^18.18.8
     chai: ^4.3.10
@@ -2866,7 +2866,7 @@ __metadata:
     "@aws-sdk/client-ecr": ^3.462.0
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     date-fns: ^2.30.0
@@ -2881,7 +2881,7 @@ __metadata:
   resolution: "@prairielearn/error@workspace:packages/error"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     lodash: ^4.17.21
@@ -3020,7 +3020,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": ^11.0.3
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     chai-as-promised: ^7.1.1
@@ -3075,7 +3075,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": ^1.17.1
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.9
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     chai-as-promised: ^7.1.1
@@ -3091,7 +3091,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.9
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/node": ^18.18.8
     chai: ^4.3.10
     mocha: ^10.2.0
@@ -3133,7 +3133,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.10
     "@types/lodash": ^4.14.200
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/multipipe": ^3.0.3
     "@types/node": ^18.18.8
     "@types/pg-cursor": ^2.7.1
@@ -3219,7 +3219,7 @@ __metadata:
     "@types/loopbench": ^1.2.3
     "@types/memorystream": ^0.3.3
     "@types/mime": ^3.0.3
-    "@types/mocha": ^10.0.3
+    "@types/mocha": ^10.0.6
     "@types/multer": ^1.4.9
     "@types/mustache": ^4.2.5
     "@types/node": ^18.18.8
@@ -4989,10 +4989,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.3":
-  version: 10.0.3
-  resolution: "@types/mocha@npm:10.0.3"
-  checksum: 52481d72c0f2eb6afcf9a43f851f81d78211880f765b5922a1aa322ed6d557bddc60786a3ae7b6c5e388e2f0cddc09d9ead3c9b80e66102eb41b58acae1e4894
+"@types/mocha@npm:^10.0.6":
+  version: 10.0.6
+  resolution: "@types/mocha@npm:10.0.6"
+  checksum: f7c836cf6cf27dc0f5970d262591b56f2a3caeaec8cfdc612c12e1cfbb207f601f710ece207e935164d4e3343b93be5054d0db5544f31f453b3923775d82099f
   languageName: node
   linkType: hard
 
