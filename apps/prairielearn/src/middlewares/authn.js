@@ -5,6 +5,7 @@ const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 
 const { config } = require('../lib/config');
 const authnLib = require('../lib/authn');
+const { clearCookie } = require('../lib/cookie');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -134,10 +135,8 @@ module.exports = asyncHandler(async (req, res, next) => {
     // We failed to authenticate.
 
     // Clear the pl_authn cookie in case it was bad
-    res.clearCookie('pl_authn');
-    res.clearCookie('pl_authn', { domain: config.cookieDomain });
-    res.clearCookie('pl2_authn');
-    res.clearCookie('pl2_authn', { domain: config.cookieDomain });
+    clearCookie(res, 'pl_authn');
+    clearCookie(res, 'pl2_authn');
 
     // Check if we're requesting the homepage. We avoid the usage of `req.path`
     // since this middleware might be mounted on a subpath.

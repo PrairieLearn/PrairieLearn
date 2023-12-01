@@ -1,4 +1,5 @@
-const { config } = require('../lib/config');
+// @ts-check
+const { clearCookie } = require('../lib/cookie');
 
 module.exports = function (req, res, next) {
   // We use the pl2_requested_data_changed cookie to detect when we
@@ -18,8 +19,7 @@ module.exports = function (req, res, next) {
   // will receive an error page as expected.
 
   if (req.cookies.pl2_requested_data_changed) {
-    res.clearCookie('pl2_requested_data_changed');
-    res.clearCookie('pl2_requested_data_changed', { domain: config.cookieDomain });
+    clearCookie(res, 'pl2_requested_data_changed');
     res.locals.pl2_requested_data_changed = true;
   }
   next();

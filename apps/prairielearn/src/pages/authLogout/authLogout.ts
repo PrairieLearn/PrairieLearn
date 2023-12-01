@@ -1,20 +1,18 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
+
 import { config } from '../../lib/config';
+import { clearCookie } from '../../lib/cookie';
 
 const router = Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    res.clearCookie('pl_authn');
-    res.clearCookie('pl_authn', { domain: config.cookieDomain });
-    res.clearCookie('pl2_authn');
-    res.clearCookie('pl2_authn', { domain: config.cookieDomain });
-    res.clearCookie('pl_assessmentpw');
-    res.clearCookie('pl_assessmentpw', { domain: config.cookieDomain });
-    res.clearCookie('pl2_assessmentpw');
-    res.clearCookie('pl2_assessmentpw', { domain: config.cookieDomain });
+    clearCookie(res, 'pl_authn');
+    clearCookie(res, 'pl2_authn');
+    clearCookie(res, 'pl_assessmentpw');
+    clearCookie(res, 'pl2_assessmentpw');
 
     if (config.devMode) {
       // In dev mode, a user will typically by automatically authenticated by our
@@ -29,12 +27,9 @@ router.get(
 
     await req.session.destroy();
     // Hold-over from the old express-session implementation
-    res.clearCookie('connect.sid');
-    res.clearCookie('connect.sid', { domain: config.cookieDomain });
-    res.clearCookie('prairielearn_session');
-    res.clearCookie('prairielearn_session', { domain: config.cookieDomain });
-    res.clearCookie('pl2_session');
-    res.clearCookie('pl2_session', { domain: config.cookieDomain });
+    clearCookie(res, 'connect.sid');
+    clearCookie(res, 'prairielearn_session');
+    clearCookie(res, 'pl2_session');
 
     const redirect = req.query.redirect;
     if (redirect && typeof redirect === 'string') {

@@ -11,6 +11,15 @@ export function shouldSecureCookie(req: Request): boolean {
   return !config.devMode || req.protocol === 'https';
 }
 
+/**
+ * Helper function to clear a cookie regardless of if it was set with and
+ * explicit domain or not.
+ */
+export function clearCookie(res: Response, name: string): void {
+  res.clearCookie(name);
+  res.clearCookie(name, { domain: config.cookieDomain });
+}
+
 const THIRTY_DAYS_IN_MILLISECONDS = 1000 * 60 * 60 * 24 * 30;
 
 // Note that the session cookie isn't represented here; it's handled independently

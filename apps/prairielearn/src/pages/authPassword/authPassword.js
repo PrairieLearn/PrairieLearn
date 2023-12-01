@@ -2,6 +2,7 @@ const express = require('express');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
 const { shouldSecureCookie } = require('../../lib/cookie');
+const { clearCookie } = require('../../lib/cookie');
 
 const router = express.Router();
 
@@ -21,10 +22,8 @@ router.post('/', function (req, res) {
     secure: shouldSecureCookie(req),
     domain: config.cookieDomain,
   });
-  res.clearCookie('pl_pw_origUrl');
-  res.clearCookie('pl_pw_origUrl', { domain: config.cookieDomain });
-  res.clearCookie('pl2_pw_original_url');
-  res.clearCookie('pl2_pw_original_url', { domain: config.cookieDomain });
+  clearCookie(res, 'pl_pw_origUrl');
+  clearCookie(res, 'pl2_pw_original_url');
   return res.redirect(redirectUrl);
 });
 module.exports = router;
