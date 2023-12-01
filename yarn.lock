@@ -2905,7 +2905,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
   dependencies:
-    "@types/express": ^4.17.20
+    "@types/express": ^4.17.21
   languageName: unknown
   linkType: soft
 
@@ -2915,7 +2915,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/express": ^4.17.20
+    "@types/express": ^4.17.21
     "@types/express-session": ^1.17.9
     "@types/node": ^18.18.8
     chai: ^4.3.10
@@ -3204,7 +3204,7 @@ __metadata:
     "@types/cookie-parser": ^1.4.5
     "@types/crypto-js": ^4.2.1
     "@types/dockerode": ^3.3.21
-    "@types/express": ^4.17.20
+    "@types/express": ^4.17.21
     "@types/express-list-endpoints": ^6.0.3
     "@types/express-session": ^1.17.9
     "@types/folder-hash": ^4.0.3
@@ -3426,7 +3426,7 @@ __metadata:
     "@types/chai": ^4.3.9
     "@types/cookie": ^0.5.3
     "@types/cookie-signature": ^1.1.1
-    "@types/express": ^4.17.20
+    "@types/express": ^4.17.21
     "@types/node": ^18.18.8
     "@types/node-fetch": ^2.6.8
     "@types/on-headers": ^1.0.2
@@ -4793,7 +4793,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:*, @types/express@npm:^4.17.20":
+"@types/express@npm:*":
   version: 4.17.20
   resolution: "@types/express@npm:4.17.20"
   dependencies:
@@ -4814,6 +4814,18 @@ __metadata:
     "@types/qs": "*"
     "@types/serve-static": "*"
   checksum: 8c178da4f0edff1f006d871fbdc3f849620986ff10bad252f3dfd45b57554e26aaa28c602285df028930d5216e257a06fbaf795070f8bb42f7d87e3b689cba50
+  languageName: node
+  linkType: hard
+
+"@types/express@npm:^4.17.21":
+  version: 4.17.21
+  resolution: "@types/express@npm:4.17.21"
+  dependencies:
+    "@types/body-parser": "*"
+    "@types/express-serve-static-core": ^4.17.33
+    "@types/qs": "*"
+    "@types/serve-static": "*"
+  checksum: fb238298630370a7392c7abdc80f495ae6c716723e114705d7e3fb67e3850b3859bbfd29391463a3fb8c0b32051847935933d99e719c0478710f8098ee7091c5
   languageName: node
   linkType: hard
 

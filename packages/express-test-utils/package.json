@@ -12,6 +12,6 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@types/express": "^4.17.20"
+    "@types/express": "^4.17.21"
   }
 }
