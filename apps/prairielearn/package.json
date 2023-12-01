@@ -216,7 +216,7 @@
     "@types/object-hash": "^3.0.5",
     "@types/passport": "^1.0.14",
     "@types/passport-azure-ad": "^4.3.3",
-    "@types/pem": "^1.14.3",
+    "@types/pem": "^1.14.4",
     "@types/pg": "^8.10.7",
     "@types/request": "^2.48.12",
     "@types/streamifier": "^0.1.2",

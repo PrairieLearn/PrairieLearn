@@ -3229,7 +3229,7 @@ __metadata:
     "@types/object-hash": ^3.0.5
     "@types/passport": ^1.0.14
     "@types/passport-azure-ad": ^4.3.3
-    "@types/pem": ^1.14.3
+    "@types/pem": ^1.14.4
     "@types/pg": ^8.10.7
     "@types/request": ^2.48.12
     "@types/streamifier": ^0.1.2
@@ -5119,12 +5119,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pem@npm:^1.14.3":
-  version: 1.14.3
-  resolution: "@types/pem@npm:1.14.3"
+"@types/pem@npm:^1.14.4":
+  version: 1.14.4
+  resolution: "@types/pem@npm:1.14.4"
   dependencies:
     "@types/node": "*"
-  checksum: 67330dbf26870ef399a66141323d2212a303bd64bbf5d4e4340cbdc61ce51b1f551105e773f37c87d2acbae9dd86e595c3bdedf7c16fa3f3e8182264656e7a26
+  checksum: 791e3c1e22d543626eccf782398eae71423b1434ab0f798c3f465f9c301e36ecfcdf80fbdd16cced827cd813c891b9245ea7dbc0375e56321f566fe81af9b045
   languageName: node
   linkType: hard
 
