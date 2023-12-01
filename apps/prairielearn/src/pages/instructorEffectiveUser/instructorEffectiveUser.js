@@ -10,6 +10,8 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const error = require('@prairielearn/error');
 var sqldb = require('@prairielearn/postgres');
 
+const { clearCookie } = require('../../lib/cookie');
+
 var sql = sqldb.loadSqlEquiv(__filename);
 
 const { parseISO, isValid } = require('date-fns');
@@ -87,26 +89,16 @@ router.post('/', function (req, res, next) {
   }
 
   if (req.body.__action === 'reset') {
-    res.clearCookie('pl_requested_uid');
-    res.clearCookie('pl_requested_uid', { domain: config.cookieDomain });
-    res.clearCookie('pl2_requested_uid');
-    res.clearCookie('pl2_requested_uid', { domain: config.cookieDomain });
-    res.clearCookie('pl_requested_course_role');
-    res.clearCookie('pl_requested_course_role', { domain: config.cookieDomain });
-    res.clearCookie('pl2_requested_course_role');
-    res.clearCookie('pl2_requested_course_role', { domain: config.cookieDomain });
-    res.clearCookie('pl_requested_course_instance_role');
-    res.clearCookie('pl_requested_course_instance_role', { domain: config.cookieDomain });
-    res.clearCookie('pl2_requested_course_instance_role');
-    res.clearCookie('pl2_requested_course_instance_role', { domain: config.cookieDomain });
-    res.clearCookie('pl_requested_mode');
-    res.clearCookie('pl_requested_mode', { domain: config.cookieDomain });
-    res.clearCookie('pl2_requested_mode');
-    res.clearCookie('pl2_requested_mode', { domain: config.cookieDomain });
-    res.clearCookie('pl_requested_date');
-    res.clearCookie('pl_requested_date', { domain: config.cookieDomain });
-    res.clearCookie('pl2_requested_date');
-    res.clearCookie('pl2_requested_date', { domain: config.cookieDomain });
+    clearCookie(res, 'pl_requested_uid');
+    clearCookie(res, 'pl2_requested_uid');
+    clearCookie(res, 'pl_requested_course_role');
+    clearCookie(res, 'pl2_requested_course_role');
+    clearCookie(res, 'pl_requested_course_instance_role');
+    clearCookie(res, 'pl2_requested_course_instance_role');
+    clearCookie(res, 'pl_requested_mode');
+    clearCookie(res, 'pl2_requested_mode');
+    clearCookie(res, 'pl_requested_date');
+    clearCookie(res, 'pl2_requested_date');
     res.cookie('pl2_requested_data_changed', 'true', {
       domain: config.cookieDomain,
     });
