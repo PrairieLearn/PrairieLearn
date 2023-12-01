@@ -413,7 +413,7 @@ describe('student data access', function () {
     'instructor (student data editor) can attach file to HW1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl2_requested_uidstudent@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@illinois.edu',
       };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
@@ -439,7 +439,7 @@ describe('student data access', function () {
     'instructor (student data editor) can submit answer to HW1/Q1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl2_requested_uidstudent@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@illinois.edu',
       };
       let response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         headers,
