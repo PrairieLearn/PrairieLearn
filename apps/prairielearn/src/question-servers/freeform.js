@@ -2004,8 +2004,8 @@ module.exports = {
     const renderer = useExperimentalRenderer
       ? 'experimental'
       : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
+        ? 'default'
+        : 'legacy';
 
     // The `*Host` values here refer to the paths relative to PrairieLearn;
     // the other values refer to the paths as they will be seen by the worker
