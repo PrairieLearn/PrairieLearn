@@ -3110,7 +3110,7 @@ __metadata:
     "@types/fs-extra": ^11.0.3
     "@types/lodash": ^4.14.200
     "@types/node": ^18.18.8
-    "@types/yargs": ^17.0.29
+    "@types/yargs": ^17.0.32
     async: ^3.2.5
     chalk: ^4.1.2
     diff: ^5.1.0
@@ -5340,12 +5340,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/yargs@npm:^17.0.29":
-  version: 17.0.29
-  resolution: "@types/yargs@npm:17.0.29"
+"@types/yargs@npm:^17.0.32":
+  version: 17.0.32
+  resolution: "@types/yargs@npm:17.0.32"
   dependencies:
     "@types/yargs-parser": "*"
-  checksum: 8bbc0edd573a5a084cb13a9985c124490fd74e73b1ed8a3058861c13124e103b00a19770dc55c53215653a7845d7033e0695917b75153cfe9618d5b2fd3cf86e
+  checksum: 4505bdebe8716ff383640c6e928f855b5d337cb3c68c81f7249fc6b983d0aa48de3eee26062b84f37e0d75a5797bc745e0c6e76f42f81771252a758c638f36ba
   languageName: node
   linkType: hard
 
