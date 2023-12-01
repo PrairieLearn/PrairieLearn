@@ -16,7 +16,7 @@
     "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
+    "@changesets/cli": "^2.27.1",
     "@prairielearn/prettier-plugin-sql": "workspace:^",
     "@typescript-eslint/eslint-plugin": "^6.9.1",
     "@typescript-eslint/parser": "^6.9.1",
