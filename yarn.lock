@@ -3210,7 +3210,7 @@ __metadata:
     "@types/folder-hash": ^4.0.3
     "@types/fs-extra": ^11.0.3
     "@types/jju": ^1.4.5
-    "@types/jquery": ^3.5.25
+    "@types/jquery": ^3.5.29
     "@types/js-cookie": ^3.0.5
     "@types/jsdom": ^21.1.4
     "@types/json-stringify-safe": ^5.0.3
@@ -4868,12 +4868,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jquery@npm:^3.5.25":
-  version: 3.5.25
-  resolution: "@types/jquery@npm:3.5.25"
+"@types/jquery@npm:^3.5.29":
+  version: 3.5.29
+  resolution: "@types/jquery@npm:3.5.29"
   dependencies:
     "@types/sizzle": "*"
-  checksum: 912ce4212447a7c640147345c6b46bde5b12bafc2c97e1abc76939174c3109e3dbb361a534af717be2da4e907bc257558a6bc631971fcc47f7e5f044d315183e
+  checksum: 5e959762d6f7050b07b4387b6507a308113384566a77cfc4f8d0f54c2fb0a79f6bc8c057706c6aa4840cde56f32ad0e5814fb53c5f078c5db9e01670a1ecd535
   languageName: node
   linkType: hard
 
