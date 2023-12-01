@@ -3304,7 +3304,7 @@ __metadata:
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^3.0.5
     jsdom: ^22.1.0
-    json-stable-stringify: ^1.0.2
+    json-stable-stringify: ^1.1.0
     json-stringify-safe: ^5.0.1
     klaw: ^4.1.0
     lodash: ^4.17.21
@@ -11378,12 +11378,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-stable-stringify@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "json-stable-stringify@npm:1.0.2"
+"json-stable-stringify@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "json-stable-stringify@npm:1.1.0"
   dependencies:
+    call-bind: ^1.0.5
+    isarray: ^2.0.5
     jsonify: ^0.0.1
-  checksum: ec10863493fb728481ed7576551382768a173d5b884758db530def00523b862083a3fd70fee24b39e2f47f5f502e22f9a1489dd66da3535b63bf6241dbfca800
+    object-keys: ^1.1.1
+  checksum: 98e74dd45d3e93aa7cb5351b9f55475e15a8a7b57f401897373a1a1bbe41a6757f8b8d24f2bff0594893eccde616efe71bbaea2c1fdc1f67e8c39bcb9ee993e2
   languageName: node
   linkType: hard
 
