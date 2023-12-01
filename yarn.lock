@@ -5147,14 +5147,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:*":
-  version: 8.10.7
-  resolution: "@types/pg@npm:8.10.7"
+"@types/pg@npm:*, @types/pg@npm:^8.10.9":
+  version: 8.10.9
+  resolution: "@types/pg@npm:8.10.9"
   dependencies:
     "@types/node": "*"
     pg-protocol: "*"
     pg-types: ^4.0.1
-  checksum: 90a616360844b6f877be21a24839af2115f5eb9c8e3eeaf577fa0f036c6c56ad140113fdd8268e63cf215bd0953d89caa1af05191dd89cb2e6d96eb6db6074d2
+  checksum: c0c750af1f0945fe31c2793931da33bf596476ec8b52babfdb20f61006570c1c6c7f62f2dedd0cb9aefd2cddab238f2ed279337d3b2aa734ddd1ee8958e2355e
   languageName: node
   linkType: hard
 
@@ -5166,17 +5166,6 @@ __metadata:
     pg-protocol: "*"
     pg-types: ^2.2.0
   checksum: a44710ff06e70f57685ddb88edbb93d4b46e03fed90619f09853ed3868ab28541c4da03eccf6b0b444a7566a0b3c56028543ced43554d51168ca3f8ae15e194f
-  languageName: node
-  linkType: hard
-
-"@types/pg@npm:^8.10.9":
-  version: 8.10.9
-  resolution: "@types/pg@npm:8.10.9"
-  dependencies:
-    "@types/node": "*"
-    pg-protocol: "*"
-    pg-types: ^4.0.1
-  checksum: c0c750af1f0945fe31c2793931da33bf596476ec8b52babfdb20f61006570c1c6c7f62f2dedd0cb9aefd2cddab238f2ed279337d3b2aa734ddd1ee8958e2355e
   languageName: node
   linkType: hard
 

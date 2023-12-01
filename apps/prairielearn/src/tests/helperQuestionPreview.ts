@@ -297,7 +297,7 @@ export function testFileDownloads(
       });
       it('should produce no issues', async function () {
         const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
-        if (result.rowCount > 0) {
+        if (result.rowCount != null && result.rowCount > 0) {
           throw new Error(`found ${result.rowCount} issues (expected zero issues)`);
         }
       });

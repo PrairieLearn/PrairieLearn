@@ -366,8 +366,9 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
           variant_id: locals.variant.id,
           req_date: locals.req_date,
         });
+        const submissionCount = result.rowCount ?? 0;
 
-        if (result.rowCount >= 1) {
+        if (submissionCount >= 1) {
           // Load detailed information for the submissions that we'll render.
           // Note that for non-Freeform questions, we unfortunately have to
           // eagerly load detailed data for all submissions, as that ends up
@@ -380,14 +381,15 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
           const detailedSubmissionResult = await sqldb.queryAsync(sql.select_detailed_submissions, {
             submission_ids: submissionsToRender.map((s) => s.id),
           });
+          const detailedSubmissionCount = detailedSubmissionResult.rowCount ?? 0;
 
           locals.submissions = result.rows.map((s, idx) => ({
             grading_job_stats: buildGradingJobStats(s.grading_job),
-            submission_number: result.rowCount - idx,
+            submission_number: submissionCount - idx,
             ...s,
             // Both queries order results consistently, so we can just use
             // the array index to match up the basic and detailed results.
-            ...(idx < detailedSubmissionResult.rowCount ? detailedSubmissionResult.rows[idx] : {}),
+            ...(idx < detailedSubmissionCount ? detailedSubmissionResult.rows[idx] : {}),
           }));
           locals.submission = locals.submissions[0]; // most recent submission
 
