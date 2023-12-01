@@ -241,7 +241,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         v.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        v.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'variant_seed',
           v.variant_seed,
