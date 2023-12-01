@@ -3136,7 +3136,7 @@ __metadata:
     "@types/mocha": ^10.0.3
     "@types/multipipe": ^3.0.3
     "@types/node": ^18.18.8
-    "@types/pg-cursor": ^2.7.1
+    "@types/pg-cursor": ^2.7.2
     chai: ^4.3.10
     chai-as-promised: ^7.1.1
     mocha: ^10.2.0
@@ -5128,13 +5128,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg-cursor@npm:^2.7.1":
-  version: 2.7.1
-  resolution: "@types/pg-cursor@npm:2.7.1"
+"@types/pg-cursor@npm:^2.7.2":
+  version: 2.7.2
+  resolution: "@types/pg-cursor@npm:2.7.2"
   dependencies:
     "@types/node": "*"
     "@types/pg": "*"
-  checksum: ae1994500719f0a2c7879d68437c6c016ad8cd10218b94e5886c87e8c37e31eb7eee0dc1cf150b0d7d2918049b3755d044529f0f1b785c2b2f66891667ad4adf
+  checksum: bedf37185917be9e9db01a865dca89676aedec55b25b6ab3fdb00e7bbb3f4bf40986086eab670aef55cdb513e5877a22b8c05c81460d8590014aeadd5276e126
   languageName: node
   linkType: hard
 
