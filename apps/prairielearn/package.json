@@ -186,7 +186,7 @@
     "@types/body-parser": "^1.19.4",
     "@types/bootstrap": "^5.2.8",
     "@types/byline": "^4.2.36",
-    "@types/chai": "^4.3.9",
+    "@types/chai": "^4.3.11",
     "@types/chai-as-promised": "^7.1.7",
     "@types/cookie-parser": "^1.4.5",
     "@types/crypto-js": "^4.2.1",

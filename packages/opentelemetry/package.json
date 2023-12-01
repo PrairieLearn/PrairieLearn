@@ -38,7 +38,7 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^1.17.1",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.9",
+    "@types/chai": "^4.3.11",
     "@types/mocha": "^10.0.3",
     "@types/node": "^18.18.8",
     "chai": "^4.3.10",

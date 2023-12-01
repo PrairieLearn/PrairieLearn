@@ -24,7 +24,7 @@
   "devDependencies": {
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.9",
+    "@types/chai": "^4.3.11",
     "@types/cookie": "^0.5.3",
     "@types/cookie-signature": "^1.1.1",
     "@types/node": "^18.18.8",

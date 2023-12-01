@@ -2942,7 +2942,7 @@ __metadata:
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@types/async": ^3.2.22
-    "@types/chai": ^4.3.9
+    "@types/chai": ^4.3.11
     "@types/dockerode": ^3.3.21
     "@types/fs-extra": ^11.0.3
     "@types/node": ^18.18.8
@@ -3074,7 +3074,7 @@ __metadata:
     "@opentelemetry/sdk-trace-node": ^1.17.1
     "@opentelemetry/semantic-conventions": ^1.17.1
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": ^4.3.9
+    "@types/chai": ^4.3.11
     "@types/mocha": ^10.0.3
     "@types/node": ^18.18.8
     chai: ^4.3.10
@@ -3090,7 +3090,7 @@ __metadata:
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": ^4.3.9
+    "@types/chai": ^4.3.11
     "@types/mocha": ^10.0.3
     "@types/node": ^18.18.8
     chai: ^4.3.10
@@ -3199,7 +3199,7 @@ __metadata:
     "@types/body-parser": ^1.19.4
     "@types/bootstrap": ^5.2.8
     "@types/byline": ^4.2.36
-    "@types/chai": ^4.3.9
+    "@types/chai": ^4.3.11
     "@types/chai-as-promised": ^7.1.7
     "@types/cookie-parser": ^1.4.5
     "@types/crypto-js": ^4.2.1
@@ -3423,7 +3423,7 @@ __metadata:
   dependencies:
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": ^4.3.9
+    "@types/chai": ^4.3.11
     "@types/cookie": ^0.5.3
     "@types/cookie-signature": ^1.1.1
     "@types/express": ^4.17.20
@@ -4658,10 +4658,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:*, @types/chai@npm:^4.3.9":
+"@types/chai@npm:*":
   version: 4.3.9
   resolution: "@types/chai@npm:4.3.9"
   checksum: 2300a2c7abd4cb590349927a759b3d0172211a69f363db06e585faf7874a47f125ef3b364cce4f6190e3668147587fc11164c791c9560cf9bce8478fb7019610
+  languageName: node
+  linkType: hard
+
+"@types/chai@npm:^4.3.11":
+  version: 4.3.11
+  resolution: "@types/chai@npm:4.3.11"
+  checksum: d0c05fe5d02b2e6bbca2bd4866a2ab20a59cf729bc04af0060e7a3277eaf2fb65651b90d4c74b0ebf1d152b4b1d49fa8e44143acef276a2bbaa7785fbe5642d3
   languageName: node
   linkType: hard
 
