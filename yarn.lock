@@ -3220,7 +3220,7 @@ __metadata:
     "@types/memorystream": ^0.3.3
     "@types/mime": ^3.0.3
     "@types/mocha": ^10.0.3
-    "@types/multer": ^1.4.9
+    "@types/multer": ^1.4.11
     "@types/mustache": ^4.2.5
     "@types/node": ^18.18.8
     "@types/node-fetch": ^2.6.8
@@ -5003,12 +5003,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/multer@npm:^1.4.9":
-  version: 1.4.9
-  resolution: "@types/multer@npm:1.4.9"
+"@types/multer@npm:^1.4.11":
+  version: 1.4.11
+  resolution: "@types/multer@npm:1.4.11"
   dependencies:
     "@types/express": "*"
-  checksum: 2e565052174389bf3bfdf77c0a8c7e9d4a44a65b05d388d9c1336db833fc3efc8d312587d3107b64e1e168b57d00f7834e093db0060b5acec8a7a02cd05b3877
+  checksum: 3d80b2acdfbc9f3e9027d4467e948925810b67e5622a3017f42f58a3598d34b25376890801e55d0c03973ccc34573abf5218af334e8292ec455832f4ade3e5f5
   languageName: node
   linkType: hard
 
