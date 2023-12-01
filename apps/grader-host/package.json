@@ -36,7 +36,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/async": "^3.2.22",
+    "@types/async": "^3.2.24",
     "@types/chai": "^4.3.9",
     "@types/dockerode": "^3.3.21",
     "@types/fs-extra": "^11.0.3",
