@@ -20,7 +20,7 @@
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.2"
   },
   "dependencies": {
     "@aws-sdk/client-ecr": "^3.462.0",

@@ -33,7 +33,7 @@
     "pyright": "^1.1.334",
     "s3rver": "^3.7.1",
     "turbo": "^1.10.16",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.2"
   },
   "workspaces": [
     "apps/*",

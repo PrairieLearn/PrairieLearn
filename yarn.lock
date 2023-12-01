@@ -2753,7 +2753,7 @@ __metadata:
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.18.8
     node-fetch: ^2.7.0
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     zod: ^3.22.4
   languageName: unknown
   linkType: soft
@@ -2766,7 +2766,7 @@ __metadata:
     "@smithy/property-provider": ^2.0.13
     "@smithy/types": ^2.4.0
     "@types/node": ^18.18.8
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2788,7 +2788,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     js-base64: ^3.7.5
     tsup: ^8.0.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2812,7 +2812,7 @@ __metadata:
     pretty-bytes: ^5.6.0
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   bin:
     compiled-assets: dist/cli.js
   languageName: unknown
@@ -2836,7 +2836,7 @@ __metadata:
     mocha: ^10.2.0
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     zod: ^3.22.4
   languageName: unknown
   linkType: soft
@@ -2855,7 +2855,7 @@ __metadata:
     multipipe: ^4.0.0
     stream-transform: ^3.2.10
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2872,7 +2872,7 @@ __metadata:
     date-fns: ^2.30.0
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2887,7 +2887,7 @@ __metadata:
     lodash: ^4.17.21
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2897,7 +2897,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.18.8
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2921,7 +2921,7 @@ __metadata:
     chai: ^4.3.10
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2960,7 +2960,7 @@ __metadata:
     sinon: ^17.0.1
     tmp: ^0.2.1
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
     winston: ^3.11.0
     winston-transport: ^4.6.0
@@ -2980,7 +2980,7 @@ __metadata:
     ejs: ^3.1.9
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -2993,7 +2993,7 @@ __metadata:
     chai: ^4.3.10
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3004,7 +3004,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.18.8
     logform: ^2.6.0
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     winston: ^3.11.0
     zod: ^3.22.4
   languageName: unknown
@@ -3029,7 +3029,7 @@ __metadata:
     serialize-error: ^8.1.0
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
     zod: ^3.22.4
   languageName: unknown
@@ -3043,7 +3043,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.18.8
     pg: ^8.11.3
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3081,7 +3081,7 @@ __metadata:
     chai-as-promised: ^7.1.1
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3096,7 +3096,7 @@ __metadata:
     chai: ^4.3.10
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3117,7 +3117,7 @@ __metadata:
     fs-extra: ^11.1.1
     lodash: ^4.17.21
     postgres-array: ^3.0.2
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
     yargs: ^17.7.2
   bin:
@@ -3145,7 +3145,7 @@ __metadata:
     pg-cursor: ^2.10.3
     pg-pool: ^3.6.1
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     zod: ^3.22.4
   languageName: unknown
   linkType: soft
@@ -3365,7 +3365,7 @@ __metadata:
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
     tzientist: ^3.2.0
     unified: ^9.2.2
@@ -3387,7 +3387,7 @@ __metadata:
     "@types/node": ^18.18.8
     prettier: 3.0.3
     sql-formatter: ^13.0.4
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3400,7 +3400,7 @@ __metadata:
     chai: ^4.3.10
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3413,7 +3413,7 @@ __metadata:
     "@types/node": ^18.18.8
     execa: ^5.1.1
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3445,7 +3445,7 @@ __metadata:
     set-cookie-parser: ^2.6.0
     source-map-support: ^0.5.21
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     uid-safe: ^2.1.5
   languageName: unknown
   linkType: soft
@@ -3461,7 +3461,7 @@ __metadata:
     debug: ^4.3.4
     lodash: ^4.17.21
     mocha: ^10.2.0
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -3505,7 +3505,7 @@ __metadata:
     node-fetch: 2.7.0
     nodemon: ^3.0.1
     ts-node: ^10.9.1
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
     uuid: ^9.0.1
     yargs-parser: ^21.1.1
@@ -3525,7 +3525,7 @@ __metadata:
     fast-glob: ^3.3.1
     filesize: ^10.1.0
     socket.io: ^4.7.2
-    typescript: ^5.2.2
+    typescript: ^5.3.2
     typescript-cp: ^0.1.9
   languageName: unknown
   linkType: soft
@@ -13875,7 +13875,7 @@ __metadata:
     pyright: ^1.1.334
     s3rver: ^3.7.1
     turbo: ^1.10.16
-    typescript: ^5.2.2
+    typescript: ^5.3.2
   languageName: unknown
   linkType: soft
 
@@ -16522,23 +16522,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.2.2":
-  version: 5.2.2
-  resolution: "typescript@npm:5.2.2"
+"typescript@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "typescript@npm:5.3.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 7912821dac4d962d315c36800fe387cdc0a6298dba7ec171b350b4a6e988b51d7b8f051317786db1094bd7431d526b648aba7da8236607febb26cf5b871d2d3c
+  checksum: d92534dda639eb825db013203404c1fabca8ac630564283c9e7dc9e64fd9c9346c2de95ecebdf3e6e8c1c32941bca1cfe0da37877611feb9daf8feeaea58d230
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^5.2.2#~builtin<compat/typescript>":
-  version: 5.2.2
-  resolution: "typescript@patch:typescript@npm%3A5.2.2#~builtin<compat/typescript>::version=5.2.2&hash=85af82"
+"typescript@patch:typescript@^5.3.2#~builtin<compat/typescript>":
+  version: 5.3.2
+  resolution: "typescript@patch:typescript@npm%3A5.3.2#~builtin<compat/typescript>::version=5.3.2&hash=85af82"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 07106822b4305de3f22835cbba949a2b35451cad50888759b6818421290ff95d522b38ef7919e70fb381c5fe9c1c643d7dea22c8b31652a717ddbd57b7f4d554
+  checksum: c034461079fbfde3cb584ddee52afccb15b6e32a0ce186d0b2719968786f7ca73e1b07f71fac4163088790b16811c6ccf79680de190664ef66ff0ba9c1fe4a23
   languageName: node
   linkType: hard
 
