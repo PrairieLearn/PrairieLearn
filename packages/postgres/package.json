@@ -24,7 +24,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@types/debug": "^4.1.10",
+    "@types/debug": "^4.1.12",
     "@types/lodash": "^4.14.200",
     "@types/pg-cursor": "^2.7.1",
     "multipipe": "^4.0.0",
