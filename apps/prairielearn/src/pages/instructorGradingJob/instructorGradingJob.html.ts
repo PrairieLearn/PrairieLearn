@@ -202,16 +202,16 @@ export function InstructorGradingJob({
                     </div>
                   `
                 : gradingJobQueryResult.grading_job.output
-                ? html`
-                    <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
+                  ? html`
+                      <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output">
 ${gradingJobQueryResult.grading_job.output}</pre
-                    >
-                  `
-                : html`
-                    <pre class="bg-dark text-white rounded p-3 mb-0">
+                      >
+                    `
+                  : html`
+                      <pre class="bg-dark text-white rounded p-3 mb-0">
 No output was captured for this grading job.</pre
-                    >
-                  `}
+                      >
+                    `}
             </div>
           </div>
         </main>

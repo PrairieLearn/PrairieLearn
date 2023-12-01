@@ -21,9 +21,8 @@ var load_default_config = function (res, _req) {
 
   var fullUrlPrefix = config.SEBServerUrl;
 
-  defobj[
-    'startURL'
-  ] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
+  defobj['startURL'] =
+    `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
   var hashdata = {
     assessment_id: res.locals.assessment.id,
