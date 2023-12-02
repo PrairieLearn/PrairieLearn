@@ -1,6 +1,6 @@
 import os
 from html import escape, unescape
-from typing import Any, Generator, Iterable, Optional, Type
+from typing import Any, Generator, Iterable, Optional
 
 import chevron
 import lxml.html
