@@ -305,8 +305,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                             ${!item.num_submissions
                               ? 'No'
                               : item.num_submissions === 1
-                              ? '1 submission'
-                              : `${item.num_submissions} submissions`}
+                                ? '1 submission'
+                                : `${item.num_submissions} submissions`}
                           </td>
                         </tr>
                       `,
