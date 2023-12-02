@@ -107,6 +107,7 @@ function createTestSubmission(
           null, // mode
           variant.id,
           authn_user_id,
+          null, // client_fingerprint_id
         ];
         sqldb.callOneRow('submissions_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
@@ -338,6 +339,7 @@ function testQuestion(
         const course_instance_id = (course_instance && course_instance.id) || null;
         const options = {};
         const require_open = true;
+        const client_fingerprint_id = null;
         const generateStart = Date.now();
         ensureVariant(
           question.id,
@@ -350,6 +352,7 @@ function testQuestion(
           question_course,
           options,
           require_open,
+          client_fingerprint_id,
           (err, ret_variant) => {
             const generateEnd = Date.now();
             generateDuration = generateEnd - generateStart;

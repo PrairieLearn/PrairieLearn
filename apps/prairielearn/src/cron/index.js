@@ -355,7 +355,7 @@ module.exports = {
     };
     sqldb.query(sql.select_recent_cron_job, params, (err, result) => {
       if (ERR(err, callback)) return;
-      if (result.rowCount > 0) {
+      if (result.rowCount != null && result.rowCount > 0) {
         debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
         logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
         callback(null);
