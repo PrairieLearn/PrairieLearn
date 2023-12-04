@@ -13,6 +13,7 @@ CREATE FUNCTION
         IN group_work boolean,
         IN require_open boolean,
         IN variant_course_id bigint,
+        IN client_fingerprint_id bigint,
         OUT variant json
     )
 AS $$
@@ -126,7 +127,8 @@ BEGIN
         broken_at,
         authn_user_id,
         workspace_id,
-        course_id
+        course_id,
+        client_fingerprint_id
       )
     VALUES
       (
@@ -144,7 +146,8 @@ BEGIN
         CASE WHEN broken THEN NOW() ELSE NULL END,
         authn_user_id,
         workspace_id,
-        variant_course_id
+        variant_course_id,
+        client_fingerprint_id
       )
     RETURNING id
     INTO variant_id;

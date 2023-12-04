@@ -314,12 +314,16 @@
               data-switchable="true"
               data-search-formatter="false">Total Time Limit</th>
               <% if (!assessment.group_work) { %>
-                <th data-field="client_fingerprint_id_change_count"
+                <th
+                  data-field="client_fingerprint_id_change_count"
                   data-sortable="true"
                   data-class="text-center align-middle"
-                  data-switchable="true">Fingerprint Changes
+                  data-switchable="true"
+                >
+                  Fingerprint Changes
                   <button class="btn btn-xs" type="button" title="Show fingerprint changes help" data-toggle="modal" data-target="#fingerprint-changes-help">
                     <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
                 </th>
               <% } %>
               <th data-field="action_button"

@@ -3230,7 +3230,7 @@ __metadata:
     "@types/passport": ^1.0.14
     "@types/passport-azure-ad": ^4.3.3
     "@types/pem": ^1.14.3
-    "@types/pg": ^8.10.7
+    "@types/pg": ^8.10.9
     "@types/request": ^2.48.12
     "@types/streamifier": ^0.1.2
     "@types/tar": ^6.1.7
@@ -3385,7 +3385,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.18.8
-    prettier: 3.0.3
+    prettier: 3.1.0
     sql-formatter: ^13.0.4
     typescript: ^5.2.2
   languageName: unknown
@@ -5147,14 +5147,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:*, @types/pg@npm:^8.10.7":
-  version: 8.10.7
-  resolution: "@types/pg@npm:8.10.7"
+"@types/pg@npm:*, @types/pg@npm:^8.10.9":
+  version: 8.10.9
+  resolution: "@types/pg@npm:8.10.9"
   dependencies:
     "@types/node": "*"
     pg-protocol: "*"
     pg-types: ^4.0.1
-  checksum: 90a616360844b6f877be21a24839af2115f5eb9c8e3eeaf577fa0f036c6c56ad140113fdd8268e63cf215bd0953d89caa1af05191dd89cb2e6d96eb6db6074d2
+  checksum: c0c750af1f0945fe31c2793931da33bf596476ec8b52babfdb20f61006570c1c6c7f62f2dedd0cb9aefd2cddab238f2ed279337d3b2aa734ddd1ee8958e2355e
   languageName: node
   linkType: hard
 
@@ -13871,8 +13871,8 @@ __metadata:
     eslint-plugin-no-floating-promise: ^1.0.2
     eslint-plugin-no-only-tests: ^3.1.0
     htmlhint: ^1.1.4
-    prettier: 3.0.3
-    pyright: ^1.1.334
+    prettier: 3.1.0
+    pyright: ^1.1.338
     s3rver: ^3.7.1
     turbo: ^1.10.16
     typescript: ^5.2.2
@@ -13905,12 +13905,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.0.3":
-  version: 3.0.3
-  resolution: "prettier@npm:3.0.3"
+"prettier@npm:3.1.0":
+  version: 3.1.0
+  resolution: "prettier@npm:3.1.0"
   bin:
     prettier: bin/prettier.cjs
-  checksum: e10b9af02b281f6c617362ebd2571b1d7fc9fb8a3bd17e371754428cda992e5e8d8b7a046e8f7d3e2da1dcd21aa001e2e3c797402ebb6111b5cd19609dd228e0
+  checksum: 44b556bd56f74d7410974fbb2418bb4e53a894d3e7b42f6f87779f69f27a6c272fa7fc27cec0118cd11730ef3246478052e002cbd87e9a253f9cd04a56aa7d9b
   languageName: node
   linkType: hard
 
@@ -14064,9 +14064,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.334":
-  version: 1.1.334
-  resolution: "pyright@npm:1.1.334"
+"pyright@npm:^1.1.338":
+  version: 1.1.338
+  resolution: "pyright@npm:1.1.338"
   dependencies:
     fsevents: ~2.3.2
   dependenciesMeta:
@@ -14075,7 +14075,7 @@ __metadata:
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: a516ea57827909add59f61896f12a66cbdec836de9caf32888bfe6e9ebc05df8dd72ab3c0e7f4e3dc5d91238f95247f1e25355817019a92b954071b1fd1bd5d1
+  checksum: b51c930c081159bc97e4a60bcd08bc664ae6eb059154052b6c816de6454ab20b1da5460a50d7302ed2b40beff9aba9e699d647d55736cb2f2d420032cc781221
   languageName: node
   linkType: hard
 
