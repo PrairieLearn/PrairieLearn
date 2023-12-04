@@ -45,6 +45,7 @@ function processSubmission(req, res, callback) {
     submitted_answer: submitted_answer,
     credit: res.locals.authz_result.credit,
     mode: res.locals.authz_data.mode,
+    client_fingerprint_id: res.locals.client_fingerprint_id,
   };
   sqldb.callOneRow(
     'variants_ensure_instance_question',
