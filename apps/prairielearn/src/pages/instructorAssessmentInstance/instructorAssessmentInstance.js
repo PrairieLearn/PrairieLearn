@@ -5,6 +5,7 @@ const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
+import { z } from 'zod';
 
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name';
 import * as ltiOutcomes from '../../lib/ltiOutcomes';
@@ -13,6 +14,7 @@ import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
 } from '../../lib/assessment';
+import { InstanceQuestionSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -46,19 +48,27 @@ router.get(
       })
     ).rows;
 
-    const dateDurationResult = await sqldb.queryOneRowAsync(sql.select_date_formatted_duration, {
-      assessment_instance_id: res.locals.assessment_instance.id,
-    });
-    res.locals.assessment_instance_date_formatted =
-      dateDurationResult.rows[0].assessment_instance_date_formatted;
-    res.locals.assessment_instance_duration =
-      dateDurationResult.rows[0].assessment_instance_duration;
-
-    res.locals.instance_questions = (
-      await sqldb.queryAsync(sql.select_instance_questions, {
+    const dateDurationResult = await sqldb.queryRow(
+      sql.select_date_formatted_duration,
+      {
         assessment_instance_id: res.locals.assessment_instance.id,
-      })
-    ).rows;
+      },
+      z.object({
+        assessment_instance_date_formatted: z.string(),
+        assessment_instance_duration: z.string(),
+      }),
+    );
+    res.locals.assessment_instance_date_formatted =
+      dateDurationResult.assessment_instance_date_formatted;
+    res.locals.assessment_instance_duration = dateDurationResult.assessment_instance_duration;
+
+    res.locals.instance_questions = await sqldb.queryRows(
+      sql.select_instance_questions,
+      {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      },
+      InstanceQuestionSchema,
+    );
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
 

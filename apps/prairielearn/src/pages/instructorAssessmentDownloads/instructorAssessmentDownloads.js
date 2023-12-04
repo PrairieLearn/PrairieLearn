@@ -51,14 +51,17 @@ const setFilenames = function (locals) {
   }
 };
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
-  setFilenames(res.locals);
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
+    setFilenames(res.locals);
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  }),
+);
 
 /**
  * Local abstraction to adapt our internal notion of columns to the columns
