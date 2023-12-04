@@ -61,7 +61,7 @@
                     // If any of the options has math, render the math as needed
                     // Events: loaded (when the page opens), rendered (when the value changes),
                     // shown (when the dropdown extends)
-                    MathJax.startup.promise.then(async () => MathJax.typesetPromise($(e.target).parent()));
+                    MathJax.typesetPromise();
                 });
         });
     </script>
