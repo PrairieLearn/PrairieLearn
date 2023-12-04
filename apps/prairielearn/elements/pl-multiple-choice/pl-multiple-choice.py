@@ -4,7 +4,6 @@ import pathlib
 import random
 from collections import Counter
 from enum import Enum
-from itertools import chain, count
 from typing import NamedTuple, Optional
 
 import chevron
@@ -67,7 +66,7 @@ def categorize_options(
     """Get provided correct and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
-    index_counter = count(0)
+    index_counter = it.count(0)
 
     # First, check internal HTML for answer choices
     for child in element:
@@ -404,7 +403,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # instructors want to explicitly have matrix M vs. vector m as possible options.
 
     choices_dict = Counter(
-        choice.html.strip() for choice in chain(correct_answers, incorrect_answers)
+        choice.html.strip() for choice in it.chain(correct_answers, incorrect_answers)
     )
 
     duplicates = [item for item, count in choices_dict.items() if count > 1]
@@ -482,18 +481,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         answerset = []
         for answer in answers:
             is_submitted_answer = submitted_key == answer["key"]
-            should_display = is_submitted_answer and not hide_score_badge
+            should_display_badge = is_submitted_answer and not hide_score_badge
 
             answer_html = {
                 "key": answer["key"],
                 "selected": is_submitted_answer,
                 "html": answer["html"],
-                "display_score_badge": should_display and display_score,
+                "display_score_badge": should_display_badge and display_score,
                 "display_feedback": is_submitted_answer and feedback,
                 "feedback": feedback,
             }
 
-            if should_display and display_score:
+            if should_display_badge and display_score:
                 score_type, _ = pl.determine_score_params(score)
                 answer_html[score_type] = True
 
@@ -648,12 +647,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         if len(incorrect_keys) > 0:
             random_key = random.choice(incorrect_keys)
             data["raw_submitted_answers"][name] = random_key
-            feedback = ""
-            score = 0.0
-            for option in data["params"][name]:
-                if option["key"] == random_key:
-                    feedback = option.get("feedback", None)
-                    score = option.get("score", 0.0)
+
+            score, feedback = next(
+                (option.get("score", 0.0), option.get("feedback"))
+                for option in data["params"][name]
+                if option["key"] == random_key
+            )
+
             data["partial_scores"][name] = {"score": score, "weight": weight}
 
             if feedback is not None:
