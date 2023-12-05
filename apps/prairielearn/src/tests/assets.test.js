@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 import fetch from 'node-fetch';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const assets = require('../lib/assets');
 import { APP_ROOT_PATH } from '../lib/paths';
 

@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');

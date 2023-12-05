@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 const cheerio = require('cheerio');
 import { step } from 'mocha-steps';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 

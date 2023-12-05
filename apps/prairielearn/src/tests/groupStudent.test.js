@@ -4,7 +4,7 @@ const ERR = require('async-stacktrace');
 import fetch from 'node-fetch';
 const fetchCookie = require('fetch-cookie');
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 import { assert } from 'chai';
 var cheerio = require('cheerio');
 

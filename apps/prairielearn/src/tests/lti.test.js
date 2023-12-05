@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 const oauthSignature = require('oauth-signature');
 import { assert } from 'chai';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const locals = {};

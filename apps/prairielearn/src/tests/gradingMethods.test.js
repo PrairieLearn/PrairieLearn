@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const cheerio = require('cheerio');
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 import fetch from 'node-fetch';
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');

@@ -1,5 +1,5 @@
 // @ts-check
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 import { assert } from 'chai';
 
 const sqldb = require('@prairielearn/postgres');

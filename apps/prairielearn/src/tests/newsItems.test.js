@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 const cheerio = require('cheerio');
 
 const news_items = require('../news_items');
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 

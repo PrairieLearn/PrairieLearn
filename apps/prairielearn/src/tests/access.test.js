@@ -4,7 +4,7 @@ import { assert } from 'chai';
 var request = require('request');
 var cheerio = require('cheerio');
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const { ensureEnrollment } = require('../models/enrollment');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);

@@ -1,5 +1,5 @@
 // @ts-check
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 var helperServer = require('./helperServer');

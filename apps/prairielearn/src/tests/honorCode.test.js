@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
