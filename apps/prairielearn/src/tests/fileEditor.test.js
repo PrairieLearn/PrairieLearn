@@ -1,7 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const request = require('request');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 import * as fs from 'fs-extra';
 const path = require('path');
 const async = require('async');

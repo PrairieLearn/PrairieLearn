@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
 import * as fs from 'fs-extra';

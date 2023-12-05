@@ -1,7 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
 const cheerio = require('cheerio');
 

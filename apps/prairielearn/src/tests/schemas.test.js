@@ -1,6 +1,6 @@
 // @ts-check
 const Ajv = require('ajv').default;
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const schemas = require('../schemas');
 
 const isObject = (a) => !!a && a.constructor === Object;

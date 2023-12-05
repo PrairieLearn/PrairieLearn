@@ -1,5 +1,5 @@
 const ERR = require('async-stacktrace');
-var assert = require('chai').assert;
+import { assert } from 'chai';
 var request = require('request');
 var cheerio = require('cheerio');
 

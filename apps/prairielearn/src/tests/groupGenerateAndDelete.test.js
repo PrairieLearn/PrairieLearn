@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const util = require('node:util');
 const sqldb = require('@prairielearn/postgres');
 const { step } = require('mocha-steps');

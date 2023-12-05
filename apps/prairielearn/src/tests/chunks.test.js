@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const tmp = require('tmp-promise');
 import * as fs from 'fs-extra';
 const path = require('path');

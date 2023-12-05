@@ -1,6 +1,6 @@
 // @ts-check
 const markdown = require('../lib/markdown');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 
 const testMarkdownQuestion = (question, expected) => {
   const actual = markdown.processQuestion(question);

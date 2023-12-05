@@ -4,7 +4,7 @@ const ERR = require('async-stacktrace');
 const { config } = require('../lib/config');
 import { TEST_COURSE_PATH } from '../lib/paths';
 const _ = require('lodash');
-var assert = require('chai').assert;
+import { assert } from 'chai';
 var request = require('request');
 var cheerio = require('cheerio');
 

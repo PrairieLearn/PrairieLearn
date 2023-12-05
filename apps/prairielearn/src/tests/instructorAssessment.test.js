@@ -1,5 +1,5 @@
 // @ts-check
-var assert = require('chai').assert;
+import { assert } from 'chai';
 var request = require('request');
 var cheerio = require('cheerio');
 const _ = require('lodash');

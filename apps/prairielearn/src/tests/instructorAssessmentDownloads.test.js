@@ -1,6 +1,6 @@
 // @ts-check
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
 const cheerio = require('cheerio');
 const { parse: csvParse } = require('csv-parse/sync');

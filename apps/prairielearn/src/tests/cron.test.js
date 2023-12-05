@@ -1,7 +1,7 @@
 // @ts-check
 const _ = require('lodash');
 const cron = require('../cron');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');

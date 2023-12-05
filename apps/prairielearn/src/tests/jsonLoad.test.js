@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const path = require('path');
 const jsonLoad = require('../lib/json-load');
 

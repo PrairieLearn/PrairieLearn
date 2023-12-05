@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
 const { step } = require('mocha-steps');

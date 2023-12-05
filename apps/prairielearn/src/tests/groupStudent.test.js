@@ -5,7 +5,7 @@ const fetch = require('node-fetch').default;
 const fetchCookie = require('fetch-cookie');
 
 const { config } = require('../lib/config');
-var assert = require('chai').assert;
+import { assert } from 'chai';
 var cheerio = require('cheerio');
 
 var sqldb = require('@prairielearn/postgres');

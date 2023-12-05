@@ -1,5 +1,5 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');
 

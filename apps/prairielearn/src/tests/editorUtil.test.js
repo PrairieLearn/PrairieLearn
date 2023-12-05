@@ -1,6 +1,6 @@
 // @ts-check
 const editor = require('../lib/editorUtil');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 
 describe('editor library', () => {
   it('gets details for course info file', () => {
