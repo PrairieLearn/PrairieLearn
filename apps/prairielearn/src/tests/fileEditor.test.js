@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const request = require('request');
 const assert = require('chai').assert;
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 const async = require('async');
 const ncp = require('ncp');

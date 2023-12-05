@@ -1,7 +1,7 @@
 // @ts-check
 const assert = require('chai').assert;
 const tmp = require('tmp-promise');
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');

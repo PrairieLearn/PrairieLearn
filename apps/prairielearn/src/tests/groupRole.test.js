@@ -2,7 +2,7 @@
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');

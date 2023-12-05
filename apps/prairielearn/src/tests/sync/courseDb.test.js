@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 const tmp = require('tmp-promise');
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 
 const courseDb = require('../../sync/course-db');

@@ -1,6 +1,6 @@
 // @ts-check
 const { promisify } = require('util');
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const tmp = require('tmp-promise');
 const path = require('path');
 const sqldb = require('@prairielearn/postgres');

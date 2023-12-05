@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');

@@ -1,7 +1,7 @@
 // @ts-check
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);

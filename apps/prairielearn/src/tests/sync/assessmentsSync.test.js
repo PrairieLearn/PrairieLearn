@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 const path = require('path');
 const { config } = require('../../lib/config');
 const { features } = require('../../lib/features/index');
