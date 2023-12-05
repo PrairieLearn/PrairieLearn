@@ -1,3 +1,5 @@
+// @ts-check
+const { promisify } = require('util');
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
@@ -45,9 +47,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} uuid
  * @property {string} name
  * @property {string} title
- * @property {string} timezone
- * @property {boolean} exampleCourse
- * @property {CourseOptions} options
+ * @property {string} [timezone]
+ * @property {CourseOptions} [options]
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
@@ -56,10 +57,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {string[]=} uids
- * @property {string=} startDate
- * @property {string=} endDate
- * @property {string=} institution
+ * @property {string[]} [uids]
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {string} [institution]
  */
 
 /**
@@ -175,13 +176,13 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} QuestionExternalGradingOptions
- * @property {boolean=} enabled
+ * @property {boolean} [enabled]
  * @property {string} image
  * @property {string} entrypoint
- * @property {string[]=} serverFilesCourse
- * @property {number=} timeout
- * @property {boolean=} enableNetworking
- * @property {Record<string, string | null>=} environment
+ * @property {string[]} [serverFilesCourse]
+ * @property {number} [timeout]
+ * @property {boolean} [enableNetworking]
+ * @property {Record<string, string | null>} [environment]
  */
 
 /**
@@ -189,11 +190,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} image
  * @property {number} port
  * @property {string} home
- * @property {string} args
- * @property {string[]} gradedFiles
- * @property {string} rewriteUrl
- * @property {boolean=} enableNetworking
- * @property {Record<string, string | null>=} environment
+ * @property {string} [args]
+ * @property {string[]} [gradedFiles]
+ * @property {string} [rewriteUrl]
+ * @property {boolean} [enableNetworking]
+ * @property {Record<string, string | null>} [environment]
  */
 
 /**
@@ -461,18 +462,12 @@ module.exports.getFakeLogger = function () {
 /**
  * Async wrapper for syncing course data from a directory. Also stubs out the
  * logger interface.
+ *
+ * @param {string} courseDir - The path to the course directory
  */
-module.exports.syncCourseData = function (courseDir) {
+module.exports.syncCourseData = async function (courseDir) {
   const logger = module.exports.getFakeLogger();
-  return new Promise((resolve, reject) => {
-    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+  await promisify(syncFromDisk.syncOrCreateDiskToSql)(courseDir, logger);
 };
 
 module.exports.createAndSyncCourseData = async function () {
@@ -572,7 +567,7 @@ function checkSetsSame(setA, setB) {
  *
  * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
- * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
+ * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
  */
 module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
@@ -595,7 +590,7 @@ module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKey
  *
  * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
- * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
+ * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
  */
 module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
