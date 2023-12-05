@@ -6,16 +6,16 @@ const path = require('path');
 const { z } = require('zod');
 import * as sqldb from '@prairielearn/postgres';
 
-const courseDB = require('../sync/course-db');
-const chunksLib = require('../lib/chunks');
+import * as courseDB from '../sync/course-db';
+import * as chunksLib from '../lib/chunks';
 import { config } from '../lib/config';
 import { TEST_COURSE_PATH } from '../lib/paths';
-const { makeMockLogger } = require('./mockLogger');
-const sql = sqldb.loadSqlEquiv(__filename);
-
+import { makeMockLogger } from './mockLogger';
 import * as helperServer from './helperServer';
-const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
-const { makeInfoFile } = require('../sync/infofile');
+import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { makeInfoFile } from '../sync/infofile';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /** @type {import('../sync/course-db').CourseData} */
 const COURSE = {

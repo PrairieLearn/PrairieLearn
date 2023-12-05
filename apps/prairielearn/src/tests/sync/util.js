@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 const stringify = require('json-stable-stringify');
 import { assert } from 'chai';
 
-const syncFromDisk = require('../../sync/syncFromDisk');
+import * as syncFromDisk from '../../sync/syncFromDisk';
 
 /**
  * @typedef {Object} CourseOptions

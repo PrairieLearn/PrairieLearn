@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import * as fs from 'fs-extra';
 const path = require('path');
 import { config } from '../../lib/config';
-const { features } = require('../../lib/features/index');
+import { features } from '../../lib/features/index';
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from '../../lib/id';
 

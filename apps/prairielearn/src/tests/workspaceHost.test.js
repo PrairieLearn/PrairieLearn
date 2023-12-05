@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { z } = require('zod');
 import * as sqldb from '@prairielearn/postgres';
 
-const workspaceHostUtils = require('../lib/workspaceHost');
+import * as workspaceHostUtils from '../lib/workspaceHost';
 import * as helperDb from './helperDb';
 
 const WorkspaceHostSchema = z.object({

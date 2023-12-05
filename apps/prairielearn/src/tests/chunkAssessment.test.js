@@ -4,7 +4,7 @@ import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 
 import { config } from '../lib/config';
-const chunks = require('../lib/chunks');
+import * as chunks from '../lib/chunks';
 import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 

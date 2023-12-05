@@ -1,6 +1,6 @@
 // @ts-check
 const _ = require('lodash');
-const cron = require('../cron');
+import * as cron from '../cron';
 import { assert } from 'chai';
 
 import { config } from '../lib/config';

@@ -6,7 +6,7 @@ import { step } from 'mocha-steps';
 
 import * as helperServer from './helperServer';
 import { deleteAllGroups } from '../lib/groups';
-const groupUpdate = require('../lib/group-update');
+import * as groupUpdate from '../lib/group-update';
 import { TEST_COURSE_PATH } from '../lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -1,5 +1,5 @@
 // @ts-check
-const markdown = require('../lib/markdown');
+import * as markdown from '../lib/markdown';
 import { assert } from 'chai';
 
 const testMarkdownQuestion = (question, expected) => {

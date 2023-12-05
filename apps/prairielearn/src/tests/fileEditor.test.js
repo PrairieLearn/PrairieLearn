@@ -16,7 +16,7 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from './helperServer';
 const { exec } = require('child_process');
-const b64Util = require('../lib/base64-util');
+import * as b64Util from '../lib/base64-util';
 import { encodePath } from '../lib/uri-util';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 

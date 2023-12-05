@@ -6,7 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
-const { ensureEnrollment } = require('../../models/enrollment');
+import { ensureEnrollment } from '../../models/enrollment';
 
 describe('student data access', function () {
   this.timeout(60000);

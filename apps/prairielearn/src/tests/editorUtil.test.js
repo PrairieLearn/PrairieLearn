@@ -1,5 +1,5 @@
 // @ts-check
-const editor = require('../lib/editorUtil');
+import * as editor from '../lib/editorUtil';
 import { assert } from 'chai';
 
 describe('editor library', () => {

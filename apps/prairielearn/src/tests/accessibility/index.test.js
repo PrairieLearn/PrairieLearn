@@ -13,11 +13,11 @@ const { A11yError } = require('@sa11y/format');
 const expressListEndpoints = require('express-list-endpoints');
 import * as sqldb from '@prairielearn/postgres';
 
-const server = require('../../server');
-const news_items = require('../../news_items');
+import * as server from '../../server';
+import * as news_items from '../../news_items';
 import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
-const { features } = require('../../lib/features/index');
+import { features } from '../../lib/features/index';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;

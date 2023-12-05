@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');
-const freeform = require('../question-servers/freeform.js');
+import * as freeform from '../question-servers/freeform.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 import { promisify } from 'util';
 

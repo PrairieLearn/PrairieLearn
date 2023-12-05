@@ -1,7 +1,7 @@
 // @ts-check
 import { TEST_COURSE_PATH } from '../lib/paths';
-const syncFromDisk = require('../sync/syncFromDisk');
-const { makeMockLogger } = require('./mockLogger');
+import * as syncFromDisk from '../sync/syncFromDisk';
+import { makeMockLogger } from './mockLogger';
 
 async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();

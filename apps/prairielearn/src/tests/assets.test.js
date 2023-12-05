@@ -5,7 +5,7 @@ const path = require('node:path');
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config';
-const assets = require('../lib/assets');
+import * as assets from '../lib/assets';
 import { APP_ROOT_PATH } from '../lib/paths';
 
 import * as helperServer from './helperServer';
