@@ -1,3 +1,4 @@
+// @ts-check
 var assert = require('chai').assert;
 
 var sqldb = require('@prairielearn/postgres');
