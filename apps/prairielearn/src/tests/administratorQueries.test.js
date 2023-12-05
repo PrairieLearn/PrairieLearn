@@ -4,7 +4,7 @@ import { step } from 'mocha-steps';
 
 import { config } from '../lib/config';
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const helperClient = require('./helperClient');
 
 describe('AdministratorQuery page', function () {

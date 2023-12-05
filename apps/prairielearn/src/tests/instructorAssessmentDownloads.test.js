@@ -5,7 +5,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const { parse: csvParse } = require('csv-parse/sync');
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const helperQuestion = require('./helperQuestion');
 const helperExam = require('./helperExam');
 

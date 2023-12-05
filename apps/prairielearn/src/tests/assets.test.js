@@ -8,7 +8,7 @@ import { config } from '../lib/config';
 const assets = require('../lib/assets');
 import { APP_ROOT_PATH } from '../lib/paths';
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');

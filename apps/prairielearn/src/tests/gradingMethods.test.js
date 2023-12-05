@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 
 import { config } from '../lib/config';
 import fetch from 'node-fetch';
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 // @ts-expect-error -- Incorrectly thinks that this is ESM.

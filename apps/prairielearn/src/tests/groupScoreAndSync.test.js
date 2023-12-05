@@ -11,7 +11,7 @@ var cheerio = require('cheerio');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 var page, form, elemList;
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 
 const locals = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;

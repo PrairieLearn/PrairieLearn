@@ -11,7 +11,7 @@ const freeform = require('../question-servers/freeform.js');
 const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
 import { promisify } from 'util';
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const helperClient = require('./helperClient');
 
 describe('Course element extensions', function () {

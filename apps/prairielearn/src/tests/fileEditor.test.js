@@ -14,7 +14,7 @@ const FormData = require('form-data');
 import { config } from '../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const { exec } = require('child_process');
 const b64Util = require('../lib/base64-util');
 const { encodePath } = require('../lib/uri-util');

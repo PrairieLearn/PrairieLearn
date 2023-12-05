@@ -12,7 +12,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { syncCourseData } = require('./sync/util');
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const { URLSearchParams } = require('url');
 const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
 import { TEST_COURSE_PATH } from '../lib/paths';

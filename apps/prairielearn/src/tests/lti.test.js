@@ -4,7 +4,7 @@ const oauthSignature = require('oauth-signature');
 import { assert } from 'chai';
 
 import { config } from '../lib/config';
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const sqldb = require('@prairielearn/postgres');
 const locals = {};
 

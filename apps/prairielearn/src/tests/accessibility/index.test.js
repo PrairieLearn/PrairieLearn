@@ -16,7 +16,7 @@ const sqldb = require('@prairielearn/postgres');
 const server = require('../../server');
 const news_items = require('../../news_items');
 import { config } from '../../lib/config';
-const helperServer = require('../helperServer');
+import * as helperServer from '../helperServer';
 const { features } = require('../../lib/features/index');
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
 

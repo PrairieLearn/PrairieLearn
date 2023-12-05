@@ -13,7 +13,7 @@ import { TEST_COURSE_PATH } from '../lib/paths';
 const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
 const { makeInfoFile } = require('../sync/infofile');
 

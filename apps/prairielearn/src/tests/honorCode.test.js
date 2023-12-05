@@ -5,7 +5,7 @@ import { config } from '../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 const helperClient = require('./helperClient');
 
 describe('Exam assessment response to `requireHonorCode`', function () {
