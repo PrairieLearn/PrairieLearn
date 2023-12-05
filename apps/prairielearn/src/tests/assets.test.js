@@ -1,5 +1,5 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const fetch = require('node-fetch').default;

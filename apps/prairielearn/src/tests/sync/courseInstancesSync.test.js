@@ -1,5 +1,5 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const fs = require('fs-extra');
 const path = require('path');
 const util = require('./util');

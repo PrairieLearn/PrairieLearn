@@ -1,5 +1,5 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const { v4: uuidv4 } = require('uuid');
 const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');

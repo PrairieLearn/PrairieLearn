@@ -1,5 +1,5 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const util = require('./util');
 const helperDb = require('../helperDb');
 

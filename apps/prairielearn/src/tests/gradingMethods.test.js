@@ -1,5 +1,5 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const cheerio = require('cheerio');
 
 const { config } = require('../lib/config');

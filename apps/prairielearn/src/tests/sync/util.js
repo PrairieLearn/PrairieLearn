@@ -5,7 +5,7 @@ const tmp = require('tmp-promise');
 const path = require('path');
 const sqldb = require('@prairielearn/postgres');
 const stringify = require('json-stable-stringify');
-const { assert } = require('chai');
+import { assert } from 'chai';
 
 const syncFromDisk = require('../../sync/syncFromDisk');
 
