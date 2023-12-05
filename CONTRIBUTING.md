@@ -20,7 +20,7 @@ You're now ready to start implementing your changes!
 
 The aforementioned setup documentation also includes instructions on starting a server, running tests, and running the linters.
 
-The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure. Also note that there has been a push to update existing code to use a more standard set of tools, you can find some guidelines in [this Discussion post](https://github.com/PrairieLearn/PrairieLearn/discussions/8874).
+The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure. Also note that there has been a push to update existing code to use a new set of patterns and best practices, you can find some guidelines in [this Discussion post](https://github.com/PrairieLearn/PrairieLearn/discussions/8874).
 
 If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://go.illinois.edu/PrairieLearnSlack)!
 
