@@ -1,4 +1,4 @@
-var ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');

@@ -1,5 +1,5 @@
 // @ts-check
-var ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 
 const { config } = require('../lib/config');
 const { TEST_COURSE_PATH } = require('../lib/paths');
