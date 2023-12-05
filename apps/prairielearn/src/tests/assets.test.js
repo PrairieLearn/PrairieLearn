@@ -6,7 +6,7 @@ const fetch = require('node-fetch').default;
 
 const { config } = require('../lib/config');
 const assets = require('../lib/assets');
-const { APP_ROOT_PATH } = require('../lib/paths');
+import { APP_ROOT_PATH } from '../lib/paths';
 
 const helperServer = require('./helperServer');
 

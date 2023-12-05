@@ -13,7 +13,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import { TEST_COURSE_PATH } from '../lib/paths';
 const { fetchCheerio } = require('./helperClient');
 
 const locals = {};

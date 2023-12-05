@@ -1,6 +1,6 @@
 // @ts-check
 const { config } = require('../lib/config');
-const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
+import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');

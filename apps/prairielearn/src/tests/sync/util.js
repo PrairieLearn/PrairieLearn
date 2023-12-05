@@ -1,9 +1,9 @@
 // @ts-check
-const { promisify } = require('util');
+import { promisify } from 'util';
 import * as fs from 'fs-extra';
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const stringify = require('json-stable-stringify');
 import { assert } from 'chai';
 

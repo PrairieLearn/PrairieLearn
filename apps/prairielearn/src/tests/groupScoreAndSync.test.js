@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 
 const { config } = require('../lib/config');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import { TEST_COURSE_PATH } from '../lib/paths';
 const _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');

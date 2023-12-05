@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const { config } = require('../lib/config');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import { TEST_COURSE_PATH } from '../lib/paths';
 const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 

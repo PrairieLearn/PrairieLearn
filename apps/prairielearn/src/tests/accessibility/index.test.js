@@ -18,7 +18,7 @@ const news_items = require('../../news_items');
 const { config } = require('../../lib/config');
 const helperServer = require('../helperServer');
 const { features } = require('../../lib/features/index');
-const { EXAMPLE_COURSE_PATH } = require('../../lib/paths');
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 

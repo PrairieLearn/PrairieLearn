@@ -18,7 +18,7 @@ const helperServer = require('./helperServer');
 const { exec } = require('child_process');
 const b64Util = require('../lib/base64-util');
 const { encodePath } = require('../lib/uri-util');
-const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
+import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 const locals = {};
 let page, elemList;

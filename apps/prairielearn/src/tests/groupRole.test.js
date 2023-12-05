@@ -15,7 +15,7 @@ const { syncCourseData } = require('./sync/util');
 const helperServer = require('./helperServer');
 const { URLSearchParams } = require('url');
 const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import { TEST_COURSE_PATH } from '../lib/paths';
 
 let elemList;
 const locals = {};

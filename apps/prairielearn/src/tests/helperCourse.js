@@ -1,5 +1,5 @@
 // @ts-check
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import { TEST_COURSE_PATH } from '../lib/paths';
 const syncFromDisk = require('../sync/syncFromDisk');
 const { makeMockLogger } = require('./mockLogger');
 

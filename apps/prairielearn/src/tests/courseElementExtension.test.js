@@ -9,7 +9,7 @@ const _ = require('lodash');
 const path = require('path');
 const freeform = require('../question-servers/freeform.js');
 const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
-const { promisify } = require('util');
+import { promisify } from 'util';
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
