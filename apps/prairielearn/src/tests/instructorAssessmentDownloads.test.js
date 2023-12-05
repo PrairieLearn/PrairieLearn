@@ -2,7 +2,7 @@
 const _ = require('lodash');
 import { assert } from 'chai';
 const request = require('request');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 const { parse: csvParse } = require('csv-parse/sync');
 
 import * as helperServer from './helperServer';

@@ -1,7 +1,7 @@
 // @ts-check
 import { config } from '../lib/config';
 
-var helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 var helperQuestion = require('./helperQuestion');
 
 const locals = {};

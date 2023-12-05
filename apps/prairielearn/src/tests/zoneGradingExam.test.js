@@ -3,13 +3,13 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-var cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
-var helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 var helperQuestion = require('./helperQuestion');
 
 const locals = {};

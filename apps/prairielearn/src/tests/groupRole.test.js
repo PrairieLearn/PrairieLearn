@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import * as fs from 'fs-extra';
 const path = require('path');

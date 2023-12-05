@@ -1,5 +1,5 @@
 // @ts-check
-const Ajv = require('ajv').default;
+import Ajv from 'ajv';
 import { assert } from 'chai';
 import * as schemas from '../schemas';
 

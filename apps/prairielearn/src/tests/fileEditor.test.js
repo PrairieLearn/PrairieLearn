@@ -6,7 +6,7 @@ import * as fs from 'fs-extra';
 const path = require('path');
 const async = require('async');
 const ncp = require('ncp');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 const tmp = require('tmp');
 import fetch from 'node-fetch';
 const FormData = require('form-data');

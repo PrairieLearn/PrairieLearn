@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import { step } from 'mocha-steps';
 
 import { config } from '../lib/config';

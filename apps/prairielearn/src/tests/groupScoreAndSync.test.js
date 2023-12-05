@@ -6,7 +6,7 @@ import { TEST_COURSE_PATH } from '../lib/paths';
 const _ = require('lodash');
 import { assert } from 'chai';
 var request = require('request');
-var cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);

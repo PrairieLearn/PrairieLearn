@@ -6,12 +6,12 @@ const fetchCookie = require('fetch-cookie');
 
 import { config } from '../lib/config';
 import { assert } from 'chai';
-var cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
-var helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 import { idsEqual } from '../lib/id';
 import { TEST_COURSE_PATH } from '../lib/paths';
 const { fetchCheerio } = require('./helperClient');

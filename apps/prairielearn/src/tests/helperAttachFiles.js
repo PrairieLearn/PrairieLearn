@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 const FormData = require('form-data');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -2,14 +2,14 @@
 const ERR = require('async-stacktrace');
 import { assert } from 'chai';
 var request = require('request');
-var cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
 import { ensureEnrollment } from '../models/enrollment';
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
-var helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 
 var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';

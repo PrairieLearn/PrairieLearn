@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
 import * as news_items from '../news_items';
 import { config } from '../lib/config';
