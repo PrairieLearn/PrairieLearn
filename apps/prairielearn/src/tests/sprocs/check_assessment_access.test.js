@@ -6,15 +6,22 @@ const helperDb = require('../helperDb');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-var reservationTests = function (
+/**
+ * @param {string | number} assessment_id
+ * @param {string | number} exam_id
+ * @param { string | number} second_assessment_id
+ * @param {boolean} [expectWideOpen]
+ * @param {boolean} [seeOtherExams]
+ */
+function reservationTests(
   assessment_id,
   exam_id,
   second_assessment_id,
   expectWideOpen = false,
   seeOtherExams = false,
 ) {
-  var expectedWord = 'fail';
-  var expectedBool = false;
+  let expectedWord = 'fail';
+  let expectedBool = false;
 
   // Handle the special case without any linking
   if (expectWideOpen) {
@@ -94,7 +101,7 @@ var reservationTests = function (
       assert.strictEqual(result.rows[0].authorized, otherExams.bool);
     });
   });
-};
+}
 
 describe('sproc check_assessment_access* tests', function () {
   describe('check_assessment_access scheduler tests', function () {
