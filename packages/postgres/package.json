@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.3",
-    "@types/multipipe": "^3.0.3",
-    "@types/node": "^18.18.8",
+    "@types/mocha": "^10.0.6",
+    "@types/multipipe": "^3.0.5",
+    "@types/node": "^18.19.0",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "mocha": "^10.2.0",
@@ -24,9 +24,9 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@types/debug": "^4.1.10",
-    "@types/lodash": "^4.14.200",
-    "@types/pg-cursor": "^2.7.1",
+    "@types/debug": "^4.1.12",
+    "@types/lodash": "^4.14.202",
+    "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
     "pg": "^8.11.3",
     "pg-cursor": "^2.10.3",
