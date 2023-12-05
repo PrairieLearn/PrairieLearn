@@ -23,13 +23,13 @@ export const IdSchema = z
  * This is a schema for the objects produced by the `postgres-interval` library.
  */
 const PostgresIntervalSchema = z.object({
-  years: z.number(),
-  months: z.number(),
-  days: z.number(),
-  hours: z.number(),
-  minutes: z.number(),
-  seconds: z.number(),
-  milliseconds: z.number(),
+  years: z.number().optional(),
+  months: z.number().optional(),
+  days: z.number().optional(),
+  hours: z.number().optional(),
+  minutes: z.number().optional(),
+  seconds: z.number().optional(),
+  milliseconds: z.number().optional(),
 });
 
 /**
@@ -55,13 +55,13 @@ export const IntervalSchema = z
     // The noteworthy parts of this conversion are that 1 year = 365.25 days and
     // 1 month = 30 days.
     return (
-      interval.years * INTERVAL_MS_PER_YEAR +
-      interval.months * INTERVAL_MS_PER_MONTH +
-      interval.days * INTERVAL_MS_PER_DAY +
-      interval.hours * INTERVAL_MS_PER_HOUR +
-      interval.minutes * INTERVAL_MS_PER_MINUTE +
-      interval.seconds * INTERVAL_MS_PER_SECOND +
-      interval.milliseconds
+      (interval.years ? interval.years * INTERVAL_MS_PER_YEAR : 0) +
+      (interval.months ? interval.months * INTERVAL_MS_PER_MONTH : 0) +
+      (interval.days ? interval.days * INTERVAL_MS_PER_DAY : 0) +
+      (interval.hours ? interval.hours * INTERVAL_MS_PER_HOUR : 0) +
+      (interval.minutes ? interval.minutes * INTERVAL_MS_PER_MINUTE : 0) +
+      (interval.seconds ? interval.seconds * INTERVAL_MS_PER_SECOND : 0) +
+      (interval.milliseconds ? interval.milliseconds : 0)
     );
   });
 
@@ -657,3 +657,23 @@ export const JobSchema = z.object({
   working_directory: z.string().nullable(),
 });
 export type Job = z.infer<typeof JobSchema>;
+
+export const assessementInstanceStatsSchema = z.object({
+  assessment_instance_id: IdSchema,
+  average_submission_score: z.number().nullable(),
+  client_fingerprint_id_change_count: z.number(),
+  first_submission_score: z.number().nullable(),
+  incremental_submission_points_array: z.array(z.number()).nullable(),
+  incremental_submission_score_array: z.array(z.number()).nullable(),
+  instance_question_id: IdSchema,
+  last_submission_score: z.number().nullable(),
+  max_submission_score: z.number().nullable(),
+  number: z.number().nullable(),
+  qid: z.string(),
+  question_id: IdSchema,
+  some_nonzero_submission: z.boolean().nullable(),
+  some_perfect_submission: z.boolean().nullable(),
+  some_submission: z.boolean().nullable(),
+  submission_score_array: z.array(z.number()).nullable(),
+  title: z.string().nullable(),
+});

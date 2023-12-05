@@ -14,7 +14,7 @@ import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
 } from '../../lib/assessment';
-import { InstanceQuestionSchema } from '../../lib/db-types';
+import { InstanceQuestionSchema, assessementInstanceStatsSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -42,11 +42,14 @@ router.get(
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     res.locals.logCsvFilename = logCsvFilename(res.locals);
-    res.locals.assessment_instance_stats = (
-      await sqldb.queryAsync(sql.assessment_instance_stats, {
+    res.locals.assessment_instance_stats = await sqldb.queryRows(
+      sql.assessment_instance_stats,
+      {
         assessment_instance_id: res.locals.assessment_instance.id,
-      })
-    ).rows;
+      },
+      assessementInstanceStatsSchema,
+    );
+    console.log(res.locals.assessment_instance_stats);
 
     const dateDurationResult = await sqldb.queryRow(
       sql.select_date_formatted_duration,
