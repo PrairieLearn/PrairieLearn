@@ -3359,7 +3359,7 @@ __metadata:
     stripe: ^14.7.0
     tablesorter: ^2.31.3
     tar: ^6.2.0
-    three: ^0.157.0
+    three: ^0.159.0
     tmp: ^0.2.1
     tmp-promise: ^3.0.3
     ts-node: ^10.9.1
@@ -15964,10 +15964,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"three@npm:^0.157.0":
-  version: 0.157.0
-  resolution: "three@npm:0.157.0"
-  checksum: 444797461c9db09d8a4cad886e494c2e6dd5754f09ac7ac4af75a3bf1143ae79641388db31999edcc76c5dba9677639f09da2df8d0128396a1dd59e41226c85c
+"three@npm:^0.159.0":
+  version: 0.159.0
+  resolution: "three@npm:0.159.0"
+  checksum: 41f03abf140d7872f64d3f980eb8cf05ef15385914969435a0b60f006f4ed846c6473aaa992e9e770baac4b4e8fdfc288c6276a74b75977cef6a5b9e76f40eb3
   languageName: node
   linkType: hard
 
