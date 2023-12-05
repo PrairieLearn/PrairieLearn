@@ -51,6 +51,7 @@ function reservationTests(
 
     it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', async () => {
       const result = await sqldb.callAsync(`check_assessment_access`, [
+        assessment_id,
         'Exam',
         'None',
         'None',
@@ -89,6 +90,7 @@ function reservationTests(
 
     it(`${otherExams.word} for access to PL course other assessment (${second_assessment_id}) when checked-in to exam ${exam_id}`, async () => {
       const result = await sqldb.callAsync(`check_assessment_access`, [
+        second_assessment_id,
         'Exam',
         'None',
         'None',
