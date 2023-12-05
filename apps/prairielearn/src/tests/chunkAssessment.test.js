@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
-const tmp = require('tmp-promise');
+import * as tmp from 'tmp-promise';
 
 const { config } = require('../lib/config');
 const chunks = require('../lib/chunks');

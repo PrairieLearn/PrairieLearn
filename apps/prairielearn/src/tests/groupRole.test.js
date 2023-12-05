@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import * as fs from 'fs-extra';
 const path = require('path');
 import { step } from 'mocha-steps';
-const tmp = require('tmp-promise');
+import * as tmp from 'tmp-promise';
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
