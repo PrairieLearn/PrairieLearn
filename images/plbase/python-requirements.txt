@@ -14,6 +14,7 @@ matplotlib==3.8.2
 networkx==3.2.1
 nltk==3.8.1
 numpy==1.26.2
+openai==0.27.4
 openpyxl==3.1.2
 pandas-stubs==2.1.1.230928
 pandas==2.1.1
