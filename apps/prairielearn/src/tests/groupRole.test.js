@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
 import * as fs from 'fs-extra';
 const path = require('path');
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 const tmp = require('tmp-promise');
 
 const { config } = require('../lib/config');

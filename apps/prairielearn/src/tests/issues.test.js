@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 
 const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');

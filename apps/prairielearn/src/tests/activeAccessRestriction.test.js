@@ -7,7 +7,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 
 describe('Exam and homework assessment with active access restriction', function () {
   this.timeout(60000);

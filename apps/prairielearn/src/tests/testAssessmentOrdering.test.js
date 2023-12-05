@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 const { v4: uuid } = require('uuid');
 
 const { config } = require('../lib/config');

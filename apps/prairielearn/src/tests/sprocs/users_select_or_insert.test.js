@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 
 const sqldb = require('@prairielearn/postgres');
 import * as helperDb from '../helperDb';

@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const util = require('node:util');
 const sqldb = require('@prairielearn/postgres');
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 
 const helperServer = require('./helperServer');
 const { deleteAllGroups } = require('../lib/groups');

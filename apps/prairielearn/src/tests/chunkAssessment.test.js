@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const { step } = require('mocha-steps');
+import { step } from 'mocha-steps';
 const tmp = require('tmp-promise');
 
 const { config } = require('../lib/config');
