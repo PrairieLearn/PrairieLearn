@@ -7,7 +7,7 @@ const { features } = require('../../lib/features/index');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
-const util = require('./util');
+import * as util from './util';
 import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const util = require('./util');
+import * as util from './util';
 import * as helperDb from '../helperDb';
 
 describe('Initial Sync', () => {
