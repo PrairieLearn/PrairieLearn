@@ -246,7 +246,7 @@ export function autoGroups(
               students.push(element.user_list);
             });
             _.shuffle(students);
-            var numStudents = resultList.rowCount;
+            var numStudents = resultList.rowCount ?? 0;
             var notAssigned = [];
             const resultList2 = await sqldb.queryAsync(sql.select_not_assigned, aid);
             resultList2.rows.forEach((element) => {

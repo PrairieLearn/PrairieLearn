@@ -3,6 +3,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
+import { idsEqual } from '../lib/id';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -195,7 +196,8 @@ export function QuestionsTable({
                   data-filter-control-placeholder="(All Assessments)"
                   data-filter-data="func:assessments${course_instance.id}List"
                   data-filter-custom-search="badgeFilterSearch"
-                  data-visible="${current_course_instance?.id === course_instance.id}"
+                  data-visible="${current_course_instance &&
+                  idsEqual(current_course_instance.id, course_instance.id)}"
                   data-switchable="true"
                 >
                   ${course_instance.short_name} Assessments

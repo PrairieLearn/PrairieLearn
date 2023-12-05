@@ -124,8 +124,8 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
   const enrollmentLimitProgressBarColor = enrollmentLimitExceeded
     ? 'bg-danger'
     : enrollmentLimitPercentage > 90
-    ? 'bg-warning'
-    : 'bg-primary';
+      ? 'bg-warning'
+      : 'bg-primary';
 
   return html`
     <form method="POST" class="js-billing-form">
