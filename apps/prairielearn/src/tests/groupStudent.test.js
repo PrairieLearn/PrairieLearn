@@ -12,7 +12,7 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
-const { idsEqual } = require('../lib/id');
+import { idsEqual } from '../lib/id';
 import { TEST_COURSE_PATH } from '../lib/paths';
 const { fetchCheerio } = require('./helperClient');
 

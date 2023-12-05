@@ -5,7 +5,7 @@ const path = require('path');
 
 import * as util from './util';
 import * as helperDb from '../helperDb';
-const { idsEqual } = require('../../lib/id');
+import { idsEqual } from '../../lib/id';
 
 /**
  * Makes an empty question.

@@ -10,7 +10,7 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
-const { idsEqual } = require('../lib/id');
+import { idsEqual } from '../lib/id';
 const { testFileDownloads, testQuestionPreviews } = require('./helperQuestionPreview');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
