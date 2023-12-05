@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const cheerio = require('cheerio');
 
 const news_items = require('../news_items');

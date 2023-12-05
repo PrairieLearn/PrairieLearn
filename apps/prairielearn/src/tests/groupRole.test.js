@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 const cheerio = require('cheerio');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 import * as fs from 'fs-extra';
 const path = require('path');
 import { step } from 'mocha-steps';

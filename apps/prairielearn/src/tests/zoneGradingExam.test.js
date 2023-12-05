@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 var cheerio = require('cheerio');
 
 const { config } = require('../lib/config');

@@ -8,7 +8,7 @@ disableInstrumentations();
 const { test } = require('mocha');
 const axe = require('axe-core');
 const jsdom = require('jsdom');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const { A11yError } = require('@sa11y/format');
 const expressListEndpoints = require('express-list-endpoints');
 const sqldb = require('@prairielearn/postgres');

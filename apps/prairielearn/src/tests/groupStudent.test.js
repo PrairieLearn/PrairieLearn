@@ -1,7 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const fetchCookie = require('fetch-cookie');
 
 const { config } = require('../lib/config');

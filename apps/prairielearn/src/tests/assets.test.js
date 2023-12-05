@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 
 const { config } = require('../lib/config');
 const assets = require('../lib/assets');

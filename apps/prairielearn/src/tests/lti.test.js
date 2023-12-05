@@ -1,5 +1,5 @@
 // @ts-check
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const oauthSignature = require('oauth-signature');
 import { assert } from 'chai';
 

@@ -7,7 +7,7 @@ const async = require('async');
 const ncp = require('ncp');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const klaw = require('klaw');
 const tmp = require('tmp');
 

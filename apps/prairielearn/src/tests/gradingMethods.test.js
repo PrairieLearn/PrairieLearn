@@ -3,7 +3,7 @@ import { assert } from 'chai';
 const cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -8,7 +8,7 @@ const async = require('async');
 const ncp = require('ncp');
 const cheerio = require('cheerio');
 const tmp = require('tmp');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const FormData = require('form-data');
 
 const { config } = require('../lib/config');
