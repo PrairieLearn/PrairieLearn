@@ -21,3 +21,55 @@ FROM
   institutions AS i
 ORDER BY
   i.id ASC;
+
+-- BLOCK add_institution
+INSERT INTO
+  institutions
+  (long_name, short_name, display_timezone, yearly_enrollment_limit, course_instance_enrollment_limit, uid_regexp)
+VALUES
+  ($long_name, $short_name, $display_timezone, $yearly_enrollment_limit, $course_instance_enrollment_limit, $uid_regexp)
+RETURNING
+  id;
+
+-- BLOCK add_institution_authn_provider
+INSERT INTO
+  institution_authn_providers
+  (institution_id, authn_provider_id)
+VALUES
+  ($institution_id, 
+    (SELECT
+        id
+      FROM
+        authn_providers
+      WHERE
+        name = $authn_provider_name
+    )
+  )
+ON CONFLICT DO NOTHING;
+
+-- BLOCK remove_institution_authn_provider
+DELETE FROM
+  institution_authn_providers
+WHERE
+  institution_id = $institution_id
+  AND authn_provider_id = (
+    SELECT
+      id
+    FROM
+      authn_providers
+    WHERE
+      name = $authn_provider_name
+  );
+
+-- BLOCK edit_institution
+UPDATE
+  institutions
+SET
+  long_name = $long_name,
+  short_name = $short_name,
+  display_timezone = $display_timezone,
+  yearly_enrollment_limit = $yearly_enrollment_limit,
+  course_instance_enrollment_limit = $course_instance_enrollment_limit,
+  uid_regexp = $uid_regexp
+WHERE
+  id = $id;
