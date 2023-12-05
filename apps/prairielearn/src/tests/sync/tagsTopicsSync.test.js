@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 const util = require('./util');
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 /**
  * Topics and tags are currently almost identical, so we test them together

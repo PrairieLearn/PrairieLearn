@@ -4,7 +4,7 @@ const path = require('node:path');
 const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
 
 const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
-const helperDb = require('./helperDb');
+import * as helperDb from './helperDb';
 
 // Custom error type so we can display our own message and omit a stacktrace
 function DatabaseError(message) {

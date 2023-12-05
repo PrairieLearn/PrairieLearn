@@ -1,7 +1,7 @@
 // @ts-check
 const chai = require('chai');
 const util = require('./util');
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 const { assert } = chai;
 

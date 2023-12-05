@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const sqldb = require('@prairielearn/postgres');
 
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

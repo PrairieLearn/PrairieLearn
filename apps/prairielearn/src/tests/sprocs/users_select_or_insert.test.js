@@ -3,7 +3,7 @@ import { assert } from 'chai';
 const { step } = require('mocha-steps');
 
 const sqldb = require('@prairielearn/postgres');
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

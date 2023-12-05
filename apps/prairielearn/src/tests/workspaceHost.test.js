@@ -5,7 +5,7 @@ const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
 
 const workspaceHostUtils = require('../lib/workspaceHost');
-const helperDb = require('./helperDb');
+import * as helperDb from './helperDb';
 
 const WorkspaceHostSchema = z.object({
   id: z.string(),

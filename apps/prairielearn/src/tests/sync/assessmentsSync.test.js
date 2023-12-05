@@ -8,7 +8,7 @@ const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const util = require('./util');
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

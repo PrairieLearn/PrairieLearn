@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 const path = require('path');
 
 const util = require('./util');
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 const { idsEqual } = require('../../lib/id');
 
 /**
