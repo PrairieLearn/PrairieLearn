@@ -1,3 +1,4 @@
+// @ts-check
 const Ajv = require('ajv').default;
 const assert = require('chai').assert;
 const schemas = require('../schemas');

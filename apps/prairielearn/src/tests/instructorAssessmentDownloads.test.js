@@ -1,3 +1,4 @@
+// @ts-check
 const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
@@ -188,7 +189,7 @@ describe('Instructor Assessment Downloads', function () {
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@illinois.edu');
-      assert.equal(data[0][('Username', 'dev')]);
+      assert.equal(data[0]['Username'], 'dev');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
       assert.approximately(data[0]['Points'], locals.assessment_instance.points, 1e-6);

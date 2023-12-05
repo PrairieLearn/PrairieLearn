@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 
 const { config } = require('../lib/config');

@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
@@ -38,7 +39,6 @@ const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, 
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
   config.authUin = authUin;
-  config.userId = studentUser.user_id;
 
   // Load assessment
   const res = await fetch(assessmentUrl);
@@ -770,7 +770,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('first user should see five roles checked in the table', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
-    verifyRoleAssignmentsInDatabase(locals.roleUpdates);
+    verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
   });
 
   step(
@@ -1046,7 +1046,7 @@ describe('Test group based assessments with custom group roles from student side
 
 /**
  * @param {string} courseDir
- * @param {GroupRole[]} groupRoles
+ * @param {Partial<import('../sync/course-db').GroupRole>[]} groupRoles
  */
 const changeGroupRolesConfig = async (courseDir, groupRoles) => {
   const infoAssessmentPath = path.join(
@@ -1067,7 +1067,7 @@ const changeGroupRolesConfig = async (courseDir, groupRoles) => {
 describe('Test group role reassignments with role of minimum > 1', function () {
   /** @type {tmp.DirectoryResult} */
   let tempTestCourseDir;
-  /** @type {tmp.DirectoryResult} */
+  /** @type {string} */
   let assessmentId;
   let assessmentUrl;
 
@@ -1846,7 +1846,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment?.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );

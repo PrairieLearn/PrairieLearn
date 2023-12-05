@@ -528,7 +528,7 @@ module.exports.captureDatabaseSnapshot = async function () {
     assessmentSets: await module.exports.dumpTable('assessment_sets'),
     topics: await module.exports.dumpTable('topics'),
     tags: await module.exports.dumpTable('tags'),
-    courseInstanceAccesRules: await module.exports.dumpTable('course_instance_access_rules'),
+    courseInstanceAccessRules: await module.exports.dumpTable('course_instance_access_rules'),
     assessmentAccessRules: await module.exports.dumpTable('assessment_access_rules'),
     zones: await module.exports.dumpTable('zones'),
     alternativeGroups: await module.exports.dumpTable('alternative_groups'),

@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const tmp = require('tmp-promise');
@@ -44,8 +45,8 @@ describe('Generate chunks and use them for a student homework', function () {
   });
 
   step('generate course chunks', async () => {
-    const course_ids = [1];
-    const authn_user_id = 1;
+    const course_ids = ['1'];
+    const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
     await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
   });

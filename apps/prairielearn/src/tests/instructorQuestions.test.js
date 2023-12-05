@@ -1,5 +1,4 @@
-import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
-
+// @ts-check
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var assert = require('chai').assert;
@@ -12,6 +11,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
+const { testFileDownloads, testQuestionPreviews } = require('./helperQuestionPreview');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -20,21 +20,25 @@ const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
 const questionsUrlCourse = baseUrl + '/course/1/course_admin/questions';
 
 const addNumbers = {
+  id: '',
   qid: 'addNumbers',
   type: 'Freeform',
   title: 'Add two numbers',
 };
 const addVectors = {
+  id: '',
   qid: 'addVectors',
   type: 'Calculation',
   title: 'Addition of vectors in Cartesian coordinates',
 };
 const downloadFile = {
+  id: '',
   qid: 'downloadFile',
   type: 'Freeform',
   title: 'File download example question',
 };
 const differentiatePolynomial = {
+  id: '',
   qid: 'differentiatePolynomial',
   type: 'Freeform',
   title: 'Differentiate a polynomial function of one variable',

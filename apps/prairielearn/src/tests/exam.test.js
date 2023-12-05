@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
@@ -1277,14 +1278,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1524,14 +1526,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1660,14 +1663,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =

@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const path = require('path');
 const jsonLoad = require('../lib/json-load');

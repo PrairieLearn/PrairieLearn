@@ -1,3 +1,4 @@
+// @ts-check
 const _ = require('lodash');
 const cron = require('../cron');
 const assert = require('chai').assert;
@@ -13,7 +14,7 @@ describe('Cron', function () {
 
   before('set up testing server', async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
-    const now = new Date();
+    const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
     const sinceMidnightMS = now - midnight;
     const dayMS = 24 * 60 * 60 * 1000;

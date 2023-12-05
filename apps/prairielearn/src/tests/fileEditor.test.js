@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const request = require('request');
 const assert = require('chai').assert;
@@ -76,7 +77,7 @@ infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
 let infoAssessmentJsonC = JSON.parse(
   fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
-infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Aagain)';
+infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Again)';
 
 const questionJsonA = JSON.parse(
   fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
@@ -113,7 +114,7 @@ const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + 
 const courseInstanceInstanceAdminEditUrl =
   courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assesmentSettingsUrl = assessmentUrl + '/settings';
+const assessmentSettingsUrl = assessmentUrl + '/settings';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
@@ -130,7 +131,7 @@ const findEditUrlData = [
   {
     name: 'assessment',
     selector: 'a:contains("infoAssessment.json") + a:contains("Edit")',
-    url: assesmentSettingsUrl,
+    url: assessmentSettingsUrl,
     expectedEditUrl: assessmentEditUrl,
   },
   {
