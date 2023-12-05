@@ -1,3 +1,4 @@
+// @ts-check
 const { config } = require('../lib/config');
 const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
 

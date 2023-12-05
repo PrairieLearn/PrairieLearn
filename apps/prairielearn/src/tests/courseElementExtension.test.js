@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const fs = require('fs-extra');
@@ -123,7 +124,7 @@ describe('Course element extensions', function () {
       );
 
       const importMap = page$('script[type="importmap"]').html();
-      const importMapData = JSON.parse(importMap);
+      const importMapData = JSON.parse(importMap ?? '');
       assert.property(
         importMapData.imports,
         incDynamicJsKey,

@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const fetch = require('node-fetch').default;
 const FormData = require('form-data');

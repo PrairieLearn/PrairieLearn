@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const assert = require('chai').assert;
 const fs = require('fs-extra');
@@ -341,7 +342,8 @@ describe('test course editor', function () {
 });
 
 async function getFiles(options) {
-  let files = new Set([]);
+  /** @type {Set<string>} */
+  let files = new Set();
 
   const ignoreHidden = (item) => {
     const basename = path.basename(item);

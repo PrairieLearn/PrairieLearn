@@ -1,12 +1,14 @@
+// @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
 
 const { config } = require('../lib/config');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
-const io = require('socket.io-client');
+// @ts-expect-error -- Incorrectly thinks that this is ESM.
+const { io } = require('socket.io-client');
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -29,14 +31,12 @@ const waitForExternalGrader = async ($questionsPage) => {
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
   return new Promise((resolve, reject) => {
-    socket.on('connect_error', (err) => {
-      reject(new Error(err));
-    });
+    socket.on('connect_error', (err) => reject(err));
 
     const handleStatusChange = (msg) => {
       msg.submissions.forEach((s) => {
         if (s.grading_job_status === 'graded') {
-          resolve();
+          resolve(undefined);
           return;
         }
       });
@@ -62,21 +62,21 @@ const waitForExternalGrader = async ($questionsPage) => {
 };
 
 /**
- * @param {object} student or instructor user to load page by
+ * @param {object} user or instructor user to load page by
  * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
  */
 const loadHomeworkPage = async (user) => {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
-  let hm9InternalExternalManaulUrl = null;
+  let hm9InternalExternalManualUrl = null;
   const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
   const $courseInstancePage = cheerio.load(courseInstanceBody);
-  hm9InternalExternalManaulUrl =
+  hm9InternalExternalManualUrl =
     siteUrl +
     $courseInstancePage(
       'a:contains("Homework for Internal, External, Manual grading methods")',
     ).attr('href');
-  let res = await fetch(hm9InternalExternalManaulUrl);
+  let res = await fetch(hm9InternalExternalManualUrl);
   assert.equal(res.ok, true);
   return res.text();
 };
@@ -84,7 +84,7 @@ const loadHomeworkPage = async (user) => {
 /**
  * Gets the score text for the first submission panel on the page.
  *
- * @param {import('cheerio')} $
+ * @param {import('cheerio').CheerioAPI} $
  * @returns {string}
  */
 function getLatestSubmissionStatus($) {

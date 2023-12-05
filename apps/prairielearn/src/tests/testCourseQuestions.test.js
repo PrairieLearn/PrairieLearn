@@ -1,3 +1,4 @@
+// @ts-check
 const { config } = require('../lib/config');
 
 var helperServer = require('./helperServer');

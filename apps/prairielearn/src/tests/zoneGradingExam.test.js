@@ -1,3 +1,4 @@
+// @ts-check
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 const { assert } = require('chai');

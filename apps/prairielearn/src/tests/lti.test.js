@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+// @ts-check
+const fetch = require('node-fetch').default;
 const oauthSignature = require('oauth-signature');
 const { assert } = require('chai');
 
@@ -26,14 +27,14 @@ describe('LTI', function () {
     lti_version: 'LTI-1p0',
     resource_link_id: 'somethingsomething',
     oauth_consumer_key: 'oauth_key',
-    oauth_timestamp: Math.floor(Date.now() / 1000),
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
     oauth_nonce: 'nonceNonce',
     user_id: 'testuser1',
     roles: 'Learner',
     context_id: 'testContext',
   };
   const secret = 'sFDpR@RzLdDW';
-  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, null, {
+  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, undefined, {
     encodeSignature: false,
   });
 

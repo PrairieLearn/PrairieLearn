@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');
@@ -52,8 +53,8 @@ describe('effective user', function () {
       2,
     ]);
     await ensureEnrollment({
-      user_id: 4,
-      course_instance_id: 1,
+      user_id: '4',
+      course_instance_id: '1',
     });
   });
 

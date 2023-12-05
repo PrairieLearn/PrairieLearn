@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const { config } = require('../../lib/config');

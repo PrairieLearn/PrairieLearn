@@ -1,3 +1,4 @@
+// @ts-check
 var ERR = require('async-stacktrace');
 
 const { config } = require('../lib/config');
@@ -138,7 +139,7 @@ describe('assessment instance group synchronization test', function () {
       request(locals.assessmentUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
         if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+          return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
         callback(null);
@@ -316,12 +317,7 @@ describe('assessment instance group synchronization test', function () {
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode, {
-                response,
-                body,
-              }),
-            );
+            return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
           callback(null);
