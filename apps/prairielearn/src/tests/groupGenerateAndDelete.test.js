@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 
 import * as helperServer from './helperServer';
-const { deleteAllGroups } = require('../lib/groups');
+import { deleteAllGroups } from '../lib/groups';
 const groupUpdate = require('../lib/group-update');
 import { TEST_COURSE_PATH } from '../lib/paths';
 

@@ -8,7 +8,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');
 const freeform = require('../question-servers/freeform.js');
-const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 import { promisify } from 'util';
 
 import * as helperServer from './helperServer';

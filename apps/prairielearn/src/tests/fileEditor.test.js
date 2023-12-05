@@ -17,7 +17,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from './helperServer';
 const { exec } = require('child_process');
 const b64Util = require('../lib/base64-util');
-const { encodePath } = require('../lib/uri-util');
+import { encodePath } from '../lib/uri-util';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 const locals = {};

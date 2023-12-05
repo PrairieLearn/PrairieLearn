@@ -14,7 +14,7 @@ const { syncCourseData } = require('./sync/util');
 
 import * as helperServer from './helperServer';
 const { URLSearchParams } = require('url');
-const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
+import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups';
 import { TEST_COURSE_PATH } from '../lib/paths';
 
 let elemList;
