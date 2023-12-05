@@ -12,7 +12,7 @@ const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
 import { promisify } from 'util';
 
 import * as helperServer from './helperServer';
-const helperClient = require('./helperClient');
+import * as helperClient from './helperClient';
 
 describe('Course element extensions', function () {
   this.timeout(60000);

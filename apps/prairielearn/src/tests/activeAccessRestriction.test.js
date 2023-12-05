@@ -6,7 +6,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';
-const helperClient = require('./helperClient');
+import * as helperClient from './helperClient';
 import { step } from 'mocha-steps';
 
 describe('Exam and homework assessment with active access restriction', function () {

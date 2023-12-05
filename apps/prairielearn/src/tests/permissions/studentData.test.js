@@ -5,7 +5,7 @@ import { config } from '../../lib/config';
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from '../helperServer';
-const helperClient = require('../helperClient');
+import * as helperClient from '../helperClient';
 const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('student data access', function () {

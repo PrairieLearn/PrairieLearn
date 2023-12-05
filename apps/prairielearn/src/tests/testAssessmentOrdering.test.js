@@ -8,7 +8,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';
-const helperClient = require('./helperClient');
+import * as helperClient from './helperClient';
 const {
   getCourseData,
   COURSE_INSTANCE_ID,

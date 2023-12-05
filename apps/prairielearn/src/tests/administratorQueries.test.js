@@ -5,7 +5,7 @@ import { step } from 'mocha-steps';
 import { config } from '../lib/config';
 
 import * as helperServer from './helperServer';
-const helperClient = require('./helperClient');
+import * as helperClient from './helperClient';
 
 describe('AdministratorQuery page', function () {
   this.timeout(60000);
