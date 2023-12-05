@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 import { step } from 'mocha-steps';
 
 import { config } from '../lib/config';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

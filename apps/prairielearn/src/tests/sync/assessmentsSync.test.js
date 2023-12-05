@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 const path = require('path');
 import { config } from '../../lib/config';
 const { features } = require('../../lib/features/index');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const { idsEqual } = require('../../lib/id');
 
 import * as util from './util';

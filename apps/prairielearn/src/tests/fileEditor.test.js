@@ -12,7 +12,7 @@ import fetch from 'node-fetch';
 const FormData = require('form-data');
 
 import { config } from '../lib/config';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from './helperServer';
 const { exec } = require('child_process');

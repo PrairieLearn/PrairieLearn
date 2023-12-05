@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as fs from 'fs-extra';
 import { config } from '../lib/config';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');

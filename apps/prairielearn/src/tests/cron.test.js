@@ -4,7 +4,7 @@ const cron = require('../cron');
 import { assert } from 'chai';
 
 import { config } from '../lib/config';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

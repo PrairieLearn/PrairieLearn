@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 import * as helperDb from '../helperDb';
 

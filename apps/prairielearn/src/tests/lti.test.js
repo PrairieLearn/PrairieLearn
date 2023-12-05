@@ -5,7 +5,7 @@ import { assert } from 'chai';
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const locals = {};
 
 const sql = sqldb.loadSqlEquiv(__filename);

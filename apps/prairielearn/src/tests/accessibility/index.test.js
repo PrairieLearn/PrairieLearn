@@ -11,7 +11,7 @@ const jsdom = require('jsdom');
 import fetch from 'node-fetch';
 const { A11yError } = require('@sa11y/format');
 const expressListEndpoints = require('express-list-endpoints');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const server = require('../../server');
 const news_items = require('../../news_items');

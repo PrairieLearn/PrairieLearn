@@ -5,7 +5,7 @@ import * as tmp from 'tmp-promise';
 
 import { config } from '../lib/config';
 const chunks = require('../lib/chunks');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

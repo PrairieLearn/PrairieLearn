@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 const { v4: uuidv4 } = require('uuid');
 const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const workspaceHostUtils = require('../lib/workspaceHost');
 import * as helperDb from './helperDb';

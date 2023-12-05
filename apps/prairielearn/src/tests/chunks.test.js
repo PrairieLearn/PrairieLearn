@@ -4,7 +4,7 @@ import * as tmp from 'tmp-promise';
 import * as fs from 'fs-extra';
 const path = require('path');
 const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');

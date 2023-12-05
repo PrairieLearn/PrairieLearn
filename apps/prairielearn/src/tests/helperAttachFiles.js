@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 const FormData = require('form-data');
 const cheerio = require('cheerio');
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 let elemList;

@@ -8,7 +8,7 @@ import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 
 import { config } from '../lib/config';
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 const { syncCourseData } = require('./sync/util');
 
