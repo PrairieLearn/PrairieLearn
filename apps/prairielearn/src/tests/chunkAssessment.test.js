@@ -6,11 +6,12 @@ import * as tmp from 'tmp-promise';
 import { config } from '../lib/config';
 import * as chunks from '../lib/chunks';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';
 import * as helperClient from './helperClient';
-const helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Generate chunks and use them for a student homework', function () {
   this.timeout(60000);
