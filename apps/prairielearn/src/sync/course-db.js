@@ -1029,7 +1029,7 @@ async function validateQuestion(question) {
     try {
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
-      await jsonLoad.validateJSONAsync(options, schema);
+      jsonLoad.validateJSON(options, schema);
     } catch (err) {
       errors.push(err.message);
     }

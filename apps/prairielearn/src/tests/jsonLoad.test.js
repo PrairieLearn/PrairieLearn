@@ -36,26 +36,12 @@ describe('JSON loading', () => {
   });
 
   describe('validateJSON', () => {
-    it('validates JSON that matches a schema', (done) => {
-      const valid = {
-        foo: 'bar',
-      };
-      jsonLoad.validateJSON(valid, schema, (err, json) => {
-        assert.isNull(err);
-        assert.equal(json, valid);
-        done();
-      });
+    it('validates JSON that matches a schema', () => {
+      jsonLoad.validateJSON({ foo: 'bar' }, schema);
     });
 
-    it("rejects JSON that does't match a schema", (done) => {
-      const invalid = {
-        foo: 1,
-      };
-      jsonLoad.validateJSON(invalid, schema, (err, json) => {
-        assert.isNotNull(err);
-        assert.isUndefined(json);
-        done();
-      });
+    it("rejects JSON that does't match a schema", () => {
+      assert.throws(() => jsonLoad.validateJSON({ foo: 1 }, schema));
     });
   });
 

@@ -30,39 +30,24 @@ export async function readJSON(jsonFilename) {
  *
  * @param {object} json The object to validate
  * @param {object} schema The schema used to validate the object
- * @param {(err: Error | null, json?: any) => void} callback Invoked with the original JSON data or an error
+ * @returns {any} The original JSON, if valid
  */
-export function validateJSON(json, schema, callback) {
-  let valid;
-  let validate;
-  try {
-    validate = ajv.compile(schema);
-    valid = validate(json);
-  } catch (e) {
-    callback(e);
-    return;
-  }
-  if (!valid) {
-    callback(
-      new Error(
-        `JSON validation error: ${ajv.errorsText(
-          validate.errors,
-        )}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`,
-      ),
-    );
-  } else {
-    callback(null, json);
-  }
-}
+export function validateJSON(json, schema) {
+  const validate = ajv.compile(schema);
+  const valid = validate(json);
 
-/**
- * Validates an object with the specified JSON schema.
- *
- * @param {object} json The object to validate
- * @param {object} schema The schema used to validate the object
- * @returns {Promise<any>} The original JSON, if valid
- */
-export const validateJSONAsync = util.promisify(validateJSON);
+  if (!valid) {
+    throw new Error(
+      `JSON validation error: ${ajv.errorsText(validate.errors)}\nError details:\n${JSON.stringify(
+        validate.errors,
+        null,
+        2,
+      )}`,
+    );
+  }
+
+  return json;
+}
 
 /**
  * Reads and validates some type of `info.json` file.
