@@ -36,7 +36,6 @@ for (const schemaName of Object.keys(schemas)) {
   if (schemaName === 'default') continue;
 
   describe(`${schemaName} schema`, () => {
-    // eslint-disable-next-line import/namespace
     const schema = schemas[schemaName];
     it('compiles', () => {
       const ajv = new Ajv();
