@@ -18,32 +18,20 @@ const schema = {
 
 describe('JSON loading', () => {
   describe('readJSON', () => {
-    it('reads a JSON file', (done) => {
-      jsonLoad.readJSON(testfile('basic.json'), (err, json) => {
-        assert.isNull(err);
-        const expected = {
-          hello: 'world',
-          testing: 1,
-        };
-        assert.deepEqual(json, expected);
-        done();
+    it('reads a JSON file', async () => {
+      const json = await jsonLoad.readJSON(testfile('basic.json'));
+      assert.deepEqual(json, {
+        hello: 'world',
+        testing: 1,
       });
     });
 
-    it("errors on a JSON file that doesn't exist", (done) => {
-      jsonLoad.readJSON(testfile('donotexist.json'), (err, json) => {
-        assert.isNotNull(err);
-        assert.isUndefined(json);
-        done();
-      });
+    it("errors on a JSON file that doesn't exist", async () => {
+      await assert.isRejected(jsonLoad.readJSON(testfile('donotexist.json')));
     });
 
-    it('errors on a malformed JSON file', (done) => {
-      jsonLoad.readJSON(testfile('broken.json'), (err, json) => {
-        assert.isNotNull(err);
-        assert.isUndefined(json);
-        done();
-      });
+    it('errors on a malformed JSON file', async () => {
+      await assert.isRejected(jsonLoad.readJSON(testfile('broken.json')));
     });
   });
 

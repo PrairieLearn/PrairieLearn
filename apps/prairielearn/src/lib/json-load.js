@@ -1,7 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 import * as util from 'util';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as jju from 'jju';
 import Ajv from 'ajv';
 
@@ -12,27 +12,18 @@ const ajv = new Ajv();
  * Asynchronously reads the specified JSON file.
  *
  * @param {string} jsonFilename The name of the file to read
- * @param {(err: Error | null, data?: any) => void} callback Invoked with the resolved JSON data or an error
+ * @returns {Promise<any>} The parsed JSON
  */
-export function readJSON(jsonFilename, callback) {
-  fs.readFile(jsonFilename, { encoding: 'utf8' }, function (err, data) {
-    if (ERR(err, callback)) return;
-    let json;
-    try {
-      json = jju.parse(data, { mode: 'json' });
-    } catch (e) {
-      ERR(
-        new Error(
-          `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
-        ),
-        callback,
-      );
-      return;
-    }
-    callback(null, json);
-  });
+export async function readJSON(jsonFilename) {
+  const data = await fs.readFile(jsonFilename, { encoding: 'utf8' });
+  try {
+    return jju.parse(data, { mode: 'json' });
+  } catch (e) {
+    throw new Error(
+      `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
+    );
+  }
 }
-export const readJSONAsync = util.promisify(readJSON);
 
 /**
  * Validates an object with the specified JSON schema.
