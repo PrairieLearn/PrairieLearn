@@ -3,7 +3,7 @@ import { TEST_COURSE_PATH } from '../lib/paths';
 import * as syncFromDisk from '../sync/syncFromDisk';
 import { makeMockLogger } from './mockLogger';
 
-async function syncCourse(courseDir = TEST_COURSE_PATH) {
+export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();
   const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(courseDir, logger);
   if (!result || result.hadJsonErrorsOrWarnings) {
@@ -11,5 +11,3 @@ async function syncCourse(courseDir = TEST_COURSE_PATH) {
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);
   }
 }
-
-module.exports.syncCourse = syncCourse;
