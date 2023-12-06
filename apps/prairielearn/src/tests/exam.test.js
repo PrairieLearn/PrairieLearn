@@ -2,7 +2,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
-const path = require('path');
 
 import * as sqldb from '@prairielearn/postgres';
 
