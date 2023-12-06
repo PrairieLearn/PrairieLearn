@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
-var request = require('request');
+const request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 

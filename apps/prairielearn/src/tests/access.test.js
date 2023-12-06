@@ -1,7 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 import { assert } from 'chai';
-var request = require('request');
+const request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -11,11 +11,11 @@ import * as helperServer from './helperServer';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-var siteUrl = 'http://localhost:' + config.serverPort;
-var baseUrl = siteUrl + '/pl';
-var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
-var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
+const siteUrl = 'http://localhost:' + config.serverPort;
+const baseUrl = siteUrl + '/pl';
+const courseInstanceBaseUrl = baseUrl + '/course_instance/1';
+const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
+const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function () {
   this.timeout(20000);

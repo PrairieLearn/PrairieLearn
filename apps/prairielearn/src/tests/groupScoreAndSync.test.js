@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
-var request = require('request');
+const request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -18,7 +18,7 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
 
-var page, form, elemList;
+let page, form, elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');

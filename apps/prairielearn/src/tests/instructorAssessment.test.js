@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-var request = require('request');
+const request = require('request');
 import * as cheerio from 'cheerio';
 const _ = require('lodash');
 
