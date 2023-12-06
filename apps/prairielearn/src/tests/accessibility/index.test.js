@@ -2,7 +2,7 @@
 
 // The OpenTelemetry instrumentation for Express breaks our ability to inspect
 // the Express routes. We need to disable it before loading the server.
-const { disableInstrumentations } = require('@prairielearn/opentelemetry');
+import { disableInstrumentations } from '@prairielearn/opentelemetry';
 disableInstrumentations();
 
 const { test } = require('mocha');

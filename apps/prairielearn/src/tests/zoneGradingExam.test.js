@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
-var sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

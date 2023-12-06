@@ -6,7 +6,7 @@ import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
 import { ensureEnrollment } from '../models/enrollment';
-var sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

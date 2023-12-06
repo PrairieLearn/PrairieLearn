@@ -8,7 +8,7 @@ import { config } from '../lib/config';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 
-var sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';

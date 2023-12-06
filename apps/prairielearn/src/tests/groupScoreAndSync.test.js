@@ -8,7 +8,7 @@ import { assert } from 'chai';
 var request = require('request');
 import * as cheerio from 'cheerio';
 
-var sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 var page, form, elemList;
 import * as helperServer from './helperServer';
