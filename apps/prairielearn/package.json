@@ -123,7 +123,6 @@
     "morphdom": "^2.7.1",
     "multer": "^1.4.5-lts.1",
     "mustache": "^4.2.0",
-    "ncp": "^2.0.0",
     "node-fetch": "^2.7.0",
     "node-jose": "^2.2.0",
     "nodemon": "^3.0.2",

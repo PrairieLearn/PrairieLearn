@@ -4,7 +4,6 @@ import { assert } from 'chai';
 import * as fs from 'fs-extra';
 const path = require('path');
 const async = require('async');
-const ncp = require('ncp');
 import * as cheerio from 'cheerio';
 const { exec } = require('child_process');
 import fetch from 'node-fetch';
@@ -318,11 +317,8 @@ describe('test course editor', function () {
 
     after('shut down testing server', helperServer.after);
 
-    after('delete test course files', function (callback) {
-      deleteCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    after('delete test course files', async () => {
+      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {
@@ -455,8 +451,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
-      it('should have a uuid', function () {
-        const infoJson = JSON.parse(fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'));
+      it('should have a uuid', async () => {
+        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
     }
@@ -466,12 +463,7 @@ function testEdit(params) {
 function createCourseFiles(callback) {
   async.series(
     [
-      (callback) => {
-        deleteCourseFiles((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await deleteCourseFiles(),
       (callback) => {
         const execOptions = {
           cwd: '.',
@@ -498,11 +490,8 @@ function createCourseFiles(callback) {
           callback(null);
         });
       },
-      (callback) => {
-        ncp(courseTemplateDir, courseLiveDir, { clobber: false }, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
       },
       (callback) => {
         const execOptions = {
@@ -552,33 +541,10 @@ function createCourseFiles(callback) {
   );
 }
 
-function deleteCourseFiles(callback) {
-  async.series(
-    [
-      (callback) => {
-        fs.remove(courseOriginDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseLiveDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseDevDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function deleteCourseFiles() {
+  await fs.remove(courseOriginDir);
+  await fs.remove(courseLiveDir);
+  await fs.remove(courseDevDir);
 }
 
 function waitForJobSequence(locals, expectedResult) {
