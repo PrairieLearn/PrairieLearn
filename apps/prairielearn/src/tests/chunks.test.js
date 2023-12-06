@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import * as tmp from 'tmp-promise';
 import * as fs from 'fs-extra';
 const path = require('path');
-const { z } = require('zod');
+import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as courseDB from '../sync/course-db';
