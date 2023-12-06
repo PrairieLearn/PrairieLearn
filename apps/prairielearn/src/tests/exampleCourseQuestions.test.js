@@ -3,7 +3,7 @@ import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 import * as helperServer from './helperServer';
-var helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
 
 const locals = {};
 

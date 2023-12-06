@@ -3,11 +3,11 @@ const _ = require('lodash');
 import { assert } from 'chai';
 const request = require('request');
 import * as cheerio from 'cheerio';
-const { parse: csvParse } = require('csv-parse/sync');
+import { parse as csvParse } from 'csv-parse/sync';
 
 import * as helperServer from './helperServer';
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
 const locals = {};
 

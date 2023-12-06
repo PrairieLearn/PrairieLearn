@@ -1,12 +1,12 @@
 // @ts-check
 import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
-
 import * as helperServer from './helperServer';
 import * as helperClient from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);

@@ -1,23 +1,24 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-
-import { config } from '../lib/config';
-import { TEST_COURSE_PATH } from '../lib/paths';
 const _ = require('lodash');
 import { assert } from 'chai';
 var request = require('request');
 import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-import * as sqldb from '@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-var page, form, elemList;
+import { config } from '../lib/config';
+import { TEST_COURSE_PATH } from '../lib/paths';
 import * as helperServer from './helperServer';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
+
+var page, form, elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');

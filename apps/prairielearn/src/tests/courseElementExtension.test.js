@@ -4,7 +4,6 @@ import { step } from 'mocha-steps';
 import * as fs from 'fs-extra';
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');
 import * as freeform from '../question-servers/freeform.js';
@@ -13,6 +12,8 @@ import { promisify } from 'util';
 
 import * as helperServer from './helperServer';
 import * as helperClient from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Course element extensions', function () {
   this.timeout(60000);

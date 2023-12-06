@@ -3,12 +3,13 @@ import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

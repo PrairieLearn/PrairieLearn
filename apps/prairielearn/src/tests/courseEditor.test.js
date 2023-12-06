@@ -5,15 +5,16 @@ import * as fs from 'fs-extra';
 const path = require('path');
 const async = require('async');
 import * as cheerio from 'cheerio';
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 import fetch from 'node-fetch';
 const klaw = require('klaw');
 const tmp = require('tmp');
 
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from './helperServer';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 

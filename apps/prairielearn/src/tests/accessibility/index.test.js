@@ -5,11 +5,11 @@
 import { disableInstrumentations } from '@prairielearn/opentelemetry';
 disableInstrumentations();
 
-const { test } = require('mocha');
+import { test } from 'mocha';
 const axe = require('axe-core');
 const jsdom = require('jsdom');
 import fetch from 'node-fetch';
-const { A11yError } = require('@sa11y/format');
+import { A11yError } from '@sa11y/format';
 const expressListEndpoints = require('express-list-endpoints');
 import * as sqldb from '@prairielearn/postgres';
 

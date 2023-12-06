@@ -4,14 +4,14 @@ const _ = require('lodash');
 import { assert } from 'chai';
 var request = require('request');
 import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-
 import * as helperServer from './helperServer';
 import { idsEqual } from '../lib/id';
-const { testFileDownloads, testQuestionPreviews } = require('./helperQuestionPreview');
+import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

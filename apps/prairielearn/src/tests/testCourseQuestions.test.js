@@ -2,7 +2,7 @@
 import { config } from '../lib/config';
 
 import * as helperServer from './helperServer';
-var helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
 
 const locals = {};
 

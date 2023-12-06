@@ -5,8 +5,8 @@ import * as cheerio from 'cheerio';
 const _ = require('lodash');
 
 import * as helperServer from './helperServer';
-var helperQuestion = require('./helperQuestion');
-var helperExam = require('./helperExam');
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
 const locals = {};
 

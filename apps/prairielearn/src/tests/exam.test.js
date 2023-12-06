@@ -6,12 +6,13 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 
 import * as helperServer from './helperServer';
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
-const helperAttachFiles = require('./helperAttachFiles');
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
+import * as helperAttachFiles from './helperAttachFiles';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 

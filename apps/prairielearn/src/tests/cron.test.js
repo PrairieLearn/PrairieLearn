@@ -2,12 +2,12 @@
 const _ = require('lodash');
 import * as cron from '../cron';
 import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
-
 import * as helperServer from './helperServer';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Cron', function () {
   this.timeout(60000);

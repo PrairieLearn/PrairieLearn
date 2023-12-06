@@ -1,11 +1,13 @@
 // @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
-import { config } from '../../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+
+import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 async function checkPermissions(users) {
   const result = await sqldb.queryAsync(sql.select_permissions, {

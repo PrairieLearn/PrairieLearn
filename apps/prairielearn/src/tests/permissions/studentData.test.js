@@ -1,12 +1,14 @@
 // @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
-import { config } from '../../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+
+import { config } from '../../lib/config';
 import * as helperServer from '../helperServer';
 import * as helperClient from '../helperClient';
 import { ensureEnrollment } from '../../models/enrollment';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('student data access', function () {
   this.timeout(60000);

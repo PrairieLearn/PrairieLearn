@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 

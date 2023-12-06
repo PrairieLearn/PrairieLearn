@@ -6,16 +6,16 @@ import * as fs from 'fs-extra';
 const path = require('path');
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
-const { syncCourseData } = require('./sync/util');
+import { syncCourseData } from './sync/util';
 
 import * as helperServer from './helperServer';
-const { URLSearchParams } = require('url');
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups';
 import { TEST_COURSE_PATH } from '../lib/paths';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let elemList;
 const locals = {};

@@ -4,13 +4,13 @@ const _ = require('lodash');
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-
 import * as helperServer from './helperServer';
-var helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 

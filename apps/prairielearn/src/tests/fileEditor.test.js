@@ -13,12 +13,13 @@ const FormData = require('form-data');
 
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 import * as helperServer from './helperServer';
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 import * as b64Util from '../lib/base64-util';
 import { encodePath } from '../lib/uri-util';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 let page, elemList;

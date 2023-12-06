@@ -1,13 +1,13 @@
 // @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
-import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
-
 import * as helperServer from './helperServer';
 import * as helperClient from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Assessment that forces students to complete questions in-order', function () {
   this.timeout(60000);
