@@ -1,8 +1,8 @@
 // @ts-check
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
 
 const locals = {};
 

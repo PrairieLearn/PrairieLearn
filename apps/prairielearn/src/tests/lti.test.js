@@ -1,11 +1,11 @@
 // @ts-check
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const oauthSignature = require('oauth-signature');
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const { config } = require('../lib/config');
-const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as sqldb from '@prairielearn/postgres';
 const locals = {};
 
 const sql = sqldb.loadSqlEquiv(__filename);

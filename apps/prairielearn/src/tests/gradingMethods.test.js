@@ -1,15 +1,16 @@
 // @ts-check
-const { assert } = require('chai');
-const cheerio = require('cheerio');
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 
-const { config } = require('../lib/config');
-const fetch = require('node-fetch').default;
-const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
+import fetch from 'node-fetch';
+import * as helperServer from './helperServer';
+import * as sqldb from '@prairielearn/postgres';
 // @ts-expect-error -- Incorrectly thinks that this is ESM.
-const { io } = require('socket.io-client');
-const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
+import { io } from 'socket.io-client';
+import { setUser, parseInstanceQuestionId, saveOrGrade } from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

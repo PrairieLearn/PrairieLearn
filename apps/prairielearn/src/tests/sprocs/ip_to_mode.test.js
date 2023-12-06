@@ -1,8 +1,8 @@
 // @ts-check
-const { assert } = require('chai');
-const sqldb = require('@prairielearn/postgres');
+import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
-const helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

@@ -1,12 +1,12 @@
 // @ts-check
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
-var _ = require('lodash');
+import { assert } from 'chai';
+const request = require('request');
+import * as cheerio from 'cheerio';
+const _ = require('lodash');
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
-var helperExam = require('./helperExam');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
 const locals = {};
 

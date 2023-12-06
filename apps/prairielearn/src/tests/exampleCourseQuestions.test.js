@@ -1,9 +1,9 @@
 // @ts-check
-const { config } = require('../lib/config');
-const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
+import { config } from '../lib/config';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
 
 const locals = {};
 

@@ -1,17 +1,17 @@
 // @ts-check
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import { assert } from 'chai';
+const request = require('request');
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import { idsEqual } from '../lib/id';
+import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
 
-var helperServer = require('./helperServer');
-const { idsEqual } = require('../lib/id');
-const { testFileDownloads, testQuestionPreviews } = require('./helperQuestionPreview');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

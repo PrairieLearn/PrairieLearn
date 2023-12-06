@@ -1,7 +1,7 @@
 // @ts-check
-const Ajv = require('ajv').default;
-const assert = require('chai').assert;
-const schemas = require('../schemas');
+import Ajv from 'ajv';
+import { assert } from 'chai';
+import * as schemas from '../schemas';
 
 const isObject = (a) => !!a && a.constructor === Object;
 
@@ -33,7 +33,10 @@ const validateRequiredRecursive = (obj, path = '') => {
 };
 
 for (const schemaName of Object.keys(schemas)) {
+  if (schemaName === 'default') continue;
+
   describe(`${schemaName} schema`, () => {
+    // eslint-disable-next-line import/namespace
     const schema = schemas[schemaName];
     it('compiles', () => {
       const ajv = new Ajv();

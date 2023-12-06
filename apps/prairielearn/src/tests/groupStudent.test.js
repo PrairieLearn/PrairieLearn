@@ -1,20 +1,19 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 const fetchCookie = require('fetch-cookie');
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-var assert = require('chai').assert;
-var cheerio = require('cheerio');
+import { config } from '../lib/config';
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
 
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer';
+import { idsEqual } from '../lib/id';
+import { TEST_COURSE_PATH } from '../lib/paths';
+import { fetchCheerio } from './helperClient';
 
-var helperServer = require('./helperServer');
-const { idsEqual } = require('../lib/id');
-const { TEST_COURSE_PATH } = require('../lib/paths');
-const { fetchCheerio } = require('./helperClient');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;

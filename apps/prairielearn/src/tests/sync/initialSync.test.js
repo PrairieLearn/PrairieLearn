@@ -1,7 +1,7 @@
 // @ts-check
-const { assert } = require('chai');
-const util = require('./util');
-const helperDb = require('../helperDb');
+import { assert } from 'chai';
+import * as util from './util';
+import * as helperDb from '../helperDb';
 
 describe('Initial Sync', () => {
   before('set up testing database', helperDb.before);

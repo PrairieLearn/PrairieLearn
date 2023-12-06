@@ -1,13 +1,13 @@
 // @ts-check
-const { config } = require('../lib/config');
-const assert = require('chai').assert;
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
-const { step } = require('mocha-steps');
 
 describe('Exam and homework assessment with active access restriction', function () {
   this.timeout(60000);

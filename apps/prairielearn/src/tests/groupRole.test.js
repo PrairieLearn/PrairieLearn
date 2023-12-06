@@ -1,21 +1,21 @@
 // @ts-check
-const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const fetch = require('node-fetch').default;
-const fs = require('fs-extra');
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import * as fs from 'fs-extra';
 const path = require('path');
-const { step } = require('mocha-steps');
-const tmp = require('tmp-promise');
+import { step } from 'mocha-steps';
+import * as tmp from 'tmp-promise';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import { syncCourseData } from './sync/util';
+
+import * as helperServer from './helperServer';
+import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups';
+import { TEST_COURSE_PATH } from '../lib/paths';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const { syncCourseData } = require('./sync/util');
-
-const helperServer = require('./helperServer');
-const { URLSearchParams } = require('url');
-const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
-const { TEST_COURSE_PATH } = require('../lib/paths');
 
 let elemList;
 const locals = {};

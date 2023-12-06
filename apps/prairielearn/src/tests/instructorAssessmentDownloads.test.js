@@ -1,13 +1,13 @@
 // @ts-check
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
-const cheerio = require('cheerio');
-const { parse: csvParse } = require('csv-parse/sync');
+import * as cheerio from 'cheerio';
+import { parse as csvParse } from 'csv-parse/sync';
 
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
 const locals = {};
 

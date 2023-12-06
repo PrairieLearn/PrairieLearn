@@ -1,7 +1,7 @@
 // @ts-check
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const path = require('path');
-const jsonLoad = require('../lib/json-load');
+import * as jsonLoad from '../lib/json-load';
 
 const testfile = (filename) => path.join(__dirname, 'testJsonLoad', filename);
 

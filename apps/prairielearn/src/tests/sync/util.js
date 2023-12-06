@@ -1,13 +1,13 @@
 // @ts-check
-const { promisify } = require('util');
-const fs = require('fs-extra');
-const tmp = require('tmp-promise');
+import { promisify } from 'util';
+import * as fs from 'fs-extra';
+import * as tmp from 'tmp-promise';
 const path = require('path');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const stringify = require('json-stable-stringify');
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const syncFromDisk = require('../../sync/syncFromDisk');
+import * as syncFromDisk from '../../sync/syncFromDisk';
 
 /**
  * @typedef {Object} CourseOptions
@@ -226,11 +226,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @param {CourseData} courseData - The course data to write to disk
  * @returns {Promise<string>} - The path to the directory containing the course data
  */
-module.exports.writeCourseToTempDirectory = async function (courseData) {
+export async function writeCourseToTempDirectory(courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
-  await module.exports.writeCourseToDirectory(courseData, coursePath);
+  await writeCourseToDirectory(courseData, coursePath);
   return coursePath;
-};
+}
 
 /**
  * Accepts a CourseData object and writes it as a PrairieLearn course
@@ -240,7 +240,7 @@ module.exports.writeCourseToTempDirectory = async function (courseData) {
  * @param {CourseData} courseData - The course data to write to disk
  * @param {string} coursePath - The path to the directory to write to
  */
-module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
+export async function writeCourseToDirectory(courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
   // infoCourse.json
@@ -283,13 +283,13 @@ module.exports.writeCourseToDirectory = async function (courseData, coursePath) 
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
     }
   }
-};
+}
 
-module.exports.QUESTION_ID = 'test';
-module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
-module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
-module.exports.WORKSPACE_QUESTION_ID = 'workspace';
-module.exports.COURSE_INSTANCE_ID = 'Fa19';
+export const QUESTION_ID = 'test';
+export const ALTERNATIVE_QUESTION_ID = 'test2';
+export const MANUAL_GRADING_QUESTION_ID = 'test_manual';
+export const WORKSPACE_QUESTION_ID = 'workspace';
+export const COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
 const course = {
@@ -357,21 +357,21 @@ const questions = {
     tags: ['test'],
     type: 'v3',
   },
-  [module.exports.QUESTION_ID]: {
+  [QUESTION_ID]: {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
     topic: 'Test',
     tags: ['test'],
     type: 'v3',
   },
-  [module.exports.ALTERNATIVE_QUESTION_ID]: {
+  [ALTERNATIVE_QUESTION_ID]: {
     uuid: '697a6188-8215-4806-92a1-592987342b9e',
     title: 'Another test question',
     topic: 'Test',
     tags: ['test'],
     type: 'Calculation',
   },
-  [module.exports.MANUAL_GRADING_QUESTION_ID]: {
+  [MANUAL_GRADING_QUESTION_ID]: {
     uuid: '2798b1ba-06e0-4ddf-9e5d-765fcca08a46',
     title: 'Test question',
     topic: 'Test',
@@ -379,7 +379,7 @@ const questions = {
     tags: ['test'],
     type: 'v3',
   },
-  [module.exports.WORKSPACE_QUESTION_ID]: {
+  [WORKSPACE_QUESTION_ID]: {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
     topic: 'Workspace',
@@ -397,7 +397,7 @@ const questions = {
 
 /** @type {{ [id: string]: CourseInstanceData }} */
 const courseInstances = {
-  [module.exports.COURSE_INSTANCE_ID]: {
+  [COURSE_INSTANCE_ID]: {
     assessments: {
       test: {
         uuid: '73432669-2663-444e-ade5-43f689a50dea',
@@ -439,7 +439,7 @@ const courseInstances = {
 /**
  * @returns {CourseData} - The base course data for syncing testing
  */
-module.exports.getCourseData = function () {
+export function getCourseData() {
   // Round-trip through JSON.stringify to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   const courseData = {
@@ -448,16 +448,16 @@ module.exports.getCourseData = function () {
     courseInstances,
   };
   return JSON.parse(JSON.stringify(courseData));
-};
+}
 
-module.exports.getFakeLogger = function () {
+export function getFakeLogger() {
   return {
     verbose: () => {},
     debug: () => {},
     info: () => {},
     warn: () => {},
   };
-};
+}
 
 /**
  * Async wrapper for syncing course data from a directory. Also stubs out the
@@ -465,21 +465,21 @@ module.exports.getFakeLogger = function () {
  *
  * @param {string} courseDir - The path to the course directory
  */
-module.exports.syncCourseData = async function (courseDir) {
-  const logger = module.exports.getFakeLogger();
+export async function syncCourseData(courseDir) {
+  const logger = getFakeLogger();
   await promisify(syncFromDisk.syncOrCreateDiskToSql)(courseDir, logger);
-};
+}
 
-module.exports.createAndSyncCourseData = async function () {
-  const courseData = module.exports.getCourseData();
-  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
-  await module.exports.syncCourseData(courseDir);
+export async function createAndSyncCourseData() {
+  const courseData = getCourseData();
+  const courseDir = await writeCourseToTempDirectory(courseData);
+  await syncCourseData(courseDir);
 
   return {
     courseData,
     courseDir,
   };
-};
+}
 
 /**
  * Writes the given course data to a new temporary directory and returns the
@@ -488,11 +488,11 @@ module.exports.createAndSyncCourseData = async function () {
  * @param {CourseData} courseData - The course data to write and sync
  * @returns {Promise<string>} the path to the new temp directory
  */
-module.exports.writeAndSyncCourseData = async function (courseData) {
-  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
-  await module.exports.syncCourseData(courseDir);
+export async function writeAndSyncCourseData(courseData) {
+  const courseDir = await writeCourseToTempDirectory(courseData);
+  await syncCourseData(courseDir);
   return courseDir;
-};
+}
 
 /**
  * Overwrites the course data in the given directory and
@@ -500,10 +500,10 @@ module.exports.writeAndSyncCourseData = async function (courseData) {
  * @param {CourseData} courseData - The course data write and sync
  * @param {string} courseDir - The path to write the course data to
  */
-module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
-  await module.exports.writeCourseToDirectory(courseData, courseDir);
-  await module.exports.syncCourseData(courseDir);
-};
+export async function overwriteAndSyncCourseData(courseData, courseDir) {
+  await writeCourseToDirectory(courseData, courseDir);
+  await syncCourseData(courseDir);
+}
 
 /**
  * Returns an array of all records in a particular database table.
@@ -511,29 +511,29 @@ module.exports.overwriteAndSyncCourseData = async function (courseData, courseDi
  * @param {string} tableName - The name of the table to query
  * @return {Promise<Record<string, any>[]>} - The rows of the given table
  */
-module.exports.dumpTable = async function (tableName) {
+export async function dumpTable(tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
-};
+}
 
-module.exports.captureDatabaseSnapshot = async function () {
+export async function captureDatabaseSnapshot() {
   return {
-    courseInstances: await module.exports.dumpTable('course_instances'),
-    assessments: await module.exports.dumpTable('assessments'),
-    assessmentSets: await module.exports.dumpTable('assessment_sets'),
-    topics: await module.exports.dumpTable('topics'),
-    tags: await module.exports.dumpTable('tags'),
-    courseInstanceAccessRules: await module.exports.dumpTable('course_instance_access_rules'),
-    assessmentAccessRules: await module.exports.dumpTable('assessment_access_rules'),
-    zones: await module.exports.dumpTable('zones'),
-    alternativeGroups: await module.exports.dumpTable('alternative_groups'),
-    assessmentQuestions: await module.exports.dumpTable('assessment_questions'),
-    questions: await module.exports.dumpTable('questions'),
-    questionTags: await module.exports.dumpTable('question_tags'),
-    users: await module.exports.dumpTable('users'),
-    enrollments: await module.exports.dumpTable('enrollments'),
+    courseInstances: await dumpTable('course_instances'),
+    assessments: await dumpTable('assessments'),
+    assessmentSets: await dumpTable('assessment_sets'),
+    topics: await dumpTable('topics'),
+    tags: await dumpTable('tags'),
+    courseInstanceAccessRules: await dumpTable('course_instance_access_rules'),
+    assessmentAccessRules: await dumpTable('assessment_access_rules'),
+    zones: await dumpTable('zones'),
+    alternativeGroups: await dumpTable('alternative_groups'),
+    assessmentQuestions: await dumpTable('assessment_questions'),
+    questions: await dumpTable('questions'),
+    questionTags: await dumpTable('question_tags'),
+    users: await dumpTable('users'),
+    enrollments: await dumpTable('enrollments'),
   };
-};
+}
 
 /**
  * Computes setA U setB.
@@ -569,7 +569,7 @@ function checkSetsSame(setA, setB) {
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKeys = []) {
+export function assertSnapshotsMatch(snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
@@ -582,7 +582,7 @@ module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKey
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
   }
-};
+}
 
 /**
  * Asserts that `snapshotA` is a subset of `snapshotB` using the same algorithm
@@ -592,7 +592,7 @@ module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKey
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoredKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKeys = []) {
+export function assertSnapshotSubset(snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
@@ -608,4 +608,4 @@ module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKey
       `Snapshot of ${key} is not a subset`,
     );
   }
-};
+}
