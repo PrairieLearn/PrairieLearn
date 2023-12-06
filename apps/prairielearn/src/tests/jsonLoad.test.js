@@ -46,24 +46,15 @@ describe('JSON loading', () => {
   });
 
   describe('readInfoJson', () => {
-    it('reads JSON that matches a schema', (done) => {
-      jsonLoad.readInfoJSON(testfile('forSchemaValid.json'), schema, (err, json) => {
-        assert.isNull(err);
-        const expected = {
-          foo: 'bar',
-          jsonFilename: testfile('forSchemaValid.json'),
-        };
-        assert.deepEqual(json, expected);
-        done();
+    it('reads JSON that matches a schema', async () => {
+      const json = await jsonLoad.readInfoJSON(testfile('forSchemaValid.json'), schema);
+      assert.deepEqual(json, {
+        foo: 'bar',
       });
     });
 
-    it('errors for JSON that does not a schema', (done) => {
-      jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema, (err, json) => {
-        assert.isNotNull(err);
-        assert.isUndefined(json);
-        done();
-      });
+    it('errors for JSON that does not a schema', async () => {
+      await assert.isRejected(jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema));
     });
   });
 });

@@ -1,6 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as util from 'util';
 import * as fs from 'fs/promises';
 import * as jju from 'jju';
 import Ajv from 'ajv';
@@ -30,7 +28,6 @@ export async function readJSON(jsonFilename) {
  *
  * @param {object} json The object to validate
  * @param {object} schema The schema used to validate the object
- * @returns {any} The original JSON, if valid
  */
 export function validateJSON(json, schema) {
   const validate = ajv.compile(schema);
@@ -45,8 +42,6 @@ export function validateJSON(json, schema) {
       )}`,
     );
   }
-
-  return json;
 }
 
 /**
@@ -54,30 +49,17 @@ export function validateJSON(json, schema) {
  *
  * @param {string} jsonFilename The name of the file to read
  * @param {Object} schema The name of the schema file
- * @param {(err: Error | null, json?: any) => void} callback Invoked with the validated JSON or an error
+ * @returns {Promise<any>} The parsed and validated JSON
  */
-export function readInfoJSON(jsonFilename, schema, callback) {
-  readJSON(jsonFilename, function (err, json) {
-    if (err) {
-      callback(err);
-      return;
-    }
-    if (schema) {
-      validateJSON(json, schema, function (err, json) {
-        if (err) {
-          ERR(
-            new Error("Error validating file '" + jsonFilename + "' against schema: " + err),
-            callback,
-          );
-          return;
-        }
-        json.jsonFilename = jsonFilename;
-        callback(null, json);
-      });
-    } else {
-      callback(null, json);
-      return;
-    }
-  });
+export async function readInfoJSON(jsonFilename, schema) {
+  const json = await readJSON(jsonFilename);
+
+  if (!schema) return json;
+
+  try {
+    validateJSON(json, schema);
+    return json;
+  } catch (e) {
+    throw new Error(`Error validating file '${jsonFilename}' against schema: ${e}`);
+  }
 }
-export const readInfoJSONAsync = util.promisify(readInfoJSON);
