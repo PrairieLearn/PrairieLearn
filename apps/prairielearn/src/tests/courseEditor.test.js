@@ -3,12 +3,12 @@ const ERR = require('async-stacktrace');
 import { assert } from 'chai';
 import * as fs from 'fs-extra';
 const path = require('path');
-const async = require('async');
+import * as async from 'async';
 import * as cheerio from 'cheerio';
 import { exec } from 'child_process';
 import fetch from 'node-fetch';
 const klaw = require('klaw');
-const tmp = require('tmp');
+import * as tmp from 'tmp';
 
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';

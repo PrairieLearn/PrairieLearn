@@ -3,7 +3,6 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import { assert } from 'chai';
 const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -1798,16 +1797,12 @@ describe('Exam assessment', function () {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          debug('partial credit test: server shutting down');
           // pass "this" explicitly to enable this.timeout() calls
           await helperServer.after.call(this);
-          debug('partial credit test: server shutdown complete');
         });
         it('should start up', async function () {
-          debug('partial credit test: server starting up');
           // pass "this" explicitly to enable this.timeout() calls
           await helperServer.before().call(this);
-          debug('partial credit test: server startup complete');
         });
       });
 

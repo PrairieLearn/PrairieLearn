@@ -5,9 +5,9 @@ import { assert } from 'chai';
 import { readFileSync } from 'node:fs';
 import * as fs from 'fs-extra';
 const path = require('path');
-const async = require('async');
+import * as async from 'async';
 import * as cheerio from 'cheerio';
-const tmp = require('tmp');
+import * as tmp from 'tmp';
 import fetch from 'node-fetch';
 const FormData = require('form-data');
 

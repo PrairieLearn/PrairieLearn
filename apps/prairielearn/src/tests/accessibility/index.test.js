@@ -7,7 +7,7 @@ disableInstrumentations();
 
 import { test } from 'mocha';
 const axe = require('axe-core');
-const jsdom = require('jsdom');
+import { JSDOM } from 'jsdom';
 import fetch from 'node-fetch';
 import { A11yError } from '@sa11y/format';
 const expressListEndpoints = require('express-list-endpoints');
@@ -62,7 +62,7 @@ async function loadPageJsdom(url) {
     }
     return res.text();
   });
-  return new jsdom.JSDOM(text);
+  return new JSDOM(text);
 }
 
 /**
