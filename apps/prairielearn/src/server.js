@@ -995,7 +995,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1328,7 +1328,7 @@ module.exports.initExpress = function () {
   // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance',
@@ -1338,7 +1338,7 @@ module.exports.initExpress = function () {
   // Client files for assessments
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance',
@@ -1355,7 +1355,7 @@ module.exports.initExpress = function () {
   // Client files for questions
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
@@ -1482,7 +1482,7 @@ module.exports.initExpress = function () {
   // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
@@ -1493,7 +1493,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance',
@@ -1515,7 +1515,7 @@ module.exports.initExpress = function () {
   // Client files for questions
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1756,13 +1756,13 @@ module.exports.initExpress = function () {
   // Global client files
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
 
   // Client files for questions
   app.use(
     '/pl/course/:course_id/question/:question_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')(),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
@@ -1831,10 +1831,6 @@ module.exports.initExpress = function () {
   ]);
 
   // Client files for questions
-  app.use(
-    '/pl/public/course/:course_id/question/:question_id/clientFilesCourse',
-    require('./pages/clientFilesCourse/clientFilesCourse')({ publicEndpoint: true }),
-  );
   app.use(
     '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion',
     require('./pages/clientFilesQuestion/clientFilesQuestion')({ publicEndpoint: true }),
