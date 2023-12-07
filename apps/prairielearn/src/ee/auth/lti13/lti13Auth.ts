@@ -208,7 +208,6 @@ const LTI13Schema = z.object({
 //
 // Helper functions
 //
-
 async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   OIDCAuthResponseSchema.passthrough().parse(req.body);
@@ -277,7 +276,6 @@ async function setupPassport(lti13_instance_id: string) {
 
 async function verify(req: Request, tokenSet: TokenSet) {
   const lti13_claims = LTI13Schema.passthrough().parse(tokenSet.claims());
-  console.log(JSON.stringify(lti13_claims, null, 2));
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
