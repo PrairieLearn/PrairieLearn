@@ -1,5 +1,6 @@
 import { step } from 'mocha-steps';
 import { assert } from 'chai';
+import fetchCookie = require('fetch-cookie');
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
@@ -53,7 +54,7 @@ describe('LTI 1.3', () => {
     );
     const platformOptionsForm = savePlatformOptionsButton.closest('form');
 
-    // Update the client ID.
+    // Update the platform options.
     const updatePlatformOptionsResponse = await fetchCheerio(
       `${siteUrl}/pl/institution/1/admin/lti13/1`,
       {
@@ -64,6 +65,7 @@ describe('LTI 1.3', () => {
           platform: 'Unknown',
           issuer_params: JSON.stringify({
             issuer: ISSUER,
+            authorization_endpoint: `${ISSUER}/authorize`,
           }),
           custom_fields: '{}',
           client_id: CLIENT_ID,
@@ -74,7 +76,6 @@ describe('LTI 1.3', () => {
 
     const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
     const keystoreForm = addKeyButton.closest('form');
-    console.log();
 
     // Create a key
     const createKeyResponse = await fetchCheerio(`${siteUrl}/pl/institution/1/admin/lti13/1`, {
@@ -84,8 +85,6 @@ describe('LTI 1.3', () => {
         __action: addKeyButton.attr('value') as string,
       }),
     });
-    console.log(await createKeyResponse.text());
-    console.log(createKeyResponse.status);
     assert.equal(createKeyResponse.status, 200);
   });
 
@@ -110,16 +109,48 @@ describe('LTI 1.3', () => {
   });
 
   step('perform login', async () => {
-    const startLoginResponse = await fetchCheerio(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
+    // `openid-client` relies on the session to store state, so we need to use
+    // a cookie-aware version of fetch.
+    const fetchWithCookies = fetchCookie(fetchCheerio);
+
+    const startLoginResponse = await fetchWithCookies(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
       method: 'POST',
       body: new URLSearchParams({
         iss: 'issuer',
-        login_hint: 'login_hint',
-        target_link_uri: 'target_link_uri',
+        login_hint: 'custom_login_hint',
+        target_link_uri: 'custom_target_link_uri',
       }),
       redirect: 'manual',
     });
-    console.log(await startLoginResponse.text());
     assert.equal(startLoginResponse.status, 302);
+
+    const redirectUrl = new URL(startLoginResponse.headers.get('location') as string);
+    assert.equal(redirectUrl.hostname, 'lti.example.com');
+    assert.equal(redirectUrl.pathname, '/authorize');
+    assert.equal(redirectUrl.searchParams.get('client_id'), CLIENT_ID);
+    assert.equal(redirectUrl.searchParams.get('scope'), 'openid');
+    assert.equal(redirectUrl.searchParams.get('response_type'), 'id_token');
+    assert.equal(redirectUrl.searchParams.get('response_mode'), 'form_post');
+    assert.equal(
+      redirectUrl.searchParams.get('redirect_uri'),
+      `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+    );
+    assert.ok(redirectUrl.searchParams.get('nonce'));
+    assert.ok(redirectUrl.searchParams.get('state'));
+
+    const redirectUri = redirectUrl.searchParams.get('redirect_uri') as string;
+    const nonce = redirectUrl.searchParams.get('nonce') as string;
+    const state = redirectUrl.searchParams.get('state') as string;
+
+    const finishLoginResponse = await fetchWithCookies(redirectUri, {
+      method: 'POST',
+      body: new URLSearchParams({
+        nonce,
+        state,
+        id_token: 'hello!',
+      }),
+    });
+    console.log(await finishLoginResponse.text());
+    assert.equal(finishLoginResponse.status, 200);
   });
 });
