@@ -15381,12 +15381,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sketchpad@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "sketchpad@npm:0.1.0"
-  checksum: 486b2c8ec71589eb70106518be39df0ca38054f008c65d82966b9ae6fdec188bc8b6ef3f717ebb9db0536cfbd98b8750ad26cedd9692b2aa0019ff0bf899aede
-  languageName: node
-  linkType: hard
 
 "slash@npm:^3.0.0":
   version: 3.0.0
