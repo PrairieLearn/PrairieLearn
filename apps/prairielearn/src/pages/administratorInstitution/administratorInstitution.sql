@@ -1,4 +1,4 @@
--- BLOCK select_institutions
+ -- BLOCK select_institution
 SELECT
   to_jsonb(i.*) AS institution,
   coalesce(
@@ -19,17 +19,21 @@ SELECT
   ) AS authn_providers
 FROM
   institutions AS i
-ORDER BY
-  i.id ASC;
+WHERE
+  i.id = $id
 
--- BLOCK add_institution
-INSERT INTO
+-- BLOCK edit_institution
+UPDATE
   institutions
-  (long_name, short_name, display_timezone, yearly_enrollment_limit, course_instance_enrollment_limit, uid_regexp)
-VALUES
-  ($long_name, $short_name, $display_timezone, $yearly_enrollment_limit, $course_instance_enrollment_limit, $uid_regexp)
-RETURNING
-  id;
+SET
+  long_name = $long_name,
+  short_name = $short_name,
+  display_timezone = $display_timezone,
+  yearly_enrollment_limit = $yearly_enrollment_limit::BIGINT,
+  course_instance_enrollment_limit = $course_instance_enrollment_limit::BIGINT,
+  uid_regexp = $uid_regexp
+WHERE
+  id = $id;
 
 -- BLOCK add_institution_authn_provider
 INSERT INTO
@@ -46,3 +50,17 @@ VALUES
     )
   )
 ON CONFLICT DO NOTHING;
+
+-- BLOCK remove_institution_authn_provider
+DELETE FROM
+  institution_authn_providers
+WHERE
+  institution_id = $institution_id
+  AND authn_provider_id = (
+    SELECT
+      id
+    FROM
+      authn_providers
+    WHERE
+      name = $authn_provider_name
+  );

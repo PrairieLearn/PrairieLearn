@@ -56,7 +56,6 @@ export function AdministratorInstitutions({
               <table class="table table-sm table-hover table-striped">
                 <thead>
                   <tr>
-                    <th></th>
                     <th>Short name</th>
                     <th>Long name</th>
                     <th>Timezone</th>
@@ -69,28 +68,17 @@ export function AdministratorInstitutions({
                     ({ institution, authn_providers }) => html`
                       <tr>
                         <td>
-                          <button
-                            type="button"
-                            class="btn btn-sm"
-                            data-toggle="modal"
-                            data-target="#edit-institution-modal-${institution.id}"
-                          >
-                            <i class="fas fa-edit"></i>
-                          </button>
-                          ${editInstitutionModal({
-                            csrf_token: resLocals.__csrf_token,
-                            institution,
-                            authn_providers,
-                          })}
-                        </td>
-                        <td>
                           ${isEnterprise()
                             ? html`
                                 <a href="/pl/institution/${institution.id}/admin">
                                   ${institution.short_name}
                                 </a>
                               `
-                            : institution.short_name}
+                            : html`
+                                <a href="/pl/administrator/institution/${institution.id}">
+                                  ${institution.short_name}
+                                </a>
+                              `}
                         </td>
                         <td>${institution.long_name}</td>
                         <td>${institution.display_timezone}</td>
@@ -112,145 +100,6 @@ export function AdministratorInstitutions({
       </body>
     </html>
   `.toString();
-}
-
-function editInstitutionModal({
-  csrf_token,
-  institution,
-  authn_providers,
-}: InstitutionRow & { csrf_token: string }) {
-  return html`
-  <div
-    class="modal fade"
-    id="edit-institution-modal-${institution.id}"
-    role="dialog"
-    aria-labelledby="edit-institution-modal-label"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Edit Institution
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form name="edit-institution" id="edit-institution-${institution.id}" method="POST">
-            <input
-              type="hidden"
-              name="__action"
-              value="edit_institution"
-            />
-            <input
-              type="hidden"
-              name="original_authn_providers"
-              value="${authn_providers.join(', ')}"
-            />
-            <input
-              type="hidden"
-              name="__csrf_token"
-              value="${csrf_token}"
-            />
-            <input
-              type="hidden"
-              name="id"
-              value="${institution.id}"
-            />
-            <div class="form-group">
-              <label for="short_name">Short name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="short_name"
-                name="short_name"
-                value="${institution.short_name}"
-              />
-            </div>
-            <div class="form-group">
-              <label for="long_name">Long name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="long_name"
-                name="long_name"
-                value="${institution.long_name}"
-              />
-            </div>
-            <div class="form-group">
-              <label for="display_timezone">Timezone</label>
-              <input
-                type="text"
-                class="form-control"
-                id="display_timezone"
-                name="display_timezone"
-                value="${institution.display_timezone}"
-              />
-            </div>
-            <div class="form-group">
-              <label for="uid_regexp">UID regexp</label>
-              <input
-                type="text"
-                class="form-control"
-                id="uid_regexp"
-                name="uid_regexp"
-                value="${institution.uid_regexp}"
-              />
-            <div class="form-group">
-              <label for="authn_providers">Authn providers <p><small>Note: authn providers must be separated by a comma and a space (i.e, "Azure, Google") </small><p></label>
-              <input
-                type="text"
-                class="form-control"
-                id="authn_providers"
-                name="authn_providers"
-                value="${authn_providers.join(', ')}"
-              />
-            </div>
-            <div class="form-group">
-              <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
-              <input
-                type="number"
-                class="form-control"
-                id="course_instance_enrollment_limit"
-                name="course_instance_enrollment_limit"
-                value="${institution.course_instance_enrollment_limit}"
-              />
-            </div>
-            <div class="form-group">
-              <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
-              <input
-                type="number"
-                class="form-control"
-                id="yearly_enrollment_limit"
-                name="yearly_enrollment_limit"
-                value="${institution.yearly_enrollment_limit}"
-              />
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            data-dismiss="modal"
-          >
-            Close
-          </button>
-          <button type="submit" class="btn btn-primary" form="edit-institution-${institution.id}">
-            Save changes
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
 }
 
 function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
@@ -284,6 +133,9 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="short_name"
                   placeholder="Short name"
                 />
+                <small id="short_name_help" class="form-text text-muted">
+                  Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
+                </small>
               </div>
               <div class="form-group">
                 <label for="long_name">Long name</label>
@@ -294,6 +146,10 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="long_name"
                   placeholder="Long name"
                 />
+                <small id="long_name_help" class="form-text text-muted">
+                  Use the full name of the university. E.g., "University of Illinois
+                  Urbana-Champaign".
+                </small>
               </div>
               <div class="form-group">
                 <label for="display_timezone">Timezone</label>
@@ -304,6 +160,15 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="display_timezone"
                   placeholder="Timezone"
                 />
+                <small id="display_timezone_help" class="form-text text-muted">
+                  The allowable timezones are from the
+                  <a
+                    href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                    target="_blank"
+                    >tz database</a
+                  >. It's best to use a city-based timezone that has the same times as you. E.g.,
+                  "America/Chicago".
+                </small>
               </div>
               <div class="form-group">
                 <label for="uid_regexp">UID regexp</label>
@@ -314,18 +179,12 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="uid_regexp"
                   placeholder="UID regexp"
                 />
+                <small id="uid_regexp_help" class="form-text text-muted">
+                  Should match the non-username part of students' UIDs. E.g., @example.com$.
+                </small>
               </div>
               <div class="form-group">
-                <label for="authn_providers"
-                  >Authn providers
-                  <p>
-                    <small
-                      >Note: authn providers must be separated by a comma and a space (i.e, "Azure,
-                      Google")
-                    </small>
-                  </p>
-                  <p></p
-                ></label>
+                <label for="authn_providers">Authn providers </label>
                 <input
                   type="text"
                   class="form-control"
@@ -333,6 +192,10 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="authn_providers"
                   placeholder="Authn providers"
                 />
+                <small id="authn_providers_help" class="form-text text-muted"
+                  >This is the list of authentication providers used for login. Authentication
+                  providers must be separated by a comma and a space. E.g., "Azure, Google"</small
+                >
               </div>
               <div class="form-group">
                 <label for="course_instance_enrollment_limit"
@@ -345,6 +208,10 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="course_instance_enrollment_limit"
                   placeholder="Course instance enrollment limit"
                 />
+                <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
+                  The maximum number of enrollments allowed for a single course instance. This value
+                  can be overridden on individual course instances.
+                </small>
               </div>
               <div class="form-group">
                 <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
@@ -355,6 +222,11 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                   name="yearly_enrollment_limit"
                   placeholder="Yearly enrollment limit"
                 />
+                <small id="yearly_enrollment_limit_help" class="form-text text-muted">
+                  The maximum number of enrollments allowed per year. The limit is applied on a
+                  rolling basis; that is, it applies to the previous 365 days from the instant a
+                  student attempts to enroll.
+                </small>
               </div>
             </form>
           </div>

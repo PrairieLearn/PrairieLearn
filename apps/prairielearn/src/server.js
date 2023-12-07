@@ -1849,6 +1849,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorInstitutions/administratorInstitutions').default,
   );
   app.use(
+    '/pl/administrator/institution',
+    require('./pages/administratorInstitution/administratorInstitution').default,
+  );
+  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses'),
   );
