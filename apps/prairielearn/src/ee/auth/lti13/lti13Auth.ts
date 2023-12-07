@@ -11,26 +11,9 @@ import * as error from '@prairielearn/error';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
-import { getInstitutionAuthenticationProviders } from '../../lib/institution';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
-
-// Middleware to check access
-router.use(
-  asyncHandler(async (req, res, next) => {
-    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-    const instAuthProviders = await getInstitutionAuthenticationProviders(
-      lti13_instance.institution_id,
-    );
-
-    if (!instAuthProviders.some((a) => a.name === 'LTI 1.3')) {
-      throw error.make(404, 'Institution does not support LTI 1.3 authentication');
-    }
-
-    next();
-  }),
-);
 
 // Express routes
 router.get('/login', asyncHandler(launchFlow));
@@ -121,8 +104,7 @@ router.post(
 
     // Get the target_link out of the LTI request and redirect
     const redirUrl =
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] ||
-      '/pl';
+      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] || '/pl';
     res.redirect(redirUrl);
   }),
 );
@@ -156,7 +138,51 @@ const LTI13Schema = z.object({
     title: z.string().nullable(),
   }),
   sub: z.string(),
+  given_name: z.string().optional(),
+  family_name: z.string().optional(),
+  name: z.string().optional(),
+  email: z.string().optional(),
+  locale: z.string().optional(),
+  // Could be more from OIDC Standard Claims
   'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
+
+  'https://purl.imsglobal.org/spec/lti/claim/context': z
+    .object({
+      id: z.string(),
+      type: z.string().array().optional(),
+      label: z.string().optional(),
+      title: z.string().optional(),
+    })
+    .nullable(),
+
+  'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
+    .object({
+      guid: z.string().max(255),
+      name: z.string().optional(),
+      contact_email: z.string().optional(),
+      description: z.string().optional(),
+      url: z.string().optional(),
+      product_family_code: z.string().optional(),
+      version: z.string().optional(),
+    })
+    .nullable(),
+
+  'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().optional(),
+
+  'https://purl.imsglobal.org/spec/lti/claim/launch_presentation': z
+    .object({
+      document_target: z.string().optional(),
+      height: z.number().optional(),
+      width: z.number().optional(),
+      return_url: z.string().optional(),
+      locale: z.string().optional(),
+    })
+    .nullable(),
+
+  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullable(),
+  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullable(),
+
+  // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
 });
 
 //
@@ -169,7 +195,6 @@ async function authenticate(req: Request, res: Response): Promise<any> {
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
-
     // Callback arguments described at
     // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
     myPassport.authenticate(`lti13`, ((err, user, info) => {
@@ -233,15 +258,17 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verifyAsync(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = tokenSet.claims();
+  //const lti13_claims = LTI13Schema.parse(tokenSet.claims());
 
+  const lti13_claims = tokenSet.claims();
   LTI13Schema.parse(lti13_claims);
+  console.log(JSON.stringify(lti13_claims, null, 2));
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cacheGet(nonceKey);
   if (cacheResult) {
-    return error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    throw error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
   cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
@@ -256,4 +283,4 @@ async function verifyAsync(req: Request, tokenSet: TokenSet) {
   await queryAsync(sql.verify_upsert, params);
 
   return lti13_claims;
-};
+}
