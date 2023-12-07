@@ -1,5 +1,47 @@
 # @prairielearn/browser-utils
 
+## 1.1.9
+
+### Patch Changes
+
+- Updated dependencies [2da23ab]
+  - @prairielearn/html@3.1.2
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [1523b97b0]
+  - @prairielearn/html@3.1.1
+
+## 1.1.7
+
+### Patch Changes
+
+- Updated dependencies [3cd0f83fa]
+  - @prairielearn/html@3.1.0
+
+## 1.1.6
+
+### Patch Changes
+
+- Updated dependencies [8dd894623]
+  - @prairielearn/html@3.0.9
+
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [bd0053577]
+  - @prairielearn/html@3.0.8
+
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [f03853d90]
+  - @prairielearn/html@3.0.7
+
 ## 1.1.3
 
 ### Patch Changes

@@ -1,13 +1,13 @@
-const util = require('util');
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
 
 describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules', function () {
   this.timeout(60000);
@@ -28,7 +28,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   };
 
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam9, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

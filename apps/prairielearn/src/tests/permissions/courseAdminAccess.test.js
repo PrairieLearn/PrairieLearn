@@ -1,11 +1,13 @@
-const util = require('util');
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../../lib/config';
+import * as helperServer from '../helperServer';
+import * as helperClient from '../helperClient';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const helperServer = require('../helperServer');
-const helperClient = require('../helperClient');
 
 async function checkPermissions(users) {
   const result = await sqldb.queryAsync(sql.select_permissions, {
@@ -79,9 +81,7 @@ function runTest(context) {
 
   var new_user = 'garbage@illinois.edu';
 
-  before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
-  });
+  before('set up testing server', helperServer.before().bind(this));
 
   before('insert users and make instructor course owner', async function () {
     for (const user of users) {

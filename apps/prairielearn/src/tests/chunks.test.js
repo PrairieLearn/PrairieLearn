@@ -1,22 +1,21 @@
 // @ts-check
-const assert = require('chai').assert;
-const util = require('util');
-const tmp = require('tmp-promise');
-const fs = require('fs-extra');
+import { assert } from 'chai';
+import * as tmp from 'tmp-promise';
+import * as fs from 'fs-extra';
 const path = require('path');
-const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
 
-const courseDB = require('../sync/course-db');
-const chunksLib = require('../lib/chunks');
-const { config } = require('../lib/config');
-const { TEST_COURSE_PATH } = require('../lib/paths');
-const { makeMockLogger } = require('./mockLogger');
+import * as courseDB from '../sync/course-db';
+import * as chunksLib from '../lib/chunks';
+import { config } from '../lib/config';
+import { TEST_COURSE_PATH } from '../lib/paths';
+import { makeMockLogger } from './mockLogger';
+import * as helperServer from './helperServer';
+import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { makeInfoFile } from '../sync/infofile';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
-const { makeInfoFile } = require('../sync/infofile');
 
 /** @type {import('../sync/course-db').CourseData} */
 const COURSE = {
@@ -294,7 +293,7 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await util.promisify(helperServer.before(tempTestCourseDir.path).bind(this))();
+      await helperServer.before(tempTestCourseDir.path).call(this);
 
       // Find the ID of this course
       const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
@@ -328,7 +327,7 @@ describe('chunks', () => {
       } catch (err) {
         console.error(err);
       }
-      await util.promisify(helperServer.after.bind(this))();
+      await helperServer.after.call(this);
 
       config.chunksConsumer = false;
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;

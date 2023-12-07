@@ -1,0 +1,7 @@
+<li class="nav-item btn-group">
+  <a class="nav-link" role="button" aria-label="Link to page showing all public questions for the course." href="<%= urlPrefix %>/questions">
+    <% if (locals.course) { %>
+      <%= course.short_name %>
+    <% } %>
+  </a>
+</li>

@@ -1,15 +1,16 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-const { assert } = require('chai');
-const fetch = require('node-fetch').default;
-var cheerio = require('cheerio');
+// @ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import { assert } from 'chai';
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 
@@ -269,19 +270,13 @@ describe('Zone grading homework assessment', function () {
   zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 

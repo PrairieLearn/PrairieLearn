@@ -16,7 +16,7 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
 
 ```json
 "allowAccess": [
@@ -274,10 +274,10 @@ To escape either math environment, consider using PrairieLearn's markdown tag an
 ```
 
 In scenarios that do not make sense for using the code environment, consider disabling math entirely by
-adding the `tex2jax_ignore` class to an HTML element.
+adding the `mathjax_ignore` class to an HTML element.
 
 ```html
-<div class="tex2jax_ignore">
+<div class="mathjax_ignore">
   Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1 dollar, then how many
   pieces of fruit can Mary get?
 </div>
@@ -388,3 +388,16 @@ For example:
 ```
 
 For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+
+## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
+
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+
+To fix student scores without requiring them to answer another question you can:
+
+1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
+2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
+3. Rename the "Score (%)" column to "score_perc" and delete all columns except "uid", "instance", and "score_perc".
+4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
+
+Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.

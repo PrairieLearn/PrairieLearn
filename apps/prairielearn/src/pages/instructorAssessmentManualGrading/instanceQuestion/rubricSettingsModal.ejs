@@ -109,6 +109,7 @@
                   <th>Description</th>
                   <th>Detailed explanation (optional)</th>
                   <th>Grader note (optional, not visible to students)</th>
+                  <th>Show to students</th>
                   <th>In use</th>
               </thead>
               <tbody>
@@ -164,6 +165,20 @@
                     </label>
                   </td>
                   <td>
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="radio" class="form-check-input" required
+                               name="rubric_item[cur<%= item.id %>][always_show_to_students]"
+                               value="true" <%= item.always_show_to_students ? 'checked' : '' %>>Always
+                      </label>
+                      <label class="form-check-label">
+                        <input type="radio" class="form-check-input" required
+                               name="rubric_item[cur<%= item.id %>][always_show_to_students]"
+                               value="false" <%= item.always_show_to_students ? '' : 'checked' %>>If selected
+                      </label>
+                    </div>
+                  </td>
+                  <td>
                     <% if (!item.num_submissions) { %>No
                     <% } else if (item.num_submissions == 1) { %>1 submission
                     <% } else { %><%= item.num_submissions %> submissions
@@ -217,6 +232,18 @@
                       <i class="fas fa-pencil"></i>
                     </button>
                   </label>
+                </td>
+                <td>
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="radio" class="form-check-input js-rubric-item-always-show" required
+                             value="true" checked>Always
+                    </label>
+                    <label class="form-check-label">
+                      <input type="radio" class="form-check-input js-rubric-item-always-show" required
+                             value="false">If selected
+                    </label>
+                  </div>
                 </td>
                 <td>
                   New

@@ -1,13 +1,13 @@
-const util = require('util');
-const { config } = require('../lib/config');
-const assert = require('chai').assert;
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
-const { step } = require('mocha-steps');
 
 describe('Exam and homework assessment with active access restriction', function () {
   this.timeout(60000);
@@ -20,6 +20,7 @@ describe('Exam and homework assessment with active access restriction', function
   context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
   context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
+  /** @type {Record<string, string>} */
   const headers = {};
 
   before('set authenticated user', function (callback) {
@@ -32,7 +33,7 @@ describe('Exam and homework assessment with active access restriction', function
     callback(null);
   });
   before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
+    await helperServer.before().call(this);
     const resultsExam = await sqldb.queryOneRowAsync(sql.select_exam11, []);
     context.examId = resultsExam.rows[0].id;
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;

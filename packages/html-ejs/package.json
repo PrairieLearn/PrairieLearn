@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html-ejs",
-  "version": "1.1.8",
+  "version": "1.1.14",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -18,8 +18,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/ejs": "^3.1.2",
-    "@types/node": "^18.17.12",
+    "@types/ejs": "^3.1.5",
+    "@types/node": "^18.19.0",
+    "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"

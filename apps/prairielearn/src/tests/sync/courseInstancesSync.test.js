@@ -1,10 +1,10 @@
 // @ts-check
-const { assert } = require('chai');
-const fs = require('fs-extra');
+import { assert } from 'chai';
+import * as fs from 'fs-extra';
 const path = require('path');
-const util = require('./util');
-const helperDb = require('../helperDb');
-const { idsEqual } = require('../../lib/id');
+import * as util from './util';
+import * as helperDb from '../helperDb';
+import { idsEqual } from '../../lib/id';
 
 /**
  * Makes an empty course instance.

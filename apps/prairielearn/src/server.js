@@ -19,7 +19,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
-const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -63,14 +62,18 @@ const namedLocks = require('@prairielearn/named-locks');
 const { EncodedData } = require('@prairielearn/browser-utils');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
-const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const SessionStore = require('./lib/session-store');
 const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 const { flashMiddleware, flash } = require('@prairielearn/flash');
-const { features, featuresMiddleware } = require('./lib/features');
+const { features } = require('./lib/features');
+const { featuresMiddleware } = require('./lib/features/middleware');
 const { markAllWorkspaceHostsUnhealthy } = require('./lib/workspaceHost');
+const { createSessionMiddleware } = require('@prairielearn/session');
+const { PostgresSessionStore } = require('./lib/session-store');
+const { pullAndUpdateCourse } = require('./lib/course');
+const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
+const { makeCookieMigrationMiddleware } = require('./lib/cookie');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -88,6 +91,7 @@ if ('h' in argv || 'help' in argv) {
     <filename> and no other args        Load an alternative config filename
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
+    --sync-course <course_id>           Synchronize a course and exit
 `;
 
   console.log(msg);
@@ -103,7 +107,7 @@ function enterpriseOnlyMiddleware(load) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {import('express').Application} The express "app" object that was created.
+ * @return {import('express').Express} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
@@ -118,6 +122,8 @@ module.exports.initExpress = function () {
     if (config.sentryTracesSampleRate) {
       app.use(Sentry.Handlers.tracingHandler());
     }
+
+    app.use(require('./lib/sentry').enrichSentryEventMiddleware);
   }
 
   // This should come before the session middleware so that we don't
@@ -149,21 +155,30 @@ module.exports.initExpress = function () {
   });
 
   app.use(
-    session({
+    createSessionMiddleware({
       secret: config.secretKey,
-      store: new SessionStore({
-        expireSeconds: config.sessionStoreExpireSeconds,
-      }),
-      resave: false,
-      saveUninitialized: true,
+      store: new PostgresSessionStore(),
       cookie: {
-        maxAge: config.sessionStoreExpireSeconds * 1000,
+        name: config.sessionCookieNames,
         httpOnly: true,
-        secure: 'auto', // uses Express "trust proxy"
+        maxAge: config.sessionStoreExpireSeconds * 1000,
+        secure: 'auto', // uses Express "trust proxy" setting
         sameSite: config.sessionCookieSameSite,
       },
     }),
   );
+
+  app.use((req, res, next) => {
+    // If the session is going to expire in the near future, we'll extend it
+    // automatically for the user.
+    //
+    // TODO: make this configurable?
+    if (req.session.getExpirationDate().getTime() < Date.now() + 60 * 60 * 1000) {
+      req.session.setExpiration(config.sessionStoreExpireSeconds);
+    }
+
+    next();
+  });
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
@@ -276,6 +291,7 @@ module.exports.initExpress = function () {
         name !== 'pl_authn' &&
         name !== 'pl_assessmentpw' &&
         name !== 'connect.sid' &&
+        name !== 'prairielearn_session' &&
         // The workspace authz cookies use a prefix plus the workspace ID, so
         // we need to check for that prefix instead of an exact name match.
         !name.startsWith('pl_authz_workspace_')
@@ -385,6 +401,7 @@ module.exports.initExpress = function () {
   ]);
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
+    makeCookieMigrationMiddleware(config.rewriteCookies),
     (req, res, next) => {
       // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
@@ -404,6 +421,7 @@ module.exports.initExpress = function () {
   });
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
+  app.use(makeCookieMigrationMiddleware(config.rewriteCookies));
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
@@ -478,6 +496,7 @@ module.exports.initExpress = function () {
       app.use('/pl/azure_callback', require('./ee/auth/azure/callback').default);
     }
 
+    app.use('/pl/lti13_instance', require('./ee/routers/lti13').default);
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
@@ -491,7 +510,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'logout';
       next();
     },
-    require('./pages/authLogout/authLogout'),
+    require('./pages/authLogout/authLogout').default,
   ]);
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
@@ -537,11 +556,6 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // clear all cached course code in dev mode (no authorization needed)
-  if (config.devMode) {
-    app.use(require('./middlewares/undefCourseCode'));
-  }
-
   // clear cookies on the homepage to reset any stale session state
   app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
@@ -581,6 +595,19 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
+  ]);
+
+  // We deliberately omit the `authzCourseOrInstance` middleware here. The
+  // route handler will only ever display courses for which the user has staff
+  // access; the course ID in the URL is only used to determine which course
+  // is the currently selected one.
+  app.use(
+    '/pl/navbar/course/:course_id/switcher',
+    require('./pages/navbarCourseSwitcher/navbarCourseSwitcher').default,
+  );
+  app.use('/pl/navbar/course/:course_id/course_instance_switcher/:course_instance_id?', [
+    require('./middlewares/authzCourseOrInstance'),
+    require('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher').default,
   ]);
 
   app.use('/pl/workspace/:workspace_id', [
@@ -844,7 +871,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorAssessmentSettings/instructorAssessmentSettings'),
+    require('./pages/instructorAssessmentSettings/instructorAssessmentSettings').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions',
@@ -853,7 +880,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'questions';
         next();
       },
-      require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+      require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions').default,
     ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
@@ -861,14 +888,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'groups';
       next();
     },
-    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function (req, res, next) {
       res.locals.navSubPage = 'access';
       next();
     },
-    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
+    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess').default,
   ]);
 
   app.use(
@@ -878,7 +905,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'assessment_statistics';
         next();
       },
-      require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
+      require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics').default,
     ],
   );
   app.use(
@@ -890,7 +917,8 @@ module.exports.initExpress = function () {
       },
       require('./pages/shared/assessmentStatDescriptions'),
       require('./pages/shared/floatFormatters'),
-      require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
+      require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics')
+        .default,
     ],
   );
   app.use(
@@ -900,7 +928,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'downloads';
         next();
       },
-      require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
+      require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads').default,
     ],
   );
   app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
@@ -908,7 +936,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'uploads';
       next();
     },
-    require('./pages/instructorAssessmentUploads/instructorAssessmentUploads'),
+    require('./pages/instructorAssessmentUploads/instructorAssessmentUploads').default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading',
@@ -917,7 +945,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'regrading';
         next();
       },
-      require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
+      require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading').default,
     ],
   );
   app.use(
@@ -927,7 +955,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'instances';
         next();
       },
-      require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
+      require('./pages/instructorAssessmentInstances/instructorAssessmentInstances').default,
     ],
   );
   app.use(
@@ -937,7 +965,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'file_edit';
         next();
       },
-      require('./pages/instructorFileEditor/instructorFileEditor'),
+      require('./pages/instructorFileEditor/instructorFileEditor').default,
     ],
   );
   app.use(
@@ -976,6 +1004,10 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
     ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1024,7 +1056,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment').default,
     ],
   );
 
@@ -1033,7 +1065,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
       require('./pages/shared/floatFormatters'),
-      require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
+      require('./pages/instructorAssessmentInstance/instructorAssessmentInstance').default,
     ],
   );
 
@@ -1090,7 +1122,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', [
     function (req, res, next) {
@@ -1106,7 +1138,7 @@ module.exports.initExpress = function () {
 
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/grading_job',
-    require('./pages/instructorGradingJob/instructorGradingJob'),
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/jobSequence',
@@ -1137,7 +1169,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sharing', [
     function (req, res, next) {
@@ -1158,14 +1190,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sets';
       next();
     },
-    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
+    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
       next();
     },
-    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/issues', [
     function (req, res, next) {
@@ -1179,7 +1211,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/syncs', [
     function (req, res, next) {
@@ -1207,7 +1239,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', [
     function (req, res, next) {
@@ -1261,14 +1293,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'assessments';
       next();
     },
-    require('./pages/instructorAssessments/instructorAssessments'),
+    require('./pages/instructorAssessments/instructorAssessments').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
-    require('./pages/instructorGradebook/instructorGradebook'),
+    require('./pages/instructorGradebook/instructorGradebook').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
     function (req, res, next) {
@@ -1282,7 +1314,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', [
     function (req, res, next) {
@@ -1305,7 +1337,7 @@ module.exports.initExpress = function () {
     ]);
   }
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
@@ -1314,12 +1346,28 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance',
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
   );
+
+  // Client files for assessments
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesCourseInstance',
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment',
     [
       require('./middlewares/selectAndAuthzAssessment'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion',
@@ -1391,8 +1439,8 @@ module.exports.initExpress = function () {
   // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./middlewares/logPageView')('studentAssessment'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/logPageView')('studentAssessment'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
   ]);
@@ -1400,8 +1448,9 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
     [
       require('./middlewares/selectAndAuthzAssessmentInstance'),
-      require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./middlewares/studentAssessmentAccess'),
+      require('./middlewares/clientFingerprint').default,
+      require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
       require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ],
   );
@@ -1415,16 +1464,18 @@ module.exports.initExpress = function () {
   );
   app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/clientFingerprint').default,
+    require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/clientFingerprint').default,
+    // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
@@ -1440,7 +1491,7 @@ module.exports.initExpress = function () {
     );
   }
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
@@ -1449,6 +1500,21 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/clientFilesCourseInstance',
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
   );
+
+  // Client files for assessments
+  app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourse', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesCourseInstance',
+    [
+      require('./middlewares/selectAndAuthzAssessment'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+    ],
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment',
     [
@@ -1456,6 +1522,12 @@ module.exports.initExpress = function () {
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/clientFilesAssessment/clientFilesAssessment'),
     ],
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
@@ -1552,7 +1624,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/file_view', [
     function (req, res, next) {
@@ -1584,7 +1656,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
+    require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/sharing', [
     function (req, res, next) {
@@ -1605,14 +1677,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'sets';
       next();
     },
-    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
+    require('./pages/instructorCourseAdminSets/instructorCourseAdminSets').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
       next();
     },
-    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/issues', [
     function (req, res, next) {
@@ -1626,7 +1698,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'questions';
       next();
     },
-    require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/instructorQuestions/instructorQuestions').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/syncs', [
     function (req, res, next) {
@@ -1654,7 +1726,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'file_edit';
       next();
     },
-    require('./pages/instructorFileEditor/instructorFileEditor'),
+    require('./pages/instructorFileEditor/instructorFileEditor').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/file_view', [
     function (req, res, next) {
@@ -1676,6 +1748,10 @@ module.exports.initExpress = function () {
     '/pl/course/:course_id/jobSequence',
     require('./pages/instructorJobSequence/instructorJobSequence'),
   );
+  app.use(
+    '/pl/course/:course_id/grading_job',
+    require('./pages/instructorGradingJob/instructorGradingJob').default,
+  );
 
   // This route is used to initiate a transfer of a question from a template course.
   // It is not actually a page; it's just used to initiate the transfer. The reason
@@ -1689,9 +1765,15 @@ module.exports.initExpress = function () {
       .default,
   );
 
-  // clientFiles
+  // Global client files
   app.use(
     '/pl/course/:course_id/clientFilesCourse',
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+  );
+
+  // Client files for questions
+  app.use(
+    '/pl/course/:course_id/question/:question_id/clientFilesCourse',
     require('./pages/clientFilesCourse/clientFilesCourse'),
   );
   app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
@@ -1733,13 +1815,46 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
+  // Public course pages ///////////////////////////////////////////////
+
+  app.use('/pl/public/course/:course_id', [
+    function (req, res, next) {
+      res.locals.navbarType = 'public';
+      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
+      next();
+    },
+  ]);
+  app.use('/pl/public/course/:course_id/question/:question_id/preview', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'preview';
+      next();
+    },
+    require('./pages/shared/floatFormatters'),
+    require('./pages/publicQuestionPreview/publicQuestionPreview'),
+  ]);
+  app.use('/pl/public/course/:course_id/questions', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_questions';
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    require('./pages/publicQuestions/publicQuestions'),
+  ]);
+
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
-  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
+  app.use(
+    '/pl/administrator/admins',
+    require('./pages/administratorAdmins/administratorAdmins').default,
+  );
   app.use(
     '/pl/administrator/settings',
-    require('./pages/administratorSettings/administratorSettings'),
+    require('./pages/administratorSettings/administratorSettings').default,
   );
   app.use(
     '/pl/administrator/institutions',
@@ -1755,7 +1870,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/workspaces',
-    require('./pages/administratorWorkspaces/administratorWorkspaces'),
+    require('./pages/administratorWorkspaces/administratorWorkspaces').default,
   );
   app.use(
     '/pl/administrator/features',
@@ -1763,12 +1878,15 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/queries',
-    require('./pages/administratorQueries/administratorQueries'),
+    require('./pages/administratorQueries/administratorQueries').default,
   );
-  app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+  app.use(
+    '/pl/administrator/query',
+    require('./pages/administratorQuery/administratorQuery').default,
+  );
   app.use(
     '/pl/administrator/jobSequence/',
-    require('./pages/administratorJobSequence/administratorJobSequence'),
+    require('./pages/administratorJobSequence/administratorJobSequence').default,
   );
   app.use(
     '/pl/administrator/courseRequests/',
@@ -1776,7 +1894,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/batchedMigrations',
-    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations'),
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1824,15 +1942,6 @@ module.exports.initExpress = function () {
     next(err);
   });
 
-  // We need to add our own handler here to ensure that we add the appropriate
-  // information to the current Sentry scope.
-  //
-  // Note that this is typically done by our `logResponse` middleware, but
-  // that doesn't run soon enough for the Sentry error handler to pick up.
-  app.use((err, req, res, next) => {
-    enrichSentryScope(req, res);
-    next(err);
-  });
   app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
@@ -2059,6 +2168,7 @@ if (require.main === module && config.startServer) {
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+          ssl: config.postgresqlSsl,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
@@ -2222,12 +2332,24 @@ if (require.main === module && config.startServer) {
           throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
         }
         await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+        await sprocs.init();
       },
-      function (callback) {
-        sprocs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        if ('sync-course' in argv) {
+          logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+          const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
+            courseId: argv['sync-course'],
+            authnUserId: null,
+            userId: null,
+          });
+          logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+          logger.info(`Waiting for job to finish...`);
+          await jobPromise;
+          (await selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+            logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
+          });
+          process.exit(0);
+        }
       },
       function (callback) {
         if (!config.initNewsItems) return callback(null);
@@ -2270,12 +2392,7 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => externalGrader.init(),
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),

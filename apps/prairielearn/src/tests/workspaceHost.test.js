@@ -1,11 +1,11 @@
 // @ts-check
-const { assert } = require('chai');
-const { v4: uuidv4 } = require('uuid');
-const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
+import { assert } from 'chai';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
 
-const workspaceHostUtils = require('../lib/workspaceHost');
-const helperDb = require('./helperDb');
+import * as workspaceHostUtils from '../lib/workspaceHost';
+import * as helperDb from './helperDb';
 
 const WorkspaceHostSchema = z.object({
   id: z.string(),

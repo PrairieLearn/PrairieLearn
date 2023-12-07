@@ -1,21 +1,21 @@
 // @ts-check
-const util = require('util');
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const { v4: uuid } = require('uuid');
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import { v4 as uuid } from 'uuid';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
 
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
-const {
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+import {
   getCourseData,
   COURSE_INSTANCE_ID,
   writeCourseToTempDirectory,
   overwriteAndSyncCourseData,
-} = require('./sync/util');
+} from './sync/util';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);
@@ -110,7 +110,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   before('set up testing server', async function () {
     courseDir = await writeCourseToTempDirectory(course);
-    await util.promisify(helperServer.before(courseDir).bind(this))();
+    await helperServer.before(courseDir).call(this);
     const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
     courseInstanceId = courseInstanceResult.rows[0].id;
   });

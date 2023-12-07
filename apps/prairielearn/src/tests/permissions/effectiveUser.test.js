@@ -1,12 +1,14 @@
-const util = require('util');
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../../lib/config';
+import * as helperServer from '../helperServer';
+import * as helperClient from '../helperClient';
+import { ensureEnrollment } from '../../models/enrollment';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const helperServer = require('../helperServer');
-const helperClient = require('../helperClient');
-const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -19,9 +21,7 @@ describe('effective user', function () {
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
   context.userId = 2;
 
-  before('set up testing server', async function () {
-    await util.promisify(helperServer.before().bind(this))();
-  });
+  before('set up testing server', helperServer.before().bind(this));
 
   before('insert users', async function () {
     await sqldb.callAsync('users_select_or_insert', [
@@ -55,8 +55,8 @@ describe('effective user', function () {
       2,
     ]);
     await ensureEnrollment({
-      user_id: 4,
-      course_instance_id: 1,
+      user_id: '4',
+      course_instance_id: '1',
     });
   });
 

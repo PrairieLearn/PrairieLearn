@@ -1,10 +1,11 @@
+//@ts-check
 const _ = require('lodash');
-const path = require('path');
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const { config } = require('./config');
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import { config } from './config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -110,7 +111,7 @@ class LoadEstimator {
     debug(`LoadEstimator._warnOldJobs(): jobType = ${this.jobType}`);
     if (!this.warnOnOldJobs) return;
     const nowMS = Date.now();
-    _.forEach(this.currentJobs, (info, id) => {
+    _.forEach(this.currentJobs, (/** @type {object} */ info, id) => {
       if (nowMS - info.startMS > config.maxResponseTimeSec * 1000 && !info.warned) {
         const details = {
           jobType: this.jobType,
@@ -128,35 +129,33 @@ class LoadEstimator {
 
 const estimators = {};
 
-module.exports = {
-  initEstimator(jobType, maxJobCount, warnOnOldJobs) {
-    debug(
-      `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
-    );
-    if (_.has(estimators, jobType)) throw new Error(`duplicate jobType: ${jobType}`);
-    estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);
-  },
+export function initEstimator(jobType, maxJobCount, warnOnOldJobs) {
+  debug(
+    `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
+  );
+  if (_.has(estimators, jobType)) throw new Error(`duplicate jobType: ${jobType}`);
+  estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);
+}
 
-  startJob(jobType, id, maxJobCount) {
-    debug(`startJob(): jobType = ${jobType}, id = ${id}, maxJobCount = ${maxJobCount}`);
-    if (!_.has(estimators, jobType)) {
-      // lazy estimator creation, needed for unit tests
-      estimators[jobType] = new LoadEstimator(jobType, maxJobCount);
-    }
-    estimators[jobType].startJob(id);
-  },
+export function startJob(jobType, id, maxJobCount) {
+  debug(`startJob(): jobType = ${jobType}, id = ${id}, maxJobCount = ${maxJobCount}`);
+  if (!_.has(estimators, jobType)) {
+    // lazy estimator creation, needed for unit tests
+    estimators[jobType] = new LoadEstimator(jobType, maxJobCount);
+  }
+  estimators[jobType].startJob(id);
+}
 
-  endJob(jobType, id) {
-    debug(`endJob(): jobType = ${jobType}, id = ${id}`);
-    if (!_.has(estimators, jobType)) throw new Error(`endJob(): no such estimator: ${jobType}`);
-    estimators[jobType].endJob(id);
-  },
+export function endJob(jobType, id) {
+  debug(`endJob(): jobType = ${jobType}, id = ${id}`);
+  if (!_.has(estimators, jobType)) throw new Error(`endJob(): no such estimator: ${jobType}`);
+  estimators[jobType].endJob(id);
+}
 
-  close() {
-    debug(`close(): ${_.size(estimators)} estimators`);
-    for (const jobType in estimators) {
-      estimators[jobType].close();
-      delete estimators[jobType];
-    }
-  },
-};
+export function close() {
+  debug(`close(): ${_.size(estimators)} estimators`);
+  for (const jobType in estimators) {
+    estimators[jobType].close();
+    delete estimators[jobType];
+  }
+}

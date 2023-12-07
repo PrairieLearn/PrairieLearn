@@ -498,12 +498,13 @@ function addRubricItemRow() {
   row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
   row.querySelector('.js-rubric-item-points').value = points;
   row.querySelector('.js-rubric-item-description').name = `rubric_item[new${next_id}][description]`;
-  row.querySelector(
-    '.js-rubric-item-explanation',
-  ).dataset.inputName = `rubric_item[new${next_id}][explanation]`;
-  row.querySelector(
-    '.js-rubric-item-grader-note',
-  ).dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
+  row.querySelector('.js-rubric-item-explanation').dataset.inputName =
+    `rubric_item[new${next_id}][explanation]`;
+  row.querySelector('.js-rubric-item-grader-note').dataset.inputName =
+    `rubric_item[new${next_id}][grader_note]`;
+  row
+    .querySelectorAll('.js-rubric-item-always-show')
+    .forEach((input) => (input.name = `rubric_item[new${next_id}][always_show_to_students]`));
 
   row.querySelector('.js-rubric-item-points').focus();
 

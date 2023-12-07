@@ -1,9 +1,9 @@
 // @ts-check
-const { assert } = require('chai');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
 
-const sqldb = require('@prairielearn/postgres');
-const helperDb = require('../helperDb');
+import * as sqldb from '@prairielearn/postgres';
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -67,7 +67,7 @@ describe('sproc users_select_or_insert tests', () => {
       name: 'J.R. User',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -82,10 +82,11 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates institution_id', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -96,11 +97,12 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uin when uin was null', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uin: '111122223',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -111,11 +113,12 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uin when uin was value', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uin: '111122224',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -126,12 +129,13 @@ describe('sproc users_select_or_insert tests', () => {
   step('user 1 updates uid with already present uin', async () => {
     const user = {
       ...baseUser,
+      name: 'J.R. User',
       uid: 'newuid@host.com',
       uin: '111122224',
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '100');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -167,7 +171,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
 
@@ -190,10 +194,9 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    await assert.isRejected(
-      usersSelectOrInsert(user, 'Azure'),
-      /authentication provider is not allowed for institution/,
-    );
+    const userResult = await usersSelectOrInsert(user, 'Azure');
+    assert.equal(userResult.rows[0].result, 'invalid_authn_provider');
+    assert.isNull(userResult.rows[0].user_id);
   });
 
   step('user 3 create under Google', async () => {
@@ -204,7 +207,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -212,7 +215,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  step('user 3 logs in via Shibboleth', async () => {
+  step('user 3 logs in via SAML', async () => {
     const user = {
       uid: 'sally@illinois.edu',
       name: 'Sally Ann',
@@ -220,7 +223,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -236,7 +239,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google');
+    const result = await usersSelectOrInsert(user, 'Google', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -259,7 +262,7 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
+    const result = await usersSelectOrInsert(user, 'SAML', '200');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
 
@@ -292,10 +295,7 @@ describe('sproc users_select_or_insert tests', () => {
       uin: '666666666',
     };
 
-    await assert.isRejected(
-      usersSelectOrInsert(user, 'Shibboleth', '200'),
-      /does not match policy/,
-    );
+    await assert.isRejected(usersSelectOrInsert(user, 'SAML', '200'), /does not match policy/);
   });
 
   // This test ensures that users in separate institutions can have the same UIN.
@@ -314,9 +314,9 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const firstResult = await usersSelectOrInsert(firstUser, 'Shibboleth', '100');
+    const firstResult = await usersSelectOrInsert(firstUser, 'SAML', '100');
     const firstUserId = firstResult.rows[0].user_id;
-    const secondResult = await usersSelectOrInsert(secondUser, 'Shibboleth', '200');
+    const secondResult = await usersSelectOrInsert(secondUser, 'SAML', '200');
     const secondUserId = secondResult.rows[0].user_id;
 
     // Ensure two distinct users were created.

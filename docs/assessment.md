@@ -374,17 +374,17 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "singleAttemptQ", "points": 10},
-            {"id": "tryOncePerVar", "points": 10},
-            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-        ]
-    }
-],
-```
+  ```json
+  "zones": [
+      {
+          "questions": [
+              {"id": "singleAttemptQ", "points": 10},
+              {"id": "tryOncePerVar", "points": 10},
+              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
+          ]
+      }
+  ],
+  ```
 
 ## Limiting the rate at which answers can be graded
 
@@ -423,3 +423,11 @@ The text of the honor code was based on the University of Maryland's [Honor Pled
 Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
 
 The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.
+
+## Client Fingerprint Tracking and Changes
+
+While a student is working on an assessment, PrairieLearn tracks the user's IP address, session ID, and user agent (this includes the operating system, browser application, and version). These attributes together make up a client fingerprint. The fingerprints are then recorded during events while accessing the assessment instance. For example, when a student views a question, a record of the client fingerprint is saved along with the view event.
+
+Each time the client fingerprint is recorded, PrairieLearn checks it against the previous client fingerprint used to access that assessment. PrairieLearn will track and display how many times the fingerprint has changed during the course of the assessment. You can see the number of times a fingerprint changed on the Students tab of an assessment. You can also see more detailed information about the client fingerprint by accessing the student's assessment instance and reviewing the Fingerprint column of the event log.
+
+Some fingerprint changes may occur naturally during the course of an assessment, such as a computer connecting to a different Wi-Fi access point or a student changing locations while working on homework. However, a high number of changes in an exam-like environment could be a possible indication of collusion between students. In particular, many fingerprint changes could be an indication that multiple users were accessing the exam simultaneously, such as one student in the exam room and a second student outside. In such a case, the exact pattern of fingerprints in the assessment instance log will be helpful in determining whether there is indeed an academic integrity issue.

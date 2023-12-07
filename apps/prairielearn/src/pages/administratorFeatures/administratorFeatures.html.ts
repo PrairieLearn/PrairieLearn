@@ -71,12 +71,14 @@ export function AdministratorFeatures({
 export function AdministratorFeature({
   feature,
   featureGrants,
+  featureInConfig,
   institutions,
   resLocals,
 }: {
   feature: string;
   institutions: Institution[];
   featureGrants: FeatureGrantRow[];
+  featureInConfig: boolean | null;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -114,11 +116,27 @@ export function AdministratorFeature({
                 Grant feature
               </button>
             </div>
-            ${featureGrants.length > 0
+            ${featureGrants.length > 0 || featureInConfig != null
               ? html`
                   <div class="list-group list-group-flush">
+                    ${featureInConfig != null
+                      ? html`
+                          <div class="list-group-item">
+                            <i
+                              class="fa-solid mr-1 ${featureInConfig
+                                ? 'fa-check text-success'
+                                : 'fa-times text-danger'}"
+                            ></i>
+                            Feature ${featureInConfig ? 'enabled' : 'disabled'} in configuration
+                            file
+                          </div>
+                        `
+                      : ''}
                     ${featureGrants.map((featureGrant) => {
-                      return FeatureGrant({ featureGrant });
+                      return FeatureGrant({
+                        featureGrant,
+                        overridden: featureInConfig != null,
+                      });
                     })}
                   </div>
                 `
@@ -185,9 +203,17 @@ function FeatureGrantBreadcrumbs({ featureGrant }: { featureGrant: FeatureGrantR
   `;
 }
 
-function FeatureGrant({ featureGrant }: { featureGrant: FeatureGrantRow }) {
+function FeatureGrant({
+  featureGrant,
+  overridden,
+}: {
+  featureGrant: FeatureGrantRow;
+  overridden: boolean;
+}) {
   return html`
-    <div class="list-group-item d-flex flex-row align-items-center">
+    <div
+      class="list-group-item d-flex flex-row align-items-center ${overridden ? 'text-muted' : ''}"
+    >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
     </div>
   `;
@@ -248,7 +274,7 @@ export function AddFeatureGrantModalBody({
           id="feature-grant-institution"
           name="institution_id"
         >
-          <option value="">None</option>
+          <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
               <option
@@ -273,7 +299,7 @@ export function AddFeatureGrantModalBody({
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses in this institution</option>
           ${(courses ?? []).map((course) => {
             return html`
               <option value="${course.id}" ${course.id === course_id ? 'selected' : ''}>
@@ -295,7 +321,7 @@ export function AddFeatureGrantModalBody({
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}
         >
-          <option value="">None</option>
+          <option value="">All courses instances in this course</option>
           ${(course_instances ?? []).map((course_instance) => {
             return html`
               <option

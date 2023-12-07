@@ -1,19 +1,20 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const assert = require('chai').assert;
-const fs = require('fs-extra');
+import { assert } from 'chai';
+import * as fs from 'fs-extra';
 const path = require('path');
-const async = require('async');
-const ncp = require('ncp');
-const cheerio = require('cheerio');
-const { exec } = require('child_process');
-const fetch = require('node-fetch').default;
+import * as async from 'async';
+import * as cheerio from 'cheerio';
+import { exec } from 'child_process';
+import fetch from 'node-fetch';
 const klaw = require('klaw');
-const tmp = require('tmp');
+import * as tmp from 'tmp';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as sqldb from '@prairielearn/postgres';
+import * as helperServer from './helperServer';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const helperServer = require('./helperServer');
 
 const locals = {};
 
@@ -317,11 +318,8 @@ describe('test course editor', function () {
 
     after('shut down testing server', helperServer.after);
 
-    after('delete test course files', function (callback) {
-      deleteCourseFiles((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    after('delete test course files', async () => {
+      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {
@@ -341,7 +339,8 @@ describe('test course editor', function () {
 });
 
 async function getFiles(options) {
-  let files = new Set([]);
+  /** @type {Set<string>} */
+  let files = new Set();
 
   const ignoreHidden = (item) => {
     const basename = path.basename(item);
@@ -453,8 +452,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
-      it('should have a uuid', function () {
-        const infoJson = JSON.parse(fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'));
+      it('should have a uuid', async () => {
+        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
     }
@@ -464,21 +464,22 @@ function testEdit(params) {
 function createCourseFiles(callback) {
   async.series(
     [
-      (callback) => {
-        deleteCourseFiles((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await deleteCourseFiles(),
       (callback) => {
         const execOptions = {
           cwd: '.',
           env: process.env,
         };
-        exec(`git init --bare ${courseOriginDir}`, execOptions, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        // Ensure that the default branch is master, regardless of how git
+        // is configured on the host machine.
+        exec(
+          `git -c "init.defaultBranch=master" init --bare ${courseOriginDir}`,
+          execOptions,
+          (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+          },
+        );
       },
       (callback) => {
         const execOptions = {
@@ -490,11 +491,8 @@ function createCourseFiles(callback) {
           callback(null);
         });
       },
-      (callback) => {
-        ncp(courseTemplateDir, courseLiveDir, { clobber: false }, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
       },
       (callback) => {
         const execOptions = {
@@ -544,33 +542,10 @@ function createCourseFiles(callback) {
   );
 }
 
-function deleteCourseFiles(callback) {
-  async.series(
-    [
-      (callback) => {
-        fs.remove(courseOriginDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseLiveDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.remove(courseDevDir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    },
-  );
+async function deleteCourseFiles() {
+  await fs.remove(courseOriginDir);
+  await fs.remove(courseLiveDir);
+  await fs.remove(courseDevDir);
 }
 
 function waitForJobSequence(locals, expectedResult) {

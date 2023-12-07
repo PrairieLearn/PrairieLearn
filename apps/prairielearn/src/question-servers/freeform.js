@@ -16,9 +16,9 @@ const schemas = require('../schemas');
 const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
-const jsonLoader = require('../lib/json-load');
+const jsonLoad = require('../lib/json-load');
 const cache = require('../lib/cache');
-const courseUtil = require('../lib/courseUtil');
+const { getOrUpdateCourseCommitHash } = require('../models/course');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
@@ -158,7 +158,7 @@ module.exports = {
         throw err;
       }
 
-      await jsonLoader.validateJSONAsync(info, elementSchema);
+      jsonLoad.validateJSON(info, elementSchema);
       info.name = elementName;
       info.directory = path.join(sourceDir, elementName);
       info.type = elementType;
@@ -260,7 +260,7 @@ module.exports = {
         }
       }
 
-      await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+      jsonLoad.validateJSON(info, schemas.infoElementExtension);
       info.name = extensionDir;
       info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
@@ -490,64 +490,30 @@ module.exports = {
 
     if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
-    /**************************************************************************************************************************************/
-    //              property                 type       presentPhases                         changePhases
-    /**************************************************************************************************************************************/
     // The following code is deliberately formatted as it is to aid in comprehension,
     // so we prevent Prettier from reformatting the code to span multiple lines.
     // prettier-ignore
-    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('variant_seed',          'integer', allPhases,                            []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('options',               'object',  allPhases,                            []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('editable',              'boolean', ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('manual_grading',        'boolean', ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('panel',                 'string',  ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('filename',              'string',  ['file'],                             []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('test_type',             'string',  ['test'],                             []);
-    if (err) return err;
-    // prettier-ignore
-    err = checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+    /**************************************************************************************************************************************/
+    //              property                 type       presentPhases                         changePhases
+    /**************************************************************************************************************************************/
+    err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+       || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+       || checkProp('variant_seed',          'integer', allPhases,                            [])
+       || checkProp('options',               'object',  allPhases,                            [])
+       || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
+       || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+       || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
+       || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
+       || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+       || checkProp('editable',              'boolean', ['render'],                           [])
+       || checkProp('manual_grading',        'boolean', ['render'],                           [])
+       || checkProp('panel',                 'string',  ['render'],                           [])
+       || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+       || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
+       || checkProp('filename',              'string',  ['file'],                             [])
+       || checkProp('test_type',             'string',  ['test'],                             [])
+       || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
     if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
@@ -930,7 +896,6 @@ module.exports = {
           total_weight_score += weight * score;
         });
         resultData.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
-        resultData.feedback = {};
       } else {
         let score = 0;
         if (
@@ -940,7 +905,6 @@ module.exports = {
           score = 1;
         }
         resultData.score = score;
-        resultData.feedback = {};
       }
     }
 
@@ -1358,8 +1322,8 @@ module.exports = {
       // parent functions don't actually return things. So we'll just stick it
       // in the `locals` object that the parent will be able to read from.
       //
-      // See the `setRendererHeader` function in `lib/question` for where this
-      // is actually used.
+      // See the `setRendererHeader` function in `lib/question-render`
+      // for where this is actually used.
       locals.question_renderer = context.renderer;
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
@@ -1451,10 +1415,17 @@ module.exports = {
               clientFilesQuestionStyles: [],
               clientFilesQuestionScripts: [],
             };
+            const dynamicDependencies = {
+              nodeModulesScripts: {},
+              coreElementScripts: {},
+              courseElementScripts: {},
+              extensionScripts: {},
+              clientFilesCourseScripts: {},
+            };
 
-            // Question dependencies are checked via schema on sync-time, so
-            // there's no need for sanity checks here.
             for (let type in question.dependencies) {
+              if (!_.has(dependencies, type)) continue;
+
               for (let dep of question.dependencies[type]) {
                 if (!_.includes(dependencies[type], dep)) {
                   dependencies[type].push(dep);
@@ -1466,6 +1437,9 @@ module.exports = {
             allRenderedElementNames.forEach((elementName) => {
               let resolvedElement = module.exports.resolveElement(elementName, context);
               const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
+              const elementDynamicDependencies = _.cloneDeep(
+                resolvedElement.dynamicDependencies || {},
+              );
 
               // Transform non-global dependencies to be prefixed by the element name,
               // since they'll be served from their element's directory
@@ -1476,6 +1450,12 @@ module.exports = {
               }
               if (_.has(elementDependencies, 'elementScripts')) {
                 elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+                  (dep) => `${resolvedElement.name}/${dep}`,
+                );
+              }
+              if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                elementDynamicDependencies.elementScripts = _.mapValues(
+                  elementDynamicDependencies.elementScripts,
                   (dep) => `${resolvedElement.name}/${dep}`,
                 );
               }
@@ -1491,6 +1471,11 @@ module.exports = {
                   elementDependencies.courseElementScripts = elementDependencies.elementScripts;
                   delete elementDependencies.elementScripts;
                 }
+                if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                  elementDynamicDependencies.courseElementScripts =
+                    elementDynamicDependencies.elementScripts;
+                  delete elementDynamicDependencies.elementScripts;
+                }
               } else {
                 if (_.has(elementDependencies, 'elementStyles')) {
                   elementDependencies.coreElementStyles = elementDependencies.elementStyles;
@@ -1500,33 +1485,43 @@ module.exports = {
                   elementDependencies.coreElementScripts = elementDependencies.elementScripts;
                   delete elementDependencies.elementScripts;
                 }
+                if (_.has(elementDynamicDependencies, 'elementScripts')) {
+                  elementDynamicDependencies.coreElementScripts =
+                    elementDynamicDependencies.elementScripts;
+                  delete elementDynamicDependencies.elementScripts;
+                }
               }
 
-              const dependencyTypes = [
-                'coreStyles',
-                'coreScripts',
-                'nodeModulesStyles',
-                'nodeModulesScripts',
-                'clientFilesCourseStyles',
-                'clientFilesCourseScripts',
-                'coreElementStyles',
-                'coreElementScripts',
-                'courseElementStyles',
-                'courseElementScripts',
-              ];
-              for (const type of dependencyTypes) {
-                if (_.has(elementDependencies, type)) {
-                  if (_.isArray(elementDependencies[type])) {
-                    for (const dep of elementDependencies[type]) {
-                      if (!_.includes(dependencies[type], dep)) {
-                        dependencies[type].push(dep);
-                      }
-                    }
-                  } else {
+              for (const type in elementDependencies) {
+                if (!_.has(dependencies, type)) continue;
+
+                for (const dep of elementDependencies[type]) {
+                  if (!_.includes(dependencies[type], dep)) {
+                    dependencies[type].push(dep);
+                  }
+                }
+              }
+
+              for (const type in elementDynamicDependencies) {
+                for (const key in elementDynamicDependencies[type]) {
+                  if (!_.has(dynamicDependencies[type], key)) {
+                    dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
+                  } else if (
+                    dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]
+                  ) {
                     courseIssues.push(
                       new CourseIssueError(
-                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`,
-                        { data: { elementDependencies }, fatal: true },
+                        `Dynamic dependency ${key} assigned to conflicting files`,
+                        {
+                          data: {
+                            dependencyType: type,
+                            values: [
+                              dynamicDependencies[type][key],
+                              elementDynamicDependencies[type][key],
+                            ],
+                          },
+                          fatal: true,
+                        },
                       ),
                     );
                   }
@@ -1536,13 +1531,19 @@ module.exports = {
               // Load any extensions if they exist
               if (_.has(extensions, elementName)) {
                 for (const extensionName of Object.keys(extensions[elementName])) {
-                  if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                  if (
+                    !_.has(extensions[elementName][extensionName], 'dependencies') &&
+                    !_.has(extensions[elementName][extensionName], 'dynamicDependencies')
+                  ) {
                     continue;
                   }
 
                   const extension = _.cloneDeep(
                     extensions[elementName][extensionName],
                   ).dependencies;
+                  const extensionDynamic = _.cloneDeep(
+                    extensions[elementName][extensionName],
+                  ).dynamicDependencies;
                   if (_.has(extension, 'extensionStyles')) {
                     extension.extensionStyles = extension.extensionStyles.map(
                       (dep) => `${elementName}/${extensionName}/${dep}`,
@@ -1553,31 +1554,40 @@ module.exports = {
                       (dep) => `${elementName}/${extensionName}/${dep}`,
                     );
                   }
+                  if (_.has(extensionDynamic, 'extensionScripts')) {
+                    extensionDynamic.extensionScripts = _.mapValues(
+                      extensionDynamic.extensionScripts,
+                      (dep) => `${elementName}/${extensionName}/${dep}`,
+                    );
+                  }
 
-                  const dependencyTypes = [
-                    'coreStyles',
-                    'coreScripts',
-                    'nodeModulesStyles',
-                    'nodeModulesScripts',
-                    'clientFilesCourseStyles',
-                    'clientFilesCourseScripts',
-                    'extensionStyles',
-                    'extensionScripts',
-                  ];
+                  for (const type in extension) {
+                    if (!_.has(dependencies, type)) continue;
 
-                  for (const type of dependencyTypes) {
-                    if (_.has(extension, type)) {
-                      if (_.isArray(extension[type])) {
-                        for (const dep of extension[type]) {
-                          if (!_.includes(dependencies[type], dep)) {
-                            dependencies[type].push(dep);
-                          }
-                        }
-                      } else {
+                    for (const dep of extension[type]) {
+                      if (!_.includes(dependencies[type], dep)) {
+                        dependencies[type].push(dep);
+                      }
+                    }
+                  }
+                  for (const type in extensionDynamic) {
+                    for (const key in extensionDynamic[type]) {
+                      if (!_.has(dynamicDependencies[type], key)) {
+                        dynamicDependencies[type][key] = extensionDynamic[type][key];
+                      } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
                         courseIssues.push(
                           new CourseIssueError(
-                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`,
-                            { data: elementDependencies, fatal: true },
+                            `Dynamic dependency ${key} assigned to conflicting files`,
+                            {
+                              data: {
+                                dependencyType: type,
+                                values: [
+                                  dynamicDependencies[type][key],
+                                  extensionDynamic[type][key],
+                                ],
+                              },
+                              fatal: true,
+                            },
                           ),
                         );
                       }
@@ -1642,8 +1652,52 @@ module.exports = {
               ),
             );
 
+            const importMap = {
+              imports: {
+                ..._.mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
+                  assets.nodeModulesAssetPath(file),
+                ),
+                ..._.mapValues(
+                  dynamicDependencies.clientFilesCourseScripts,
+                  (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
+                ),
+                ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
+                  assets.coreElementAssetPath(file),
+                ),
+                ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
+                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+                ),
+                ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
+                  assets.courseElementExtensionAssetPath(
+                    course.commit_hash,
+                    locals.urlPrefix,
+                    file,
+                  ),
+                ),
+              },
+            };
+
+            // Check if any of the keys was found in more than one dependency type
+            Object.keys(importMap.imports).forEach((key) => {
+              const types = Object.entries(dynamicDependencies)
+                .filter(([, value]) => _.has(value, key))
+                .map(([type]) => type);
+              if (types.length > 1) {
+                courseIssues.push(
+                  new CourseIssueError(
+                    `Dynamic dependency key ${key} assigned to multiple types of dependencies`,
+                    { data: { types }, fatal: true },
+                  ),
+                );
+              }
+            });
+
             const headerHtmls = [
               ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+              // The import map must come before any scripts that use imports
+              !_.isEmpty(importMap.imports)
+                ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
+                : ``,
               // It's important that any library-style scripts come first
               ...coreScriptUrls.map(
                 (url) => `<script type="text/javascript" src="${url}"></script>`,
@@ -1755,6 +1809,7 @@ module.exports = {
         params: _.get(variant, 'params', {}),
         correct_answers: _.get(variant, 'true_answer', {}),
         submitted_answers: _.get(submission, 'submitted_answer', {}),
+        feedback: _.get(submission, 'feedback', {}),
         format_errors: _.get(submission, 'format_errors', {}),
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
@@ -1776,6 +1831,7 @@ module.exports = {
             params: resultData.params,
             true_answer: resultData.correct_answers,
             submitted_answer: resultData.submitted_answers,
+            feedback: resultData.feedback,
             raw_submitted_answer: resultData.raw_submitted_answers,
             format_errors: resultData.format_errors,
             gradable: resultData.gradable,
@@ -1948,8 +2004,8 @@ module.exports = {
     const renderer = useExperimentalRenderer
       ? 'experimental'
       : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
+        ? 'default'
+        : 'legacy';
 
     // The `*Host` values here refer to the paths relative to PrairieLearn;
     // the other values refer to the paths as they will be seen by the worker
@@ -1982,7 +2038,7 @@ module.exports = {
 
   async getCacheKey(course, data, context) {
     try {
-      const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
+      const commitHash = await getOrUpdateCourseCommitHash(course);
       const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
       return `question:${commitHash}-${dataHash}`;
     } catch (err) {

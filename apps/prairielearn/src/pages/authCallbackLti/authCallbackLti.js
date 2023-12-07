@@ -24,6 +24,11 @@ router.post('/', function (req, res, next) {
   var signature = req.body.oauth_signature;
   delete parameters.oauth_signature;
 
+  const ltiRedirectUrl = config.ltiRedirectUrl;
+  if (!ltiRedirectUrl) {
+    return next(error.make(500, 'LTI not configured'));
+  }
+
   if (parameters.lti_message_type !== 'basic-lti-launch-request') {
     return next(error.make(500, 'Unsupported lti_message_type'));
   }
@@ -54,10 +59,10 @@ router.post('/', function (req, res, next) {
 
       var genSignature = oauthSignature.generate(
         'POST',
-        config.ltiRedirectUrl,
+        ltiRedirectUrl,
         parameters,
         ltiresult.secret,
-        null,
+        undefined,
         { encodeSignature: false },
       );
       if (genSignature !== signature) {
@@ -134,6 +139,11 @@ router.post('/', function (req, res, next) {
           httpOnly: true,
           secure: shouldSecureCookie(req),
         });
+
+        // Dual-write information to the session so that we can start reading
+        // it instead of the cookie in the future.
+        req.session.user_id = result.rows[0].user_id;
+        req.session.authn_provider_name = 'LTI';
 
         const params = {
           course_instance_id: ltiresult.course_instance_id,

@@ -8,18 +8,6 @@ WHERE
   ai.id = $assessment_instance_id
   AND a.id = $assessment_id;
 
--- BLOCK select_assessment_for_grading_job
-SELECT
-  ai.id AS assessment_instance_id
-FROM
-  grading_jobs AS gj
-  JOIN submissions AS s ON (s.id = gj.submission_id)
-  JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-WHERE
-  gj.id = $grading_job_id;
-
 -- BLOCK select_assessment_info
 SELECT
   assessment_label (a, aset),
@@ -49,6 +37,51 @@ FROM
 WHERE
   a.id = $assessment_id
   AND ai.open;
+
+-- BLOCK close_assessment_instance
+WITH
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      open = FALSE,
+      closed_at = CURRENT_TIMESTAMP,
+      duration = assessment_instances_duration (ai.id),
+      modified_at = now(),
+      -- Mark the assessment instance as in need of grading. We'll start
+      -- grading immediately, but in case the PrairieLearn process dies in
+      -- the middle of grading, the `autoFinishExams` cronjob will grade the
+      -- assessment instance at some point in the near future.
+      grading_needed = TRUE
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.id
+  )
+INSERT INTO
+  assessment_state_logs (open, assessment_instance_id, auth_user_id)
+SELECT
+  FALSE,
+  updated_assessment_instance.id,
+  $authn_user_id
+FROM
+  updated_assessment_instance;
+
+-- BLOCK select_variants_for_assessment_instance_grading
+SELECT DISTINCT
+  ON (iq.id) to_jsonb(v.*) AS variant,
+  to_jsonb(q.*) AS question,
+  to_jsonb(vc.*) AS variant_course
+FROM
+  variants AS v
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+  JOIN questions AS q ON (q.id = v.question_id)
+  JOIN pl_courses AS vc ON (vc.id = v.course_id)
+WHERE
+  ai.id = $assessment_instance_id
+ORDER BY
+  iq.id,
+  v.date DESC;
 
 -- BLOCK unset_grading_needed
 UPDATE assessment_instances AS ai
@@ -184,6 +217,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         NULL::BIGINT AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         assessment_instances AS ai
@@ -207,6 +241,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         v.id AS log_id,
+        v.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'variant_seed',
           v.variant_seed,
@@ -242,6 +277,7 @@ WITH
         v.number AS variant_number,
         s.id AS submission_id,
         s.id AS log_id,
+        s.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'submitted_answer',
           CASE
@@ -290,6 +326,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         to_jsonb(gj.*) AS data
       FROM
         grading_jobs AS gj
@@ -320,6 +357,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -390,6 +428,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -434,6 +473,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         qsl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           qsl.points,
@@ -472,6 +512,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           asl.points,
@@ -505,6 +546,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        asl.client_fingerprint_id AS client_fingerprint_id,
         CASE
           WHEN asl.open THEN jsonb_build_object(
             'date_limit',
@@ -550,6 +592,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'time_limit',
           format_interval (asl.date_limit - ai.date)
@@ -594,6 +637,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         pvl.id AS log_id,
+        pvl.client_fingerprint_id AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         user_page_view_logs AS pvl
@@ -621,6 +665,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         pvl.id AS log_id,
+        pvl.client_fingerprint_id AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         user_page_view_logs AS pvl
@@ -645,6 +690,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         gl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object('user', gu.uid) AS data
       FROM
         assessment_instances AS ai
@@ -685,12 +731,14 @@ SELECT
   el.variant_number,
   el.submission_id,
   el.data,
+  to_jsonb(cf.*) AS client_fingerprint,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
   qd.instructor_question_number
 FROM
   event_log AS el
+  LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)
   LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id),
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)

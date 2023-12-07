@@ -1,38 +1,38 @@
 // @ts-check
-const async = require('async');
-const EventEmitter = require('events');
-const fs = require('fs-extra');
-const tar = require('tar');
+import * as async from 'async';
+import { EventEmitter } from 'events';
+import * as fs from 'fs-extra';
+import * as tar from 'tar';
 const _ = require('lodash');
-const { Upload } = require('@aws-sdk/lib-storage');
-const { S3 } = require('@aws-sdk/client-s3');
+import { Upload } from '@aws-sdk/lib-storage';
+import { S3 } from '@aws-sdk/client-s3';
 const PassThroughStream = require('stream').PassThrough;
-const { SQSClient, GetQueueUrlCommand, SendMessageCommand } = require('@aws-sdk/client-sqs');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
+import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
 
-const aws = require('./aws');
+import { makeAwsClientConfig, makeS3ClientConfig } from './aws';
 const { config: globalConfig } = require('./config');
-const externalGraderCommon = require('./externalGraderCommon');
+import { getJobDirectory, buildDirectory } from './externalGraderCommon';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 let QUEUE_URL = null;
 
-class Grader {
+export class ExternalGraderSqs {
   handleGradingRequest(grading_job, submission, variant, question, course, configOverrides) {
     const config = _.cloneDeep(globalConfig);
     _.assign(config, configOverrides);
 
     const emitter = new EventEmitter();
 
-    const dir = externalGraderCommon.getJobDirectory(grading_job.id);
+    const dir = getJobDirectory(grading_job.id);
     const s3RootKey = getS3RootKey(grading_job.id);
 
     async.series(
       [
         (callback) => {
-          externalGraderCommon.buildDirectory(dir, submission, variant, question, course, callback);
+          buildDirectory(dir, submission, variant, question, course, callback);
         },
         async () => {
           // Now that we've built up our directory, let's zip it up and send
@@ -54,7 +54,7 @@ class Grader {
             Body: passthrough,
           };
 
-          const s3 = new S3(aws.makeS3ClientConfig());
+          const s3 = new S3(makeS3ClientConfig());
           await new Upload({
             client: s3,
             params,
@@ -89,7 +89,7 @@ function getS3RootKey(jobId) {
 }
 
 async function sendJobToQueue(jobId, question, config) {
-  const sqs = new SQSClient(aws.makeAwsClientConfig());
+  const sqs = new SQSClient(makeAwsClientConfig());
 
   await async.series([
     async () => {
@@ -109,7 +109,10 @@ async function sendJobToQueue(jobId, question, config) {
         entrypoint: question.external_grading_entrypoint,
         s3Bucket: config.externalGradingS3Bucket,
         s3RootKey: getS3RootKey(jobId),
-        timeout: question.external_grading_timeout || config.externalGradingDefaultTimeout,
+        timeout: Math.min(
+          question.external_grading_timeout ?? config.externalGradingDefaultTimeout,
+          config.externalGradingMaximumTimeout,
+        ),
         enableNetworking: question.external_grading_enable_networking || false,
         environment: question.external_grading_environment || {},
       };
@@ -126,5 +129,3 @@ async function sendJobToQueue(jobId, question, config) {
     },
   ]);
 }
-
-module.exports = Grader;

@@ -1,7 +1,7 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const infofile = require('../infofile');
+import * as infofile from '../infofile';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -9,7 +9,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {import('../course-db').CourseData} courseData
  * @param {any} courseId
  */
-module.exports.sync = async function (courseData, courseId) {
+export async function sync(courseData, courseId) {
   if (infofile.hasErrors(courseData.course)) {
     const params = {
       course_id: courseId,
@@ -38,4 +38,4 @@ module.exports.sync = async function (courseData, courseId) {
   const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);
   if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
   courseInfo.timezone = res.rows[0].display_timezone;
-};
+}

@@ -6,7 +6,7 @@ const qs = require('qs');
 const ejs = require('ejs');
 const path = require('path');
 
-const question = require('../../../lib/question');
+const { getAndRenderVariant, renderPanelsForSubmission } = require('../../../lib/question-render');
 const manualGrading = require('../../../lib/manualGrading');
 const { features } = require('../../../lib/features/index');
 
@@ -27,11 +27,7 @@ async function prepareLocalsForRender(req, res) {
 
   if (variant_with_submission) {
     res.locals.manualGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant)(
-      variant_with_submission.variant_id,
-      null,
-      res.locals,
-    );
+    await util.promisify(getAndRenderVariant)(variant_with_submission.variant_id, null, res.locals);
   }
 
   res.locals.rubric_settings_visible = await features.enabledFromLocals(
@@ -77,7 +73,7 @@ router.get(
 router.get(
   '/variant/:variant_id/submission/:submission_id',
   asyncHandler(async (req, res, _next) => {
-    const results = await util.promisify(question.renderPanelsForSubmission)(
+    const results = await util.promisify(renderPanelsForSubmission)(
       req.params.submission_id,
       res.locals.question.id,
       res.locals.instance_question.id,
@@ -167,7 +163,9 @@ router.post(
     } else if (req.body.__action === 'modify_rubric_settings') {
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
+      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {}).map(
+        (item) => ({ ...item, always_show_to_students: item.always_show_to_students === 'true' }),
+      );
       manualGrading
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,

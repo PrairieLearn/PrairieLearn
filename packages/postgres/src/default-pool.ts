@@ -1,7 +1,7 @@
-import { PostgresPool } from './pool';
+import { PostgresPool, type CursorIterator, type QueryParams } from './pool';
 
 const defaultPool = new PostgresPool();
-export { defaultPool };
+export { defaultPool, type CursorIterator, type QueryParams };
 
 // We re-expose all functions from the default pool here to account for the
 // default case of a shared global pool of clients. If someone want to create

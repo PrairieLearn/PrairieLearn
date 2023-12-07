@@ -1,16 +1,18 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as sqldb from '@prairielearn/postgres';
+
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperAttachFiles from './helperAttachFiles';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperAttachFiles = require('./helperAttachFiles');
 
 const locals = {};
 
@@ -1359,19 +1361,13 @@ describe('Homework assessment', function () {
   partialCreditTests.forEach(function (partialCreditTest, iPartialCreditTest) {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
-        it('should shut down', function (callback) {
+        it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.after.call(this);
         });
-        it('should start up', function (callback) {
+        it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(this, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperServer.before().call(this);
         });
       });
 
