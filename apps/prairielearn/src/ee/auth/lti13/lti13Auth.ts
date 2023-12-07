@@ -164,10 +164,11 @@ const LTI13Schema = z.object({
 //
 
 async function authenticate(req: Request, res: Response): Promise<any> {
+  // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
+  OIDCAuthResponseSchema.parse(req.body);
+
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
-    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-    OIDCAuthResponseSchema.parse(req.body);
 
     // Callback arguments described at
     // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
@@ -224,7 +225,6 @@ async function setupPassport(lti13_instance_id: string) {
         client: client,
         passReqToCallback: true,
       },
-      // Passport verify function
       callbackify(verifyAsync),
     ),
   );
