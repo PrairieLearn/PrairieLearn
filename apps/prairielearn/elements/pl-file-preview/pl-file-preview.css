@@ -17,7 +17,7 @@
   content: 'Show preview';
 }
 
-[id^='file-preview'] .file-status-container:not(.collapsed) .file-preview-button::before {
+[id^='file-preview'] .file-preview-button:not(.collapsed)::before {
   content: 'Hide preview';
 }
 
@@ -26,10 +26,19 @@
   transition: transform 400ms;
 }
 
-[id^='file-preview'] .file-status-container:not(.collapsed) .file-preview-icon {
+[id^='file-preview'] .file-preview-button:not(.collapsed) .file-preview-icon {
   transform: rotateX(180deg);
 }
 
 [id^='file-preview'] .file-preview pre {
   max-height: 200px;
+}
+
+[id^='file-preview'] .file-max-view-button::before {
+  content: 'Full View';
+  margin-right: 10px;
+}
+
+[id^='file-preview'] .file-max-view-button:not(.max-view-tag)::before {
+  content: 'Mini View';
 }

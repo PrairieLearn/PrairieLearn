@@ -81,6 +81,25 @@
                 code.textContent = text;
                 pre.classList.remove('d-none');
                 hideErrorMessage();
+
+                $(".file-max-view-button").on("click", function() {
+                  let tag = 'max-view-tag';
+                  const iconExpand = this.querySelector('.file-full-view-icon-expand');
+                  const iconMinimize = this.querySelector ('.file-full-view-icon-compress');
+                  if (this.classList.contains(tag)) {
+                    pre.style.maxHeight = '100%';
+                    this.classList.remove(tag);
+                    iconExpand.classList.add('d-none');
+                    iconMinimize.classList.remove('d-none');
+                  } else {
+                    pre.style.removeProperty("max-height");
+                    this.classList.add(tag);
+                    iconExpand.classList.remove('d-none');
+                    iconMinimize.classList.add('d-none');
+                  }
+                })
+
+
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
                 img.src = url;

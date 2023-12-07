@@ -8,7 +8,7 @@
     <ul class="list-group list-group-flush">
       {{#files}}
       <li class="list-group-item" data-file="{{name}}">
-        <div class="d-flex flex-row collapsed file-status-container" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
+        <div class="d-flex flex-row collapsed file-status-container">
           <div class="flex-grow-1">
             <i class="file-status-icon fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
             {{name}}
@@ -18,8 +18,13 @@
             <button class="btn btn-outline-secondary btn-sm file-preview-download-file">
               Download
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
+            <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
               <i class="file-preview-icon fa fa-angle-down"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm file-max-view-button max-view-tag">
+            <i class="file-full-view-icon-expand fa fa-solid fa-expand"></i>
+            <i class="file-full-view-icon-compress fa fa-solid fa-compress d-none"></i>
+            </button>
             </button>
           </div>
         </div>
