@@ -1,9 +1,10 @@
-var assert = require('chai').assert;
+// @ts-check
+import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
-var sqldb = require('@prairielearn/postgres');
-var helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
-var sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let user_id = null;
 

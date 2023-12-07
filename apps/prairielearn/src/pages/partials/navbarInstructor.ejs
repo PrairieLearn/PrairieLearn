@@ -79,9 +79,9 @@
                 <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
-                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Change assessment">
-                </a>
                 <% if (typeof assessments != 'undefined') { %>
+                    <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Change assessment">
+                    </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
                         <% assessments.forEach(function(a) { %>
                             <a class="dropdown-item <% if (navPage == "assessment" && assessment.id == a.id) { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= a.id %><% if (navPage == "assessment" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= a.assessment_label %></a>

@@ -30,7 +30,7 @@ router.get(
     const sqlFilename = req.params.query + '.sql';
 
     const info = AdministratorQuerySchema.parse(
-      await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename)),
+      await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
     const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
@@ -95,7 +95,7 @@ router.post(
     const jsonFilename = req.params.query + '.json';
     const sqlFilename = req.params.query + '.sql';
 
-    const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
+    const info = await jsonLoad.readJSON(path.join(queriesDir, jsonFilename));
     const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
@@ -117,7 +117,7 @@ router.post(
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
       params.result = {
-        rowCount: result.rowCount,
+        rowCount: result.rowCount ?? 0,
         columns: result.fields.map((f) => f.name),
         rows: result.rows,
       };

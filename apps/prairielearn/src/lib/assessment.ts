@@ -11,7 +11,13 @@ import * as externalGrader from './externalGrader';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
-import { CourseSchema, IdSchema, QuestionSchema, VariantSchema } from './db-types';
+import {
+  CourseSchema,
+  IdSchema,
+  QuestionSchema,
+  VariantSchema,
+  ClientFingerprintSchema,
+} from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -28,12 +34,13 @@ export const InstanceLogSchema = z.object({
   variant_number: z.number().nullable(),
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
+  client_fingerprint: ClientFingerprintSchema.nullable(),
   formatted_date: z.string(),
   date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+type InstanceLogEntry = z.infer<typeof InstanceLogSchema> & { client_fingerprint_number?: number };
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -365,11 +372,23 @@ export async function selectAssessmentInstanceLog(
   assessment_instance_id: string,
   include_files: boolean,
 ): Promise<InstanceLogEntry[]> {
-  return sqldb.queryRows(
+  const log: InstanceLogEntry[] = await sqldb.queryRows(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
+  const fingerprintNumbers = {};
+  let i = 1;
+  log.forEach((row) => {
+    if (row.client_fingerprint) {
+      if (!fingerprintNumbers[row.client_fingerprint.id]) {
+        fingerprintNumbers[row.client_fingerprint.id] = i;
+        i++;
+      }
+      row.client_fingerprint_number = fingerprintNumbers[row.client_fingerprint.id];
+    }
+  });
+  return log;
 }
 
 export async function selectAssessmentInstanceLogCursor(

@@ -2,6 +2,7 @@ columns
     assessment_id: bigint
     assessment_instance_id: bigint
     authn_user_id: bigint not null
+    client_fingerprint_id: bigint
     course_instance_id: bigint
     date: timestamp with time zone not null default now()
     id: bigint not null default nextval('page_view_logs_id_seq'::regclass)
@@ -24,6 +25,7 @@ foreign-key constraints
     page_view_logs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs_client_fingerprint_id_fkey: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
     page_view_logs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

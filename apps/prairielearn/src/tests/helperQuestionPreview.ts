@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import request = require('request');
-import helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -297,7 +297,7 @@ export function testFileDownloads(
       });
       it('should produce no issues', async function () {
         const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
-        if (result.rowCount > 0) {
+        if (result.rowCount != null && result.rowCount > 0) {
           throw new Error(`found ${result.rowCount} issues (expected zero issues)`);
         }
       });

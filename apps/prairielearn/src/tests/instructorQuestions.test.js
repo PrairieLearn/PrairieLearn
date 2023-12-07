@@ -1,17 +1,17 @@
+// @ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import { assert } from 'chai';
+const request = require('request');
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import { idsEqual } from '../lib/id';
 import { testFileDownloads, testQuestionPreviews } from './helperQuestionPreview';
 
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
-
-const { config } = require('../lib/config');
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-
-var helperServer = require('./helperServer');
-const { idsEqual } = require('../lib/id');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -20,21 +20,25 @@ const questionsUrl = courseInstanceBaseUrl + '/course_admin/questions';
 const questionsUrlCourse = baseUrl + '/course/1/course_admin/questions';
 
 const addNumbers = {
+  id: '',
   qid: 'addNumbers',
   type: 'Freeform',
   title: 'Add two numbers',
 };
 const addVectors = {
+  id: '',
   qid: 'addVectors',
   type: 'Calculation',
   title: 'Addition of vectors in Cartesian coordinates',
 };
 const downloadFile = {
+  id: '',
   qid: 'downloadFile',
   type: 'Freeform',
   title: 'File download example question',
 };
 const differentiatePolynomial = {
+  id: '',
   qid: 'differentiatePolynomial',
   type: 'Freeform',
   title: 'Differentiate a polynomial function of one variable',

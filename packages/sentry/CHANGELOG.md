@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 1.1.4
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
 ## 1.1.3
 
 ### Patch Changes

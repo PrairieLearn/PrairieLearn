@@ -96,6 +96,7 @@ router.get(
           res.locals.authz_data.mode,
           time_limit_min,
           res.locals.authz_data.date,
+          res.locals.client_fingerprint_id,
         );
         debug('redirecting');
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
@@ -133,6 +134,7 @@ router.post(
           res.locals.authz_data.mode,
           time_limit_min,
           res.locals.authz_data.date,
+          res.locals.client_fingerprint_id,
         );
         debug('redirecting');
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

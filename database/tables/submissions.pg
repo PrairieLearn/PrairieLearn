@@ -1,6 +1,7 @@
 columns
     auth_user_id: bigint
     broken: boolean default false
+    client_fingerprint_id: bigint
     correct: boolean
     credit: integer
     date: timestamp with time zone default CURRENT_TIMESTAMP
@@ -32,6 +33,7 @@ indexes
 
 foreign-key constraints
     submissions_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    submissions_client_fingerprint_id_fkey: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions_manual_rubric_grading_id_fkey: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
 

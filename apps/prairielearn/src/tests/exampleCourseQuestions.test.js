@@ -1,8 +1,9 @@
-const { config } = require('../lib/config');
-const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
+// @ts-check
+import { config } from '../lib/config';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
 
 const locals = {};
 
@@ -60,7 +61,6 @@ const qidsExampleCourse = [
   'element/symbolicInput',
   'element/bigOInput',
   'element/unitsInput',
-  // FIXME: 'element/threeJS',
   'element/variableOutput',
   'element/orderBlocks',
 ];

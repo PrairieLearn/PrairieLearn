@@ -8,37 +8,69 @@ const INTERVAL_MS_PER_DAY = 24 * INTERVAL_MS_PER_HOUR;
 const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
 const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 
-// IDs are always coerced to strings. This ensures consistent handling when an
-// ID is fetched directly or via `to_jsonb`, which returns a number.
-//
-// The `refine` step is important to ensure that the thing we've coerced to a
-// string is actually a number. If it's not, we want to fail quickly.
+/**
+ * IDs are always coerced to strings. This ensures consistent handling when an
+ * ID is fetched directly or via `to_jsonb`, which returns a number.
+ *
+ * The `refine` step is important to ensure that the thing we've coerced to a
+ * string is actually a number. If it's not, we want to fail quickly.
+ */
 export const IdSchema = z
   .string({ coerce: true })
   .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
 
-export const IntervalSchema = z.string().transform((val) => {
-  const interval = parsePostgresInterval(val);
-
-  // This calculation matches Postgres's behavior when computing the number of
-  // milliseconds in an interval with `EXTRACT(epoch from '...'::interval) * 1000`.
-  // The noteworthy parts of this conversion are that 1 year = 365.25 days and
-  // 1 month = 30 days.
-  return (
-    interval.years * INTERVAL_MS_PER_YEAR +
-    interval.months * INTERVAL_MS_PER_MONTH +
-    interval.days * INTERVAL_MS_PER_DAY +
-    interval.hours * INTERVAL_MS_PER_HOUR +
-    interval.minutes * INTERVAL_MS_PER_MINUTE +
-    interval.seconds * INTERVAL_MS_PER_SECOND +
-    interval.milliseconds
-  );
+/**
+ * This is a schema for the objects produced by the `postgres-interval` library.
+ */
+const PostgresIntervalSchema = z.object({
+  years: z.number(),
+  months: z.number(),
+  days: z.number(),
+  hours: z.number(),
+  minutes: z.number(),
+  seconds: z.number(),
+  milliseconds: z.number(),
 });
 
-// Accepts either a string or a Date object. If a string is passed, it is
-// validated and parsed as an ISO date string.
-//
-// Useful for parsing dates from JSON, which are always strings.
+/**
+ * This schema handles two representations of an interval:
+ *
+ * - A string like "1 year 2 days", which is how intervals will be represented
+ *   if they go through `to_jsonb` in a query.
+ * - A {@link PostgresIntervalSchema} object, which is what we'll get if a
+ *   query directly returns an interval column. The interval will already be
+ *   parsed by `postgres-interval` by way of `pg-types`.
+ *
+ * In either case, we convert the interval to a number of milliseconds.
+ */
+export const IntervalSchema = z
+  .union([z.string(), PostgresIntervalSchema])
+  .transform((interval) => {
+    if (typeof interval === 'string') {
+      interval = parsePostgresInterval(interval);
+    }
+
+    // This calculation matches Postgres's behavior when computing the number of
+    // milliseconds in an interval with `EXTRACT(epoch from '...'::interval) * 1000`.
+    // The noteworthy parts of this conversion are that 1 year = 365.25 days and
+    // 1 month = 30 days.
+    return (
+      interval.years * INTERVAL_MS_PER_YEAR +
+      interval.months * INTERVAL_MS_PER_MONTH +
+      interval.days * INTERVAL_MS_PER_DAY +
+      interval.hours * INTERVAL_MS_PER_HOUR +
+      interval.minutes * INTERVAL_MS_PER_MINUTE +
+      interval.seconds * INTERVAL_MS_PER_SECOND +
+      interval.milliseconds
+    );
+  });
+
+/**
+ * Accepts either a string or a Date object. If a string is passed, it is
+ * validated and parsed as an ISO date string.
+ *
+ * Useful for parsing dates from JSON, which are always strings.
+ */
 export const DateFromISOString = z
   .union([z.string(), z.date()])
   .refine(
@@ -505,6 +537,7 @@ export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
+  client_fingerprint_id: IdSchema.nullable(),
   correct: z.boolean().nullable(),
   credit: z.number().nullable(),
   date: DateFromISOString.nullable(),
@@ -584,6 +617,16 @@ export const GradingJobSchema = z.object({
   v2_score: z.number().nullable(),
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
+
+export const ClientFingerprintSchema = z.object({
+  id: IdSchema,
+  user_id: IdSchema,
+  user_session_id: IdSchema,
+  ip_address: z.string(),
+  user_agent: z.string().nullable(),
+  accept_language: z.string().nullable(),
+  created_at: DateFromISOString,
+});
 
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),

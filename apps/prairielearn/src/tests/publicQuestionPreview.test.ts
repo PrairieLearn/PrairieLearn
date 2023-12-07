@@ -2,8 +2,8 @@ import { testQuestionPreviews, testFileDownloads } from './helperQuestionPreview
 import { config } from '../lib/config';
 import { z } from 'zod';
 import { features } from '../lib/features/index';
-import sqldb = require('@prairielearn/postgres');
-import helperServer = require('./helperServer');
+import * as sqldb from '@prairielearn/postgres';
+import * as helperServer from './helperServer';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;

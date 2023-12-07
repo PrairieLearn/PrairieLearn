@@ -17,7 +17,7 @@ async function loadNewsItems() {
     const infoFilename = path.join(__dirname, dir, 'info.json');
     let info;
     try {
-      info = await jsonLoad.readInfoJSONAsync(infoFilename, schemas.infoNewsItem);
+      info = await jsonLoad.readInfoJSON(infoFilename, schemas.infoNewsItem);
     } catch (err) {
       if (err.code === 'ENOTDIR' || err.code === 'ENOENT') return; // skip dir entries without an info.json
       throw err;
