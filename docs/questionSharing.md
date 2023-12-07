@@ -64,4 +64,4 @@ Just as anyone with access to a question in your course can access any the `clie
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
 3. Visit the question settings page for the question you would like to share, click the button to "Share publicly", and complete the confirmation dialog
-4. Anyone with a PrairieLearn accound may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments
+4. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments
