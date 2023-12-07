@@ -121,9 +121,9 @@ export default router;
 const OIDCAuthResponseSchema = z.object({
   state: z.string(),
   id_token: z.string(),
+  // also has utf8, authenticity_token, lti_storage_target
 });
 
-// This is likely complete
 const OIDCLaunchFlowSchema = z.object({
   iss: z.string(),
   login_hint: z.string(),
@@ -131,6 +131,7 @@ const OIDCLaunchFlowSchema = z.object({
   lti_deployment_id: z.string().optional(),
   client_id: z.string().optional(),
   target_link_uri: z.string(),
+  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
 });
 
 // Validate LTI 1.3
@@ -203,6 +204,8 @@ async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   OIDCAuthResponseSchema.parse(req.body);
 
+  console.log(req.body);
+
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
     // Callback arguments described at
@@ -230,6 +233,9 @@ async function authenticate(req: Request, res: Response): Promise<any> {
 
 async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+
+  console.log(req.body);
+  console.log(req.query);
 
   const parameters = OIDCLaunchFlowSchema.parse({ ...req.body, ...req.query });
 
