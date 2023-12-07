@@ -1,9 +1,10 @@
 import { Router, type Request, Response, NextFunction } from 'express';
 import asyncHandler = require('express-async-handler');
-import { Issuer, Strategy, type StrategyVerifyCallbackReq, IdTokenClaims } from 'openid-client';
+import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
 import { z } from 'zod';
 import { get as _get } from 'lodash';
+import { callbackify } from 'util';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -224,31 +225,23 @@ async function setupPassport(lti13_instance_id: string) {
         passReqToCallback: true,
       },
       // Passport verify function
-      validate,
+      callbackify(verifyAsync),
     ),
   );
 
   return localPassport;
 }
 
-const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
-  req: Request,
-  tokenSet,
-  done,
-) {
+async function verifyAsync(req: Request, tokenSet: TokenSet) {
   const lti13_claims = tokenSet.claims();
 
-  try {
-    LTI13Schema.parse(lti13_claims);
-  } catch (err) {
-    return done(err);
-  }
+  LTI13Schema.parse(lti13_claims);
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
   const cacheResult = await cacheGet(nonceKey);
   if (cacheResult) {
-    return done(error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again'));
+    return error.make(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
   cacheSet(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
@@ -262,5 +255,5 @@ const validate: StrategyVerifyCallbackReq<IdTokenClaims> = async function (
   };
   await queryAsync(sql.verify_upsert, params);
 
-  return done(null, lti13_claims);
+  return lti13_claims;
 };
