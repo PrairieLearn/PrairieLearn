@@ -183,6 +183,8 @@ const LTI13Schema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullable(),
 
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
+  // My development Canvas sends their own named extension as a top level property
+  // "https://www.instructure.com/placement": "course_navigation"
 });
 
 //
