@@ -146,7 +146,16 @@ const LTI13Schema = z.object({
     description: z.string().nullable(),
     title: z.string().nullable(),
   }),
+  // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
+  // https://www.imsglobal.org/spec/security/v1p0/#id-token
+  iss: z.string(),
+  aud: z.string(),
   sub: z.string(),
+  exp: z.number(),
+  iat: z.number(),
+  azp: z.string().optional(),
+  nonce: z.string(),
+
   given_name: z.string().optional(),
   family_name: z.string().optional(),
   name: z.string().optional(),
@@ -202,9 +211,7 @@ const LTI13Schema = z.object({
 
 async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-  OIDCAuthResponseSchema.parse(req.body);
-
-  console.log(req.body);
+  OIDCAuthResponseSchema.passthrough().parse(req.body);
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
@@ -217,7 +224,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
         // The authentication libraries under openid-connect will fail (silently) if the key length
         // is too small, like with the Canvas development keys. It triggers that error in PL here.
         reject(
-          error.make(400, `Authentication failed, before user validation.`, {
+          error.make(400, 'Authentication failed, before user validation.', {
             err,
             user,
             info_raw: info,
@@ -234,10 +241,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
 async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
-  console.log(req.body);
-  console.log(req.query);
-
-  const parameters = OIDCLaunchFlowSchema.parse({ ...req.body, ...req.query });
+  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   myPassport.authenticate('lti13', {
@@ -272,10 +276,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  //const lti13_claims = LTI13Schema.parse(tokenSet.claims());
-
-  const lti13_claims = tokenSet.claims();
-  LTI13Schema.parse(lti13_claims);
+  const lti13_claims = LTI13Schema.passthrough().parse(tokenSet.claims());
   console.log(JSON.stringify(lti13_claims, null, 2));
 
   // Check nonce to protect against reuse
