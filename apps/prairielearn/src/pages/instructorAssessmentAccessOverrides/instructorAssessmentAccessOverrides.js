@@ -23,9 +23,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'add_new_override') {
-      const params = {
-        assessment_id: res.locals.assessment.id,
+    if (req.body.__action === 'add_new_override') {      const params = {
+        assessment_id: res.locals.assessment.id, 
         created_by: res.locals.user.uid,
         credit: req.body.credit,
         end_date: new Date(req.body.end_date),
@@ -42,8 +41,13 @@ router.post(
           assessment_id: res.locals.assessment.id,
         });
         // Get the group_id from the result
-        params.group_id = group_result.rows[0].id;
-        // If group does not belong to course instance, return error
+        if (group_result.rows.length > 0) {
+          params.group_id = group_result.rows[0].id;
+        } else {
+          params.group_id = null;
+        }
+
+        // If group does not belong to assessments and indirectly course instances, return error
         if (!params.group_id) {
           throw error.make(400, 'Group does not belong to the current course instance.');
         }

@@ -74,7 +74,14 @@ VALUES
   (
     $assessment_id,
     NOW(),
-    $created_by,
+    (
+      SELECT
+        user_id
+      FROM
+        users
+      WHERE 
+        uid = $created_by
+    ),
     $credit,
     $end_date,
     (
@@ -159,50 +166,5 @@ WITH
         )
       )
       AND assessment_id = $assessment_id
-    RETURNING
-      *
+    
   )
-SELECT
-  COALESCE(
-    format_date_full_compact (aap.created_at, 'America/Chicago'),
-    '—'
-  ) AS created_at,
-  COALESCE(aap.created_by::text, '—') AS created_by,
-  COALESCE(aap.credit::text, '—') AS credit,
-  COALESCE(
-    format_date_full_compact (aap.end_date, 'America/Chicago'),
-    '—'
-  ) AS end_date,
-  COALESCE(aap.note, '—') AS note,
-  COALESCE(
-    (
-      SELECT
-        name
-      from
-        groups
-      where
-        id = aap.group_id
-    ),
-    '-'
-  ) as group_name,
-  COALESCE(
-    format_date_full_compact (aap.start_date, 'America/Chicago'),
-    '—'
-  ) AS start_date,
-  COALESCE(
-    (
-      SELECT
-        uid
-      FROM
-        users
-      WHERE
-        user_id = aap.user_id
-    ),
-    '-'
-  ) AS student_uid
-FROM
-  assessment_access_policies AS aap
-WHERE
-  assessment_id = $assessment_id
-ORDER BY
-  aap.created_at;

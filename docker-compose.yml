@@ -1,7 +1,6 @@
 version: '3.8'
 services:
   pl:
-    platform: linux/amd64
     build:
       context: .
     image: prairielearn/prairielearn:local

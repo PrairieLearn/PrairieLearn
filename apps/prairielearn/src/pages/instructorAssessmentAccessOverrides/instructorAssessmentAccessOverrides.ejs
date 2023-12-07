@@ -214,9 +214,6 @@
 										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
 											<form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
 												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-												<!-- <button type="button" class="btn edit-override-button" id="edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
-													<i class="fas fa-edit"></i> Edit -->
-												<!-- </button> -->
 												<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
 													<i class="fas fa-edit"></i> Edit
 												</button>												

@@ -4,6 +4,11 @@ import prairielearn as pl
 
 
 def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ["width", "height"]
+    for attrib in required_attribs:
+        if not pl.has_attrib(element, attrib):
+            raise Exception(f"Element must have attribute {attrib}")
     return data
 
 
