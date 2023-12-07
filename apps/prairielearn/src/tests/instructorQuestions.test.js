@@ -200,6 +200,6 @@ describe('Instructor questions', function () {
     };
 
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
-    testFileDownloads(previewPageInfo, downloadFile);
+    testFileDownloads(previewPageInfo, downloadFile, true);
   });
 });

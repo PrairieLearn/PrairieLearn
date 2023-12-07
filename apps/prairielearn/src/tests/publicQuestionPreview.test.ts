@@ -1,4 +1,4 @@
-import { testQuestionPreviews } from './helperQuestionPreview';
+import { testQuestionPreviews, testFileDownloads } from './helperQuestionPreview';
 import { config } from '../lib/config';
 import { z } from 'zod';
 import { features } from '../lib/features/index';
@@ -20,6 +20,12 @@ const addVectors = {
   qid: 'addVectors',
   type: 'Calculation',
   title: 'Addition of vectors in Cartesian coordinates',
+};
+const downloadFile = {
+  id: '',
+  qid: 'downloadFile',
+  type: 'Freeform',
+  title: 'File download example question',
 };
 
 describe('Public Question Preview', function () {
@@ -47,8 +53,16 @@ describe('Public Question Preview', function () {
       },
       z.string(),
     );
+    downloadFile.id = await sqldb.queryRow(
+      sql.select_question_id,
+      {
+        qid: downloadFile.qid,
+      },
+      z.string(),
+    );
     await sqldb.queryAsync(sql.update_shared_publicly, { question_id: addNumbers.id });
     await sqldb.queryAsync(sql.update_shared_publicly, { question_id: addVectors.id });
+    await sqldb.queryAsync(sql.update_shared_publicly, { question_id: downloadFile.id });
   });
 
   describe('Test Question Previews', function () {
@@ -62,7 +76,6 @@ describe('Public Question Preview', function () {
 
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
 
-    // TODO: implement file downloads for previews accessed through public urls
-    // testFileDownloads(previewPageInfo, downloadFile);
+    testFileDownloads(previewPageInfo, downloadFile, false);
   });
 });
