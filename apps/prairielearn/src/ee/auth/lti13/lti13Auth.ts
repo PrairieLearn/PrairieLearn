@@ -15,7 +15,11 @@ import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
+//
 // Express routes
+//
+// https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+// Can be POST or GET
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
 router.post(
@@ -119,9 +123,13 @@ const OIDCAuthResponseSchema = z.object({
   id_token: z.string(),
 });
 
+// This is likely complete
 const OIDCLaunchFlowSchema = z.object({
   iss: z.string(),
   login_hint: z.string(),
+  lti_message_hint: z.string().optional(),
+  lti_deployment_id: z.string().optional(),
+  client_id: z.string().optional(),
   target_link_uri: z.string(),
 });
 
@@ -223,9 +231,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
 async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
-  const parameters = { ...req.body, ...req.query };
-
-  OIDCLaunchFlowSchema.parse(parameters);
+  const parameters = OIDCLaunchFlowSchema.parse({ ...req.body, ...req.query });
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   myPassport.authenticate('lti13', {
@@ -252,14 +258,14 @@ async function setupPassport(lti13_instance_id: string) {
         client: client,
         passReqToCallback: true,
       },
-      callbackify(verifyAsync),
+      callbackify(verify),
     ),
   );
 
   return localPassport;
 }
 
-async function verifyAsync(req: Request, tokenSet: TokenSet) {
+async function verify(req: Request, tokenSet: TokenSet) {
   //const lti13_claims = LTI13Schema.parse(tokenSet.claims());
 
   const lti13_claims = tokenSet.claims();
