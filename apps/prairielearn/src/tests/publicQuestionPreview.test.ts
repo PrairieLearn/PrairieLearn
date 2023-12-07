@@ -76,6 +76,6 @@ describe('Public Question Preview', function () {
 
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
 
-    testFileDownloads(previewPageInfo, downloadFile);
+    testFileDownloads(previewPageInfo, downloadFile, false);
   });
 });
