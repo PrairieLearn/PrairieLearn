@@ -169,7 +169,6 @@ describe('LTI 1.3', () => {
       kid: 'test',
     });
 
-    // Should probably use RS256 here? I don't entirely know what I'm doing.
     const joseKey = await jose.importJWK(key.toJSON(true) as any);
     const fakeIdToken = await new jose.SignJWT({})
       .setProtectedHeader({ alg: 'RS256' })
