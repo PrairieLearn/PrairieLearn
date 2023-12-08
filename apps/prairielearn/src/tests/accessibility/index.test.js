@@ -207,7 +207,7 @@ const SKIP_ROUTES = [
   '/pl/news_item/:news_item_id/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
-  '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file',
+  '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:variant_id/submission/:submission_id',
