@@ -58,7 +58,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
       await client.repos.getContent({
         owner: config.githubCourseOwner,
         repo: repo,
-        path: '',
+        path: 'infoCourse.json',
       });
       return;
     } catch (err) {
