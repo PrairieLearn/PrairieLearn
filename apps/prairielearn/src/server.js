@@ -1033,7 +1033,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/submissionFile/submissionFile'),
+      require('./pages/submissionFile/submissionFile')(),
     ],
   );
 
@@ -1379,7 +1379,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/submissionFile/submissionFile'),
+      require('./pages/submissionFile/submissionFile')(),
     ],
   );
 
@@ -1531,7 +1531,7 @@ module.exports.initExpress = function () {
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    require('./pages/submissionFile/submissionFile'),
+    require('./pages/submissionFile/submissionFile')(),
   );
 
   // legacy client file paths
@@ -1778,7 +1778,7 @@ module.exports.initExpress = function () {
   // Submission files
   app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/submissionFile/submissionFile'),
+    require('./pages/submissionFile/submissionFile')(),
   ]);
 
   // legacy client file paths
@@ -1841,6 +1841,12 @@ module.exports.initExpress = function () {
     '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion',
     require('./pages/generatedFilesQuestion/generatedFilesQuestion')({ publicEndpoint: true }),
   );
+
+  // Submission files
+  app.use('/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    // require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile')({ publicEndpoint: true }),
+  ]);
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
