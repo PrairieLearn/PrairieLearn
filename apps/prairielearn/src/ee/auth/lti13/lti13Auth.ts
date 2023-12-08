@@ -167,12 +167,11 @@ const LTI13Schema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/context': z
     .object({
       id: z.string(),
-      type: z.string().array().optional(),
-      label: z.string().optional(),
-      title: z.string().optional(),
+      type: z.string().array().nullish(),
+      label: z.string().nullish(),
+      title: z.string().nullish(),
     })
-    .nullable()
-    .optional(),
+    .nullish(),
 
   'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
     .object({
@@ -184,10 +183,9 @@ const LTI13Schema = z.object({
       product_family_code: z.string().optional(),
       version: z.string().optional(),
     })
-    .nullable()
-    .optional(),
+    .nullish(),
 
-  'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().optional(),
+  'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().nullish(),
 
   'https://purl.imsglobal.org/spec/lti/claim/launch_presentation': z
     .object({
@@ -197,8 +195,7 @@ const LTI13Schema = z.object({
       return_url: z.string().optional(),
       locale: z.string().optional(),
     })
-    .nullable()
-    .optional(),
+    .nullish(),
 
   'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullish(),
   'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullish(),
