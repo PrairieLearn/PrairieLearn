@@ -25,11 +25,10 @@ ORDER BY
 -- BLOCK add_institution
 INSERT INTO
   institutions
-  (long_name, short_name, display_timezone, yearly_enrollment_limit, course_instance_enrollment_limit, uid_regexp)
+  (long_name, short_name, display_timezone, uid_regexp)
 VALUES
-  ($long_name, $short_name, $display_timezone, $yearly_enrollment_limit, $course_instance_enrollment_limit, $uid_regexp)
-RETURNING
-  id;
+  ($long_name, $short_name, $display_timezone, $uid_regexp)
+
 
 -- BLOCK add_institution_authn_provider
 INSERT INTO

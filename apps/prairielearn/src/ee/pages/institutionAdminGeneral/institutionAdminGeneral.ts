@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, runInTransactionAsync, queryAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 import { flash } from '@prairielearn/flash';
 
@@ -8,7 +8,7 @@ import {
   InstitutionAdminGeneral,
   InstitutionStatisticsSchema,
 } from './institutionAdminGeneral.html';
-import { getInstitution } from '../../lib/institution';
+import { getInstitution, getInstitutionAuthenticationProviders } from '../../lib/institution';
 import {
   getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
@@ -16,6 +16,7 @@ import {
 import { InstitutionSchema } from '../../../lib/db-types';
 import { insertAuditLog } from '../../../models/audit-log';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
+import { getAvailableTimezonesByName } from '../../../lib/timezones';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -24,6 +25,10 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
+    const authn_providers = (
+      await getInstitutionAuthenticationProviders(req.params.institution_id)
+    ).map((provider) => provider.name);
+    const availableTimezones = await getAvailableTimezonesByName();
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },
@@ -33,6 +38,8 @@ router.get(
     res.send(
       InstitutionAdminGeneral({
         institution,
+        authn_providers,
+        availableTimezones,
         statistics,
         planGrants,
         resLocals: res.locals,
@@ -48,14 +55,53 @@ router.post(
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
         const updatedInstitution = await queryRow(
-          sql.update_enrollment_limits,
+          sql.update_institution,
           {
             institution_id: req.params.institution_id,
+            short_name: req.body.short_name,
+            long_name: req.body.long_name,
+            display_timezone: req.body.display_timezone,
+            uid_regexp: req.body.uid_regexp,
             yearly_enrollment_limit: req.body.yearly_enrollment_limit,
             course_instance_enrollment_limit: req.body.course_instance_enrollment_limit,
           },
           InstitutionSchema,
         );
+
+        if (req.body.authn_providers !== req.body.original_authn_providers) {
+          const original_authn_providers = req.body.original_authn_providers.split(', ');
+          const new_authn_providers = req.body.authn_providers?.split(', ');
+          if (new_authn_providers.length > original_authn_providers.length) {
+            new_authn_providers.forEach(async (provider, i) => {
+              if (original_authn_providers[i] !== provider) {
+                await queryAsync(sql.remove_institution_authn_provider, {
+                  institution_id: req.params.institution_id,
+                  authn_provider_name: original_authn_providers[i],
+                });
+              }
+              await queryAsync(sql.add_institution_authn_provider, {
+                institution_id: req.params.institution_id,
+                authn_provider_name: provider,
+              });
+            });
+          } else {
+            original_authn_providers.forEach(async (provider, i) => {
+              if (new_authn_providers[i] !== provider) {
+                await queryAsync(sql.remove_institution_authn_provider, {
+                  institution_id: req.params.institution_id,
+                  authn_provider_name: provider,
+                });
+                if (new_authn_providers[i]) {
+                  await queryAsync(sql.add_institution_authn_provider, {
+                    institution_id: req.params.institution_id,
+                    authn_provider_name: new_authn_providers[i],
+                  });
+                }
+              }
+            });
+          }
+        }
+
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'institutions',

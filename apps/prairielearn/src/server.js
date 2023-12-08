@@ -1849,10 +1849,6 @@ module.exports.initExpress = function () {
     require('./pages/administratorInstitutions/administratorInstitutions').default,
   );
   app.use(
-    '/pl/administrator/institution',
-    require('./pages/administratorInstitution/administratorInstitution').default,
-  );
-  app.use(
     '/pl/administrator/courses',
     require('./pages/administratorCourses/administratorCourses'),
   );
@@ -1887,6 +1883,10 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
+  );
+  app.use(
+    '/pl/institution/:institution_id/admin',
+    require('./ee/pages/institutionAdminGeneral/institutionAdminGeneral').default,
   );
 
   //////////////////////////////////////////////////////////////////////

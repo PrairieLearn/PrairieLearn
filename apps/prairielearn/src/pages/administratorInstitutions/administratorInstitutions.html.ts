@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { isEnterprise } from '../../lib/license';
 import { InstitutionSchema } from '../../lib/db-types';
+import { type Timezone } from '../../lib/timezones';
 
 export const InstitutionRowSchema = z.object({
   institution: InstitutionSchema,
@@ -12,9 +12,11 @@ type InstitutionRow = z.infer<typeof InstitutionRowSchema>;
 
 export function AdministratorInstitutions({
   institutions,
+  availableTimezones,
   resLocals,
 }: {
   institutions: InstitutionRow[];
+  availableTimezones: Map<string, Timezone>;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -51,7 +53,7 @@ export function AdministratorInstitutions({
                 <span class="d-none d-sm-inline">Add institution</span>
               </button>
             </div>
-            ${addInstitutionModal({ csrf_token: resLocals.__csrf_token })}
+            ${AddInstitutionModal({ csrf_token: resLocals.__csrf_token, availableTimezones })}
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">
                 <thead>
@@ -68,17 +70,9 @@ export function AdministratorInstitutions({
                     ({ institution, authn_providers }) => html`
                       <tr>
                         <td>
-                          ${isEnterprise()
-                            ? html`
-                                <a href="/pl/institution/${institution.id}/admin">
-                                  ${institution.short_name}
-                                </a>
-                              `
-                            : html`
-                                <a href="/pl/administrator/institution/${institution.id}">
-                                  ${institution.short_name}
-                                </a>
-                              `}
+                          <a href="/pl/institution/${institution.id}/admin">
+                            ${institution.short_name}
+                          </a>
                         </td>
                         <td>${institution.long_name}</td>
                         <td>${institution.display_timezone}</td>
@@ -92,7 +86,8 @@ export function AdministratorInstitutions({
             </div>
             <div class="card-footer">
               <small>
-                To update institutions, click the edit button to the left of the institution.
+                This is a list of all institutions in the database. Click on an institution name to
+                view more details or edit configuration.
               </small>
             </div>
           </div>
@@ -102,7 +97,13 @@ export function AdministratorInstitutions({
   `.toString();
 }
 
-function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
+function AddInstitutionModal({
+  csrf_token,
+  availableTimezones,
+}: {
+  csrf_token: string;
+  availableTimezones: Map<string, Timezone>;
+}) {
   return html`
     <div
       class="modal fade"
@@ -153,13 +154,14 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
               </div>
               <div class="form-group">
                 <label for="display_timezone">Timezone</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="display_timezone"
-                  name="display_timezone"
-                  placeholder="Timezone"
-                />
+                <select class="form-control" id="display_timezone" name="display_timezone">
+                  <option value="" selected disabled hidden>Timezone</option>
+                  ${Array.from(availableTimezones.keys()).map(
+                    (timezoneName) => html`
+                      <option value="${timezoneName}">${timezoneName}</option>
+                    `,
+                  )}
+                </select>
                 <small id="display_timezone_help" class="form-text text-muted">
                   The allowable timezones are from the
                   <a
@@ -181,51 +183,6 @@ function addInstitutionModal({ csrf_token }: { csrf_token: string }) {
                 />
                 <small id="uid_regexp_help" class="form-text text-muted">
                   Should match the non-username part of students' UIDs. E.g., @example.com$.
-                </small>
-              </div>
-              <div class="form-group">
-                <label for="authn_providers">Authn providers </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="authn_providers"
-                  name="authn_providers"
-                  placeholder="Authn providers"
-                />
-                <small id="authn_providers_help" class="form-text text-muted"
-                  >This is the list of authentication providers used for login. Authentication
-                  providers must be separated by a comma and a space. E.g., "Azure, Google"</small
-                >
-              </div>
-              <div class="form-group">
-                <label for="course_instance_enrollment_limit"
-                  >Course instance enrollment limit</label
-                >
-                <input
-                  type="text"
-                  class="form-control"
-                  id="course_instance_enrollment_limit"
-                  name="course_instance_enrollment_limit"
-                  placeholder="Course instance enrollment limit"
-                />
-                <small id="course_instance_enrollment_limit_help" class="form-text text-muted">
-                  The maximum number of enrollments allowed for a single course instance. This value
-                  can be overridden on individual course instances.
-                </small>
-              </div>
-              <div class="form-group">
-                <label for="yearly_enrollment_limit">Yearly enrollment limit</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="yearly_enrollment_limit"
-                  name="yearly_enrollment_limit"
-                  placeholder="Yearly enrollment limit"
-                />
-                <small id="yearly_enrollment_limit_help" class="form-text text-muted">
-                  The maximum number of enrollments allowed per year. The limit is applied on a
-                  rolling basis; that is, it applies to the previous 365 days from the instant a
-                  student attempts to enroll.
                 </small>
               </div>
             </form>

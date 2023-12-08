@@ -36,12 +36,46 @@ FROM
   course_instance_statistics,
   enrollment_statistics;
 
--- BLOCK update_enrollment_limits
+-- BLOCK update_institution
 UPDATE institutions
 SET
+  short_name = $short_name,
+  long_name = $long_name,
+  display_timezone = $display_timezone,
+  uid_regexp = $uid_regexp,
   yearly_enrollment_limit = $yearly_enrollment_limit,
   course_instance_enrollment_limit = $course_instance_enrollment_limit
 WHERE
   id = $institution_id
 RETURNING
   institutions.*;
+
+-- BLOCK add_institution_authn_provider
+INSERT INTO
+  institution_authn_providers
+  (institution_id, authn_provider_id)
+VALUES
+  ($institution_id, 
+    (SELECT
+        id
+      FROM
+        authn_providers
+      WHERE
+        name = $authn_provider_name
+    )
+  )
+ON CONFLICT DO NOTHING;
+
+-- BLOCK remove_institution_authn_provider
+DELETE FROM
+  institution_authn_providers
+WHERE
+  institution_id = $institution_id
+  AND authn_provider_id = (
+    SELECT
+      id
+    FROM
+      authn_providers
+    WHERE
+      name = $authn_provider_name
+  );

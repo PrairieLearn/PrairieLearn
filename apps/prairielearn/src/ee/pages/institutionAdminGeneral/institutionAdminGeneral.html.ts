@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { type PlanGrant, type Institution } from '../../../lib/db-types';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
+import { Timezone } from '../../../lib/timezones';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
@@ -15,11 +16,15 @@ type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
 
 export function InstitutionAdminGeneral({
   institution,
+  authn_providers,
+  availableTimezones,
   statistics,
   planGrants,
   resLocals,
 }: {
   institution: Institution;
+  authn_providers: (string | null)[];
+  availableTimezones: Map<string, Timezone>;
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
   resLocals: Record<string, any>;
@@ -55,6 +60,7 @@ export function InstitutionAdminGeneral({
           navbarType: 'institution',
           navPage: 'institution_admin',
           navSubPage: 'general',
+          lti13_enabled: false,
         })}
         <main class="container mb-4">
           <h2 class="h4">Statistics</h2>
@@ -66,9 +72,92 @@ export function InstitutionAdminGeneral({
             })}
             ${StatisticsCard({ title: 'Enrollments', value: statistics.enrollment_count })}
           </div>
-
-          <h2 class="h4">Limits</h2>
+          <h2 class="h4">General Information</h2>
           <form method="POST" class="mb-3">
+            <div class="form-group">
+              <label for="short_name">Short name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="short_name"
+                name="short_name"
+                value="${institution.short_name}"
+              />
+              <small id="short_name_help" class="form-text text-muted">
+                Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="long_name">Long name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="long_name"
+                name="long_name"
+                value="${institution.long_name}"
+              />
+              <small id="long_name_help" class="form-text text-muted">
+                Use the full name of the university. E.g., "University of Illinois
+                Urbana-Champaign".
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="display_timezone">Timezone</label>
+              <select
+                class="form-control"
+                id="display_timezone"
+                name="display_timezone"
+                value="${institution.display_timezone}"
+              >
+                ${Array.from(availableTimezones.keys()).map(
+                  (timezoneName) => html`
+                    <option
+                      value="${timezoneName}"
+                      ${institution.display_timezone === timezoneName ? 'selected' : ''}
+                    >
+                      ${timezoneName}
+                    </option>
+                  `,
+                )}
+              </select>
+              <small id="display_timezone_help" class="form-text text-muted">
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you. E.g.,
+                "America/Chicago".
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="uid_regexp">UID regexp</label>
+              <input
+                type="text"
+                class="form-control"
+                id="uid_regexp"
+                name="uid_regexp"
+                value="${institution.uid_regexp}"
+              />
+              <small id="uid_regexp_help" class="form-text text-muted">
+                Should match the non-username part of students' UIDs. E.g., @example.com$.
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="authn_providers">Authn providers </label>
+              <input
+                type="text"
+                class="form-control"
+                id="authn_providers"
+                name="authn_providers"
+                value="${authn_providers.join(', ')}"
+              />
+              <small id="authn_providers_help" class="form-text text-muted"
+                >This is the list of authentication providers used for login. Authentication
+                providers must be separated by a comma and a space. E.g., "Azure, Google"</small
+              >
+            </div>
+            <h2 class="h4">Limits</h2>
             <div class="form-group">
               <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
               <input
@@ -102,6 +191,11 @@ export function InstitutionAdminGeneral({
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input
+              type="hidden"
+              name="original_authn_providers"
+              value="${authn_providers.join(', ')}"
+            />
             <button
               type="submit"
               name="__action"
