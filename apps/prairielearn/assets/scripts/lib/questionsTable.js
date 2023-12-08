@@ -14,19 +14,11 @@ onDocumentReady(() => {
 
   window.tagsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
-    console.log(
-      _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name)),
-    );
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
   window.sharingSetsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
-    console.log(
-      _.keyBy(
-        _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
-      ),
-    );
     const sharing_sets = _.keyBy(
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
     );
