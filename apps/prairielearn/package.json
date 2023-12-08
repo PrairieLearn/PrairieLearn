@@ -230,6 +230,7 @@
     "chai-as-promised": "^7.1.1",
     "express-list-endpoints": "^6.0.0",
     "form-data": "^4.0.0",
+    "get-port": "^5.1.1",
     "jsdom": "^22.1.0",
     "json-stable-stringify": "^1.0.2",
     "mocha": "^10.2.0",

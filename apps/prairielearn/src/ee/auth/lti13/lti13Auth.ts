@@ -143,8 +143,8 @@ const LTI13Schema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
     id: z.string(),
-    description: z.string().nullable(),
-    title: z.string().nullable(),
+    description: z.string().nullish(),
+    title: z.string().nullish(),
   }),
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
@@ -171,7 +171,8 @@ const LTI13Schema = z.object({
       label: z.string().optional(),
       title: z.string().optional(),
     })
-    .nullable(),
+    .nullable()
+    .optional(),
 
   'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
     .object({
@@ -183,7 +184,8 @@ const LTI13Schema = z.object({
       product_family_code: z.string().optional(),
       version: z.string().optional(),
     })
-    .nullable(),
+    .nullable()
+    .optional(),
 
   'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().optional(),
 
@@ -195,10 +197,11 @@ const LTI13Schema = z.object({
       return_url: z.string().optional(),
       locale: z.string().optional(),
     })
-    .nullable(),
+    .nullable()
+    .optional(),
 
-  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullable(),
-  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullable(),
+  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullish(),
+  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullish(),
 
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
   // My development Canvas sends their own named extension as a top level property
@@ -291,7 +294,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   const params = {
     lti13_instance_id: req.params.lti13_instance_id,
     tool_platform_name:
-      (lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform'] as any).name || null,
+      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
   };
   await queryAsync(sql.verify_upsert, params);
 
