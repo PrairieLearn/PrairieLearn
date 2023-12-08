@@ -81,8 +81,7 @@
                 code.textContent = text;
                 pre.classList.remove('d-none');
                 hideErrorMessage();
-
-                $(".file-max-view-button").on("click", function() {
+                $('#file-max-view-button-' + uuid).on("click", function() {
                   let tag = 'max-view-tag';
                   const iconExpand = this.querySelector('.file-full-view-icon-expand');
                   const iconMinimize = this.querySelector ('.file-full-view-icon-compress');
@@ -98,8 +97,6 @@
                     iconMinimize.classList.add('d-none');
                   }
                 })
-
-
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
                 img.src = url;
