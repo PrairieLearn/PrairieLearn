@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import request = require('request');
-import helperQuestion = require('./helperQuestion');
+import * as helperQuestion from './helperQuestion';
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -171,6 +171,7 @@ export function testQuestionPreviews(
 export function testFileDownloads(
   previewPageInfo: QuestionPreviewPageInfo,
   downloadFile: QuestionInfo,
+  shouldAccessClientFilesCourse: boolean,
 ) {
   const locals: any = previewPageInfo;
 
@@ -192,18 +193,26 @@ export function testFileDownloads(
       it('should download something with the link to clientFilesCourse/data.txt', function (callback) {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
         request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
+          if (shouldAccessClientFilesCourse) {
+            if (error) {
+              return callback(error);
+            }
+            if (response.statusCode !== 200) {
+              return callback(new Error('bad status: ' + response.statusCode));
+            }
+            page = body;
+          } else {
+            if (response.statusCode !== 404) {
+              return callback(new Error('Should not have been able to access clientFilesCourse'));
+            }
           }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
           callback(null);
         });
       });
       it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function () {
-        assert.equal(page, 'This data is specific to the course.');
+        if (shouldAccessClientFilesCourse) {
+          assert.equal(page, 'This data is specific to the course.');
+        }
       });
     });
     describe('downloading question text files', function () {
@@ -297,7 +306,7 @@ export function testFileDownloads(
       });
       it('should produce no issues', async function () {
         const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
-        if (result.rowCount > 0) {
+        if (result.rowCount != null && result.rowCount > 0) {
           throw new Error(`found ${result.rowCount} issues (expected zero issues)`);
         }
       });

@@ -1,20 +1,21 @@
-var ERR = require('async-stacktrace');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+// @ts-check
+const ERR = require('async-stacktrace');
+import { assert } from 'chai';
+const request = require('request');
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const { ensureEnrollment } = require('../models/enrollment');
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
+import { ensureEnrollment } from '../models/enrollment';
+import * as helperServer from './helperServer';
 
-var helperServer = require('./helperServer');
+const sql = sqldb.loadSqlEquiv(__filename);
 
-var siteUrl = 'http://localhost:' + config.serverPort;
-var baseUrl = siteUrl + '/pl';
-var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
-var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
+const siteUrl = 'http://localhost:' + config.serverPort;
+const baseUrl = siteUrl + '/pl';
+const courseInstanceBaseUrl = baseUrl + '/course_instance/1';
+const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
+const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function () {
   this.timeout(20000);
@@ -45,49 +46,49 @@ describe('Access control', function () {
 
   var cookiesStudent = function () {
     var cookies = request.jar();
-    cookies.setCookie(request.cookie('pl_test_user=test_student'), siteUrl);
+    cookies.setCookie('pl_test_user=test_student', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExam = function () {
     var cookies = cookiesStudent();
-    cookies.setCookie(request.cookie('pl_test_mode=Exam'), siteUrl);
+    cookies.setCookie('pl_test_mode=Exam', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamBeforeCourseInstance = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=1750-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamBeforeAssessment = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=1850-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamBeforeReservation = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=1950-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=1950-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterReservation = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=2250-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=2250-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterAssessment = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=2350-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterCourseInstance = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(request.cookie('pl_test_date=2450-06-13T13:12:00Z'), siteUrl);
+    cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
   };
 
@@ -136,7 +137,7 @@ describe('Access control', function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
-      await ensureEnrollment({ user_id: user.user_id, course_instance_id: 1 });
+      await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
     });
   });
 
@@ -328,7 +329,7 @@ describe('Access control', function () {
     it('should produce an addVectors instance_question in the DB', function (callback) {
       sqldb.query(sql.select_instance_question_addVectors, [], function (err, result) {
         if (ERR(err, callback)) return;
-        if (result.rowCount === 0) {
+        if (result.rowCount == null || result.rowCount === 0) {
           return callback(new Error('did not find addVectors instance question in DB'));
         } else if (result.rowCount > 1) {
           return callback(

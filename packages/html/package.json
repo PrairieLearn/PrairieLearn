@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "main": "dist/index.js",
   "sideEffects": false,
   "repository": {
@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^18.18.8",
+    "@types/node": "^18.19.0",
     "chai": "^4.3.10",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",

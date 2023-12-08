@@ -1,6 +1,7 @@
-const Ajv = require('ajv').default;
-const assert = require('chai').assert;
-const schemas = require('../schemas');
+// @ts-check
+import Ajv from 'ajv';
+import { assert } from 'chai';
+import * as schemas from '../schemas';
 
 const isObject = (a) => !!a && a.constructor === Object;
 
@@ -32,6 +33,8 @@ const validateRequiredRecursive = (obj, path = '') => {
 };
 
 for (const schemaName of Object.keys(schemas)) {
+  if (schemaName === 'default') continue;
+
   describe(`${schemaName} schema`, () => {
     const schema = schemas[schemaName];
     it('compiles', () => {

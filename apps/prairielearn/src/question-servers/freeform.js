@@ -158,7 +158,7 @@ module.exports = {
         throw err;
       }
 
-      await jsonLoad.validateJSONAsync(info, elementSchema);
+      jsonLoad.validateJSON(info, elementSchema);
       info.name = elementName;
       info.directory = path.join(sourceDir, elementName);
       info.type = elementType;
@@ -260,7 +260,7 @@ module.exports = {
         }
       }
 
-      await jsonLoad.validateJSONAsync(info, schemas.infoElementExtension);
+      jsonLoad.validateJSON(info, schemas.infoElementExtension);
       info.name = extensionDir;
       info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
@@ -2004,8 +2004,8 @@ module.exports = {
     const renderer = useExperimentalRenderer
       ? 'experimental'
       : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
+        ? 'default'
+        : 'legacy';
 
     // The `*Host` values here refer to the paths relative to PrairieLearn;
     // the other values refer to the paths as they will be seen by the worker

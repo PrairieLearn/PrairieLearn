@@ -25,7 +25,10 @@ async function setLocals(req, res) {
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);
   res.locals.question = await selectQuestionById(req.params.question_id);
-  if (!res.locals.question.shared_publicly) {
+  if (
+    !res.locals.question.shared_publicly ||
+    res.locals.course.id !== res.locals.question.course_id
+  ) {
     throw error.make(404, 'Not Found');
   }
   return;
