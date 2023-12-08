@@ -21,6 +21,7 @@ const QuestionsPageDataSchema = z.object({
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
   tags: z.array(TagSchema).nullable(),
+  shared_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
   assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
 });

@@ -14,14 +14,24 @@ onDocumentReady(() => {
 
   window.tagsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
+    console.log(
+      _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name)),
+    );
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
   window.sharingSetsList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
-    return _.keyBy(
+    console.log(
+      _.keyBy(
+        _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
+      ),
+    );
+    const sharing_sets = _.keyBy(
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
     );
+    sharing_sets['Public'] = 'Public';
+    return sharing_sets;
   };
 
   window.versionList = function () {
@@ -84,9 +94,12 @@ onDocumentReady(() => {
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
-    return _.map(question.sharing_sets ?? [], (sharing_set) =>
-      html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
-    ).join(' ');
+    return (
+      _.map(question.sharing_sets ?? [], (sharing_set) =>
+        html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
+      ).join(' ') +
+      (question.shared_publicly ? html`<span class="badge color-green3">Public</span>` : '')
+    );
   };
 
   window.versionFormatter = function (version, question) {

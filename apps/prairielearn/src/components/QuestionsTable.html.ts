@@ -141,13 +141,13 @@ export function QuestionsTable({
                   data-class="align-middle text-nowrap"
                   data-formatter="sharingSetFormatter"
                   data-filter-control="select"
-                  data-filter-control-placeholder="(All Sharing Sets)"
+                  data-filter-control-placeholder="(All)"
                   data-filter-data="func:sharingSetsList"
                   data-filter-custom-search="badgeFilterSearch"
                   data-switchable="true"
                   data-visible="false"
                 >
-                  Sharing Sets
+                  Sharing
                 </th>`
               : ''}
             <th
