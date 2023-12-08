@@ -3,7 +3,6 @@ import { selectCourseById } from '../../models/course';
 import { selectQuestionById } from '../../models/question';
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const error = require('@prairielearn/error');
 const { isBinaryFile } = require('isbinaryfile');
 const mime = require('mime');
 const sqldb = require('@prairielearn/postgres');
