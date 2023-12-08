@@ -9,16 +9,40 @@ import express = require('express');
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
+import { queryAsync } from '@prairielearn/postgres';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
+async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
+  const server = app.listen(port);
+
+  await new Promise<void>((resolve, reject) => {
+    server.on('listening', () => resolve());
+    server.on('error', (err) => reject(err));
+  });
+
+  try {
+    return await fn();
+  } finally {
+    server.close();
+  }
+}
+
 describe('LTI 1.3', () => {
+  let oidcProviderPort: number;
+
   before(async () => {
     config.isEnterprise = true;
     config.features.lti13 = true;
     await helperServer.before()();
+
+    // We need to give the default institution a `uid_regexp`.
+    await queryAsync("UPDATE institutions SET uid_regexp = '@example\\.com$'", {});
+
+    // Allocate an available port for the OIDC provider.
+    oidcProviderPort = await getPort();
   });
 
   after(async () => {
@@ -26,23 +50,6 @@ describe('LTI 1.3', () => {
     config.isEnterprise = false;
     config.features = {};
   });
-
-  let oidcProviderPort: number;
-
-  before(async () => {
-    // Generate keys for the OIDC provider.
-    const keystore = nodeJose.JWK.createKeyStore();
-    const key = await keystore.generate('RSA', 2048, {
-      alg: 'RS256',
-      use: 'sig',
-      kid: 'test',
-    });
-    console.log('KEY', key.toJSON(true));
-
-    oidcProviderPort = await getPort();
-  });
-
-  after(async () => {});
 
   step('create an LTI instance', async () => {
     // Load the LTI admin page.
@@ -137,9 +144,10 @@ describe('LTI 1.3', () => {
     const startLoginResponse = await fetchWithCookies(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
       method: 'POST',
       body: new URLSearchParams({
-        iss: 'issuer',
-        login_hint: 'custom_login_hint',
-        target_link_uri: 'custom_target_link_uri',
+        iss: siteUrl,
+        // TODO: what should this be?
+        login_hint: 'login_hint',
+        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
     });
@@ -170,36 +178,71 @@ describe('LTI 1.3', () => {
       kid: 'test',
     });
 
+    const joseKey = await jose.importJWK(key.toJSON(true) as any);
+    const fakeIdToken = await new jose.SignJWT({
+      nonce,
+      // The below values are based on data observed by Dave during an actual
+      // login with Canvas.
+      'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiResourceLinkRequest',
+      'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
+      'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
+        '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
+      // This MUST match the value in the login request.
+      'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+      'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
+        id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+        title: 'Test Course',
+      },
+      'https://purl.imsglobal.org/spec/lti/claim/roles': [
+        'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
+      ],
+      'https://purl.imsglobal.org/spec/lti/claim/context': {
+        id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+        type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
+        label: 'TEST 101',
+        title: 'Test Course',
+      },
+      name: 'Test User',
+      email: 'test-user@example.com',
+      'https://purl.imsglobal.org/spec/lti/claim/custom': {
+        uin: '123456789',
+      },
+    })
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuer(`http://localhost:${oidcProviderPort}`)
+      .setIssuedAt()
+      .setExpirationTime('1h')
+      .setSubject('a555090c-8355-4b58-b315-247612cc22f0')
+      .setAudience(CLIENT_ID)
+      .sign(joseKey);
+
     // Run a server to respond to JWKS requests.
     const app = express();
     app.get('/jwks', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(keystore.toJSON()));
     });
-    await new Promise<void>((resolve) => {
-      app.listen(oidcProviderPort, () => resolve());
+
+    const finishLoginResponse = await withServer(app, oidcProviderPort, async () => {
+      return await fetchWithCookies(redirectUri, {
+        method: 'POST',
+        body: new URLSearchParams({
+          nonce,
+          state,
+          id_token: fakeIdToken,
+        }),
+        redirect: 'manual',
+      });
     });
 
-    const joseKey = await jose.importJWK(key.toJSON(true) as any);
-    const fakeIdToken = await new jose.SignJWT({ nonce })
-      .setProtectedHeader({ alg: 'RS256' })
-      .setIssuer(`http://localhost:${oidcProviderPort}`)
-      .setIssuedAt()
-      .setExpirationTime('1h')
-      // TODO: probably need better values here
-      .setSubject('a555090c-8355-4b58-b315-247612cc22f0')
-      .setAudience(CLIENT_ID)
-      .sign(joseKey);
-
-    const finishLoginResponse = await fetchWithCookies(redirectUri, {
-      method: 'POST',
-      body: new URLSearchParams({
-        nonce,
-        state,
-        id_token: fakeIdToken,
-      }),
-    });
-    console.log(await finishLoginResponse.text());
-    assert.equal(finishLoginResponse.status, 200);
+    // The page that we're being redirected to doesn't exist yet. Just assert
+    // that we were redirected to the right place.
+    assert.equal(finishLoginResponse.status, 302);
+    assert.equal(
+      finishLoginResponse.headers.get('location'),
+      `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+    );
   });
 });
