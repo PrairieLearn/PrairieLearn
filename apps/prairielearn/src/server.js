@@ -1844,7 +1844,6 @@ module.exports.initExpress = function () {
 
   // Submission files
   app.use('/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file', [
-    // require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/submissionFile/submissionFile')({ publicEndpoint: true }),
   ]);
 
