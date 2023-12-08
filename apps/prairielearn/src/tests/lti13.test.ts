@@ -1,13 +1,15 @@
 import { step } from 'mocha-steps';
 import { assert } from 'chai';
 import fetchCookie = require('fetch-cookie');
+import getPort = require('get-port');
+import nodeJose = require('node-jose');
+import jose = require('jose');
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
 
 const CLIENT_ID = 'prairielearn_test_lms';
-const ISSUER = 'https://lti.example.com';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -23,6 +25,23 @@ describe('LTI 1.3', () => {
     config.isEnterprise = false;
     config.features = {};
   });
+
+  let oidcProviderPort: number;
+
+  before(async () => {
+    // Generate keys for the OIDC provider.
+    const keystore = nodeJose.JWK.createKeyStore();
+    const key = await keystore.generate('RSA', 2048, {
+      alg: 'RS256',
+      use: 'sig',
+      kid: 'test',
+    });
+    console.log('KEY', key.toJSON(true));
+
+    oidcProviderPort = await getPort();
+  });
+
+  after(async () => {});
 
   step('create an LTI instance', async () => {
     // Load the LTI admin page.
@@ -64,8 +83,9 @@ describe('LTI 1.3', () => {
           __action: platformOptionsForm.find('input[name=__action]').val() as string,
           platform: 'Unknown',
           issuer_params: JSON.stringify({
-            issuer: ISSUER,
-            authorization_endpoint: `${ISSUER}/authorize`,
+            issuer: `http://localhost:${oidcProviderPort}`,
+            authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+            jwks_uri: 'TODO START SERVER TO RESPOND WITH KEYSTORE',
           }),
           custom_fields: '{}',
           client_id: CLIENT_ID,
@@ -125,8 +145,8 @@ describe('LTI 1.3', () => {
     assert.equal(startLoginResponse.status, 302);
 
     const redirectUrl = new URL(startLoginResponse.headers.get('location') as string);
-    assert.equal(redirectUrl.hostname, 'lti.example.com');
-    assert.equal(redirectUrl.pathname, '/authorize');
+    assert.equal(redirectUrl.hostname, 'localhost');
+    assert.equal(redirectUrl.pathname, '/auth');
     assert.equal(redirectUrl.searchParams.get('client_id'), CLIENT_ID);
     assert.equal(redirectUrl.searchParams.get('scope'), 'openid');
     assert.equal(redirectUrl.searchParams.get('response_type'), 'id_token');
@@ -142,12 +162,31 @@ describe('LTI 1.3', () => {
     const nonce = redirectUrl.searchParams.get('nonce') as string;
     const state = redirectUrl.searchParams.get('state') as string;
 
+    const keystore = nodeJose.JWK.createKeyStore();
+    const key = await keystore.generate('RSA', 2048, {
+      alg: 'RS256',
+      use: 'sig',
+      kid: 'test',
+    });
+
+    // Should probably use RS256 here? I don't entirely know what I'm doing.
+    const joseKey = await jose.importJWK(key.toJSON(true) as any);
+    const fakeIdToken = await new jose.SignJWT({})
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuer(`http://localhost:${oidcProviderPort}`)
+      .setIssuedAt()
+      .setExpirationTime('1h')
+      // TODO: probably need better values here
+      .setSubject('a555090c-8355-4b58-b315-247612cc22f0')
+      .setAudience(CLIENT_ID)
+      .sign(joseKey);
+
     const finishLoginResponse = await fetchWithCookies(redirectUri, {
       method: 'POST',
       body: new URLSearchParams({
         nonce,
         state,
-        id_token: 'hello!',
+        id_token: fakeIdToken,
       }),
     });
     console.log(await finishLoginResponse.text());

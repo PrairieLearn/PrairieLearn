@@ -3289,6 +3289,7 @@ __metadata:
     form-data: ^4.0.0
     fs-extra: ^11.1.1
     generic-pool: ^3.9.0
+    get-port: ^5.1.1
     google-auth-library: ^9.2.0
     he: ^1.2.0
     highlight.js: ^11.9.0
