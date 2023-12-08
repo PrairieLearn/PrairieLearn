@@ -3,10 +3,8 @@ import fs from 'node:fs/promises';
 import globby from 'globby';
 import { parse } from '@typescript-eslint/parser';
 
-const files = await globby(['apps/*/src/**/*.{js,ts}']);
-
-console.log(files);
-
+// These modules have their types declared as `export = ...`, so we can't use
+// `import` to load them until we're using native ESM.
 const CJS_ONLY_MODULES = new Set([
   'async-stacktrace',
   'axe-core',
@@ -31,6 +29,10 @@ function maybeLogLocation(path, node, modulePath) {
   console.log(`${path}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
 }
 
+const importEqualsOnly = process.argv.includes('--import-equals-only');
+
+const files = await globby(['apps/*/src/**/*.{js,ts}']);
+
 for (const file of files.sort()) {
   const contents = await fs.readFile(file, 'utf-8');
   const ast = parse(contents, {
@@ -41,7 +43,7 @@ for (const file of files.sort()) {
 
   ast.body.forEach((node) => {
     // Handle `require()` calls.
-    if (node.type === 'VariableDeclaration') {
+    if (node.type === 'VariableDeclaration' && !importEqualsOnly) {
       node.declarations.forEach((declaration) => {
         if (
           declaration.init?.type === 'CallExpression' &&
