@@ -1,7 +1,7 @@
 columns
-    lti13_instance_id: bigint
+    lti13_instance_id: bigint not null
     sub: text not null
-    user_id: bigint
+    user_id: bigint not null
 
 indexes
     lti13_users_user_id_lti13_instance_id_key: UNIQUE (user_id, lti13_instance_id) USING btree (user_id, lti13_instance_id)
