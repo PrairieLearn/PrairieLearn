@@ -9,10 +9,18 @@ console.log(files);
 
 const CJS_ONLY_MODULES = new Set([
   'async-stacktrace',
+  'axe-core',
   'execa',
   'express-async-handler',
+  'express-list-endpoints',
+  'fetch-cookie',
+  'form-data',
+  'json-stable-stringify',
+  'klaw',
   'lodash',
+  'passport',
   'request',
+  'strip-ansi',
   'winston',
   'winston-transport',
 ]);
