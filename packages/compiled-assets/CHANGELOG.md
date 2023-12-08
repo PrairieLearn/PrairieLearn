@@ -1,5 +1,13 @@
 # @prairielearn/compiled-assets
 
+## 2.0.12
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+- Updated dependencies [2da23ab]
+  - @prairielearn/html@3.1.2
+
 ## 2.0.11
 
 ### Patch Changes

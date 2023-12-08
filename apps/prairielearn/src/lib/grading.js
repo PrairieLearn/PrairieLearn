@@ -54,7 +54,7 @@ export function saveSubmission(submission, variant, question, variant_course, ca
           };
           sqldb.queryZeroOrOneRow(sql.select_workspace_id, params, (err, result) => {
             if (ERR(err, callback)) return;
-            if (result.rowCount > 0) {
+            if (result.rowCount != null && result.rowCount > 0) {
               workspace_id = result.rows[0].workspace_id;
             }
             callback(null);
