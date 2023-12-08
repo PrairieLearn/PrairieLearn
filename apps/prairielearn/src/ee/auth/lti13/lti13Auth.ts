@@ -221,6 +221,9 @@ async function authenticate(req: Request, res: Response): Promise<any> {
     // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
     myPassport.authenticate(`lti13`, ((err, user, info) => {
       if (err) {
+        // Replay attack fails here
+        // "did not find expected authorization request details in session, req.session[\"oidc:localhost\"] is undefined"
+        // Passport's cleanup of the session might take care of nonce reuse without us having to
         reject(err);
       } else if (!user) {
         // The authentication libraries under openid-connect will fail (silently) if the key length

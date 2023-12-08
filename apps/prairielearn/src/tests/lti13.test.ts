@@ -12,6 +12,7 @@ import { fetchCheerio } from './helperClient';
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import { selectUserByUid } from '../models/user';
 import { Lti13UserSchema } from '../lib/db-types';
+import { CreateIpamScopeCommand } from '@aws-sdk/client-ec2';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 
@@ -250,6 +251,21 @@ describe('LTI 1.3', () => {
       finishLoginResponse.headers.get('location'),
       `${siteUrl}//pl/lti13_instance/1/course_navigation`,
     );
+
+    const repeatLoginTestNonce = await withServer(app, oidcProviderPort, async () => {
+      return await fetchWithCookies(redirectUri, {
+        method: 'POST',
+        body: new URLSearchParams({
+          nonce,
+          state,
+          id_token: fakeIdToken,
+        }),
+        redirect: 'manual',
+      });
+    });
+
+    // This should fail for nonce reuse
+    assert.equal(repeatLoginTestNonce.status, 500);
   });
 
   step('validate login', async () => {
@@ -272,5 +288,61 @@ describe('LTI 1.3', () => {
     assert.ok(ltiUser);
     assert.equal(ltiUser?.sub, 'a555090c-8355-4b58-b315-247612cc22f0');
     assert.equal(ltiUser?.lti13_instance_id, '1');
+  });
+
+  step('malformed requests fail', async () => {
+    const fetchWithCookies = fetchCookie(fetchCheerio);
+
+    // Malformed login
+    const startBadLoginResponse = await fetchWithCookies(
+      `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          iss: siteUrl,
+          // Missing required login_hint
+          //login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
+          target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+        }),
+        redirect: 'manual',
+      },
+    );
+    assert.equal(startBadLoginResponse.status, 500);
+
+    // Successful login to test malformed response
+    const startLoginResponse = await fetchWithCookies(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        iss: siteUrl,
+        login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
+        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+      }),
+      redirect: 'manual',
+    });
+    assert.equal(startLoginResponse.status, 302);
+
+    const redirectUrl = new URL(startLoginResponse.headers.get('location') as string);
+
+    assert.ok(redirectUrl.searchParams.get('state'));
+
+    const redirectUri = redirectUrl.searchParams.get('redirect_uri') as string;
+    const nonce = redirectUrl.searchParams.get('nonce') as string;
+
+    // Not a real token, not running a JWKS server, so not a full test
+    // Just making sure if state is missing that PL errors
+    const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
+      method: 'POST',
+      body: new URLSearchParams({
+        nonce,
+        // Missing state parameter
+        //state,
+        id_token: 'junkjunkjunk',
+      }),
+      redirect: 'manual',
+    });
+
+    // The page that we're being redirected to doesn't exist yet. Just assert
+    // that we were redirected to the right place.
+    assert.equal(finishBadLoginResponse.status, 500);
   });
 });
