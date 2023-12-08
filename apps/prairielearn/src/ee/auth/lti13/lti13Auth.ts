@@ -143,8 +143,8 @@ const LTI13Schema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
     id: z.string(),
-    description: z.string().nullable().optional(),
-    title: z.string().nullable().optional(),
+    description: z.string().nullish(),
+    title: z.string().nullish(),
   }),
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
@@ -200,8 +200,8 @@ const LTI13Schema = z.object({
     .nullable()
     .optional(),
 
-  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullable().optional(),
-  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullable().optional(),
+  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullish(),
+  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullish(),
 
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
   // My development Canvas sends their own named extension as a top level property

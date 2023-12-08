@@ -9,7 +9,9 @@ import express = require('express');
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
 import { fetchCheerio } from './helperClient';
-import { queryAsync } from '@prairielearn/postgres';
+import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { selectUserByUid } from '../models/user';
+import { Lti13UserSchema } from '../lib/db-types';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 
@@ -145,8 +147,7 @@ describe('LTI 1.3', () => {
       method: 'POST',
       body: new URLSearchParams({
         iss: siteUrl,
-        // TODO: what should this be?
-        login_hint: 'login_hint',
+        login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
         target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
@@ -163,6 +164,10 @@ describe('LTI 1.3', () => {
     assert.equal(
       redirectUrl.searchParams.get('redirect_uri'),
       `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+    );
+    assert.equal(
+      redirectUrl.searchParams.get('login_hint'),
+      'fef15674-ae78-4763-b915-6fe3dbf42c67',
     );
     assert.ok(redirectUrl.searchParams.get('nonce'));
     assert.ok(redirectUrl.searchParams.get('state'));
@@ -222,7 +227,8 @@ describe('LTI 1.3', () => {
     const app = express();
     app.get('/jwks', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(keystore.toJSON()));
+      // Pass `false` to `toJSON` to only include public keys.
+      res.end(JSON.stringify(keystore.toJSON(false)));
     });
 
     const finishLoginResponse = await withServer(app, oidcProviderPort, async () => {
@@ -244,5 +250,27 @@ describe('LTI 1.3', () => {
       finishLoginResponse.headers.get('location'),
       `${siteUrl}//pl/lti13_instance/1/course_navigation`,
     );
+  });
+
+  step('validate login', async () => {
+    // There should be a new user.
+    const user = await selectUserByUid('test-user@example.com');
+    assert.ok(user);
+    assert.equal(user?.uid, 'test-user@example.com');
+    assert.equal(user?.name, 'Test User');
+    assert.equal(user?.uin, '123456789');
+    assert.equal(user?.institution_id, '1');
+
+    // The new user should have an entry in `lti13_users`.
+    const ltiUser = await queryOptionalRow(
+      'SELECT * FROM lti13_users WHERE user_id = $user_id',
+      {
+        user_id: user?.user_id,
+      },
+      Lti13UserSchema,
+    );
+    assert.ok(ltiUser);
+    assert.equal(ltiUser?.sub, 'a555090c-8355-4b58-b315-247612cc22f0');
+    assert.equal(ltiUser?.lti13_instance_id, '1');
   });
 });
