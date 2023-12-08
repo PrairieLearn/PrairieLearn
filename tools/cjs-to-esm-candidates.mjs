@@ -1,14 +1,19 @@
 // @ts-check
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import globby from 'globby';
 import { parse } from '@typescript-eslint/parser';
 
 // These modules have their types declared as `export = ...`, so we can't use
 // `import` to load them until we're using native ESM.
 const CJS_ONLY_MODULES = new Set([
+  'assert',
   'async-stacktrace',
   'axe-core',
+  'cookie-parser',
+  'csvtojson',
   'execa',
+  'express',
   'express-async-handler',
   'express-list-endpoints',
   'fetch-cookie',
@@ -16,17 +21,34 @@ const CJS_ONLY_MODULES = new Set([
   'json-stable-stringify',
   'klaw',
   'lodash',
+  'loopbench',
+  'node:assert',
   'passport',
+  'postgres-interval',
   'request',
   'strip-ansi',
   'winston',
   'winston-transport',
+  // Relative paths to PrairieLearn files.
+  'apps/grader-host/src/lib/logger',
+  'apps/prairielearn/src/middlewares/authzCourseOrInstance',
+  'apps/prairielearn/src/middlewares/authzIsAdministrator',
+  'apps/prairielearn/src/middlewares/logPageView',
+  'apps/prairielearn/src/middlewares/staticNodeModules',
+  'apps/prairielearn/src/pages/elementFiles/elementFiles',
 ]);
 
-function maybeLogLocation(path, node, modulePath) {
-  if (CJS_ONLY_MODULES.has(modulePath)) return;
+function maybeLogLocation(filePath, node, modulePath) {
+  let resolvedModulePath = modulePath;
+  if (modulePath.startsWith('.')) {
+    resolvedModulePath = path.relative(
+      process.cwd(),
+      path.resolve(path.dirname(filePath), modulePath),
+    );
+  }
+  if (CJS_ONLY_MODULES.has(resolvedModulePath)) return;
 
-  console.log(`${path}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
+  console.log(`${filePath}:${node.loc.start.line}:${node.loc.start.column}: ${modulePath}`);
 }
 
 const importEqualsOnly = process.argv.includes('--import-equals-only');

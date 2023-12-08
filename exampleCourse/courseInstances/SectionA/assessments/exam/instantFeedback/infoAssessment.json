@@ -19,7 +19,7 @@
     "zones": [
         {
             "questions": [
-                {"id": "demo/annotated/mathNumberInput","points": [3,1]}
+                {"id": "demo/calculation"}
             ]
         },
         {

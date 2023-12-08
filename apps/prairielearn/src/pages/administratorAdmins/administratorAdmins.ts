@@ -1,8 +1,8 @@
 import asyncHandler = require('express-async-handler');
 import express = require('express');
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { AdministratorAdmins } from './administratorAdmins.html';
 import { UserSchema } from '../../lib/db-types';
 
