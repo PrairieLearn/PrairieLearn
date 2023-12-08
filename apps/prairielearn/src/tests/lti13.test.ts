@@ -4,6 +4,7 @@ import fetchCookie = require('fetch-cookie');
 import getPort = require('get-port');
 import nodeJose = require('node-jose');
 import jose = require('jose');
+import express = require('express');
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
@@ -85,7 +86,7 @@ describe('LTI 1.3', () => {
           issuer_params: JSON.stringify({
             issuer: `http://localhost:${oidcProviderPort}`,
             authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-            jwks_uri: 'TODO START SERVER TO RESPOND WITH KEYSTORE',
+            jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
           }),
           custom_fields: '{}',
           client_id: CLIENT_ID,
@@ -169,8 +170,18 @@ describe('LTI 1.3', () => {
       kid: 'test',
     });
 
+    // Run a server to respond to JWKS requests.
+    const app = express();
+    app.get('/jwks', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(keystore.toJSON()));
+    });
+    await new Promise<void>((resolve) => {
+      app.listen(oidcProviderPort, () => resolve());
+    });
+
     const joseKey = await jose.importJWK(key.toJSON(true) as any);
-    const fakeIdToken = await new jose.SignJWT({})
+    const fakeIdToken = await new jose.SignJWT({ nonce })
       .setProtectedHeader({ alg: 'RS256' })
       .setIssuer(`http://localhost:${oidcProviderPort}`)
       .setIssuedAt()
