@@ -12,7 +12,6 @@ import { fetchCheerio } from './helperClient';
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import { selectUserByUid } from '../models/user';
 import { Lti13UserSchema } from '../lib/db-types';
-import { CreateIpamScopeCommand } from '@aws-sdk/client-ec2';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 
@@ -341,8 +340,6 @@ describe('LTI 1.3', () => {
       redirect: 'manual',
     });
 
-    // The page that we're being redirected to doesn't exist yet. Just assert
-    // that we were redirected to the right place.
     assert.equal(finishBadLoginResponse.status, 500);
   });
 });
