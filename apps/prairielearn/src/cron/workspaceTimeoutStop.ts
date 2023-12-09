@@ -1,8 +1,8 @@
-import util = require('util');
+import * as util from 'node:util';
 import { logger } from '@prairielearn/logger';
 import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
-import sqldb = require('@prairielearn/postgres');
-import workspaceUtils = require('@prairielearn/workspace-utils');
+import * as sqldb from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../lib/config';
 

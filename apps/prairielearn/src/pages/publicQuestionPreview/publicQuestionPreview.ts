@@ -1,14 +1,14 @@
+import ERR = require('async-stacktrace');
+import { Router } from 'express';
+import * as async from 'async';
+import * as path from 'path';
+import * as error from '@prairielearn/error';
+import { z } from 'zod';
+
 import { selectQuestionById } from '../../models/question';
 import { selectCourseById } from '../../models/course';
 import { processSubmission } from '../../lib/questionPreview';
 import { IdSchema, UserSchema } from '../../lib/db-types';
-import { z } from 'zod';
-
-import ERR = require('async-stacktrace');
-import { Router } from 'express';
-import async = require('async');
-import path = require('path');
-import error = require('@prairielearn/error');
 import LogPageView = require('../../middlewares/logPageView');
 import {
   getAndRenderVariant,
