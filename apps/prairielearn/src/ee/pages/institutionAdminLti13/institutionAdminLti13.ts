@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import jose = require('node-jose');
+import * as jose from 'node-jose';
 import { z } from 'zod';
 import { sortBy } from 'lodash';
 
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { flash } from '@prairielearn/flash';
 

@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { InstructorSharing } from './instructorCourseAdminSharing.html';
 import { z } from 'zod';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(__filename);
