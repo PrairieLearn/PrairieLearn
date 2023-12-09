@@ -87,10 +87,10 @@ onDocumentReady(() => {
 
   window.sharingSetFormatter = function (sharing_sets, question) {
     return (
+      (question.shared_publicly ? html`<span class="badge color-green3">Public</span> ` : '') +
       _.map(question.sharing_sets ?? [], (sharing_set) =>
         html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
-      ).join(' ') +
-      (question.shared_publicly ? html`<span class="badge color-green3">Public</span>` : '')
+      ).join(' ')
     );
   };
 
