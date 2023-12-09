@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 
 import { CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
 import { isEnterprise } from '../lib/license';

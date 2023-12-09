@@ -1,4 +1,4 @@
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 import AnsiUp from 'ansi_up';
 import {
   TopicSchema,

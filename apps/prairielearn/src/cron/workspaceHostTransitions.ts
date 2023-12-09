@@ -1,4 +1,4 @@
-import async = require('async');
+import * as async from 'async';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
 import fetch from 'node-fetch';
@@ -8,8 +8,8 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
 import { makeAwsClientConfig } from '../lib/aws';
-import workspaceHelper = require('../lib/workspace');
-import workspaceHostUtils = require('../lib/workspaceHost');
+import * as workspaceHelper from '../lib/workspace';
+import * as workspaceHostUtils from '../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 
