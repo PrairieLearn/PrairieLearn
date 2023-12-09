@@ -594,7 +594,7 @@ module.exports.initExpress = function () {
       res.locals.navPage = 'request_course';
       next();
     },
-    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
+    require('./pages/instructorRequestCourse/instructorRequestCourse').default,
   ]);
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The
