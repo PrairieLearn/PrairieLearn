@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import * as fs from 'fs-extra';
-const path = require('path');
+import * as path from 'path';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 import * as sqldb from '@prairielearn/postgres';

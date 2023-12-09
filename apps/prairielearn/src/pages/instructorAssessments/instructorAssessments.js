@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 import * as express from 'express';
 const asyncHandler = require('express-async-handler');
-const { default: AnsiUp } = require('ansi_up');
+import AnsiUp from 'ansi_up';
 import * as error from '@prairielearn/error';
 const debug = require('debug')('prairielearn:instructorAssessments');
 import { logger } from '@prairielearn/logger';

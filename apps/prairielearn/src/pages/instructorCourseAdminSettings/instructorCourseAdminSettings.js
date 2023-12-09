@@ -3,7 +3,7 @@ import * as express from 'express';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as fs from 'fs-extra';
-const async = require('async');
+import * as async from 'async';
 const ERR = require('async-stacktrace');
 import { CourseInfoEditor } from '../../lib/editors';
 import { logger } from '@prairielearn/logger';

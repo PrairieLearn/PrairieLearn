@@ -1,13 +1,12 @@
 // @ts-check
-import { selectCourseById } from '../../models/course';
-import { selectQuestionById } from '../../models/question';
-import { promisify } from 'util';
-
 const asyncHandler = require('express-async-handler');
 const error = require('@prairielearn/error');
 var express = require('express');
+const { promisify } = require('util');
 
 var question = require('../../lib/question-variant');
+const { selectCourseById } = require('../../models/course');
+const { selectQuestionById } = require('../../models/question');
 var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);

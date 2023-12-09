@@ -2,7 +2,7 @@
 import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-const path = require('path');
+import * as path from 'path';
 import * as sqldb from '@prairielearn/postgres';
 const stringify = require('json-stable-stringify');
 import { assert } from 'chai';

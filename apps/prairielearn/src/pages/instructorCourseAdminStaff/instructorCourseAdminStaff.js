@@ -1,5 +1,3 @@
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
@@ -10,6 +8,7 @@ const { logger } = require('@prairielearn/logger');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
+const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));

@@ -1,5 +1,5 @@
 // @ts-check
-const path = require('path');
+import * as path from 'path';
 const _ = require('lodash');
 import * as fs from 'fs-extra';
 import * as async from 'async';

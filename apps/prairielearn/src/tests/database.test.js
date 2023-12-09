@@ -1,6 +1,6 @@
 // @ts-check
 const _ = require('lodash');
-const path = require('node:path');
+import * as path from 'node:path';
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
 import { REPOSITORY_ROOT_PATH } from '../lib/paths';

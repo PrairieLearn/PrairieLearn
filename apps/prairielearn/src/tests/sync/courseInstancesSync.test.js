@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 import * as fs from 'fs-extra';
-const path = require('path');
+import * as path from 'path';
 import * as util from './util';
 import * as helperDb from '../helperDb';
 import { idsEqual } from '../../lib/id';

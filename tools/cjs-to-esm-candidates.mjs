@@ -14,6 +14,7 @@ const CJS_ONLY_MODULES = new Set([
   'fetch-cookie',
   'form-data',
   'json-stable-stringify',
+  'json-stringify-safe',
   'klaw',
   'lodash',
   'passport',
@@ -30,6 +31,7 @@ function maybeLogLocation(path, node, modulePath) {
 }
 
 const importEqualsOnly = process.argv.includes('--import-equals-only');
+const filesWithImportsOnly = process.argv.includes('--files-with-imports-only');
 
 const files = await globby(['apps/*/src/**/*.{js,ts}']);
 
@@ -40,6 +42,15 @@ for (const file of files.sort()) {
     loc: true,
     tokens: false,
   });
+
+  const fileHasImports = ast.body.some(
+    (node) =>
+      node.type === 'ImportDeclaration' ||
+      (node.type === 'TSImportEqualsDeclaration' &&
+        node.moduleReference.type === 'TSExternalModuleReference'),
+  );
+
+  if (filesWithImportsOnly && !fileHasImports) continue;
 
   ast.body.forEach((node) => {
     // Handle `require()` calls.
