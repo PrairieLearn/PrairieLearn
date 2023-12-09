@@ -6,8 +6,13 @@ import { parse } from '@typescript-eslint/parser';
 // These modules have their types declared as `export = ...`, so we can't use
 // `import` to load them until we're using native ESM.
 const CJS_ONLY_MODULES = new Set([
+  'archiver',
   'async-stacktrace',
   'axe-core',
+  'byline',
+  'crypto-js/sha256',
+  'dockerode',
+  'events',
   'execa',
   'express-async-handler',
   'express-list-endpoints',
@@ -17,6 +22,7 @@ const CJS_ONLY_MODULES = new Set([
   'json-stringify-safe',
   'klaw',
   'lodash',
+  'oauth-signature',
   'passport',
   'request',
   'strip-ansi',
