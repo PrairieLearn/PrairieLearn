@@ -23,12 +23,12 @@ export const IdSchema = z
  * This is a schema for the objects produced by the `postgres-interval` library.
  */
 const PostgresIntervalSchema = z.object({
-  years: z.number(),
-  months: z.number(),
-  days: z.number(),
-  hours: z.number(),
-  minutes: z.number(),
-  seconds: z.number(),
+  years: z.number().default(0),
+  months: z.number().default(0),
+  days: z.number().default(0),
+  hours: z.number().default(0),
+  minutes: z.number().default(0),
+  seconds: z.number().default(0),
   milliseconds: z.number(),
 });
 
@@ -553,7 +553,7 @@ export const SubmissionSchema = z.object({
   mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
-  partial_scores: z.record(z.string(), z.number()).nullable(),
+  partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
   regradable: z.boolean().nullable(),
   score: z.number().nullable(),
