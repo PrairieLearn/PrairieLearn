@@ -87,7 +87,6 @@ export async function init() {
       'instance_questions_select_variant.sql',
       'instance_questions_next_allowed_grade.sql',
       'submissions_lock.sql',
-      'submissions_select.sql',
       'submissions_insert.sql',
       'assessment_instances_update.sql',
       'grading_job_status.sql',
