@@ -14,7 +14,7 @@ export async function selectQuestionById(question_id: string): Promise<Question>
 }
 
 export async function selectQuestionByInstanceQuestionId(
-  instance_question_id: string | number,
+  instance_question_id: string,
 ): Promise<Question> {
   return await queryRow(
     sql.select_question_by_instance_question_id,
