@@ -1,14 +1,14 @@
 // @ts-check
-const { assert } = require('chai');
-const fs = require('fs-extra');
+import { assert } from 'chai';
+import * as fs from 'fs-extra';
 const path = require('path');
-const { config } = require('../../lib/config');
-const { features } = require('../../lib/features/index');
-const sqldb = require('@prairielearn/postgres');
-const { idsEqual } = require('../../lib/id');
+import { config } from '../../lib/config';
+import { features } from '../../lib/features/index';
+import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from '../../lib/id';
 
-const util = require('./util');
-const helperDb = require('../helperDb');
+import * as util from './util';
+import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

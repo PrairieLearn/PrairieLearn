@@ -2,23 +2,23 @@
 
 // The OpenTelemetry instrumentation for Express breaks our ability to inspect
 // the Express routes. We need to disable it before loading the server.
-const { disableInstrumentations } = require('@prairielearn/opentelemetry');
+import { disableInstrumentations } from '@prairielearn/opentelemetry';
 disableInstrumentations();
 
-const { test } = require('mocha');
+import { test } from 'mocha';
 const axe = require('axe-core');
-const jsdom = require('jsdom');
-const fetch = require('node-fetch').default;
-const { A11yError } = require('@sa11y/format');
+import { JSDOM } from 'jsdom';
+import fetch from 'node-fetch';
+import { A11yError } from '@sa11y/format';
 const expressListEndpoints = require('express-list-endpoints');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const server = require('../../server');
-const news_items = require('../../news_items');
-const { config } = require('../../lib/config');
-const helperServer = require('../helperServer');
-const { features } = require('../../lib/features/index');
-const { EXAMPLE_COURSE_PATH } = require('../../lib/paths');
+import * as server from '../../server';
+import * as news_items from '../../news_items';
+import { config } from '../../lib/config';
+import * as helperServer from '../helperServer';
+import { features } from '../../lib/features/index';
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 
@@ -62,7 +62,7 @@ async function loadPageJsdom(url) {
     }
     return res.text();
   });
-  return new jsdom.JSDOM(text);
+  return new JSDOM(text);
 }
 
 /**
@@ -205,6 +205,9 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/text/:filename',
   '/pl/course/:course_id/grading_job/:job_id/file/:file',
   '/pl/news_item/:news_item_id/*',
+  '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
+  '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
+  '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:variant_id/submission/:submission_id',

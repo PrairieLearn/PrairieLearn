@@ -1,16 +1,18 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as sqldb from '@prairielearn/postgres';
+
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperAttachFiles from './helperAttachFiles';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperAttachFiles = require('./helperAttachFiles');
 
 const locals = {};
 

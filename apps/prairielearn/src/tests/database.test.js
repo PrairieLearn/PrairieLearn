@@ -1,10 +1,10 @@
 // @ts-check
 const _ = require('lodash');
 const path = require('node:path');
-const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
+import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
-const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
-const helperDb = require('./helperDb');
+import { REPOSITORY_ROOT_PATH } from '../lib/paths';
+import * as helperDb from './helperDb';
 
 // Custom error type so we can display our own message and omit a stacktrace
 function DatabaseError(message) {
