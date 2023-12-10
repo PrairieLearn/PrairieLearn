@@ -29,7 +29,7 @@ const PostgresIntervalSchema = z.object({
   hours: z.number().default(0),
   minutes: z.number().default(0),
   seconds: z.number().default(0),
-  milliseconds: z.number(),
+  milliseconds: z.number().default(0),
 });
 
 /**
