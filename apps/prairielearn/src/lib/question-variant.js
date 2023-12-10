@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
+import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -124,30 +125,17 @@ export function getFile(filename, variant, question, variant_course, authn_user_
  * Internal function, do not call directly. Get a question by either question_id or instance_question_id.
  * @protected
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant. Can be null if question_id is provided.
- * @param {function} callback - A callback(err, question) function.
+ * @param {string |  null} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {string | null} instance_question_id - The instance question for the new variant. Can be null if question_id is provided.
+ * @returns {Promise<import('./db-types').Question>}
  */
-function selectQuestion(question_id, instance_question_id, callback) {
+async function selectQuestion(question_id, instance_question_id) {
   if (question_id != null) {
-    sqldb.callOneRow('questions_select', [question_id], (err, result) => {
-      if (ERR(err, callback)) return;
-      const question = result.rows[0];
-      callback(null, question);
-    });
+    return await selectQuestionById(question_id);
+  } else if (instance_question_id != null) {
+    return await selectQuestionByInstanceQuestionId(instance_question_id);
   } else {
-    if (instance_question_id == null) {
-      return callback(new Error('question_id and instance_question_id cannot both be null'));
-    }
-    sqldb.callOneRow(
-      'instance_questions_select_question',
-      [instance_question_id],
-      (err, result) => {
-        if (ERR(err, callback)) return;
-        const question = result.rows[0];
-        callback(null, question);
-      },
-    );
+    throw new Error('question_id and instance_question_id cannot both be null');
   }
 }
 
@@ -155,8 +143,8 @@ function selectQuestion(question_id, instance_question_id, callback) {
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
  * @protected
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param {?string} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {?string} instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
@@ -179,7 +167,7 @@ function makeAndInsertVariant(
   client_fingerprint_id,
   callback,
 ) {
-  selectQuestion(question_id, instance_question_id, (err, question) => {
+  util.callbackify(selectQuestion)(question_id, instance_question_id, (err, question) => {
     if (ERR(err, callback)) return;
     makeVariant(question, question_course, options, (err, courseIssues, variant) => {
       if (ERR(err, callback)) return;
@@ -225,8 +213,8 @@ function makeAndInsertVariant(
 /**
  * Ensure that there is a variant for the given instance question.
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param {?string} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {?string} instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
