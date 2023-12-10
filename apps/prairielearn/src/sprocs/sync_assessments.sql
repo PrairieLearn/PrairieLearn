@@ -389,10 +389,20 @@ BEGIN
 
                     computed_manual_perc := (assessment_question->>'manual_perc')::double precision;
                     IF computed_manual_perc IS NULL THEN
-                        SELECT manual_perc INTO computed_manual_perc
+                        SELECT COALESCE(manual_perc, CASE WHEN grading_method = 'Manual' THEN 100 ELSE 0 END)
+                        INTO computed_manual_perc
                         FROM questions q
                         WHERE q.id = new_question_id;
                     END IF;
+                    -- The values of max_manual_points and max_auto_points are
+                    -- currently saved in the assessment question, but they are
+                    -- expected to be deprecated in the near future. At that
+                    -- point, these values will be dynamically computed from the
+                    -- question's max_points and manual_perc, using the
+                    -- question's manual_perc if the assessment question does
+                    -- not set it explicitly. This will allow the question to be
+                    -- changed (even if it is shared from a different course)
+                    -- without requiring an update of the assessment itself.
                     computed_manual_points := ROUND((assessment_question->>'max_points')::numeric * computed_manual_perc::numeric / 100, 2);
                     computed_max_auto_points := ROUND((assessment_question->>'max_points')::numeric - computed_manual_points::numeric, 2);
 
@@ -417,7 +427,7 @@ BEGIN
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
-                        computed_manual_perc,
+                        (assessment_question->>'manual_perc')::double precision,
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
