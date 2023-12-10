@@ -14,4 +14,4 @@ FROM
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
-  iq.id = instance_question_id;
+  iq.id = $instance_question_id;
