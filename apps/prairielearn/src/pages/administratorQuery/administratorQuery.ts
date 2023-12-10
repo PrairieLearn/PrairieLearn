@@ -1,14 +1,14 @@
 import express = require('express');
 const router = express.Router();
 import asyncHandler = require('express-async-handler');
-import fsPromises = require('node:fs/promises');
-import path = require('path');
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import hljs from 'highlight.js';
 import { stringify } from '@prairielearn/csv';
 import { z } from 'zod';
 
-import jsonLoad = require('../../lib/json-load');
-import sqldb = require('@prairielearn/postgres');
+import * as jsonLoad from '../../lib/json-load';
+import * as sqldb from '@prairielearn/postgres';
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
@@ -30,9 +30,9 @@ router.get(
     const sqlFilename = req.params.query + '.sql';
 
     const info = AdministratorQuerySchema.parse(
-      await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename)),
+      await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
-    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+    const querySql = await fs.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
     const sqlHighlighted = hljs.highlight(querySql, {
@@ -95,8 +95,8 @@ router.post(
     const jsonFilename = req.params.query + '.json';
     const sqlFilename = req.params.query + '.sql';
 
-    const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
-    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+    const info = await jsonLoad.readJSON(path.join(queriesDir, jsonFilename));
+    const querySql = await fs.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
 
@@ -117,7 +117,7 @@ router.post(
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
       params.result = {
-        rowCount: result.rowCount,
+        rowCount: result.rowCount ?? 0,
         columns: result.fields.map((f) => f.name),
         rows: result.rows,
       };

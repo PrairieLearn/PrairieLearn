@@ -1,19 +1,21 @@
 // @ts-check
 const path = require('path');
 const _ = require('lodash');
-const fs = require('fs-extra');
-const async = require('async');
-const jju = require('jju');
-const Ajv = require('ajv').default;
-const betterAjvErrors = require('better-ajv-errors').default;
-const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
-const { chalk } = require('../lib/chalk');
-const { config } = require('../lib/config');
+import * as fs from 'fs-extra';
+import * as async from 'async';
+import * as jju from 'jju';
+import Ajv from 'ajv';
+import betterAjvErrors from 'better-ajv-errors';
+import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
 
-const schemas = require('../schemas');
-const infofile = require('./infofile');
-const jsonLoad = require('../lib/json-load');
-const perf = require('./performance')('course-db');
+import { chalk } from '../lib/chalk';
+import { config } from '../lib/config';
+import * as schemas from '../schemas';
+import * as infofile from './infofile';
+import { validateJSON } from '../lib/json-load';
+import { makePerformance } from './performance';
+
+const perf = makePerformance('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -430,21 +432,17 @@ const FILE_UUID_REGEX =
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourse = async function (courseDir) {
-  const courseInfo = await module.exports.loadCourseInfo(courseDir);
+export async function loadFullCourse(courseDir) {
+  const courseInfo = await loadCourseInfo(courseDir);
   perf.start('loadQuestions');
-  const questions = await module.exports.loadQuestions(courseDir);
+  const questions = await loadQuestions(courseDir);
   perf.end('loadQuestions');
-  const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
+  const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
   for (const courseInstanceId in courseInstanceInfos) {
     // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
     // If so, duplicate all that here
-    const assessments = await module.exports.loadAssessments(
-      courseDir,
-      courseInstanceId,
-      questions,
-    );
+    const assessments = await loadAssessments(courseDir, courseInstanceId, questions);
     const courseInstance = {
       courseInstance: courseInstanceInfos[courseInstanceId],
       assessments,
@@ -456,7 +454,7 @@ module.exports.loadFullCourse = async function (courseDir) {
     questions,
     courseInstances,
   };
-};
+}
 
 /**
  * @template T
@@ -490,7 +488,7 @@ function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile,
  * @param {CourseData} courseData
  * @param {(line?: string) => void} writeLine
  */
-module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseData, writeLine) {
+export function writeErrorsAndWarningsForCourseData(courseId, courseData, writeLine) {
   writeErrorsAndWarningsForInfoFileIfNeeded(
     courseId,
     'infoCourse.json',
@@ -520,13 +518,13 @@ module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseD
       writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
     });
   });
-};
+}
 
 /**
  * @param {CourseData} courseData
  * @returns {boolean}
  */
-module.exports.courseDataHasErrors = function (courseData) {
+export function courseDataHasErrors(courseData) {
   if (infofile.hasErrors(courseData.course)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrors)) return true;
   if (
@@ -538,13 +536,13 @@ module.exports.courseDataHasErrors = function (courseData) {
     return true;
   }
   return false;
-};
+}
 
 /**
  * @param {CourseData} courseData
  * @returns {boolean}
  */
-module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
+export function courseDataHasErrorsOrWarnings(courseData) {
   if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
   if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
   if (
@@ -556,7 +554,7 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
     return true;
   }
   return false;
-};
+}
 
 /**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
@@ -570,12 +568,7 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
  * @returns {Promise<InfoFile<T> | null>}
  */
-module.exports.loadInfoFile = async function ({
-  coursePath,
-  filePath,
-  schema,
-  tolerateMissing = false,
-}) {
+export async function loadInfoFile({ coursePath, filePath, schema, tolerateMissing = false }) {
   const absolutePath = path.join(coursePath, filePath);
   let contents;
   try {
@@ -688,15 +681,15 @@ module.exports.loadInfoFile = async function ({
     result.uuid = uuid[0];
     return result;
   }
-};
+}
 
 /**
  * @param {string} coursePath
  * @returns {Promise<InfoFile<Course>>}
  */
-module.exports.loadCourseInfo = async function (coursePath) {
+export async function loadCourseInfo(coursePath) {
   /** @type {import('./infofile').InfoFile<Course> | null} */
-  const maybeNullLoadedData = await module.exports.loadInfoFile({
+  const maybeNullLoadedData = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -792,7 +785,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
 
   loadedData.data = course;
   return loadedData;
-};
+}
 
 /**
  * @template {{ uuid: string }} T
@@ -814,7 +807,7 @@ async function loadAndValidateJson({
   tolerateMissing,
 }) {
   const loadedJson = /** @type {InfoFile<T>} */ (
-    await module.exports.loadInfoFile({
+    await loadInfoFile({
       coursePath,
       filePath,
       schema,
@@ -1032,7 +1025,7 @@ async function validateQuestion(question) {
     try {
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
-      await jsonLoad.validateJSONAsync(options, schema);
+      validateJSON(options, schema);
     } catch (err) {
       errors.push(err.message);
     }
@@ -1388,7 +1381,7 @@ async function validateCourseInstance(courseInstance) {
  *
  * @param {string} coursePath
  */
-module.exports.loadQuestions = async function (coursePath) {
+export async function loadQuestions(coursePath) {
   /** @type {{ [qid: string]: InfoFile<Question> }} */
   const questions = await loadInfoForDirectory({
     coursePath,
@@ -1411,14 +1404,14 @@ module.exports.loadQuestions = async function (coursePath) {
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
   );
   return questions;
-};
+}
 
 /**
  * Loads all course instances in a course directory.
  *
  * @param {string} coursePath
  */
-module.exports.loadCourseInstances = async function (coursePath) {
+export async function loadCourseInstances(coursePath) {
   /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
   const courseInstances = await loadInfoForDirectory({
     coursePath,
@@ -1434,7 +1427,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
     (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`,
   );
   return courseInstances;
-};
+}
 
 /**
  * Loads all assessments in a course instance.
@@ -1443,7 +1436,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
  */
-module.exports.loadAssessments = async function (coursePath, courseInstance, questions) {
+export async function loadAssessments(coursePath, courseInstance, questions) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   /** @type {(assessment: Assessment) => Promise<{ warnings: string[], errors: string[] }>} */
   const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
@@ -1463,4 +1456,4 @@ module.exports.loadAssessments = async function (coursePath, courseInstance, que
       `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
-};
+}

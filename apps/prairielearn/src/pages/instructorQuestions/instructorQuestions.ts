@@ -1,10 +1,10 @@
 import ERR = require('async-stacktrace');
 import { Router } from 'express';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 import { QuestionAddEditor } from '../../lib/editors';
-import fs = require('fs-extra');
+import * as fs from 'fs-extra';
 import { QuestionsPage } from './instructorQuestions.html';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
 import asyncHandler = require('express-async-handler');

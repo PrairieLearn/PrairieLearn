@@ -340,7 +340,7 @@ async function updateInstanceQuestionFromJson(
         qid,
       },
       z.object({
-        submission_id: IdSchema,
+        submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
         uid_or_group: z.string(),
         qid: z.string(),

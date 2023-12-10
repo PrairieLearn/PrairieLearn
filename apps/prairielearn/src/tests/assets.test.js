@@ -1,14 +1,14 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const fetch = require('node-fetch').default;
+import fetch from 'node-fetch';
 
-const { config } = require('../lib/config');
-const assets = require('../lib/assets');
-const { APP_ROOT_PATH } = require('../lib/paths');
+import { config } from '../lib/config';
+import * as assets from '../lib/assets';
+import { APP_ROOT_PATH } from '../lib/paths';
 
-const helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');

@@ -1,7 +1,7 @@
 import express = require('express');
 import asyncHandler = require('express-async-handler');
 import Stripe from 'stripe';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config';
