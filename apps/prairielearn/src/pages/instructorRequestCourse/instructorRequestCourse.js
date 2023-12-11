@@ -15,6 +15,11 @@ import { config } from '../../lib/config';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
+router.use((req, res, next) => {
+  res.locals.navPage = 'request_course';
+  next();
+})
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
