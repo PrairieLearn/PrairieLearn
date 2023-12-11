@@ -46,13 +46,11 @@ Canvas uses these terms in their config as something to enable for the PrairieLe
 - Create and update submission results for assignments associated with the tool
 - Retrieve user data associated with the context the tool is in
 
-More technically, make sure the [AGS](https://www.imsglobal.org/spec/lti-ags/v2p0) score and lineitem scopes are enabled as well as [NRPS](https://www.imsglobal.org/spec/lti-nrps/v2p0/) contextmembership.readonly.
+More technically, make sure the [AGS](https://www.imsglobal.org/spec/lti-ags/v2p0) `score` and `lineitem` scopes are enabled as well as [NRPS](https://www.imsglobal.org/spec/lti-nrps/v2p0/) `contextmembership.readonly`.
 
 ### Anonymous logins not allowed
 
-You must configure your LMS to send user identifying claims. Anonymous logins are not supported with PrairieLearn.
-
-Canvas calls this: Privacy Public
+You must configure your LMS to send user identifying claims. Anonymous logins are not supported with PrairieLearn. Canvas calls this "Privacy Public".
 
 ### Placements
 
