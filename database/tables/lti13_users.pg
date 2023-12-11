@@ -4,7 +4,7 @@ columns
     user_id: bigint not null
 
 indexes
-    lti13_users_user_id_lti13_instance_id_key: UNIQUE (user_id, lti13_instance_id) USING btree (user_id, lti13_instance_id)
+    lti13_users_pkey: PRIMARY KEY (user_id, lti13_instance_id) USING btree (user_id, lti13_instance_id)
 
 foreign-key constraints
     lti13_users_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

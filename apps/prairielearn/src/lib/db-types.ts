@@ -286,7 +286,7 @@ export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 export const Lti13UserSchema = z.object({
   lti13_instance_id: IdSchema,
   sub: z.string(),
-  user_id: IdSchema.nullable(),
+  user_id: IdSchema,
 });
 export type Lti13User = z.infer<typeof Lti13UserSchema>;
 
