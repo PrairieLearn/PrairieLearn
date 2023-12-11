@@ -36,7 +36,9 @@ LTI 1.3 configuration
 
 ### LTI Advantage Services
 
-Make sure these are enabled for PL in your institution. Canvas calls these:
+The services of LTI 1.3 that do grade passback, assessment setup, or roster syncing have their own specific standards and configuration. Make sure these "scopes" are enabled for PrairieLearn in your LMS to use this functionality.
+
+Canvas uses these terms in their config as something to enable for the PrairieLearn LTI developer key:
 
 - Create and view assignment data in the gradebook
 - View assignment data in the gradebook associated with the tool
