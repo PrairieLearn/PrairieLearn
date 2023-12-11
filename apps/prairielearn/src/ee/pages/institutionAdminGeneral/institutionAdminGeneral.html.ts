@@ -16,7 +16,6 @@ type InstitutionStatistics = z.infer<typeof InstitutionStatisticsSchema>;
 
 export function InstitutionAdminGeneral({
   institution,
-  authn_providers,
   availableTimezones,
   statistics,
   planGrants,
@@ -143,20 +142,6 @@ export function InstitutionAdminGeneral({
                 Should match the non-username part of students' UIDs. E.g., @example.com$.
               </small>
             </div>
-            <div class="form-group">
-              <label for="authn_providers">Authn providers </label>
-              <input
-                type="text"
-                class="form-control"
-                id="authn_providers"
-                name="authn_providers"
-                value="${authn_providers.join(', ')}"
-              />
-              <small id="authn_providers_help" class="form-text text-muted"
-                >This is the list of authentication providers used for login. Authentication
-                providers must be separated by a comma and a space. E.g., "Azure, Google"</small
-              >
-            </div>
             <h2 class="h4">Limits</h2>
             <div class="form-group">
               <label for="course_instance_enrollment_limit">Course instance enrollment limit</label>
@@ -191,11 +176,6 @@ export function InstitutionAdminGeneral({
               </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input
-              type="hidden"
-              name="original_authn_providers"
-              value="${authn_providers.join(', ')}"
-            />
             <button
               type="submit"
               name="__action"

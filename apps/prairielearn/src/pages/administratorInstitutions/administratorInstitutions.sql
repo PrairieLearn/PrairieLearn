@@ -24,24 +24,16 @@ ORDER BY
 
 -- BLOCK add_institution
 INSERT INTO
-  institutions
-  (long_name, short_name, display_timezone, uid_regexp)
-VALUES
-  ($long_name, $short_name, $display_timezone, $uid_regexp)
-
-
--- BLOCK add_institution_authn_provider
-INSERT INTO
-  institution_authn_providers
-  (institution_id, authn_provider_id)
-VALUES
-  ($institution_id, 
-    (SELECT
-        id
-      FROM
-        authn_providers
-      WHERE
-        name = $authn_provider_name
-    )
+  institutions (
+    long_name,
+    short_name,
+    display_timezone,
+    uid_regexp
   )
-ON CONFLICT DO NOTHING;
+VALUES
+  (
+    $long_name,
+    $short_name,
+    $display_timezone,
+    $uid_regexp
+  )

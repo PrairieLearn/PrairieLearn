@@ -49,33 +49,3 @@ WHERE
   id = $institution_id
 RETURNING
   institutions.*;
-
--- BLOCK add_institution_authn_provider
-INSERT INTO
-  institution_authn_providers
-  (institution_id, authn_provider_id)
-VALUES
-  ($institution_id, 
-    (SELECT
-        id
-      FROM
-        authn_providers
-      WHERE
-        name = $authn_provider_name
-    )
-  )
-ON CONFLICT DO NOTHING;
-
--- BLOCK remove_institution_authn_provider
-DELETE FROM
-  institution_authn_providers
-WHERE
-  institution_id = $institution_id
-  AND authn_provider_id = (
-    SELECT
-      id
-    FROM
-      authn_providers
-    WHERE
-      name = $authn_provider_name
-  );

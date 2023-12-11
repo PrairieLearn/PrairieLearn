@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRow, runInTransactionAsync, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import error = require('@prairielearn/error');
 import { flash } from '@prairielearn/flash';
 
@@ -67,41 +67,6 @@ router.post(
           },
           InstitutionSchema,
         );
-
-        if (req.body.authn_providers !== req.body.original_authn_providers) {
-          const original_authn_providers = req.body.original_authn_providers.split(', ');
-          const new_authn_providers = req.body.authn_providers?.split(', ');
-          if (new_authn_providers.length > original_authn_providers.length) {
-            new_authn_providers.forEach(async (provider, i) => {
-              if (original_authn_providers[i] !== provider) {
-                await queryAsync(sql.remove_institution_authn_provider, {
-                  institution_id: req.params.institution_id,
-                  authn_provider_name: original_authn_providers[i],
-                });
-              }
-              await queryAsync(sql.add_institution_authn_provider, {
-                institution_id: req.params.institution_id,
-                authn_provider_name: provider,
-              });
-            });
-          } else {
-            original_authn_providers.forEach(async (provider, i) => {
-              if (new_authn_providers[i] !== provider) {
-                await queryAsync(sql.remove_institution_authn_provider, {
-                  institution_id: req.params.institution_id,
-                  authn_provider_name: provider,
-                });
-                if (new_authn_providers[i]) {
-                  await queryAsync(sql.add_institution_authn_provider, {
-                    institution_id: req.params.institution_id,
-                    authn_provider_name: new_authn_providers[i],
-                  });
-                }
-              }
-            });
-          }
-        }
-
         await insertAuditLog({
           authn_user_id: res.locals.authn_user.user_id,
           table_name: 'institutions',

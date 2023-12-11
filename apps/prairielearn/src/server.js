@@ -1884,10 +1884,6 @@ module.exports.initExpress = function () {
     '/pl/administrator/batchedMigrations',
     require('./pages/administratorBatchedMigrations/administratorBatchedMigrations').default,
   );
-  app.use(
-    '/pl/institution/:institution_id/admin',
-    require('./ee/pages/institutionAdminGeneral/institutionAdminGeneral').default,
-  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////

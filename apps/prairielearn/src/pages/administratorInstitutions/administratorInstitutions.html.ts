@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { isEnterprise } from '../../lib/license';
 import { InstitutionSchema } from '../../lib/db-types';
 import { type Timezone } from '../../lib/timezones';
 
@@ -70,9 +71,13 @@ export function AdministratorInstitutions({
                     ({ institution, authn_providers }) => html`
                       <tr>
                         <td>
-                          <a href="/pl/institution/${institution.id}/admin">
-                            ${institution.short_name}
-                          </a>
+                          ${isEnterprise()
+                            ? html`
+                                <a href="/pl/institution/${institution.id}/admin">
+                                  ${institution.short_name}
+                                </a>
+                              `
+                            : institution.short_name}
                         </td>
                         <td>${institution.long_name}</td>
                         <td>${institution.display_timezone}</td>
