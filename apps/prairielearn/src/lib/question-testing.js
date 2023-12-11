@@ -6,6 +6,7 @@ import * as async from 'async';
 const jsonStringifySafe = require('json-stringify-safe');
 import debugfn from 'debug';
 import * as path from 'path';
+const assert = require('node:assert');
 
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
@@ -40,21 +41,15 @@ function createTestSubmission(
 ) {
   debug('_createTestSubmission()');
   if (question.type !== 'Freeform') return callback(new Error('question.type must be Freeform'));
-  let questionModule, question_course, courseIssues, data, submission_id, grading_job;
+  const questionModule = questionServers.getModule(question.type);
+  let question_course, courseIssues, data, submission_id, grading_job;
   async.series(
     [
-      (callback) => {
-        questionServers.getModule(question.type, (err, ret_questionModule) => {
-          if (ERR(err, callback)) return;
-          questionModule = ret_questionModule;
-          debug('_createTestSubmission()', 'loaded questionModule');
-          callback(null);
-        });
-      },
       async () => {
         question_course = await getQuestionCourse(question, variant_course);
       },
       (callback) => {
+        assert(questionModule.test, `Question type ${question.type} does not support testing.`);
         questionModule.test(
           variant,
           question,

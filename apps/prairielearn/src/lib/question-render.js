@@ -55,31 +55,29 @@ function render(
   locals,
   callback,
 ) {
-  questionServers.getModule(question.type, (err, questionModule) => {
-    if (ERR(err, callback)) return;
-    questionModule.render(
-      renderSelection,
-      variant,
-      question,
-      submission,
-      submissions,
-      question_course,
-      course_instance,
-      locals,
-      (err, courseIssues, htmls) => {
-        if (ERR(err, callback)) return;
+  const questionModule = questionServers.getModule(question.type);
+  questionModule.render(
+    renderSelection,
+    variant,
+    question,
+    submission,
+    submissions,
+    question_course,
+    course_instance,
+    locals,
+    (err, courseIssues, htmls) => {
+      if (ERR(err, callback)) return;
 
-        const studentMessage = 'Error rendering question';
-        const courseData = { variant, question, submission, course: variant_course };
-        // locals.authn_user may not be populated when rendering a panel
-        const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-        writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData, (err) => {
-          if (ERR(err, callback)) return;
-          return callback(null, htmls);
-        });
-      },
-    );
-  });
+      const studentMessage = 'Error rendering question';
+      const courseData = { variant, question, submission, course: variant_course };
+      // locals.authn_user may not be populated when rendering a panel
+      const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+      writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData, (err) => {
+        if (ERR(err, callback)) return;
+        return callback(null, htmls);
+      });
+    },
+  );
 }
 
 /**
@@ -402,12 +400,10 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
           }
         }
       },
-      (callback) => {
-        questionServers.getEffectiveQuestionType(locals.question.type, (err, eqt) => {
-          if (ERR(err, callback)) return;
-          locals.effectiveQuestionType = eqt;
-          callback(null);
-        });
+      async () => {
+        locals.effectiveQuestionType = questionServers.getEffectiveQuestionType(
+          locals.question.type,
+        );
       },
       (callback) => {
         const renderSelection = {

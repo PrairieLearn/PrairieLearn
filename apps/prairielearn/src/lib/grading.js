@@ -43,7 +43,8 @@ export function saveSubmission(submission, variant, question, variant_course, ca
   debug('saveSubmission()');
   submission.raw_submitted_answer = submission.submitted_answer;
   submission.gradable = true;
-  let questionModule, question_course, courseIssues, data, submission_id, workspace_id, zipPath;
+  const questionModule = questionServers.getModule(question.type);
+  let question_course, courseIssues, data, submission_id, workspace_id, zipPath;
   async.series(
     [
       (callback) => {
@@ -95,14 +96,6 @@ export function saveSubmission(submission, variant, question, variant_course, ca
           submission.submitted_answer['_files'].push({ name, contents });
         }
         await fs.promises.unlink(zipPath);
-      },
-      (callback) => {
-        questionServers.getModule(question.type, (err, ret_questionModule) => {
-          if (ERR(err, callback)) return;
-          questionModule = ret_questionModule;
-          debug('saveSubmission()', 'loaded questionModule');
-          callback(null);
-        });
       },
       async () => {
         question_course = await getQuestionCourse(question, variant_course);
@@ -196,7 +189,8 @@ export function gradeVariant(
   callback,
 ) {
   debug('_gradeVariant()');
-  let questionModule, question_course, courseIssues, data, submission, grading_job;
+  const questionModule = questionServers.getModule(question.type);
+  let question_course, courseIssues, data, submission, grading_job;
   async.series(
     [
       async () => {
@@ -234,14 +228,6 @@ export function gradeVariant(
 
           grading_job = result.rows[0];
           debug('_gradeVariant()', 'inserted', 'grading_job.id:', grading_job.id);
-          callback(null);
-        });
-      },
-      (callback) => {
-        questionServers.getModule(question.type, (err, ret_questionModule) => {
-          if (ERR(err, callback)) return;
-          questionModule = ret_questionModule;
-          debug('_gradeVariant()', 'loaded questionModule');
           callback(null);
         });
       },
