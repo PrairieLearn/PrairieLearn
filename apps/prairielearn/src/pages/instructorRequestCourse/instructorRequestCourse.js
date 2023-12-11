@@ -21,8 +21,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.navPage = 'request_course';
-
-    const result = await queryRows(
+    res.locals.course_requests = await queryRows(
       sql.get_requests,
       {
         user_id: res.locals.authn_user.user_id,
@@ -30,7 +29,6 @@ router.get(
       CourseRequestSchema,
     );
 
-    res.locals.course_requests = result;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -76,7 +74,7 @@ router.post(
       error = true;
     }
 
-    const existingCourseRequestsResult = await queryRow(
+    const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
       {
         user_id: res.locals.authn_user.user_id,
@@ -86,7 +84,7 @@ router.post(
       z.boolean(),
     );
 
-    if (existingCourseRequestsResult) {
+    if (hasExistingCourseRequest) {
       flash('error', 'You already have a request for this course.');
       error = true;
     }

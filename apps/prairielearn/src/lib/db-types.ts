@@ -660,7 +660,7 @@ export type Job = z.infer<typeof JobSchema>;
 
 export const CourseRequestSchema = z.object({
   approved_by: IdSchema.nullable(),
-  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']), // should be NOT NULL?
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   created_at: DateFromISOString,
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
@@ -669,7 +669,7 @@ export const CourseRequestSchema = z.object({
   last_name: z.string().nullable(),
   short_name: z.string().nullable(),
   title: z.string().nullable(),
-  user_id: IdSchema.nullable(), // should be NOT NULL?
+  user_id: IdSchema.nullable(),
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
