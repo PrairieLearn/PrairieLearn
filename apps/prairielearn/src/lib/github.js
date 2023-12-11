@@ -11,8 +11,8 @@ import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
 import { sendCourseRequestMessage } from './opsbot';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
 import { createServerJob } from './server-jobs';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /*
@@ -58,7 +58,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
       await client.repos.getContent({
         owner: config.githubCourseOwner,
         repo: repo,
-        path: '',
+        path: 'infoCourse.json',
       });
       return;
     } catch (err) {

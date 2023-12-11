@@ -1,11 +1,11 @@
 // @ts-check
-const { assert } = require('chai');
-const tmp = require('tmp-promise');
-const fs = require('fs-extra');
-const path = require('path');
+import { assert } from 'chai';
+import * as tmp from 'tmp-promise';
+import * as fs from 'fs-extra';
+import * as path from 'path';
 
-const courseDb = require('../../sync/course-db');
-const infofile = require('../../sync/infofile');
+import * as courseDb from '../../sync/course-db';
+import * as infofile from '../../sync/infofile';
 
 /**
  * @param {(dir: string) => Promise<void>} callback

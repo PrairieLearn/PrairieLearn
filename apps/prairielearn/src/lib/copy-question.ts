@@ -1,6 +1,6 @@
 import { type Response } from 'express';
-import fs = require('fs-extra');
-import path = require('node:path');
+import * as fs from 'fs-extra';
+import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';

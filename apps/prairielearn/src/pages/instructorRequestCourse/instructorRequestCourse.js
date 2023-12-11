@@ -1,19 +1,24 @@
 // @ts-check
-const express = require('express');
 const asyncHandler = require('express-async-handler');
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
 
-const { flash } = require('@prairielearn/flash');
-const sqldb = require('@prairielearn/postgres');
-const { logger } = require('@prairielearn/logger');
-const Sentry = require('@prairielearn/sentry');
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
-const opsbot = require('../../lib/opsbot');
-const github = require('../../lib/github');
-const { config } = require('../../lib/config');
+import * as opsbot from '../../lib/opsbot';
+import * as github from '../../lib/github';
+import { config } from '../../lib/config';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+
+router.use((req, res, next) => {
+  res.locals.navPage = 'request_course';
+  next();
+});
 
 router.get(
   '/',
@@ -165,4 +170,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

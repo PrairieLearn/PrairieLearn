@@ -1,6 +1,6 @@
 import asyncHandler = require('express-async-handler');
 import express = require('express');
-import sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
 import { AdministratorInstitutions, InstitutionRowSchema } from './administratorInstitutions.html';
 import { getAvailableTimezonesByName } from '../../lib/timezones';

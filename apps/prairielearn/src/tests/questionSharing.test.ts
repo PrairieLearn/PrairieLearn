@@ -3,13 +3,13 @@ import { step } from 'mocha-steps';
 import { config } from '../lib/config';
 import fetch from 'node-fetch';
 import { fetchCheerio } from './helperClient';
-import helperServer = require('./helperServer');
-import sqldb = require('@prairielearn/postgres');
+import * as helperServer from './helperServer';
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 import { features } from '../lib/features/index';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
 
-import syncFromDisk = require('../sync/syncFromDisk');
+import * as syncFromDisk from '../sync/syncFromDisk';
 
 import { makeMockLogger } from './mockLogger';
 const { logger } = makeMockLogger();
