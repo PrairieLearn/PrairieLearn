@@ -1,8 +1,6 @@
 -- BLOCK get_requests
 SELECT
-  r.approved_status AS status,
-  r.short_name,
-  r.title,
+  *,
   CASE
     WHEN r.approved_status = 'approved' THEN (
       CASE -- If the request was auto-approved, there wont be an approver
