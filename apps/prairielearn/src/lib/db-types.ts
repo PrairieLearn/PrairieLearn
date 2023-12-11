@@ -217,7 +217,6 @@ export const QuestionSchema = z.object({
   topic_id: IdSchema.nullable(),
   type: z.enum([
     'Calculation',
-    'ShortAnswer',
     'MultipleChoice',
     'Checkbox',
     'File',
