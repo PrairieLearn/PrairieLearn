@@ -2,7 +2,7 @@
 
 LTI 1.3 is available in early beta. Reach out to support@prairielearn.com to get it setup.
 
-Learning Tools Interoperability (LTI) provides app integration between Learning Management Systems (LMS) like Canvas, Moodle, etc. and PrairieLearn. It includes features like single sign on from the LMS, with course context information and roles. Version 1.3 enlarges LTI to include an API for asynchronous two-way updates relating to assessments, scores, and rosters.
+Learning Tools Interoperability (LTI) provides app integration between Learning Management Systems (LMS) like Canvas, Moodle, etc. and PrairieLearn. It includes single sign on from the LMS with additional features like course context information and roles. Version 1.3 enlarges LTI to include an API for asynchronous two-way updates for assessments, scores, and rosters.
 
 LTI 1.3 is configured on an institution level by establishing a trust relationship between the LMS and PrairieLearn. LMSes can decide where to apply that integration (per course, per account, per institution).
 
@@ -11,11 +11,11 @@ LTI 1.3 is configured on an institution level by establishing a trust relationsh
 LTI 1.3 configuration
 
 - Information about your LMS: type, self-hosted or cloud-provider hosted, etc.
-- Typical 1.3 endpoints for your LMS
-  - Issuer, JWKS URL, URL endpoints for token and authorization
+- Typical LTI 1.3 OIDC authentication for your LMS
+  - Issuer, JWK or JWK key set URL, URL endpoints for token and authorization
 - Client ID for PrairieLearn from the LMS LTI configuration
 
-PrairieLearn institution configuration (see the [SAML SSO](saml.md) for definitions)
+PrairieLearn institution configuration (see the [SAML SSO doc](saml.md) for our definitions)
 
 - What do email addresses from the institution look like? (Or other UID value)
 - What is appropriate for the UIN?
@@ -29,14 +29,14 @@ PrairieLearn institution configuration (see the [SAML SSO](saml.md) for definiti
 LTI 1.3 configuration
 
 - A JSON configuration URL to setup your LMS to work with PL
-  - This could be imported into the LMS programmatically or read by a human
+  - This could be imported into the LMS programmatically (it was designed for Canvas) or read by a human and includes the OIDC authentication URLs
 - A JWKS key set URL for PL public key exchange
 
 ## LMS setup
 
 ### LTI Advantage Services
 
-Make sure these are enabled for PL in your institution.
+Make sure these are enabled for PL in your institution. Canvas calls these:
 
 - Create and view assignment data in the gradebook
 - View assignment data in the gradebook associated with the tool
@@ -44,9 +44,11 @@ Make sure these are enabled for PL in your institution.
 - Create and update submission results for assignments associated with the tool
 - Retrieve user data associated with the context the tool is in
 
+More technically, make sure the [AGS](https://www.imsglobal.org/spec/lti-ags/v2p0) score and lineitem scopes are enabled as well as [NRPS](https://www.imsglobal.org/spec/lti-nrps/v2p0/) contextmembership.readonly.
+
 ### Anonymous logins not allowed
 
-You must configure your LMS to send user identifying claims. Anonymous logins are not supported.
+You must configure your LMS to send user identifying claims. Anonymous logins are not supported with PrairieLearn.
 
 Canvas calls this: Privacy Public
 
