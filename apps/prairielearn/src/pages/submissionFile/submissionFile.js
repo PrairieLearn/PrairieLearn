@@ -1,11 +1,12 @@
 // @ts-check
-import { selectCourseById } from '../../models/course';
-import { selectQuestionById } from '../../models/question';
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { isBinaryFile } = require('isbinaryfile');
 const mime = require('mime');
 const sqldb = require('@prairielearn/postgres');
+
+const { selectCourseById } = require('../../models/course');
+const { selectQuestionById } = require('../../models/question');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

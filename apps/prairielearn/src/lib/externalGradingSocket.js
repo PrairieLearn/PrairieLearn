@@ -8,7 +8,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config';
 import { renderPanelsForSubmission } from './question-render';
-const socketServer = require('./socket-server');
+import * as socketServer from './socket-server';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

@@ -11,8 +11,8 @@ import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
 import { sendCourseRequestMessage } from './opsbot';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
 import { createServerJob } from './server-jobs';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /*

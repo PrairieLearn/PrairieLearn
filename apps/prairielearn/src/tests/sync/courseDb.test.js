@@ -2,7 +2,7 @@
 import { assert } from 'chai';
 import * as tmp from 'tmp-promise';
 import * as fs from 'fs-extra';
-const path = require('path');
+import * as path from 'path';
 
 import * as courseDb from '../../sync/course-db';
 import * as infofile from '../../sync/infofile';

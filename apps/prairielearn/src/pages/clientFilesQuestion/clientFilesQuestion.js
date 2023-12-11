@@ -1,7 +1,4 @@
 // @ts-check
-import { selectCourseById } from '../../models/course';
-import { selectQuestionById } from '../../models/question';
-
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
@@ -9,6 +6,8 @@ const express = require('express');
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
 const { getQuestionCourse } = require('../../lib/question-variant');
+const { selectCourseById } = require('../../models/course');
+const { selectQuestionById } = require('../../models/question');
 
 module.exports = function (options = { publicEndpoint: false }) {
   const router = express.Router({ mergeParams: true });

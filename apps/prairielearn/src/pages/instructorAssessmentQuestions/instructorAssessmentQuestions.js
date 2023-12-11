@@ -4,7 +4,7 @@ import * as express from 'express';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
-const { default: AnsiUp } = require('ansi_up');
+import AnsiUp from 'ansi_up';
 
 import * as sqldb from '@prairielearn/postgres';
 
