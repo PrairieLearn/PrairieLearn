@@ -659,8 +659,8 @@ export const JobSchema = z.object({
 export type Job = z.infer<typeof JobSchema>;
 
 export const CourseRequestSchema = z.object({
-  approved_by: IdSchema.nullish(),
-  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  approved_by: IdSchema.nullable(),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']), // should be NOT NULL?
   created_at: DateFromISOString,
   first_name: z.string().nullable(),
   github_user: z.string().nullable(),
