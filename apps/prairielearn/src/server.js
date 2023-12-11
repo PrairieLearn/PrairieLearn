@@ -589,13 +589,10 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
-  app.use('/pl/request_course', [
-    function (req, res, next) {
-      res.locals.navPage = 'request_course';
-      next();
-    },
-    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
-  ]);
+  app.use(
+    '/pl/request_course',
+    require('./pages/instructorRequestCourse/instructorRequestCourse').default,
+  );
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The
   // route handler will only ever display courses for which the user has staff
