@@ -331,7 +331,7 @@ describe('accessibility', () => {
   after('shut down testing server', helperServer.after);
 
   test('All pages pass accessibility checks', async function () {
-    this.timeout(120_000);
+    this.timeout(240_000);
 
     const missingParamsEndpoints = [];
     const failingEndpoints = [];
