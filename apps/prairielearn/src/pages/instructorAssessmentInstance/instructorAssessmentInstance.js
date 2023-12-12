@@ -100,7 +100,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
@@ -134,14 +134,14 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      next(error.make(404, 'Unknown filename: ' + req.params.filename));
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
@@ -197,12 +197,9 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      throw error.make(400, 'unknown __action', {
+        body: req.body,
+      });
     }
   }),
 );
