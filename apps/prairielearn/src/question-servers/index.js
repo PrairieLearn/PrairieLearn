@@ -10,13 +10,13 @@
 
 /**
  * @typedef QuestionServer
- * @property {function} generate
- * @property {function} prepare
- * @property {function} render
- * @property {function} parse
- * @property {function} grade
- * @property {function} [file]
- * @property {function} [test]
+ * @property {Function} generate
+ * @property {Function} prepare
+ * @property {Function} render
+ * @property {Function} parse
+ * @property {Function} grade
+ * @property {Function} [file]
+ * @property {Function} [test]
  */
 
 /** @type {Record<EffectiveQuestionType, QuestionServer>} */
