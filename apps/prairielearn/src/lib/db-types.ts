@@ -217,7 +217,6 @@ export const QuestionSchema = z.object({
   topic_id: IdSchema.nullable(),
   type: z.enum([
     'Calculation',
-    'ShortAnswer',
     'MultipleChoice',
     'Checkbox',
     'File',
@@ -657,3 +656,19 @@ export const JobSchema = z.object({
   working_directory: z.string().nullable(),
 });
 export type Job = z.infer<typeof JobSchema>;
+
+export const CourseRequestSchema = z.object({
+  approved_by: IdSchema.nullable(),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  created_at: DateFromISOString,
+  first_name: z.string().nullable(),
+  github_user: z.string().nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  last_name: z.string().nullable(),
+  short_name: z.string().nullable(),
+  title: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+  work_email: z.string().nullable(),
+});
+export type CourseRequest = z.infer<typeof CourseRequestSchema>;
