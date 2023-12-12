@@ -1,4 +1,4 @@
-const _ = require('lodash');
+import _ = require('lodash');
 
 /**
  * Question servers module.
@@ -23,20 +23,18 @@ const effectiveQuestionTypes = {
   Freeform: 'Freeform',
 };
 
-module.exports = {
-  getEffectiveQuestionType: function (type, callback) {
-    if (_.has(effectiveQuestionTypes, type)) {
-      callback(null, effectiveQuestionTypes[type]);
-    } else {
-      callback(new Error('Unknown question type: ' + type));
-    }
-  },
+export function getEffectiveQuestionType(type, callback) {
+  if (_.has(effectiveQuestionTypes, type)) {
+    callback(null, effectiveQuestionTypes[type]);
+  } else {
+    callback(new Error('Unknown question type: ' + type));
+  }
+}
 
-  getModule: function (type, callback) {
-    if (_.has(questionModules, type)) {
-      callback(null, questionModules[type]);
-    } else {
-      callback(new Error('Unknown question type: ' + type));
-    }
-  },
-};
+export function getModule(type, callback) {
+  if (_.has(questionModules, type)) {
+    callback(null, questionModules[type]);
+  } else {
+    callback(new Error('Unknown question type: ' + type));
+  }
+}
