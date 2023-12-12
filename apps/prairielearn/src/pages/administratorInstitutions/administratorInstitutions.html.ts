@@ -59,7 +59,7 @@ export function AdministratorInstitutions({
               title: 'Add Institution',
               id: 'add-institution-modal',
               body: html`
-                <input type="hidden" name="__action" value="insert_institution" />
+                <input type="hidden" name="__action" value="add_institution" />
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <div class="form-group">
                   <label for="short_name">Short name</label>

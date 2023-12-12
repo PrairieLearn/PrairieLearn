@@ -58,7 +58,6 @@ export function InstitutionAdminGeneral({
           navbarType: 'institution',
           navPage: 'institution_admin',
           navSubPage: 'general',
-          lti13_enabled: false,
         })}
         <main class="container mb-4">
           <h2 class="h4">Statistics</h2>
