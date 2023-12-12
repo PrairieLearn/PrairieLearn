@@ -22,8 +22,7 @@ export function InstitutionAdminGeneral({
   resLocals,
 }: {
   institution: Institution;
-  authn_providers: (string | null)[];
-  availableTimezones: Map<string, Timezone>;
+  availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
   resLocals: Record<string, any>;
@@ -108,13 +107,19 @@ export function InstitutionAdminGeneral({
                 name="display_timezone"
                 value="${institution.display_timezone}"
               >
-                ${Array.from(availableTimezones.keys()).map(
-                  (timezoneName) => html`
+                ${availableTimezones.map(
+                  (tz) => html`
                     <option
-                      value="${timezoneName}"
-                      ${institution.display_timezone === timezoneName ? 'selected' : ''}
+                      value="${tz.name}"
+                      ${institution.display_timezone === tz.name ? 'selected' : ''}
                     >
-                      ${timezoneName}
+                      ${`${tz.utc_offset.hours ? tz.utc_offset.hours : '00'}:${
+                        tz.utc_offset.minutes
+                          ? tz.utc_offset.minutes > 0
+                            ? tz.utc_offset.minutes
+                            : tz.utc_offset.minutes * -1
+                          : '00'
+                      } ${tz.name}`}
                     </option>
                   `,
                 )}
@@ -139,7 +144,7 @@ export function InstitutionAdminGeneral({
                 value="${institution.uid_regexp}"
               />
               <small id="uid_regexp_help" class="form-text text-muted">
-                Should match the non-username part of students' UIDs. E.g., @example.com$.
+                Should match the non-username part of students' UIDs. E.g., @example\\.com$.
               </small>
             </div>
             <h2 class="h4">Limits</h2>

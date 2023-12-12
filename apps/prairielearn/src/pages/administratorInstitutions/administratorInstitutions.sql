@@ -22,7 +22,7 @@ FROM
 ORDER BY
   i.id ASC;
 
--- BLOCK add_institution
+-- BLOCK insert_institution
 INSERT INTO
   institutions (
     long_name,

@@ -8,7 +8,7 @@ import {
   InstitutionAdminGeneral,
   InstitutionStatisticsSchema,
 } from './institutionAdminGeneral.html';
-import { getInstitution, getInstitutionAuthenticationProviders } from '../../lib/institution';
+import { getInstitution } from '../../lib/institution';
 import {
   getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,
@@ -16,7 +16,7 @@ import {
 import { InstitutionSchema } from '../../../lib/db-types';
 import { insertAuditLog } from '../../../models/audit-log';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { getAvailableTimezonesByName } from '../../../lib/timezones';
+import { getAvailableTimezones } from '../../../lib/timezones';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -25,10 +25,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
-    const authn_providers = (
-      await getInstitutionAuthenticationProviders(req.params.institution_id)
-    ).map((provider) => provider.name);
-    const availableTimezones = await getAvailableTimezonesByName();
+    const availableTimezones = await getAvailableTimezones();
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },
@@ -38,7 +35,6 @@ router.get(
     res.send(
       InstitutionAdminGeneral({
         institution,
-        authn_providers,
         availableTimezones,
         statistics,
         planGrants,
