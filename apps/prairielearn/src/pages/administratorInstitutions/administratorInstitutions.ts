@@ -32,7 +32,6 @@ router.post(
       });
     } else {
       throw error.make(400, 'Unknown action', {
-        locals: res.locals,
         body: req.body,
       });
     }
