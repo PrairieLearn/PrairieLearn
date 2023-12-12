@@ -34,7 +34,13 @@ function makeVariant(question, course, options, callback) {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
   debug(`_makeVariant(): question_id = ${question.id}`);
-  const questionModule = questionServers.getModule(question.type);
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  try {
+    questionModule = questionServers.getModule(question.type);
+  } catch (err) {
+    return callback(err);
+  }
   questionModule.generate(question, course, variant_seed, (err, courseIssues, data) => {
     if (ERR(err, callback)) return;
     const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
@@ -87,7 +93,13 @@ function makeVariant(question, course, options, callback) {
  * @param {function} callback - A callback(err, fileData) function.
  */
 export function getFile(filename, variant, question, variant_course, authn_user_id, callback) {
-  const questionModule = questionServers.getModule(question.type);
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  try {
+    questionModule = questionServers.getModule(question.type);
+  } catch (err) {
+    return callback(err);
+  }
   util.callbackify(getQuestionCourse)(question, variant_course, (err, question_course) => {
     if (ERR(err, callback)) return;
     if (!questionModule.file) {

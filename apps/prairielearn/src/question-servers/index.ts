@@ -1,10 +1,11 @@
 import { Question, Course, Variant, Submission, CourseInstance } from '../lib/db-types';
 
-type QuestionType = Question['type'];
-type EffectiveQuestionType = 'Calculation' | 'Freeform';
+export type QuestionType = Question['type'];
+export type EffectiveQuestionType = 'Calculation' | 'Freeform';
+
 type QuestionServerCallback = (err: Error | null, courseIssues: Error[], data: any) => void;
 
-interface QuestionServer {
+export interface QuestionServer {
   generate: (
     question: Question,
     course: Course,

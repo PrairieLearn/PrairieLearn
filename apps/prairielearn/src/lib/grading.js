@@ -43,7 +43,13 @@ export function saveSubmission(submission, variant, question, variant_course, ca
   debug('saveSubmission()');
   submission.raw_submitted_answer = submission.submitted_answer;
   submission.gradable = true;
-  const questionModule = questionServers.getModule(question.type);
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  try {
+    questionModule = questionServers.getModule(question.type);
+  } catch (err) {
+    return callback(err);
+  }
   let question_course, courseIssues, data, submission_id, workspace_id, zipPath;
   async.series(
     [
@@ -189,7 +195,13 @@ export function gradeVariant(
   callback,
 ) {
   debug('_gradeVariant()');
-  const questionModule = questionServers.getModule(question.type);
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  try {
+    questionModule = questionServers.getModule(question.type);
+  } catch (err) {
+    return callback(err);
+  }
   let question_course, courseIssues, data, submission, grading_job;
   async.series(
     [

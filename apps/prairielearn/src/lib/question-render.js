@@ -55,7 +55,13 @@ function render(
   locals,
   callback,
 ) {
-  const questionModule = questionServers.getModule(question.type);
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  try {
+    questionModule = questionServers.getModule(question.type);
+  } catch (err) {
+    return callback(err);
+  }
   questionModule.render(
     renderSelection,
     variant,
