@@ -58,9 +58,9 @@ export function AdministratorInstitutions({
             ${Modal({
               title: 'Add Institution',
               id: 'add-institution-modal',
-              body: html` <form name="add-institution" id="add-institution" method="POST">
-                <input type="hidden" name="__action" value="add_institution" />
-                <input type="hidden" name="__csrf_token" value="${resLocals.csrf_token}" />
+              body: html`
+                <input type="hidden" name="__action" value="insert_institution" />
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <div class="form-group">
                   <label for="short_name">Short name</label>
                   <input
@@ -129,7 +129,7 @@ export function AdministratorInstitutions({
                     Should match the non-username part of students' UIDs. E.g., @example\\.com$.
                   </small>
                 </div>
-              </form>`,
+              `,
               footer: html`
                 <button
                   type="button"
@@ -139,9 +139,7 @@ export function AdministratorInstitutions({
                 >
                   Cancel
                 </button>
-                <button type="submit" class="btn btn-primary" form="add-institution">
-                  Add institution
-                </button>
+                <button type="submit" class="btn btn-primary">Add institution</button>
               `,
             })}
             <div class="table-responsive">
