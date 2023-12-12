@@ -49,7 +49,6 @@ router.get(
       },
       assessementInstanceStatsSchema,
     );
-    console.log(res.locals.assessment_instance_stats);
 
     const dateDurationResult = await sqldb.queryRow(
       sql.select_date_formatted_duration,

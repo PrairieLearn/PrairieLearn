@@ -668,7 +668,7 @@ export const assessementInstanceStatsSchema = z.object({
   instance_question_id: IdSchema,
   last_submission_score: z.number().nullable(),
   max_submission_score: z.number().nullable(),
-  number: z.number().nullable(),
+  number: z.string().nullable(),
   qid: z.string(),
   question_id: IdSchema,
   some_nonzero_submission: z.boolean().nullable(),
