@@ -27,7 +27,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {Object} variant - The variant to submit to.
  * @param {Object} question - The question for the variant.
  * @param {Object} variant_course - The course for the variant.
- * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
+ * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
  * @param {function} callback - A callback(err, submission_id) function.
  */
@@ -203,7 +203,7 @@ function compareSubmissions(expected_submission, test_submission, callback) {
  * @param {Object} variant - The variant to submit to.
  * @param {Object} question - The question for the variant.
  * @param {Object} course - The course for the variant.
- * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
+ * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
  * @param {function} callback - A callback(err) function.
  */
@@ -295,7 +295,7 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
  * @param {boolean} group_work - If the assessment will support group work.
  * @param {Object} variant_course - The course for the variant.
  * @param {string} authn_user_id - The currently authenticated user.
- * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
+ * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {function} callback - A callback(err, variant) function.
  */
 function testQuestion(
@@ -418,7 +418,7 @@ function testQuestion(
  * @param {Object} question - The question for the variant.
  * @param {boolean} group_work - If the assessment will support group work.
  * @param {Object} course - The course for the variant.
- * @param {string} test_type - The type of test to run.  Should be one of 'correct', 'incorrect', or 'invalid'.
+ * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
  */
 async function runTest(
@@ -526,7 +526,7 @@ export async function startTestQuestion(
   authn_user_id,
 ) {
   let success = true;
-  const test_types = ['correct', 'incorrect', 'invalid'];
+  const test_types = /** @type {const} */ (['correct', 'incorrect', 'invalid']);
 
   const serverJob = await createServerJob({
     courseId: course.id,

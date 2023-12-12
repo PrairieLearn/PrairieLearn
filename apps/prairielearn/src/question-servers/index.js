@@ -7,16 +7,17 @@
 
 /** @typedef {import('../lib/db-types').Question['type']} QuestionType */
 /** @typedef {'Calculation' | 'Freeform'} EffectiveQuestionType */
+/** @typedef {(err: Error | null, courseIssues: Error[], data: any) => void} QuestionServerCallback */
 
 /**
  * @typedef QuestionServer
- * @property {Function} generate
- * @property {Function} prepare
- * @property {Function} render
- * @property {Function} parse
- * @property {Function} grade
- * @property {Function} [file]
- * @property {Function} [test]
+ * @property {(question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, variant_seed: string, callback: QuestionServerCallback) => void} generate
+ * @property {(question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, variant: Object, callback: QuestionServerCallback) => void} prepare
+ * @property {(renderSelection: {question: boolean, answer: boolean, submissions: boolean}, variant: import('../lib/db-types').Variant, question: import('../lib/db-types').Question, submission: import('../lib/db-types').Submission, submissions: import('../lib/db-types').Submission[], course: import('../lib/db-types').Course, course_instance: import('../lib/db-types').CourseInstance, locals: Record<string, any>, callback: QuestionServerCallback) => void} render
+ * @property {(submission: import('../lib/db-types').Submission, variant: import('../lib/db-types').Variant, question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, callback: QuestionServerCallback) => void} parse
+ * @property {(submission: import('../lib/db-types').Submission, variant: import('../lib/db-types').Variant, question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, callback: QuestionServerCallback) => void} grade
+ * @property {(filename: string, variant: import('../lib/db-types').Variant, question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, callback: QuestionServerCallback) => void} [file]
+ * @property {(variant: import('../lib/db-types').Variant, question: import('../lib/db-types').Question, course: import('../lib/db-types').Course, test_type: 'correct' | 'incorrect' | 'invalid', callback: QuestionServerCallback) => void} [test]
  */
 
 /** @type {Record<EffectiveQuestionType, QuestionServer>} */
