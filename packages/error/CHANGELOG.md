@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 1.0.11
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
 ## 1.0.10
 
 ### Patch Changes

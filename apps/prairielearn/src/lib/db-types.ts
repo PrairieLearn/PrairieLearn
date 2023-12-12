@@ -23,13 +23,13 @@ export const IdSchema = z
  * This is a schema for the objects produced by the `postgres-interval` library.
  */
 const PostgresIntervalSchema = z.object({
-  years: z.number().optional(),
-  months: z.number().optional(),
-  days: z.number().optional(),
-  hours: z.number().optional(),
-  minutes: z.number().optional(),
-  seconds: z.number().optional(),
-  milliseconds: z.number().optional(),
+  years: z.number().default(0),
+  months: z.number().default(0),
+  days: z.number().default(0),
+  hours: z.number().default(0),
+  minutes: z.number().default(0),
+  seconds: z.number().default(0),
+  milliseconds: z.number().default(0),
 });
 
 /**
@@ -217,7 +217,6 @@ export const QuestionSchema = z.object({
   topic_id: IdSchema.nullable(),
   type: z.enum([
     'Calculation',
-    'ShortAnswer',
     'MultipleChoice',
     'Checkbox',
     'File',
@@ -553,7 +552,7 @@ export const SubmissionSchema = z.object({
   mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
-  partial_scores: z.record(z.string(), z.number()).nullable(),
+  partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
   regradable: z.boolean().nullable(),
   score: z.number().nullable(),
@@ -657,23 +656,3 @@ export const JobSchema = z.object({
   working_directory: z.string().nullable(),
 });
 export type Job = z.infer<typeof JobSchema>;
-
-export const assessementInstanceStatsSchema = z.object({
-  assessment_instance_id: IdSchema,
-  average_submission_score: z.number().nullable(),
-  client_fingerprint_id_change_count: z.number(),
-  first_submission_score: z.number().nullable(),
-  incremental_submission_points_array: z.array(z.number()).nullable(),
-  incremental_submission_score_array: z.array(z.number()).nullable(),
-  instance_question_id: IdSchema,
-  last_submission_score: z.number().nullable(),
-  max_submission_score: z.number().nullable(),
-  number: z.string().nullable(),
-  qid: z.string(),
-  question_id: IdSchema,
-  some_nonzero_submission: z.boolean().nullable(),
-  some_perfect_submission: z.boolean().nullable(),
-  some_submission: z.boolean().nullable(),
-  submission_score_array: z.array(z.number()).nullable(),
-  title: z.string().nullable(),
-});

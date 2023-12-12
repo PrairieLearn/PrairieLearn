@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 1.8.1
+
+### Patch Changes
+
+- 2da23ab: Upgrade all JavaScript dependencies
+
 ## 1.8.0
 
 ### Minor Changes

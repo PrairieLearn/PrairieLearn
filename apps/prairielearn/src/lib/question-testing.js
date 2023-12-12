@@ -14,6 +14,7 @@ import { saveSubmission, gradeVariant } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
+import { SubmissionSchema } from './db-types';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -231,13 +232,9 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
           },
         );
       },
-      (callback) => {
-        sqldb.callOneRow('submissions_select', [expected_submission_id], (err, result) => {
-          if (ERR(err, callback)) return;
-          expected_submission = result.rows[0];
-          debug('_testVariant()', 'selected expected_submission, id:', expected_submission.id);
-          callback(null);
-        });
+      async () => {
+        expected_submission = await selectSubmission(expected_submission_id);
+        debug('_testVariant()', 'selected expected_submission, id:', expected_submission.id);
       },
       (callback) => {
         const submission = {
@@ -259,13 +256,9 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
           callback(null);
         });
       },
-      (callback) => {
-        sqldb.callOneRow('submissions_select', [test_submission_id], (err, result) => {
-          if (ERR(err, callback)) return;
-          test_submission = result.rows[0];
-          debug('_testVariant()', 'selected test_submission, id:', test_submission.id);
-          callback(null);
-        });
+      async () => {
+        test_submission = await selectSubmission(test_submission_id);
+        debug('_testVariant()', 'selected test_submission, id:', test_submission.id);
       },
       (callback) => {
         compareSubmissions(expected_submission, test_submission, (err, courseIssues) => {
@@ -603,4 +596,13 @@ export async function startTestQuestion(
   });
 
   return serverJob.jobSequenceId;
+}
+
+/**
+ *
+ * @param {string} submission_id
+ * @returns {Promise<import('./db-types').Submission>}
+ */
+async function selectSubmission(submission_id) {
+  return await sqldb.queryRow(sql.select_submission_by_id, { submission_id }, SubmissionSchema);
 }

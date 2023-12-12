@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import fetchCookie = require('fetch-cookie');
 import { config } from '../lib/config';
@@ -8,7 +8,7 @@ import { step } from 'mocha-steps';
 import { queryAsync, queryOneRowAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 const sql = loadSqlEquiv(__filename);
 
-import helperServer = require('./helperServer');
+import * as helperServer from './helperServer';
 import { TEST_COURSE_PATH } from '../lib/paths';
 import { UserSchema } from '../lib/db-types';
 
