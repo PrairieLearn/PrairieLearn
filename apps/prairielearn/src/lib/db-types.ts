@@ -55,13 +55,13 @@ export const IntervalSchema = z
     // The noteworthy parts of this conversion are that 1 year = 365.25 days and
     // 1 month = 30 days.
     return (
-      (interval.years ? interval.years * INTERVAL_MS_PER_YEAR : 0) +
-      (interval.months ? interval.months * INTERVAL_MS_PER_MONTH : 0) +
-      (interval.days ? interval.days * INTERVAL_MS_PER_DAY : 0) +
-      (interval.hours ? interval.hours * INTERVAL_MS_PER_HOUR : 0) +
-      (interval.minutes ? interval.minutes * INTERVAL_MS_PER_MINUTE : 0) +
-      (interval.seconds ? interval.seconds * INTERVAL_MS_PER_SECOND : 0) +
-      (interval.milliseconds ? interval.milliseconds : 0)
+      interval.years * INTERVAL_MS_PER_YEAR +
+      interval.months * INTERVAL_MS_PER_MONTH +
+      interval.days * INTERVAL_MS_PER_DAY +
+      interval.hours * INTERVAL_MS_PER_HOUR +
+      interval.minutes * INTERVAL_MS_PER_MINUTE +
+      interval.seconds * INTERVAL_MS_PER_SECOND +
+      interval.milliseconds
     );
   });
 

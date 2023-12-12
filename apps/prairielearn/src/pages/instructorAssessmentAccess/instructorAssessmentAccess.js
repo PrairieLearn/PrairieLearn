@@ -1,7 +1,5 @@
 // @ts-check
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const asyncHandler = require('express-async-handler');
 import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
@@ -31,18 +29,12 @@ const assessmentAccessRulesSchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    debug('GET /');
-    const params = {
-      assessment_id: res.locals.assessment.id,
-      link_exam_id: config.syncExamIdAccessRules,
-    };
     const result = await sqldb.queryRows(
       sql.assessment_access_rules,
-      params,
+      { assessment_id: res.locals.assessment.id, link_exam_id: config.syncExamIdAccessRules },
       assessmentAccessRulesSchema,
     );
     res.locals.access_rules = result;
-    debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );

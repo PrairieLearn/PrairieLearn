@@ -14,10 +14,30 @@ import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
 } from '../../lib/assessment';
-import { InstanceQuestionSchema, assessementInstanceStatsSchema } from '../../lib/db-types';
+import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+
+export const AssessementInstanceStatsSchema = z.object({
+  assessment_instance_id: IdSchema,
+  average_submission_score: z.number().nullable(),
+  client_fingerprint_id_change_count: z.number(),
+  first_submission_score: z.number().nullable(),
+  incremental_submission_points_array: z.array(z.number()).nullable(),
+  incremental_submission_score_array: z.array(z.number()).nullable(),
+  instance_question_id: IdSchema,
+  last_submission_score: z.number().nullable(),
+  max_submission_score: z.number().nullable(),
+  number: z.string().nullable(),
+  qid: z.string(),
+  question_id: IdSchema,
+  some_nonzero_submission: z.boolean().nullable(),
+  some_perfect_submission: z.boolean().nullable(),
+  some_submission: z.boolean().nullable(),
+  submission_score_array: z.array(z.number()).nullable(),
+  title: z.string().nullable(),
+});
 
 const logCsvFilename = (locals) => {
   return (
@@ -47,7 +67,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      assessementInstanceStatsSchema,
+      AssessementInstanceStatsSchema,
     );
 
     const dateDurationResult = await sqldb.queryRow(

@@ -1,8 +1,6 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
@@ -54,7 +52,6 @@ const setFilenames = function (locals) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    debug('GET /');
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
