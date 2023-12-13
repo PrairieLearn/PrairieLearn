@@ -1,4 +1,5 @@
 ansi2html==1.8.0
+openai>=0.11.1
 black==23.11.0
 chevron==0.14.0
 coloraide==2.13.1
