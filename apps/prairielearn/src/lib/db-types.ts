@@ -235,6 +235,29 @@ export const QuestionSchema = z.object({
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
+export const WorkspaceSchema = z.object({
+  created_at: DateFromISOString,
+  heartbeat_at: DateFromISOString.nullable(),
+  hostname: z.string().nullable(),
+  id: IdSchema,
+  launch_port: IdSchema.nullable(), // TODO: this should be a number
+  launch_uuid: z.string().nullable(),
+  launched_at: DateFromISOString.nullable(),
+  launching_duration: IntervalSchema.nullable(),
+  message: z.string().nullable(),
+  message_updated_at: DateFromISOString,
+  rebooted_at: DateFromISOString.nullable(),
+  reset_at: DateFromISOString.nullable(),
+  running_at: DateFromISOString.nullable(),
+  running_duration: IntervalSchema.nullable(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
+  state_updated_at: DateFromISOString,
+  stopped_at: DateFromISOString.nullable(),
+  version: IdSchema, // TODO: this should be a number
+  workspace_host_id: IdSchema.nullable(),
+});
+export type Workspace = z.infer<typeof WorkspaceSchema>;
+
 export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
   id: IdSchema,
