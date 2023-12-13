@@ -122,14 +122,14 @@ export function getFile(filename, variant, question, variant_course, authn_user_
       async () => {
         question_course = await getQuestionCourse(question, variant_course);
         questionModule = questionServers.getModule(question.type);
+      },
+      (callback) => {
         if (!questionModule.file) {
           return callback(
             new Error(`Question type ${question.type} does not support file generation`),
           );
         }
-      },
-      (callback) => {
-        questionModule.file?.(
+        questionModule.file(
           filename,
           variant,
           question,
