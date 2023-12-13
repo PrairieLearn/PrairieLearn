@@ -93,8 +93,8 @@ export function AdministratorInstitutions({
                   <select class="form-control" id="display_timezone" name="display_timezone">
                     <option value="" selected disabled hidden>Timezone</option>
                     ${availableTimezones.map(
-                      (tz) => html`
-                        <option value="${tz.name}">
+                      (tz, i) => html`
+                        <option value="${tz.name}" id="timezone-${i}">
                           ${`${tz.utc_offset.hours ? tz.utc_offset.hours : '00'}:${
                             tz.utc_offset.minutes
                               ? tz.utc_offset.minutes > 0

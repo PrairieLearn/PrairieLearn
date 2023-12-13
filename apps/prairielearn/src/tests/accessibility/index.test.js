@@ -47,6 +47,20 @@ function cleanLargePages(url, page) {
       .querySelectorAll('#js-student-link-qrcode svg > *')
       .forEach((e) => e.remove());
   }
+
+  if (url === 'pl/administrator/institutions' || url === 'pl/institution/1/admin') {
+    // The timezones dropdown has many options, which makes AXE run very slow.
+    // We do not need to check all of the options of the dropdown, so we'll
+    // remove all but 10 of the options.
+    page.window.document
+      .querySelector('#display_timezone')
+      ?.querySelectorAll('option')
+      .forEach((e, i) => {
+        if (i > 10) {
+          e.remove();
+        }
+      });
+  }
 }
 
 /**
