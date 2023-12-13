@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 import fetch from 'node-fetch';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -29,6 +28,7 @@ import * as workspaceHostUtils from './workspaceHost';
 import * as issues from './issues';
 import {
   CourseSchema,
+  DateFromISOString,
   QuestionSchema,
   VariantSchema,
   WorkspaceHostSchema,
@@ -120,15 +120,11 @@ export function connection(socket) {
 
     socket.join(`workspace-${workspace_id}`);
 
-    sqldb.queryOneRow(sql.select_workspace, { workspace_id }, (err, result) => {
-      if (ERR(err, callback)) return;
-      const workspace = result.rows[0];
-
-      callback({
-        workspace_id,
-        state: workspace.state,
-      });
-    });
+    sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
+      (workspace) => callback({ workspace_id, state: workspace.state }),
+      // TODO The client does not currently support passing an error to callback
+      (err) => callback({ err: serializeError(err) }),
+    );
   });
 
   socket.on('startWorkspace', () => {
@@ -147,14 +143,10 @@ export function connection(socket) {
     // TODO: remove this in the future once all clients have been updated.
     const callback = args.at(-1);
 
-    sqldb.queryOneRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, (err, result) => {
-      if (ERR(err, callback)) return;
-      const heartbeat_at = result.rows[0].heartbeat_at;
-      callback({
-        workspace_id,
-        heartbeat_at,
-      });
-    });
+    sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
+      (heartbeat_at) => callback({ workspace_id, heartbeat_at }),
+      (err) => callback({ err: serializeError(err) }),
+    );
   });
 }
 
