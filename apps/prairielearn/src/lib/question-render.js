@@ -57,31 +57,41 @@ function render(
 ) {
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
-  questionModule.render(
-    renderSelection,
-    variant,
-    question,
-    submission,
-    submissions,
-    question_course,
-    course_instance,
-    locals,
-    (err, courseIssues, htmls) => {
-      if (ERR(err, callback)) return;
+  let htmls;
+  async.series(
+    [
+      async () => {
+        questionModule = questionServers.getModule(question.type);
+      },
+      (callback) => {
+        questionModule.render(
+          renderSelection,
+          variant,
+          question,
+          submission,
+          submissions,
+          question_course,
+          course_instance,
+          locals,
+          (err, courseIssues, ret_htmls) => {
+            if (ERR(err, callback)) return;
 
-      const studentMessage = 'Error rendering question';
-      const courseData = { variant, question, submission, course: variant_course };
-      // locals.authn_user may not be populated when rendering a panel
-      const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-      writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData, (err) => {
-        if (ERR(err, callback)) return;
-        return callback(null, htmls);
-      });
+            const studentMessage = 'Error rendering question';
+            const courseData = { variant, question, submission, course: variant_course };
+            htmls = ret_htmls;
+            // locals.authn_user may not be populated when rendering a panel
+            const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+            writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData, (err) => {
+              if (ERR(err, callback)) return;
+              return callback(null);
+            });
+          },
+        );
+      },
+    ],
+    (err) => {
+      if (ERR(err, callback)) return;
+      callback(null, htmls);
     },
   );
 }

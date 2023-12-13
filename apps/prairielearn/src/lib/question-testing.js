@@ -42,15 +42,11 @@ function createTestSubmission(
   if (question.type !== 'Freeform') return callback(new Error('question.type must be Freeform'));
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
   let question_course, courseIssues, data, submission_id, grading_job;
   async.series(
     [
       async () => {
+        questionModule = questionServers.getModule(question.type);
         question_course = await getQuestionCourse(question, variant_course);
       },
       (callback) => {

@@ -13,6 +13,7 @@ import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
+import * as async from 'async';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -36,50 +37,70 @@ function makeVariant(question, course, options, callback) {
   debug(`_makeVariant(): question_id = ${question.id}`);
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
-  questionModule.generate(question, course, variant_seed, (err, courseIssues, data) => {
-    if (ERR(err, callback)) return;
-    const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-    var variant = {
-      variant_seed: variant_seed,
-      params: data.params || {},
-      true_answer: data.true_answer || {},
-      options: data.options || {},
-      broken: hasFatalIssue,
-    };
-    if (question.workspace_image !== null) {
-      // if workspace, add graded files to params
-      variant.params['_workspace_required_file_names'] = (
-        question.workspace_graded_files || []
-      ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
-      if (!('_required_file_names' in variant.params)) {
-        variant.params['_required_file_names'] = [];
-      }
-      variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-        variant.params['_workspace_required_file_names'],
-      );
-    }
-    if (variant.broken) {
-      return callback(null, courseIssues, variant);
-    }
-    questionModule.prepare(question, course, variant, (err, extraCourseIssues, data) => {
+  let courseIssues, variant;
+  async.series(
+    [
+      async () => {
+        questionModule = questionServers.getModule(question.type);
+      },
+      (callback) => {
+        questionModule.generate(
+          question,
+          course,
+          variant_seed,
+          (err, generateCourseIssues, data) => {
+            if (ERR(err, callback)) return;
+            courseIssues = generateCourseIssues;
+            const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+            variant = {
+              variant_seed: variant_seed,
+              params: data.params || {},
+              true_answer: data.true_answer || {},
+              options: data.options || {},
+              broken: hasFatalIssue,
+            };
+            callback(null);
+          },
+        );
+      },
+      async () => {
+        if (question.workspace_image !== null) {
+          // if workspace, add graded files to params
+          variant.params['_workspace_required_file_names'] = (
+            question.workspace_graded_files || []
+          ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
+          if (!('_required_file_names' in variant.params)) {
+            variant.params['_required_file_names'] = [];
+          }
+          variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
+            variant.params['_workspace_required_file_names'],
+          );
+        }
+      },
+      (callback) => {
+        if (variant.broken) {
+          return callback(null);
+        }
+        questionModule.prepare(question, course, variant, (err, prepareCourseIssues, data) => {
+          if (ERR(err, callback)) return;
+          courseIssues.push(...prepareCourseIssues);
+          const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+          variant = {
+            variant_seed: variant_seed,
+            params: data.params || {},
+            true_answer: data.true_answer || {},
+            options: data.options || {},
+            broken: hasFatalIssue,
+          };
+          callback(null);
+        });
+      },
+    ],
+    (err) => {
       if (ERR(err, callback)) return;
-      courseIssues.push(...extraCourseIssues);
-      const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-      var variant = {
-        variant_seed: variant_seed,
-        params: data.params || {},
-        true_answer: data.true_answer || {},
-        options: data.options || {},
-        broken: hasFatalIssue,
-      };
       callback(null, courseIssues, variant);
-    });
-  });
+    },
+  );
 }
 
 /**
@@ -95,41 +116,50 @@ function makeVariant(question, course, options, callback) {
 export function getFile(filename, variant, question, variant_course, authn_user_id, callback) {
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
-  util.callbackify(getQuestionCourse)(question, variant_course, (err, question_course) => {
-    if (ERR(err, callback)) return;
-    if (!questionModule.file) {
-      return callback(new Error(`Question type ${question.type} does not support file generation`));
-    }
-    questionModule.file(
-      filename,
-      variant,
-      question,
-      question_course,
-      (err, courseIssues, fileData) => {
-        if (ERR(err, callback)) return;
-
-        const studentMessage = 'Error creating file: ' + filename;
-        const courseData = { variant, question, course: variant_course };
-        writeCourseIssues(
-          courseIssues,
+  let question_course, fileData;
+  async.series(
+    [
+      async () => {
+        question_course = await getQuestionCourse(question, variant_course);
+        questionModule = questionServers.getModule(question.type);
+        if (!questionModule.file) {
+          return callback(
+            new Error(`Question type ${question.type} does not support file generation`),
+          );
+        }
+      },
+      (callback) => {
+        questionModule.file?.(
+          filename,
           variant,
-          authn_user_id,
-          studentMessage,
-          courseData,
-          (err) => {
+          question,
+          question_course,
+          (err, courseIssues, ret_fileData) => {
             if (ERR(err, callback)) return;
+            fileData = ret_fileData;
+            const studentMessage = 'Error creating file: ' + filename;
+            const courseData = { variant, question, course: variant_course };
+            writeCourseIssues(
+              courseIssues,
+              variant,
+              authn_user_id,
+              studentMessage,
+              courseData,
+              (err) => {
+                if (ERR(err, callback)) return;
 
-            return callback(null, fileData);
+                return callback(null);
+              },
+            );
           },
         );
       },
-    );
-  });
+    ],
+    (err) => {
+      if (ERR(err, callback)) return;
+      return callback(null, fileData);
+    },
+  );
 }
 
 /**

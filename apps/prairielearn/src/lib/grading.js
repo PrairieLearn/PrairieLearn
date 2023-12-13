@@ -45,11 +45,6 @@ export function saveSubmission(submission, variant, question, variant_course, ca
   submission.gradable = true;
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
   let question_course, courseIssues, data, submission_id, workspace_id, zipPath;
   async.series(
     [
@@ -104,6 +99,7 @@ export function saveSubmission(submission, variant, question, variant_course, ca
         await fs.promises.unlink(zipPath);
       },
       async () => {
+        questionModule = questionServers.getModule(question.type);
         question_course = await getQuestionCourse(question, variant_course);
       },
       (callback) => {
@@ -197,11 +193,6 @@ export function gradeVariant(
   debug('_gradeVariant()');
   /** @type {questionServers.QuestionServer} */
   let questionModule;
-  try {
-    questionModule = questionServers.getModule(question.type);
-  } catch (err) {
-    return callback(err);
-  }
   let question_course, courseIssues, data, submission, grading_job;
   async.series(
     [
@@ -242,6 +233,9 @@ export function gradeVariant(
           debug('_gradeVariant()', 'inserted', 'grading_job.id:', grading_job.id);
           callback(null);
         });
+      },
+      async () => {
+        questionModule = questionServers.getModule(question.type);
       },
       (callback) => {
         if (question.grading_method !== 'External') {
