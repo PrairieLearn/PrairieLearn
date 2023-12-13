@@ -52,17 +52,15 @@ const assessmentInstanceRowSchema = z.object({
 router.get(
   '/raw_data.json',
   asyncHandler(async (req, res) => {
-    debug('GET /raw_data.json');
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    const params = {
-      assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
-    };
     const result = await sqldb.queryRows(
       sql.select_assessment_instances,
-      params,
+      {
+        assessment_id: res.locals.assessment.id,
+        group_work: res.locals.assessment.group_work,
+      },
       assessmentInstanceRowSchema,
     );
     res.send(result);
@@ -73,7 +71,6 @@ router.get(
 router.get(
   '/client.js',
   asyncHandler(async (req, res) => {
-    debug('GET /client.js');
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
@@ -85,7 +82,6 @@ router.get(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    debug('GET /');
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
@@ -115,7 +111,6 @@ router.post(
         close,
         overrideGradeRate,
       );
-      console.log(JSON.stringify({}));
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
