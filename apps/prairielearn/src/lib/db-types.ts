@@ -520,6 +520,7 @@ export const InstanceQuestionSchema = z.object({
   points: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
   points_list_original: z.array(z.number()).nullable(),
+  qid: z.string().nullable(),
   question_number: z.string().nullable(),
   requires_manual_grading: z.boolean(),
   score_perc: z.number().nullable(),
