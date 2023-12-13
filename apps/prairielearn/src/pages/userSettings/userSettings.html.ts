@@ -6,6 +6,8 @@ import { IdSchema, Institution, User } from '../../lib/db-types';
 import { type Purchase } from '../../ee/lib/billing/purchases';
 import { isEnterprise } from '../../lib/license';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html';
+import { EncodedData } from '@prairielearn/browser-utils';
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -24,6 +26,7 @@ export function UserSettings({
   accessTokens,
   newAccessTokens,
   purchases,
+  authn_provider_debug,
   resLocals,
 }: {
   authn_user: User;
@@ -32,13 +35,23 @@ export function UserSettings({
   accessTokens: AccessToken[];
   newAccessTokens: string[];
   purchases: Purchase[];
+  authn_provider_debug: any;
   resLocals: Record<string, any>;
 }) {
+  let authn_provider_debug_toggle;
+  if (authn_provider_debug) {
+    authn_provider_debug_toggle = html`
+    <button type="button" class="btn btn-secondary btn-xs" id="authn_provider_debug_toggle">
+      Debug
+    </button>`;
+  }
+
   return html`
     <!doctype html>
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${authn_provider_debug ? compiledScriptTag('userSettings.ts') : ''}
       </head>
       <body>
         <script>
@@ -46,6 +59,7 @@ export function UserSettings({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
+        ${authn_provider_debug ? EncodedData(authn_provider_debug, 'authn_provider_debug') : ''}
         ${renderEjs(__filename, "<%- include('../../pages/partials/navbar') %>", {
           ...resLocals,
           navPage: 'user_settings',
@@ -76,7 +90,7 @@ export function UserSettings({
                 </tr>
                 <tr>
                   <th>Authentication method</th>
-                  <td>${authn_provider_name}</td>
+                  <td>${authn_provider_name}${authn_provider_debug_toggle}</td>
                 </tr>
               </tbody>
             </table>
@@ -191,6 +205,7 @@ export function UserSettings({
                   )}
             </ul>
           </div>
+          <a href="?debug" class="small text-secondary">Advanced page</a>
         </main>
       </body>
     </html>

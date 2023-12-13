@@ -18,6 +18,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const authn_user = UserSchema.parse(res.locals.authn_user);
     const authn_institution = InstitutionSchema.parse(res.locals.authn_institution);
+    let authn_provider_debug;
+
+    if ('debug' in req.query && res.locals.authn_provider_name === 'LTI 1.3') {
+      authn_provider_debug = {
+        debug: 'secret',
+      };
+    }
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
@@ -53,6 +60,7 @@ router.get(
         accessTokens,
         newAccessTokens,
         purchases,
+        authn_provider_debug,
         resLocals: res.locals,
       }),
     );
