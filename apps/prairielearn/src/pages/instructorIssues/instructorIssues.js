@@ -38,14 +38,23 @@ function formatForLikeClause(str) {
 function parseRawQuery(str) {
   const parsedQuery = SearchString.parse(str);
   const filters = {
+    /** @type {boolean | null} */
     filter_is_open: null,
+    /** @type {boolean | null} */
     filter_is_closed: null,
+    /** @type {boolean | null} */
     filter_manually_reported: null,
+    /** @type {boolean | null} */
     filter_automatically_reported: null,
+    /** @type {string[] | null} */
     filter_qids: null,
+    /** @type {string[] | null} */
     filter_not_qids: null,
+    /** @type {string | null} */
     filter_query_text: null,
+    /** @type {string[] | null} */
     filter_users: null,
+    /** @type {string[] | null} */
     filter_not_users: null,
   };
 
@@ -217,7 +226,7 @@ router.get(
     res.locals.rows = issues.rows;
 
     res.locals.filterQuery = req.query.q;
-    res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
+    res.locals.encodedFilterQuery = encodeURIComponent(/** @type {string } */ (req.query.q));
     res.locals.filters = filters;
     res.locals.anyFilteredIssuesOpen = issues.rows.some((row) => row.open);
 
