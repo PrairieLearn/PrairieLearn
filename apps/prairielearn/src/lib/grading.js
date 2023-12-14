@@ -43,7 +43,9 @@ export function saveSubmission(submission, variant, question, variant_course, ca
   debug('saveSubmission()');
   submission.raw_submitted_answer = submission.submitted_answer;
   submission.gradable = true;
-  let questionModule, question_course, courseIssues, data, submission_id, workspace_id, zipPath;
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  let question_course, courseIssues, data, submission_id, workspace_id, zipPath;
   async.series(
     [
       (callback) => {
@@ -96,15 +98,8 @@ export function saveSubmission(submission, variant, question, variant_course, ca
         }
         await fs.promises.unlink(zipPath);
       },
-      (callback) => {
-        questionServers.getModule(question.type, (err, ret_questionModule) => {
-          if (ERR(err, callback)) return;
-          questionModule = ret_questionModule;
-          debug('saveSubmission()', 'loaded questionModule');
-          callback(null);
-        });
-      },
       async () => {
+        questionModule = questionServers.getModule(question.type);
         question_course = await getQuestionCourse(question, variant_course);
       },
       (callback) => {
@@ -196,7 +191,9 @@ export function gradeVariant(
   callback,
 ) {
   debug('_gradeVariant()');
-  let questionModule, question_course, courseIssues, data, submission, grading_job;
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  let question_course, courseIssues, data, submission, grading_job;
   async.series(
     [
       async () => {
@@ -237,13 +234,8 @@ export function gradeVariant(
           callback(null);
         });
       },
-      (callback) => {
-        questionServers.getModule(question.type, (err, ret_questionModule) => {
-          if (ERR(err, callback)) return;
-          questionModule = ret_questionModule;
-          debug('_gradeVariant()', 'loaded questionModule');
-          callback(null);
-        });
+      async () => {
+        questionModule = questionServers.getModule(question.type);
       },
       (callback) => {
         if (question.grading_method !== 'External') {
