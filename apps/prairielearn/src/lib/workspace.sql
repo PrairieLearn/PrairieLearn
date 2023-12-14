@@ -57,4 +57,3 @@ WHERE
   w.id = $workspace_id
 RETURNING
   heartbeat_at;
-
