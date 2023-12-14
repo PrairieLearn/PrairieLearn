@@ -37,6 +37,7 @@ nav:
       - 'Question configuration': 'question.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'
+      - 'Course best practices': 'course-best-practices.md'
       - 'Access control': 'accessControl.md'
       - 'Remote exams': 'remoteExams.md'
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
@@ -55,7 +56,6 @@ nav:
       - 'API': 'api.md'
   - Developer Guide:
       - 'Developer guide': 'dev-guide.md'
-      - 'Course best practices': 'course-best-practices.md'
       - 'Running in Docker with local source': 'installingLocal.md'
       - 'Running natively': 'installingNative.md'
       - 'Server configuration': 'configJson.md'

@@ -5,6 +5,10 @@ large courses. This techniques described here are a mix of standard software
 engineering practices applied to PrairieLearn, along with tips specific to
 working with certain features specific to PrairieLearn.
 
+This can be viewed as a more advanced version of the
+[course documentation page](course.md), as working knowledge of
+the structure of courses is necessary for understanding this documentation.
+
 ## Motivation
 
 As described in the [course documentation page](course.md), a course is stored
@@ -26,4 +30,12 @@ regardless of the repository hosting platform.
 
 ## Technical Challenges
 
-We will first outline the specific technical challenges that this
+The most important feature of PrairieLearn from a course maintenance
+standpoint is that, although most configuration files are read by
+the platform each time that a sync is performed, this is not true
+of the files related to question content (HTML and Python). This
+means that breaking changes to a question are only be visible
+when the question is next opened, and may be the result of editing
+files not local to that question.
+
+The very flexible nature of questions makes it difficult to debug
