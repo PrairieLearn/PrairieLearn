@@ -32,6 +32,7 @@ nav:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
+      - 'Course best practices': 'course-best-practices.md'
       - 'Course instance configuration': 'courseInstance.md'
       - 'Assessment configuration': 'assessment.md'
       - 'Question configuration': 'question.md'
