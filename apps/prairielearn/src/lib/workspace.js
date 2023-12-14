@@ -701,11 +701,7 @@ export async function getGradedFilesFromFileSystem(workspace_id) {
 }
 
 /**
- * @typedef {Error & {data?: any; cause?: ErrorWithDataAndCause}} ErrorWithDataAndCause
- */
-
-/**
- * @param {ErrorWithDataAndCause} err
+ * @param {Error & {data?: any; cause?: Error}} err
  * @returns
  */
 function serializeError(err) {
