@@ -86,3 +86,47 @@ LIMIT
   $limit
 OFFSET
   $offset;
+
+-- BLOCK close_issues
+WITH
+  updated_issues AS (
+    UPDATE issues AS e
+    SET
+      open = FALSE
+    WHERE
+      e.course_id = $course_id
+      AND e.course_caused
+      AND e.open IS TRUE
+      AND e.id = ANY ($issue_ids::BIGINT[])
+    RETURNING
+      e.id,
+      e.open
+  ),
+  inserted_audit_logs AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        table_name,
+        column_name,
+        row_id,
+        action,
+        parameters,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      $course_id,
+      'issues',
+      'open',
+      i.id,
+      'update',
+      jsonb_build_object('course_id', $course_id),
+      jsonb_build_object('open', i.open)
+    FROM
+      updated_issues AS i
+  )
+SELECT
+  COUNT(*)::integer
+FROM
+  updated_issues;

@@ -14,22 +14,23 @@
     <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <% if (authz_data.has_course_permission_edit) { %>
-      <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
+      <div class="modal fade" id="closeMatchingIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeMatchingIssuesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="closeAllIssuesModalLabel">Close all issues</h4>
+              <h4 class="modal-title" id="closeMatchingIssuesModalLabel">Close matching issues</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to close all issues? This cannot
-              be undone.
+              Are you sure you want to close <strong><%= rows.length %></strong> matching
+              <%= rows.length === 1 ? 'issue' : 'issues' %>? This cannot be undone.
             </div>
             <div class="modal-footer">
-              <form name="close-all-form" method="POST">
-                <input type="hidden" name="__action" value="close_all">
+              <form name="close-matching-form" method="POST">
+                <input type="hidden" name="__action" value="close_matching">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="unsafe_issue_ids" value="<%= rows.map(row => row.issue_id).join(',') %>">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger">Close all</button>
+                <button type="submit" class="btn btn-danger">Close issues</button>
               </form>
             </div>
           </div>
@@ -119,9 +120,9 @@
                 </a>
               </small>
             </div>
-            <% if (authz_data.has_course_permission_edit) { %>
-            <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeAllIssuesModal">
-              <i class="fa fa-times" aria-hidden="true"></i> Close all issues
+            <% if (authz_data.has_course_permission_edit && anyFilteredIssuesOpen) { %>
+            <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeMatchingIssuesModal">
+              <i class="fa fa-times" aria-hidden="true"></i> Close matching issues
             </button>
             <% } %>
           </div>

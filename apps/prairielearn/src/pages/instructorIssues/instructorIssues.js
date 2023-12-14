@@ -1,13 +1,16 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const { parseISO, formatDistance } = require('date-fns');
 const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
+const { z } = require('zod');
 
 const error = require('@prairielearn/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/postgres');
+const { flash } = require('@prairielearn/flash');
 const { idsEqual } = require('../../lib/id');
 const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
 
@@ -216,6 +219,7 @@ router.get(
     res.locals.filterQuery = req.query.q;
     res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
     res.locals.filters = filters;
+    res.locals.anyFilteredIssuesOpen = issues.rows.some((row) => row.open);
 
     res.locals.commonQueries = {};
     _.assign(res.locals.commonQueries, formattedCommonQueries);
@@ -249,13 +253,18 @@ router.post(
       ];
       await sqldb.callAsync('issues_update_open', params);
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'close_all') {
-      let params = [
-        false, // open status
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('issues_update_open_all', params);
+    } else if (req.body.__action === 'close_matching') {
+      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
+      const closedCount = await sqldb.queryRow(
+        sql.close_issues,
+        {
+          issue_ids: issueIds,
+          course_id: res.locals.course.id,
+          authn_user_id: res.locals.authn_user.user_id,
+        },
+        z.number(),
+      );
+      flash('success', `Closed ${closedCount} ${closedCount === 1 ? 'issue' : 'issues'}.`);
       res.redirect(req.originalUrl);
     } else {
       throw error.make(400, 'unknown __action', {
