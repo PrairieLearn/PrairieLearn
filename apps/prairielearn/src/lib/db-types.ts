@@ -240,7 +240,7 @@ export const WorkspaceSchema = z.object({
   heartbeat_at: DateFromISOString.nullable(),
   hostname: z.string().nullable(),
   id: IdSchema,
-  launch_port: IdSchema.nullable(), // TODO: this should be a number
+  launch_port: z.coerce.number(), // This is BIGINT, but always fits a number
   launch_uuid: z.string().nullable(),
   launched_at: DateFromISOString.nullable(),
   launching_duration: IntervalSchema.nullable(),
@@ -253,7 +253,7 @@ export const WorkspaceSchema = z.object({
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   state_updated_at: DateFromISOString,
   stopped_at: DateFromISOString.nullable(),
-  version: IdSchema, // TODO: this should be a number
+  version: z.coerce.number(), // This is BIGINT, but always fits a number
   workspace_host_id: IdSchema.nullable(),
 });
 export type Workspace = z.infer<typeof WorkspaceSchema>;
