@@ -3,14 +3,56 @@ import { Question, Course, Variant, Submission, CourseInstance } from '../lib/db
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
-type QuestionServerCallback = (err: Error | null, courseIssues: Error[], data: any) => void;
+type QuestionServerCallback<T> = (err: Error | null, courseIssues: Error[], data: T) => void;
+
+export interface GenerateResultData {
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  options?: Record<string, any> | null;
+}
+export type PrepareResultData = GenerateResultData;
+export interface RenderResultData {
+  extraHeadersHtml: string;
+  questionHtml: string;
+  submissionHtmls: string[];
+  answerHtml: string;
+}
+export interface ParseResultData {
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  submitted_answer: Record<string, any>;
+  feedback: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  gradable: boolean;
+}
+export interface GradeResultData {
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  submitted_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
+  partial_scores: Record<string, any>;
+  score: number;
+  feedback: Record<string, any>;
+  gradable: boolean;
+}
+export interface TestResultData {
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
+  format_errors: Record<string, any>;
+  raw_submitted_answer: Record<string, any>;
+  partial_scores: Record<string, any>;
+  score: number;
+  gradable: boolean;
+}
 
 export interface QuestionServer {
   generate: (
     question: Question,
     course: Course,
     variant_seed: string,
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<GenerateResultData>,
   ) => void;
   prepare: (
     question: Question,
@@ -22,7 +64,7 @@ export interface QuestionServer {
       options: Record<string, any>;
       broken: boolean;
     },
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<PrepareResultData>,
   ) => void;
   render: (
     renderSelection: { question: boolean; answer: boolean; submissions: boolean },
@@ -33,35 +75,35 @@ export interface QuestionServer {
     course: Course,
     course_instance: CourseInstance,
     locals: Record<string, any>,
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<RenderResultData>,
   ) => void;
   parse: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<ParseResultData>,
   ) => void;
   grade: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<GradeResultData>,
   ) => void;
   file?: (
     filename: string,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<Buffer>,
   ) => void;
   test?: (
     variant: Variant,
     question: Question,
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
-    callback: QuestionServerCallback,
+    callback: QuestionServerCallback<TestResultData>,
   ) => void;
 }
 
