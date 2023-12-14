@@ -10,13 +10,16 @@ export interface GenerateResultData {
   true_answer: Record<string, any>;
   options?: Record<string, any> | null;
 }
+
 export type PrepareResultData = GenerateResultData;
+
 export interface RenderResultData {
   extraHeadersHtml: string;
   questionHtml: string;
   submissionHtmls: string[];
   answerHtml: string;
 }
+
 export interface ParseResultData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
@@ -26,6 +29,7 @@ export interface ParseResultData {
   format_errors: Record<string, any>;
   gradable: boolean;
 }
+
 export interface GradeResultData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
@@ -37,6 +41,7 @@ export interface GradeResultData {
   feedback: Record<string, any>;
   gradable: boolean;
 }
+
 export interface TestResultData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
