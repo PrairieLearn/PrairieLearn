@@ -19,4 +19,11 @@ The techniques described here are primarily continuous integration (CI)
 practices. For more information about these techniques outside of the
 PrairieLearn ecosystem, see [this page](https://www.atlassian.com/continuous-delivery/continuous-integration).
 
-**Note**: All of the examples used in this page will be
+**Note**: All of the examples used in this page will be written assuming course
+repositories are hosted on GitHub, and using CI through GitHub actions. This
+may not always be the case in the future, but the general principles apply
+regardless of the repository hosting platform.
+
+## Technical Challenges
+
+We will first outline the specific technical challenges that this
