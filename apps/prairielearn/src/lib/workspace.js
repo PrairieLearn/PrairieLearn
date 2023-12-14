@@ -13,7 +13,7 @@ import * as tmp from 'tmp-promise';
 import * as mustache from 'mustache';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
-const assert = require('node:assert');
+import { ok as assert } from 'node:assert';
 
 import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
@@ -359,8 +359,9 @@ export async function initialize(workspace_id) {
     WorkspaceDataSchema,
   );
 
-  // TODO Figure out what to do if course path is null
-  assert(course.path);
+  assert(course.path, `Workspace ${workspace_id} is part of a course that has no directory`);
+  assert(question.qid, `Workspace ${workspace_id} is part of a question that has no directory`);
+
   const course_path = chunks.getRuntimeDirectoryForCourse({ id: course.id, path: course.path });
   await chunks.ensureChunksForCourseAsync(course.id, {
     type: 'question',
@@ -369,9 +370,6 @@ export async function initialize(workspace_id) {
 
   /** @type {{file: string; msg: string; err?: any, data?: Record<string, any>}[]} */
   const fileGenerationErrors = [];
-
-  // TODO figure out what to do if QID is null
-  assert(question.qid);
 
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
