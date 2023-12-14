@@ -122,7 +122,6 @@ export function connection(socket) {
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
-      // TODO The client does not currently support passing an error to callback
       (err) => callback({ err: serializeError(err) }),
     );
   });

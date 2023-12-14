@@ -104,7 +104,11 @@ $(function () {
     // TODO: remove second argument once all servers no longer require it.
     socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
       console.log('joinWorkspace, msg =', msg);
-      setState(msg.state);
+      if (msg.err) {
+        setMessage('Error joining workspace: ' + msg.err.message);
+      } else {
+        setState(msg.state);
+      }
     });
   });
 
