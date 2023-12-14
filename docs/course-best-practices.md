@@ -36,6 +36,15 @@ the platform each time that a sync is performed, this is not true
 of the files related to question content (HTML and Python). This
 means that breaking changes to a question are only be visible
 when the question is next opened, and may be the result of editing
-files not local to that question.
+files not local to that question. In addition,
 
-The very flexible nature of questions makes it difficult to debug
+The following are common situations that tools described in this
+page are designed to solve:
+- Code shared between multiple questions is refactored in a way
+that changes the interface. Questions requiring the old interface
+may not display errors until they are next opened.
+- Code as part of a randomized question is invalid but only
+reachable in rare variants.
+- An instructor wishes to write questions with similar backend
+logic but different starting configurations
+- Invalid JSON or Python code is merged
