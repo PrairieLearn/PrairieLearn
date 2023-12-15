@@ -3,7 +3,7 @@ import { Question, Course, Variant, Submission, CourseInstance } from '../lib/db
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
-type QuestionServerCallback<T> = (err: Error | null, courseIssues: Error[], data: T) => void;
+type QuestionServerReturnValue<T> = Promise<{ courseIssues: Error[]; data: T }>;
 
 export interface GenerateResultData {
   params: Record<string, any>;
@@ -57,8 +57,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
-    callback: QuestionServerCallback<GenerateResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<GenerateResultData>;
   prepare: (
     question: Question,
     course: Course,
@@ -69,8 +68,7 @@ export interface QuestionServer {
       options: Record<string, any>;
       broken: boolean;
     },
-    callback: QuestionServerCallback<PrepareResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
     renderSelection: { question: boolean; answer: boolean; submissions: boolean },
     variant: Variant,
@@ -80,36 +78,31 @@ export interface QuestionServer {
     course: Course,
     course_instance: CourseInstance,
     locals: Record<string, any>,
-    callback: QuestionServerCallback<RenderResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback<ParseResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<ParseResultData>;
   grade: (
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback<GradeResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<GradeResultData>;
   file?: (
     filename: string,
     variant: Variant,
     question: Question,
     course: Course,
-    callback: QuestionServerCallback<Buffer>,
-  ) => void;
+  ) => QuestionServerReturnValue<Buffer>;
   test?: (
     variant: Variant,
     question: Question,
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
-    callback: QuestionServerCallback<TestResultData>,
-  ) => void;
+  ) => QuestionServerReturnValue<TestResultData>;
 }
 
 const questionModules: Record<EffectiveQuestionType, QuestionServer> = {

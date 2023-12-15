@@ -1,4 +1,5 @@
 // @ts-check
+
 import * as async from 'async';
 import * as _ from 'lodash';
 import * as fs from 'fs-extra';
@@ -1059,7 +1060,7 @@ function getContextOptions(context) {
   return options;
 }
 
-export async function generateAsync(question, course, variant_seed) {
+export async function generate(question, course, variant_seed) {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     const data = {
@@ -1088,18 +1089,7 @@ export async function generateAsync(question, course, variant_seed) {
   });
 }
 
-export function generate(question, course, variant_seed, callback) {
-  generateAsync(question, course, variant_seed).then(
-    ({ courseIssues, data }) => {
-      callback(null, courseIssues, data);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
-}
-
-export async function prepareAsync(question, course, variant) {
+export async function prepare(question, course, variant) {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken) throw new Error('attemped to prepare broken variant');
 
@@ -1129,17 +1119,6 @@ export async function prepareAsync(question, course, variant) {
       };
     });
   });
-}
-
-export function prepare(question, course, variant, callback) {
-  prepareAsync(question, course, variant).then(
-    ({ courseIssues, data }) => {
-      callback(null, courseIssues, data);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
 }
 
 /**
@@ -1273,7 +1252,7 @@ async function renderPanelInstrumented(
   });
 }
 
-export async function renderAsync(
+export async function render(
   renderSelection,
   variant,
   question,
@@ -1305,17 +1284,36 @@ export async function renderAsync(
     locals.question_renderer = context.renderer;
 
     return withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      await async.series([
-        // FIXME: support 'header'
-        async () => {
-          if (!renderSelection.question) return;
+      // FIXME: support 'header'
+      if (renderSelection.question) {
+        const {
+          courseIssues: newCourseIssues,
+          html,
+          renderedElementNames,
+        } = await renderPanelInstrumented(
+          'question',
+          codeCaller,
+          submission,
+          variant,
+          question,
+          course,
+          locals,
+          context,
+        );
 
+        courseIssues.push(...newCourseIssues);
+        htmls.questionHtml = html;
+        allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+      }
+
+      if (renderSelection.submissions) {
+        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
           const {
             courseIssues: newCourseIssues,
             html,
             renderedElementNames,
           } = await renderPanelInstrumented(
-            'question',
+            'submission',
             codeCaller,
             submission,
             variant,
@@ -1326,177 +1324,204 @@ export async function renderAsync(
           );
 
           courseIssues.push(...newCourseIssues);
-          htmls.questionHtml = html;
           allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-        },
-        async () => {
-          if (!renderSelection.submissions) return;
+          return html;
+        });
+      }
 
-          htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-            const {
-              courseIssues: newCourseIssues,
-              html,
-              renderedElementNames,
-            } = await renderPanelInstrumented(
-              'submission',
-              codeCaller,
-              submission,
-              variant,
-              question,
-              course,
-              locals,
-              context,
-            );
+      if (renderSelection.answer) {
+        const {
+          courseIssues: newCourseIssues,
+          html,
+          renderedElementNames,
+        } = await renderPanelInstrumented(
+          'answer',
+          codeCaller,
+          submission,
+          variant,
+          question,
+          course,
+          locals,
+          context,
+        );
 
-            courseIssues.push(...newCourseIssues);
-            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-            return html;
-          });
-        },
-        async () => {
-          if (!renderSelection.answer) return;
+        courseIssues.push(...newCourseIssues);
+        htmls.answerHtml = html;
+        allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+      }
 
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'answer',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
+      const extensions = context.course_element_extensions;
+      const dependencies = {
+        coreStyles: [],
+        coreScripts: [],
+        nodeModulesStyles: [],
+        nodeModulesScripts: [],
+        coreElementStyles: [],
+        coreElementScripts: [],
+        courseElementStyles: [],
+        courseElementScripts: [],
+        extensionStyles: [],
+        extensionScripts: [],
+        clientFilesCourseStyles: [],
+        clientFilesCourseScripts: [],
+        clientFilesQuestionStyles: [],
+        clientFilesQuestionScripts: [],
+      };
+      const dynamicDependencies = {
+        nodeModulesScripts: {},
+        coreElementScripts: {},
+        courseElementScripts: {},
+        extensionScripts: {},
+        clientFilesCourseScripts: {},
+      };
+
+      for (let type in question.dependencies) {
+        if (!_.has(dependencies, type)) continue;
+
+        for (let dep of question.dependencies[type]) {
+          if (!_.includes(dependencies[type], dep)) {
+            dependencies[type].push(dep);
+          }
+        }
+      }
+
+      // Gather dependencies for all rendered elements
+      allRenderedElementNames.forEach((elementName) => {
+        let resolvedElement = resolveElement(elementName, context);
+        const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
+        const elementDynamicDependencies = _.cloneDeep(resolvedElement.dynamicDependencies || {});
+
+        // Transform non-global dependencies to be prefixed by the element name,
+        // since they'll be served from their element's directory
+        if (_.has(elementDependencies, 'elementStyles')) {
+          elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+            (dep) => `${resolvedElement.name}/${dep}`,
           );
+        }
+        if (_.has(elementDependencies, 'elementScripts')) {
+          elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+            (dep) => `${resolvedElement.name}/${dep}`,
+          );
+        }
+        if (_.has(elementDynamicDependencies, 'elementScripts')) {
+          elementDynamicDependencies.elementScripts = _.mapValues(
+            elementDynamicDependencies.elementScripts,
+            (dep) => `${resolvedElement.name}/${dep}`,
+          );
+        }
 
-          courseIssues.push(...newCourseIssues);
-          htmls.answerHtml = html;
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-        },
-        async () => {
-          const extensions = context.course_element_extensions;
-          const dependencies = {
-            coreStyles: [],
-            coreScripts: [],
-            nodeModulesStyles: [],
-            nodeModulesScripts: [],
-            coreElementStyles: [],
-            coreElementScripts: [],
-            courseElementStyles: [],
-            courseElementScripts: [],
-            extensionStyles: [],
-            extensionScripts: [],
-            clientFilesCourseStyles: [],
-            clientFilesCourseScripts: [],
-            clientFilesQuestionStyles: [],
-            clientFilesQuestionScripts: [],
-          };
-          const dynamicDependencies = {
-            nodeModulesScripts: {},
-            coreElementScripts: {},
-            courseElementScripts: {},
-            extensionScripts: {},
-            clientFilesCourseScripts: {},
-          };
+        // Rename properties so we can track core and course
+        // element dependencies separately
+        if (resolvedElement.type === 'course') {
+          if (_.has(elementDependencies, 'elementStyles')) {
+            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
+            delete elementDependencies.elementStyles;
+          }
+          if (_.has(elementDependencies, 'elementScripts')) {
+            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
+            delete elementDependencies.elementScripts;
+          }
+          if (_.has(elementDynamicDependencies, 'elementScripts')) {
+            elementDynamicDependencies.courseElementScripts =
+              elementDynamicDependencies.elementScripts;
+            delete elementDynamicDependencies.elementScripts;
+          }
+        } else {
+          if (_.has(elementDependencies, 'elementStyles')) {
+            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
+            delete elementDependencies.elementStyles;
+          }
+          if (_.has(elementDependencies, 'elementScripts')) {
+            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
+            delete elementDependencies.elementScripts;
+          }
+          if (_.has(elementDynamicDependencies, 'elementScripts')) {
+            elementDynamicDependencies.coreElementScripts =
+              elementDynamicDependencies.elementScripts;
+            delete elementDynamicDependencies.elementScripts;
+          }
+        }
 
-          for (let type in question.dependencies) {
-            if (!_.has(dependencies, type)) continue;
+        for (const type in elementDependencies) {
+          if (!_.has(dependencies, type)) continue;
 
-            for (let dep of question.dependencies[type]) {
-              if (!_.includes(dependencies[type], dep)) {
-                dependencies[type].push(dep);
-              }
+          for (const dep of elementDependencies[type]) {
+            if (!_.includes(dependencies[type], dep)) {
+              dependencies[type].push(dep);
             }
           }
+        }
 
-          // Gather dependencies for all rendered elements
-          allRenderedElementNames.forEach((elementName) => {
-            let resolvedElement = resolveElement(elementName, context);
-            const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
-            const elementDynamicDependencies = _.cloneDeep(
-              resolvedElement.dynamicDependencies || {},
-            );
-
-            // Transform non-global dependencies to be prefixed by the element name,
-            // since they'll be served from their element's directory
-            if (_.has(elementDependencies, 'elementStyles')) {
-              elementDependencies.elementStyles = elementDependencies.elementStyles.map(
-                (dep) => `${resolvedElement.name}/${dep}`,
+        for (const type in elementDynamicDependencies) {
+          for (const key in elementDynamicDependencies[type]) {
+            if (!_.has(dynamicDependencies[type], key)) {
+              dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
+            } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
+              courseIssues.push(
+                new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
+                  data: {
+                    dependencyType: type,
+                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                  },
+                  fatal: true,
+                }),
               );
             }
-            if (_.has(elementDependencies, 'elementScripts')) {
-              elementDependencies.elementScripts = elementDependencies.elementScripts.map(
-                (dep) => `${resolvedElement.name}/${dep}`,
+          }
+        }
+
+        // Load any extensions if they exist
+        if (_.has(extensions, elementName)) {
+          for (const extensionName of Object.keys(extensions[elementName])) {
+            if (
+              !_.has(extensions[elementName][extensionName], 'dependencies') &&
+              !_.has(extensions[elementName][extensionName], 'dynamicDependencies')
+            ) {
+              continue;
+            }
+
+            const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
+            const extensionDynamic = _.cloneDeep(
+              extensions[elementName][extensionName],
+            ).dynamicDependencies;
+            if (_.has(extension, 'extensionStyles')) {
+              extension.extensionStyles = extension.extensionStyles.map(
+                (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
-            if (_.has(elementDynamicDependencies, 'elementScripts')) {
-              elementDynamicDependencies.elementScripts = _.mapValues(
-                elementDynamicDependencies.elementScripts,
-                (dep) => `${resolvedElement.name}/${dep}`,
+            if (_.has(extension, 'extensionScripts')) {
+              extension.extensionScripts = extension.extensionScripts.map(
+                (dep) => `${elementName}/${extensionName}/${dep}`,
+              );
+            }
+            if (_.has(extensionDynamic, 'extensionScripts')) {
+              extensionDynamic.extensionScripts = _.mapValues(
+                extensionDynamic.extensionScripts,
+                (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
 
-            // Rename properties so we can track core and course
-            // element dependencies separately
-            if (resolvedElement.type === 'course') {
-              if (_.has(elementDependencies, 'elementStyles')) {
-                elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-                delete elementDependencies.elementStyles;
-              }
-              if (_.has(elementDependencies, 'elementScripts')) {
-                elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-                delete elementDependencies.elementScripts;
-              }
-              if (_.has(elementDynamicDependencies, 'elementScripts')) {
-                elementDynamicDependencies.courseElementScripts =
-                  elementDynamicDependencies.elementScripts;
-                delete elementDynamicDependencies.elementScripts;
-              }
-            } else {
-              if (_.has(elementDependencies, 'elementStyles')) {
-                elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-                delete elementDependencies.elementStyles;
-              }
-              if (_.has(elementDependencies, 'elementScripts')) {
-                elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-                delete elementDependencies.elementScripts;
-              }
-              if (_.has(elementDynamicDependencies, 'elementScripts')) {
-                elementDynamicDependencies.coreElementScripts =
-                  elementDynamicDependencies.elementScripts;
-                delete elementDynamicDependencies.elementScripts;
-              }
-            }
-
-            for (const type in elementDependencies) {
+            for (const type in extension) {
               if (!_.has(dependencies, type)) continue;
 
-              for (const dep of elementDependencies[type]) {
+              for (const dep of extension[type]) {
                 if (!_.includes(dependencies[type], dep)) {
                   dependencies[type].push(dep);
                 }
               }
             }
-
-            for (const type in elementDynamicDependencies) {
-              for (const key in elementDynamicDependencies[type]) {
+            for (const type in extensionDynamic) {
+              for (const key in extensionDynamic[type]) {
                 if (!_.has(dynamicDependencies[type], key)) {
-                  dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
-                } else if (
-                  dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]
-                ) {
+                  dynamicDependencies[type][key] = extensionDynamic[type][key];
+                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [
-                            dynamicDependencies[type][key],
-                            elementDynamicDependencies[type][key],
-                          ],
+                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
                         },
                         fatal: true,
                       },
@@ -1505,212 +1530,115 @@ export async function renderAsync(
                 }
               }
             }
+          }
+        }
+      });
 
-            // Load any extensions if they exist
-            if (_.has(extensions, elementName)) {
-              for (const extensionName of Object.keys(extensions[elementName])) {
-                if (
-                  !_.has(extensions[elementName][extensionName], 'dependencies') &&
-                  !_.has(extensions[elementName][extensionName], 'dynamicDependencies')
-                ) {
-                  continue;
-                }
+      // Transform dependency list into style/link tags
+      const coreScriptUrls = [];
+      const scriptUrls = [];
+      const styleUrls = [];
+      dependencies.coreStyles.forEach((file) =>
+        styleUrls.push(assets.assetPath(`stylesheets/${file}`)),
+      );
+      dependencies.coreScripts.forEach((file) =>
+        coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
+      );
+      dependencies.nodeModulesStyles.forEach((file) =>
+        styleUrls.push(assets.nodeModulesAssetPath(file)),
+      );
+      dependencies.nodeModulesScripts.forEach((file) =>
+        coreScriptUrls.push(assets.nodeModulesAssetPath(file)),
+      );
+      dependencies.clientFilesCourseStyles.forEach((file) =>
+        styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
+      );
+      dependencies.clientFilesCourseScripts.forEach((file) =>
+        scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
+      );
+      dependencies.clientFilesQuestionStyles.forEach((file) =>
+        styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
+      );
+      dependencies.clientFilesQuestionScripts.forEach((file) =>
+        scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
+      );
+      dependencies.coreElementStyles.forEach((file) =>
+        styleUrls.push(assets.coreElementAssetPath(file)),
+      );
+      dependencies.coreElementScripts.forEach((file) =>
+        scriptUrls.push(assets.coreElementAssetPath(file)),
+      );
+      dependencies.courseElementStyles.forEach((file) =>
+        styleUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+      );
+      dependencies.courseElementScripts.forEach((file) =>
+        scriptUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+      );
+      dependencies.extensionStyles.forEach((file) =>
+        styleUrls.push(
+          assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
+        ),
+      );
+      dependencies.extensionScripts.forEach((file) =>
+        scriptUrls.push(
+          assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
+        ),
+      );
 
-                const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
-                const extensionDynamic = _.cloneDeep(
-                  extensions[elementName][extensionName],
-                ).dynamicDependencies;
-                if (_.has(extension, 'extensionStyles')) {
-                  extension.extensionStyles = extension.extensionStyles.map(
-                    (dep) => `${elementName}/${extensionName}/${dep}`,
-                  );
-                }
-                if (_.has(extension, 'extensionScripts')) {
-                  extension.extensionScripts = extension.extensionScripts.map(
-                    (dep) => `${elementName}/${extensionName}/${dep}`,
-                  );
-                }
-                if (_.has(extensionDynamic, 'extensionScripts')) {
-                  extensionDynamic.extensionScripts = _.mapValues(
-                    extensionDynamic.extensionScripts,
-                    (dep) => `${elementName}/${extensionName}/${dep}`,
-                  );
-                }
-
-                for (const type in extension) {
-                  if (!_.has(dependencies, type)) continue;
-
-                  for (const dep of extension[type]) {
-                    if (!_.includes(dependencies[type], dep)) {
-                      dependencies[type].push(dep);
-                    }
-                  }
-                }
-                for (const type in extensionDynamic) {
-                  for (const key in extensionDynamic[type]) {
-                    if (!_.has(dynamicDependencies[type], key)) {
-                      dynamicDependencies[type][key] = extensionDynamic[type][key];
-                    } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
-                      courseIssues.push(
-                        new CourseIssueError(
-                          `Dynamic dependency ${key} assigned to conflicting files`,
-                          {
-                            data: {
-                              dependencyType: type,
-                              values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
-                            },
-                            fatal: true,
-                          },
-                        ),
-                      );
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-          // Transform dependency list into style/link tags
-          const coreScriptUrls = [];
-          const scriptUrls = [];
-          const styleUrls = [];
-          dependencies.coreStyles.forEach((file) =>
-            styleUrls.push(assets.assetPath(`stylesheets/${file}`)),
-          );
-          dependencies.coreScripts.forEach((file) =>
-            coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
-          );
-          dependencies.nodeModulesStyles.forEach((file) =>
-            styleUrls.push(assets.nodeModulesAssetPath(file)),
-          );
-          dependencies.nodeModulesScripts.forEach((file) =>
-            coreScriptUrls.push(assets.nodeModulesAssetPath(file)),
-          );
-          dependencies.clientFilesCourseStyles.forEach((file) =>
-            styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
-          );
-          dependencies.clientFilesCourseScripts.forEach((file) =>
-            scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
-          );
-          dependencies.clientFilesQuestionStyles.forEach((file) =>
-            styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
-          );
-          dependencies.clientFilesQuestionScripts.forEach((file) =>
-            scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
-          );
-          dependencies.coreElementStyles.forEach((file) =>
-            styleUrls.push(assets.coreElementAssetPath(file)),
-          );
-          dependencies.coreElementScripts.forEach((file) =>
-            scriptUrls.push(assets.coreElementAssetPath(file)),
-          );
-          dependencies.courseElementStyles.forEach((file) =>
-            styleUrls.push(
-              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
-            ),
-          );
-          dependencies.courseElementScripts.forEach((file) =>
-            scriptUrls.push(
-              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
-            ),
-          );
-          dependencies.extensionStyles.forEach((file) =>
-            styleUrls.push(
-              assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
-            ),
-          );
-          dependencies.extensionScripts.forEach((file) =>
-            scriptUrls.push(
-              assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
-            ),
-          );
-
-          const importMap = {
-            imports: {
-              ..._.mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
-                assets.nodeModulesAssetPath(file),
-              ),
-              ..._.mapValues(
-                dynamicDependencies.clientFilesCourseScripts,
-                (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
-              ),
-              ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
-                assets.coreElementAssetPath(file),
-              ),
-              ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-                assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
-              ),
-              ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
-                assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
-              ),
-            },
-          };
-
-          // Check if any of the keys was found in more than one dependency type
-          Object.keys(importMap.imports).forEach((key) => {
-            const types = Object.entries(dynamicDependencies)
-              .filter(([, value]) => _.has(value, key))
-              .map(([type]) => type);
-            if (types.length > 1) {
-              courseIssues.push(
-                new CourseIssueError(
-                  `Dynamic dependency key ${key} assigned to multiple types of dependencies`,
-                  { data: { types }, fatal: true },
-                ),
-              );
-            }
-          });
-
-          const headerHtmls = [
-            ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
-            // The import map must come before any scripts that use imports
-            !_.isEmpty(importMap.imports)
-              ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
-              : ``,
-            // It's important that any library-style scripts come first
-            ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
-            ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
-          ];
-          htmls.extraHeadersHtml = headerHtmls.join('\n');
+      const importMap = {
+        imports: {
+          ..._.mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
+            assets.nodeModulesAssetPath(file),
+          ),
+          ..._.mapValues(
+            dynamicDependencies.clientFilesCourseScripts,
+            (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
+          ),
+          ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
+            assets.coreElementAssetPath(file),
+          ),
+          ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
+            assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+          ),
+          ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
+            assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
+          ),
         },
-      ]);
+      };
 
-      return { courseIssues, htmls };
+      // Check if any of the keys was found in more than one dependency type
+      Object.keys(importMap.imports).forEach((key) => {
+        const types = Object.entries(dynamicDependencies)
+          .filter(([, value]) => _.has(value, key))
+          .map(([type]) => type);
+        if (types.length > 1) {
+          courseIssues.push(
+            new CourseIssueError(
+              `Dynamic dependency key ${key} assigned to multiple types of dependencies`,
+              { data: { types }, fatal: true },
+            ),
+          );
+        }
+      });
+
+      const headerHtmls = [
+        ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+        // The import map must come before any scripts that use imports
+        !_.isEmpty(importMap.imports)
+          ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
+          : ``,
+        // It's important that any library-style scripts come first
+        ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+        ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+      ];
+      htmls.extraHeadersHtml = headerHtmls.join('\n');
+
+      return { courseIssues, data: htmls };
     });
   });
 }
 
-export function render(
-  renderSelection,
-  variant,
-  question,
-  submission,
-  submissions,
-  course,
-  course_instance,
-  locals,
-  callback,
-) {
-  renderAsync(
-    renderSelection,
-    variant,
-    question,
-    submission,
-    submissions,
-    course,
-    course_instance,
-    locals,
-  ).then(
-    ({ courseIssues, htmls }) => {
-      callback(null, courseIssues, htmls);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
-}
-
-export async function fileAsync(filename, variant, question, course) {
+export async function file(filename, variant, question, course) {
   return instrumented('freeform.file', async (span) => {
     debug('file()');
     if (variant.broken) throw new Error('attemped to get a file for a broken variant');
@@ -1749,22 +1677,11 @@ export async function fileAsync(filename, variant, question, course) {
 
     const { courseIssues, fileDataBase64 } = cachedData;
     const fileData = Buffer.from(fileDataBase64, 'base64');
-    return { courseIssues, fileData };
+    return { courseIssues, data: fileData };
   });
 }
 
-export function file(filename, variant, question, course, callback) {
-  fileAsync(filename, variant, question, course).then(
-    ({ courseIssues, fileData }) => {
-      callback(null, courseIssues, fileData);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
-}
-
-export async function parseAsync(submission, variant, question, course) {
+export async function parse(submission, variant, question, course) {
   return instrumented('freeform.parse', async () => {
     debug('parse()');
     if (variant.broken) throw new Error('attemped to parse broken variant');
@@ -1804,17 +1721,6 @@ export async function parseAsync(submission, variant, question, course) {
       };
     });
   });
-}
-
-export function parse(submission, variant, question, course, callback) {
-  parseAsync(submission, variant, question, course).then(
-    ({ courseIssues, data: resultData }) => {
-      callback(null, courseIssues, resultData);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
 }
 
 export async function gradeAsync(submission, variant, question, question_course) {
@@ -1864,18 +1770,7 @@ export async function gradeAsync(submission, variant, question, question_course)
   });
 }
 
-export function grade(submission, variant, question, question_course, callback) {
-  gradeAsync(submission, variant, question, question_course).then(
-    ({ courseIssues, data: resultData }) => {
-      callback(null, courseIssues, resultData);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
-}
-
-export async function testAsync(variant, question, course, test_type) {
+export async function test(variant, question, course, test_type) {
   return instrumented('freeform.test', async () => {
     debug('test()');
     if (variant.broken) throw new Error('attemped to test broken variant');
@@ -1888,7 +1783,7 @@ export async function testAsync(variant, question, course, test_type) {
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
+      variant_seed: parseInt(variant.variant_seed ?? '0', 36),
       options: _.get(variant, 'options', {}),
       raw_submitted_answers: {},
       gradable: true,
@@ -1919,17 +1814,6 @@ export async function testAsync(variant, question, course, test_type) {
   });
 }
 
-export function test(variant, question, course, test_type, callback) {
-  testAsync(variant, question, course, test_type).then(
-    ({ courseIssues, data }) => {
-      callback(null, courseIssues, data);
-    },
-    (err) => {
-      callback(err);
-    },
-  );
-}
-
 /**
  * @param {Object} question
  * @param {Object} course
@@ -1939,22 +1823,11 @@ async function getContext(question, course) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
   /** @type {chunks.Chunk[]} */
   const chunksToLoad = [
-    {
-      type: 'question',
-      questionId: question.id,
-    },
-    {
-      type: 'clientFilesCourse',
-    },
-    {
-      type: 'serverFilesCourse',
-    },
-    {
-      type: 'elements',
-    },
-    {
-      type: 'elementExtensions',
-    },
+    { type: 'question', questionId: question.id },
+    { type: 'clientFilesCourse' },
+    { type: 'serverFilesCourse' },
+    { type: 'elements' },
+    { type: 'elementExtensions' },
   ];
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 

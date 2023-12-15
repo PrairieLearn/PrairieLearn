@@ -95,18 +95,12 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
-export function generate(question, course, variant_seed, callback) {
-  callFunction('generate', course, question, { variant_seed }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => callback(err),
-  );
+export async function generate(question, course, variant_seed) {
+  return await callFunction('generate', course, question, { variant_seed });
 }
 
-export function grade(submission, variant, question, question_course, callback) {
-  callFunction('grade', question_course, question, { submission, variant }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => callback(err),
-  );
+export async function grade(submission, variant, question, question_course) {
+  return await callFunction('grade', question_course, question, { submission, variant });
 }
 
 export function getFile(filename, variant, question, course, callback) {
@@ -124,43 +118,43 @@ export function getFile(filename, variant, question, course, callback) {
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-export function render(
-  renderSelection,
-  variant,
-  question,
-  submission,
+export async function render(
+  _renderSelection,
+  _variant,
+  _question,
+  _submission,
   submissions,
-  course,
-  course_instance,
-  locals,
-  callback,
+  _course,
+  _course_instance,
+  _locals,
 ) {
-  const htmls = {
+  const data = {
     extraHeadersHtml: '',
     questionHtml: '',
     submissionHtmls: _.map(submissions, () => ''),
     answerHtml: '',
   };
-  callback(null, [], htmls);
+  return { courseIssues: [], data };
 }
 
-export function prepare(question, course, variant, callback) {
+export async function prepare(_question, _course, variant) {
   const data = {
     params: variant.params,
     true_answer: variant.true_answer,
     options: variant.options,
   };
-  callback(null, [], data);
+  return { courseIssues: [], data };
 }
 
-export function parse(submission, variant, question, course, callback) {
+export async function parse(submission, variant, _question, _course) {
   const data = {
-    params: variant.params,
-    true_answer: variant.true_answer,
-    submitted_answer: submission.submitted_answer,
-    raw_submitted_answer: submission.raw_submitted_answer,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
+    submitted_answer: submission.submitted_answer ?? {},
+    raw_submitted_answer: submission.raw_submitted_answer ?? {},
+    feedback: {},
     format_errors: {},
     gradable: true,
   };
-  callback(null, [], data);
+  return { courseIssues: [], data };
 }
