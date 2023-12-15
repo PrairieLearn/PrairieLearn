@@ -92,7 +92,7 @@ router.get(
       InstanceQuestionSchema.extend({
         modified_at: z.string(),
         qid: z.string().nullable(),
-        question_number: z.number().nullable(),
+        question_number: z.string().nullable(),
       }),
     );
 
