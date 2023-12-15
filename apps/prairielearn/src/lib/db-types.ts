@@ -512,6 +512,7 @@ export const InstanceQuestionSchema = z.object({
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
   max_submission_score: z.number().nullable(),
+  modified_at: DateFromISOString,
   number: z.number().nullable(),
   number_attempts: z.number(),
   open: z.boolean(),
