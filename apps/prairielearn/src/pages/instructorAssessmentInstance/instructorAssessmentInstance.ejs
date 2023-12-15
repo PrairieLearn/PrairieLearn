@@ -334,7 +334,29 @@
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
               <% if (row.client_fingerprint) { %>
-              <td><a tabindex="0" class="btn btn-xs btn-secondary"
+              <td><a tabindex="0" 
+              <% switch(row.client_fingerprint_number % 6) { 
+                 case 1: %>
+                 class="badge color-gray3"
+                 <% break;
+                 case 2: %>
+                 class="badge color-blue3"
+                 <% break;
+                 case 3: %>
+                 class="badge color-orange3"
+                 <% break;
+                 case 4: %>
+                 class="badge color-brown1"
+                 <% break;
+                 case 5: %>
+                 class="badge color-green3"
+                 <% break;
+                 case 0: %>
+                 class="badge color-red2"
+                 <% break; 
+                  default: 
+                  break; } %>" 
+                role="button"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
                 data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_number%>"
