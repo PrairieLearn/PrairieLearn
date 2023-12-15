@@ -21,7 +21,7 @@ router.get(
     const authn_institution = InstitutionSchema.parse(res.locals.authn_institution);
     let authn_provider_debug;
 
-    if ('debug' in req.query && res.locals.authn_provider_name === 'dev') {
+    if ('debug' in req.query && res.locals.authn_provider_name === 'LTI 1.3') {
       authn_provider_debug = hljs.highlight(JSON.stringify(req.session.lti13_claims ?? {}, null, 2), {
         language: 'json',
       }).value;
