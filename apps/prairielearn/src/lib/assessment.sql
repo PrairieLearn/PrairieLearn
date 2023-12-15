@@ -700,11 +700,6 @@ WITH
       WHERE
         ai.id = $assessment_instance_id
     )
-    ORDER BY
-      date,
-      event_order,
-      log_id,
-      question_id
   ),
   question_data AS (
     SELECT
@@ -744,4 +739,9 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  ai.id = $assessment_instance_id;
+  ai.id = $assessment_instance_id
+ORDER BY
+  el.date,
+  el.event_order,
+  el.log_id,
+  el.question_id;

@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from 'chai';
-const util = require('node:util');
+import * as util from 'node:util';
 import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 

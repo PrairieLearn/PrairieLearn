@@ -28,6 +28,7 @@
     "eslint-plugin-mocha": "^10.2.0",
     "eslint-plugin-no-floating-promise": "^1.0.2",
     "eslint-plugin-no-only-tests": "^3.1.0",
+    "globby": "^11.1.0",
     "htmlhint": "^1.1.4",
     "prettier": "3.1.0",
     "pyright": "^1.1.338",

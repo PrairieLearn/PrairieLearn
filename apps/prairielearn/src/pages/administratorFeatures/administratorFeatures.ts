@@ -1,7 +1,7 @@
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
 import { loadSqlEquiv, queryValidatedRows, queryRows } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
 import { FeatureName, features } from '../../lib/features';

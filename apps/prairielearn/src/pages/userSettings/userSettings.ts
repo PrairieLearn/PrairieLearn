@@ -1,9 +1,9 @@
 import express = require('express');
 import asyncHandler = require('express-async-handler');
-import crypto = require('crypto');
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-import error = require('@prairielearn/error');
-import sqldb = require('@prairielearn/postgres');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types';

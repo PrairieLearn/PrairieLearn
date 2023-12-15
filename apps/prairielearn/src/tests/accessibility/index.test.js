@@ -23,33 +23,6 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
 const SITE_URL = 'http://localhost:' + config.serverPort;
 
 /**
- * Several pages have very large DOMs or attributes that AXE runs very slow on.
- * None of these elements have accessibility components, so we'll special-case these
- * and remove them before running AXE.
- *
- * @param {import('jsdom').JSDOM} page
- */
-function cleanLargePages(url, page) {
-  if (url === '/pl/course_instance/1/instructor/course_admin/questions') {
-    // This attribute is very large, which somehow corresponds to a long running
-    // time for AXE. It's irrelevant for our checks, so we just remove it.
-    page.window.document.querySelector('#questionsTable')?.removeAttribute('data-data');
-  }
-
-  if (
-    url === '/pl/course_instance/1/instructor/instance_admin/settings' ||
-    /\/pl\/course_instance\/1\/instructor\/assessment\/\d+\/settings/.test(url)
-  ) {
-    // The SVG for the QR code contains many elements, which in turn makes AXE
-    // run very slow. We don't need to check the accessibility of the QR code
-    // itself, so we'll remove the children.
-    page.window.document
-      .querySelectorAll('#js-student-link-qrcode svg > *')
-      .forEach((e) => e.remove());
-  }
-}
-
-/**
  * Loads the given URL into a JSDOM object.
  *
  * @param {string} url
@@ -72,8 +45,9 @@ async function loadPageJsdom(url) {
  */
 async function checkPage(url) {
   const page = await loadPageJsdom(SITE_URL + url);
-  cleanLargePages(url, page);
-  const results = await axe.run(page.window.document.documentElement);
+  const results = await axe.run(page.window.document.documentElement, {
+    resultTypes: ['violations', 'incomplete'],
+  });
   A11yError.checkAndThrow(results.violations);
 }
 
@@ -207,6 +181,7 @@ const SKIP_ROUTES = [
   '/pl/news_item/:news_item_id/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
+  '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
 
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:variant_id/submission/:submission_id',
@@ -330,7 +305,7 @@ describe('accessibility', () => {
   after('shut down testing server', helperServer.after);
 
   test('All pages pass accessibility checks', async function () {
-    this.timeout(120_000);
+    this.timeout(240_000);
 
     const missingParamsEndpoints = [];
     const failingEndpoints = [];

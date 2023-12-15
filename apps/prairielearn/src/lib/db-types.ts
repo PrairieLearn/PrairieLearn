@@ -23,13 +23,13 @@ export const IdSchema = z
  * This is a schema for the objects produced by the `postgres-interval` library.
  */
 const PostgresIntervalSchema = z.object({
-  years: z.number(),
-  months: z.number(),
-  days: z.number(),
-  hours: z.number(),
-  minutes: z.number(),
-  seconds: z.number(),
-  milliseconds: z.number(),
+  years: z.number().default(0),
+  months: z.number().default(0),
+  days: z.number().default(0),
+  hours: z.number().default(0),
+  minutes: z.number().default(0),
+  seconds: z.number().default(0),
+  milliseconds: z.number().default(0),
 });
 
 /**
@@ -217,7 +217,6 @@ export const QuestionSchema = z.object({
   topic_id: IdSchema.nullable(),
   type: z.enum([
     'Calculation',
-    'ShortAnswer',
     'MultipleChoice',
     'Checkbox',
     'File',
@@ -560,7 +559,7 @@ export const SubmissionSchema = z.object({
   mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
-  partial_scores: z.record(z.string(), z.number()).nullable(),
+  partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
   regradable: z.boolean().nullable(),
   score: z.number().nullable(),
@@ -664,3 +663,19 @@ export const JobSchema = z.object({
   working_directory: z.string().nullable(),
 });
 export type Job = z.infer<typeof JobSchema>;
+
+export const CourseRequestSchema = z.object({
+  approved_by: IdSchema.nullable(),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  created_at: DateFromISOString,
+  first_name: z.string().nullable(),
+  github_user: z.string().nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  last_name: z.string().nullable(),
+  short_name: z.string().nullable(),
+  title: z.string().nullable(),
+  user_id: IdSchema.nullable(),
+  work_email: z.string().nullable(),
+});
+export type CourseRequest = z.infer<typeof CourseRequestSchema>;

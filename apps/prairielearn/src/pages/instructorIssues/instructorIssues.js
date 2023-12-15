@@ -1,5 +1,3 @@
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const { parseISO, formatDistance } = require('date-fns');
@@ -11,6 +9,7 @@ const error = require('@prairielearn/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
+const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

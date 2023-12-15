@@ -12,6 +12,8 @@ import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
+import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
+import * as async from 'async';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -33,48 +35,72 @@ function makeVariant(question, course, options, callback) {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
   debug(`_makeVariant(): question_id = ${question.id}`);
-  questionServers.getModule(question.type, (err, questionModule) => {
-    if (ERR(err, callback)) return;
-    questionModule.generate(question, course, variant_seed, (err, courseIssues, data) => {
-      if (ERR(err, callback)) return;
-      const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-      var variant = {
-        variant_seed: variant_seed,
-        params: data.params || {},
-        true_answer: data.true_answer || {},
-        options: data.options || {},
-        broken: hasFatalIssue,
-      };
-      if (question.workspace_image !== null) {
-        // if workspace, add graded files to params
-        variant.params['_workspace_required_file_names'] = (
-          question.workspace_graded_files || []
-        ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
-        if (!('_required_file_names' in variant.params)) {
-          variant.params['_required_file_names'] = [];
-        }
-        variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-          variant.params['_workspace_required_file_names'],
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  let courseIssues, variant;
+  async.series(
+    [
+      async () => {
+        questionModule = questionServers.getModule(question.type);
+      },
+      (callback) => {
+        questionModule.generate(
+          question,
+          course,
+          variant_seed,
+          (err, generateCourseIssues, data) => {
+            if (ERR(err, callback)) return;
+            courseIssues = generateCourseIssues;
+            const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+            variant = {
+              variant_seed: variant_seed,
+              params: data.params || {},
+              true_answer: data.true_answer || {},
+              options: data.options || {},
+              broken: hasFatalIssue,
+            };
+            callback(null);
+          },
         );
-      }
-      if (variant.broken) {
-        return callback(null, courseIssues, variant);
-      }
-      questionModule.prepare(question, course, variant, (err, extraCourseIssues, data) => {
-        if (ERR(err, callback)) return;
-        courseIssues.push(...extraCourseIssues);
-        const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-        var variant = {
-          variant_seed: variant_seed,
-          params: data.params || {},
-          true_answer: data.true_answer || {},
-          options: data.options || {},
-          broken: hasFatalIssue,
-        };
-        callback(null, courseIssues, variant);
-      });
-    });
-  });
+      },
+      async () => {
+        if (question.workspace_image !== null) {
+          // if workspace, add graded files to params
+          variant.params['_workspace_required_file_names'] = (
+            question.workspace_graded_files || []
+          ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
+          if (!('_required_file_names' in variant.params)) {
+            variant.params['_required_file_names'] = [];
+          }
+          variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
+            variant.params['_workspace_required_file_names'],
+          );
+        }
+      },
+      (callback) => {
+        if (variant.broken) {
+          return callback(null);
+        }
+        questionModule.prepare(question, course, variant, (err, prepareCourseIssues, data) => {
+          if (ERR(err, callback)) return;
+          courseIssues.push(...prepareCourseIssues);
+          const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+          variant = {
+            variant_seed: variant_seed,
+            params: data.params || {},
+            true_answer: data.true_answer || {},
+            options: data.options || {},
+            broken: hasFatalIssue,
+          };
+          callback(null);
+        });
+      },
+    ],
+    (err) => {
+      if (ERR(err, callback)) return;
+      callback(null, courseIssues, variant);
+    },
+  );
 }
 
 /**
@@ -88,66 +114,69 @@ function makeVariant(question, course, options, callback) {
  * @param {function} callback - A callback(err, fileData) function.
  */
 export function getFile(filename, variant, question, variant_course, authn_user_id, callback) {
-  questionServers.getModule(question.type, (err, questionModule) => {
-    if (ERR(err, callback)) return;
-    util.callbackify(getQuestionCourse)(question, variant_course, (err, question_course) => {
-      if (ERR(err, callback)) return;
-      questionModule.file(
-        filename,
-        variant,
-        question,
-        question_course,
-        (err, courseIssues, fileData) => {
-          if (ERR(err, callback)) return;
-
-          const studentMessage = 'Error creating file: ' + filename;
-          const courseData = { variant, question, course: variant_course };
-          writeCourseIssues(
-            courseIssues,
-            variant,
-            authn_user_id,
-            studentMessage,
-            courseData,
-            (err) => {
-              if (ERR(err, callback)) return;
-
-              return callback(null, fileData);
-            },
+  /** @type {questionServers.QuestionServer} */
+  let questionModule;
+  let question_course, fileData;
+  async.series(
+    [
+      async () => {
+        question_course = await getQuestionCourse(question, variant_course);
+        questionModule = questionServers.getModule(question.type);
+      },
+      (callback) => {
+        if (!questionModule.file) {
+          return callback(
+            new Error(`Question type ${question.type} does not support file generation`),
           );
-        },
-      );
-    });
-  });
+        }
+        questionModule.file(
+          filename,
+          variant,
+          question,
+          question_course,
+          (err, courseIssues, ret_fileData) => {
+            if (ERR(err, callback)) return;
+            fileData = ret_fileData;
+            const studentMessage = 'Error creating file: ' + filename;
+            const courseData = { variant, question, course: variant_course };
+            writeCourseIssues(
+              courseIssues,
+              variant,
+              authn_user_id,
+              studentMessage,
+              courseData,
+              (err) => {
+                if (ERR(err, callback)) return;
+
+                return callback(null);
+              },
+            );
+          },
+        );
+      },
+    ],
+    (err) => {
+      if (ERR(err, callback)) return;
+      return callback(null, fileData);
+    },
+  );
 }
 
 /**
  * Internal function, do not call directly. Get a question by either question_id or instance_question_id.
  * @protected
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant. Can be null if question_id is provided.
- * @param {function} callback - A callback(err, question) function.
+ * @param {string |  null} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {string | null} instance_question_id - The instance question for the new variant. Can be null if question_id is provided.
+ * @returns {Promise<import('./db-types').Question>}
  */
-function selectQuestion(question_id, instance_question_id, callback) {
+async function selectQuestion(question_id, instance_question_id) {
   if (question_id != null) {
-    sqldb.callOneRow('questions_select', [question_id], (err, result) => {
-      if (ERR(err, callback)) return;
-      const question = result.rows[0];
-      callback(null, question);
-    });
+    return await selectQuestionById(question_id);
+  } else if (instance_question_id != null) {
+    return await selectQuestionByInstanceQuestionId(instance_question_id);
   } else {
-    if (instance_question_id == null) {
-      return callback(new Error('question_id and instance_question_id cannot both be null'));
-    }
-    sqldb.callOneRow(
-      'instance_questions_select_question',
-      [instance_question_id],
-      (err, result) => {
-        if (ERR(err, callback)) return;
-        const question = result.rows[0];
-        callback(null, question);
-      },
-    );
+    throw new Error('question_id and instance_question_id cannot both be null');
   }
 }
 
@@ -155,8 +184,8 @@ function selectQuestion(question_id, instance_question_id, callback) {
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
  * @protected
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param {?string} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {?string} instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
@@ -179,7 +208,7 @@ function makeAndInsertVariant(
   client_fingerprint_id,
   callback,
 ) {
-  selectQuestion(question_id, instance_question_id, (err, question) => {
+  util.callbackify(selectQuestion)(question_id, instance_question_id, (err, question) => {
     if (ERR(err, callback)) return;
     makeVariant(question, question_course, options, (err, courseIssues, variant) => {
       if (ERR(err, callback)) return;
@@ -225,8 +254,8 @@ function makeAndInsertVariant(
 /**
  * Ensure that there is a variant for the given instance question.
  *
- * @param {?number} question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param {?number} instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param {?string} question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param {?string} instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
