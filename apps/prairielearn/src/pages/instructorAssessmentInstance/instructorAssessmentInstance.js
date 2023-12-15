@@ -77,14 +77,35 @@ router.get(
         res.locals.assessment_instance.id,
         false,
       );
-
+      const fingerprintNumbers = {};
+      let i = 1;
       const stringifier = stringifyStream({
         header: true,
-        columns: ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'],
+        columns: [
+          'Time',
+          'Auth user',
+          'Fingerprint',
+          'IP Address',
+          'Event',
+          'Instructor question',
+          'Student question',
+          'Data',
+        ],
         transform(record) {
+          if (record.client_fingerprint) {
+            if (!fingerprintNumbers[record.client_fingerprint.id]) {
+              fingerprintNumbers[record.client_fingerprint.id] = i;
+              i++;
+            }
+            record.client_fingerprint_number = fingerprintNumbers[record.client_fingerprint.id];
+          }
           return [
             record.date_iso8601,
             record.auth_user_uid,
+            record.client_fingerprint_number == null ? null : record.client_fingerprint_number,
+            record.client_fingerprint?.ip_address == null
+              ? null
+              : record.client_fingerprint.ip_address,
             record.event_name,
             record.instructor_question_number == null
               ? null
@@ -95,6 +116,10 @@ router.get(
                 record.student_question_number +
                 (record.variant_number == null ? '' : '#' + record.variant_number),
             record.data == null ? null : JSON.stringify(record.data),
+            // record.client_fingerprint_number == null ? null : record.client_fingerprint_number,
+            // record.client_fingerprint.ip_address == null
+            //   ? null
+            //   : record.client_fingerprint.ip_address,
           ];
         },
       });
