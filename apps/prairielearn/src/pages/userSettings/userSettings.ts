@@ -21,12 +21,10 @@ router.get(
     const authn_institution = InstitutionSchema.parse(res.locals.authn_institution);
     let authn_provider_debug;
 
-    const debug = {
-      debug: 'secret',
-    };
-
     if ('debug' in req.query && res.locals.authn_provider_name === 'dev') {
-      authn_provider_debug = hljs.highlight(JSON.stringify(debug, null, 2), { language: 'json'}).value
+      authn_provider_debug = hljs.highlight(JSON.stringify(req.session.lti13_claims ?? {}, null, 2), {
+        language: 'json',
+      }).value;
     }
 
     const accessTokens = await sqldb.queryRows(
