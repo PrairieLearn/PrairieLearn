@@ -111,7 +111,7 @@ router.post(
 
     // Get the target_link out of the LTI request and redirect
     const redirUrl =
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] || '/pl';
+      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'] ?? '/pl';
     res.redirect(redirUrl);
   }),
 );
