@@ -13,9 +13,10 @@
 // changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
 // in order to update the file in `dist`.
 
-const path = require('path');
-const readline = require('readline');
-const error = require('@prairielearn/error');
+import * as path from 'path';
+import * as readline from 'readline';
+
+import * as error from '@prairielearn/error';
 
 const requireFrontend = require('../lib/require-frontend');
 
