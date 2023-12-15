@@ -1,13 +1,13 @@
 // @ts-check
-const _ = require('lodash');
-const path = require('node:path');
-const { contains } = require('@prairielearn/path-utils');
+import * as _ from 'lodash';
+import * as path from 'node:path';
+import { contains } from '@prairielearn/path-utils';
 
-const { config } = require('../lib/config');
-const chunks = require('../lib/chunks');
-const filePaths = require('../lib/file-paths');
-const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
-const { withCodeCaller } = require('../lib/code-caller');
+import { config } from '../lib/config';
+import * as chunks from '../lib/chunks';
+import * as filePaths from '../lib/file-paths';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths';
+import { withCodeCaller } from '../lib/code-caller';
 
 /** @typedef {import('../lib/chunks').Chunk} Chunk */
 
@@ -15,23 +15,13 @@ async function prepareChunksIfNeeded(question, course) {
   const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
 
   /** @type {Chunk[]} */
-  const templateQuestionChunks = questionIds.map((id) => ({
-    type: 'question',
-    questionId: id,
-  }));
+  const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
 
   /** @type {Chunk[]} */
   const chunksToLoad = [
-    {
-      type: 'question',
-      questionId: question.id,
-    },
-    {
-      type: 'clientFilesCourse',
-    },
-    {
-      type: 'serverFilesCourse',
-    },
+    { type: 'question', questionId: question.id },
+    { type: 'clientFilesCourse' },
+    { type: 'serverFilesCourse' },
     ...templateQuestionChunks,
   ];
 
@@ -105,21 +95,21 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
-module.exports.generate = (question, course, variant_seed, callback) => {
+export function generate(question, course, variant_seed, callback) {
   callFunction('generate', course, question, { variant_seed }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
     (err) => callback(err),
   );
-};
+}
 
-module.exports.grade = (submission, variant, question, question_course, callback) => {
+export function grade(submission, variant, question, question_course, callback) {
   callFunction('grade', question_course, question, { submission, variant }).then(
     ({ data, courseIssues }) => callback(null, courseIssues, data),
     (err) => callback(err),
   );
-};
+}
 
-module.exports.getFile = (filename, variant, question, course, callback) => {
+export function getFile(filename, variant, question, course, callback) {
   callFunction('getFile', course, question, { filename, variant }).then(
     ({ data, courseIssues }) => {
       // We need to "unwrap" buffers if needed
@@ -129,12 +119,12 @@ module.exports.getFile = (filename, variant, question, course, callback) => {
     },
     (err) => callback(err),
   );
-};
+}
 
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-module.exports.render = function (
+export function render(
   renderSelection,
   variant,
   question,
@@ -152,18 +142,18 @@ module.exports.render = function (
     answerHtml: '',
   };
   callback(null, [], htmls);
-};
+}
 
-module.exports.prepare = function (question, course, variant, callback) {
+export function prepare(question, course, variant, callback) {
   const data = {
     params: variant.params,
     true_answer: variant.true_answer,
     options: variant.options,
   };
   callback(null, [], data);
-};
+}
 
-module.exports.parse = function (submission, variant, question, course, callback) {
+export function parse(submission, variant, question, course, callback) {
   const data = {
     params: variant.params,
     true_answer: variant.true_answer,
@@ -173,4 +163,4 @@ module.exports.parse = function (submission, variant, question, course, callback
     gradable: true,
   };
   callback(null, [], data);
-};
+}
