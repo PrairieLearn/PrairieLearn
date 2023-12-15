@@ -89,7 +89,11 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      InstanceQuestionSchema,
+      InstanceQuestionSchema.extend({
+        modified_at: z.string(),
+        qid: z.string().nullable(),
+        question_number: z.number().nullable(),
+      }),
     );
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
