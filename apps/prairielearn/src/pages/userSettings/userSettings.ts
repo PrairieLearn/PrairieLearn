@@ -2,6 +2,7 @@ import express = require('express');
 import asyncHandler = require('express-async-handler');
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import hljs from 'highlight.js';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -20,10 +21,12 @@ router.get(
     const authn_institution = InstitutionSchema.parse(res.locals.authn_institution);
     let authn_provider_debug;
 
-    if ('debug' in req.query && res.locals.authn_provider_name === 'LTI 1.3') {
-      authn_provider_debug = {
-        debug: 'secret',
-      };
+    const debug = {
+      debug: 'secret',
+    };
+
+    if ('debug' in req.query && res.locals.authn_provider_name === 'dev') {
+      authn_provider_debug = hljs.highlight(JSON.stringify(debug, null, 2), { language: 'json'}).value
     }
 
     const accessTokens = await sqldb.queryRows(

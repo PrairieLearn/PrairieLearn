@@ -1,13 +1,12 @@
 import { z } from 'zod';
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { IdSchema, Institution, User } from '../../lib/db-types';
 import { type Purchase } from '../../ee/lib/billing/purchases';
 import { isEnterprise } from '../../lib/license';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html';
-import { EncodedData } from '@prairielearn/browser-utils';
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { nodeModulesAssetPath } from '../../lib/assets';
 
 export const AccessTokenSchema = z.object({
   created_at: z.string(),
@@ -35,15 +34,19 @@ export function UserSettings({
   accessTokens: AccessToken[];
   newAccessTokens: string[];
   purchases: Purchase[];
-  authn_provider_debug: any;
+  authn_provider_debug: string;
   resLocals: Record<string, any>;
 }) {
-  let authn_provider_debug_toggle;
+  let authn_provider_debug_content;
   if (authn_provider_debug) {
-    authn_provider_debug_toggle = html`
-    <button type="button" class="btn btn-secondary btn-xs" id="authn_provider_debug_toggle">
-      Debug
-    </button>`;
+    authn_provider_debug_content = html`
+    <button type="button" class="btn btn-secondary btn-xs" onClick="$('#authn_provider_debug_content').toggle();">
+      Show details
+    </button>
+    <div id="authn_provider_debug_content" style="display:none;"><pre><code>${unsafeHtml(
+      authn_provider_debug,
+    )}</pre></code></div>
+    `;
   }
 
   return html`
@@ -51,7 +54,7 @@ export function UserSettings({
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
-        ${authn_provider_debug ? compiledScriptTag('userSettings.ts') : ''}
+        <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
       </head>
       <body>
         <script>
@@ -59,7 +62,6 @@ export function UserSettings({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${authn_provider_debug ? EncodedData(authn_provider_debug, 'authn_provider_debug') : ''}
         ${renderEjs(__filename, "<%- include('../../pages/partials/navbar') %>", {
           ...resLocals,
           navPage: 'user_settings',
@@ -90,7 +92,7 @@ export function UserSettings({
                 </tr>
                 <tr>
                   <th>Authentication method</th>
-                  <td>${authn_provider_name}${authn_provider_debug_toggle}</td>
+                  <td>${authn_provider_name} ${authn_provider_debug_content}</td>
                 </tr>
               </tbody>
             </table>
@@ -205,7 +207,9 @@ export function UserSettings({
                   )}
             </ul>
           </div>
-          <a href="?debug" class="small text-secondary">Advanced page</a>
+          ${authn_provider_debug
+            ? html`<a href="/pl/settings" class="small text-secondary">Standard page</a>`
+            : html`<a href="/pl/settings?debug" class="small text-secondary">Advanced page</a>`}
         </main>
       </body>
     </html>
