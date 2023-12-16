@@ -92,7 +92,7 @@ export function UserSettings({
                 </tr>
                 <tr>
                   <th>Authentication method</th>
-                  <td>${authn_provider_name} ${authn_provider_debug_content}</td>
+                  <td>${authn_provider_name}${authn_provider_debug_content}</td>
                 </tr>
               </tbody>
             </table>
