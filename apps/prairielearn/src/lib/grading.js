@@ -101,38 +101,24 @@ export function saveSubmission(submission, variant, question, variant_course, ca
       async () => {
         questionModule = questionServers.getModule(question.type);
         question_course = await getQuestionCourse(question, variant_course);
-      },
-      (callback) => {
-        questionModule.parse(
+        ({ courseIssues, data } = await questionModule.parse(
           submission,
           variant,
           question,
           question_course,
-          (err, ret_courseIssues, ret_data) => {
-            if (ERR(err, callback)) return;
-            courseIssues = ret_courseIssues;
-            data = ret_data;
+        ));
+        debug('saveSubmission()', 'completed parse()');
 
-            debug('saveSubmission()', 'completed parse()');
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
         const studentMessage = 'Error parsing submission';
         const courseData = { variant, question, submission, course: variant_course };
-        writeCourseIssues(
+        await writeCourseIssues(
           courseIssues,
           variant,
           submission.auth_user_id,
           studentMessage,
           courseData,
-          (err) => {
-            if (ERR(err, callback)) return;
-            debug('saveSubmission()', `wrote courseIssues: ${courseIssues.length}`);
-            callback(null);
-          },
         );
+        debug('saveSubmission()', `wrote courseIssues: ${courseIssues.length}`);
       },
       (callback) => {
         const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
@@ -236,51 +222,39 @@ export function gradeVariant(
       },
       async () => {
         questionModule = questionServers.getModule(question.type);
-      },
-      (callback) => {
+
         if (question.grading_method !== 'External') {
           // For Internal grading we call the grading code. For Manual grading, if the question
           // reached this point, it has auto points, so it should be treated like Internal.
-          questionModule.grade(
+          ({ courseIssues, data } = await questionModule.grade(
             submission,
             variant,
             question,
             question_course,
-            (err, ret_courseIssues, ret_data) => {
-              if (ERR(err, callback)) return;
-              courseIssues = ret_courseIssues;
-              const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-              data = {
-                ...ret_data,
-                gradable: ret_data.gradable && !hasFatalIssue,
-                broken: hasFatalIssue,
-              };
-              debug('_gradeVariant()', 'completed grade()', 'hasFatalIssue:', hasFatalIssue);
-              callback(null);
-            },
-          );
+          ));
+          const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+          data = {
+            ...data,
+            gradable: data.gradable && !hasFatalIssue,
+            broken: hasFatalIssue,
+          };
+          debug('_gradeVariant()', 'completed grade()', 'hasFatalIssue:', hasFatalIssue);
         } else {
           // for External grading we don't do anything
           courseIssues = [];
           data = {};
-          callback(null);
         }
-      },
-      (callback) => {
+
         const studentMessage = 'Error grading submission';
         const courseData = { variant, question, submission, course: variant_course };
-        writeCourseIssues(
+        await writeCourseIssues(
           courseIssues,
           variant,
           submission.auth_user_id,
           studentMessage,
           courseData,
-          (err) => {
-            if (ERR(err, callback)) return;
-            debug('_gradeVariant()', `wrote courseIssues: ${courseIssues.length}`);
-            callback(null);
-          },
         );
+        debug('_gradeVariant()', `wrote courseIssues: ${courseIssues.length}`);
       },
       (callback) => {
         if (question.grading_method === 'External') {

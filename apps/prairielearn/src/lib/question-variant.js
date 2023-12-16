@@ -1,19 +1,17 @@
 // @ts-check
-
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as path from 'path';
 import debugfn from 'debug';
 import * as fg from 'fast-glob';
 import * as util from 'util';
-import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 
+import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
+
 import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
-import * as async from 'async';
 
 const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -24,9 +22,8 @@ const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
  * @param {Object} question - The question for the variant.
  * @param {Object} course - The course for the question.
  * @param {Object} options - Options controlling the creation: options = {variant_seed}
- * @param {function} callback - A callback(err, courseIssues, variant) function.
  */
-function makeVariant(question, course, options, callback) {
+async function makeVariant(question, course, options) {
   debug('_makeVariant()');
   var variant_seed;
   if (_(options).has('variant_seed') && options.variant_seed != null) {
@@ -35,72 +32,55 @@ function makeVariant(question, course, options, callback) {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
   debug(`_makeVariant(): question_id = ${question.id}`);
-  /** @type {questionServers.QuestionServer} */
-  let questionModule;
   let courseIssues, variant;
-  async.series(
-    [
-      async () => {
-        questionModule = questionServers.getModule(question.type);
-      },
-      (callback) => {
-        questionModule.generate(
-          question,
-          course,
-          variant_seed,
-          (err, generateCourseIssues, data) => {
-            if (ERR(err, callback)) return;
-            courseIssues = generateCourseIssues;
-            const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-            variant = {
-              variant_seed: variant_seed,
-              params: data.params || {},
-              true_answer: data.true_answer || {},
-              options: data.options || {},
-              broken: hasFatalIssue,
-            };
-            callback(null);
-          },
-        );
-      },
-      async () => {
-        if (question.workspace_image !== null) {
-          // if workspace, add graded files to params
-          variant.params['_workspace_required_file_names'] = (
-            question.workspace_graded_files || []
-          ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
-          if (!('_required_file_names' in variant.params)) {
-            variant.params['_required_file_names'] = [];
-          }
-          variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-            variant.params['_workspace_required_file_names'],
-          );
-        }
-      },
-      (callback) => {
-        if (variant.broken) {
-          return callback(null);
-        }
-        questionModule.prepare(question, course, variant, (err, prepareCourseIssues, data) => {
-          if (ERR(err, callback)) return;
-          courseIssues.push(...prepareCourseIssues);
-          const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-          variant = {
-            variant_seed: variant_seed,
-            params: data.params || {},
-            true_answer: data.true_answer || {},
-            options: data.options || {},
-            broken: hasFatalIssue,
-          };
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, courseIssues, variant);
-    },
+
+  const questionModule = questionServers.getModule(question.type);
+  const { courseIssues: generateCourseIssues, data } = await questionModule.generate(
+    question,
+    course,
+    variant_seed,
   );
+  courseIssues = generateCourseIssues;
+  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+  variant = {
+    variant_seed: variant_seed,
+    params: data.params || {},
+    true_answer: data.true_answer || {},
+    options: data.options || {},
+    broken: hasFatalIssue,
+  };
+
+  if (question.workspace_image !== null) {
+    // if workspace, add graded files to params
+    variant.params['_workspace_required_file_names'] = (
+      question.workspace_graded_files || []
+    ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
+    if (!('_required_file_names' in variant.params)) {
+      variant.params['_required_file_names'] = [];
+    }
+    variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
+      variant.params['_workspace_required_file_names'],
+    );
+  }
+
+  if (!variant.broken) {
+    const { courseIssues: prepareCourseIssues, data } = await questionModule.prepare(
+      question,
+      course,
+      variant,
+    );
+    courseIssues.push(...prepareCourseIssues);
+    const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+    variant = {
+      variant_seed: variant_seed,
+      params: data.params || {},
+      true_answer: data.true_answer || {},
+      options: data.options || {},
+      broken: hasFatalIssue,
+    };
+  }
+
+  return { courseIssues, variant };
 }
 
 /**
@@ -111,56 +91,27 @@ function makeVariant(question, course, options, callback) {
  * @param {Object} question - The question for the variant.
  * @param {Object} variant_course - The course for the variant.
  * @param {string} authn_user_id - The current authenticated user.
- * @param {function} callback - A callback(err, fileData) function.
+ * @returns {Promise<Buffer>}
  */
-export function getFile(filename, variant, question, variant_course, authn_user_id, callback) {
-  /** @type {questionServers.QuestionServer} */
-  let questionModule;
-  let question_course, fileData;
-  async.series(
-    [
-      async () => {
-        question_course = await getQuestionCourse(question, variant_course);
-        questionModule = questionServers.getModule(question.type);
-      },
-      (callback) => {
-        if (!questionModule.file) {
-          return callback(
-            new Error(`Question type ${question.type} does not support file generation`),
-          );
-        }
-        questionModule.file(
-          filename,
-          variant,
-          question,
-          question_course,
-          (err, courseIssues, ret_fileData) => {
-            if (ERR(err, callback)) return;
-            fileData = ret_fileData;
-            const studentMessage = 'Error creating file: ' + filename;
-            const courseData = { variant, question, course: variant_course };
-            writeCourseIssues(
-              courseIssues,
-              variant,
-              authn_user_id,
-              studentMessage,
-              courseData,
-              (err) => {
-                if (ERR(err, callback)) return;
-
-                return callback(null);
-              },
-            );
-          },
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      return callback(null, fileData);
-    },
+export async function getFileAsync(filename, variant, question, variant_course, authn_user_id) {
+  const question_course = await getQuestionCourse(question, variant_course);
+  const questionModule = questionServers.getModule(question.type);
+  if (!questionModule.file) {
+    throw new Error(`Question type ${question.type} does not support file generation`);
+  }
+  const { courseIssues, data: fileData } = await questionModule.file(
+    filename,
+    variant,
+    question,
+    question_course,
   );
+
+  const studentMessage = 'Error creating file: ' + filename;
+  const courseData = { variant, question, course: variant_course };
+  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  return fileData;
 }
+export const getFile = util.callbackify(getFileAsync);
 
 /**
  * Internal function, do not call directly. Get a question by either question_id or instance_question_id.
@@ -189,12 +140,14 @@ async function selectQuestion(question_id, instance_question_id) {
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
+ * @param {?string} course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param {Object} variant_course - The course for the variant.
  * @param {Object} question_course - The course for the question.
  * @param {Object} options - Options controlling the creation: options = {variant_seed}
- * @param {function} callback - A callback(err, variant) function.
+ * @param {boolean} require_open - If true, only use an existing variant if it is open.
+ * @param {?string} client_fingerprint_id - The client fingerprint for this variant.
  */
-function makeAndInsertVariant(
+async function makeAndInsertVariant(
   question_id,
   instance_question_id,
   user_id,
@@ -206,49 +159,36 @@ function makeAndInsertVariant(
   options,
   require_open,
   client_fingerprint_id,
-  callback,
 ) {
-  util.callbackify(selectQuestion)(question_id, instance_question_id, (err, question) => {
-    if (ERR(err, callback)) return;
-    makeVariant(question, question_course, options, (err, courseIssues, variant) => {
-      if (ERR(err, callback)) return;
-      const params = [
-        variant.variant_seed,
-        variant.params,
-        variant.true_answer,
-        variant.options,
-        variant.broken,
-        instance_question_id,
-        question.id,
-        course_instance_id,
-        user_id,
-        authn_user_id,
-        group_work,
-        require_open,
-        variant_course.id,
-        client_fingerprint_id,
-      ];
-      sqldb.callOneRow('variants_insert', params, (err, result) => {
-        if (ERR(err, callback)) return;
-        const variant = result.rows[0].variant;
-        debug('variants_insert', variant);
+  const question = await selectQuestion(question_id, instance_question_id);
+  const { courseIssues, variant: variantData } = await makeVariant(
+    question,
+    question_course,
+    options,
+  );
+  const result = await sqldb.callOneRowAsync('variants_insert', [
+    variantData.variant_seed,
+    variantData.params,
+    variantData.true_answer,
+    variantData.options,
+    variantData.broken,
+    instance_question_id,
+    question.id,
+    course_instance_id,
+    user_id,
+    authn_user_id,
+    group_work,
+    require_open,
+    variant_course.id,
+    client_fingerprint_id,
+  ]);
+  const variant = result.rows[0].variant;
+  debug('variants_insert', variant);
 
-        const studentMessage = 'Error creating question variant';
-        const courseData = { variant, question, course: variant_course };
-        writeCourseIssues(
-          courseIssues,
-          variant,
-          authn_user_id,
-          studentMessage,
-          courseData,
-          (err) => {
-            if (ERR(err, callback)) return;
-            return callback(null, variant);
-          },
-        );
-      });
-    });
-  });
+  const studentMessage = 'Error creating question variant';
+  const courseData = { variant, question, course: variant_course };
+  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  return variant;
 }
 
 /**
@@ -259,15 +199,14 @@ function makeAndInsertVariant(
  * @param {string} user_id - The user for the new variant.
  * @param {string} authn_user_id - The current authenticated user.
  * @param {boolean} group_work - If the assessment will support group work.
- * @param {?number} course_instance_id - The course instance for this variant. Can be null for instructor questions.
+ * @param {?string} course_instance_id - The course instance for this variant. Can be null for instructor questions.
  * @param {Object} variant_course - The course for the variant.
  * @param {Object} question_course - The course for the question.
  * @param {Object} options - Options controlling the creation: options = {variant_seed}
  * @param {boolean} require_open - If true, only use an existing variant if it is open.
  * @param {?string} client_fingerprint_id - The client fingerprint for this variant. Can be null.
- * @param {function} callback - A callback(err, variant) function.
  */
-export function ensureVariant(
+export async function ensureVariant(
   question_id,
   instance_question_id,
   user_id,
@@ -279,61 +218,32 @@ export function ensureVariant(
   options,
   require_open,
   client_fingerprint_id,
-  callback,
 ) {
   if (instance_question_id != null) {
-    // see if we have a useable existing variant, otherwise
-    // make a new one
-    var params = [instance_question_id, require_open];
-    sqldb.call('instance_questions_select_variant', params, (err, result) => {
-      if (ERR(err, callback)) return;
-      const variant = result.rows[0].variant;
-      if (variant != null) {
-        debug('instance_questions_select_variant not null', variant);
-        return callback(null, variant);
-      }
-      makeAndInsertVariant(
-        question_id,
-        instance_question_id,
-        user_id,
-        authn_user_id,
-        group_work,
-        course_instance_id,
-        variant_course,
-        question_course,
-        options,
-        require_open,
-        client_fingerprint_id,
-        (err, variant) => {
-          if (ERR(err, callback)) return;
-          debug(
-            'instance_questions_select_variant was null, run through _makeAndInsertVariant',
-            variant,
-          );
-          callback(null, variant);
-        },
-      );
-    });
-  } else {
-    // if we don't have instance_question_id, just make a new variant
-    makeAndInsertVariant(
-      question_id,
+    // see if we have a useable existing variant, otherwise make a new one
+    const result = await sqldb.callAsync('instance_questions_select_variant', [
       instance_question_id,
-      user_id,
-      authn_user_id,
-      group_work,
-      course_instance_id,
-      variant_course,
-      question_course,
-      options,
       require_open,
-      client_fingerprint_id,
-      (err, variant) => {
-        if (ERR(err, callback)) return;
-        callback(null, variant);
-      },
-    );
+    ]);
+    const variant = result.rows[0].variant;
+    if (variant != null) {
+      return variant;
+    }
   }
+  // if we don't have instance_question_id or if it's not open, just make a new variant
+  return await makeAndInsertVariant(
+    question_id,
+    instance_question_id,
+    user_id,
+    authn_user_id,
+    group_work,
+    course_instance_id,
+    variant_course,
+    question_course,
+    options,
+    require_open,
+    client_fingerprint_id,
+  );
 }
 
 /**

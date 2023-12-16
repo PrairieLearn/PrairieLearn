@@ -1723,7 +1723,7 @@ export async function parse(submission, variant, question, course) {
   });
 }
 
-export async function gradeAsync(submission, variant, question, question_course) {
+export async function grade(submission, variant, question, question_course) {
   return instrumented('freeform.grade', async () => {
     debug('grade()');
     if (variant.broken) throw new Error('attemped to grade broken variant');
