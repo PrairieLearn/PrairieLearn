@@ -3,7 +3,6 @@ const _ = require('lodash');
 import * as path from 'path';
 import debugfn from 'debug';
 import * as fg from 'fast-glob';
-import * as util from 'util';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
@@ -93,7 +92,7 @@ async function makeVariant(question, course, options) {
  * @param {string} authn_user_id - The current authenticated user.
  * @returns {Promise<Buffer>}
  */
-export async function getFileAsync(filename, variant, question, variant_course, authn_user_id) {
+export async function getDynamicFile(filename, variant, question, variant_course, authn_user_id) {
   const question_course = await getQuestionCourse(question, variant_course);
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.file) {
@@ -111,7 +110,6 @@ export async function getFileAsync(filename, variant, question, variant_course, 
   await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
   return fileData;
 }
-export const getFile = util.callbackify(getFileAsync);
 
 /**
  * Internal function, do not call directly. Get a question by either question_id or instance_question_id.
