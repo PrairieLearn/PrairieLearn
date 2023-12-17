@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
 import asyncHandler = require('express-async-handler');
+import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation';
 import { features } from '../../lib/features';
+import middlewareAuthn = require('../../middlewares/authn');
+import csrfToken = require('../../middlewares/csrfToken');
 
 const router = Router({ mergeParams: true });
 
@@ -20,6 +23,14 @@ router.use(
   }),
 );
 
+router.use(
+  '/:lti13_instance_id/course_navigation',
+  middlewareAuthn, // authentication, set res.locals.authn_user
+  csrfToken,
+  lti13CourseNavigation,
+);
+
+// lti13InstancePages is a catch all for some small pages so put it last
 router.use('/:lti13_instance_id/', lti13InstancePages);
 
 export default router;
