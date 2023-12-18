@@ -1,7 +1,5 @@
 // @ts-check
 const _ = require('lodash');
-import * as path from 'path';
-import debugfn from 'debug';
 import * as fg from 'fast-glob';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
@@ -12,8 +10,6 @@ import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
  * @protected
@@ -23,14 +19,12 @@ const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
  * @param {Object} options - Options controlling the creation: options = {variant_seed}
  */
 async function makeVariant(question, course, options) {
-  debug('_makeVariant()');
   var variant_seed;
   if (_(options).has('variant_seed') && options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
     variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
   }
-  debug(`_makeVariant(): question_id = ${question.id}`);
   let courseIssues, variant;
 
   const questionModule = questionServers.getModule(question.type);
@@ -181,7 +175,6 @@ async function makeAndInsertVariant(
     client_fingerprint_id,
   ]);
   const variant = result.rows[0].variant;
-  debug('variants_insert', variant);
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };

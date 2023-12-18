@@ -4,8 +4,6 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
 const jsonStringifySafe = require('json-stringify-safe');
-import debugfn from 'debug';
-import * as path from 'path';
 
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
@@ -17,7 +15,6 @@ import { writeCourseIssues } from './issues';
 import { SubmissionSchema } from './db-types';
 import { ok as assert } from 'node:assert';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -39,7 +36,6 @@ function createTestSubmission(
   authn_user_id,
   callback,
 ) {
-  debug('_createTestSubmission()');
   if (question.type !== 'Freeform') return callback(new Error('question.type must be Freeform'));
   /** @type {questionServers.QuestionServer} */
   let questionModule;
@@ -58,12 +54,10 @@ function createTestSubmission(
         ));
         const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
         data = { ...data, broken: hasFatalIssue };
-        debug('_createTestSubmission()', 'completed test()');
 
         const studentMessage = 'Error creating test submission';
         const courseData = { variant, question, course: variant_course };
         await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
-        debug('_createTestSubmission()', `wrote courseIssues: ${courseIssues.length}`);
       },
       (callback) => {
         const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
@@ -91,7 +85,6 @@ function createTestSubmission(
         sqldb.callOneRow('submissions_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
           submission_id = result.rows[0].submission_id;
-          debug('_createTestSubmission()', 'inserted', 'submission_id:', submission_id);
           callback(null);
         });
       },
@@ -100,7 +93,6 @@ function createTestSubmission(
         sqldb.callOneRow('grading_jobs_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
           grading_job = result.rows[0];
-          debug('_createTestSubmission()', 'inserted', 'grading_job_id:', grading_job.id);
           callback(null);
         });
       },
@@ -124,14 +116,12 @@ function createTestSubmission(
         sqldb.callOneRow('grading_jobs_update_after_grading', params, (err, result) => {
           if (ERR(err, callback)) return;
           grading_job = result.rows[0];
-          debug('_createTestSubmission()', 'inserted', 'grading_job.id:', grading_job.id);
           callback(null);
         });
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
-      debug('_createTestSubmission()', 'returning', 'submission_id:', submission_id);
       callback(null, submission_id);
     },
   );
@@ -192,7 +182,6 @@ function compareSubmissions(expected_submission, test_submission) {
  * @param {function} callback - A callback(err) function.
  */
 function testVariant(variant, question, course, test_type, authn_user_id, callback) {
-  debug('_testVariant()');
   let expected_submission_id, expected_submission, test_submission_id, test_submission;
   async.series(
     [
@@ -206,14 +195,12 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
           (err, ret_submission_id) => {
             if (ERR(err, callback)) return;
             expected_submission_id = ret_submission_id;
-            debug('_testVariant()', 'expected_submission_id:', expected_submission_id);
             callback(null);
           },
         );
       },
       async () => {
         expected_submission = await selectSubmission(expected_submission_id);
-        debug('_testVariant()', 'selected expected_submission, id:', expected_submission.id);
       },
       (callback) => {
         const submission = {
@@ -224,20 +211,17 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
         saveSubmission(submission, variant, question, course, (err, ret_submission_id) => {
           if (ERR(err, callback)) return;
           test_submission_id = ret_submission_id;
-          debug('_testVariant()', 'test_submission_id:', test_submission_id);
           callback(null);
         });
       },
       (callback) => {
         gradeVariant(variant, test_submission_id, question, course, authn_user_id, true, (err) => {
           if (ERR(err, callback)) return;
-          debug('testVariant()', 'graded');
           callback(null);
         });
       },
       async () => {
         test_submission = await selectSubmission(test_submission_id);
-        debug('_testVariant()', 'selected test_submission, id:', test_submission.id);
       },
       async () => {
         const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -254,7 +238,6 @@ function testVariant(variant, question, course, test_type, authn_user_id, callba
     ],
     (err) => {
       if (ERR(err, callback)) return;
-      debug('_testVariant()', 'returning');
       callback(null, expected_submission, test_submission);
     },
   );
@@ -279,8 +262,6 @@ function testQuestion(
   authn_user_id,
   callback,
 ) {
-  debug('_testQuestion()');
-
   let generateDuration;
   let renderDuration;
   let gradeDuration;
@@ -335,7 +316,6 @@ function testQuestion(
             const renderEnd = Date.now();
             renderDuration = renderEnd - renderStart;
             if (ERR(err, callback)) return;
-            debug('_testQuestion()', 'rendered variant');
             callback(null);
           },
         );
@@ -355,14 +335,6 @@ function testQuestion(
             if (ERR(err, callback)) return;
             expected_submission = ret_expected_submission;
             test_submission = ret_test_submission;
-            debug(
-              '_testQuestion()',
-              'tested',
-              'expected_submission_id:',
-              expected_submission ? expected_submission.id : null,
-              'test_submission_id:',
-              test_submission ? test_submission.id : null,
-            );
             callback(null);
           },
         );
@@ -370,7 +342,6 @@ function testQuestion(
     ],
     (err) => {
       if (ERR(err, callback)) return;
-      debug('_testQuestion()', 'returning');
       const stats = { generateDuration, renderDuration, gradeDuration };
       callback(null, variant, expected_submission, test_submission, stats);
     },

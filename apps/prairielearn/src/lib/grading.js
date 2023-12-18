@@ -3,8 +3,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
-import * as path from 'path';
-import debugfn from 'debug';
 import * as util from 'util';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
@@ -17,7 +15,6 @@ import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import * as workspaceHelper from './workspace';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -40,7 +37,6 @@ class NoSubmissionError extends Error {
  * @param {function} callback - A callback(err, submission_id) function.
  */
 export function saveSubmission(submission, variant, question, variant_course, callback) {
-  debug('saveSubmission()');
   submission.raw_submitted_answer = submission.submitted_answer;
   submission.gradable = true;
   /** @type {questionServers.QuestionServer} */
@@ -68,12 +64,10 @@ export function saveSubmission(submission, variant, question, variant_course, ca
       async () => {
         // if we have a workspace and any files to be graded, get the files
         if (workspace_id == null || !question.workspace_graded_files?.length) {
-          debug('saveSubmission()', 'not getting workspace graded files');
           return;
         }
         try {
           zipPath = await workspaceHelper.getGradedFiles(workspace_id);
-          debug('saveSubmission()', `saved graded files: ${zipPath}`);
         } catch (err) {
           if (err instanceof workspaceHelper.SubmissionFormatError) {
             ((submission.format_errors ??= {})._files ??= []).push(err.message);
@@ -107,7 +101,6 @@ export function saveSubmission(submission, variant, question, variant_course, ca
           question,
           question_course,
         ));
-        debug('saveSubmission()', 'completed parse()');
 
         const studentMessage = 'Error parsing submission';
         const courseData = { variant, question, submission, course: variant_course };
@@ -118,7 +111,6 @@ export function saveSubmission(submission, variant, question, variant_course, ca
           studentMessage,
           courseData,
         );
-        debug('saveSubmission()', `wrote courseIssues: ${courseIssues.length}`);
       },
       (callback) => {
         const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
@@ -143,14 +135,12 @@ export function saveSubmission(submission, variant, question, variant_course, ca
         sqldb.callOneRow('submissions_insert', params, (err, result) => {
           if (ERR(err, callback)) return;
           submission_id = result.rows[0].submission_id;
-          debug('saveSubmission()', 'inserted', 'submission_id:', submission_id);
           callback(null);
         });
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
-      debug('saveSubmission()', 'returning', 'submission_id:', submission_id);
       callback(null, submission_id);
     },
   );
@@ -176,7 +166,6 @@ export function gradeVariant(
   overrideGradeRateCheck,
   callback,
 ) {
-  debug('_gradeVariant()');
   /** @type {questionServers.QuestionServer} */
   let questionModule;
   let question_course, courseIssues, data, submission, grading_job;
@@ -191,7 +180,6 @@ export function gradeVariant(
           if (ERR(err, callback)) return;
           if (result.rowCount === 0) return callback(new NoSubmissionError());
           submission = result.rows[0];
-          debug('_gradeVariant()', 'selected submission', 'submission.id:', submission.id);
           callback(null);
         });
       },
@@ -200,12 +188,6 @@ export function gradeVariant(
         var params = [variant.instance_question_id];
         sqldb.callZeroOrOneRow('instance_questions_next_allowed_grade', params, (err, result) => {
           if (ERR(err, callback)) return;
-          debug(
-            '_gradeVariant()',
-            'checked grade rate',
-            'allow_grade_left_ms:',
-            result.rows[0].allow_grade_left_ms,
-          );
           if (result.rows[0].allow_grade_left_ms > 0) return callback(new NoSubmissionError());
           callback(null);
         });
@@ -216,7 +198,6 @@ export function gradeVariant(
           if (ERR(err, callback)) return;
 
           grading_job = result.rows[0];
-          debug('_gradeVariant()', 'inserted', 'grading_job.id:', grading_job.id);
           callback(null);
         });
       },
@@ -238,7 +219,6 @@ export function gradeVariant(
             gradable: data.gradable && !hasFatalIssue,
             broken: hasFatalIssue,
           };
-          debug('_gradeVariant()', 'completed grade()', 'hasFatalIssue:', hasFatalIssue);
         } else {
           // for External grading we don't do anything
           courseIssues = [];
@@ -254,7 +234,6 @@ export function gradeVariant(
           studentMessage,
           courseData,
         );
-        debug('_gradeVariant()', `wrote courseIssues: ${courseIssues.length}`);
       },
       (callback) => {
         if (question.grading_method === 'External') {
@@ -291,7 +270,6 @@ export function gradeVariant(
           grading_job = result.rows[0];
           if (!grading_job.gradable) return callback(new NoSubmissionError());
 
-          debug('_gradeVariant()', 'inserted', 'grading_job.id:', grading_job.id);
           callback(null);
         });
       },
@@ -313,11 +291,9 @@ export function gradeVariant(
     (err) => {
       // catch NoSubmissionError as we are just using it to exit with no action
       if (err instanceof NoSubmissionError) {
-        debug('_gradeVariant()', 'no submissions for grading, skipping');
         err = null;
       }
       if (ERR(err, callback)) return;
-      debug('_gradeVariant()', 'success');
       // data and grading_job might not be defined if we bailed out early above
       if (data && !data.broken && grading_job && grading_job.grading_method === 'External') {
         // We need to submit this external grading job.
@@ -350,8 +326,6 @@ export function saveAndGradeSubmission(
   overrideGradeRateCheck,
   callback,
 ) {
-  debug('saveAndGradeSubmission()');
-
   let submission_id, grading_job_id;
   async.series(
     [
@@ -359,7 +333,6 @@ export function saveAndGradeSubmission(
         saveSubmission(submission, variant, question, course, (err, ret_submission_id) => {
           if (ERR(err, callback)) return;
           submission_id = ret_submission_id;
-          debug('saveAndGradeSubmission()', 'submission_id:', submission_id);
           callback(null);
         });
       },
@@ -374,7 +347,6 @@ export function saveAndGradeSubmission(
           (err, ret_grading_job_id) => {
             if (ERR(err, callback)) return;
             grading_job_id = ret_grading_job_id;
-            debug('saveAndGradeSubmission()', 'graded');
             callback(null);
           },
         );
@@ -382,7 +354,6 @@ export function saveAndGradeSubmission(
     ],
     (err) => {
       if (ERR(err, callback)) return;
-      debug('saveAndGradeSubmission()', 'returning submission_id:', submission_id);
       if (grading_job_id !== undefined) {
         // We need to submit this grading job now that the
         // transaction has been committed
