@@ -8,15 +8,24 @@ import { Course, CourseInstance } from '../../../lib/db-types';
 export function Lti13CourseNavigationInstructor({
   courseName,
   resLocals,
-  courses_with_staff_access,
+  courses,
   course_instances,
 }: {
   courseName: string;
   resLocals: Record<string, any>;
-  courses_with_staff_access: Course[];
+  courses: Course[];
   course_instances: CourseInstance[];
 }): string {
 
+  /*
+
+    0 courses with edit access, 0 course instances.
+    1 course with edit access, N course instances.
+    N courses
+
+  */
+
+  console.log(courses)
   console.log(course_instances);
   return html`
     <!doctype html>
@@ -36,8 +45,16 @@ export function Lti13CourseNavigationInstructor({
         <main class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
-          <p>${courses_with_staff_access.length} courses with staff access.</p>
+          <p>We know that you came from ${courseName} -- now we need to connect that course to
+          a PrairieLearn course instance.
+          </p>
+
+          <p>${courses.length} courses with staff access.
+          </p>
           <p>${course_instances.length} course instances.</p>
+
+          <p><a class="btn btn-success" href="/pl/request_course">Request a new course</a>
+
         </main>
       </body>
     </html>

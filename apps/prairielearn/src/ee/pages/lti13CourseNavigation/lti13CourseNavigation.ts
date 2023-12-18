@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryOptionalRow, callAsync } from '@prairielearn/postgres';
-import { Lti13CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
-import { selectCoursesWithStaffAccess } from '../../../models/course';
+import { CourseInstance, Lti13CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
+import { selectCoursesWithEditAccess } from '../../../models/course';
 import {
   Lti13CourseNavigationInstructor,
   Lti13CourseNavigationNotReady,
@@ -87,17 +87,17 @@ router.get(
 
     } else {
 
-      const courses_with_staff_access = await selectCoursesWithStaffAccess({
+      const courses_with_staff_access = await selectCoursesWithEditAccess({
         user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.authn_is_administrator,
       });
 
-      let course_instances = [];
+      let course_instances: CourseInstance[] = [];
 
       //courses_with_staff_access.forEach(async (course) => {
       for (const course of courses_with_staff_access) {
 
-        let foo = await selectCourseInstancesWithStaffAccess({
+        const loopCI = await selectCourseInstancesWithStaffAccess({
           course_id: course.id,
           user_id: res.locals.authn_user.user_id,
           authn_user_id: res.locals.authn_user.user_id,
@@ -105,17 +105,14 @@ router.get(
           authn_is_administrator: res.locals.authn_is_administrator,
         });
 
-        course_instances.push.apply(course_instances, foo);
-        //course_instances[course.id] = foo;
+        course_instances = [...course_instances, ...loopCI];
       };
-
-      //console.log(courses_with_staff_access);
 
       res.send(
         Lti13CourseNavigationInstructor({
           resLocals: res.locals,
           courseName,
-          courses_with_staff_access,
+          courses: courses_with_staff_access,
           course_instances,
         }),
       );
