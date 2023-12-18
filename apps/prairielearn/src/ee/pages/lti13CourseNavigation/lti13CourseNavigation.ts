@@ -1,13 +1,20 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryOptionalRow, callAsync } from '@prairielearn/postgres';
-import { CourseInstance, Lti13CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
+
+import {
+  CourseInstance,
+  Lti13CourseInstance,
+  Lti13CourseInstanceSchema,
+} from '../../../lib/db-types';
 import { selectCoursesWithEditAccess } from '../../../models/course';
+import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
+
 import {
   Lti13CourseNavigationInstructor,
   Lti13CourseNavigationNotReady,
+  Lti13CourseNavigationDone,
 } from './lti13CourseNavigation.html';
-import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -43,9 +50,22 @@ const lti13_claims = {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+
+    if ('done' in req.query) {
+      res.send(
+        Lti13CourseNavigationDone({
+          resLocals: res.locals,
+        }));
+      return;
+    }
+
     // Get role of LTI user
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-    const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+    let role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+
+    if ('student' in req.query) {
+      role_instructor = false;
+    }
 
     // Get lti13_course_instance info, if present
     const lci = await queryOptionalRow(
@@ -84,19 +104,20 @@ router.get(
           courseName,
         }),
       );
-
     } else {
-
-      const courses_with_staff_access = await selectCoursesWithEditAccess({
+      let courses_with_staff_access = await selectCoursesWithEditAccess({
         user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.authn_is_administrator,
       });
+
+      if ('nocourse' in req.query) {
+        courses_with_staff_access = [];
+      }
 
       let course_instances: CourseInstance[] = [];
 
       //courses_with_staff_access.forEach(async (course) => {
       for (const course of courses_with_staff_access) {
-
         const loopCI = await selectCourseInstancesWithStaffAccess({
           course_id: course.id,
           user_id: res.locals.authn_user.user_id,
@@ -106,7 +127,7 @@ router.get(
         });
 
         course_instances = [...course_instances, ...loopCI];
-      };
+      }
 
       res.send(
         Lti13CourseNavigationInstructor({
@@ -117,6 +138,14 @@ router.get(
         }),
       );
     }
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler((req, res) => {
+    console.log(req.body);
+    res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
   }),
 );
 
