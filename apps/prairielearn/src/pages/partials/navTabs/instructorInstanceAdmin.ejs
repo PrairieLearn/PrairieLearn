@@ -23,6 +23,13 @@
     urlSuffix:      '/instance_admin/lti',
     iconClasses:    'fas fa-graduation-cap',
     tabLabel:       'LTI'}) %>
+<% if (lti13_enabled) { %>
+    <%- include('navTab', {
+        activeSubPage:  'lti13',
+        urlSuffix:      '/instance_admin/lti13',
+        iconClasses:    'fas fa-school',
+        tabLabel:       'LTI 1.3'}) %>
+<% } %>
 <% if (billing_enabled) { %>
     <%- include('navTab', {
         activeSubPage:  'billing',

@@ -1249,13 +1249,16 @@ module.exports.initExpress = function () {
       next();
     },
     asyncHandler(async (req, res, next) => {
-      // The navigation tabs rely on this value to know when to show/hide the
-      // billing tab, so we need to load it for all instance admin pages.
+      // The navigation tabs rely on these values to know when to show/hide themselves
+      // so we need to load it for all instance admin pages.
       const hasCourseInstanceBilling = await features.enabledFromLocals(
         'course-instance-billing',
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const hasLti13 = await features.enabledFromLocals('lti13', res.locals);
+      res.locals.lti13_enabled = hasLti13 && isEnterprise();
       next();
     }),
   );
@@ -1320,6 +1323,10 @@ module.exports.initExpress = function () {
       },
       require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
     ]);
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13',
+      require('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13').default,
+    );
   }
 
   // Global client files
