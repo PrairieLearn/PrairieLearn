@@ -114,10 +114,6 @@ router.get(
                 record.student_question_number +
                 (record.variant_number == null ? '' : '#' + record.variant_number),
             record.data == null ? null : JSON.stringify(record.data),
-            // record.client_fingerprint_number == null ? null : record.client_fingerprint_number,
-            // record.client_fingerprint.ip_address == null
-            //   ? null
-            //   : record.client_fingerprint.ip_address,
           ];
         },
       });
