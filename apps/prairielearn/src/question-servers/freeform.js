@@ -1783,7 +1783,7 @@ export async function test(variant, question, course, test_type) {
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+      variant_seed: parseInt(variant.variant_seed, 36),
       options: _.get(variant, 'options', {}),
       raw_submitted_answers: {},
       gradable: true,
