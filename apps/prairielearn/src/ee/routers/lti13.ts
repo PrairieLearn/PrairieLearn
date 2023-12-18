@@ -5,15 +5,17 @@ import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNav
 import { features } from '../../lib/features';
 import middlewareAuthn = require('../../middlewares/authn');
 import csrfToken = require('../../middlewares/csrfToken');
+import { selectLti13Instance } from '../models/lti13Instance';
 
 const router = Router({ mergeParams: true });
 
 router.use(
   '/:lti13_instance_id/',
   asyncHandler(async (req, res, next) => {
+    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
     if (
       await features.enabled('lti13', {
-        institution_id: req.params.institution_id,
+        institution_id: lti13_instance.institution_id,
       })
     ) {
       next();
