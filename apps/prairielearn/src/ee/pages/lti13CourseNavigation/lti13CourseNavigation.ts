@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryOptionalRow, callAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, callAsync, queryAsync } from '@prairielearn/postgres';
 
 import {
   CourseInstance,
@@ -55,6 +55,7 @@ router.get(
       res.send(
         Lti13CourseNavigationDone({
           resLocals: res.locals,
+          lti13_instance_id: req.params.lti13_instance_id,
         }));
       return;
     }
@@ -143,8 +144,45 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler((req, res) => {
+  asyncHandler(async (req, res) => {
     console.log(req.body);
+
+    /*
+    INSERT INTO
+  lti13_course_instances (
+    lti13_instance_id,
+    deployment_id,
+    context_id,
+    context_label,
+    context_title,
+    course_instance_id,
+    nrps_context_memberships_url,
+    ags_lineitems,
+    ags_lineitem
+  )
+VALUES
+  (
+    $lti13_instance_id,
+    $deployment_id,
+    $context_id,
+    $context_label,
+    $context_title,
+    $course_instance_id,
+    $nrps_context_memberships_url,
+    $ags_lineitems,
+    $ags_lineitem
+  );
+  */
+
+    await queryAsync(sql.link_ci, {
+      lti13_instance_id: req.params.lti13_instance_id,
+      deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+      context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
+      context_label: null,
+      context_title: null,
+      course_instance_id: req.body.ci_id,
+    });
+
     res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
   }),
 );

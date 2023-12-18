@@ -190,8 +190,10 @@ export function Lti13CourseNavigationNotReady({
 
 export function Lti13CourseNavigationDone({
   resLocals,
+  lti13_instance_id,
 }: {
   resLocals: Record<string, any>;
+  lti13_instance_id: string;
 }): string {
   return html`
     <!doctype html>
@@ -223,7 +225,7 @@ export function Lti13CourseNavigationDone({
           </p>
 
           <p>
-            <a href="." class="btn btn-success btn-lg"
+            <a href="/pl/lti13_instance/${lti13_instance_id}/course_navigation" class="btn btn-success btn-lg"
               >Click here to continue on to your course instance</a
             >
           </p>

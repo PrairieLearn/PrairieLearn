@@ -12,32 +12,23 @@ WHERE
 
 -- BLOCK link_ci
 INSERT INTO
-  pl_lti13_course_instances (
-    pl_lti13_instance_id,
+  lti13_course_instances (
+    lti13_instance_id,
     deployment_id,
     context_id,
     context_label,
     context_title,
-    course_instance_id,
-    nrps_context_memberships_url,
-    ags_lineitems,
-    ags_lineitem
+    course_instance_id
   )
 VALUES
   (
-    $instance_id,
+    $lti13_instance_id,
     $deployment_id,
     $context_id,
     $context_label,
     $context_title,
-    $course_instance_id,
-    $nrps_context_memberships_url,
-    $ags_lineitems,
-    $ags_lineitem
+    $course_instance_id
   );
 
--- upsert?
+-- upsert? what about deleted_at?
 -- user who created?
-
--- BLOCK get_course
-SELECT * FROM course_instances WHERE id = $course_instance_id;
