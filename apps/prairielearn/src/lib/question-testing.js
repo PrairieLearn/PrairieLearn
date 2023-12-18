@@ -58,9 +58,8 @@ function createTestSubmission(
           (err, ret_courseIssues, ret_data) => {
             if (ERR(err, callback)) return;
             courseIssues = ret_courseIssues;
-            data = ret_data;
             const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-            data.broken = hasFatalIssue;
+            data = { ...ret_data, broken: hasFatalIssue };
             debug('_createTestSubmission()', 'completed test()');
             callback(null);
           },
