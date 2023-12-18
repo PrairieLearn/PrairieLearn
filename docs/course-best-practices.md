@@ -9,7 +9,7 @@ This can be viewed as a more advanced version of the
 [course documentation page](course.md), as working knowledge of
 the structure of courses is necessary for understanding this documentation.
 
-## Motivation
+## Motivation and Background
 
 As described in the [course documentation page](course.md), a course is stored
 in a Git repository with a specific layout. As such, a large course with
@@ -17,7 +17,9 @@ many course instances and a large bank of questions is comparable to
 a large codebase in terms of the maintenance burden. Accordingly, many
 developer tools meant to manage large codebases can be applied to
 PrairieLearn courses. Throughout this page, we will use the terms "course"
-and "repository" interchangeably.
+and "repository" interchangeably. We will also assume familiarity with
+managing a course in a corresponding GitHub repository instead of only
+using the web interface.
 
 The techniques described here are primarily continuous integration (CI)
 practices. For more information about these techniques outside of the
@@ -31,20 +33,21 @@ regardless of the repository hosting platform.
 ## Technical Challenges
 
 The most important feature of PrairieLearn from a course maintenance
-standpoint is that, although most configuration files are read by
+standpoint is that, although most JSON configuration files are read by
 the platform each time that a sync is performed, this is not true
 of the files related to question content (HTML and Python). This
 means that breaking changes to a question are only be visible
 when the question is next opened, and may be the result of editing
-files not local to that question. In addition,
+files not local to that question.
 
 The following are common situations that tools described in this
 page are designed to solve:
 - Code shared between multiple questions is refactored in a way
 that changes the interface. Questions requiring the old interface
 may not display errors until they are next opened.
-- Code as part of a randomized question is invalid but only
+- Python code as part of a randomized question is invalid but only
 reachable in rare variants.
 - An instructor wishes to write questions with similar backend
-logic but different starting configurations
-- Invalid JSON or Python code is merged
+logic but different starting configurations.
+- Invalid JSON or Python code is merged to a course, but no
+errors are displayed until all affected questions are opened.
