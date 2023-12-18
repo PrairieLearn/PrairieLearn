@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { Lti13CourseInstanceSchema } from '../../../lib/db-types';
+import { loadSqlEquiv, queryOptionalRow, callAsync } from '@prairielearn/postgres';
+import { Lti13CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
+import { selectCoursesWithStaffAccess } from '../../../models/course';
+import {
+  Lti13CourseNavigationInstructor,
+  Lti13CourseNavigationNotReady,
+} from './lti13CourseNavigation.html';
+import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -25,13 +31,21 @@ const lti13_claims = {
     title: 'Potions',
     description: null,
   },
+  'https://purl.imsglobal.org/spec/lti/claim/tool_platform': {
+    guid: 'JBDFobrLcVnRDhQtha6AxTviEE50NLpNfcwUPUu7:canvas-lms',
+    name: 'Hogwarts',
+    version: 'cloud',
+    product_family_code: 'canvas',
+  },
 };
 
 // Placeholder to be enlarged later
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log(`course nav for ${req.params.lti13_instance_id}`);
+    // Get role of LTI user
+    const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
+    const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
 
     // Get lti13_course_instance info, if present
     const lci = await queryOptionalRow(
@@ -44,24 +58,73 @@ router.get(
       Lti13CourseInstanceSchema,
     );
 
+    //const lci: Lti13CourseInstance = { course_instance_id: '17', };
+
     if (lci) {
-      console.log(lci);
-      // Redirect from sourced info
-      // return
+      // Redirect to linked course instance
+      res.redirect(
+        `/pl/course_instance/${lci.course_instance_id}/${role_instructor ? 'instructor/' : ''}`,
+      );
+      return;
     }
 
-    // Get role of LTI user
-    const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-    const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+    let courseName = 'your course';
+    if (
+      'label' in lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'] &&
+      'title' in lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context']
+    ) {
+      courseName = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label;
+      courseName += `: ${lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title}`;
+    }
 
-    console.log(role_instructor);
-    // Instructors get options
-    // Non-instructors get an explanation
+    if (!role_instructor) {
+      res.send(
+        Lti13CourseNavigationNotReady({
+          resLocals: res.locals,
+          courseName,
+        }),
+      );
 
-    res.redirect('/pl');
+    } else {
+
+      const courses_with_staff_access = await selectCoursesWithStaffAccess({
+        user_id: res.locals.authn_user.user_id,
+        is_administrator: res.locals.authn_is_administrator,
+      });
+
+      let course_instances = [];
+
+      //courses_with_staff_access.forEach(async (course) => {
+      for (const course of courses_with_staff_access) {
+
+        let foo = await selectCourseInstancesWithStaffAccess({
+          course_id: course.id,
+          user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          is_administrator: res.locals.authn_is_administrator,
+          authn_is_administrator: res.locals.authn_is_administrator,
+        });
+
+        course_instances.push.apply(course_instances, foo);
+        //course_instances[course.id] = foo;
+      };
+
+      //console.log(courses_with_staff_access);
+
+      res.send(
+        Lti13CourseNavigationInstructor({
+          resLocals: res.locals,
+          courseName,
+          courses_with_staff_access,
+          course_instances,
+        }),
+      );
+    }
   }),
 );
 
-/* On saving course_instance_id connection, make sure the user has the right permissions */
+/* On saving course_instance_id connection, make sure the user has the right permissions
+   Unique should include deleted_at
+ */
 
 export default router;

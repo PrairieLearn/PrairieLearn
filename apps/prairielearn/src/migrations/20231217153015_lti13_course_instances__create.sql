@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS
     lti13_instance_id BIGINT REFERENCES lti13_instances ON DELETE CASCADE ON UPDATE CASCADE,
     --nrps_context_memberships_url text,
     --preferences jsonb,
-    UNIQUE (lti13_instance_id, deployment_id, context_id)
+    UNIQUE (lti13_instance_id, deployment_id, context_id, deleted_at)
   );
 
 CREATE INDEX IF NOT EXISTS lti13_course_instances_course_instance_id_idx ON lti13_course_instances (course_instance_id);
