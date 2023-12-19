@@ -108,6 +108,7 @@ router.post(
 
     // Put the LTI 1.3 claims in the session
     req.session.lti13_claims = lti13_claims;
+    req.session.authn_lti13_instance_id = lti13_instance.id;
 
     // Get the target_link out of the LTI request and redirect
     const redirUrl =
