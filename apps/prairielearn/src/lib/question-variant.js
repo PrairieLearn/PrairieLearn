@@ -224,9 +224,8 @@ export async function ensureVariant(
     const variant = await sqldb.callOptionalRow(
       'instance_questions_select_variant',
       [instance_question_id, require_open],
-      VariantWithFormattedDateSchema,
+      VariantWithFormattedDateSchema.nullable(),
     );
-    console.log(variant);
     if (variant != null) {
       return variant;
     }
