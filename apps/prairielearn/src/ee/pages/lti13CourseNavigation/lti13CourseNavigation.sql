@@ -27,7 +27,10 @@ VALUES
     $context_label,
     $context_title,
     $course_instance_id
-  );
+  )
+;
+-- Might still need some ON CONFLICT or checking to not make duplicate rows
+-- or check it first in code
 
 -- BLOCK upsert_lci
 UPDATE lti13_course_instances
