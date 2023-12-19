@@ -1,0 +1,72 @@
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+//import { EncodedData } from '@prairielearn/browser-utils';
+//import { compiledScriptTag } from '../../../lib/assets';
+
+export function InstructorInstanceAdminLti13({
+  resLocals,
+  lti13_instance_id,
+}: {
+  resLocals: Record<string, any>;
+  lti13_instance_id: string;
+}): string {
+  return html`
+    <!doctype html>
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+          ...resLocals,
+        })}
+      </head>
+      <body>
+        <script>
+          $( () => {
+            $('#selectLti13Instance').on('change', () => {
+              let li = $('#selectLti13Instance option:selected');
+              window.location.href = li.val();
+            });
+          });
+        </script>
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar'); %>", {
+          ...resLocals,
+        })}
+        <main class="container-fluid mb-4">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex">
+              LTI 1.3 course instance configuration
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-2">
+                  <select class="custom-select" id="selectLti13Instance">
+                    <option value="1" ${lti13_instance_id === '1' ? 'selected' : ''}>Hogwarts Canvas</option>
+                    <option value="2" ${lti13_instance_id === '2' ? 'selected' : ''}>Hogwarts Moodle</option>
+                  </select>
+                  <hr>
+                  <ul>
+                    <li><a href="#connection">Connection to LMS</a></li>
+                  </ul>
+                </div>
+                <div class="col-10">
+                  <h3 id="connection">Connection to LMS</h3>
+                  <form method="POST">
+                    <input type="hidden" name="__action" value="remove_connection">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                    <button
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('Are you sure you want to remove this connection?');"
+                  >
+                    Remove LTI 1.3 connection with Hogwarts Canvas: POTS 1
+                  </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}

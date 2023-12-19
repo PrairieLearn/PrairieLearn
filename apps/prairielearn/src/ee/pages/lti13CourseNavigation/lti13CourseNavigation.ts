@@ -81,7 +81,7 @@ router.get(
 
     //const lci: Lti13CourseInstance = { course_instance_id: '17', };
 
-    if (lci) {
+    if (lci && !('noredir' in req.query)) {
       // Redirect to linked course instance
       res.redirect(
         `/pl/course_instance/${lci.course_instance_id}/${role_instructor ? 'instructor/' : ''}`,

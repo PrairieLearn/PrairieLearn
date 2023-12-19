@@ -218,14 +218,21 @@ export function Lti13CourseNavigationDone({
             <strong>OK, you're all set.</strong> Next time you (or students) click on the link in
             your LMS, they will be taken directly to your PrairieLearn course instance.
           </p>
+          <ul>
+            <li>
+              The course instance <code>allowAccess</code> rules still apply and may need to be configured for
+              the course.
+            </li>
+          </ul>
 
           <p>
-            To change these settings in the future, go to your course instance "Settings" in the
-            "LTI 1.3" tab.
+            To change this connection, go to your course instance "Settings" in the "LTI 1.3" tab.
           </p>
 
           <p>
-            <a href="/pl/lti13_instance/${lti13_instance_id}/course_navigation" class="btn btn-success btn-lg"
+            <a
+              href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
+              class="btn btn-success btn-lg"
               >Click here to continue on to your course instance</a
             >
           </p>

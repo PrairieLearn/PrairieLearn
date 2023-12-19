@@ -74,6 +74,7 @@ const { PostgresSessionStore } = require('./lib/session-store');
 const { pullAndUpdateCourse } = require('./lib/course');
 const { selectJobsByJobSequenceId } = require('./lib/server-jobs');
 const { makeCookieMigrationMiddleware } = require('./lib/cookie');
+const { validateLti13CourseInstance } = require('./ee/models/lti13Instance');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1257,8 +1258,11 @@ module.exports.initExpress = function () {
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
 
-      const hasLti13 = await features.enabledFromLocals('lti13', res.locals);
-      res.locals.lti13_enabled = hasLti13 && isEnterprise();
+      //const hasLti13Features = await features.enabledFromLocals('lti13', res.locals);
+
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1324,7 +1328,7 @@ module.exports.initExpress = function () {
       require('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling').default,
     ]);
     app.use(
-      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13',
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
       require('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13').default,
     );
   }
