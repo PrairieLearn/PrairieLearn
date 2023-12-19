@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryAsync, callAsync } from '@prairielearn/postgres';
 
-import {
-  CourseInstance,
-  Lti13CourseInstanceSchema,
-} from '../../../lib/db-types';
+import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';
 import { selectCoursesWithEditAccess } from '../../../models/course';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances';
-
 import {
   Lti13CourseNavigationInstructor,
   Lti13CourseNavigationNotReady,
@@ -18,7 +14,9 @@ import {
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-const lti13_claims = {
+// FIXME
+const devel_authn_lti13_instance_id = '1';
+const devel_lti13_claims = {
   'https://purl.imsglobal.org/spec/lti/claim/roles': [
     'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
     'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
@@ -45,10 +43,11 @@ const lti13_claims = {
   },
 };
 
-// Placeholder to be enlarged later
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const lti13_claims = devel_lti13_claims;
+
     if ('done' in req.query) {
       res.send(
         Lti13CourseNavigationDone({
@@ -63,6 +62,7 @@ router.get(
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
     let role_instructor = roles.some((val) => val.endsWith('#Instructor'));
 
+    // FIXME
     if ('student' in req.query) {
       role_instructor = false;
     }
@@ -78,13 +78,13 @@ router.get(
       Lti13CourseInstanceSchema,
     );
 
-    //const lci: Lti13CourseInstance = { course_instance_id: '17', };
-
+    // FIXME
     if (lci && !('noredir' in req.query)) {
       // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
       if (role_instructor) {
         await queryAsync(sql.upsert_lci, {
           lti13_instance_id: req.params.lti13_instance_id,
+          course_instance_id: lci.course_instance_id,
           deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
           context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
           context_label: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label,
@@ -122,10 +122,12 @@ router.get(
         is_administrator: res.locals.authn_is_administrator,
       });
 
+      // FIXME
       if ('nocourse' in req.query) {
         courses = [];
       }
 
+      // FIXME
       let course_instances: CourseInstance[] = [];
 
       for (const course of courses) {
@@ -155,22 +157,41 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    // todo: make sure saving user has the right permissions
-    // is instructor
-    // has course instance permission
-    // existing LTI13 instance information lines up
+    const unsafe_course_instance_id = req.body.ci_id;
+    const unsafe_lti13_instance_id = req.params.lti13_instance_id;
 
-    // Insert
+    // FIXME
+    const lti13_claims = devel_lti13_claims;
+    const authn_lti13_instance_id = devel_authn_lti13_instance_id;
+
+    // Validate user login match this lti13_instance
+    if (unsafe_lti13_instance_id !== authn_lti13_instance_id) {
+      throw new Error(`Permission denied`);
+    }
+
+    // Check user has instructor permissions in LMS and CI
+    const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
+    const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+
+    const is_ci_instructor = await callAsync('users_is_instructor_in_course_instance', [
+      res.locals.authn_user.user_id,
+      unsafe_course_instance_id,
+    ]);
+
+    if (!role_instructor || !is_ci_instructor.rows[0].is_instructor) {
+      throw new Error(`Permission denied`);
+    }
+
     await queryAsync(sql.insert_lci, {
       lti13_instance_id: req.params.lti13_instance_id,
       deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
       context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
       context_label: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label,
       context_title: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title,
-      course_instance_id: req.body.ci_id,
+      course_instance_id: unsafe_course_instance_id,
     });
 
-    res.redirect(`/pl/lti13_instance/${req.params.lti13_instance_id}/course_navigation?done`);
+    res.redirect(`/pl/lti13_instance/${unsafe_lti13_instance_id}/course_navigation?done`);
   }),
 );
 

@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types';
 import { features } from '../../lib/features';
-import { LTI13InstancePlatforms } from '../pages/institutionAdminLti13/institutionAdminLti13.types';
 
 const sql = loadSqlEquiv(__filename);
 
