@@ -139,7 +139,6 @@ const maybeUser = await queryOptionalRow(sql.select_user, { user_id: '1' }, User
 const users = await callRows('select_users', User);
 const user = await callRow('select_user', ['1'], User);
 const maybeUser = await callOptionalRow('select_user', ['1'], User);
-
 ```
 
 These functions have some behaviors that can make them more convenient to work with:
