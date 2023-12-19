@@ -596,7 +596,7 @@ export function renderPanelsForSubmission(
           submission.submission_number = submission_index;
           const submissions = [submission];
 
-          const htmls = await util.promisify(render)(
+          const htmls = await render(
             renderSelection,
             variant,
             question,
