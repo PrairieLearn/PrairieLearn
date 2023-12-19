@@ -58,7 +58,12 @@ WITH
       ai.id
   )
 INSERT INTO
-  assessment_state_logs (open, assessment_instance_id, auth_user_id, client_fingerprint_id)
+  assessment_state_logs (
+    open,
+    assessment_instance_id,
+    auth_user_id,
+    client_fingerprint_id
+  )
 SELECT
   FALSE,
   updated_assessment_instance.id,
