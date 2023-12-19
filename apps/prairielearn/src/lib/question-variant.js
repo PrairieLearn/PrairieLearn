@@ -12,6 +12,10 @@ import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
 import { VariantSchema } from './db-types';
 
+const VariantWithFormattedDateSchema = VariantSchema.extend({
+  formatted_date: z.string(),
+});
+
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
  * @protected
@@ -186,10 +190,6 @@ async function makeAndInsertVariant(
   await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
   return variant;
 }
-
-const VariantWithFormattedDateSchema = VariantSchema.extend({
-  formatted_date: z.string(),
-});
 
 /**
  * Ensure that there is a variant for the given instance question.
