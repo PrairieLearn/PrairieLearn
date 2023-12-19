@@ -67,6 +67,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
+        res.locals.client_fingerprint_id,
         function (err) {
           if (ERR(err, next)) return;
           if (req.body.__action === 'timeLimitFinish') {

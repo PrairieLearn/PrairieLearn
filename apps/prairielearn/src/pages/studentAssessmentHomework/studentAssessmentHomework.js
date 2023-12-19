@@ -9,6 +9,7 @@ const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/postgres');
 const groupAssessmentHelper = require('../../lib/groups');
+import { getClientFingerprintId } from '../../middlewares/clientFingerprint';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -88,6 +89,7 @@ router.get(
         if (!checkPasswordOrRedirect(req, res)) return;
 
         const time_limit_min = null;
+        const client_fingerprint_id = await getClientFingerprintId(req, res);
         const assessment_instance_id = await assessment.makeAssessmentInstance(
           res.locals.assessment.id,
           res.locals.user.user_id,
@@ -96,7 +98,7 @@ router.get(
           res.locals.authz_data.mode,
           time_limit_min,
           res.locals.authz_data.date,
-          res.locals.client_fingerprint_id,
+          client_fingerprint_id,
         );
         debug('redirecting');
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
@@ -126,6 +128,7 @@ router.post(
         if (!checkPasswordOrRedirect(req, res)) return;
 
         const time_limit_min = null;
+        const client_fingerprint_id = await getClientFingerprintId(req, res);
         const assessment_instance_id = await assessment.makeAssessmentInstance(
           res.locals.assessment.id,
           res.locals.user.user_id,
@@ -134,7 +137,7 @@ router.post(
           res.locals.authz_data.mode,
           time_limit_min,
           res.locals.authz_data.date,
-          res.locals.client_fingerprint_id,
+          client_fingerprint_id,
         );
         debug('redirecting');
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

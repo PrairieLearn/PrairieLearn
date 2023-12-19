@@ -40,6 +40,7 @@ export function run(callback: (err?: Error | null) => void): void {
           requireOpen,
           examItem.close_assessment,
           overrideGradeRate,
+          null, //client_fingerprint_id
           function (err) {
             if (ERR(err, () => {})) {
               logger.error('Error finishing exam', error.addData(err, { examItem }));

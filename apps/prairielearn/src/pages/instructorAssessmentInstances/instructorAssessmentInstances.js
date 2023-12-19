@@ -71,6 +71,7 @@ router.post('/', function (req, res, next) {
         requireOpen,
         close,
         overrideGradeRate,
+        null, //client_fingerprint_id
         function (err) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify({}));
