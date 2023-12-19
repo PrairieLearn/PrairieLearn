@@ -11,7 +11,7 @@ This can be viewed as a more advanced version of the
 [course documentation page](course.md) and the
 [question runtime environment](questionRuntime/index.md),
 as working knowledge of the course directory structure and question
-development is necessary for understanding this documentation.
+code execution is necessary for understanding this documentation.
 We will also assume basic familiarity with managing a course in a corresponding
 GitHub repository instead of only using the web interface.
 
@@ -56,3 +56,5 @@ page are designed to solve:
   logic but different starting configurations.
 - Invalid JSON or Python code is merged to a course, but no
   errors are displayed until all affected questions are opened.
+
+Each of these issues can be resolved by
