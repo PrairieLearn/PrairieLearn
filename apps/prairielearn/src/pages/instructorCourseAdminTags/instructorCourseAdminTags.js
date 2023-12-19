@@ -1,3 +1,4 @@
+//@ts-check
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
