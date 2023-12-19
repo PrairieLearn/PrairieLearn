@@ -50,14 +50,15 @@ export function Lti13CourseNavigationInstructor({
               </div>
               <div class="modal-body">
                 <p>
-                  PrairieLearn defines a <strong>course</strong> as a collection of questions and course instances.
-                  It is the overarching umbrella that spans multiple runnings of the course with
-                  students. Things that live across multiple semesters live at the course level.
+                  PrairieLearn defines a <strong>course</strong> as a collection of questions and
+                  course instances. It is the overarching umbrella that spans multiple runnings of
+                  the course with students. Things that live across multiple semesters live at the
+                  course level.
                 </p>
 
                 <p>
-                  A <strong>course instance</strong> is the running of an edition of a course that has assessments,
-                  enrollments, grades, etc. Like a semester or quarter.
+                  A <strong>course instance</strong> is the running of an edition of a course that
+                  has assessments, enrollments, grades, etc. Like a semester or quarter.
                 </p>
 
                 <p class="font-italic">
@@ -66,7 +67,9 @@ export function Lti13CourseNavigationInstructor({
 
                 <p>
                   For more, see the
-                  <a href="https://prairielearn.readthedocs.io/" target="_blank">PrairieLearn User Guide</a>
+                  <a href="https://prairielearn.readthedocs.io/" target="_blank"
+                    >PrairieLearn User Guide</a
+                  >
                 </p>
               </div>
             </div>
@@ -150,8 +153,7 @@ export function Lti13CourseNavigationInstructor({
                     </select>
                   </div>
                   <button class="btn btn-primary btn-lg" id="saveButton" disabled>Save</button>
-                </form>
-              `}
+                </form> `}
         </main>
       </body>
     </html>

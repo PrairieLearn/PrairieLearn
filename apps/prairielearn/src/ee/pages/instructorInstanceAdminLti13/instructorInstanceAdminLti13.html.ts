@@ -48,7 +48,8 @@ export function InstructorInstanceAdminLti13({
                 <div class="col-2">
                   <select class="custom-select mb-2" id="selectLti13Instance">
                     ${lti13Instances.map((li) => {
-                      return html`<option value="${li.id}"
+                      return html`<option
+                        value="${li.id}"
                         ${lti13Instance.id === li.id ? 'selected' : ''}
                       >
                         ${li.name}
@@ -69,7 +70,8 @@ export function InstructorInstanceAdminLti13({
                       class="btn btn-danger btn-sm"
                       onclick="return confirm('Are you sure you want to remove this connection?');"
                     >
-                      Remove LTI 1.3 connection with ${lti13Instance.name}: ${lti13CourseInstance.context_label}
+                      Remove LTI 1.3 connection with ${lti13Instance.name}:
+                      ${lti13CourseInstance.context_label}
                     </button>
                   </form>
                 </div>

@@ -20,6 +20,10 @@ SELECT
   );
 
 -- BLOCK get_instances_ci
-SELECT li.* FROM lti13_instances AS li JOIN lti13_course_instances AS lci
-ON lci.lti13_instance_id = li.id
-WHERE lci.course_instance_id = $course_instance_id;
+SELECT
+  li.*
+FROM
+  lti13_instances AS li
+  JOIN lti13_course_instances AS lci ON lci.lti13_instance_id = li.id
+WHERE
+  lci.course_instance_id = $course_instance_id;
