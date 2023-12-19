@@ -46,12 +46,13 @@ files not local to that question.
 
 The following are common situations that tools described in this
 page are designed to solve:
+
 - Code shared between multiple questions is refactored in a way
-that changes the interface. Questions requiring the old interface
-may not display errors until they are next opened.
+  that changes the interface. Questions requiring the old interface
+  may not display errors until they are next opened.
 - Python code as part of a randomized question is invalid but only
-reachable in rare variants.
+  reachable in rare variants.
 - An instructor wishes to write questions with similar backend
-logic but different starting configurations.
+  logic but different starting configurations.
 - Invalid JSON or Python code is merged to a course, but no
-errors are displayed until all affected questions are opened.
+  errors are displayed until all affected questions are opened.
