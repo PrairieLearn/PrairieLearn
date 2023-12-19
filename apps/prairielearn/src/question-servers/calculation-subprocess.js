@@ -103,18 +103,6 @@ export async function grade(submission, variant, question, question_course) {
   return await callFunction('grade', question_course, question, { submission, variant });
 }
 
-export function getFile(filename, variant, question, course, callback) {
-  callFunction('getFile', course, question, { filename, variant }).then(
-    ({ data, courseIssues }) => {
-      // We need to "unwrap" buffers if needed
-      const isBuffer = data.type === 'buffer';
-      const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
-      callback(null, courseIssues, unwrappedData);
-    },
-    (err) => callback(err),
-  );
-}
-
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
