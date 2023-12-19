@@ -161,7 +161,6 @@ if (require.main === module) {
       // Depending on which function is being invoked, these may or may not
       // be present.
       variant_seed,
-      filename,
       variant,
       submission,
     } = input;

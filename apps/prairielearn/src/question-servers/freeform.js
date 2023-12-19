@@ -1284,7 +1284,6 @@ export async function render(
     locals.question_renderer = context.renderer;
 
     return withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      // FIXME: support 'header'
       if (renderSelection.question) {
         const {
           courseIssues: newCourseIssues,
