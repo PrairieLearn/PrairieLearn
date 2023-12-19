@@ -130,7 +130,7 @@ export function Lti13CourseNavigationInstructor({
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <input type="hidden" name="__action" value="connect_ci" />
-                  <label for="onepicker"><h3>Link ${courseName} with:</h3></label>
+                  <label for="onepicker"><h3>Connect ${courseName} with:</h3></label>
                   <div class="input-group input-group-lg">
                     <select class="custom-select" id="onepicker" name="ci_id">
                       <option value="" disabled selected>
