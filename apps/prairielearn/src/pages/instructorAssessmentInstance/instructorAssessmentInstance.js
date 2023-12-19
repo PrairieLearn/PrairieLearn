@@ -77,7 +77,7 @@ router.get(
         res.locals.assessment_instance.id,
         false,
       );
-      const fingerprintNumbers = {};
+      const fingerprintNumbers = new Map();
       let i = 1;
       const stringifier = stringifyStream({
         header: true,
@@ -93,16 +93,18 @@ router.get(
         ],
         transform(record) {
           if (record.client_fingerprint) {
-            if (!fingerprintNumbers[record.client_fingerprint.id]) {
-              fingerprintNumbers[record.client_fingerprint.id] = i;
+            if (!fingerprintNumbers.get(record.client_fingerprint.id)) {
+              fingerprintNumbers.set(record.client_fingerprint.id, {
+                client_fingerprint_number: i,
+              });
               i++;
             }
-            record.client_fingerprint_number = fingerprintNumbers[record.client_fingerprint.id];
           }
           return [
             record.date_iso8601,
             record.auth_user_uid,
-            record.client_fingerprint_number ?? null,
+            fingerprintNumbers.get(record.client_fingerprint?.id)?.client_fingerprint_number ??
+              null,
             record.client_fingerprint?.ip_address ?? null,
             record.event_name,
             record.instructor_question_number == null
