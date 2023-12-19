@@ -5,11 +5,17 @@ large courses. This techniques described here are a mix of standard software
 engineering practices applied to PrairieLearn, along with tips specific to
 working with certain features specific to PrairieLearn.
 
-This can be viewed as a more advanced version of the
-[course documentation page](course.md), as working knowledge of
-the structure of courses is necessary for understanding this documentation.
+## Background
 
-## Motivation and Background
+This can be viewed as a more advanced version of the
+[course documentation page](course.md) and the
+[question runtime environment](questionRuntime/index.md),
+as working knowledge of the course directory structure and question
+development is necessary for understanding this documentation.
+We will also assume basic familiarity with managing a course in a corresponding
+GitHub repository instead of only using the web interface.
+
+## Motivation
 
 As described in the [course documentation page](course.md), a course is stored
 in a Git repository with a specific layout. As such, a large course with
@@ -17,9 +23,7 @@ many course instances and a large bank of questions is comparable to
 a large codebase in terms of the maintenance burden. Accordingly, many
 developer tools meant to manage large codebases can be applied to
 PrairieLearn courses. Throughout this page, we will use the terms "course"
-and "repository" interchangeably. We will also assume familiarity with
-managing a course in a corresponding GitHub repository instead of only
-using the web interface.
+and "repository" interchangeably.
 
 The techniques described here are primarily continuous integration (CI)
 practices. For more information about these techniques outside of the
