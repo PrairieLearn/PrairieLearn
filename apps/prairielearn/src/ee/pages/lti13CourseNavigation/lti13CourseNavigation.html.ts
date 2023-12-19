@@ -43,12 +43,32 @@ export function Lti13CourseNavigationInstructor({
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">PrairieLearn terminology</h5>
+                <h5 class="modal-title" id="exampleModalLabel">Understanding PrairieLearn</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
-              <div class="modal-body">Body goes here.</div>
+              <div class="modal-body">
+                <p>
+                  PrairieLearn defines a <strong>course</strong> as a collection of questions and course instances.
+                  It is the overarching umbrella that spans multiple runnings of the course with
+                  students. Things that live across multiple semesters live at the course level.
+                </p>
+
+                <p>
+                  A <strong>course instance</strong> is the running of an edition of a course that has assessments,
+                  enrollments, grades, etc. Like a semester or quarter.
+                </p>
+
+                <p class="font-italic">
+                  Example: A course might be MATH 101 and have a course instance MATH 101 Fall 2023.
+                </p>
+
+                <p>
+                  For more, see the
+                  <a href="https://prairielearn.readthedocs.io/" target="_blank">PrairieLearn User Guide</a>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -77,8 +97,7 @@ export function Lti13CourseNavigationInstructor({
           </p>
           <ul>
             <li>
-              If you're creating a new course, please
-              <a href="/pl/request_course">request one here</a>.
+              To create a new course, please <a href="/pl/request_course">request one here</a>.
             </li>
             <li>
               New course instances can be made from the "Course Instances" tab in an existing
@@ -104,9 +123,7 @@ export function Lti13CourseNavigationInstructor({
                       <a href="/pl/course/${course.id}">${course.short_name}: ${course.title}</a>
                     </li>`;
                   })}
-                </ul> `}
-          ${courses.length > 0
-            ? html`
+                </ul>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <input type="hidden" name="__action" value="connect_ci" />
@@ -134,8 +151,7 @@ export function Lti13CourseNavigationInstructor({
                   </div>
                   <button class="btn btn-primary btn-lg" id="saveButton" disabled>Save</button>
                 </form>
-              `
-            : ``}
+              `}
         </main>
       </body>
     </html>
@@ -150,6 +166,7 @@ function devHeader() {
       <a href="?student">Student</a>
       <a href="?nocourse">No courses</a>
       <a href="?done">Done</a>
+      <a href="?noredir">No redirect</a>
     </p>
   `;
 }
@@ -220,8 +237,8 @@ export function Lti13CourseNavigationDone({
           </p>
           <ul>
             <li>
-              The course instance <code>allowAccess</code> rules still apply and may need to be configured for
-              the course.
+              The course instance <code>allowAccess</code> rules still apply and may need to be
+              configured for the course.
             </li>
           </ul>
 

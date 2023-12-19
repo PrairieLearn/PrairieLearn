@@ -1,15 +1,20 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types';
 
 //import { EncodedData } from '@prairielearn/browser-utils';
 //import { compiledScriptTag } from '../../../lib/assets';
 
 export function InstructorInstanceAdminLti13({
   resLocals,
-  lti13_instance_id,
+  lti13Instance,
+  lti13Instances,
+  lti13CourseInstance,
 }: {
   resLocals: Record<string, any>;
-  lti13_instance_id: string;
+  lti13Instance: Lti13Instance;
+  lti13Instances: Lti13Instance[];
+  lti13CourseInstance: Lti13CourseInstance;
 }): string {
   return html`
     <!doctype html>
@@ -22,9 +27,10 @@ export function InstructorInstanceAdminLti13({
       </head>
       <body>
         <script>
-          $( () => {
+          $(() => {
             $('#selectLti13Instance').on('change', () => {
               let li = $('#selectLti13Instance option:selected');
+              // fixme: no relative urls
               window.location.href = li.val();
             });
           });
@@ -40,11 +46,16 @@ export function InstructorInstanceAdminLti13({
             <div class="card-body">
               <div class="row">
                 <div class="col-2">
-                  <select class="custom-select" id="selectLti13Instance">
-                    <option value="1" ${lti13_instance_id === '1' ? 'selected' : ''}>Hogwarts Canvas</option>
-                    <option value="2" ${lti13_instance_id === '2' ? 'selected' : ''}>Hogwarts Moodle</option>
+                  <select class="custom-select mb-2" id="selectLti13Instance">
+                    ${lti13Instances.map((li) => {
+                      return html`<option value="${li.id}"
+                        ${lti13Instance.id === li.id ? 'selected' : ''}
+                      >
+                        ${li.name}
+                      </option>`;
+                    })}
                   </select>
-                  <hr>
+                  Quick links:
                   <ul>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
@@ -52,14 +63,14 @@ export function InstructorInstanceAdminLti13({
                 <div class="col-10">
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
-                    <input type="hidden" name="__action" value="remove_connection">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                    <input type="hidden" name="__action" value="remove_connection" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <button
-                    class="btn btn-danger btn-sm"
-                    onclick="return confirm('Are you sure you want to remove this connection?');"
-                  >
-                    Remove LTI 1.3 connection with Hogwarts Canvas: POTS 1
-                  </button>
+                      class="btn btn-danger btn-sm"
+                      onclick="return confirm('Are you sure you want to remove this connection?');"
+                    >
+                      Remove LTI 1.3 connection with ${lti13Instance.name}: ${lti13CourseInstance.context_label}
+                    </button>
                   </form>
                 </div>
               </div>
