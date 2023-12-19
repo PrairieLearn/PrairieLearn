@@ -200,14 +200,16 @@ export async function gradeVariantAsync(
     // LTI updates.
     const grading_job_post_update = resultGradingJobUpdate.rows[0];
     if (!grading_job_post_update.gradable) return;
-  }
 
-  const assessment_instance_id = await sqldb.queryRow(
-    sql.select_assessment_for_submission,
-    { submission_id: submission.id },
-    IdSchema,
-  );
-  await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+    const assessment_instance_id = await sqldb.queryOptionalRow(
+      sql.select_assessment_for_submission,
+      { submission_id: submission.id },
+      IdSchema.nullable(),
+    );
+    if (assessment_instance_id != null) {
+      await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+    }
+  }
 }
 export const gradeVariant = util.callbackify(gradeVariantAsync);
 
