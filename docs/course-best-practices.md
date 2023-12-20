@@ -214,13 +214,11 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         # Run Python code linting with flake8.
-        # TODO update this command once the flake8 config gets updated.
       - name: Lint with flake8
         run: |
-          # Fail if codebase contains any of these issues
-          flake8p . --select=W2,F,W6,E20,E26 --show-source
+          flake8p .
         # Run static typechecking with mypy and random file renaming. Detailed discussion on why
-        # this is necessary in the section on mypy.
+        # this is necessary in the section on mypy. Partially written by Eric Huber.
       - name: Static Typechecking with mypy
         run: |
           find questions -type f -name server.py -execdir /bin/bash -c 'mv server.py server_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}.py' \;
@@ -257,7 +255,87 @@ for more detailed discussion.
 
 ## Python Tooling
 
+In this section, we will preset sample `pyproject.toml` and `requirements.txt`
+files, including discussion of all of the associated Python tooling. First,
+here is the `pyproject.toml` file.
+
+```toml
+# Using "verify" keyword instead of "test" to avoid conflicts with autograder code.
+[tool.pytest.ini_options]
+python_files = "verify_*.py"
+python_classes = "Verify"
+python_functions = "verify_*"
+testpaths = "serverFilesCourse/unit_tests"
+required_plugins = [
+  "pytest-lazy-fixture",
+  "pytest-cov",
+  "pytest-mock"
+]
+
+# For mypy, we just set the Python version and exclude certain autograder files.
+[tool.mypy]
+python_version = "3.10"
+plugins = "numpy.typing.mypy_plugin"
+exclude = "/(setup_code|ans)\\.py$"
+implicit_optional = true
+
+# List of packages to skip analysis, as they are not available on PyPI or do not
+# have type annotations.
+[[tool.mypy.overrides]]
+module = [
+  "pl_helpers.*",
+  "pl_unit_test.*",
+  "code_feedback.*",
+  "pygraphviz.*",
+  "networkx.*",
+  "matplotlib.*",
+  "python_helper_sympy.*"
+]
+ignore_missing_imports = true
+
+
+[tool.coverage.run]
+# Add in all server files for the course
+include = ["serverFilesCourse/*"]
+# Omit init files and all test files
+omit = [
+  "*/__init__.py",
+  "*/verify_*",
+  "serverFilesCourse/unit_tests/*"
+]
+
+[tool.flake8]
+count = true
+statistics = true
+show-source = true
+per-file-ignores = [
+    # Files related to the Python autograder will often intentionally appear
+    # broken in isolation. We'll allow specific errors in these files to
+    # account for that.
+    #
+    # - F401: module imported but unused
+    # - F821: undefined name
+    # - F841: local variable name is assigned to but never used
+    # - E999: SyntaxError
+    "questions/**/tests/setup_code.py: F401, F821",
+    "questions/**/tests/initial_code.py: F401, F821, E999",
+    "questions/**/tests/leading_code.py: F401, F821, F841",
+    "questions/**/tests/trailing_code.py: F821, E999",
+    "questions/**/tests/ans.py: F821",
+]
+
+# Error codes to check for. Can be customized based on course, or left blank
+# to check for all violations by default.
+select = ["W2", "F", "W6", "E20", "E26"]
+
+# Black compatibility
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+```
+
 ### flake8
+
+Flake8 is a linter.
 
 ### mypy
 
