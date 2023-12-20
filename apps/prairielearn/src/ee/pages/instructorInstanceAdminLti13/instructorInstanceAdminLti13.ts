@@ -59,7 +59,6 @@ router.get(
 router.post(
   '/:unsafe_lti13_instance_id',
   asyncHandler(async (req, res) => {
-
     if (req.body.__action === 'remove_connection') {
       await queryAsync(sql.remove_connection, {
         course_instance_id: res.locals.course_instance.id,
@@ -76,7 +75,6 @@ router.post(
         return;
       }
       res.redirect(req.originalUrl);
-
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }
