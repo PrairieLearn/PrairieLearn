@@ -229,14 +229,14 @@ export async function addUserToGroup(
     }
 
     if (enforceGroupSize && group.cur_size >= group.max_size) {
-      throw new Error(`Group is full.`);
+      throw new Error(`Group is already full.`);
     }
 
     // Find a group role. If none of the roles can be assigned, assign no role.
     const groupRoleId = group.has_roles
       ? await sqldb.queryOptionalRow(
           sql.select_suitable_group_role,
-          { group_id: group.id, cur_size: group.cur_size },
+          { assessment_id, group_id: group.id, cur_size: group.cur_size },
           IdSchema,
         )
       : null;

@@ -184,17 +184,17 @@ WITH
     SELECT
       gr.id,
       gr.can_assign_roles_at_start
-      AND $cur_size = 0 AS assigner_role_needed,
-      upgr.user_count = 0
+      AND COALESCE($cur_size::INT, 0) = 0 AS assigner_role_needed,
+      upgr.user_count IS NULL
       AND gr.minimum > 0 AS mandatory_with_no_user,
-      GREATEST(0, gr.minimum - upgr.user_count) AS needed_users,
-      gr.maximum - upgr.user_count AS remaining
+      GREATEST(0, gr.minimum - COALESCE(upgr.user_count, 0)) AS needed_users,
+      gr.maximum - COALESCE(upgr.user_count, 0) AS remaining
     FROM
       group_roles AS gr
-      JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
+      LEFT JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
     WHERE
       gr.assessment_id = $assessment_id
-      AND gr.maximum > upgr.user_count
+      AND (gr.maximum IS NULL OR gr.maximum > COALESCE(upgr.user_count, 0))
   )
 SELECT
   sgr.id
@@ -204,23 +204,23 @@ ORDER BY
   -- If there are no users in the group, assign to an assigner role.
   assigner_role_needed DESC,
   -- Assign to a mandatory role with no users, if one exists.
-  has_minimum_and_no_user DESC,
+  mandatory_with_no_user DESC,
   -- Assign to role that has not reached their minimum.
   needed_users DESC,
   -- Assign to role that has the most remaining spots.
-  remaining DESC
-LIMIT
+  remaining DESC NULLS LAST
+limit
   1;
 
 -- BLOCK insert_group_user
 WITH
   inserted_user AS (
     INSERT INTO
-      group_users gu (group_id, user_id)
+      group_users (group_id, user_id)
     VALUES
       ($group_id, $user_id)
     RETURNING
-      gu.*
+      *
   ),
   inserted_user_roles AS (
     INSERT INTO
