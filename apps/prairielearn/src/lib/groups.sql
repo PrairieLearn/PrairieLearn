@@ -194,7 +194,10 @@ WITH
       LEFT JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
     WHERE
       gr.assessment_id = $assessment_id
-      AND (gr.maximum IS NULL OR gr.maximum > COALESCE(upgr.user_count, 0))
+      AND (
+        gr.maximum IS NULL
+        OR gr.maximum > COALESCE(upgr.user_count, 0)
+      )
   )
 SELECT
   sgr.id
