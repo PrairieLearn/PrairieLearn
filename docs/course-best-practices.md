@@ -335,9 +335,104 @@ extend-ignore = ["E203", "W503"]
 
 ### flake8
 
-Flake8 is a linter.
+Flake8 is a Python linter that reports different violations of style
+conventions and code correctness, each under separate error codes.
+A list of the error codes can be found [here](https://flake8.pycqa.org/en/latest/user/error-codes.html).
+Additional checks can be performed by installing plugins.
+
+This is mainly useful for enforcing style conventions and checking
+that Python files do not contain syntax errors. Additional plugins
+can enforce the usage of isort (for organizing imports) and
+black (for formatting code more strictly). Both of these tools
+will be discussed in more detail in the section on [VSCode configuration](#vscode-config).
+
+In the sample `pyproject.toml` file, we include a selection of error codes to check for,
+along with per-file error ignores specific to files used by the Python autograder.
+These are in the `[tool.flake8]` section.
+
+**Note**: Flake8 cannot read a configuration from a `pyproject.toml` file by default.
+To facilitate this, we added the `Flake8-pyproject` package to the `requirements.txt`
+file.
 
 ### mypy
+
+Mypy is a static typechecker for Python. At a high level, this allows
+the use of (optional) type annotations that are checked as part of the
+Python CI workflow. In particular, this eliminates a large class of errors when
+working with PrairieLearn, as it statically checks for type correctness on
+all Python files (questions, elements, and shared files in `serverFilesCourse`)
+on each commit. A full discussion of static typechecking is beyond the scope of
+this documentation, see the
+[mypy documentation](https://mypy.readthedocs.io/en/stable/index.html)
+for details. The configuration for mypy is in the `[tool.mypy]` section
+of the `pyproject.toml` file.
+
+The main thing to note is the automated file renaming that is run before the
+invocation of the `mypy` command in the `python-ci.yml` workflow file. This
+is needed because a single execution of mypy is assumed to be over a single
+project, and without the presence of `__init__.py` files, each question
+`server.py` file would be mapped to the same package name. For more details
+on this, see the
+[mypy documentation](https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-paths-to-modules).
+
+In addition, custom type stubs may be provided for individual packages that lack them.
+As configured here, mypy expects additional type stubs to be stored in the
+`serverFilesCourse/type_stubs` directory. Here is a sample `prairielearn.pyi` stub file:
+
+```python
+from lxml.html import HtmlElement
+from typing import List, Any, Dict, Optional, Type, TypedDict, TypeVar
+from enum import Enum
+
+EnumT = TypeVar("EnumT", bound=Enum)
+
+class QuestionData(TypedDict):
+    "A class with type signatures for the data dictionary"
+
+    params: Dict[str, Any]
+    correct_answers: Dict[str, Any]
+    submitted_answers: Dict[str, Any]
+    format_errors: Dict[str, Any]
+    partial_scores: Dict[str, PartialScore]
+    score: float
+    feedback: Dict[str, Any]
+    variant_seed: int
+    options: Dict[str, Any]
+    raw_submitted_answers: Dict[str, Any]
+    editable: bool
+    panel: Literal["question", "submission", "answer"]
+    extensions: Dict[str, Any]
+
+def get_boolean_attrib(element: HtmlElement, name: str, default: bool = False) -> bool: ...
+
+def get_integer_attrib(element: HtmlElement, name: str, default: int = 0) -> int: ...
+
+def get_string_attrib(element: HtmlElement, name: str, default: str = "") -> str: ...
+
+def get_enum_attrib(element: HtmlElement, name: str, enum: Type[EnumT], default: Optional[EnumT]=None) -> EnumT: ...
+
+def has_attrib(element: HtmlElement, name: str) -> bool: ...
+
+def index2key(i: int) -> str: ...
+
+def get_uuid() -> str: ...
+
+def inner_html(element: HtmlElement) -> str: ...
+
+def to_json(v: Any) -> Dict[str, Any]: ...
+
+def from_json(v: Dict[str, Any]) -> Any: ...
+
+def check_attribs(element: HtmlElement, required_attribs: List[str], optional_attribs: List[str]) -> None: ...
+
+def escape_unicode_string(string: str) -> str: ...
+
+def set_weighted_score_data(data: QuestionData) -> None: ...
+
+def set_all_or_nothing_score_data(data: QuestionData) -> None: ...
+
+def all_partial_scores_correct(data: QuestionData) -> bool: ...
+```
 
 ### pytest
 
