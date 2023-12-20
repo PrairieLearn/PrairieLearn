@@ -3,6 +3,7 @@
 import * as util from 'util';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
+import { z } from 'zod';
 
 import * as externalGrader from './externalGrader';
 import * as ltiOutcomes from './ltiOutcomes';
@@ -11,9 +12,15 @@ import { getQuestionCourse } from './question-variant';
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import * as workspaceHelper from './workspace';
-import { IdSchema } from './db-types';
+import { DateFromISOString, GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+const NextAllowedGradeSchema = z.object({
+  allow_grade_date: DateFromISOString,
+  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_interval: z.string(),
+});
 
 /**
  * Save a new submission to a variant into the database.
@@ -85,22 +92,26 @@ export async function saveSubmissionAsync(submission, variant, question, variant
 
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
 
-  const result = await sqldb.callOneRowAsync('submissions_insert', [
-    data.submitted_answer,
-    data.raw_submitted_answer,
-    data.format_errors,
-    data.gradable && !hasFatalIssue,
-    hasFatalIssue,
-    data.true_answer,
-    data.feedback,
-    false, // regradable
-    submission.credit,
-    submission.mode,
-    submission.variant_id,
-    submission.auth_user_id,
-    submission.client_fingerprint_id,
-  ]);
-  return result.rows[0].submission_id;
+  const submission_id = await sqldb.callRow(
+    'submissions_insert',
+    [
+      data.submitted_answer,
+      data.raw_submitted_answer,
+      data.format_errors,
+      data.gradable && !hasFatalIssue,
+      hasFatalIssue,
+      data.true_answer,
+      data.feedback,
+      false, // regradable
+      submission.credit,
+      submission.mode,
+      submission.variant_id,
+      submission.auth_user_id,
+      submission.client_fingerprint_id,
+    ],
+    IdSchema,
+  );
+  return submission_id;
 }
 export const saveSubmission = util.callbackify(saveSubmissionAsync);
 
@@ -125,25 +136,27 @@ export async function gradeVariantAsync(
 ) {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submissionResult = await sqldb.callZeroOrOneRowAsync(
+  const submission = await sqldb.callOptionalRow(
     'variants_select_submission_for_grading',
     [variant.id, check_submission_id],
+    SubmissionSchema,
   );
-  if (submissionResult.rowCount == null || submissionResult.rowCount === 0) return;
-  const submission = submissionResult.rows[0];
+  if (submission == null) return;
 
   if (!overrideGradeRateCheck) {
-    const resultNextAllowed = await sqldb.callOneRowAsync('instance_questions_next_allowed_grade', [
-      variant.instance_question_id,
-    ]);
-    if (resultNextAllowed.rows[0].allow_grade_left_ms > 0) return;
+    const resultNextAllowed = await sqldb.callRow(
+      'instance_questions_next_allowed_grade',
+      [variant.instance_question_id],
+      NextAllowedGradeSchema,
+    );
+    if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }
 
-  const resultGradingJob = await sqldb.callOneRowAsync('grading_jobs_insert', [
-    submission.id,
-    authn_user_id,
-  ]);
-  const grading_job = resultGradingJob.rows[0];
+  const grading_job = await sqldb.callRow(
+    'grading_jobs_insert',
+    [submission.id, authn_user_id],
+    GradingJobSchema,
+  );
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -172,7 +185,7 @@ export async function gradeVariantAsync(
       courseData,
     );
 
-    const resultGradingJobUpdate = await sqldb.callOneRowAsync(
+    const grading_job_post_update = await sqldb.callRow(
       'grading_jobs_update_after_grading',
       [
         grading_job.id,
@@ -193,12 +206,12 @@ export async function gradeVariantAsync(
         data.score,
         data.v2_score,
       ],
+      GradingJobSchema,
     );
 
     // If the submission was marked invalid during grading the grading
     // job will be marked ungradable and we should bail here to prevent
     // LTI updates.
-    const grading_job_post_update = resultGradingJobUpdate.rows[0];
     if (!grading_job_post_update.gradable) return;
 
     const assessment_instance_id = await sqldb.queryOptionalRow(
