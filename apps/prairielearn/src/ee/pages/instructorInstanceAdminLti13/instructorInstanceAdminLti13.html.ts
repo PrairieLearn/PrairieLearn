@@ -30,8 +30,7 @@ export function InstructorInstanceAdminLti13({
           $(() => {
             $('#selectLti13Instance').on('change', () => {
               let li = $('#selectLti13Instance option:selected');
-              // fixme: no relative urls
-              window.location.href = li.val();
+              window.location.href = '/pl/course_instance/${resLocals.course_instance.id}/instructor/instance_admin/lti13_instance/' + li.val();
             });
           });
         </script>
@@ -41,7 +40,7 @@ export function InstructorInstanceAdminLti13({
         <main class="container-fluid mb-4">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              LTI 1.3 course instance configuration
+              LTI 1.3 configuration
             </div>
             <div class="card-body">
               <div class="row">

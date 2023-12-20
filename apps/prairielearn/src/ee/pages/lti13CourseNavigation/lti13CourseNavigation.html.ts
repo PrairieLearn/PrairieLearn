@@ -144,7 +144,7 @@ export function Lti13CourseNavigationInstructor({
                           <optgroup label="${course.short_name}: ${course.title}">
                             ${course_cis.map((ci) => {
                               return html`<option value="${ci.id}">
-                                ${ci.long_name} (${ci.short_name})
+                                ${course.short_name} -- ${ci.long_name} (${ci.short_name})
                               </option>`;
                             })}
                           </optgroup>

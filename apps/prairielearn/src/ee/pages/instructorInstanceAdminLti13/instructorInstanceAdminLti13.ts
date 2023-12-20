@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 import { InstructorInstanceAdminLti13 } from './instructorInstanceAdminLti13.html';
 import { selectLti13InstancesByCourseInstance } from '../../models/lti13Instance';
 import { Lti13CourseInstanceSchema } from '../../../lib/db-types';
@@ -58,7 +59,27 @@ router.get(
 router.post(
   '/:unsafe_lti13_instance_id',
   asyncHandler(async (req, res) => {
-    res.send('OK');
+
+    if (req.body.__action === 'remove_connection') {
+      await queryAsync(sql.remove_connection, {
+        course_instance_id: res.locals.course_instance.id,
+        lti13_instance_id: req.params.unsafe_lti13_instance_id,
+      });
+
+      try {
+        await selectLti13InstancesByCourseInstance(res.locals.course_instance.id);
+      } catch (err) {
+        res.redirect(
+          // Redirect away so they don't get an error page
+          `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
+        );
+        return;
+      }
+      res.redirect(req.originalUrl);
+
+    } else {
+      throw error.make(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 
