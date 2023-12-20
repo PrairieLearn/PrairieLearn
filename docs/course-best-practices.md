@@ -377,7 +377,11 @@ on this, see the
 
 In addition, custom type stubs may be provided for individual packages that lack them.
 As configured here, mypy expects additional type stubs to be stored in the
-`serverFilesCourse/type_stubs` directory. Here is a sample `prairielearn.pyi` stub file:
+`serverFilesCourse/type_stubs` directory. More discussion on these files can
+be found in the relevant section of the
+[mypy documentation](https://mypy.readthedocs.io/en/stable/stubs.html).
+
+Here is a sample `prairielearn.pyi` stub file:
 
 ```python
 from lxml.html import HtmlElement
