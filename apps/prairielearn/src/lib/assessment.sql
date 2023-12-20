@@ -161,6 +161,44 @@ FROM
 WHERE
   a.id = $assessment_id;
 
+-- BLOCK select_assessment_instance_max_points
+SELECT
+  ai.max_points
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id;
+
+-- BLOCK update_assessment_instance_score
+WITH
+  updated_assessment_instances AS (
+    UPDATE assessment_instances AS ai
+    SET
+      points = $points,
+      score_perc = $score_perc,
+      modified_at = now()
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.*
+  )
+INSERT INTO
+  assessment_score_logs (
+    assessment_instance_id,
+    auth_user_id,
+    max_points,
+    points,
+    score_perc
+  )
+SELECT
+  ai.id,
+  $authn_user_id,
+  ai.max_points,
+  ai.points,
+  ai.score_perc
+FROM
+  updated_assessment_instances AS ai;
+
 -- BLOCK assessment_instance_log
 WITH
   ai_group_users AS (
