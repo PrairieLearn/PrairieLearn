@@ -15,6 +15,10 @@ working with certain features specific to PrairieLearn.
   behavior in Python is sensitive to the directory structure.
   Thus, for ease of presentation, we will assume a specific folder structure and
   CI configuration. This should work in the vast majority of situations.
+- Code maintenance and development practices are inherently coupled together. As
+  such, this page will include configurations for local course content development
+  in VSCode. For more details on local development, see the
+  [local course development documentation](installing.md).
 
 ## Background
 
@@ -80,29 +84,65 @@ files for CI configuration. Some folders are omitted.
 exampleCourse
 +-- .github
 |   +-- workflows       # Directory holding configurations for each CI workflow.
-|       `-- ci.yml
-+-- infoCourse.json     # course specification (see below)
-+-- questions           # all questions for the course (see other doc)
+|       `-- python-ci.yml
+|       `-- json-ci.yml
++-- .vscode             # Directory holding configurations for VSCode.
+|   +-- extensions.json
+|   +-- settings.json
++-- questions
 |   `-- ...
 |   `-- ...
-+-- elements            # custom HTML elements for the course
++-- elements
 |   +-- element1
+|       `-- element1.py # Python controller file for element1.
 |       `-- ...
-`-- serverFilesCourse   # files only accessible from code on the server (see other doc)
-    `-- secret1.js
++-- serverFilesCourse
+|   +-- type_stubs      # Additional type hints for mypy.
+|       `-- prairielearn.pyi
+|       `-- ...
+|   +-- unit_tests      # Python unit tests to run on Python files in serverFilesCourse.
+|       `-- __init__.py
+|       `-- verify_code.py
+|       `-- ...
++-- pyproject.toml      # Config file for Python CI tooling.
++-- requirements.txt    # Required packages for Python CI tooling.
 ```
 
 ### Files
 
-Here is a breakdown of what each file does. This is meant to be a general overview,
-detailed file contents will be shown in later sections.
+Here is a breakdown of what each notable config file and folder does. This is meant to be
+a general overview, detailed file contents will be shown in later sections.
 
-- `ci.yml`: The configuration file for the CI workflow.
-- ``
+- `python-ci.yml`: The configuration file for the Python CI workflow. Settings for each
+  individual tool are set in `pyproject.toml`.
+- `json-ci.yml`: The configuration file for the JSON CI workflow.
+- `pyproject.toml`: The configuration file for tooling used in the Python CI workflow.
+- `requirements.txt`: File containing packages required for Python CI to run.
+- `type_stubs`: A folder holding additional type annotations for mypy (in this case,
+  only the stubs for `prairielearn.pyi`).
+- `__init__.py`: An empty file required for Python to recognize the serverFilesCourse
+  directory structure. More detailed discussion on this will be in the
+  [python code execution section](#python-execution-and-folder-structure).
 
 ## GitHub Actions
 
-In this section, we will provide a sample `ci.yml` configuration file and discuss
+In this section, we will provide sample configuration files and discuss
 some of the basics of using GitHub Actions in PrairieLearn. This is not meant
 to be a comprehensive discussion of GitHub Actions. For that, please refer
 to the [GitHub Actions Documentation](https://docs.github.com/en/actions).
+
+## Python Execution and Folder Structure
+
+In this section, we will shed some light on how the folder structure used
+in PrairieLearn interacts with the execution of Python code. This can be
+viewed as an extension of the documentation on the
+[question runtime environment](questionRuntime/index.md).
+
+Because the `serverFilesCourse` directory is present during the execution
+of question code in Python, the configuration discussed in this page
+is such that individual directories within `serverFilesCourse` will be
+treated as regular packages by Python. In particular, this means that
+all directories (including subdirectories) containing `.py` files need
+to have an `__init__.py` file to be correctly recognized by Python.
+See the documentation on [regular packages](https://docs.python.org/3/reference/import.html#regular-packages)
+for more detailed discussion.
