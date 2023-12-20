@@ -167,7 +167,9 @@ SELECT
 FROM
   assessment_instances AS ai
 WHERE
-  ai.id = $assessment_instance_id;
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
 
 -- BLOCK update_assessment_instance_score
 WITH
