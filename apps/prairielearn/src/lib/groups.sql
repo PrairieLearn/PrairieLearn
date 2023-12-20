@@ -24,62 +24,18 @@ WITH
       )
     RETURNING
       id
-  ),
-  create_log AS (
-    INSERT INTO
-      group_logs (authn_user_id, user_id, group_id, action)
-    SELECT
-      $authn_user_id,
-      $user_id,
-      cg.id,
-      'create'
-    FROM
-      create_group AS cg
-  ),
-  get_role AS (
-    SELECT
-      gr.id AS role_id
-    FROM
-      group_roles AS gr
-    WHERE
-      (
-        gr.assessment_id = $assessment_id
-        AND gr.can_assign_roles_at_start
-      )
-    ORDER BY
-      gr.maximum
-    LIMIT
-      1
-  ),
-  join_group AS (
-    INSERT INTO
-      group_users (user_id, group_id)
-    SELECT
-      $user_id,
-      cg.id
-    FROM
-      create_group AS cg
-  ),
-  assign_role AS (
-    INSERT INTO
-      group_user_roles (user_id, group_role_id, group_id)
-    SELECT
-      $user_id,
-      gr.role_id,
-      cg.id
-    FROM
-      create_group AS cg,
-      get_role as gr
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
 SELECT
   $authn_user_id,
-  $user_id,
+  NULL,
   cg.id,
-  'join'
+  'create'
 FROM
-  create_group AS cg;
+  create_group AS cg
+RETURNING
+  group_id;
 
 -- BLOCK get_group_members
 SELECT DISTINCT
@@ -171,6 +127,122 @@ WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id
   AND g.deleted_at IS NULL;
+
+-- BLOCK select_group_by_name
+SELECT
+  g.id
+FROM
+  groups AS g
+  JOIN group_configs AS gc ON g.group_config_id = gc.id
+WHERE
+  g.name = $group_name
+  AND g.join_code = $join_code
+  AND gc.assessment_id = $assessment_id
+  AND g.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+FOR NO KEY UPDATE of
+  g;
+
+-- BLOCK select_group_for_update
+SELECT
+  g.*,
+  (
+    SELECT
+      COUNT(*)
+    FROM
+      group_users AS gu
+    WHERE
+      gu.group_id = g.id
+  )::INT AS cur_size,
+  gc.maximum AS max_size,
+  gc.has_roles
+FROM
+  groups AS g
+  JOIN group_configs AS gc ON g.group_config_id = gc.id
+WHERE
+  g.id = $group_id
+  AND gc.assessment_id = $assessment_id
+  AND g.deleted_at IS NULL
+  AND gc.deleted_at IS NULL
+FOR NO KEY UPDATE of
+  g;
+
+-- BLOCK select_suitable_group_role
+WITH
+  users_per_group_role AS (
+    SELECT
+      gur.group_role_id,
+      COUNT(*) AS user_count
+    FROM
+      group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+    GROUP BY
+      gur.group_role_id
+  ),
+  suitable_group_roles AS (
+    SELECT
+      gr.id,
+      gr.can_assign_roles_at_start
+      AND $cur_size = 0 AS assigner_role_needed,
+      upgr.user_count = 0
+      AND gr.minimum > 0 AS mandatory_with_no_user,
+      GREATEST(0, gr.minimum - upgr.user_count) AS needed_users,
+      gr.maximum - upgr.user_count AS remaining
+    FROM
+      group_roles AS gr
+      JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
+    WHERE
+      gr.assessment_id = $assessment_id
+      AND gr.maximum > upgr.user_count
+  )
+SELECT
+  sgr.id
+FROM
+  suitable_group_roles AS sgr
+ORDER BY
+  -- If there are no users in the group, assign to an assigner role.
+  assigner_role_needed DESC,
+  -- Assign to a mandatory role with no users, if one exists.
+  has_minimum_and_no_user DESC,
+  -- Assign to role that has not reached their minimum.
+  needed_users DESC,
+  -- Assign to role that has the most remaining spots.
+  remaining DESC
+LIMIT
+  1;
+
+-- BLOCK insert_group_user
+WITH
+  inserted_user AS (
+    INSERT INTO
+      group_users gu (group_id, user_id)
+    VALUES
+      ($group_id, $user_id)
+    RETURNING
+      gu.*
+  ),
+  inserted_user_roles AS (
+    INSERT INTO
+      group_user_roles (user_id, group_id, group_role_id)
+    SELECT
+      iu.user_id,
+      iu.group_id,
+      $group_role_id
+    FROM
+      inserted_user AS iu
+    WHERE
+      $group_role_id::bigint IS NOT NULL
+  )
+INSERT INTO
+  group_logs (authn_user_id, user_id, group_id, action)
+SELECT
+  $authn_user_id,
+  iu.user_id,
+  iu.group_id,
+  'join'
+FROM
+  inserted_user AS iu;
 
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur

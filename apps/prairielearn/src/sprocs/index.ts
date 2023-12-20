@@ -133,13 +133,11 @@ export async function init() {
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'assessment_groups_update.sql',
-      'assessment_groups_add_member.sql',
       'assessment_groups_delete_member.sql',
       'assessment_groups_delete_group.sql',
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'group_users_insert.sql',
       'sync_assessment_modules.sql',
     ],
     async (filename) => {

@@ -154,7 +154,7 @@ router.post(
       await groupAssessmentHelper.createGroup(
         req.body.groupName,
         res.locals.assessment.id,
-        res.locals.user.user_id,
+        [res.locals.user.user_id],
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);

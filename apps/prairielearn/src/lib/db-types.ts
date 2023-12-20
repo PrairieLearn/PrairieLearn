@@ -672,3 +672,14 @@ export const CourseRequestSchema = z.object({
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
+
+export const GroupSchema = z.object({
+  course_instance_id: IdSchema,
+  date: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  group_config_id: IdSchema.nullable(),
+  id: IdSchema,
+  join_code: z.string(),
+  name: z.string(),
+});
+export type Group = z.infer<typeof GroupSchema>;
