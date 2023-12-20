@@ -102,6 +102,7 @@ exampleCourse
 |       `-- ...
 |   +-- unit_tests      # Python unit tests to run on Python files in serverFilesCourse.
 |       `-- __init__.py
+|       `-- conftest.py
 |       `-- verify_code.py
 |       `-- ...
 +-- pyproject.toml      # Config file for Python CI tooling.
@@ -123,6 +124,9 @@ a general overview, detailed file contents will be shown in later sections.
 - `__init__.py`: An empty file required for Python to recognize the serverFilesCourse
   directory structure. More detailed discussion on this will be in the
   [python code execution section](#python-execution-and-folder-structure).
+- `verify_code.py`: A file for testing Python code in serverFilesCourse. More
+  detailed discussion will be on the section on [Python testing](#testing).
+- `conftest.py`: A file containing test fixtures. See the section on [Python testing](#testing)
 
 ## GitHub Actions
 
@@ -146,3 +150,7 @@ all directories (including subdirectories) containing `.py` files need
 to have an `__init__.py` file to be correctly recognized by Python.
 See the documentation on [regular packages](https://docs.python.org/3/reference/import.html#regular-packages)
 for more detailed discussion.
+
+## Python Tooling
+
+### Testing
