@@ -111,14 +111,13 @@ exampleCourse
 
 ### Files
 
-Here is a breakdown of what each notable config file and folder does. This is meant to be
+Here is a breakdown of what each notable config file and directory does. This is meant to be
 a general overview, detailed file contents will be shown in later sections.
 
-- `python-ci.yml`: The configuration file for the Python CI workflow. Settings for each
-  individual tool are set in `pyproject.toml`.
-- `json-ci.yml`: The configuration file for the JSON CI workflow.
-- `pyproject.toml`: The configuration file for tooling used in the Python CI workflow.
-- `requirements.txt`: File containing packages required for Python CI to run.
+- `.github/workflows`: The directory containing configuration files for CI
+  workflows. Detailed discussion in the [GitHub Actions](#github-actions) section.
+- `.vscode`: A directory containing config files for VSCode for the course.
+  Detailed discussion in the [VSCode config](#vscode-config) section.
 - `type_stubs`: A folder holding additional type annotations for mypy (in this case,
   only the stubs for `prairielearn.pyi`).
 - `__init__.py`: An empty file required for Python to recognize the serverFilesCourse
@@ -126,7 +125,9 @@ a general overview, detailed file contents will be shown in later sections.
   [python code execution section](#python-execution-and-folder-structure).
 - `verify_code.py`: A file for testing Python code in serverFilesCourse. More
   detailed discussion will be on the section on [Python testing](#testing).
-- `conftest.py`: A file containing test fixtures. See the section on [Python testing](#testing)
+- `conftest.py`: A file containing test fixtures. See the section on [Python testing](#testing).
+- `pyproject.toml`: The common configuration file for tooling used in the Python CI workflow.
+- `requirements.txt`: File containing packages required for Python CI to run.
 
 ## GitHub Actions
 
@@ -134,6 +135,109 @@ In this section, we will provide sample configuration files and discuss
 some of the basics of using GitHub Actions in PrairieLearn. This is not meant
 to be a comprehensive discussion of GitHub Actions. For that, please refer
 to the [GitHub Actions Documentation](https://docs.github.com/en/actions).
+
+### `json-ci.yml`
+
+This is the configuration file for the JSON CI workflow. The validation performed
+is only basic JSON syntax validation, but serves as a good minimal example of a
+workflow file. This is especially useful for verifying JSON files in large pull
+requests.
+
+```yml
+name: Check JSON syntax
+
+on:
+  # Behavior on pushes, only runs validation on pushes to
+  # the master branch and if .json files were changed.
+  push:
+    branches:
+      - master
+    paths:
+      - '**.json'
+  # Runs validation if any .json files are changed in a
+  # pull request.
+  pull_request:
+    paths:
+      - '**.json'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check all JSON syntax
+        uses: limitusus/json-syntax-check@v1.0.3
+        with:
+          pattern: "\\.json$"
+```
+
+### `python-ci.yml`
+
+This is the configuration file for the Python CI workflow, which is substantially
+more complex than the JSON CI. Note that this configuration file only controls
+what commands get executed, not the configuration for each individual tool
+(flake8, mypy, and pytest). For details on each, see the section on
+[Python tooling](#python-tooling).
+
+```yml
+name: Test and Verify Python Grading and Utility Code
+
+on:
+  # Similar configuration to the json-ci.yml. CI workflow only runs on changes
+  # to Python files on commits to the master branch and all pull requests.
+  push:
+    branches:
+      - master
+    paths:
+      - '**.py'
+  pull_request:
+    paths:
+      - '**.py'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10']
+
+    steps:
+      # Check out repository files and install dependencies.
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
+        # Python dependencies are installed from the requirements.txt file.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # Run Python code linting with flake8.
+        # TODO update this command once the flake8 config gets updated.
+      - name: Lint with flake8
+        run: |
+          # Fail if codebase contains any of these issues
+          flake8p . --select=W2,F,W6,E20,E26 --show-source
+        # Run static typechecking with mypy and random file renaming. Detailed discussion on why
+        # this is necessary in the section on mypy.
+      - name: Static Typechecking with mypy
+        run: |
+          find questions -type f -name server.py -execdir /bin/bash -c 'mv server.py server_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}.py' \;
+          find questions -type f -name test.py -execdir /bin/bash -c 'mv test.py test_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}_${RANDOM}.py' \;
+          MYPY_CACHE_DIR=/tmp/mypy_ci_cache
+          rm -rf $MYPY_CACHE_DIR
+          mkdir -p $MYPY_CACHE_DIR
+          mypy --cache-dir $MYPY_CACHE_DIR --config-file pyproject.toml elements questions serverFilesCourse
+        # Run Python tests with pytest and produce coverage report.
+      - name: Test with pytest
+        run: |
+          set -o pipefail
+          pytest --cache-clear --cov | tee pytest-coverage.txt
+        # Add comment on pull request with coverage report.
+      - name: Comment coverage
+        uses: coroo/pytest-coverage-commentator@v1.0.2
+```
 
 ## Python Execution and Folder Structure
 
@@ -153,4 +257,10 @@ for more detailed discussion.
 
 ## Python Tooling
 
-### Testing
+### flake8
+
+### mypy
+
+### pytest
+
+## VSCode Config
