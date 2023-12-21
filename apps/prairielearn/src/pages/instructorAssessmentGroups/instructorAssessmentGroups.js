@@ -125,7 +125,7 @@ router.post(
         }
       }
 
-      if (notExist) {
+      if (notExist.length > 0) {
         flash(
           'error',
           html`Could not create group. The following users do not exist:
