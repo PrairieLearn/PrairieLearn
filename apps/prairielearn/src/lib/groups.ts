@@ -2,7 +2,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { z } from 'zod';
 import _ = require('lodash');
-import { forEachSeries } from 'async';
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';
@@ -307,7 +306,7 @@ export async function createGroup(
   }
 
   try {
-    return sqldb.runInTransactionAsync(async () => {
+    await sqldb.runInTransactionAsync(async () => {
       let groupId;
       try {
         groupId = await sqldb.queryRow(
@@ -322,10 +321,9 @@ export async function createGroup(
       } catch (err) {
         throw new Error('Group name is already taken.');
       }
-      await forEachSeries(userIds, async (userId) => {
+      for (const userId of userIds) {
         await addUserToGroup(assessmentId, groupId, userId, authnUserId, false);
-      });
-      return groupId;
+      }
     });
   } catch (err) {
     flash('error', `Failed to create the group ${groupName}. ${err.message}`);

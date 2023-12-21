@@ -182,7 +182,7 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      assert.lengthOf(response.$('.alert:contains(You are already in a group)'), 1);
+      assert.lengthOf(response.$('.alert:contains(already in another group)'), 1);
     });
   });
 
