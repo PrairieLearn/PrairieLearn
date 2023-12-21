@@ -501,9 +501,18 @@ describe('Test group based assessments with custom group roles from student side
     await joinGroup(locals.assessmentUrl, locals.joinCode);
   });
 
-  step('third user cannot start assessment as non-assigner', function () {
+  step('assigns third user with required role upon join', async function () {
+    const expectedRoleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+    ];
+    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
+  });
+
+  step('third user can start assessment as minimum roles are complete', function () {
     elemList = locals.$('#start-assessment');
-    assert.isTrue(elemList.is(':disabled'));
+    assert.isFalse(elemList.is(':disabled'));
   });
 
   step('does not render the group role table as non-assigner', function () {
@@ -511,20 +520,39 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 0);
   });
 
-  step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+  step('displays no role assignment error', function () {
+    elemList = locals.$('.alert:contains(needs to be assigned)');
+    assert.lengthOf(elemList, 0);
+  });
+
+  step('first user can edit role table to make two users recorder', async function () {
+    // Switch to first user
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
+
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+    ];
+    await updateGroupRoles(
+      locals.roleUpdates,
+      locals.groupRoles,
+      locals.studentUsers,
+      locals.assessmentUrl,
+    );
+  });
+
+  step('displays error for too few reflectors and too many recorders', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 1);
+    elemList = locals.$('.alert:contains(more person needs to be assigned Reflector.)');
     assert.lengthOf(elemList, 1);
     elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
-  step('assigns third user with required role upon join', async function () {
-    const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-    ];
-    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
+  step('cannot start assessment as minimum roles are incomplete', function () {
+    elemList = locals.$('#start-assessment');
+    assert.isTrue(elemList.is(':disabled'));
   });
 
   step('fourth user can load assessment and join group', async function () {
@@ -532,31 +560,18 @@ describe('Test group based assessments with custom group roles from student side
     await joinGroup(locals.assessmentUrl, locals.joinCode);
   });
 
-  step('fourth user cannot start assessment as non-assigner', function () {
-    elemList = locals.$('#start-assessment');
-    assert.isTrue(elemList.is(':disabled'));
-  });
-
-  step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
-    assert.lengthOf(elemList, 1);
-  });
-
   step('should not render the group role table', function () {
     elemList = locals.$('#role-select-form').find('tr');
     assert.lengthOf(elemList, 0);
   });
 
-  step('assigns fourth user with non-required role upon join', async function () {
-    // Fourth user should receive non-required role because the group size has reached
-    // the minimum number of required role assignments (3)
+  step('assigns fourth user with required role upon join', async function () {
+    // Fourth user should receive required role because there is one role still to be assigned its minimum
     const expectedRoleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-      { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
     ];
     await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
   });
@@ -609,9 +624,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays no errors when role config is correct', function () {
-    elemList = locals.$('.alert:contains(has too few assignments)');
-    assert.lengthOf(elemList, 0);
-    elemList = locals.$('.alert:contains(has too many assignments)');
+    elemList = locals.$('.alert:contains(needs to be assigned)');
     assert.lengthOf(elemList, 0);
   });
 
@@ -1216,6 +1229,15 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await joinGroup(assessmentUrl, locals.joinCode);
   });
 
+  step('database assigns third user with required role', async function () {
+    const expectedRoleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+    ];
+    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
+  });
+
   step('should not be able to start assessment as non-assigner', function () {
     elemList = locals.$('#start-assessment');
     assert.isTrue(elemList.is(':disabled'));
@@ -1226,23 +1248,29 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     assert.lengthOf(elemList, 0);
   });
 
-  step('displays error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+  step('displays error for too few recorders', function () {
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
-  step('displays no errors for recorders', function () {
-    elemList = locals.$('.alert:contains(Recorder)');
+  step('displays no errors for reflector', function () {
+    elemList = locals.$('.alert:contains(Reflector)');
     assert.lengthOf(elemList, 0);
   });
 
-  step('database assigns third user with required role', async function () {
-    const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-    ];
-    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
+  step('first user can see group role table with four users', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
+
+    elemList = locals.$('#role-select-form').find('tr');
+    // Header row and three user rows
+    assert.lengthOf(elemList, 4);
+  });
+
+  step('first user should not be able to select the contributor role', function () {
+    elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+    assert.lengthOf(elemList, 1);
+    elemList = elemList.next();
+    assert.equal(elemList.text().trim(), locals.contributor.role_name);
   });
 
   step('fourth user should be able to join group', async function () {
@@ -1250,16 +1278,24 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await joinGroup(assessmentUrl, locals.joinCode);
   });
 
-  step('should not be able to start assessment', function () {
-    elemList = locals.$('#start-assessment');
-    assert.isTrue(elemList.is(':disabled'));
+  step('assigns fourth user with required role upon join', async function () {
+    const expectedRoleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].user_id },
+    ];
+    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
   });
 
-  step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
-    assert.lengthOf(elemList, 1);
+  step('should be able to start assessment', function () {
+    elemList = locals.$('#start-assessment');
+    assert.isFalse(elemList.is(':disabled'));
+  });
+
+  step('displays no role assignment errors', function () {
+    elemList = locals.$('.alert:contains(needs to be assigned)');
+    assert.lengthOf(elemList, 0);
   });
 
   step('should not render the group role table for non-assigner', function () {
@@ -1267,18 +1303,8 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     assert.lengthOf(elemList, 0);
   });
 
-  step('assigns fourth user with required role upon join', async function () {
-    const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].user_id },
-    ];
-    await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
-  });
-
   step('first user can see group role table with four users', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
     elemList = locals.$('#role-select-form').find('tr');
     // Header row and four user rows
