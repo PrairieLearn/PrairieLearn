@@ -346,7 +346,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is full', function () {
-      const elemList = locals.$('.alert:contains(It is already full)');
+      const elemList = locals.$('.alert:contains(is already full)');
       assert.lengthOf(elemList, 1);
     });
   });
@@ -656,8 +656,8 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should contain a prompt to inform the user that the group is full', function () {
-      const elemList = locals.$('.alert:contains(It is already full)');
+    it('should contain a prompt to inform the user that the group is invalid', function () {
+      const elemList = locals.$('.alert:contains(does not exist)');
       assert.lengthOf(elemList, 1);
     });
   });
