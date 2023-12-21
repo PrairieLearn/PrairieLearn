@@ -245,7 +245,7 @@
           </thead>
           <tbody>
             <% groups.forEach(function(row, iRow) { %>
-            <tr>
+            <tr data-test-group-id="<%= row.group_id %>">
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
               <td class="text-center" style="word-break:break-all;">

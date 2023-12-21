@@ -21,6 +21,8 @@ describe('Instructor group controls', () => {
   let users: User[] = [];
   let assessment_id: string;
   let instructorAssessmentGroupsUrl: string;
+  let group1RowId: string | undefined;
+  let group2RowId: string | undefined;
 
   step('has group-based homework assessment', async () => {
     assessment_id = await queryRow(sql.select_group_work_assessment, {}, IdSchema);
@@ -58,7 +60,11 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(response.$('#usersTable td:contains(TestGroup)'), 1);
+    const groupRow = response.$('#usersTable tr:contains(TestGroup)');
+    assert.lengthOf(groupRow, 1);
+    assert.ok(groupRow.is(`:contains(${users[0].uid})`));
+    assert.ok(groupRow.is(`:contains(${users[1].uid})`));
+    group1RowId = groupRow.attr('data-test-group-id');
   });
 
   step('cannot create a group with a user already in another group', async () => {
@@ -79,10 +85,7 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(
-      response.$('.alert:contains(The following users are already in another group)'),
-      1,
-    );
+    assert.lengthOf(response.$('.alert:contains(in another group)'), 1);
     assert.lengthOf(response.$('#usersTable td:contains(TestGroup2)'), 0);
   });
 
@@ -104,7 +107,11 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(response.$('#usersTable td:contains(TestGroup2)'), 1);
+    const groupRow = response.$('#usersTable tr:contains(TestGroup2)');
+    assert.lengthOf(groupRow, 1);
+    assert.ok(groupRow.is(`:contains(${users[2].uid})`));
+    assert.ok(groupRow.is(`:contains(${users[3].uid})`));
+    group2RowId = groupRow.attr('data-test-group-id');
   });
 
   step('can add a user to an existing group', async () => {
@@ -120,12 +127,13 @@ describe('Instructor group controls', () => {
       body: new URLSearchParams({
         __csrf_token: csrfToken,
         __action: 'add_member',
-        group_id: '1',
+        group_id: group1RowId || '',
         // Add final user to the first group
         add_member_uids: users[4].uid,
       }),
     });
     assert.equal(response.status, 200);
+    assert.lengthOf(response.$('.alert'), 0);
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
   });
 
@@ -142,13 +150,14 @@ describe('Instructor group controls', () => {
       body: new URLSearchParams({
         __csrf_token: csrfToken,
         __action: 'add_member',
-        group_id: '2',
+        group_id: group2RowId || '',
         // Add final user to the second group
         add_member_uids: users[4].uid,
       }),
     });
     assert.equal(response.status, 200);
-    assert.lengthOf(response.$('.alert:contains(They are already in another group)'), 1);
+    assert.lengthOf(response.$('.alert:contains(in another group)'), 1);
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
+    assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup2):contains(${users[4].uid})`), 0);
   });
 });
