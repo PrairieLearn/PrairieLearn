@@ -256,8 +256,13 @@ for more detailed discussion.
 ## Python Tooling
 
 In this section, we will preset sample `pyproject.toml` and `requirements.txt`
-files, including discussion of all of the associated Python tooling. First,
-here is the `pyproject.toml` file.
+files, including discussion of all of the associated Python tooling.
+
+### pyproject.toml
+
+Although a `pyproject.toml` file can be used to store package metadata, its main
+usage in the context fo PrairieLearn is to serve as a unified configuration file
+for CI tooling.
 
 ```toml
 # Using "verify" keyword instead of "test" to avoid conflicts with autograder code.
@@ -333,6 +338,42 @@ max-line-length = 88
 extend-ignore = ["E203", "W503"]
 ```
 
+### requirements.txt
+
+Note that the packages specified here are **only used during testing and not
+question execution**. This means it is possible to install additional packages
+for testing and static typechecking that may not be present during question
+execution.
+
+```text
+###### Requirements without Version Specifiers ######
+flake8
+Flake8-pyproject
+pytest
+pytest-cov
+mypy
+nltk
+chevron
+networkx
+pandas
+numpy
+scipy
+sympy
+pytest-mock
+pytest-lazy-fixture
+types-pytest-lazy-fixture
+types-chevron
+pygraphviz
+lxml
+lxml-stubs
+pandas-stubs
+text-unidecode
+typing-extensions
+
+###### Requirements with Version Specifiers ######
+matplotlib==3.7.3
+```
+
 ### flake8
 
 Flake8 is a Python linter that reports different violations of style
@@ -380,6 +421,9 @@ As configured here, mypy expects additional type stubs to be stored in the
 `serverFilesCourse/type_stubs` directory. More discussion on these files can
 be found in the relevant section of the
 [mypy documentation](https://mypy.readthedocs.io/en/stable/stubs.html).
+Type stubs can also be included through the use of additional stubs packages in
+the `requirements.txt` file. Any packages missing stubs will raise warnings and
+must be set to be ignored in the config file.
 
 Here is a sample `prairielearn.pyi` stub file:
 
@@ -391,7 +435,7 @@ from enum import Enum
 EnumT = TypeVar("EnumT", bound=Enum)
 
 class QuestionData(TypedDict):
-    "A class with type signatures for the data dictionary"
+    """A class with type signatures for the data dictionary"""
 
     params: Dict[str, Any]
     correct_answers: Dict[str, Any]
@@ -438,6 +482,38 @@ def set_all_or_nothing_score_data(data: QuestionData) -> None: ...
 def all_partial_scores_correct(data: QuestionData) -> bool: ...
 ```
 
+**Note**: If you wish to use these type stubs as part of your course, you will want to
+move the `QuestionData` class into a normal `.py` file so it can be imported from other Python
+files.
+
 ### pytest
 
+Pytest is a testing framework for Python. Tests are detected based on a file and
+function naming convention (by default, those starting with `test_`). Because this
+causes naming conflicts with some files in PrairieLearn, the configuration in the given
+`pyproject.toml` file is set to change the naming convention to be files and functions
+starting with `verify_`. The configuration for pytest is in the `[tool.pytest.ini_options]`
+section of the `pyproject.toml` file.
+
+Of particular note is that there is no need to have unit test files read by PrairieLearn
+questions. Thus, it is possible to use packages and pytest plugins that are not
+available on PrairieLearn for testing by adding them to the `requirements.txt` file.
+
+For more detailed information, see the [pytest documentation](https://docs.pytest.org/en/7.4.x/).
+
 ## VSCode Config
+
+To support development with VSCode, additional project settings can be added to the
+`.vscode` directory. In particular, you may add the following snippet to the
+`.vscode/settings.json` file to enable black and isort formatting on save in VSCode:
+
+```json
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
+  },
+  "isort.args":["--profile", "black"],
+```
