@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<%- include('../partials/head'); %>
+</head>
+<body>
+	<script>
+		$(function () {
+			$('[data-toggle="popover"]').popover({ sanitize: false })
+			$('#add_new_override').on('submit', function (event) {
+				var startDate = new Date($('#start_date').val());
+				var endDate = new Date($('#end_date').val());
+				if (startDate >= endDate) {
+					event.preventDefault();
+					$('#end_date').addClass('is-invalid');
+					$('#end_date_error').text('End date should be greater than the start date.').show();
+				}
+				// Check if either student_uid or group_id is not empty
+				if (userId === '' && groupName === '') {
+					event.preventDefault();
+					$('#group_id').addClass('is-invalid');
+					$('#group_id_error').text('Either user ID or group ID should be filled.').show();
+				}
+			});
+			$('.edit-override-button').on('click', function (event) {
+				event.preventDefault();
+				var button = $(this);
+				var editOverrideForm = $('#edit-override-form');
+				editOverrideForm.find('#edit-assessment_id').val(button.data('assessment-id'));
+				console.log(button.data('assessment-id'))
+				editOverrideForm.find('#edit-student_uid').val(button.data('user-id'));
+				editOverrideForm.find('#edit-group_id').val(button.data('group-id'));
+				editOverrideForm.find('#edit-credit').val(button.data('credit'));
+				var policy_start_date = new Date(button.data('start-date'))
+				var policy_start_date_string = policy_start_date.toISOString().slice(0, 16);
+				editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
+				var policy_end_date = new Date(button.data('end-date'))
+				var policy_end_date_string = policy_end_date.toISOString().slice(0, 16);
+				editOverrideForm.find('#edit-start_date').val(policy_start_date_string);
+				editOverrideForm.find('#edit-end_date').val(policy_end_date_string);
+				editOverrideForm.find('#edit-created_by').val(button.data('created-by'));
+				editOverrideForm.find('#edit-note').val(button.data('note'));
+				editOverrideForm.find('#edit-type').val(button.data('type'));
+
+				// Show the modal form
+				$('#editPolicyModal').modal('show');
+			});
+				// Event listener for delete button
+				$('.delete-button').on('click', function () {
+					var button = $(this);
+					var student_uid = button.data('student-uid');
+					var assessment_id = button.data('assessment-id');
+					var groupId = button.data('group-id');
+
+					// Set the values of the form's hidden input fields
+					$('#deleteModal input[name="student_uid"]').val(student_uid);
+					$('#deleteModal input[name="assessment_id"]').val(assessment_id);
+					$('#deleteModal input[name="group_id"]').val(groupId);
+
+					// Show the modal confirmation dialog
+					$('#deleteModal').modal('show');
+				});
+
+				// Event listener for confirm delete button in the modal
+				$('#confirmDeleteButton').on('click', function () {
+					// Set the __action value to "delete_override"
+					$('form[name="delete-override-form"] input[name="__action"]').val('delete_override');
+
+					// Submit the form
+					$('form[name="delete-override-form"]').submit();
+				});
+		});
+
+	</script>
+	<%- include('../partials/navbar'); %>
+	<main id="content" class="container-fluid">
+		<div class="card mb-4">
+			<div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+				Access Overrides - <%= assessment.title %>
+				<button type="button" class="btn btn-light" data-toggle="modal" data-target="#addPolicyModal">
+					Add <i class="fas fa-plus"></i>
+				</button>
+			</div>
+
+
+			<div class="modal fade" id="addPolicyModal" tabindex="-1" role="dialog" aria-labelledby="addPolicyModalLabel" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="addPolicyModalLabel">Add New Override</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<form id="add-new-override" method="POST">
+								<input type="hidden" name="__action" value="add_new_override">
+								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+								<input type="hidden" class="form-control" id="current_student_uid" name="current_student_uid" value="<%= user.uid %>" required readonly>
+								<div class="form-group">
+									<label for="student_uid">Student UID</label>
+									<input type="text" class="form-control" id="student_uid" name="student_uid">
+								</div>
+								<div class="form-group">
+									<label for="group_id">Group Name</label>
+									<input type="text" class="form-control" id="group_name" name="group_name">
+									<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
+								</div>
+								<div class="form-group">
+									<label for="start_date">Start Date</label>
+									<input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+								</div>
+								<div class="form-group">
+									<label for="end_date">End Date</label>
+									<input type="datetime-local" class="form-control" id="end_date" name="end_date" required>
+									<div id="end_date_error" class="invalid-feedback" style="display: none; color: red;"></div>
+								</div>
+								<div class="form-group">
+									<label for="credit">Credit</label>
+									<input type="number" class="form-control" id="credit" name="credit">
+								</div>
+								<div class="form-group">
+									<label for="note">Note</label>
+									<textarea class="form-control" id="note" name="note"></textarea>
+								</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+							<button type="submit" class="btn btn-primary">Submit</button>
+						</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="modal fade" id="editPolicyModal" tabindex="-1" role="dialog" aria-labelledby="editPolicyModalLabel" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="editPolicyModalLabel">Edit Override</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<form id="edit-override-form" method="POST">
+								<input type="hidden" name="__action" value="edit_override">
+								<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+								<div class="form-group">
+									<label for="student_uid">Student UID</label>
+									<input type="text" class="form-control" id="edit-student_uid" name="student_uid">
+								</div>
+								<div class="form-group">
+									<label for="group_name">Group Name</label>
+									<input type="text" class="form-control" id="edit-group_name" name="group_name">
+									<div id="group_name_error" class="invalid-feedback" style="display: none; color: red;"></div>
+								</div>
+								<div class="form-group">
+									<label for="edit-credit">Credit</label>
+									<input type="number" class="form-control" id="edit-credit" name="credit">
+								</div>
+								<div class="form-group">
+									<label for="edit-start_date">Start Date</label>
+									<input type="datetime-local" class="form-control" id="edit-start_date" name="start_date" required>
+								</div>
+								<div class="form-group">
+									<label for="edit-end_date">End Date</label>
+									<input type="datetime-local" class="form-control" id="edit-end_date" name="end_date" required>
+								</div>
+
+								<div class="form-group">
+									<label for="edit-note">Note</label>
+									<textarea class="form-control" id="edit-note" name="note"></textarea>
+								</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+							<button type="submit" class="btn btn-primary" form="edit-override-form">Save Changes</button>
+						</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-sm table-hover">
+					<thead>
+						<tr>
+							<th>Student UID</th>
+							<th>Group Name</th>
+							<th>Created At</th>
+							<th>Start Date</th>
+							<th>End Date</th>
+							<th>Created By</th>
+							<th>Credit</th>
+							<th>Note</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						<% policies.forEach(function (policy) { %>
+							<tr>
+								<td><%= policy.student_uid %></td>
+								<td><%= policy.group_name %></td>
+								<td><%= policy.created_at %></td>
+								<td><%= policy.start_date %></td>
+								<td><%= policy.end_date %></td>
+								<td><%= policy.created_by %></td>
+								<td><%= policy.credit %></td>
+								<td><%= policy.note %></td>
+								<td>
+									<div class="dropdown">
+										<button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+											Action
+										</button>
+										<div class="dropdown-menu" aria-labelledby="actionDropdown<%= policy.id %>">
+											<form name="edit-override-form" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" method="POST">
+												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+												<button type="button" class="btn edit-override-button" data-assessment-id="<%= policy.assessment_id %>" data-user-id="<%= policy.student_uid %>" data-group-id="<%= policy.group_id %>" data-credit="<%= policy.credit %>" data-start-date="<%= policy.start_date %>" data-end-date="<%= policy.end_date %>" data-created-by="<%= policy.created_by %>" data-note="<%= policy.note %>" data-type="<%= policy.type %>">
+													<i class="fas fa-edit"></i> Edit
+												</button>												
+											</form>
+											<form name="delete-override-form" method="POST">
+												<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+												<input type="hidden" name="__action" value="delete_override">
+												<input type="hidden" name="student_uid" value="<%= policy.student_uid %>">
+												<input type="hidden" name="assessment_id" value="<%= policy.assessment_id %>"> 
+  												<input type="hidden" name="group_name" value="<%= policy.group_name %>">
+												<!-- <button type="submit" class="btn delete-button"> -->
+													<button type="button" class="btn delete-button" data-toggle="modal" data-target="#deleteModal" data-student-uid="<%= policy.student_uid %>" data-assessment-id="<%= policy.assessment_id %>" data-group-id="<%= policy.group_id %>">
+													<i class="fas fa-remove"></i> Delete
+												</button>
+											</form>
+
+										</div>
+									</div>
+								</td>
+							</tr>
+						<% }); %>
+					</tbody>
+				</table>
+			</div>
+			<div class="card-footer">
+			</div>
+			<!-- Modal dialog for delete confirmation -->
+			<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<p>Are you sure you want to delete this Access Override? </p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+							<button id="confirmDeleteButton" type="button" class="btn btn-danger">Delete</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+</body>
+</html>
