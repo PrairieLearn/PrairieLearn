@@ -253,7 +253,7 @@ function buildLocals(
 
   if (
     assessment?.group_config?.has_roles &&
-    !instance_question?.group_role_permissions?.canSubmit
+    !instance_question?.group_role_permissions?.can_submit
   ) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
