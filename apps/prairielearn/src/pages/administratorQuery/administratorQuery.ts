@@ -68,6 +68,8 @@ router.get(
           header: true,
           columns: query_run.result.columns,
         }).pipe(res);
+      } else {
+        res.send('');
       }
     } else {
       const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
