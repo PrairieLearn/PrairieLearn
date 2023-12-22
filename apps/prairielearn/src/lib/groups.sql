@@ -147,6 +147,17 @@ WHERE
   gr.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
 
+-- BLOCK select_question_permissions
+SELECT
+  BOOL_OR(aqrp.can_view) AS can_view,
+  BOOL_OR(aqrp.can_submit) AS can_submit
+FROM
+  assessment_question_role_permissions AS aqrp
+  JOIN group_user_roles AS gu ON gu.group_role_id = aqrp.group_role_id
+WHERE
+  aqrp.assessment_question_id = $assessment_question_id
+  AND gu.user_id = $user_id;
+
 -- BLOCK get_role_assignments
 SELECT
   gu.user_id,
