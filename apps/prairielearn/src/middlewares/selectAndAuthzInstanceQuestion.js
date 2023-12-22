@@ -25,21 +25,23 @@ const middleware = asyncHandler(async (req, res, next) => {
       res.locals.assessment_instance.group_id,
       res.locals.assessment.group_config,
     );
-    if (!res.locals.assessment_instance.group_info.start) {
-      throw error.make(
-        400,
-        'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
+    if (res.locals.assessment.group_config.has_roles) {
+      if (!res.locals.assessment_instance.group_info.start) {
+        throw error.make(
+          400,
+          'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
+        );
+      }
+      res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
+        res.locals.assessment_question.id,
+        res.locals.authz_data.user.user_id,
       );
-    }
-    res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
-      res.locals.assessment_question.id,
-      res.locals.authz_data.user.user_id,
-    );
-    if (!res.locals.instance_question.group_role_permissions.can_view) {
-      throw error.make(
-        400,
-        'Your current group role does not give you permission to see this question.',
-      );
+      if (!res.locals.instance_question.group_role_permissions.can_view) {
+        throw error.make(
+          400,
+          'Your current group role does not give you permission to see this question.',
+        );
+      }
     }
   }
   next();
