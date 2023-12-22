@@ -788,3 +788,13 @@ export const GroupUserRoleSchema = z.object({
   user_id: IdSchema,
 });
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
+
+export const AssessmentQuestionRolePermissionsSchema = z.object({
+  assessment_question_id: IdSchema,
+  group_role_id: IdSchema,
+  can_submit: z.boolean().nullable(),
+  can_view: z.boolean().nullable(),
+});
+export type AssessmentQuestionRolePermissions = z.infer<
+  typeof AssessmentQuestionRolePermissionsSchema
+>;
