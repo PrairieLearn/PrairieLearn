@@ -185,22 +185,9 @@ async function getRolesInfo(groupId: string, groupMembers: GroupMember[]): Promi
 }
 
 export async function getQuestionGroupPermissions(
-  assessment_id: string,
   assessment_question_id: string,
-  group_id: string,
   user_id: string,
 ): Promise<{ can_submit: boolean; can_view: boolean }> {
-  const groupConfig = await getGroupConfig(assessment_id);
-  const groupInfo = await getGroupInfo(group_id, groupConfig);
-  if (!groupInfo.start) {
-    // If the group roles do not allow assessment start (e.g., are not balanced, or minimum roles are not filled), then no one can edit
-    return { can_submit: false, can_view: false };
-  }
-  if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, user_id))) {
-    // If the user is not in the group, then they cannot edit
-    return { can_submit: false, can_view: false };
-  }
-
   const userPermissions = await sqldb.queryOptionalRow(
     sql.select_question_permissions,
     { assessment_question_id, user_id },
