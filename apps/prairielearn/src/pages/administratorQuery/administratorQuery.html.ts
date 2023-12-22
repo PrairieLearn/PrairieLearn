@@ -17,7 +17,7 @@ export const AdministratorQueryRunParamsSchema = z.object({
   params: z.record(z.any()),
   authn_user_id: z.string(),
   error: z.string().optional().nullable(),
-  result: AdministratorQueryResultSchema.optional().nullable(),
+  result: AdministratorQueryResultSchema.nullable(),
   formatted_date: z.string().optional().nullable(),
 });
 export type AdministratorQueryRunParams = z.infer<typeof AdministratorQueryRunParamsSchema>;
@@ -46,7 +46,7 @@ export const AdministratorQueryQueryRunSchema = z.object({
   sql: z.string(),
   params: z.record(z.any()),
   error: z.string().nullable(),
-  result: AdministratorQueryResultSchema,
+  result: AdministratorQueryResultSchema.nullable(),
   authn_user_id: z.string().optional(),
   name: z.string().optional(),
   id: z.string().optional(),
@@ -230,29 +230,30 @@ export function AdministratorQuery({
               ? html`
                   <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
                     Query ran at: ${query_run?.formatted_date}
-                    ${query_run?.result != null &&
-                    html`
-                      <div class="ml-auto">
-                        <span class="mr-2 test-suite-row-count">
-                          ${query_run.result.rowCount}
-                          ${query_run.result.rowCount === 1 ? 'row' : 'rows'}
-                        </span>
-                        <a
-                          href="${`?query_run_id=${query_run_id}&format=json`}"
-                          role="button"
-                          class="btn btn-sm btn-light"
-                        >
-                          <i class="fas fa-download" aria-hidden="true"></i> JSON
-                        </a>
-                        <a
-                          href="${`?query_run_id=${query_run_id}&format=csv`}"
-                          role="button"
-                          class="btn btn-sm btn-light"
-                        >
-                          <i class="fas fa-download" aria-hidden="true"></i> CSV
-                        </a>
-                      </div>
-                    `}
+                    ${query_run?.result != null
+                      ? html`
+                          <div class="ml-auto">
+                            <span class="mr-2 test-suite-row-count">
+                              ${query_run.result.rowCount}
+                              ${query_run.result.rowCount === 1 ? 'row' : 'rows'}
+                            </span>
+                            <a
+                              href="${`?query_run_id=${query_run_id}&format=json`}"
+                              role="button"
+                              class="btn btn-sm btn-light"
+                            >
+                              <i class="fas fa-download" aria-hidden="true"></i> JSON
+                            </a>
+                            <a
+                              href="${`?query_run_id=${query_run_id}&format=csv`}"
+                              role="button"
+                              class="btn btn-sm btn-light"
+                            >
+                              <i class="fas fa-download" aria-hidden="true"></i> CSV
+                            </a>
+                          </div>
+                        `
+                      : ''}
                   </div>
                 `
               : null}
@@ -266,7 +267,7 @@ export function AdministratorQuery({
                       <thead>
                         <tr>
                           ${query_run.result.columns?.map((col) => {
-                            return html` ${renderHeader(query_run.result.columns, col)} `;
+                            return html` ${renderHeader(query_run.result?.columns, col)} `;
                           })}
                         </tr>
                       </thead>
@@ -275,7 +276,7 @@ export function AdministratorQuery({
                         ${query_run.result.rows?.map((row) => {
                           return html`
                             <tr>
-                              ${query_run.result.columns?.map((col) => {
+                              ${query_run.result?.columns?.map((col) => {
                                 return html` ${render(row, col)}`;
                               })}
                             </tr>

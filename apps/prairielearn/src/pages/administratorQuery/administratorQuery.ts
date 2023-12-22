@@ -60,13 +60,13 @@ router.get(
 
     if (req.query.format === 'json') {
       res.attachment(req.params.query + '.json');
-      res.send(query_run?.result.rows);
+      res.send(query_run?.result?.rows);
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
-      if (query_run != null) {
+      if (query_run?.result != null) {
         stringify(query_run.result.rows, {
           header: true,
-          columns: query_run?.result.columns,
+          columns: query_run.result.columns,
         }).pipe(res);
       }
     } else {
@@ -113,6 +113,7 @@ router.post(
       params: queryParams,
       authn_user_id: res.locals.authn_user.user_id,
       error: null,
+      result: null,
     };
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
