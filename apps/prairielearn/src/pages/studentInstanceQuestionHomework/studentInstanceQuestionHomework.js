@@ -17,6 +17,17 @@ function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
   }
+  if (
+    res.locals.assessment.group_config?.has_roles &&
+    !res.locals.instance_question.group_role_permissions.can_submit
+  ) {
+    return callback(
+      error.make(
+        403,
+        'Your current group role does not give you permission to submit to this question.',
+      ),
+    );
+  }
   let variant_id, submitted_answer;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;

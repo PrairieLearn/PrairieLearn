@@ -24,7 +24,10 @@ function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
   }
-  if (!res.locals.instance_question.group_role_permissions.can_submit) {
+  if (
+    res.locals.assessment.group_config?.has_roles &&
+    !res.locals.instance_question.group_role_permissions.can_submit
+  ) {
     return callback(
       error.make(
         403,
