@@ -35,6 +35,18 @@
             <% } %>
             </button>
           <% } %>
+          <% if (locals.assessment?.group_config.has_roles &&
+                 !locals.instance_question?.group_role_permissions?.can_submit) { %>
+            <button
+              type="button"
+              class="btn btn-xs order-3"
+              data-toggle="popover"
+              data-trigger="focus"
+              data-content="Your group role (<%= locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[locals.authz_data.user.uid]?.map(role => role.role_name)?.join(', ') ?? 'None' %>) is not allowed to submit this question."
+              aria-label="Submission blocked">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            </button>
+        <% } %>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
@@ -109,8 +121,20 @@
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
             </button>
-              <% } %>
-          </span>
+          <% } %>
+          <% if (locals.assessment?.group_config.has_roles &&
+                  !locals.instance_question?.group_role_permissions?.can_submit) { %>
+            <button
+              type="button"
+              class="btn btn-xs order-3"
+              data-toggle="popover"
+              data-trigger="focus"
+              data-content="Your group role (<%= locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[locals.authz_data.user.uid]?.map(role => role.role_name)?.join(', ') ?? 'None' %>) is not allowed to submit this question."
+              aria-label="Submission blocked">
+            <i class="fa fa-lock" aria-hidden="true"></i>
+            </button>
+         <% } %>
+       </span>
           <span class="d-flex">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="postData" class="postData">
