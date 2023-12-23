@@ -34,6 +34,7 @@ const middleware = asyncHandler(async (req, res, next) => {
       }
       res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
         res.locals.assessment_question.id,
+        res.locals.assessment_instance.group_id,
         res.locals.authz_data.user.user_id,
       );
       if (!res.locals.instance_question.group_role_permissions.can_view) {

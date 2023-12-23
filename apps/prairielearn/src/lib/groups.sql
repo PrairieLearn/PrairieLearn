@@ -153,10 +153,11 @@ SELECT
   BOOL_OR(aqrp.can_submit) AS can_submit
 FROM
   assessment_question_role_permissions AS aqrp
-  JOIN group_user_roles AS gu ON gu.group_role_id = aqrp.group_role_id
+  JOIN group_user_roles AS gur ON gur.group_role_id = aqrp.group_role_id
 WHERE
   aqrp.assessment_question_id = $assessment_question_id
-  AND gu.user_id = $user_id;
+  AND gur.group_id = $group_id
+  AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
 SELECT
