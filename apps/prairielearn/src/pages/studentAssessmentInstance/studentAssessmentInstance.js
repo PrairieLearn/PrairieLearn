@@ -19,12 +19,11 @@ async function ensureUpToDate(locals) {
   if (!updated) return;
 
   // we updated the assessment_instance, so reload it
-  const result = sqldb.queryRow(
+  locals.assessment_instance = sqldb.queryRow(
     sql.select_assessment_instance,
     { assessment_instance_id: locals.assessment_instance.id },
     AssessmentInstanceSchema,
   );
-  locals.assessment_instance = result.rows[0];
 }
 
 router.post(
