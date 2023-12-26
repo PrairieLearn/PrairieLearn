@@ -42,7 +42,7 @@
                 <% } %>
             </button>
           <% } %>
-          <% if (locals.assessment?.group_config.has_roles &&
+          <% if (locals.assessment?.group_config?.has_roles &&
                  !locals.instance_question?.group_role_permissions?.can_submit) { %>
             <button
               type="button"
