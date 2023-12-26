@@ -115,7 +115,6 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    console.log(res.locals.assessment.type);
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
