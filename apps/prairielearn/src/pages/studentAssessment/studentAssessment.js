@@ -72,6 +72,7 @@ router.get(
         // we'll ensure that the password has already been entered before allowing
         // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
+
         if (res.locals.assessment.group_work) {
           // Get the group config info
           const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
@@ -104,7 +105,7 @@ router.get(
             }
           }
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        } else if (assessment.type === 'Exam') {
+        } else if (res.locals.assessment.type === 'Homework') {
           const time_limit_min = null;
           const assessment_instance_id = await assessment.makeAssessmentInstance(
             res.locals.assessment.id,
