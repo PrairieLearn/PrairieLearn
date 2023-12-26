@@ -10,7 +10,6 @@ const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const sqldb = require('@prairielearn/postgres');
 const groupAssessmentHelper = require('../../lib/groups');
-const { AssessmentInstanceSchema } = require('../../lib/db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -18,11 +17,10 @@ async function ensureUpToDate(locals) {
   const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
   if (updated) {
     // we updated the assessment_instance, so reload it
-    locals.assessment_instance = sqldb.queryRow(
-      sql.select_assessment_instance,
-      { assessment_instance_id: locals.assessment_instance.id },
-      AssessmentInstanceSchema,
-    );
+    const result = await sqldb.queryAsync(sql.select_assessment_instance, {
+      assessment_instance_id: locals.assessment_instance.id,
+    });
+    locals.assessment_instance = result.rows[0];
   }
 }
 
