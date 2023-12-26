@@ -49,7 +49,10 @@ FROM
   JOIN instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
 WHERE
   ai.id = $assessment_instance_id
-  AND (aq.deleted_at IS NULL OR a.type = 'Exam')
+  AND (
+    aq.deleted_at IS NULL
+    OR a.type = 'Exam'
+  )
 WINDOW
   w AS (
     ORDER BY

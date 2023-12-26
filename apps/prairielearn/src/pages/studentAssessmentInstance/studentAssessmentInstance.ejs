@@ -27,7 +27,7 @@
       });
     </script>
 
-    <% if (authz_result.authorized_edit) { %>
+    <% if (assessment.type === 'Exam' && authz_result.authorized_edit) { %>
     <div id="confirmFinishModal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
