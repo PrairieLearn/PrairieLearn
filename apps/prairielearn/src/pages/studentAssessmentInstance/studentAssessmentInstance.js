@@ -16,14 +16,14 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 async function ensureUpToDate(locals) {
   const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
-  if (!updated) return;
-
-  // we updated the assessment_instance, so reload it
-  locals.assessment_instance = sqldb.queryRow(
-    sql.select_assessment_instance,
-    { assessment_instance_id: locals.assessment_instance.id },
-    AssessmentInstanceSchema,
-  );
+  if (updated) {
+    // we updated the assessment_instance, so reload it
+    locals.assessment_instance = sqldb.queryRow(
+      sql.select_assessment_instance,
+      { assessment_instance_id: locals.assessment_instance.id },
+      AssessmentInstanceSchema,
+    );
+  }
 }
 
 router.post(
@@ -115,7 +115,8 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (res.locals.assessment_instance.type === 'Homework') {
+    console.log(res.locals.assessment.type);
+    if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
     const params = {
