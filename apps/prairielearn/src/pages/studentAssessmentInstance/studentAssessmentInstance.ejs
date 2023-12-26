@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
+    <% if (assessment.type === 'Exam') { %>
     <%- compiled_script_tag('examTimeLimitCountdown.ts') %>
     <%- encoded_data({
           serverRemainingMS: assessment_instance_remaining_ms,
@@ -11,6 +12,7 @@
           canTriggerFinish: authz_result.authorized_edit,
           csrfToken: __csrf_token,
         }, 'time-limit-data') %>
+    <% } %>
   </head>
   <body>
     <script>
@@ -79,6 +81,9 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+          <% if (assessment.group_work) { %>
+            <i class="fas fa-users"></i>
+          <% } %>
         </div>
 
         <div class="card-body">
@@ -258,7 +263,7 @@
         </table>
 
         <div class="card-footer">
-          <% if (assessment_instance.open && authz_result.active) { %>
+          <% if (assessment.type === 'Exam' && assessment_instance.open && authz_result.active) { %>
           <% if (assessment.allow_real_time_grading) { %>
             <form name="grade-form" method="POST" class="form-inline">
               <input type="hidden" name="__action" value="grade">
