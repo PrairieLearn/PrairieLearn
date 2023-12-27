@@ -109,7 +109,7 @@ WITH
   count_group_user_per_role AS (
     SELECT
       gur.group_role_id,
-      COUNT(gur.user_id) AS count
+      COUNT(gur.id) AS count
     FROM
       group_user_roles AS gur
       JOIN group_users AS gu ON gur.group_user_id = gu.id
