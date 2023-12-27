@@ -143,17 +143,11 @@ router.get(
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       res.locals.groupConfig = groupConfig;
 
-      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-      const groupId = await groupAssessmentHelper.getGroupId(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-      );
-
-      if (groupId === null) {
-        throw error.make(403, 'Not a group member', res.locals);
-      }
       res.locals.notInGroup = false;
-      const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+      const groupInfo = await groupAssessmentHelper.getGroupInfo(
+        res.locals.assessment_instance.group_id,
+        groupConfig,
+      );
       res.locals.groupSize = groupInfo.groupSize;
       res.locals.groupMembers = groupInfo.groupMembers;
       res.locals.joinCode = groupInfo.joinCode;
@@ -171,7 +165,7 @@ router.get(
         for (const question of res.locals.instance_questions) {
           question.group_role_permissions = await groupAssessmentHelper.getQuestionGroupPermissions(
             question.id,
-            groupId,
+            res.locals.assessment_instance.group_id,
             res.locals.authz_data.user.user_id,
           );
         }

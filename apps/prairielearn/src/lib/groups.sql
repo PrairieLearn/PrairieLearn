@@ -164,14 +164,15 @@ WHERE
 
 -- BLOCK get_role_assignments
 SELECT
-  gu.user_id,
+  gur.user_id,
   u.uid,
   gr.role_name,
   gr.id as group_role_id
 FROM
-  users u
-  JOIN group_user_roles gu ON u.user_id = gu.user_id
-  JOIN group_roles gr ON gu.group_role_id = gr.id
+  group_users gu
+  JOIN users u ON gu.user_id = u.user_id
+  JOIN group_user_roles gur ON gu.user_id = gur.user_id
+  JOIN group_roles gr ON gur.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
 
