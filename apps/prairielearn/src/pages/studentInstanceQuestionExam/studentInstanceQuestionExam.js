@@ -1,3 +1,5 @@
+import { getQuestionGroupPermissions } from '../../lib/groups';
+
 const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
@@ -256,6 +258,24 @@ router.get('/', function (req, res, next) {
         });
       },
       async () => await setQuestionCopyTargets(res),
+      async () => {
+        if (res.locals.assessment.group_config?.has_roles) {
+          if (res.locals.instance_question_info.prev_instance_question.id != null) {
+            res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.prev_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+          if (res.locals.instance_question_info.next_instance_question.id) {
+            res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.next_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+        }
+      },
     ],
     (err) => {
       if (ERR(err, next)) return;

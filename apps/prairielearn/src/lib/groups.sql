@@ -152,10 +152,13 @@ SELECT
   BOOL_OR(aqrp.can_view) AS can_view,
   BOOL_OR(aqrp.can_submit) AS can_submit
 FROM
-  assessment_question_role_permissions AS aqrp
+  instance_questions AS iq
+  JOIN assessment_question_role_permissions AS aqrp ON (
+    aqrp.assessment_question_id = iq.assessment_question_id
+  )
   JOIN group_user_roles AS gur ON gur.group_role_id = aqrp.group_role_id
 WHERE
-  aqrp.assessment_question_id = $assessment_question_id
+  iq.id = $instance_question_id
   AND gur.group_id = $group_id
   AND gur.user_id = $user_id;
 

@@ -32,8 +32,15 @@ const middleware = asyncHandler(async (req, res, next) => {
           'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
         );
       }
+      res.locals.assessment_instance.user_group_roles = (
+        res.locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[
+          res.locals.authz_data.user.uid
+        ] || ['None']
+      )
+        .map((role) => role.role_name)
+        .join(', ');
       res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
-        res.locals.assessment_question.id,
+        res.locals.instance_question.id,
         res.locals.assessment_instance.group_id,
         res.locals.authz_data.user.user_id,
       );

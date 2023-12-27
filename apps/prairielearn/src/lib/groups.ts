@@ -185,13 +185,13 @@ async function getRolesInfo(groupId: string, groupMembers: GroupMember[]): Promi
 }
 
 export async function getQuestionGroupPermissions(
-  assessment_question_id: string,
+  instance_question_id: string,
   group_id: string,
   user_id: string,
 ): Promise<{ can_submit: boolean; can_view: boolean }> {
   const userPermissions = await sqldb.queryOptionalRow(
     sql.select_question_permissions,
-    { assessment_question_id, group_id, user_id },
+    { instance_question_id, group_id, user_id },
     z.object({ can_submit: z.boolean(), can_view: z.boolean() }),
   );
   return userPermissions ?? { can_submit: false, can_view: false };
