@@ -114,9 +114,8 @@ WITH
       COUNT(gur.id) AS count
     FROM
       group_user_roles AS gur
-      JOIN group_users AS gu ON gur.group_user_id = gu.id
     WHERE
-      gu.group_id = $group_id
+      gur.group_id = $group_id
     GROUP BY
       gur.group_role_id
   )
@@ -143,14 +142,11 @@ SELECT
   bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
   group_roles as gr
-  -- TODO probably a good idea to add a join with groups before doing this check?
-  JOIN group_users AS gu ON gu.user_id = $user_id
-  JOIN group_user_roles as gur ON (
-    gr.id = gur.group_role_id
-    AND gur.group_user_id = gu.id
-  )
+  JOIN group_user_roles as gur ON (gr.id = gur.group_role_id)
 WHERE
-  gr.assessment_id = $assessment_id;
+  gr.assessment_id = $assessment_id
+  -- TODO probably a good idea to add a join with groups before doing this check?
+  AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
 SELECT
@@ -159,10 +155,9 @@ SELECT
   gr.role_name,
   gr.id as group_role_id
 FROM
-  group_users AS gu
-  JOIN users u ON u.user_id = gu.user_id
-  JOIN group_user_roles gur ON gu.id = gur.group_user_id
-  JOIN group_roles gr ON gur.group_role_id = gr.id
+  users u
+  JOIN group_user_roles gu ON u.user_id = gu.user_id
+  JOIN group_roles gr ON gu.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
 
@@ -179,12 +174,10 @@ WHERE
   AND g.deleted_at IS NULL;
 
 -- BLOCK delete_non_required_roles
-DELETE FROM group_user_roles gur USING group_users AS gu
-JOIN group_roles AS gr ON TRUE
+DELETE FROM group_user_roles gur USING group_roles AS gr
 WHERE
-  gu.group_id = $group_id
+  gur.group_id = $group_id
   AND gur.group_role_id = gr.id
-  AND gur.group_user_id = gu.id
   AND gr.assessment_id = $assessment_id
   AND gr.minimum = 0;
 
@@ -204,10 +197,9 @@ VALUES
 -- BLOCK reassign_group_roles_after_leave
 WITH
   deleted_group_users_roles AS (
-    DELETE FROM group_user_roles AS gur USING group_users AS gu
+    DELETE FROM group_user_roles
     WHERE
-      gu.group_id = $group_id
-      AND gur.group_user_id = gu.id
+      group_id = $group_id
   ),
   json_roles AS (
     SELECT
@@ -228,19 +220,14 @@ SELECT
   user_id,
   group_role_id
 FROM
-  json_roles
-ON CONFLICT (group_user_id, group_role_id) DO
-UPDATE
-SET
-  group_role_id = EXCLUDED.group_role_id;
+  json_roles;
 
 -- BLOCK update_group_roles
 WITH
   deleted_group_users_roles AS (
-    DELETE FROM group_user_roles AS gur USING group_users AS gu
+    DELETE FROM group_user_roles
     WHERE
-      gu.group_id = $group_id
-      AND gur.group_user_id = gu.id
+      group_id = $group_id
   ),
   assign_new_group_roles AS (
     INSERT INTO
