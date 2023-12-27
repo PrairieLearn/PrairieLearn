@@ -58,6 +58,9 @@ router.get(
       return;
     }
 
+    // TODO Validate LTI claim info or error
+
+    // TODO Move is_instructor logic to library, consider TA roles
     // Get role of LTI user
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
     let role_instructor = roles.some((val) => val.endsWith('#Instructor'));
@@ -80,8 +83,9 @@ router.get(
 
     // FIXME
     if (lci && !('noredir' in req.query)) {
-      // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
+
       if (role_instructor) {
+        // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
         await queryAsync(sql.upsert_lci, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lci.course_instance_id,
@@ -90,7 +94,11 @@ router.get(
           context_label: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label,
           context_title: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title,
         });
+
+        // TODO: Set course/instance staff permissions on LMS course staff here?
+
       }
+
 
       // Redirect to linked course instance
       res.redirect(
@@ -127,7 +135,6 @@ router.get(
         courses = [];
       }
 
-      // FIXME
       let course_instances: CourseInstance[] = [];
 
       for (const course of courses) {
@@ -164,12 +171,15 @@ router.post(
     const lti13_claims = devel_lti13_claims;
     const authn_lti13_instance_id = devel_authn_lti13_instance_id;
 
+    // Validate claims have fields we need. Zod?
+
     // Validate user login match this lti13_instance
     if (unsafe_lti13_instance_id !== authn_lti13_instance_id) {
       throw new Error(`Permission denied`);
     }
 
     // Check user has instructor permissions in LMS and CI
+    // TODO use library call here
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
     const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
 
