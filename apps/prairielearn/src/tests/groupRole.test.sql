@@ -38,12 +38,13 @@ WHERE
 
 -- BLOCK select_group_user_roles
 SELECT
-  gur.user_id,
+  gu.user_id,
   gur.group_role_id
 FROM
-  group_user_roles AS gur
-  JOIN groups AS gr ON gur.group_id = gr.id
-  JOIN group_configs AS gc ON gc.id = gr.group_config_id
+  group_configs AS gc
+  JOIN groups AS g ON g.group_config_id = gc.id
+  JOIN group_users AS gu ON gu.group_id = g.id
+  JOIN group_user_roles AS gur ON gur.group_user_id = gu.id
 WHERE
   gc.assessment_id = $assessment_id;
 
