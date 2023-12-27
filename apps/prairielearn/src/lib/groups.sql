@@ -121,7 +121,7 @@ WITH
 SELECT
   gr.id,
   gr.role_name,
-  COALESCE(COUNT(gur.user_id), 0) AS count,
+  COALESCE(gur.count, 0) AS count,
   gr.maximum,
   gr.minimum,
   gr.can_assign_roles_at_start,
