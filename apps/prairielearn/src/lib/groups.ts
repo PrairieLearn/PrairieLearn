@@ -461,7 +461,6 @@ export async function updateGroupRoles(
       });
     }
 
-    console.log(roleAssignments);
     await sqldb.queryAsync(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
