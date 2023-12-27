@@ -1,6 +1,7 @@
 // @ts-check
 const _ = require('lodash');
 import * as fg from 'fast-glob';
+import { z } from 'zod';
 
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import * as sqldb from '@prairielearn/postgres';
@@ -9,6 +10,11 @@ import * as questionServers from '../question-servers';
 import { writeCourseIssues } from './issues';
 import { selectCourseById } from '../models/course';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question';
+import { VariantSchema } from './db-types';
+
+const VariantWithFormattedDateSchema = VariantSchema.extend({
+  formatted_date: z.string(),
+});
 
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
@@ -158,23 +164,26 @@ async function makeAndInsertVariant(
     question_course,
     options,
   );
-  const result = await sqldb.callOneRowAsync('variants_insert', [
-    variantData.variant_seed,
-    variantData.params,
-    variantData.true_answer,
-    variantData.options,
-    variantData.broken,
-    instance_question_id,
-    question.id,
-    course_instance_id,
-    user_id,
-    authn_user_id,
-    group_work,
-    require_open,
-    variant_course.id,
-    client_fingerprint_id,
-  ]);
-  const variant = result.rows[0].variant;
+  const variant = await sqldb.callRow(
+    'variants_insert',
+    [
+      variantData.variant_seed,
+      variantData.params,
+      variantData.true_answer,
+      variantData.options,
+      variantData.broken,
+      instance_question_id,
+      question.id,
+      course_instance_id,
+      user_id,
+      authn_user_id,
+      group_work,
+      require_open,
+      variant_course.id,
+      client_fingerprint_id,
+    ],
+    VariantWithFormattedDateSchema,
+  );
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };
@@ -212,11 +221,11 @@ export async function ensureVariant(
 ) {
   if (instance_question_id != null) {
     // see if we have a useable existing variant, otherwise make a new one
-    const result = await sqldb.callAsync('instance_questions_select_variant', [
-      instance_question_id,
-      require_open,
-    ]);
-    const variant = result.rows[0].variant;
+    const variant = await sqldb.callOptionalRow(
+      'instance_questions_select_variant',
+      [instance_question_id, require_open],
+      VariantWithFormattedDateSchema.nullable(),
+    );
     if (variant != null) {
       return variant;
     }
