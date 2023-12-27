@@ -14,6 +14,7 @@ DECLARE
     has_roles boolean;
     default_group_role_id bigint;
     min_roles_to_fill bigint;
+    new_group_user_id bigint;
 BEGIN
     -- find group id
     SELECT 
@@ -112,14 +113,15 @@ BEGIN
 
     -- join the group
     INSERT INTO group_users (user_id, group_id)
-    VALUES (arg_user_id, cur_group_id);
+    VALUES (arg_user_id, cur_group_id)
+    RETURNING id INTO new_group_user_id;
 
     -- assign the role, if appropriate
     IF has_roles THEN
         INSERT INTO group_user_roles
-            (user_id, group_id, group_role_id)
+            (user_group_id, group_role_id)
         VALUES
-            (arg_user_id, cur_group_id, default_group_role_id);
+            (new_group_user_id, default_group_role_id);
     END IF;
 
     -- log the join
