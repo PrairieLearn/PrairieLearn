@@ -110,27 +110,36 @@ function processSubmission(req, res, callback) {
 }
 
 router.post('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
-
   if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
   }
 
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
-    if (res.locals.authz_result.time_limit_expired) {
-      return next(
-        error.make(403, 'time limit is expired, please go back and finish your assessment'),
-      );
+    if (res.locals.assessment.type === 'Exam') {
+      if (res.locals.authz_result.time_limit_expired) {
+        return next(
+          error.make(403, 'Time limit is expired, please go back and finish your assessment'),
+        );
+      }
+      if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
+        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+        return;
+      }
     }
-    if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-      next(error.make(403, 'Real-time grading is not allowed for this assessment'));
-      return;
-    }
-    processSubmission(req, res, function (err) {
+    processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
+      if (res.locals.assessment.type === 'Exam') {
+        res.redirect(req.originalUrl);
+      } else {
+        res.redirect(
+          `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
+        );
+      }
     });
   } else if (req.body.__action === 'timeLimitFinish') {
+    if (res.locals.assessment.type !== 'Exam') {
+      return next(error.make(400, 'Only exams have a time limit'));
+    }
     // Only close if the timer expired due to time limit, not for access end
     if (!res.locals.assessment_instance_time_limit_expired) {
       return res.redirect(req.originalUrl);
@@ -240,12 +249,10 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 });
 
 router.get('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
-
   async.series(
     [
       (callback) => {
-        const variant_id = null;
+        const variant_id = res.locals.assessment.type === 'Exam' ? null : req.query.variant_id;
         questionRender.getAndRenderVariant(variant_id, null, res.locals, (err) => {
           if (ERR(err, callback)) return;
           callback(null);
