@@ -162,12 +162,16 @@ router.get(
         )
           .map((role) => role.role_name)
           .join(', ');
-        for (const question of res.locals.instance_questions) {
-          question.group_role_permissions = await groupAssessmentHelper.getQuestionGroupPermissions(
-            question.id,
-            res.locals.assessment_instance.group_id,
-            res.locals.authz_data.user.user_id,
-          );
+        // Get the role permissions. If the authorized user is a staff member, then they have all permissions.
+        if (!res.locals.authz_data.has_course_instance_permission_view) {
+          for (const question of res.locals.instance_questions) {
+            question.group_role_permissions =
+              await groupAssessmentHelper.getQuestionGroupPermissions(
+                question.id,
+                res.locals.assessment_instance.group_id,
+                res.locals.authz_data.user.user_id,
+              );
+          }
         }
       }
     }
