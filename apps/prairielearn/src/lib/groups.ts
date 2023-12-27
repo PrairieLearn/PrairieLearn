@@ -218,6 +218,7 @@ export async function joinGroup(
       joinCode,
     ]);
   } catch (err) {
+    console.log(err);
     flash(
       'error',
       `Failed to join the group with join code ${fullJoinCode}. It is already full or does not exist. Please try to join another one.`,

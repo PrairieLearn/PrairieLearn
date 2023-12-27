@@ -60,13 +60,15 @@ WITH
     FROM
       create_group AS cg
     RETURNING
-      gu.id
+      gu.*
   ),
   assign_role AS (
     INSERT INTO
-      group_user_roles (group_user_id, group_role_id)
+      group_user_roles (group_user_id, user_id, group_id, group_role_id)
     SELECT
       jg.id,
+      jg.user_id,
+      jg.group_id,
       gr.role_id
     FROM
       join_group AS jg,
@@ -109,7 +111,7 @@ WITH
   count_group_user_per_role AS (
     SELECT
       gur.group_role_id,
-      COUNT(gur.user_id) AS count
+      COUNT(gur.id) AS count
     FROM
       group_user_roles AS gur
       JOIN group_users AS gu ON gur.group_user_id = gu.id
@@ -178,9 +180,10 @@ WHERE
 
 -- BLOCK delete_non_required_roles
 DELETE FROM group_user_roles gur USING group_users AS gu
-JOIN group_roles AS gr ON gur.group_role_id = gr.id
+JOIN group_roles AS gr ON TRUE
 WHERE
   gu.group_id = $group_id
+  AND gur.group_role_id = gr.id
   AND gur.group_user_id = gu.id
   AND gr.assessment_id = $assessment_id
   AND gr.minimum = 0;
@@ -209,6 +212,8 @@ WITH
   json_roles AS (
     SELECT
       gu.id AS group_user_id,
+      gu.user_id,
+      gu.group_id,
       (role_assignment ->> 'group_role_id')::bigint AS group_role_id
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
@@ -216,9 +221,11 @@ WITH
       AND gu.user_id = (role_assignment ->> 'user_id')::bigint
   )
 INSERT INTO
-  group_user_roles (group_user_id, group_role_id)
+  group_user_roles (group_user_id, group_id, user_id, group_role_id)
 SELECT
   group_user_id,
+  group_id,
+  user_id,
   group_role_id
 FROM
   json_roles
@@ -237,9 +244,11 @@ WITH
   ),
   assign_new_group_roles AS (
     INSERT INTO
-      group_user_roles (group_user_id, group_role_id)
+      group_user_roles (group_user_id, group_id, user_id, group_role_id)
     SELECT
       gu.id,
+      gu.group_id,
+      gu.user_id,
       (role_assignment ->> 'group_role_id')::bigint
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment

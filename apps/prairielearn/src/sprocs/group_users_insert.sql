@@ -119,9 +119,9 @@ BEGIN
     -- assign the role, if appropriate
     IF has_roles THEN
         INSERT INTO group_user_roles
-            (user_group_id, group_role_id)
+            (group_user_id, user_id, group_id, group_role_id)
         VALUES
-            (new_group_user_id, default_group_role_id);
+            (new_group_user_id, arg_user_id, arg_group_id, default_group_role_id);
     END IF;
 
     -- log the join
