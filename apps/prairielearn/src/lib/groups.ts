@@ -366,7 +366,6 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-
         await sqldb.queryAsync(sql.reassign_group_roles_after_leave, {
           assessment_id: assessmentId,
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),

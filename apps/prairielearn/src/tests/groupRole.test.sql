@@ -46,7 +46,10 @@ FROM
   JOIN group_users AS gu ON gu.group_id = g.id
   JOIN group_user_roles AS gur ON gur.group_user_id = gu.id
 WHERE
-  gc.assessment_id = $assessment_id;
+  gc.assessment_id = $assessment_id
+ORDER BY
+  gu.user_id,
+  gur.group_role_id;
 
 -- BLOCK generate_and_enroll_5_users
 SELECT

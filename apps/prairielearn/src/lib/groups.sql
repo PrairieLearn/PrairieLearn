@@ -196,11 +196,6 @@ VALUES
 
 -- BLOCK reassign_group_roles_after_leave
 WITH
-  deleted_group_users_roles AS (
-    DELETE FROM group_user_roles
-    WHERE
-      group_id = $group_id
-  ),
   json_roles AS (
     SELECT
       gu.id AS group_user_id,
@@ -211,6 +206,20 @@ WITH
       JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
       JOIN group_users AS gu ON gu.group_id = $group_id
       AND gu.user_id = (role_assignment ->> 'user_id')::bigint
+  ),
+  deleted_group_users_roles AS (
+    DELETE FROM group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          json_roles AS jr
+        WHERE
+          jr.user_id = gur.user_id
+          AND jr.group_role_id = gur.group_role_id
+      )
   )
 INSERT INTO
   group_user_roles (group_user_id, group_id, user_id, group_role_id)
@@ -220,27 +229,47 @@ SELECT
   user_id,
   group_role_id
 FROM
-  json_roles;
+  json_roles
+ON CONFLICT DO NOTHING;
 
 -- BLOCK update_group_roles
 WITH
-  deleted_group_users_roles AS (
-    DELETE FROM group_user_roles
-    WHERE
-      group_id = $group_id
+  json_roles AS (
+    SELECT
+      gu.id AS group_user_id,
+      gu.user_id,
+      gu.group_id,
+      (role_assignment ->> 'group_role_id')::bigint AS group_role_id
+    FROM
+      JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
+      JOIN group_users AS gu ON gu.group_id = $group_id
+      AND gu.user_id = (role_assignment ->> 'user_id')::bigint
   ),
   assign_new_group_roles AS (
     INSERT INTO
       group_user_roles (group_user_id, group_id, user_id, group_role_id)
     SELECT
-      gu.id,
-      gu.group_id,
-      gu.user_id,
-      (role_assignment ->> 'group_role_id')::bigint
+      jr.group_user_id,
+      jr.group_id,
+      jr.user_id,
+      jr.group_role_id
     FROM
-      JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
-      JOIN group_users AS gu ON gu.group_id = (role_assignment ->> 'group_id')::bigint
-      AND gu.user_id = (role_assignment ->> 'user_id')::bigint
+      json_roles jr
+    ON CONFLICT DO NOTHING
+  ),
+  deleted_group_users_roles AS (
+    DELETE FROM group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          json_roles jr
+        WHERE
+          gur.user_id = jr.user_id
+          AND gur.group_role_id = jr.group_role_id
+      )
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
