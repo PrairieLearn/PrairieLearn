@@ -151,16 +151,30 @@ router.get(
 
       if (groupId === null) {
         throw error.make(403, 'Not a group member', res.locals);
-      } else {
-        res.locals.notInGroup = false;
-        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
-        res.locals.groupSize = groupInfo.groupSize;
-        res.locals.groupMembers = groupInfo.groupMembers;
-        res.locals.joinCode = groupInfo.joinCode;
-        res.locals.groupName = groupInfo.groupName;
-        res.locals.start = groupInfo.start;
-        res.locals.rolesInfo = groupInfo.rolesInfo;
-        res.locals.used_join_code = req.body.used_join_code;
+      }
+      res.locals.notInGroup = false;
+      const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+      res.locals.groupSize = groupInfo.groupSize;
+      res.locals.groupMembers = groupInfo.groupMembers;
+      res.locals.joinCode = groupInfo.joinCode;
+      res.locals.groupName = groupInfo.groupName;
+      res.locals.start = groupInfo.start;
+      res.locals.rolesInfo = groupInfo.rolesInfo;
+      res.locals.used_join_code = req.body.used_join_code;
+
+      if (groupConfig.has_roles) {
+        res.locals.user_group_roles = (
+          groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid] || ['None']
+        )
+          .map((role) => role.role_name)
+          .join(', ');
+        for (const question of res.locals.instance_questions) {
+          question.group_role_permissions = await groupAssessmentHelper.getQuestionGroupPermissions(
+            question.id,
+            groupId,
+            res.locals.authz_data.user.user_id,
+          );
+        }
       }
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
