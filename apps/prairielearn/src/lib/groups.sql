@@ -194,44 +194,6 @@ INSERT INTO
 VALUES
   ($authn_user_id, $user_id, $group_id, 'leave');
 
--- BLOCK reassign_group_roles_after_leave
-WITH
-  json_roles AS (
-    SELECT
-      gu.id AS group_user_id,
-      gu.user_id,
-      gu.group_id,
-      (role_assignment ->> 'group_role_id')::bigint AS group_role_id
-    FROM
-      JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
-      JOIN group_users AS gu ON gu.group_id = $group_id
-      AND gu.user_id = (role_assignment ->> 'user_id')::bigint
-  ),
-  deleted_group_users_roles AS (
-    DELETE FROM group_user_roles AS gur
-    WHERE
-      gur.group_id = $group_id
-      AND NOT EXISTS (
-        SELECT
-          1
-        FROM
-          json_roles AS jr
-        WHERE
-          jr.user_id = gur.user_id
-          AND jr.group_role_id = gur.group_role_id
-      )
-  )
-INSERT INTO
-  group_user_roles (group_user_id, group_id, user_id, group_role_id)
-SELECT
-  group_user_id,
-  group_id,
-  user_id,
-  group_role_id
-FROM
-  json_roles
-ON CONFLICT DO NOTHING;
-
 -- BLOCK update_group_roles
 WITH
   json_roles AS (
