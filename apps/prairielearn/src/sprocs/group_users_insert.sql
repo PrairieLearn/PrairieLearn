@@ -121,7 +121,7 @@ BEGIN
         INSERT INTO group_user_roles
             (group_user_id, user_id, group_id, group_role_id)
         VALUES
-            (new_group_user_id, arg_user_id, arg_group_id, default_group_role_id);
+            (new_group_user_id, arg_user_id, cur_group_id, default_group_role_id);
     END IF;
 
     -- log the join
