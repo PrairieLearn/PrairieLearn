@@ -100,7 +100,7 @@ export function AdministratorQuery({
     } else if (col === 'course' && 'course_id' in row) {
       return html`
         <td ${tdAttributes}>
-          <a href="${`${resLocals.urlPrefix}/course/${row['course_id']}`}">${row[col]}</a>
+          <a href="${resLocals.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
         </td>
       `;
     } else if (col === 'course_instance_id' && 'course_instance' in row) {
@@ -108,9 +108,9 @@ export function AdministratorQuery({
     } else if (col === 'course_instance' && 'course_instance_id' in row) {
       return html`
         <td ${tdAttributes}>
-          <a href="${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}`}"
-            >${row[col]}</a
-          >
+          <a href="${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}">
+            ${row[col]}
+          </a>
         </td>
       `;
     } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
@@ -119,9 +119,12 @@ export function AdministratorQuery({
       return html`
         <td ${tdAttributes}>
           <a
-            href="${`${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}/instructor/assessment/${row['assessment_id']}`}"
-            >${row[col]}</a
+            href="${resLocals.urlPrefix}/course_instance/${row[
+              'course_instance_id'
+            ]}/instructor/assessment/${row['assessment_id']}"
           >
+            ${row[col]}
+          </a>
         </td>
       `;
     } else if (/^_sortval_/.test(col)) {
@@ -195,8 +198,8 @@ export function AdministratorQuery({
             <div class="card-body">
               <form name="run-query-form" method="POST">
                 ${info.params
-                  ? info.params.map((param) => {
-                      return html`
+                  ? info.params.map(
+                      (param) => html`
                         <div class="form-group">
                           <label for="${`param-${param.name}`}">${param.name}</label>
                           <input
@@ -215,8 +218,8 @@ export function AdministratorQuery({
                             ${param.description}
                           </small>
                         </div>
-                      `;
-                    })
+                      `,
+                    )
                   : null}
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <button type="submit" class="btn btn-primary">
@@ -266,22 +269,20 @@ export function AdministratorQuery({
                     <table class="table table-sm table-hover table-striped tablesorter">
                       <thead>
                         <tr>
-                          ${query_run.result.columns?.map((col) => {
-                            return html` ${renderHeader(query_run.result?.columns, col)} `;
-                          })}
+                          ${query_run.result.columns?.map((col) =>
+                            renderHeader(query_run.result?.columns, col),
+                          )}
                         </tr>
                       </thead>
 
                       <tbody>
-                        ${query_run.result.rows?.map((row) => {
-                          return html`
+                        ${query_run.result.rows?.map(
+                          (row) => html`
                             <tr>
-                              ${query_run.result?.columns?.map((col) => {
-                                return html` ${render(row, col)}`;
-                              })}
+                              ${query_run.result?.columns?.map((col) => render(row, col))}
                             </tr>
-                          `;
-                        })}
+                          `,
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -306,8 +307,8 @@ export function AdministratorQuery({
                         </tr>
                       </thead>
                       <tbody>
-                        ${recent_query_runs.map((run) => {
-                          return html`
+                        ${recent_query_runs.map(
+                          (run) => html`
                             <tr>
                               <td>
                                 <a href="${`?query_run_id=${run.id}`}"> ${run.formatted_date} </a>
@@ -318,8 +319,8 @@ export function AdministratorQuery({
                               <td>${run.user_name}</td>
                               <td>${run.user_uid}</td>
                             </tr>
-                          `;
-                        })}
+                          `,
+                        )}
                       </tbody>
                     </table>
                   `
