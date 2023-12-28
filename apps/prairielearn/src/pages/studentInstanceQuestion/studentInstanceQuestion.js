@@ -7,13 +7,20 @@ const async = require('async');
 
 const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
-const questionRender = require('../../lib/question-render');
 const grading = require('../../lib/grading');
+const questionRender = require('../../lib/question-render');
+const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/postgres');
 const { setQuestionCopyTargets } = require('../../lib/copy-question');
 
 function processSubmission(req, res, callback) {
+  if (!res.locals.assessment_instance.open) {
+    return callback(error.make(400, 'assessment_instance is closed'));
+  }
+  if (!res.locals.instance_question.open) {
+    return callback(error.make(400, 'instance_question is closed'));
+  }
   if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
   }
@@ -90,23 +97,60 @@ function processSubmission(req, res, callback) {
 }
 
 router.post('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Homework') return next();
-
   if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
   }
 
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
+    if (res.locals.assessment.type === 'Exam') {
+      if (res.locals.authz_result.time_limit_expired) {
+        return next(
+          error.make(403, 'Time limit is expired, please go back and finish your assessment'),
+        );
+      }
+      if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
+        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+        return;
+      }
+    }
     processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
-      res.redirect(
-        res.locals.urlPrefix +
-          '/instance_question/' +
-          res.locals.instance_question.id +
-          '/?variant_id=' +
-          variant_id,
-      );
+      if (res.locals.assessment.type === 'Exam') {
+        res.redirect(req.originalUrl);
+      } else {
+        res.redirect(
+          `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
+        );
+      }
     });
+  } else if (req.body.__action === 'timeLimitFinish') {
+    if (res.locals.assessment.type !== 'Exam') {
+      return next(error.make(400, 'Only exams have a time limit'));
+    }
+    // Only close if the timer expired due to time limit, not for access end
+    if (!res.locals.assessment_instance_time_limit_expired) {
+      return res.redirect(req.originalUrl);
+    }
+
+    const requireOpen = true;
+    const closeExam = true;
+    const overrideGradeRate = false;
+    assessment.gradeAssessmentInstance(
+      res.locals.assessment_instance.id,
+      res.locals.authn_user.user_id,
+      requireOpen,
+      closeExam,
+      overrideGradeRate,
+      function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(
+          res.locals.urlPrefix +
+            '/assessment_instance/' +
+            res.locals.assessment_instance.id +
+            '?timeLimitExpired=true',
+        );
+      },
+    );
   } else if (req.body.__action === 'attach_file') {
     util.callbackify(studentInstanceQuestion.processFileUpload)(
       req,
@@ -164,8 +208,8 @@ router.post('/', function (req, res, next) {
       );
     });
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
+    return next(
+      error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
       }),
@@ -192,12 +236,11 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
 });
 
 router.get('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Homework') return next();
-
   async.series(
     [
       (callback) => {
-        questionRender.getAndRenderVariant(req.query.variant_id, null, res.locals, function (err) {
+        const variant_id = res.locals.assessment.type === 'Exam' ? null : req.query.variant_id;
+        questionRender.getAndRenderVariant(variant_id, null, res.locals, (err) => {
           if (ERR(err, callback)) return;
           callback(null);
         });
