@@ -2783,7 +2783,7 @@ __metadata:
   resolution: "@prairielearn/aws@workspace:packages/aws"
   dependencies:
     "@prairielearn/tsconfig": "*"
-    "@smithy/property-provider": ^2.0.15
+    "@smithy/property-provider": ^2.0.16
     "@smithy/types": ^2.6.0
     "@types/node": ^18.19.0
     typescript: ^5.2.2
@@ -4189,6 +4189,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smithy/property-provider@npm:^2.0.16":
+  version: 2.0.16
+  resolution: "@smithy/property-provider@npm:2.0.16"
+  dependencies:
+    "@smithy/types": ^2.7.0
+    tslib: ^2.5.0
+  checksum: 4ab44d5cc0a7f1a52112ba521aaea2d5b8c234e0b09279f592da0682eb2fc1e501b33106b1acea2502ae02bb884a8725a8379691b81c8dc4a24cf5f6fdf23ab8
+  languageName: node
+  linkType: hard
+
 "@smithy/protocol-http@npm:^3.0.10, @smithy/protocol-http@npm:^3.0.9":
   version: 3.0.10
   resolution: "@smithy/protocol-http@npm:3.0.10"
@@ -4273,6 +4283,15 @@ __metadata:
   dependencies:
     tslib: ^2.5.0
   checksum: 9233d1e6e414a8b807f9fe7a7c30064626f77b0242d8634b9b1c192f77b27a997a3caf90ecf7f4361d5926c9e9cc761991eecfb47bbfa6ce2be21c5533a3bea6
+  languageName: node
+  linkType: hard
+
+"@smithy/types@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "@smithy/types@npm:2.7.0"
+  dependencies:
+    tslib: ^2.5.0
+  checksum: f3edb2a281e69a7dc471b62fb34237fec44b37617d1b8f5c1bc4b6c410b03416f76eabc6ead1fb63cb18742890d9115226eaa7da055fd39f0c24754ed2fd56a7
   languageName: node
   linkType: hard
 
