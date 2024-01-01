@@ -43,7 +43,7 @@ SELECT
 FROM
   group_configs AS gc
   JOIN groups AS g ON g.group_config_id = gc.id
-  JOIN group_user_roles AS gur ON gur.group_id = g.group_id
+  JOIN group_user_roles AS gur ON gur.group_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
 ORDER BY
