@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/diff": "^5.0.8",
+    "@types/diff": "^5.0.9",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.14.202",
     "@types/node": "^18.19.0",
