@@ -225,7 +225,7 @@
     "@types/unzipper": "^0.10.9",
     "@types/uuid": "^9.0.7",
     "axe-core": "^4.7.0",
-    "chai": "^4.3.10",
+    "chai": "^5.0.0",
     "chai-as-promised": "^7.1.1",
     "express-list-endpoints": "^6.0.0",
     "form-data": "^4.0.0",

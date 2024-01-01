@@ -27,7 +27,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.19.0",
-    "chai": "^4.3.10",
+    "chai": "^5.0.0",
     "get-port": "^5.1.1",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
