@@ -22,7 +22,7 @@
     "@typescript-eslint/parser": "^6.9.1",
     "dependency-cruiser": "^13.1.5",
     "eslint": "^8.55.0",
-    "eslint-config-prettier": "^9.0.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "2.29.0",
     "eslint-plugin-mocha": "^10.2.0",
