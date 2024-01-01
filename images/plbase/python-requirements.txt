@@ -15,8 +15,8 @@ networkx==3.2.1
 nltk==3.8.1
 numpy==1.26.2
 openpyxl==3.1.2
-pandas-stubs==2.1.1.230928
-pandas==2.1.1
+pandas-stubs==2.1.4.231227
+pandas==2.1.4
 Pint==0.22
 psutil==5.9.6
 PuLP==2.7.0
