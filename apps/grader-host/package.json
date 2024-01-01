@@ -40,7 +40,7 @@
     "@types/chai": "^4.3.11",
     "@types/dockerode": "^3.3.23",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^18.19.0",
+    "@types/node": "^18.19.4",
     "@types/tmp": "^0.2.6",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.2",
