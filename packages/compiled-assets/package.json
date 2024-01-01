@@ -31,7 +31,7 @@
     "get-port": "^5.1.1",
     "mocha": "^10.2.0",
     "node-fetch": "^2.7.0",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.2.2"
   }
 }
