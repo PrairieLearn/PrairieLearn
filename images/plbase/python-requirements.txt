@@ -17,7 +17,7 @@ numpy==1.26.2
 openpyxl==3.1.2
 pandas-stubs==2.1.1.230928
 pandas==2.1.1
-Pint==0.22
+Pint==0.23
 psutil==5.9.6
 PuLP==2.7.0
 pycryptodome==3.19.0
