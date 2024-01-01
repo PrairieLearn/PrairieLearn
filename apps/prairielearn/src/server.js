@@ -1426,8 +1426,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
-    require('./pages/studentAssessmentExam/studentAssessmentExam'),
+    require('./pages/studentAssessment/studentAssessment'),
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
