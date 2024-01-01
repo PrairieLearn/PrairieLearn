@@ -16,7 +16,7 @@
   "dependencies": {
     "@prairielearn/html": "workspace:^",
     "commander": "^11.1.0",
-    "esbuild": "^0.19.8",
+    "esbuild": "^0.19.11",
     "express": "^4.18.2",
     "express-static-gzip": "^2.1.7",
     "fs-extra": "^11.2.0",
