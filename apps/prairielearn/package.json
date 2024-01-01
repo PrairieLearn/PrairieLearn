@@ -74,7 +74,7 @@
     "clipboard": "^2.0.11",
     "cookie-parser": "^1.4.6",
     "crypto-js": "^4.2.0",
-    "csv-parse": "^5.5.2",
+    "csv-parse": "^5.5.3",
     "csvtojson": "^2.0.10",
     "d3": "^7.8.5",
     "date-fns": "^2.30.0",

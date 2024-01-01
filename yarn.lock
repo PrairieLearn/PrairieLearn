@@ -3285,7 +3285,7 @@ __metadata:
     clipboard: ^2.0.11
     cookie-parser: ^1.4.6
     crypto-js: ^4.2.0
-    csv-parse: ^5.5.2
+    csv-parse: ^5.5.3
     csvtojson: ^2.0.10
     d3: ^7.8.5
     date-fns: ^2.30.0
@@ -7487,10 +7487,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csv-parse@npm:^5.5.2":
-  version: 5.5.2
-  resolution: "csv-parse@npm:5.5.2"
-  checksum: de2eb0c29b049783ef101b7eb843456200dc9a4fc9f4b400473bb0521b41aadb77af560cf4edc49bac65cc457b32596519860120181b26ec3b372109ddf8e8ea
+"csv-parse@npm:^5.5.3":
+  version: 5.5.3
+  resolution: "csv-parse@npm:5.5.3"
+  checksum: 38399bc4c61b721bc2f52a6262d6000b4e5f391e45b071f6eb087b293a02f867020f7da36adf6f56eb9fb45bd28c82cd223afd35846551fb5ad31bf3d0602961
   languageName: node
   linkType: hard
 
