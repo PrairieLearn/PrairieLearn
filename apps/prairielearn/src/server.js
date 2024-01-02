@@ -1426,8 +1426,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
-    require('./pages/studentAssessmentExam/studentAssessmentExam'),
+    require('./pages/studentAssessment/studentAssessment'),
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
@@ -1462,8 +1461,7 @@ module.exports.initExpress = function () {
     require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
-    require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
-    require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
+    require('./pages/studentInstanceQuestion/studentInstanceQuestion'),
   ]);
   if (config.devMode) {
     app.use(

@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
 import asyncHandler = require('express-async-handler');
+import * as error from '@prairielearn/error';
+import lti13InstancePages from '../pages/lti13Instance/lti13Instance';
 import { features } from '../../lib/features';
 
 const router = Router({ mergeParams: true });
@@ -15,7 +16,7 @@ router.use(
     ) {
       next();
     } else {
-      next(new Error('Access denied. LTI 1.3 feature not enabled'));
+      throw error.make(403, 'Access denied. LTI 1.3 feature not enabled');
     }
   }),
 );
