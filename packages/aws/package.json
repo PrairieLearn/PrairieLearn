@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "@smithy/property-provider": "^2.0.16",
-    "@smithy/types": "^2.7.0"
+    "@smithy/types": "^2.8.0"
   }
 }
