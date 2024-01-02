@@ -1,13 +1,12 @@
-CREATE TABLE
-  client_fingerprints (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users (user_id),
-    user_session_id BIGINT NOT NULL REFERENCES user_sessions (id),
-    ip_address INET NOT NULL,
-    user_agent VARCHAR(255),
-    accept_language VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  );
+CREATE TABLE client_fingerprints (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users (user_id),
+  user_session_id BIGINT NOT NULL REFERENCES user_sessions (id),
+  ip_address INET NOT NULL,
+  user_agent VARCHAR(255),
+  accept_language VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- add client_fingerprint_id to page_view_logs
 ALTER TABLE page_view_logs

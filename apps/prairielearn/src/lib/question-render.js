@@ -4,7 +4,6 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
 import * as path from 'path';
-import debugfn from 'debug';
 import * as ejs from 'ejs';
 import { differenceInMilliseconds, parseISO } from 'date-fns';
 import * as util from 'util';
@@ -19,7 +18,6 @@ import * as error from '@prairielearn/error';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { writeCourseIssues } from './issues';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
@@ -41,9 +39,8 @@ const MAX_RECENT_SUBMISSIONS = 3;
  * @param {Object} question_course - The course for the question.
  * @param {Object} course_instance - The course_instance for the variant.
  * @param {Object} locals - The current locals for the page response.
- * @param {function} callback - A callback(err, courseIssues, htmls) function.
  */
-function render(
+async function render(
   renderSelection,
   variant,
   question,
@@ -53,33 +50,26 @@ function render(
   question_course,
   course_instance,
   locals,
-  callback,
 ) {
-  questionServers.getModule(question.type, (err, questionModule) => {
-    if (ERR(err, callback)) return;
-    questionModule.render(
-      renderSelection,
-      variant,
-      question,
-      submission,
-      submissions,
-      question_course,
-      course_instance,
-      locals,
-      (err, courseIssues, htmls) => {
-        if (ERR(err, callback)) return;
+  const questionModule = questionServers.getModule(question.type);
 
-        const studentMessage = 'Error rendering question';
-        const courseData = { variant, question, submission, course: variant_course };
-        // locals.authn_user may not be populated when rendering a panel
-        const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-        writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData, (err) => {
-          if (ERR(err, callback)) return;
-          return callback(null, htmls);
-        });
-      },
-    );
-  });
+  const { courseIssues, data } = await questionModule.render(
+    renderSelection,
+    variant,
+    question,
+    submission,
+    submissions,
+    question_course,
+    course_instance,
+    locals,
+  );
+
+  const studentMessage = 'Error rendering question';
+  const courseData = { variant, question, submission, course: variant_course };
+  // locals.authn_user may not be populated when rendering a panel
+  const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
+  return data;
 }
 
 /**
@@ -277,15 +267,14 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
       async () => {
         locals.question_course = await getQuestionCourse(locals.question, locals.course);
       },
-      (callback) => {
+      async () => {
         if (variant_id != null) {
-          const params = [variant_id, locals.question.id, locals.instance_question?.id];
-          sqldb.callOneRow('variants_select', params, (err, result) => {
-            if (ERR(err, callback)) return;
-            debug('variants_select', result.rows[0].variant);
-            _.assign(locals, result.rows[0]);
-            callback(null);
-          });
+          const result = await sqldb.callOneRowAsync('variants_select', [
+            variant_id,
+            locals.question.id,
+            locals.instance_question?.id,
+          ]);
+          _.assign(locals, result.rows[0]);
         } else {
           const require_open = locals.assessment && locals.assessment.type !== 'Exam';
           const instance_question_id = locals.instance_question
@@ -299,7 +288,7 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
             variant_seed,
           };
           const assessmentGroupWork = locals.assessment ? locals.assessment.group_work : false;
-          ensureVariant(
+          locals.variant = await ensureVariant(
             locals.question.id,
             instance_question_id,
             locals.user.user_id,
@@ -311,11 +300,6 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
             options,
             require_open,
             locals.client_fingerprint_id,
-            (err, variant) => {
-              if (ERR(err, callback)) return;
-              locals.variant = variant;
-              callback(null);
-            },
           );
         }
       },
@@ -402,21 +386,19 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
           }
         }
       },
-      (callback) => {
-        questionServers.getEffectiveQuestionType(locals.question.type, (err, eqt) => {
-          if (ERR(err, callback)) return;
-          locals.effectiveQuestionType = eqt;
-          callback(null);
-        });
+      async () => {
+        locals.effectiveQuestionType = questionServers.getEffectiveQuestionType(
+          locals.question.type,
+        );
       },
-      (callback) => {
+      async () => {
         const renderSelection = {
           header: true,
           question: true,
           submissions: locals.showSubmissions,
           answer: locals.showTrueAnswer,
         };
-        render(
+        const htmls = await render(
           renderSelection,
           locals.variant,
           locals.question,
@@ -426,15 +408,11 @@ export function getAndRenderVariant(variant_id, variant_seed, locals, callback) 
           locals.question_course,
           locals.course_instance,
           locals,
-          (err, htmls) => {
-            if (ERR(err, callback)) return;
-            locals.extraHeadersHtml = htmls.extraHeadersHtml;
-            locals.questionHtml = htmls.questionHtml;
-            locals.submissionHtmls = htmls.submissionHtmls;
-            locals.answerHtml = htmls.answerHtml;
-            callback(null);
-          },
         );
+        locals.extraHeadersHtml = htmls.extraHeadersHtml;
+        locals.questionHtml = htmls.questionHtml;
+        locals.submissionHtmls = htmls.submissionHtmls;
+        locals.answerHtml = htmls.answerHtml;
       },
       async () => {
         // Load issues last in case there are issues from rendering.
@@ -618,7 +596,7 @@ export function renderPanelsForSubmission(
           submission.submission_number = submission_index;
           const submissions = [submission];
 
-          const htmls = await util.promisify(render)(
+          const htmls = await render(
             renderSelection,
             variant,
             question,
