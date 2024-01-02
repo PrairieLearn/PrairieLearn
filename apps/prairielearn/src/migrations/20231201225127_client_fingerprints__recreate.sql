@@ -22,23 +22,22 @@ DROP COLUMN client_fingerprint_id;
 DROP TABLE client_fingerprints;
 
 -- Recreate the table with the UNIQUE constraint.
-CREATE TABLE
-  client_fingerprints (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users (user_id),
-    user_session_id BIGINT NOT NULL REFERENCES user_sessions (id),
-    ip_address INET NOT NULL,
-    user_agent VARCHAR(255),
-    accept_language VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE NULLS NOT DISTINCT (
-      user_id,
-      user_session_id,
-      ip_address,
-      user_agent,
-      accept_language
-    )
-  );
+CREATE TABLE client_fingerprints (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users (user_id),
+  user_session_id BIGINT NOT NULL REFERENCES user_sessions (id),
+  ip_address INET NOT NULL,
+  user_agent VARCHAR(255),
+  accept_language VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE NULLS NOT DISTINCT (
+    user_id,
+    user_session_id,
+    ip_address,
+    user_agent,
+    accept_language
+  )
+);
 
 ALTER TABLE page_view_logs
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
