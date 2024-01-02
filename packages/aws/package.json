@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^18.19.0",
-    "typescript": "^5.2.2"
+    "@types/node": "^18.19.4",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@smithy/property-provider": "^2.0.15",
-    "@smithy/types": "^2.6.0"
+    "@smithy/property-provider": "^2.0.16",
+    "@smithy/types": "^2.7.0"
   }
 }
