@@ -97,7 +97,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      InstanceQuestionRowsSchema,
+      InstanceQuestionRowSchema,
     );
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
