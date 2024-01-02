@@ -365,7 +365,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = pl.full_unidecode(expr).replace("^", "**")
+    expr = pl.full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
     local_dict = {
         k: v
@@ -489,6 +489,7 @@ def convert_string_to_sympy_with_source(
         variable_dict = locals_for_eval["variables"]
 
         for variable in variables:
+            variable = greek_unicode_transform(variable)
             # Check for naming conflicts
             if variable in used_names:
                 raise HasConflictingVariable(f"Conflicting variable name: {variable}")
