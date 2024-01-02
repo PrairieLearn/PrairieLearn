@@ -352,3 +352,11 @@ class TestExceptions:
             )
             assert format_error is not None
             assert target_string in format_error
+
+
+@pytest.mark.parametrize(
+    "input_str, expected_output",
+    [("abba", "abba"), ("\u03bc0", "mu0")],
+)
+def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
+    assert phs.greek_unicode_transform(input_str) == expected_output
