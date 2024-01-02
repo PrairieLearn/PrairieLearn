@@ -14,9 +14,9 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/debug": "^4.1.12",
-    "@types/node": "^18.19.0",
+    "@types/node": "^18.19.4",
     "mocha": "^10.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "base64url": "^3.0.1",
