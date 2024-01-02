@@ -140,11 +140,12 @@ SELECT
   bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
   bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
-  group_roles as gr
-  JOIN group_user_roles as gur ON (gr.id = gur.group_role_id)
+  group_configs as gc
+  JOIN groups as g ON (gc.id = g.group_config_id)
+  JOIN group_user_roles as gur ON (gur.group_id = g.id)
+  JOIN group_roles AS gr ON (gr.id = gur.group_role_id)
 WHERE
-  gr.assessment_id = $assessment_id
-  -- TODO probably a good idea to add a join with groups before doing this check?
+  gc.assessment_id = $assessment_id
   AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
