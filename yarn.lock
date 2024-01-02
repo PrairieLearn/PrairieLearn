@@ -4152,17 +4152,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/property-provider@npm:^2.0.0, @smithy/property-provider@npm:^2.0.16":
-  version: 2.0.16
-  resolution: "@smithy/property-provider@npm:2.0.16"
-  dependencies:
-    "@smithy/types": ^2.7.0
-    tslib: ^2.5.0
-  checksum: 4ab44d5cc0a7f1a52112ba521aaea2d5b8c234e0b09279f592da0682eb2fc1e501b33106b1acea2502ae02bb884a8725a8379691b81c8dc4a24cf5f6fdf23ab8
-  languageName: node
-  linkType: hard
-
-"@smithy/property-provider@npm:^2.0.17":
+"@smithy/property-provider@npm:^2.0.0, @smithy/property-provider@npm:^2.0.16, @smithy/property-provider@npm:^2.0.17":
   version: 2.0.17
   resolution: "@smithy/property-provider@npm:2.0.17"
   dependencies:
@@ -4252,16 +4242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@smithy/types@npm:^2.0.2, @smithy/types@npm:^2.7.0":
-  version: 2.7.0
-  resolution: "@smithy/types@npm:2.7.0"
-  dependencies:
-    tslib: ^2.5.0
-  checksum: f3edb2a281e69a7dc471b62fb34237fec44b37617d1b8f5c1bc4b6c410b03416f76eabc6ead1fb63cb18742890d9115226eaa7da055fd39f0c24754ed2fd56a7
-  languageName: node
-  linkType: hard
-
-"@smithy/types@npm:^2.8.0":
+"@smithy/types@npm:^2.0.2, @smithy/types@npm:^2.7.0, @smithy/types@npm:^2.8.0":
   version: 2.8.0
   resolution: "@smithy/types@npm:2.8.0"
   dependencies:
@@ -12399,7 +12380,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:9.0.3":
+"minimatch@npm:9.0.3, minimatch@npm:^9.0.1":
   version: 9.0.3
   resolution: "minimatch@npm:9.0.3"
   dependencies:
@@ -12414,15 +12395,6 @@ __metadata:
   dependencies:
     brace-expansion: ^2.0.1
   checksum: 32ffda25b9fb8270a1c1beafdb7489dc0e411af553495136509a945691f63c9b6b000eeeaaf8bffe3efa609c1d6d3bc0f5a106f6c3443b5c05da649100ded964
-  languageName: node
-  linkType: hard
-
-"minimatch@npm:^9.0.1":
-  version: 9.0.2
-  resolution: "minimatch@npm:9.0.2"
-  dependencies:
-    brace-expansion: ^2.0.1
-  checksum: 2eb12e2047a062fdb973fb51b9803f2455e3a00977858c038d66646d303a5a15bbcbc6ed5a2fc403bc869b1309f829ed3acd881d3246faf044ea7a494974b924
   languageName: node
   linkType: hard
 
