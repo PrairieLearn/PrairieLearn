@@ -44,7 +44,7 @@ const DateDurationResultSchema = z.object({
   assessment_instance_duration: z.string(),
 });
 
-const InstanceQuestionRowsSchema = InstanceQuestionSchema.extend({
+const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
   qid: z.string().nullable(),
   question_number: z.string().nullable(),
