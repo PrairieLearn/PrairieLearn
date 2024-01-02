@@ -53,7 +53,7 @@ ALTER TABLE assessments
 ADD COLUMN duration_stat_threshold_seconds double precision[] NOT NULL DEFAULT ARRAY[]::double precision[];
 
 ALTER TABLE assessments
-ADD COLUMN duration_stat_threshold_labels text[] NOT NULL DEFAULT ARRAY[]::text[];
+ADD COLUMN duration_stat_threshold_labels text [] NOT NULL DEFAULT ARRAY[]::text [];
 
 ALTER TABLE assessments
 ADD COLUMN duration_stat_hist integer[] NOT NULL DEFAULT ARRAY[]::integer[];
