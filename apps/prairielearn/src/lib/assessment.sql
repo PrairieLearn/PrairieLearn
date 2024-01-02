@@ -161,7 +161,7 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_assessment_instance_max_points
+-- BLOCK select_and_lock_assessment_instance_max_points
 SELECT
   ai.max_points
 FROM

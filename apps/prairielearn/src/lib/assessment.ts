@@ -367,7 +367,7 @@ export async function updateAssessmentInstanceScore(
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const max_points = await sqldb.queryRow(
-      sql.select_assessment_instance_max_points,
+      sql.select_and_lock_assessment_instance_max_points,
       { assessment_instance_id },
       z.number(),
     );
@@ -388,7 +388,7 @@ export async function updateAssessmentInstancePoints(
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const max_points = await sqldb.queryRow(
-      sql.select_assessment_instance_max_points,
+      sql.select_and_lock_assessment_instance_max_points,
       { assessment_instance_id },
       z.number(),
     );
