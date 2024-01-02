@@ -39,6 +39,17 @@ export const AssessementInstanceStatsSchema = z.object({
   title: z.string().nullable(),
 });
 
+const DateDurationResultSchema = z.object({
+  assessment_instance_date_formatted: z.string(),
+  assessment_instance_duration: z.string(),
+});
+
+const InstanceQuestionRowsSchema = InstanceQuestionSchema.extend({
+  modified_at: z.string(),
+  qid: z.string().nullable(),
+  question_number: z.string().nullable(),
+});
+
 const logCsvFilename = (locals) => {
   return (
     assessmentFilenamePrefix(
@@ -75,10 +86,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      z.object({
-        assessment_instance_date_formatted: z.string(),
-        assessment_instance_duration: z.string(),
-      }),
+      DateDurationResultSchema,
     );
     res.locals.assessment_instance_date_formatted =
       dateDurationResult.assessment_instance_date_formatted;
@@ -89,11 +97,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      InstanceQuestionSchema.extend({
-        modified_at: z.string(),
-        qid: z.string().nullable(),
-        question_number: z.string().nullable(),
-      }),
+      InstanceQuestionRowsSchema,
     );
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
