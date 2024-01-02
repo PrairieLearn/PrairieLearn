@@ -153,7 +153,7 @@ jobs:
         run: sudo apt-get install -y graphviz graphviz-dev
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: pip
@@ -168,8 +168,6 @@ jobs:
           cache: 'yarn'
       - name: Install Node dependencies
         run: yarn install --immutable
-      - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
 
       - name: Set up Turborepo cache
         uses: actions/cache@v3
@@ -201,3 +199,9 @@ jobs:
       # is run above.
       - name: Run the TypeScript typechecker for tools
         run: make typecheck-tools
+
+      # This step runs at the end, since it is common for it to fail in
+      # dependabot PRs, but we still want all other tests above to run
+      # in those cases.
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check
