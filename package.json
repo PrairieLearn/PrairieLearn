@@ -18,7 +18,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
     "@prairielearn/prettier-plugin-sql": "workspace:^",
-    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.9.1",
     "dependency-cruiser": "^13.1.5",
     "eslint": "^8.56.0",
