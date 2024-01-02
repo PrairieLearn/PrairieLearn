@@ -179,6 +179,7 @@ router.post(
     }
 
     // Check user has instructor permissions in LMS and CI
+    // Mapping of lti13_instance to institution to course instance?
     // TODO use library call here
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
     const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
