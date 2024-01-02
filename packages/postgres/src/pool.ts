@@ -934,6 +934,78 @@ export class PostgresPool {
     }
   }
 
+  async callRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      const rawData = results.rows.map((row) => row[columnName]);
+      return z.array(model).parse(rawData);
+    } else {
+      return z.array(model).parse(results.rows);
+    }
+  }
+
+  async callRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callOneRowAsync(sql, params);
+    if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: any[],
+    model: Model,
+  ): Promise<z.infer<Model> | null>;
+  async callOptionalRow<Model extends z.ZodTypeAny>(
+    sql: string,
+    paramsOrSchema: any[] | Model,
+    maybeModel?: Model,
+  ) {
+    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const results = await this.callZeroOrOneRowAsync(sql, params);
+    if (results.rows.length === 0) {
+      return null;
+    } else if (results.fields.length === 1) {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
   /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
