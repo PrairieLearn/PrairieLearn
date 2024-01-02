@@ -64,7 +64,7 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
     seen = set()
     for i, node in enumerate(submission):
         if node is None or not all(
-            u in seen for (u, _) in graph.in_edges(node)  # type : ignore
+            u in seen for (u, _) in graph.in_edges(node)  # type: ignore
         ):
             return i
         seen.add(node)
