@@ -13865,7 +13865,7 @@ __metadata:
     globby: ^11.1.0
     htmlhint: ^1.1.4
     prettier: 3.1.1
-    pyright: ^1.1.338
+    pyright: ^1.1.344
     s3rver: ^3.7.1
     turbo: ^1.11.2
     typescript: ^5.3.3
@@ -14057,9 +14057,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.338":
-  version: 1.1.338
-  resolution: "pyright@npm:1.1.338"
+"pyright@npm:^1.1.344":
+  version: 1.1.344
+  resolution: "pyright@npm:1.1.344"
   dependencies:
     fsevents: ~2.3.2
   dependenciesMeta:
@@ -14068,7 +14068,7 @@ __metadata:
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: b51c930c081159bc97e4a60bcd08bc664ae6eb059154052b6c816de6454ab20b1da5460a50d7302ed2b40beff9aba9e699d647d55736cb2f2d420032cc781221
+  checksum: d044e68b82bc4236293312e75131d0a22122d9d7ab30f5314b3f489265313fb8ce86a7ad0c8492d4e853bd18df82fca352ec3df97ee84421f868b04fcfd1b779
   languageName: node
   linkType: hard
 
