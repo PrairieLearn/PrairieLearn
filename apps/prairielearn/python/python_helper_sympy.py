@@ -508,6 +508,7 @@ def convert_string_to_sympy_with_source(
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
         for function in custom_functions:
+            function = greek_unicode_transform(function)
             if function in used_names:
                 raise HasConflictingFunction(f"Conflicting variable name: {function}")
 

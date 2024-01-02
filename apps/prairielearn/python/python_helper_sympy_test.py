@@ -36,11 +36,12 @@ class TestSympy:
     SYMBOL_NAMES = ["n", "m", "alpha", "\u03bc0"]
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
-    FUNCTION_NAMES = ["f", "g", "beef"]
+    FUNCTION_NAMES = ["f", "g", "beef", "\u03C6"]
     # Any annotations here to ignore annoying typechecking complaining
     F: Any = sympy.Function("f")
     G: Any = sympy.Function("g")
     BEEF: Any = sympy.Function("beef")
+    PHI: Any = sympy.Function("phi")
 
     CUSTOM_FUNCTION_PAIRS = [
         ("f(1) + g(2)", F(1) + G(2)),
@@ -48,6 +49,7 @@ class TestSympy:
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
         ("beef(m + n)", BEEF(N + M)),
         ("beef(n) + f(m)", BEEF(N) + F(M)),
+        ("\u03C6(\u03bc0)", PHI(MU0)),
     ]
 
     INCORRECT_FUNCTION_PAIRS = [
