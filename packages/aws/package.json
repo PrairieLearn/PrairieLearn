@@ -17,7 +17,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@smithy/property-provider": "^2.0.16",
-    "@smithy/types": "^2.7.0"
+    "@smithy/property-provider": "^2.0.17",
+    "@smithy/types": "^2.8.0"
   }
 }
