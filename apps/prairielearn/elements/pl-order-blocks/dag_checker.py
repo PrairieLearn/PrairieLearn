@@ -39,7 +39,7 @@ def solve_dag(
     contiguously, making it a solution to the given problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)
-    sort = list(nx.topological_sort(graph))
+    sort = list(nx.topological_sort(graph))  # type: ignore
 
     # We need to ensure that blocks from the same block group occur contiguously. Because we enforce the syntactic
     # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move
@@ -63,7 +63,9 @@ def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
     """
     seen = set()
     for i, node in enumerate(submission):
-        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
+        if node is None or not all(
+            u in seen for (u, _) in graph.in_edges(node)  # type : ignore
+        ):
             return i
         seen.add(node)
     return len(submission)
@@ -135,7 +137,7 @@ def add_edges_for_groups(
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
-        for dependency, _ in graph.in_edges(group_tag):
+        for dependency, _ in graph.in_edges(group_tag):  # type: ignore
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
