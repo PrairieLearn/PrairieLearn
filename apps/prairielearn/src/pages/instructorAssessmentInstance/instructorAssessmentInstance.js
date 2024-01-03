@@ -21,13 +21,13 @@ import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export const AssessementInstanceStatsSchema = z.object({
+export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
   average_submission_score: z.number().nullable(),
   client_fingerprint_id_change_count: z.number(),
   first_submission_score: z.number().nullable(),
-  incremental_submission_points_array: z.array(z.number()).nullable(),
-  incremental_submission_score_array: z.array(z.number()).nullable(),
+  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
+  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
   instance_question_id: IdSchema,
   last_submission_score: z.number().nullable(),
   max_submission_score: z.number().nullable(),
@@ -37,7 +37,7 @@ export const AssessementInstanceStatsSchema = z.object({
   some_nonzero_submission: z.boolean().nullable(),
   some_perfect_submission: z.boolean().nullable(),
   some_submission: z.boolean().nullable(),
-  submission_score_array: z.array(z.number()).nullable(),
+  submission_score_array: z.array(z.number().nullable()).nullable(),
   title: z.string().nullable(),
 });
 
@@ -80,7 +80,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      AssessementInstanceStatsSchema,
+      AssessmentInstanceStatsSchema,
     );
 
     const dateDurationResult = await sqldb.queryRow(
