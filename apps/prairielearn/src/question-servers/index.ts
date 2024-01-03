@@ -3,7 +3,10 @@ import { Question, Course, Variant, Submission, CourseInstance } from '../lib/db
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
-type QuestionServerReturnValue<T> = Promise<{ courseIssues: Error[]; data: T }>;
+type QuestionServerReturnValue<T> = Promise<{
+  courseIssues: (Error & { fatal?: boolean; data?: any })[];
+  data: T;
+}>;
 
 export interface GenerateResultData {
   params: Record<string, any>;
@@ -40,6 +43,7 @@ export interface GradeResultData {
   score: number;
   feedback: Record<string, any>;
   gradable: boolean;
+  v2_score?: number;
 }
 
 export interface TestResultData {

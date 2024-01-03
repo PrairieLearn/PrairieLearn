@@ -3,6 +3,10 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { config } from '../lib/config';
 
+interface CheerioResponse extends Response {
+  $: cheerio.CheerioAPI;
+}
+
 /**
  * A wrapper around node-fetch that provides a few features:
  *
@@ -17,12 +21,7 @@ import { config } from '../lib/config';
 export async function fetchCheerio(
   url: string | URL,
   options: RequestInit & { form?: Record<string, any> } = {},
-): Promise<
-  Omit<Response, 'text'> & {
-    text: () => Promise<string>;
-    $: cheerio.CheerioAPI;
-  }
-> {
+): Promise<CheerioResponse> {
   if (options.form) {
     options.body = JSON.stringify(options.form);
     options.headers = {
@@ -33,11 +32,11 @@ export async function fetchCheerio(
   }
   const response = await fetch(url, options);
   const text = await response.text();
-  // Create a new object with the same properties (via accessors) but additional/changed fields
-  return Object.create(response, {
-    text: { value: () => Promise.resolve(text) },
-    $: { value: cheerio.load(text) },
-  });
+
+  const cheerioResponse = response as CheerioResponse;
+  cheerioResponse.$ = cheerio.load(text);
+  cheerioResponse.text = () => Promise.resolve(text);
+  return cheerioResponse;
 }
 
 /**

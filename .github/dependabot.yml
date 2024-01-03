@@ -16,12 +16,16 @@ updates:
       aws:
         patterns:
           - '@aws-sdk/*'
+          - '@smithy/*'
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
       sentry:
         patterns:
           - '@sentry/*'
+      typescript-eslint:
+        patterns:
+          - '@typescript-eslint/*'
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
