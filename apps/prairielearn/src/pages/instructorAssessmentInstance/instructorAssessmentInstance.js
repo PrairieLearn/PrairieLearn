@@ -5,6 +5,7 @@ const asyncHandler = require('express-async-handler');
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { stringifyStream } from '@prairielearn/csv';
+import { z } from 'zod';
 
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name';
 import * as ltiOutcomes from '../../lib/ltiOutcomes';
@@ -12,10 +13,44 @@ import { updateInstanceQuestionScore } from '../../lib/manualGrading';
 import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
+  updateAssessmentInstancePoints,
+  updateAssessmentInstanceScore,
 } from '../../lib/assessment';
+import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
+
+export const AssessmentInstanceStatsSchema = z.object({
+  assessment_instance_id: IdSchema,
+  average_submission_score: z.number().nullable(),
+  client_fingerprint_id_change_count: z.number(),
+  first_submission_score: z.number().nullable(),
+  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
+  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
+  instance_question_id: IdSchema,
+  last_submission_score: z.number().nullable(),
+  max_submission_score: z.number().nullable(),
+  number: z.string().nullable(),
+  qid: z.string(),
+  question_id: IdSchema,
+  some_nonzero_submission: z.boolean().nullable(),
+  some_perfect_submission: z.boolean().nullable(),
+  some_submission: z.boolean().nullable(),
+  submission_score_array: z.array(z.number().nullable()).nullable(),
+  title: z.string().nullable(),
+});
+
+const DateDurationResultSchema = z.object({
+  assessment_instance_date_formatted: z.string(),
+  assessment_instance_duration: z.string(),
+});
+
+const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+  modified_at: z.string(),
+  qid: z.string().nullable(),
+  question_number: z.string().nullable(),
+});
 
 const logCsvFilename = (locals) => {
   return (
@@ -40,25 +75,32 @@ router.get(
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
     res.locals.logCsvFilename = logCsvFilename(res.locals);
-    res.locals.assessment_instance_stats = (
-      await sqldb.queryAsync(sql.assessment_instance_stats, {
+    res.locals.assessment_instance_stats = await sqldb.queryRows(
+      sql.assessment_instance_stats,
+      {
         assessment_instance_id: res.locals.assessment_instance.id,
-      })
-    ).rows;
+      },
+      AssessmentInstanceStatsSchema,
+    );
 
-    const dateDurationResult = await sqldb.queryOneRowAsync(sql.select_date_formatted_duration, {
-      assessment_instance_id: res.locals.assessment_instance.id,
-    });
+    const dateDurationResult = await sqldb.queryRow(
+      sql.select_date_formatted_duration,
+      {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      },
+      DateDurationResultSchema,
+    );
     res.locals.assessment_instance_date_formatted =
-      dateDurationResult.rows[0].assessment_instance_date_formatted;
-    res.locals.assessment_instance_duration =
-      dateDurationResult.rows[0].assessment_instance_duration;
+      dateDurationResult.assessment_instance_date_formatted;
+    res.locals.assessment_instance_duration = dateDurationResult.assessment_instance_duration;
 
-    res.locals.instance_questions = (
-      await sqldb.queryAsync(sql.select_instance_questions, {
+    res.locals.instance_questions = await sqldb.queryRows(
+      sql.select_instance_questions,
+      {
         assessment_instance_id: res.locals.assessment_instance.id,
-      })
-    ).rows;
+      },
+      InstanceQuestionRowSchema,
+    );
 
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
 
@@ -68,7 +110,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
@@ -102,32 +144,32 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      next(error.make(404, 'Unknown filename: ' + req.params.filename));
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'edit_total_points') {
-      await sqldb.callAsync('assessment_instances_update_points', [
+      await updateAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
         res.locals.authn_user.user_id,
-      ]);
+      );
       await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
-      await sqldb.callAsync('assessment_instances_update_score_perc', [
+      await updateAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
-      ]);
+      );
       await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
@@ -165,12 +207,9 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      throw error.make(400, 'unknown __action', {
+        body: req.body,
+      });
     }
   }),
 );

@@ -8,12 +8,14 @@ CREATE FUNCTION
 AS $$
 DECLARE
     arg_user_id bigint;
+    group_config_id bigint;
 BEGIN
     -- ##################################################################
     -- verify the updating group belongs to the selected assessment
     -- then lock the group row
     -- TODO: This sproc and associated UI doesn't actually respect maximum size constraints.
-    PERFORM 1
+    SELECT gc.id
+    INTO group_config_id
     FROM
         group_configs AS gc
         JOIN groups AS g ON gc.id = g.group_config_id
@@ -60,8 +62,8 @@ BEGIN
     -- ##################################################################
     -- insert group_user
     WITH log AS (
-        INSERT INTO group_users (group_id, user_id)
-        VALUES (arg_group_id, arg_user_id)
+        INSERT INTO group_users (group_id, user_id, group_config_id)
+        VALUES (arg_group_id, arg_user_id, group_config_id)
         RETURNING group_id
     )
     INSERT INTO group_logs 

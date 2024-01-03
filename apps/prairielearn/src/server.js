@@ -1861,7 +1861,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courses',
-    require('./pages/administratorCourses/administratorCourses'),
+    require('./pages/administratorCourses/administratorCourses').default,
   );
   app.use(
     '/pl/administrator/networks',
@@ -1889,7 +1889,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courseRequests/',
-    require('./pages/administratorCourseRequests/administratorCourseRequests'),
+    require('./pages/administratorCourseRequests/administratorCourseRequests').default,
   );
   app.use(
     '/pl/administrator/batchedMigrations',

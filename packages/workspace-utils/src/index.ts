@@ -16,7 +16,11 @@ export function init(io: SocketIOServer | SocketIOEmitter) {
   socketIoServer = io;
 }
 
-function emitMessageForWorkspace(workspaceId: string | number, event: string, ...args: any[]) {
+export function emitMessageForWorkspace(
+  workspaceId: string | number,
+  event: string,
+  ...args: any[]
+) {
   if (!socketIoServer) throw new Error('SocketIO server not initialized.');
 
   socketIoServer

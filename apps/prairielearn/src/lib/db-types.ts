@@ -235,6 +235,29 @@ export const QuestionSchema = z.object({
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
+export const WorkspaceSchema = z.object({
+  created_at: DateFromISOString,
+  heartbeat_at: DateFromISOString.nullable(),
+  hostname: z.string().nullable(),
+  id: IdSchema,
+  launch_port: z.coerce.number(), // This is BIGINT, but always fits a number
+  launch_uuid: z.string().nullable(),
+  launched_at: DateFromISOString.nullable(),
+  launching_duration: IntervalSchema.nullable(),
+  message: z.string().nullable(),
+  message_updated_at: DateFromISOString,
+  rebooted_at: DateFromISOString.nullable(),
+  reset_at: DateFromISOString.nullable(),
+  running_at: DateFromISOString.nullable(),
+  running_duration: IntervalSchema.nullable(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
+  state_updated_at: DateFromISOString,
+  stopped_at: DateFromISOString.nullable(),
+  version: z.coerce.number(), // This is BIGINT, but always fits a number
+  workspace_host_id: IdSchema.nullable(),
+});
+export type Workspace = z.infer<typeof WorkspaceSchema>;
+
 export const WorkspaceHostSchema = z.object({
   hostname: z.string().nullable(),
   id: IdSchema,
@@ -281,6 +304,13 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
+
+export const Lti13UserSchema = z.object({
+  lti13_instance_id: IdSchema,
+  sub: z.string(),
+  user_id: IdSchema,
+});
+export type Lti13User = z.infer<typeof Lti13UserSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
@@ -505,8 +535,9 @@ export const InstanceQuestionSchema = z.object({
   first_submission_score: z.number().nullable(),
   highest_submission_score: z.number().nullable(),
   id: IdSchema,
-  incremental_submission_points_array: z.array(z.number()).nullable(),
-  incremental_submission_score_array: z.array(z.number()).nullable(),
+  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
+  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
+  instructor_question_number: z.string().nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
@@ -527,7 +558,7 @@ export const InstanceQuestionSchema = z.object({
   status: z
     .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
     .nullable(),
-  submission_score_array: z.array(z.number()).nullable(),
+  submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number()),
 });

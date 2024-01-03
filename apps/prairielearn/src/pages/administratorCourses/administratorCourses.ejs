@@ -42,8 +42,8 @@
             <tbody>
               <% courses.forEach(function(course, i) { %>
               <tr>
-                <td><%= course.institution.short_name %></td>
-                <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i}) %>
+                <td><a href="/pl/institution/<%= course.institution.id %>/admin"><%= course.institution.short_name %></a></td>
+                <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i, href: `/pl/course/${course.id}`  }) %>
                 <%- include('courseUpdateColumn', {column_name: 'title',            label: 'title',      course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
