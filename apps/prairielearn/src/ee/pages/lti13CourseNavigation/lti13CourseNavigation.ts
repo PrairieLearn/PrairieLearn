@@ -29,32 +29,11 @@ router.get(
       return;
     }
 
+    console.log(req);
+
     // TODO Validate LTI claim info or error
 
-    /*
-
-     TA roles
-
-     [
-      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
-      'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
-      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
-    ]
-    */
-
-    // TODO Move is_instructor logic to library, consider TA roles
-    // Get role of LTI user
-    const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-    // Scoped to just this context
-    // https://www.imsglobal.org/spec/lti/v1p3#lis-vocabulary-for-context-roles
-    let role_instructor = roles.some(
-      (val: string) =>
-        ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val)
-    );
-
-    console.log(roles, role_instructor);
+    let role_instructor = is_role_instructor_lti13(lti13_claims);
 
     // FIXME
     if ('student' in req.query) {
@@ -124,6 +103,7 @@ router.get(
 
       let course_instances: CourseInstance[] = [];
 
+      // This should match our policy for who can link courses (only instructors? TAs?)
       for (const course of courses) {
         const loopCI = await selectCourseInstancesWithStaffAccess({
           course_id: course.id,
@@ -166,9 +146,7 @@ router.post(
 
     // Check user has instructor permissions in LMS and CI
     // Mapping of lti13_instance to institution to course instance?
-    // TODO use library call here
-    const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-    const role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+    const role_instructor = is_role_instructor_lti13(lti13_claims);
 
     const is_ci_instructor = await callAsync('users_is_instructor_in_course_instance', [
       res.locals.authn_user.user_id,
@@ -193,3 +171,35 @@ router.post(
 );
 
 export default router;
+
+function is_role_instructor_lti13(claims, ta_is_instructor=false) {
+    /*
+
+     TA roles from Canvas development system
+     [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    */
+
+    // Get roles of LTI user
+    // Scoped to just this context
+    // https://www.imsglobal.org/spec/lti/v1p3#lis-vocabulary-for-context-roles
+
+    const roles = claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
+
+    let role_instructor = roles.some(
+      (val: string) =>
+        ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val)
+    );
+
+    if (!ta_is_instructor && roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant')) {
+      role_instructor = false;
+    }
+
+    //console.log(roles, role_instructor);
+    return role_instructor;
+};

@@ -44,7 +44,7 @@ export function InstructorInstanceAdminLti13({
             <div class="card-header bg-primary text-white d-flex">LTI 1.3 configuration</div>
             <div class="card-body">
               <div class="row">
-                <div class="col-2">
+                <div class="col-3">
                   <select class="custom-select mb-2" id="selectLti13Instance">
                     ${lti13Instances.map((li) => {
                       return html`<option
@@ -60,7 +60,7 @@ export function InstructorInstanceAdminLti13({
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
                 </div>
-                <div class="col-10">
+                <div class="col-9">
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
                     <input type="hidden" name="__action" value="remove_connection" />

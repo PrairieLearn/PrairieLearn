@@ -1,0 +1,22 @@
+<div id="navbarDeveloper" style="display:none;background-color:pink;" class="p-2">
+<strong>Developer:</strong> URL: <a id='develUrl' target='_blank'></a>
+<br/>
+<a href="/pl/lti13_instance/1/course_navigation">Course Nav</a>
+
+<button type="button" class="btn btn-primary btn-sm" onclick="window.parent.postMessage(
+    {
+      subject: 'lti.hideRightSideWrapper',
+    },
+    '*'
+)">Hide right side wrapper</button>
+
+</div>
+
+<script>
+    if (window.self !== window.top) {
+        document.getElementById('navbarDeveloper').style.display = 'block';
+        var u = document.getElementById('develUrl');
+        u.innerHTML = window.location.href;
+        u.href = window.location.href;
+    }
+</script>
