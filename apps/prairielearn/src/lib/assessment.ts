@@ -360,6 +360,48 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
   });
 }
 
+export async function updateAssessmentInstanceScore(
+  assessment_instance_id: string,
+  score_perc: number,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const max_points = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance_max_points,
+      { assessment_instance_id },
+      z.number(),
+    );
+    const points = (score_perc * max_points) / 100;
+    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+      assessment_instance_id,
+      score_perc,
+      points,
+      authn_user_id,
+    });
+  });
+}
+
+export async function updateAssessmentInstancePoints(
+  assessment_instance_id: string,
+  points: number,
+  authn_user_id: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const max_points = await sqldb.queryRow(
+      sql.select_and_lock_assessment_instance_max_points,
+      { assessment_instance_id },
+      z.number(),
+    );
+    const score_perc = (points / (max_points > 0 ? max_points : 1)) * 100;
+    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+      assessment_instance_id,
+      score_perc,
+      points,
+      authn_user_id,
+    });
+  });
+}
+
 /**
  * Selects a log of all events associated to an assessment instance.
  *

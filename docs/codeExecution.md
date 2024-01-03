@@ -69,7 +69,7 @@ The piece of code to execute is specified by (`type`, `directory`, `file`) inste
 
 Let's walk through a typical request to view a question that requires a function in a corresponding `server.py` file to run.
 
-1. The page request is handled by `pages/studentInstanceQuestionHomework` or similar.
+1. The page request is handled by `pages/studentInstanceQuestion` or similar.
 2. That handler calls `getAndRenderVariant` in `lib/question` (a different function would be called if the user were submitting an answer).
 3. That function calls an internal function that calls `render` in `question-servers/freeform.js`.
 4. That function calls `withCodeCaller` in `lib/workers`. Depending on the active execution mode
