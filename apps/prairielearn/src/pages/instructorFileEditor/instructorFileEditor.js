@@ -1,33 +1,38 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const express = require('express');
-const router = express.Router();
-const async = require('async');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const fs = require('fs-extra');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+import * as express from 'express';
+import * as async from 'async';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 const debug = require('debug')('prairielearn:instructorFileEditor');
-const { contains } = require('@prairielearn/path-utils');
-const serverJobs = require('../../lib/server-jobs-legacy');
-const { createServerJob } = require('../../lib/server-jobs');
-const namedLocks = require('@prairielearn/named-locks');
-const syncFromDisk = require('../../sync/syncFromDisk');
-const courseUtil = require('../../lib/courseUtil');
-const { config } = require('../../lib/config');
-const editorUtil = require('../../lib/editorUtil');
-const { default: AnsiUp } = require('ansi_up');
+import { contains } from '@prairielearn/path-utils';
+import * as serverJobs from '../../lib/server-jobs-legacy';
+import { createServerJob } from '../../lib/server-jobs';
+import * as namedLocks from '@prairielearn/named-locks';
+import * as syncFromDisk from '../../sync/syncFromDisk';
+import {
+  getOrUpdateCourseCommitHash,
+  getCourseCommitHash,
+  updateCourseCommitHash,
+  getLockNameForCoursePath,
+} from '../../models/course';
+import { config } from '../../lib/config';
+import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
+import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
-const b64Util = require('../../lib/base64-util');
-const fileStore = require('../../lib/file-store');
-const { isBinaryFile } = require('isbinaryfile');
-const modelist = require('ace-code/src/ext/modelist');
-const { decodePath } = require('../../lib/uri-util');
-const chunks = require('../../lib/chunks');
-const { idsEqual } = require('../../lib/id');
-const { getPaths } = require('../../lib/instructorFiles');
-const { getLockNameForCoursePath } = require('../../lib/course');
+import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
+import { deleteFile, getFile, uploadFile } from '../../lib/file-store';
+import { isBinaryFile } from 'isbinaryfile';
+import * as modelist from 'ace-code/src/ext/modelist';
+import { decodePath } from '../../lib/uri-util';
+import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks';
+import { idsEqual } from '../../lib/id';
+import { getPaths } from '../../lib/instructorFiles';
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
@@ -90,7 +95,7 @@ router.get('/*', (req, res, next) => {
 
         debug('Read from disk');
         const contents = await fs.readFile(fullPath);
-        fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
+        fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
         fileEdit.diskHash = getHash(fileEdit.diskContents);
 
         const binary = await isBinaryFile(contents);
@@ -110,10 +115,7 @@ router.get('/*', (req, res, next) => {
           );
         }
 
-        const data = await editorUtil.getErrorsAndWarningsForFilePath(
-          res.locals.course.id,
-          relPath,
-        );
+        const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
         const ansiUp = new AnsiUp();
         fileEdit.sync_errors = data.errors;
         fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
@@ -123,7 +125,7 @@ router.get('/*', (req, res, next) => {
     ],
     (err) => {
       if (ERR(err, next)) return;
-      if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
+      if (fileEdit.jobSequence?.status === 'Running') {
         debug('Job sequence is still running - redirect to status page');
         res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
         return;
@@ -141,7 +143,7 @@ router.get('/*', (req, res, next) => {
         }
       }
 
-      if ('jobSequence' in fileEdit) {
+      if (fileEdit.jobSequence) {
         // New case: single job for the entire operation. We check the flag
         // we would have set when the job executed to determine if the push
         // succeeded or not.
@@ -366,19 +368,19 @@ async function readEdit(fileEdit) {
       debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
     } else {
       debug(`Remove file_id=${row.file_id} from file store`);
-      await fileStore.delete(row.file_id, fileEdit.userID);
+      await deleteFile(row.file_id, fileEdit.userID);
     }
   }
 
   if ('editID' in fileEdit) {
     debug('Read contents of file edit');
-    const result = await fileStore.get(fileEdit.fileID);
-    const contents = b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
+    const result = await getFile(fileEdit.fileID);
+    const contents = b64EncodeUnicode(result.contents.toString('utf8'));
     fileEdit.editContents = contents;
     fileEdit.editHash = getHash(fileEdit.editContents);
 
     debug(`Remove file_id=${fileEdit.fileID} from file store`);
-    await fileStore.delete(fileEdit.fileID, fileEdit.userID);
+    await deleteFile(fileEdit.fileID, fileEdit.userID);
   }
 }
 
@@ -414,7 +416,7 @@ async function createEdit(fileEdit) {
   debug(`Deleted ${deletedFileEdits.rowCount} previously saved drafts`);
   for (const row of deletedFileEdits.rows) {
     debug(`Remove file_id=${row.file_id} from file store`);
-    await fileStore.delete(row.file_id, fileEdit.userID);
+    await deleteFile(row.file_id, fileEdit.userID);
   }
 
   debug('Write contents to file edit');
@@ -439,9 +441,9 @@ async function createEdit(fileEdit) {
 }
 
 async function writeEdit(fileEdit) {
-  const fileID = await fileStore.upload(
+  const fileID = await uploadFile(
     fileEdit.fileName,
-    Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+    Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
     'instructor_file_edit',
     null,
     null,
@@ -479,8 +481,7 @@ async function saveAndSync(fileEdit, locals) {
         },
       },
       async () => {
-        const startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
-
+        const startGitHash = await getOrUpdateCourseCommitHash(locals.course);
         if (fileEdit.doPull) {
           await job.exec('git', ['fetch'], {
             cwd: locals.course.path,
@@ -498,12 +499,12 @@ async function saveAndSync(fileEdit, locals) {
 
         const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
         const contents = await fs.readFile(fullPath, 'utf8');
-        fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
+        fileEdit.diskHash = getHash(b64EncodeUnicode(contents));
         if (fileEdit.origHash !== fileEdit.diskHash) {
           job.fail(`Another user made changes to the file you were editing.`);
         }
 
-        await fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8');
+        await fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8');
         job.verbose(`Wrote changed to ${fullPath}`);
 
         if (config.fileEditorUseGit) {
@@ -574,21 +575,21 @@ async function saveAndSync(fileEdit, locals) {
           );
 
           if (config.chunksGenerator) {
-            const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
-            const chunkChanges = await chunks.updateChunksForCourse({
+            const endGitHash = await getCourseCommitHash(locals.course.path);
+            const chunkChanges = await updateChunksForCourse({
               coursePath: locals.course.path,
               courseId: locals.course.id,
               courseData: result.courseData,
               oldHash: startGitHash,
               newHash: endGitHash,
             });
-            chunks.logChunkChangesToJob(chunkChanges, job);
+            logChunkChangesToJob(chunkChanges, job);
           }
 
           // Note that we deliberately don't actually write the updated commit hash
           // to the database until after chunks have been updated. This ensures
           // that if the chunks update fails, we'll try again next time.
-          await courseUtil.updateCourseCommitHashAsync(locals.course);
+          await updateCourseCommitHash(locals.course);
 
           if (result.hadJsonErrors) {
             job.fail('One or more JSON files contained errors and were unable to be synced');
@@ -602,4 +603,4 @@ async function saveAndSync(fileEdit, locals) {
   });
 }
 
-module.exports = router;
+export default router;

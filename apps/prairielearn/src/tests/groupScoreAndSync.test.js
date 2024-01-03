@@ -1,23 +1,24 @@
-var ERR = require('async-stacktrace');
-
-const { config } = require('../lib/config');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+// @ts-check
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+import { assert } from 'chai';
+const request = require('request');
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-var page, form, elemList;
-const helperServer = require('./helperServer');
+import { config } from '../lib/config';
+import { TEST_COURSE_PATH } from '../lib/paths';
+import * as helperServer from './helperServer';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
-locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
+
+let page, form, elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
@@ -69,7 +70,7 @@ describe('assessment instance group synchronization test', function () {
     });
     it('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 5);
+      assert.lengthOf(elemList, 4);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
@@ -139,7 +140,7 @@ describe('assessment instance group synchronization test', function () {
       request(locals.assessmentUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
         if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+          return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
         callback(null);
@@ -317,12 +318,7 @@ describe('assessment instance group synchronization test', function () {
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode, {
-                response,
-                body,
-              }),
-            );
+            return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
           callback(null);

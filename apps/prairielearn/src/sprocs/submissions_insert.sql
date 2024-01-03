@@ -12,6 +12,7 @@ CREATE FUNCTION
         IN mode enum_mode,
         IN variant_id bigint,
         IN authn_user_id bigint,
+        IN client_fingerprint_id bigint,
         OUT submission_id bigint
     )
 AS $$
@@ -98,9 +99,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration, params, true_answer, feedback, gradable, broken, regradable)
+            credit, mode, duration, params, true_answer, feedback, gradable, broken, regradable, client_fingerprint_id)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta, variant.params, variant.true_answer, feedback, gradable, broken, regradable)
+            credit, mode, delta, variant.params, variant.true_answer, feedback, gradable, broken, regradable, client_fingerprint_id)
     RETURNING id
     INTO submission_id;
 
@@ -125,6 +126,11 @@ BEGIN
             modified_at = now(),
             requires_manual_grading = requires_manual_grading OR aq_manual_points > 0
         WHERE id = instance_question_id;
+
+        -- Update the stats, in particular the submission score array. Initial
+        -- updates only involve a null entry, which is updated after grading if
+        -- the submission is graded.
+        PERFORM instance_questions_calculate_stats(instance_question_id);
 
         UPDATE assessment_instances AS ai
         SET

@@ -1,21 +1,21 @@
 // @ts-check
-const assert = require('chai').assert;
-const tmp = require('tmp-promise');
-const fs = require('fs-extra');
-const path = require('path');
-const { z } = require('zod');
-const sqldb = require('@prairielearn/postgres');
+import { assert } from 'chai';
+import * as tmp from 'tmp-promise';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
 
-const courseDB = require('../sync/course-db');
-const chunksLib = require('../lib/chunks');
-const { config } = require('../lib/config');
-const { TEST_COURSE_PATH } = require('../lib/paths');
-const { makeMockLogger } = require('./mockLogger');
+import * as courseDB from '../sync/course-db';
+import * as chunksLib from '../lib/chunks';
+import { config } from '../lib/config';
+import { TEST_COURSE_PATH } from '../lib/paths';
+import { makeMockLogger } from './mockLogger';
+import * as helperServer from './helperServer';
+import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
+import { makeInfoFile } from '../sync/infofile';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
-const { makeInfoFile } = require('../sync/infofile');
 
 /** @type {import('../sync/course-db').CourseData} */
 const COURSE = {

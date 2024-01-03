@@ -1,15 +1,17 @@
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const tmp = require('tmp-promise');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as tmp from 'tmp-promise';
 
-const { config } = require('../lib/config');
-const chunks = require('../lib/chunks');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as chunks from '../lib/chunks';
+import * as sqldb from '@prairielearn/postgres';
+
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+import * as helperQuestion from './helperQuestion';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
-const helperQuestion = require('./helperQuestion');
 
 describe('Generate chunks and use them for a student homework', function () {
   this.timeout(60000);
@@ -44,8 +46,8 @@ describe('Generate chunks and use them for a student homework', function () {
   });
 
   step('generate course chunks', async () => {
-    const course_ids = [1];
-    const authn_user_id = 1;
+    const course_ids = ['1'];
+    const authn_user_id = '1';
     const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
     await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
   });

@@ -55,7 +55,7 @@ WITH
         jsonb_agg(
           jsonb_set(
             to_jsonb(assessment_questions),
-            '{question}'::text[],
+            '{question}'::text [],
             to_jsonb(questions)
           )
           ORDER BY

@@ -1,19 +1,20 @@
+// @ts-check
 const _ = require('lodash');
-const cron = require('../cron');
-const assert = require('chai').assert;
+import * as cron from '../cron';
+import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
 
 describe('Cron', function () {
   this.timeout(60000);
 
   before('set up testing server', async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
-    const now = new Date();
+    const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
     const sinceMidnightMS = now - midnight;
     const dayMS = 24 * 60 * 60 * 1000;

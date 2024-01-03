@@ -1,8 +1,9 @@
 import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { CourseInstance } from '../lib/db-types';
+import { type CourseInstance } from '../lib/db-types';
 import { QuestionsPageDataAnsified } from '../models/questions';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
+import { idsEqual } from '../lib/id';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -23,19 +24,21 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  showAddQuestionButton,
-  showSharingSets,
+  showAddQuestionButton = false,
+  showSharingSets = false,
   current_course_instance,
-  course_instances,
+  course_instances = [],
+  qidPrefix,
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
 }: {
   questions: QuestionsPageDataAnsified[];
-  showAddQuestionButton: boolean;
-  showSharingSets: boolean;
-  current_course_instance: CourseInstance;
-  course_instances: CourseInstance[];
+  showAddQuestionButton?: boolean;
+  showSharingSets?: boolean;
+  current_course_instance?: CourseInstance;
+  course_instances?: CourseInstance[];
+  qidPrefix?: string;
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
@@ -44,7 +47,7 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, urlPrefix, plainUrlPrefix },
+      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
       'questions-table-data',
     )}
 
@@ -138,13 +141,13 @@ export function QuestionsTable({
                   data-class="align-middle text-nowrap"
                   data-formatter="sharingSetFormatter"
                   data-filter-control="select"
-                  data-filter-control-placeholder="(All Sharing Sets)"
+                  data-filter-control-placeholder="(All)"
                   data-filter-data="func:sharingSetsList"
                   data-filter-custom-search="badgeFilterSearch"
                   data-switchable="true"
                   data-visible="false"
                 >
-                  Sharing Sets
+                  Sharing
                 </th>`
               : ''}
             <th
@@ -193,7 +196,8 @@ export function QuestionsTable({
                   data-filter-control-placeholder="(All Assessments)"
                   data-filter-data="func:assessments${course_instance.id}List"
                   data-filter-custom-search="badgeFilterSearch"
-                  data-visible="${current_course_instance?.id === course_instance.id}"
+                  data-visible="${current_course_instance &&
+                  idsEqual(current_course_instance.id, course_instance.id)}"
                   data-switchable="true"
                 >
                   ${course_instance.short_name} Assessments

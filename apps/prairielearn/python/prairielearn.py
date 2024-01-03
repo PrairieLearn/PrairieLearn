@@ -2,17 +2,19 @@ import collections
 import html
 import importlib
 import importlib.util
+import itertools as it
 import json
 import math
 import numbers
 import os
 import random
 import re
+import string
 import unicodedata
 import uuid
 from enum import Enum
 from io import StringIO
-from typing import Any, Callable, Literal, Type, TypedDict, TypeVar, overload
+from typing import Any, Callable, Generator, Literal, Type, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -103,8 +105,9 @@ def grade_answer_parameterized(
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
+    # If there is no submitted answer, we shouldn't do anything. Issues with blank
+    # answers should be handled in parse.
     if question_name not in data["submitted_answers"]:
-        data["format_errors"][question_name] = "No answer was submitted"
         return
 
     submitted_answer = data["submitted_answers"][question_name]
@@ -1789,7 +1792,19 @@ def load_host_script(script_name):
     return __import__(script_name)
 
 
-def index2key(i):
+def iter_keys() -> Generator[str, None, None]:
+    """
+    from:
+    https://stackoverflow.com/questions/29351492/how-to-make-a-continuous-alphabetic-list-python-from-a-z-then-from-aa-ab-ac-e/29351603#29351603
+    """
+    ascii_set = string.ascii_lowercase
+
+    return (
+        "".join(s) for size in it.count(1) for s in it.product(ascii_set, repeat=size)
+    )
+
+
+def index2key(i: int) -> str:
     """
     index2key(i)
 
@@ -1797,21 +1812,7 @@ def index2key(i):
 
     Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
     """
-    if i >= 26:
-        n = i
-        base_26_str = ""
-        while not n < 26:
-            base_26_str = "{:02d}".format(n % 26) + base_26_str
-            n = n // 26 - 1
-        base_26_str = "{:02d}".format(n) + base_26_str
-        base_26_int = [
-            int(base_26_str[i : i + 2]) for i in range(0, len(base_26_str), 2)
-        ]
-        key = "".join([chr(ord("a") + i) for i in base_26_int])
-    else:
-        key = chr(ord("a") + i)
-
-    return key
+    return next(it.islice(iter_keys(), i, None))
 
 
 def is_int_json_serializable(n: int) -> bool:
