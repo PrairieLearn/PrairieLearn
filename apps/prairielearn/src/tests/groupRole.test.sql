@@ -41,11 +41,14 @@ SELECT
   gur.user_id,
   gur.group_role_id
 FROM
-  group_user_roles AS gur
-  JOIN groups AS gr ON gur.group_id = gr.id
-  JOIN group_configs AS gc ON gc.id = gr.group_config_id
+  group_configs AS gc
+  JOIN groups AS g ON g.group_config_id = gc.id
+  JOIN group_user_roles AS gur ON gur.group_id = g.id
 WHERE
-  gc.assessment_id = $assessment_id;
+  gc.assessment_id = $assessment_id
+ORDER BY
+  gur.user_id,
+  gur.group_role_id;
 
 -- BLOCK generate_and_enroll_5_users
 SELECT
