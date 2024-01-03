@@ -1,5 +1,3 @@
-// @ts-check
-
 import * as util from 'util';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
@@ -12,7 +10,16 @@ import { getQuestionCourse } from './question-variant';
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import * as workspaceHelper from './workspace';
-import { DateFromISOString, GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
+import {
+  Course,
+  DateFromISOString,
+  GradingJobSchema,
+  IdSchema,
+  Question,
+  Submission,
+  SubmissionSchema,
+  Variant,
+} from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -22,18 +29,31 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_interval: z.string(),
 });
 
+type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
+  Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
+    submitted_answer: NonNullable<Submission['submitted_answer']>;
+  };
+
 /**
  * Save a new submission to a variant into the database.
  *
- * @param {Object} submission - The submission to save (should not have an id property yet).
- * @param {Object} variant - The variant to submit to.
- * @param {Object} question - The question for the variant.
- * @param {Object} variant_course - The course for the variant.
- * @returns {Promise<string>} submission_id
+ * @param submission - The submission to save (should not have an id property yet).
+ * @param variant - The variant to submit to.
+ * @param question - The question for the variant.
+ * @param variant_course - The course for the variant.
+ * @returns submission_id
  */
-export async function saveSubmissionAsync(submission, variant, question, variant_course) {
-  submission.raw_submitted_answer = submission.submitted_answer;
-  submission.gradable = true;
+export async function saveSubmissionAsync(
+  submissionData: SubmissionDataForSaving,
+  variant: Variant,
+  question: Question,
+  variant_course: Course,
+): Promise<string> {
+  const submission: Partial<Submission> & SubmissionDataForSaving = {
+    ...submissionData,
+    raw_submitted_answer: submissionData.submitted_answer,
+    gradable: true,
+  };
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
@@ -118,22 +138,21 @@ export const saveSubmission = util.callbackify(saveSubmissionAsync);
 /**
  * Grade the most recent submission for a given variant.
  *
- * @param {Object} variant - The variant to grade.
- * @param {string | null} check_submission_id - The submission_id that must be graded (or null to skip this check).
- * @param {Object} question - The question for the variant.
- * @param {Object} variant_course - The course for the variant.
- * @param {string | null} authn_user_id - The currently authenticated user.
- * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
- * @returns {Promise<void>}
+ * @param variant - The variant to grade.
+ * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
+ * @param question - The question for the variant.
+ * @param variant_course - The course for the variant.
+ * @param authn_user_id - The currently authenticated user.
+ * @param overrideGradeRateCheck - Whether to override grade rate limits.
  */
 export async function gradeVariantAsync(
-  variant,
-  check_submission_id,
-  question,
-  variant_course,
-  authn_user_id,
-  overrideGradeRateCheck,
-) {
+  variant: Variant,
+  check_submission_id: string | null,
+  question: Question,
+  variant_course: Course,
+  authn_user_id: string | null,
+  overrideGradeRateCheck: boolean,
+): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
   const submission = await sqldb.callOptionalRow(
@@ -229,27 +248,27 @@ export const gradeVariant = util.callbackify(gradeVariantAsync);
 /**
  * Save and grade a new submission to a variant.
  *
- * @param {Object} submission - The submission to save (should not have an id property yet).
- * @param {Object} variant - The variant to submit to.
- * @param {Object} question - The question for the variant.
- * @param {Object} course - The course for the variant.
- * @param {boolean} overrideGradeRateCheck - Whether to override grade rate limits.
- * @returns {Promise<string>} submission_id
+ * @param submissionData - The submission to save (should not have an id property yet).
+ * @param variant - The variant to submit to.
+ * @param question - The question for the variant.
+ * @param course - The course for the variant.
+ * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @returns submission_id
  */
 export async function saveAndGradeSubmissionAsync(
-  submission,
-  variant,
-  question,
-  course,
-  overrideGradeRateCheck,
+  submissionData: SubmissionDataForSaving,
+  variant: Variant,
+  question: Question,
+  course: Course,
+  overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmissionAsync(submission, variant, question, course);
+  const submission_id = await saveSubmissionAsync(submissionData, variant, question, course);
   await gradeVariantAsync(
     variant,
     submission_id,
     question,
     course,
-    submission.auth_user_id,
+    submissionData.auth_user_id,
     overrideGradeRateCheck,
   );
   return submission_id;
