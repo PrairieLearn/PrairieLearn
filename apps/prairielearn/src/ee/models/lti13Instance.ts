@@ -1,11 +1,8 @@
 import { z } from 'zod';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { Lti13Instance, Lti13InstanceSchema } from '../../lib/db-types';
-<<<<<<< HEAD
 import { features } from '../../lib/features';
-=======
 import { getInstitutionAuthenticationProviders } from '../lib/institution';
->>>>>>> master
 
 const sql = loadSqlEquiv(__filename);
 
