@@ -305,6 +305,13 @@ export const Lti13InstanceSchema = z.object({
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
+export const Lti13UserSchema = z.object({
+  lti13_instance_id: IdSchema,
+  sub: z.string(),
+  user_id: IdSchema,
+});
+export type Lti13User = z.infer<typeof Lti13UserSchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
