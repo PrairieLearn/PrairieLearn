@@ -29,11 +29,10 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_interval: z.string(),
 });
 
-type SubmissionDataForSaving = Partial<Submission> & {
-  variant_id: string;
-  submitted_answer: Record<string, any>;
-  auth_user_id: string;
-};
+type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
+  Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
+    submitted_answer: NonNullable<Submission['submitted_answer']>;
+  };
 
 /**
  * Save a new submission to a variant into the database.
@@ -45,13 +44,16 @@ type SubmissionDataForSaving = Partial<Submission> & {
  * @returns submission_id
  */
 export async function saveSubmissionAsync(
-  submission: SubmissionDataForSaving,
+  submissionData: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
   variant_course: Course,
 ): Promise<string> {
-  submission.raw_submitted_answer = submission.submitted_answer;
-  submission.gradable = true;
+  const submission: Partial<Submission> & SubmissionDataForSaving = {
+    ...submissionData,
+    raw_submitted_answer: submissionData.submitted_answer,
+    gradable: true,
+  };
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
@@ -246,7 +248,7 @@ export const gradeVariant = util.callbackify(gradeVariantAsync);
 /**
  * Save and grade a new submission to a variant.
  *
- * @param submission - The submission to save (should not have an id property yet).
+ * @param submissionData - The submission to save (should not have an id property yet).
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
@@ -254,19 +256,19 @@ export const gradeVariant = util.callbackify(gradeVariantAsync);
  * @returns submission_id
  */
 export async function saveAndGradeSubmissionAsync(
-  submission: SubmissionDataForSaving,
+  submissionData: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmissionAsync(submission, variant, question, course);
+  const submission_id = await saveSubmissionAsync(submissionData, variant, question, course);
   await gradeVariantAsync(
     variant,
     submission_id,
     question,
     course,
-    submission.auth_user_id,
+    submissionData.auth_user_id,
     overrideGradeRateCheck,
   );
   return submission_id;
