@@ -20,6 +20,7 @@ import * as workspaceUtils from '@prairielearn/workspace-utils';
 import { contains } from '@prairielearn/path-utils';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { config } from './config';
 import * as socketServer from './socket-server';
@@ -122,7 +123,10 @@ export function connection(socket) {
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
-      (err) => callback({ err: serializeError(err) }),
+      (err) => {
+        callback({ errorMessage: err.message });
+        Sentry.captureException(err);
+      },
     );
   });
 
@@ -144,7 +148,10 @@ export function connection(socket) {
 
     sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
       (heartbeat_at) => callback({ workspace_id, heartbeat_at }),
-      (err) => callback({ err: serializeError(err) }),
+      (err) => {
+        callback({ errorMessage: err.message });
+        Sentry.captureException(err);
+      },
     );
   });
 }
