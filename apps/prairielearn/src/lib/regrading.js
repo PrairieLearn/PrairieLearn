@@ -5,101 +5,93 @@ import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 import { logger } from '@prairielearn/logger';
-import { createJob, createJobSequence, failJobSequence } from './server-jobs-legacy';
+import {
+  createJob,
+  createJobAsync,
+  createJobSequence,
+  createJobSequenceAsync,
+  failJobSequence,
+} from './server-jobs-legacy';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
+import { z } from 'zod';
+import { IdSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export function regradeAssessmentInstance(
-  assessment_instance_id,
-  user_id,
-  authn_user_id,
-  callback,
-) {
-  debug('regradeAssessmentInstance()');
-  var params = { assessment_instance_id };
-  sqldb.queryOneRow(sql.select_regrade_assessment_instance_info, params, function (err, result) {
-    if (ERR(err, callback)) return;
-    const assessment_instance_label = result.rows[0].assessment_instance_label;
-    let jobInfo;
-    if (result.rows[0].user_uid) {
-      jobInfo = result.rows[0].user_uid;
-    } else {
-      jobInfo = 'group name ' + result.rows[0].group_name;
-    }
-    const assessment_id = result.rows[0].assessment_id;
-    const course_instance_id = result.rows[0].course_instance_id;
-    const course_id = result.rows[0].course_id;
+export async function regradeAssessmentInstance(assessment_instance_id, user_id, authn_user_id) {
+  const assessmentInstance = await sqldb.queryRow(
+    sql.select_regrade_assessment_instance_info,
+    { assessment_instance_id },
+    z.object({
+      assessment_instance_label: z.string(),
+      user_uid: z.string().optional(),
+      group_name: z.string().nullable(),
+      assessment_id: IdSchema,
+      course_instance_id: IdSchema,
+      course_id: IdSchema,
+    }),
+  );
+  const assessment_instance_label = assessmentInstance.assessment_instance_label;
+  let jobInfo;
+  if (assessmentInstance.user_uid) {
+    jobInfo = assessmentInstance.user_uid;
+  } else {
+    jobInfo = 'group name ' + assessmentInstance.group_name;
+  }
+  const assessment_id = assessmentInstance.assessment_id;
+  const course_instance_id = assessmentInstance.course_instance_id;
+  const course_id = assessmentInstance.course_id;
 
-    var options = {
-      course_id: course_id,
-      course_instance_id: course_instance_id,
-      assessment_id: assessment_id,
-      user_id: user_id,
-      authn_user_id: authn_user_id,
-      type: 'regrade_assessment_instance',
-      description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
-    };
-    createJobSequence(options, function (err, job_sequence_id) {
-      if (ERR(err, callback)) return;
-      callback(null, job_sequence_id);
+  var options = {
+    course_id: course_id,
+    course_instance_id: course_instance_id,
+    assessment_id: assessment_id,
+    user_id: user_id,
+    authn_user_id: authn_user_id,
+    type: 'regrade_assessment_instance',
+    description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
+  };
+  const job_sequence_id = await createJobSequenceAsync(options);
 
-      // We've now triggered the callback to our caller, but we
-      // continue executing below to launch the jobs themselves.
+  // We've now triggered the callback to our caller, but we
+  // continue executing below to launch the jobs themselves.
 
-      var jobOptions = {
-        course_id: course_id,
-        course_instance_id: course_instance_id,
-        assessment_id: assessment_id,
-        user_id: user_id,
-        authn_user_id: authn_user_id,
-        type: 'regrade_assessment_instance',
-        description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
-      };
-      createJob(jobOptions, function (err, job) {
-        if (err) {
-          logger.error('Error in createJob()', err);
-          failJobSequence(job_sequence_id);
-          return;
-        }
-        job.verbose('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-        var params = [assessment_instance_id, authn_user_id];
-        sqldb.call('assessment_instances_regrade', params, function (err, result) {
-          if (ERR(err, function () {})) {
-            job.fail(err);
-          } else {
-            if (result.rowCount !== 1) {
-              job.fail(new Error('Incorrect rowCount: ' + result.rowCount));
-            }
-            job.verbose('Regrading complete');
-            var regrade = result.rows[0];
-            if (regrade.updated) {
-              job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
-              job.verbose(
-                'New score: ' +
-                  Math.floor(regrade.new_score_perc) +
-                  '% (was ' +
-                  Math.floor(regrade.old_score_perc) +
-                  '%)',
-              );
-            } else {
-              job.verbose('No changes made');
-            }
-            ltiOutcomes.updateScore(assessment_instance_id, (err) => {
-              if (err) {
-                job.fail(err);
-              } else {
-                job.succeed();
-              }
-            });
-          }
-        });
-      });
-    });
-  });
+  var jobOptions = {
+    course_id: course_id,
+    course_instance_id: course_instance_id,
+    assessment_id: assessment_id,
+    user_id: user_id,
+    authn_user_id: authn_user_id,
+    type: 'regrade_assessment_instance',
+    description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
+    job_sequence_id: job_sequence_id,
+    last_in_sequence: true,
+  };
+  const job = await createJobAsync(jobOptions);
+  job.verbose('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
+  var params = [assessment_instance_id, authn_user_id];
+  const jobResult = await sqldb.callAsync('assessment_instances_regrade', params);
+  if (jobResult.rowCount !== 1) {
+    job.fail(new Error('Incorrect rowCount: ' + jobResult.rowCount));
+  }
+  job.verbose('Regrading complete');
+  var regrade = jobResult.rows[0];
+  if (regrade.updated) {
+    job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
+    job.verbose(
+      'New score: ' +
+        Math.floor(regrade.new_score_perc) +
+        '% (was ' +
+        Math.floor(regrade.old_score_perc) +
+        '%)',
+    );
+  } else {
+    job.verbose('No changes made');
+  }
+  ltiOutcomes.updateScoreAsync(assessment_instance_id);
+  job.succeed();
+  return job_sequence_id;
 }
 
 export function regradeAllAssessmentInstances(assessment_id, user_id, authn_user_id, callback) {

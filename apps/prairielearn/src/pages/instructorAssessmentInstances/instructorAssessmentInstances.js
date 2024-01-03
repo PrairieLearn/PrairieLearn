@@ -1,8 +1,6 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -18,7 +16,7 @@ import { IdSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const assessmentInstanceRowSchema = z.object({
+const AssessmentInstanceRowSchema = z.object({
   assessment_label: z.string(),
   user_id: IdSchema.nullable(),
   uid: z.string().nullable(),
@@ -55,16 +53,15 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    const result = await sqldb.queryRows(
+    const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
       {
         assessment_id: res.locals.assessment.id,
         group_work: res.locals.assessment.group_work,
       },
-      assessmentInstanceRowSchema,
+      AssessmentInstanceRowSchema,
     );
-    res.send(result);
-    return;
+    res.send(assessmentInstances);
   }),
 );
 
@@ -85,7 +82,6 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data viewer)');
     }
-    debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -100,11 +96,11 @@ router.post(
     if (req.body.__action === 'close') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      checkBelongsAsync(assessment_instance_id, assessment_id);
+      await checkBelongsAsync(assessment_instance_id, assessment_id);
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
-      gradeAssessmentInstanceAsync(
+      await gradeAssessmentInstanceAsync(
         assessment_instance_id,
         res.locals.authn_user.user_id,
         requireOpen,
@@ -115,9 +111,11 @@ router.post(
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      checkBelongsAsync(assessment_instance_id, assessment_id);
-      const params = [assessment_instance_id, res.locals.authn_user.user_id];
-      sqldb.callAsync('assessment_instances_delete', params);
+      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      await sqldb.callAsync('assessment_instances_delete', [
+        assessment_instance_id,
+        res.locals.authn_user.user_id,
+      ]);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
@@ -132,14 +130,16 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
-      const params = [res.locals.assessment.id, res.locals.authn_user.user_id];
-      sqldb.callAsync('assessment_instances_delete_all', params);
+      await sqldb.callAsync('assessment_instances_delete_all', [
+        res.locals.assessment.id,
+        res.locals.authn_user.user_id,
+      ]);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'regrade') {
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
-      checkBelongsAsync(assessment_instance_id, assessment_id);
-      const job_sequence_id = regradeAssessmentInstance(
+      await checkBelongsAsync(assessment_instance_id, assessment_id);
+      const job_sequence_id = await regradeAssessmentInstance(
         assessment_instance_id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
@@ -167,7 +167,7 @@ router.post(
       } else {
         params.time_add *= req.body.plus_minus;
       }
-      sqldb.queryAsync(sql.set_time_limit, params);
+      await sqldb.queryAsync(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'set_time_limit_all') {
       const params = {
@@ -191,7 +191,7 @@ router.post(
       } else {
         params.time_add *= req.body.plus_minus;
       }
-      sqldb.queryAsync(sql.set_time_limit_all, params);
+      await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
       throw error.make(400, 'unknown __action', {
