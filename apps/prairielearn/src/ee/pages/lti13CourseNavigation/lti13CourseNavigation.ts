@@ -14,39 +14,10 @@ import {
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-// FIXME
-const devel_authn_lti13_instance_id = '1';
-const devel_lti13_claims = {
-  'https://purl.imsglobal.org/spec/lti/claim/roles': [
-    'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-    'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-    'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
-  ],
-  'https://purl.imsglobal.org/spec/lti/claim/context': {
-    id: 'c9d7d100bb177c0e54f578e7ac538cd9f7a3e4ad',
-    type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
-    label: 'POT 1',
-    title: 'Potions',
-  },
-  'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
-    '1:b82229c6e10bcb87beb1f1b287faee560ddc3109',
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
-    id: 'c9d7d100bb177c0e54f578e7ac538cd9f7a3e4ad',
-    title: 'Potions',
-    description: null,
-  },
-  'https://purl.imsglobal.org/spec/lti/claim/tool_platform': {
-    guid: 'JBDFobrLcVnRDhQtha6AxTviEE50NLpNfcwUPUu7:canvas-lms',
-    name: 'Hogwarts',
-    version: 'cloud',
-    product_family_code: 'canvas',
-  },
-};
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const lti13_claims = devel_lti13_claims;
+    const lti13_claims = req.session.lti13_claims;
 
     if ('done' in req.query) {
       res.send(
@@ -60,10 +31,30 @@ router.get(
 
     // TODO Validate LTI claim info or error
 
+    /*
+
+     TA roles
+
+     [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    */
+
     // TODO Move is_instructor logic to library, consider TA roles
     // Get role of LTI user
     const roles = lti13_claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-    let role_instructor = roles.some((val) => val.endsWith('#Instructor'));
+    // Scoped to just this context
+    // https://www.imsglobal.org/spec/lti/v1p3#lis-vocabulary-for-context-roles
+    let role_instructor = roles.some(
+      (val: string) =>
+        ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val)
+    );
+
+    console.log(roles, role_instructor);
 
     // FIXME
     if ('student' in req.query) {
@@ -81,9 +72,7 @@ router.get(
       Lti13CourseInstanceSchema,
     );
 
-    // FIXME
     if (lci && !('noredir' in req.query)) {
-
       if (role_instructor) {
         // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
         await queryAsync(sql.upsert_lci, {
@@ -96,9 +85,7 @@ router.get(
         });
 
         // TODO: Set course/instance staff permissions on LMS course staff here?
-
       }
-
 
       // Redirect to linked course instance
       res.redirect(
@@ -167,9 +154,8 @@ router.post(
     const unsafe_course_instance_id = req.body.ci_id;
     const unsafe_lti13_instance_id = req.params.lti13_instance_id;
 
-    // FIXME
-    const lti13_claims = devel_lti13_claims;
-    const authn_lti13_instance_id = devel_authn_lti13_instance_id;
+    const lti13_claims = req.session.lti13_claims;
+    const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
     // Validate claims have fields we need. Zod?
 
