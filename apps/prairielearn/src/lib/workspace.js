@@ -109,7 +109,7 @@ export async function init() {
  *
  * @param {import('socket.io').Socket} socket
  */
-export function connection(socket) {
+function connection(socket) {
   // The middleware will have already ensured that this property exists and
   // that the client possesses a token that is valid for this workspace ID.
   const workspace_id = socket.handshake.auth.workspace_id;
@@ -174,7 +174,7 @@ export function connection(socket) {
  * @param {Record<string, any>} [options]
  * @returns {Promise<void | string | null>}
  */
-export async function controlContainer(workspace_id, action, options = {}) {
+async function controlContainer(workspace_id, action, options = {}) {
   const workspace_host = await sqldb.queryOptionalRow(
     sql.select_workspace_host,
     { workspace_id },
@@ -228,7 +228,7 @@ export async function controlContainer(workspace_id, action, options = {}) {
  * @param {string} workspace_id
  * @returns {Promise<void>}
  */
-export async function startup(workspace_id) {
+async function startup(workspace_id) {
   const result = await sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema);
   const state = result.state;
 
@@ -358,7 +358,7 @@ export async function startup(workspace_id) {
  * @param {string | number} workspace_id
  * @returns {Promise<InitializeResult>}
  */
-export async function initialize(workspace_id) {
+async function initialize(workspace_id) {
   const { workspace, variant, question, course } = await sqldb.queryRow(
     sql.select_workspace_data,
     { workspace_id },
@@ -599,7 +599,7 @@ export async function initialize(workspace_id) {
  * @param {string} workspace_id
  * @returns {Promise<string | null>} The ID of the host that was assigned to the workspace.
  */
-export async function assignHost(workspace_id) {
+async function assignHost(workspace_id) {
   if (!config.workspaceEnable) return null;
 
   const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
@@ -646,7 +646,7 @@ export async function getGradedFiles(workspace_id) {
  * @param {string} workspace_id
  * @returns {Promise<string | null>}
  */
-export async function getGradedFilesFromFileSystem(workspace_id) {
+async function getGradedFilesFromFileSystem(workspace_id) {
   const { workspace_version, workspace_graded_files } = await sqldb.queryRow(
     sql.select_workspace_version_and_graded_files,
     { workspace_id },
