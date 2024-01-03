@@ -5,7 +5,7 @@ import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgre
 
 import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
-import workspaceHostUtils = require('../../lib/workspaceHost');
+import * as workspaceHostUtils from '../../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
 

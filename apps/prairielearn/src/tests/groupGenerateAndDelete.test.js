@@ -1,13 +1,13 @@
 // @ts-check
-const assert = require('chai').assert;
-const util = require('node:util');
-const sqldb = require('@prairielearn/postgres');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import * as util from 'node:util';
+import * as sqldb from '@prairielearn/postgres';
+import { step } from 'mocha-steps';
 
-const helperServer = require('./helperServer');
-const { deleteAllGroups } = require('../lib/groups');
-const groupUpdate = require('../lib/group-update');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import * as helperServer from './helperServer';
+import { deleteAllGroups } from '../lib/groups';
+import * as groupUpdate from '../lib/group-update';
+import { TEST_COURSE_PATH } from '../lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const locals = {};

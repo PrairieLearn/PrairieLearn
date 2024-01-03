@@ -161,6 +161,46 @@ FROM
 WHERE
   a.id = $assessment_id;
 
+-- BLOCK select_and_lock_assessment_instance_max_points
+SELECT
+  ai.max_points
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK update_assessment_instance_score
+WITH
+  updated_assessment_instances AS (
+    UPDATE assessment_instances AS ai
+    SET
+      points = $points,
+      score_perc = $score_perc,
+      modified_at = now()
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.*
+  )
+INSERT INTO
+  assessment_score_logs (
+    assessment_instance_id,
+    auth_user_id,
+    max_points,
+    points,
+    score_perc
+  )
+SELECT
+  ai.id,
+  $authn_user_id,
+  ai.max_points,
+  ai.points,
+  ai.score_perc
+FROM
+  updated_assessment_instances AS ai;
+
 -- BLOCK assessment_instance_log
 WITH
   ai_group_users AS (
@@ -217,6 +257,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         NULL::BIGINT AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         assessment_instances AS ai
@@ -240,6 +281,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         v.id AS log_id,
+        v.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'variant_seed',
           v.variant_seed,
@@ -302,6 +344,7 @@ WITH
         v.number AS variant_number,
         s.id AS submission_id,
         s.id AS log_id,
+        s.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
           'submitted_answer',
           CASE
@@ -350,6 +393,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         to_jsonb(gj.*) AS data
       FROM
         grading_jobs AS gj
@@ -380,6 +424,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -450,6 +495,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -494,6 +540,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         qsl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           qsl.points,
@@ -532,6 +579,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           asl.points,
@@ -565,6 +613,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        asl.client_fingerprint_id AS client_fingerprint_id,
         CASE
           WHEN asl.open THEN jsonb_build_object(
             'date_limit',
@@ -610,6 +659,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         asl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object(
           'time_limit',
           format_interval (asl.date_limit - ai.date)
@@ -654,6 +704,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         pvl.id AS log_id,
+        pvl.client_fingerprint_id AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         user_page_view_logs AS pvl
@@ -681,6 +732,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         pvl.id AS log_id,
+        pvl.client_fingerprint_id AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         user_page_view_logs AS pvl
@@ -705,6 +757,7 @@ WITH
         NULL::INTEGER AS variant_number,
         NULL::INTEGER AS submission_id,
         gl.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         jsonb_build_object('user', gu.uid) AS data
       FROM
         assessment_instances AS ai
@@ -714,11 +767,6 @@ WITH
       WHERE
         ai.id = $assessment_instance_id
     )
-    ORDER BY
-      date,
-      event_order,
-      log_id,
-      question_id
   ),
   question_data AS (
     SELECT
@@ -745,15 +793,22 @@ SELECT
   el.variant_number,
   el.submission_id,
   el.data,
+  to_jsonb(cf.*) AS client_fingerprint,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
   qd.instructor_question_number
 FROM
   event_log AS el
+  LEFT JOIN client_fingerprints AS cf ON (cf.id = el.client_fingerprint_id)
   LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id),
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  ai.id = $assessment_instance_id;
+  ai.id = $assessment_instance_id
+ORDER BY
+  el.date,
+  el.event_order,
+  el.log_id,
+  el.question_id;

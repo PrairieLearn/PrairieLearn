@@ -1,12 +1,12 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 import * as express from 'express';
-const async = require('async');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const fs = require('fs-extra');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+import * as async from 'async';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 const debug = require('debug')('prairielearn:instructorFileEditor');
 import { contains } from '@prairielearn/path-utils';
 import * as serverJobs from '../../lib/server-jobs-legacy';
@@ -21,7 +21,7 @@ import {
 } from '../../models/course';
 import { config } from '../../lib/config';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil';
-const { default: AnsiUp } = require('ansi_up');
+import AnsiUp from 'ansi_up';
 const sha256 = require('crypto-js/sha256');
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store';

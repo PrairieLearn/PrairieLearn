@@ -1,14 +1,14 @@
 import express = require('express');
 const router = express.Router();
 import asyncHandler = require('express-async-handler');
-import fsPromises = require('node:fs/promises');
-import path = require('path');
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import hljs from 'highlight.js';
 import { stringify } from '@prairielearn/csv';
 import { z } from 'zod';
 
-import jsonLoad = require('../../lib/json-load');
-import sqldb = require('@prairielearn/postgres');
+import * as jsonLoad from '../../lib/json-load';
+import * as sqldb from '@prairielearn/postgres';
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
@@ -30,9 +30,9 @@ router.get(
     const sqlFilename = req.params.query + '.sql';
 
     const info = AdministratorQuerySchema.parse(
-      await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename)),
+      await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
-    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+    const querySql = await fs.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
     const sqlHighlighted = hljs.highlight(querySql, {
@@ -60,14 +60,16 @@ router.get(
 
     if (req.query.format === 'json') {
       res.attachment(req.params.query + '.json');
-      res.send(query_run?.result.rows);
+      res.send(query_run?.result?.rows);
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
-      if (query_run != null) {
+      if (query_run?.result != null) {
         stringify(query_run.result.rows, {
           header: true,
-          columns: query_run?.result.columns,
+          columns: query_run.result.columns,
         }).pipe(res);
+      } else {
+        res.send('');
       }
     } else {
       const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
@@ -95,8 +97,8 @@ router.post(
     const jsonFilename = req.params.query + '.json';
     const sqlFilename = req.params.query + '.sql';
 
-    const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
-    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+    const info = await jsonLoad.readJSON(path.join(queriesDir, jsonFilename));
+    const querySql = await fs.readFile(path.join(queriesDir, sqlFilename), {
       encoding: 'utf8',
     });
 
@@ -113,11 +115,12 @@ router.post(
       params: queryParams,
       authn_user_id: res.locals.authn_user.user_id,
       error: null,
+      result: null,
     };
     try {
       const result = await sqldb.queryAsync(querySql, queryParams);
       params.result = {
-        rowCount: result.rowCount,
+        rowCount: result.rowCount ?? 0,
         columns: result.fields.map((f) => f.name),
         rows: result.rows,
       };

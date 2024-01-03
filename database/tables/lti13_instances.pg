@@ -22,3 +22,6 @@ indexes
 
 foreign-key constraints
     lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+referenced by
+    lti13_users: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

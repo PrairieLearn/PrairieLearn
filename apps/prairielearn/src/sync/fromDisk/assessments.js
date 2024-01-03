@@ -1,14 +1,15 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/postgres');
+import { z } from 'zod';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../../lib/config');
-const perf = require('../performance')('assessments');
-const infofile = require('../infofile');
-const { features } = require('../../lib/features/index');
-const { z } = require('zod');
+import { config } from '../../lib/config';
+import * as infofile from '../infofile';
+import { features } from '../../lib/features/index';
+import { makePerformance } from '../performance';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const perf = makePerformance('assessments');
 
 /**
  * SYNCING PROCESS:
@@ -121,8 +122,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  let assessmentCanView = assessment?.canView ?? [];
-  let assessmentCanSubmit = assessment?.canSubmit ?? [];
+  let allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
+  let assessmentCanView = assessment?.canView ?? allRoleNames;
+  let assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes
@@ -149,13 +151,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
-              ? question.forceMaxPoints
-              : false,
+                ? question.forceMaxPoints
+                : false,
             triesPerVariant: _.has(alternative, 'triesPerVariant')
               ? alternative.triesPerVariant
               : _.has(question, 'triesPerVariant')
-              ? question.triesPerVariant
-              : 1,
+                ? question.triesPerVariant
+                : 1,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
@@ -298,7 +300,7 @@ function parseSharedQuestionReference(qid) {
  * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
  * @param {{ [qid: string]: any }} questionIds
  */
-module.exports.sync = async function (courseId, courseInstanceId, assessments, questionIds) {
+export async function sync(courseId, courseInstanceId, assessments, questionIds) {
   if (config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
@@ -427,4 +429,4 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');
-};
+}
