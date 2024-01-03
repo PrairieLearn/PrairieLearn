@@ -1,3 +1,5 @@
+import { AssessmentInstanceSchema } from '../../lib/db-types';
+
 const util = require('util');
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -17,10 +19,11 @@ async function ensureUpToDate(locals) {
   const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
   if (updated) {
     // we updated the assessment_instance, so reload it
-    const result = await sqldb.queryAsync(sql.select_assessment_instance, {
-      assessment_instance_id: locals.assessment_instance.id,
-    });
-    locals.assessment_instance = result.rows[0];
+    locals.assessment_instance = await sqldb.queryRow(
+      sql.select_assessment_instance,
+      { assessment_instance_id: locals.assessment_instance.id },
+      AssessmentInstanceSchema,
+    );
   }
 }
 
