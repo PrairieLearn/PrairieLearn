@@ -21,7 +21,7 @@ import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export const AssessementInstanceStatsSchema = z.object({
+export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
   average_submission_score: z.number().nullable(),
   client_fingerprint_id_change_count: z.number(),
@@ -80,7 +80,7 @@ router.get(
       {
         assessment_instance_id: res.locals.assessment_instance.id,
       },
-      AssessementInstanceStatsSchema,
+      AssessmentInstanceStatsSchema,
     );
 
     const dateDurationResult = await sqldb.queryRow(

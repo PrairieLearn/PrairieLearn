@@ -21,7 +21,7 @@
            "endDate": "2025-12-08T23:59:59"
       },
       {
-          "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
+          "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessment)",
           "mode": "Public",
           "credit": 0,
           "startDate": "2021-01-01T00:00:01",
