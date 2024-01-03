@@ -172,20 +172,7 @@
 
         <table class="table table-sm table-hover" data-testid="assessment-questions">
           <thead>
-            <% if (assessment.type === 'Homework') { %>
-              <% if (has_auto_grading_question && has_manual_grading_question) { %>
-              <tr>
-                <th rowspan="2">Question</th>
-                <th class="text-center" colspan="3">Auto-grading</th>
-                <th class="text-center" rowspan="2">Manual grading points</th>
-                <th class="text-center" rowspan="2">Total points</th>
-              </tr>
-              <tr>
-              <% } else { %>
-              <tr>
-                <th>Question</th>
-              <% } %>
-            <% } else { %>
+            <% if (assessment.type === 'Exam') { %>
               <% if (has_auto_grading_question && has_manual_grading_question && assessment.allow_real_time_grading) { %>
               <tr>
                 <th rowspan="2">Question</th>
@@ -200,15 +187,22 @@
                 <th>Question</th>
                 <th class="text-center">Submission status</th>
               <% } %>
+            <% } else { %>
+              <% if (has_auto_grading_question && has_manual_grading_question) { %>
+              <tr>
+                <th rowspan="2">Question</th>
+                <th class="text-center" colspan="3">Auto-grading</th>
+                <th class="text-center" rowspan="2">Manual grading points</th>
+                <th class="text-center" rowspan="2">Total points</th>
+              </tr>
+              <tr>
+              <% } else { %>
+              <tr>
+                <th>Question</th>
+              <% } %>
             <% } %>
 
-            <% if (assessment.type === 'Homework') { %>
-              <% if (has_auto_grading_question) { %>
-                <th class="text-center">Value</th>
-                <th class="text-center">History</th>
-              <% } %>
-              <th class="text-center">Awarded points</th>
-            <% } else { %>
+            <% if (assessment.type === 'Exam') { %>
               <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
                 <th class="text-center">
                   Best submission
@@ -229,6 +223,12 @@
               <% } else { %>
                 <th class="text-center">Points</th>
               <% } %>
+              <% } else { %>
+                <% if (has_auto_grading_question) { %>
+                <th class="text-center">Value</th>
+                <th class="text-center">History</th>
+              <% } %>
+              <th class="text-center">Awarded points</th>
             <% } %>
             </tr>
           </thead>
