@@ -29,6 +29,12 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_interval: z.string(),
 });
 
+type SubmissionDataForSaving = Partial<Submission> & {
+  variant_id: string;
+  submitted_answer: Record<string, any>;
+  auth_user_id: string;
+};
+
 /**
  * Save a new submission to a variant into the database.
  *
@@ -39,7 +45,7 @@ const NextAllowedGradeSchema = z.object({
  * @returns submission_id
  */
 export async function saveSubmissionAsync(
-  submission: Submission,
+  submission: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
   variant_course: Course,
@@ -62,9 +68,6 @@ export async function saveSubmissionAsync(
         // if we have workspace files, encode them into _files
         if (zipPath != null) {
           const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
-          if (!submission.submitted_answer) {
-            submission.submitted_answer = {};
-          }
           if (!('_files' in submission.submitted_answer)) {
             submission.submitted_answer['_files'] = [];
           }
@@ -251,7 +254,7 @@ export const gradeVariant = util.callbackify(gradeVariantAsync);
  * @returns submission_id
  */
 export async function saveAndGradeSubmissionAsync(
-  submission: Submission,
+  submission: SubmissionDataForSaving,
   variant: Variant,
   question: Question,
   course: Course,
