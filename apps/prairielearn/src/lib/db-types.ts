@@ -514,6 +514,7 @@ export const InstanceQuestionSchema = z.object({
   id: IdSchema,
   incremental_submission_points_array: z.array(z.number()).nullable(),
   incremental_submission_score_array: z.array(z.number()).nullable(),
+  instructor_question_number: z.string().nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
