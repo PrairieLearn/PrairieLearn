@@ -1,10 +1,11 @@
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
 
 describe('AdministratorQuery page', function () {
   this.timeout(60000);

@@ -1,19 +1,18 @@
 -- one-to-one relationship for each group work assessment
 -- group_configs table stores most information including group size and authz defined by the instructor
-CREATE TABLE IF NOT EXISTS
-  group_configs (
-    id BIGSERIAL PRIMARY KEY,
-    course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    assessment_id BIGINT REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    name TEXT,
-    minimum INT,
-    maximum INT,
-    student_authz_join boolean DEFAULT false,
-    student_authz_create boolean DEFAULT false,
-    student_authz_leave boolean DEFAULT false,
-    date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp with time zone
-  );
+CREATE TABLE IF NOT EXISTS group_configs (
+  id BIGSERIAL PRIMARY KEY,
+  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_id BIGINT REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  name TEXT,
+  minimum INT,
+  maximum INT,
+  student_authz_join boolean DEFAULT false,
+  student_authz_create boolean DEFAULT false,
+  student_authz_leave boolean DEFAULT false,
+  date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  deleted_at timestamp with time zone
+);
 
 CREATE INDEX group_configs_course_instance_id_key ON group_configs (course_instance_id);
 
@@ -48,16 +47,15 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 ------------------------------------------------------------------------------
 -- one-to-many relationship for each group_configs: an assessment with a group_config has many groups
 -- groups table only stores id and names
-CREATE TABLE IF NOT EXISTS
-  groups (
-    id BIGSERIAL PRIMARY KEY,
-    course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    name TEXT NOT NULL, -- visible name of the group; alpha & number only; no space or special character
-    join_code TEXT NOT NULL DEFAULT random_string (4), -- random 4-character suffix join code identifier
-    group_config_id BIGINT REFERENCES group_configs (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp with time zone
-  );
+CREATE TABLE IF NOT EXISTS groups (
+  id BIGSERIAL PRIMARY KEY,
+  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  name TEXT NOT NULL, -- visible name of the group; alpha & number only; no space or special character
+  join_code TEXT NOT NULL DEFAULT random_string (4), -- random 4-character suffix join code identifier
+  group_config_id BIGINT REFERENCES group_configs (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  deleted_at timestamp with time zone
+);
 
 CREATE INDEX groups_course_instance_id_key ON groups (course_instance_id);
 
@@ -72,12 +70,11 @@ WHERE
 ------------------------------------------------------------------------------
 -- simple join table, no extra metadata - that could be stored in audit logs if needed
 -- one-to-many relationship for each group; this table joins group_id with user_id together
-CREATE TABLE IF NOT EXISTS
-  group_users (
-    group_id BIGINT REFERENCES groups (id),
-    user_id BIGINT REFERENCES users,
-    PRIMARY KEY (group_id, user_id)
-  );
+CREATE TABLE IF NOT EXISTS group_users (
+  group_id BIGINT REFERENCES groups (id),
+  user_id BIGINT REFERENCES users,
+  PRIMARY KEY (group_id, user_id)
+);
 
 CREATE INDEX group_users_group_id_key ON group_users (group_id);
 
@@ -158,12 +155,11 @@ DROP NOT NULL;
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 -- a log table to store all create, join, leave, delete activities
-CREATE TABLE IF NOT EXISTS
-  group_logs (
-    id BIGSERIAL PRIMARY KEY,
-    date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    authn_user_id BIGINT,
-    user_id BIGINT,
-    group_id BIGINT,
-    action TEXT
-  );
+CREATE TABLE IF NOT EXISTS group_logs (
+  id BIGSERIAL PRIMARY KEY,
+  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  authn_user_id BIGINT,
+  user_id BIGINT,
+  group_id BIGINT,
+  action TEXT
+);

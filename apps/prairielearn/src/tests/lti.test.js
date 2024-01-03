@@ -1,10 +1,11 @@
-const fetch = require('node-fetch');
+// @ts-check
+import fetch from 'node-fetch';
 const oauthSignature = require('oauth-signature');
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const { config } = require('../lib/config');
-const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as sqldb from '@prairielearn/postgres';
 const locals = {};
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -26,14 +27,14 @@ describe('LTI', function () {
     lti_version: 'LTI-1p0',
     resource_link_id: 'somethingsomething',
     oauth_consumer_key: 'oauth_key',
-    oauth_timestamp: Math.floor(Date.now() / 1000),
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
     oauth_nonce: 'nonceNonce',
     user_id: 'testuser1',
     roles: 'Learner',
     context_id: 'testContext',
   };
   const secret = 'sFDpR@RzLdDW';
-  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, null, {
+  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, undefined, {
     encodeSignature: false,
   });
 

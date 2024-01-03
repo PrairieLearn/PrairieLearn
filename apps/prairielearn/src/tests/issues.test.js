@@ -1,14 +1,15 @@
 // @ts-check
-const assert = require('chai').assert;
-const fetch = require('node-fetch').default;
-const cheerio = require('cheerio');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+
+import * as helperServer from './helperServer';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';

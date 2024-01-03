@@ -1,9 +1,11 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 
-const infofile = require('../infofile');
-const perf = require('../performance')('question');
+import * as infofile from '../infofile';
+import { makePerformance } from '../performance';
+
+const perf = makePerformance('courseInstances');
 
 /**
  *
@@ -41,7 +43,7 @@ function getParamsForCourseInstance(courseInstance) {
  * @param {import('../course-db').CourseData} courseData
  * @returns {Promise<{ [ciid: string]: any }>}
  */
-module.exports.sync = async function (courseId, courseData) {
+export async function sync(courseId, courseData) {
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseIntanceData]) => {
       const { courseInstance } = courseIntanceData;
@@ -64,4 +66,4 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type {[string, any][]} */
   const nameToIdMap = result.rows[0].name_to_id_map;
   return nameToIdMap;
-};
+}

@@ -1,5 +1,4 @@
 import * as async from 'async';
-import { callbackify } from 'util';
 
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
@@ -83,7 +82,7 @@ export async function insertIssueForError(
  * @param studentMessage - The message to display to the student.
  * @param courseData - Arbitrary data to be associated with the issues.
  */
-export async function writeCourseIssuesAsync(
+export async function writeCourseIssues(
   courseIssues: ErrorMaybeWithData[],
   variant: Variant,
   authn_user_id: string | null,
@@ -99,4 +98,3 @@ export async function writeCourseIssuesAsync(
     });
   });
 }
-export const writeCourseIssues = callbackify(writeCourseIssuesAsync);

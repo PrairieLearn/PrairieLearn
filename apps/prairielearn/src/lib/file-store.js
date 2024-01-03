@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as fsPromises from 'fs/promises';
 import * as fs from 'fs';
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import * as sqldb from '@prairielearn/postgres';
 import { config } from './config';

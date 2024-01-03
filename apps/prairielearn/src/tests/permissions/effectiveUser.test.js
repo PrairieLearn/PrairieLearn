@@ -1,11 +1,14 @@
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../../lib/config';
+import * as helperServer from '../helperServer';
+import * as helperClient from '../helperClient';
+import { ensureEnrollment } from '../../models/enrollment';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const helperServer = require('../helperServer');
-const helperClient = require('../helperClient');
-const { ensureEnrollment } = require('../../models/enrollment');
 
 describe('effective user', function () {
   this.timeout(60000);
@@ -52,8 +55,8 @@ describe('effective user', function () {
       2,
     ]);
     await ensureEnrollment({
-      user_id: 4,
-      course_instance_id: 1,
+      user_id: '4',
+      course_instance_id: '1',
     });
   });
 
