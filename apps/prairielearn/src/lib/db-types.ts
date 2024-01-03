@@ -535,8 +535,8 @@ export const InstanceQuestionSchema = z.object({
   first_submission_score: z.number().nullable(),
   highest_submission_score: z.number().nullable(),
   id: IdSchema,
-  incremental_submission_points_array: z.array(z.number()).nullable(),
-  incremental_submission_score_array: z.array(z.number()).nullable(),
+  incremental_submission_points_array: z.array(z.number().nullable()).nullable(),
+  incremental_submission_score_array: z.array(z.number().nullable()).nullable(),
   instructor_question_number: z.string().nullable(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
@@ -558,7 +558,7 @@ export const InstanceQuestionSchema = z.object({
   status: z
     .enum(['complete', 'unanswered', 'saved', 'correct', 'incorrect', 'grading', 'invalid'])
     .nullable(),
-  submission_score_array: z.array(z.number()).nullable(),
+  submission_score_array: z.array(z.number().nullable()).nullable(),
   used_for_grade: z.boolean().nullable(),
   variants_points_list: z.array(z.number()),
 });
