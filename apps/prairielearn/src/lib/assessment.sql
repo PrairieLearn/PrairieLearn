@@ -317,6 +317,7 @@ WITH
         v.number AS variant_number,
         NULL::INTEGER AS submission_id,
         v.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
         NULL::JSONB AS data
       FROM
         variants AS v
