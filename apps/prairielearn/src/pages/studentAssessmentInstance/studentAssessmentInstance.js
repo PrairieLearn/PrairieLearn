@@ -1,5 +1,3 @@
-import { AssessmentInstanceSchema } from '../../lib/db-types';
-
 const util = require('util');
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -12,6 +10,7 @@ const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const sqldb = require('@prairielearn/postgres');
 const groupAssessmentHelper = require('../../lib/groups');
+const { AssessmentInstanceSchema } = require('../../lib/db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
