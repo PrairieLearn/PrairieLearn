@@ -36,4 +36,4 @@ VALUES
     $short_name,
     $display_timezone,
     $uid_regexp
-  )
+  );
