@@ -13,6 +13,8 @@ import { updateInstanceQuestionScore } from '../../lib/manualGrading';
 import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
+  updateAssessmentInstancePoints,
+  updateAssessmentInstanceScore,
 } from '../../lib/assessment';
 import { InstanceQuestionSchema, IdSchema } from '../../lib/db-types';
 
@@ -155,19 +157,19 @@ router.post(
     }
 
     if (req.body.__action === 'edit_total_points') {
-      await sqldb.callAsync('assessment_instances_update_points', [
+      await updateAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
         res.locals.authn_user.user_id,
-      ]);
+      );
       await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
-      await sqldb.callAsync('assessment_instances_update_score_perc', [
+      await updateAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
         res.locals.authn_user.user_id,
-      ]);
+      );
       await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {

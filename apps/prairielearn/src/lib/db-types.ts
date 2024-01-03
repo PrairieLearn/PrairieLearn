@@ -282,6 +282,13 @@ export const Lti13InstanceSchema = z.object({
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
+export const Lti13UserSchema = z.object({
+  lti13_instance_id: IdSchema,
+  sub: z.string(),
+  user_id: IdSchema,
+});
+export type Lti13User = z.infer<typeof Lti13UserSchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -673,3 +680,129 @@ export const CourseRequestSchema = z.object({
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
+
+export const AssessmentSchema = z.object({
+  advance_score_perc: z.number().nullable(),
+  allow_issue_reporting: z.boolean().nullable(),
+  allow_real_time_grading: z.boolean().nullable(),
+  assessment_module_id: IdSchema.nullable(),
+  assessment_set_id: IdSchema.nullable(),
+  auto_close: z.boolean().nullable(),
+  config: z.any().nullable(),
+  constant_question_value: z.boolean().nullable(),
+  course_instance_id: IdSchema,
+  deleted_at: DateFromISOString.nullable(),
+  duration_stat_hist: z.number().array(),
+  duration_stat_max: IntervalSchema,
+  duration_stat_mean: IntervalSchema,
+  duration_stat_median: IntervalSchema,
+  duration_stat_min: IntervalSchema,
+  duration_stat_threshold_labels: z.string().array(),
+  duration_stat_threshold_seconds: z.number().array(),
+  duration_stat_thresholds: IntervalSchema.array(),
+  group_work: z.boolean().nullable(),
+  id: IdSchema,
+  max_bonus_points: z.number().nullable(),
+  max_points: z.number().nullable(),
+  multiple_instance: z.boolean().nullable(),
+  number: z.string(),
+  obj: z.any().nullable(),
+  order_by: z.number().nullable(),
+  require_honor_code: z.boolean().nullable(),
+  score_stat_hist: z.number().array(),
+  score_stat_max: z.number(),
+  score_stat_mean: z.number(),
+  score_stat_median: z.number(),
+  score_stat_min: z.number(),
+  score_stat_n_hundred: z.number(),
+  score_stat_n_hundred_perc: z.number(),
+  score_stat_n_zero: z.number(),
+  score_stat_n_zero_perc: z.number(),
+  score_stat_number: z.number(),
+  score_stat_std: z.number(),
+  shuffle_questions: z.boolean().nullable(),
+  statistics_last_updated_at: DateFromISOString,
+  stats_last_updated: DateFromISOString.nullable(),
+  sync_errors: z.string().nullable(),
+  sync_job_sequence_id: IdSchema.nullable(),
+  sync_warnings: z.string().nullable(),
+  text: z.string().nullable(),
+  tid: z.string().nullable(),
+  title: z.string().nullable(),
+  type: z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']).nullable(),
+  uuid: z.string().nullable(),
+});
+export type Assessment = z.infer<typeof AssessmentSchema>;
+
+export const AssessmentInstanceSchema = z.object({
+  assessment_id: IdSchema,
+  auth_user_id: IdSchema.nullable(),
+  auto_close: z.boolean().nullable(),
+  client_fingerprint_id_change_count: z.number(),
+  closed_at: DateFromISOString.nullable(),
+  date: DateFromISOString.nullable(),
+  date_limit: DateFromISOString.nullable(),
+  duration: IntervalSchema.nullable(),
+  grading_needed: z.boolean(),
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  include_in_statistics: z.boolean(),
+  last_client_fingerprint_id: IdSchema.nullable(),
+  max_bonus_points: z.number().nullable(),
+  max_points: z.number().nullable(),
+  mode: z.enum(['Public', 'Exam', 'SEB']).nullable(),
+  modified_at: DateFromISOString,
+  number: z.number().nullable(),
+  open: z.boolean().nullable(),
+  points: z.number().nullable(),
+  score_perc: z.number().nullable(),
+  user_id: IdSchema.nullable(),
+});
+export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
+
+export const GroupSchema = z.object({
+  course_instance_id: IdSchema,
+  date: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  group_config_id: IdSchema.nullable(),
+  id: IdSchema,
+  join_code: z.string(),
+  name: z.string(),
+});
+export type Group = z.infer<typeof GroupSchema>;
+
+export const GroupUserSchema = z.object({
+  group_id: IdSchema,
+  user_id: IdSchema,
+});
+export type GroupUser = z.infer<typeof GroupUserSchema>;
+
+export const GroupRoleSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  can_assign_roles_at_start: z.boolean().nullable(),
+  can_assign_roles_during_assessment: z.boolean().nullable(),
+  can_submit_assessment: z.boolean().nullable(),
+  id: IdSchema,
+  maximum: z.number().nullable(),
+  minimum: z.number().nullable(),
+  role_name: z.string(),
+});
+export type GroupRole = z.infer<typeof GroupRoleSchema>;
+
+export const GroupUserRoleSchema = z.object({
+  group_id: IdSchema,
+  group_role_id: IdSchema,
+  id: IdSchema,
+  user_id: IdSchema,
+});
+export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
+
+export const AssessmentQuestionRolePermissionsSchema = z.object({
+  assessment_question_id: IdSchema,
+  group_role_id: IdSchema,
+  can_submit: z.boolean().nullable(),
+  can_view: z.boolean().nullable(),
+});
+export type AssessmentQuestionRolePermissions = z.infer<
+  typeof AssessmentQuestionRolePermissionsSchema
+>;
