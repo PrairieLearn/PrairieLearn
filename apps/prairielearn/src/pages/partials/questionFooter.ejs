@@ -1,45 +1,47 @@
 <% if (question_context !== 'manual_grading') { %>
   <div class="card-footer" id="question-panel-footer">
-  <% if (question.type !== 'Freeform') { %>
-  <form class="question-form" name="question-form" method="POST">
-  <% } %>
-  <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
+    <% if (question.type !== 'Freeform') { %><form class="question-form" name="question-form" method="POST"><% } %>
+    <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
     This question is complete and cannot be answered again.
-  <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
-    <div class="alert alert-warning mt-2" role="alert">
-      You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
-    </div>
-  <% } else { %>
+    <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+      <div class="alert alert-warning mt-2" role="alert">
+        You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
+      </div>
+    <% } else { %>
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex align-items-center">
           <% if (showSaveButton) { %>
             <button
-               class="btn btn-info question-save disable-on-submit order-2"
-               <%= disableSaveButton ? "disabled" : "" %>
-               <% if (question.type === 'Freeform') { %>name="__action" value="save"<% } %>
+              class="btn btn-info question-save disable-on-submit order-2"
+              <%= disableSaveButton ? "disabled" : "" %>
+              <% if (question.type === 'Freeform') { %>name="__action" value="save"<% } %>
             >
-              <%= showGradeButton ? 'Save only' : 'Save' %>
+              <% if (showGradeButton) { %>
+                Save only
+              <% } else { %>
+                Save
+              <% } %>
             </button>
           <% } %>
           <% if (showGradeButton) { %>
             <button
-               class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
-               <%= disableGradeButton ? "disabled" : "" %>
-               <% if (question.type === 'Freeform') { %>name="__action" value="grade"<% } %>
+              class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
+              <%= disableGradeButton ? "disabled" : "" %>
+              <% if (question.type === 'Freeform') { %>name="__action" value="grade"<% } %>
             >
-               Save & Grade
-                <% if (variantAttemptsTotal > 0) { %>
-                  <% if (variantAttemptsLeft > 1) { %>
+              Save &amp; Grade
+              <% if (variantAttemptsTotal > 0) { %>
+                <% if (variantAttemptsLeft > 1) { %>
                   <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
-                  <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+                <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
                   <small class="font-italic ml-2">Last attempt</small>
-                  <% } else if (variantAttemptsLeft == 1) { %>
+                <% } else if (variantAttemptsLeft == 1) { %>
                   <small class="font-italic ml-2">Single attempt</small>
-                  <% } %>
-                <% } else if (question_context != 'instructor') { %>
-                  <small class="font-italic ml-2">Unlimited attempts</small>
                 <% } %>
+              <% } else if (question_context != 'instructor') { %>
+                <small class="font-italic ml-2">Unlimited attempts</small>
+              <% } %>
             </button>
           <% } %>
           <% if (locals.assessment?.group_config?.has_roles &&
@@ -51,9 +53,9 @@
               data-trigger="focus"
               data-content="Your group role (<%= assessment_instance.user_group_roles %>) is not allowed to submit this question."
               aria-label="Submission blocked">
-            <i class="fa fa-lock" aria-hidden="true"></i>
+              <i class="fa fa-lock" aria-hidden="true"></i>
             </button>
-        <% } %>
+          <% } %>
         </span>
         <span class="d-flex">
           <% if (question.type === 'Freeform') { %>
@@ -98,8 +100,6 @@
     </div>
     <%- include('submitRateFooter') %>
     <% } %>
-    <% if (question.type !== 'Freeform') { %>
-  </form>
-  <% } %>
+    <% if (question.type !== 'Freeform') { %></form><% } %>
   </div>
 <% } %>
