@@ -28,18 +28,19 @@
               class="btn btn-primary question-grade disable-on-submit order-1 mr-1"
               <%= disableGradeButton ? "disabled" : "" %>
               <% if (question.type === 'Freeform') { %>name="__action" value="grade"<% } %>
-            >Save & Grade
-            <% if (variantAttemptsTotal > 0) { %>
-               <% if (variantAttemptsLeft > 1) { %>
-               <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
-               <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
-               <small class="font-italic ml-2">Last attempt</small>
-               <% } else if (variantAttemptsLeft == 1) { %>
-               <small class="font-italic ml-2">Single attempt</small>
-               <% } %>
-            <% } else if (question_context != 'instructor') { %>
-               <small class="font-italic ml-2">Unlimited attempts</small>
-            <% } %>
+            >
+              Save &amp; Grade
+              <% if (variantAttemptsTotal > 0) { %>
+                <% if (variantAttemptsLeft > 1) { %>
+                  <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
+                <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+                  <small class="font-italic ml-2">Last attempt</small>
+                <% } else if (variantAttemptsLeft == 1) { %>
+                  <small class="font-italic ml-2">Single attempt</small>
+                <% } %>
+              <% } else if (question_context != 'instructor') { %>
+                <small class="font-italic ml-2">Unlimited attempts</small>
+              <% } %>
             </button>
           <% } %>
         </span>
