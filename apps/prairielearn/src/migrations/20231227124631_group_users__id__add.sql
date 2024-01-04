@@ -1,6 +1,6 @@
 ALTER TABLE group_users
 ADD UNIQUE (group_id, user_id),
-DROP CONSTRAINT group_users_pkey CASCADE,
+DROP CONSTRAINT group_users_pkey,
 ADD COLUMN id BIGSERIAL PRIMARY KEY;
 
 -- Group_id does not need its own index because it is already indexed as part of a unique constraint.
