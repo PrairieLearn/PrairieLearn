@@ -34,7 +34,10 @@ SELECT
   ) AS file_count,
   qo.sequence_locked AS sequence_locked,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
-  'Question ' || (lag(qo.question_number) OVER w) AS prev_title,
+  CASE
+    WHEN a.type = 'Homework' THEN ''
+    ELSE 'Question '
+  END || (lag(qo.question_number) OVER w) AS prev_title,
   (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
   iqnag.*
 FROM
