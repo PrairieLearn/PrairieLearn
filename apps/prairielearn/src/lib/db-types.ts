@@ -148,6 +148,9 @@ export const SamlProviderSchema = z.object({
   sso_login_url: z.string(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
+  validate_audience: z.boolean(),
+  want_assertions_signed: z.boolean(),
+  want_authn_response_signed: z.boolean(),
 });
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
