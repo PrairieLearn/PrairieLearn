@@ -13,8 +13,7 @@ Regular migrations can be authored as either SQL or JavaScript. They should be l
 
 ```sql
 -- migrations/20230411002409_example_migration.sql
-CREATE TABLE IF NOT EXISTS
-  examples (id BIGSERIAL PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS examples (id BIGSERIAL PRIMARY KEY, value TEXT NOT NULL);
 ```
 
 ```ts

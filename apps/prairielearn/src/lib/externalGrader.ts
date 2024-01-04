@@ -1,4 +1,3 @@
-import * as async from 'async';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -59,10 +58,6 @@ export function init(): void {
     logger.verbose('External grader running locally');
     grader = new ExternalGraderLocal();
   }
-}
-
-export async function beginGradingJobs(grading_job_ids: string[]): Promise<void> {
-  await async.each(grading_job_ids, beginGradingJob);
 }
 
 export async function beginGradingJob(grading_job_id: string): Promise<void> {
