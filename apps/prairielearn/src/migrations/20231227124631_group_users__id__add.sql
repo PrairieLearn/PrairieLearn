@@ -7,7 +7,7 @@ ADD COLUMN id BIGSERIAL PRIMARY KEY;
 DROP INDEX group_users_group_id_key;
 
 ALTER TABLE group_user_roles
-ADD COLUMN group_user_id BIGINT REFERENCES group_users (id) ON DELETE CASCADE;
+ADD COLUMN group_user_id BIGINT REFERENCES group_users (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 UPDATE group_user_roles gur
 SET
