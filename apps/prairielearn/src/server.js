@@ -1426,8 +1426,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
-    require('./pages/studentAssessmentExam/studentAssessmentExam'),
+    require('./pages/studentAssessment/studentAssessment'),
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
@@ -1452,8 +1451,7 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
-    require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
-    require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
+    require('./pages/studentAssessmentInstance/studentAssessmentInstance'),
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
@@ -1863,7 +1861,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courses',
-    require('./pages/administratorCourses/administratorCourses'),
+    require('./pages/administratorCourses/administratorCourses').default,
   );
   app.use(
     '/pl/administrator/networks',
@@ -1891,7 +1889,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courseRequests/',
-    require('./pages/administratorCourseRequests/administratorCourseRequests'),
+    require('./pages/administratorCourseRequests/administratorCourseRequests').default,
   );
   app.use(
     '/pl/administrator/batchedMigrations',

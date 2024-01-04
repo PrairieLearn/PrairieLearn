@@ -22,4 +22,5 @@ foreign-key constraints
     group_configs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    group_users: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
     groups: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE SET NULL
