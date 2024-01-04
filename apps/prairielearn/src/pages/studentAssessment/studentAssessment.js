@@ -14,12 +14,18 @@ const groupAssessmentHelper = require('../../lib/groups');
 router.get(
   '/',
   asyncHandler(async function (req, res, next) {
-    if (res.locals.assessment.type !== 'Exam') return next();
     var params = {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,
     };
     if (res.locals.assessment.multiple_instance) {
+      if (res.locals.assessment.type === 'Homework') {
+        return next(
+          error.makeWithData('"Homework" assessments do not support multiple instances', {
+            assessment: res.locals.assessment,
+          }),
+        );
+      }
       // The user has landed on this page to create a new assessment instance.
       //
       // Before allowing the user to create a new assessment instance, we need
@@ -67,6 +73,7 @@ router.get(
         // we'll ensure that the password has already been entered before allowing
         // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
+
         if (res.locals.assessment.group_work) {
           // Get the group config info
           const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
@@ -98,8 +105,24 @@ router.get(
               res.locals.canViewRoleTable = result.can_assign_roles_at_start;
             }
           }
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        } else if (res.locals.assessment.type === 'Homework') {
+          const time_limit_min = null;
+          const client_fingerprint_id = await getClientFingerprintId(req, res);
+          const assessment_instance_id = await assessment.makeAssessmentInstance(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+            res.locals.assessment.group_work,
+            res.locals.authn_user.user_id,
+            res.locals.authz_data.mode,
+            time_limit_min,
+            res.locals.authz_data.date,
+            client_fingerprint_id,
+          );
+          res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+        } else {
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       } else {
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
       }
@@ -110,8 +133,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
-    if (res.locals.assessment.type !== 'Exam') return next();
-
     // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
     // only for an assessment instance, not an assessment).
     //
@@ -128,6 +149,8 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
+      const time_limit_min =
+        res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await assessment.makeAssessmentInstance(
         res.locals.assessment.id,
@@ -135,7 +158,7 @@ router.post(
         res.locals.assessment.group_work,
         res.locals.authn_user.user_id,
         res.locals.authz_data.mode,
-        res.locals.authz_result.time_limit_min,
+        time_limit_min,
         res.locals.req_date,
         client_fingerprint_id,
       );
