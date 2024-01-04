@@ -6,14 +6,16 @@ import { promises as fsPromises } from 'fs';
 import * as fse from 'fs-extra';
 import * as async from 'async';
 import debugfn from 'debug';
-const archiver = require('archiver');
-const klaw = require('klaw');
+import archiver = require('archiver');
+import klaw = require('klaw');
 import { v4 as uuidv4 } from 'uuid';
 import * as tmp from 'tmp-promise';
 import * as mustache from 'mustache';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
 import { ok as assert } from 'node:assert';
+import type { Socket } from 'socket.io';
+import type { Entry } from 'fast-glob';
 
 import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
@@ -51,21 +53,29 @@ const WorkspaceVersionAndGradedFilesSchema = z.object({
   workspace_graded_files: QuestionSchema.shape.workspace_graded_files,
 });
 
-/**
- * @typedef {Object} DiskWorkspaceFile
- * @property {string} name
- * @property {string} localPath
- */
+interface DiskWorkspaceFile {
+  name: string;
+  localPath: string;
+}
 
-/**
- * @typedef {Object} BufferWorkspaceFile
- * @property {string} name
- * @property {Buffer | string} buffer
- */
+interface BufferWorkspaceFile {
+  name: string;
+  buffer: Buffer | string;
+}
 
-/**
- * @typedef {DiskWorkspaceFile | BufferWorkspaceFile} WorkspaceFile
- */
+type WorkspaceFile = DiskWorkspaceFile | BufferWorkspaceFile;
+
+interface DynamicWorkspaceFile {
+  name?: string;
+  contents?: string;
+  encoding?: BufferEncoding;
+  questionFile?: string;
+}
+
+interface InitializeResult {
+  sourcePath: string;
+  destinationPath: string;
+}
 
 /**
  * Internal error type for tracking submission with format issues.
@@ -77,7 +87,7 @@ export class SubmissionFormatError extends Error {
   }
 }
 
-export async function init() {
+export async function init(): Promise<void> {
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
@@ -106,10 +116,8 @@ export async function init() {
 
 /**
  * Called when a client connects to the workspace namespace.
- *
- * @param {import('socket.io').Socket} socket
  */
-function connection(socket) {
+function connection(socket: Socket) {
   // The middleware will have already ensured that this property exists and
   // that the client possesses a token that is valid for this workspace ID.
   const workspace_id = socket.handshake.auth.workspace_id;
@@ -156,25 +164,17 @@ function connection(socket) {
   });
 }
 
-/** @overload
- * @param {string} workspace_id
- * @param {'getGradedFiles'} action
- * @returns {Promise<string>}
- */
-/**
- * @overload
- * @param {string} workspace_id
- * @param {'init'} action
- * @param {{useInitialZip: boolean}} options
- * @returns {Promise<void>}
- */
-/**
- * @param {string} workspace_id
- * @param {'init' | 'getGradedFiles'} action
- * @param {Record<string, any>} [options]
- * @returns {Promise<void | string | null>}
- */
-async function controlContainer(workspace_id, action, options = {}) {
+async function controlContainer(workspace_id: string, action: 'getGradedFiles'): Promise<string>;
+async function controlContainer(
+  workspace_id: string,
+  action: 'init',
+  options: { useInitialZip: boolean },
+): Promise<void>;
+async function controlContainer(
+  workspace_id: string,
+  action: 'init' | 'getGradedFiles',
+  options = {},
+): Promise<any> {
   const workspace_host = await sqldb.queryOptionalRow(
     sql.select_workspace_host,
     { workspace_id },
@@ -202,7 +202,7 @@ async function controlContainer(workspace_id, action, options = {}) {
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    let stream = fs.createWriteStream(zipPath);
+    const stream = fs.createWriteStream(zipPath);
 
     return new Promise((resolve, reject) => {
       stream
@@ -224,20 +224,15 @@ async function controlContainer(workspace_id, action, options = {}) {
   throw new Error(`Error from workspace host: ${json.message}`);
 }
 
-/**
- * @param {string} workspace_id
- * @returns {Promise<void>}
- */
-async function startup(workspace_id) {
+async function startup(workspace_id: string): Promise<void> {
   const result = await sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema);
   const state = result.state;
 
   if (state !== 'uninitialized' && state !== 'stopped') return;
 
-  let useInitialZip = state === 'uninitialized';
+  const useInitialZip = state === 'uninitialized';
 
-  /** @type {InitializeResult | null} */
-  let initializeResult;
+  let initializeResult: InitializeResult | null = null;
   if (state === 'uninitialized') {
     initializeResult = await initialize(workspace_id);
   }
@@ -315,7 +310,7 @@ async function startup(workspace_id) {
   // already trying to assign this host to a workspace.
   if (!shouldAssignHost) return;
 
-  let workspace_host_id = null;
+  let workspace_host_id: string | null = null;
   let attempt = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -339,12 +334,6 @@ async function startup(workspace_id) {
 }
 
 /**
- * @typedef {Object} InitializeResult
- * @property {string} sourcePath
- * @property {string} destinationPath
- */
-
-/**
  * This function constructs the initial state of a workspace.
  *
  * We'll construct the initial directory on disk in a temporary location and
@@ -354,11 +343,8 @@ async function startup(workspace_id) {
  * Locking ensures that multiple hosts can't clobber writes to the same
  * workspace. This is mostly important on NFS volumes, where renames (moves)
  * are not atomic.
- *
- * @param {string | number} workspace_id
- * @returns {Promise<InitializeResult>}
  */
-async function initialize(workspace_id) {
+async function initialize(workspace_id: string): Promise<InitializeResult> {
   const { workspace, variant, question, course } = await sqldb.queryRow(
     sql.select_workspace_data,
     { workspace_id },
@@ -374,8 +360,12 @@ async function initialize(workspace_id) {
     questionId: question.id,
   });
 
-  /** @type {{file: string; msg: string; err?: any, data?: Record<string, any>}[]} */
-  const fileGenerationErrors = [];
+  const fileGenerationErrors: {
+    file: string;
+    msg: string;
+    err?: any;
+    data?: Record<string, any>;
+  }[] = [];
 
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
@@ -386,75 +376,58 @@ async function initialize(workspace_id) {
   const remoteDirName = `workspace-${workspace_id}-${workspace.version}`;
   const remotePath = path.join(remoteDirName, 'current');
 
-  /** @type {WorkspaceFile[]} */
-  const staticFiles = (
+  const staticFiles: WorkspaceFile[] = (
     await async
-      .mapSeries(
-        klaw(localPath),
-        /** @returns {Promise<WorkspaceFile | null>} */
-        async (/** @type {klaw.Item} */ file) => {
-          return file.stats.isFile()
-            ? { name: path.relative(localPath, file.path), localPath: file.path }
-            : null;
-        },
-      )
+      .mapSeries(klaw(localPath), async (file: klaw.Item): Promise<WorkspaceFile | null> => {
+        return file.stats.isFile()
+          ? { name: path.relative(localPath, file.path), localPath: file.path }
+          : null;
+      })
       .catch(() => {
         // Path does not exist or is not accessible, do nothing
-        return /** @type {(WorkspaceFile | null)[]} */ ([]);
+        return [] as (WorkspaceFile | null)[];
       })
-  ).filter(
-    /** @returns {file is WorkspaceFile} */
-    (file) => !!file,
-  );
+  ).filter((file): file is WorkspaceFile => !!file);
 
   const mustacheParams = { params: variant.params, correct_answers: variant.true_answer };
 
-  /** @type {WorkspaceFile[]} */
-  const templateFiles = (
+  const templateFiles: WorkspaceFile[] = (
     await async
-      .mapSeries(
-        klaw(templatePath),
-        /** @returns {Promise<WorkspaceFile | null>} */
-        async (/** @type {klaw.Item} */ file) => {
-          const generatedFileName = path.relative(
-            templatePath,
-            file.path.replace(/\.mustache$/i, ''),
-          );
-          try {
-            if (!file.stats.isFile()) return null;
-            return {
-              name: generatedFileName,
-              buffer: mustache.render(
-                await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
-                mustacheParams,
-              ),
-            };
-          } catch (err) {
-            fileGenerationErrors.push({
-              file: generatedFileName,
-              err,
-              msg: `Error rendering workspace template file: ${err.message}`,
-            });
-            // File cannot be rendered, treat file as static file
-            return { name: generatedFileName, localPath: file.path };
-          }
-        },
-      )
+      .mapSeries(klaw(templatePath), async (file: klaw.Item): Promise<WorkspaceFile | null> => {
+        const generatedFileName = path.relative(
+          templatePath,
+          file.path.replace(/\.mustache$/i, ''),
+        );
+        try {
+          if (!file.stats.isFile()) return null;
+          return {
+            name: generatedFileName,
+            buffer: mustache.render(
+              await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
+              mustacheParams,
+            ),
+          };
+        } catch (err) {
+          fileGenerationErrors.push({
+            file: generatedFileName,
+            err,
+            msg: `Error rendering workspace template file: ${err.message}`,
+          });
+          // File cannot be rendered, treat file as static file
+          return { name: generatedFileName, localPath: file.path };
+        }
+      })
       .catch(() => {
         // Template directory does not exist or is not accessible, do nothing
-        return /** @type {(WorkspaceFile | null)[]} */ ([]);
+        return [] as (WorkspaceFile | null)[];
       })
-  ).filter(
-    /** @returns {file is WorkspaceFile} */
-    (file) => !!file,
-  );
+  ).filter((file): file is WorkspaceFile => !!file);
 
-  /** @type {WorkspaceFile[]} */
-  const dynamicFiles = (
-    await async.mapSeries(variant.params?._workspace_files || [], async (file, i) => {
-      try {
+  const dynamicFiles: WorkspaceFile[] =
+    (variant.params?._workspace_files as DynamicWorkspaceFile[] | null)
+      ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
-        if (!file.name) {
+        if (!file?.name) {
           fileGenerationErrors.push({
             file: `Dynamic file ${i}`,
             msg: 'Dynamic workspace file does not include a name. File ignored.',
@@ -462,63 +435,61 @@ async function initialize(workspace_id) {
           });
           return null;
         }
-        // Discard names with directory traversal outside the home directory
-        if (!contains(remotePath, path.join(remotePath, file.name), false)) {
-          fileGenerationErrors.push({
-            file: file.name,
-            msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
-            data: file,
-          });
-          return null;
-        }
-
-        if (file.questionFile) {
-          const localPath = path.join(questionBasePath, file.questionFile);
-          // Discard paths with directory traversal outside the question
-          if (!contains(questionBasePath, localPath, false)) {
+        try {
+          // Discard names with directory traversal outside the home directory
+          if (!contains(remotePath, path.join(remotePath, file.name), false)) {
             fileGenerationErrors.push({
               file: file.name,
-              msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
+              msg: 'Dynamic workspace file includes a name that traverses outside the home directory. File ignored.',
               data: file,
             });
             return null;
           }
-          // To avoid race conditions, no check if file exists here, rather an exception is
-          // captured when attempting to copy.
+
+          if (file.questionFile) {
+            const localPath = path.join(questionBasePath, file.questionFile);
+            // Discard paths with directory traversal outside the question
+            if (!contains(questionBasePath, localPath, false)) {
+              fileGenerationErrors.push({
+                file: file.name,
+                msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
+                data: file,
+              });
+              return null;
+            }
+            // To avoid race conditions, no check if file exists here, rather an exception is
+            // captured when attempting to copy.
+            return {
+              name: file.name,
+              localPath,
+            };
+          }
+
+          // Discard encodings outside of explicit list of allowed encodings
+          if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,
+              data: file,
+            });
+            return null;
+          }
           return {
             name: file.name,
-            localPath,
+            buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
           };
-        }
-
-        // Discard encodings outside of explicit list of allowed encodings
-        if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
+        } catch (err) {
+          // Error retrieving contents of dynamic file. Ignoring file.
           fileGenerationErrors.push({
             file: file.name,
-            msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,
+            msg: `Error decoding dynamic workspace file: ${err.message}`,
+            err,
             data: file,
           });
           return null;
         }
-        return {
-          name: file.name,
-          buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
-        };
-      } catch (err) {
-        // Error retrieving contents of dynamic file. Ignoring file.
-        fileGenerationErrors.push({
-          file: file.name,
-          msg: `Error decoding dynamic workspace file: ${err.message}`,
-          err,
-          data: file,
-        });
-        return null;
-      }
-    })
-  ).filter(
-    /** @returns {file is WorkspaceFile} */
-    (file) => !!file,
-  );
+      })
+      .filter((file): file is WorkspaceFile => !!file) ?? [];
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
@@ -596,10 +567,9 @@ async function initialize(workspace_id) {
 }
 
 /**
- * @param {string} workspace_id
- * @returns {Promise<string | null>} The ID of the host that was assigned to the workspace.
+ * @returns The ID of the host that was assigned to the workspace.
  */
-async function assignHost(workspace_id) {
+async function assignHost(workspace_id: string): Promise<string | null> {
   if (!config.workspaceEnable) return null;
 
   const workspaceHostId = await workspaceHostUtils.assignWorkspaceToHost(
@@ -610,13 +580,8 @@ async function assignHost(workspace_id) {
   return workspaceHostId; // null means we didn't assign a host
 }
 
-/**
- *
- * @param {string} workspace_id
- * @returns {Promise<null | string>}
- */
-export async function getGradedFiles(workspace_id) {
-  let zipPath;
+export async function getGradedFiles(workspace_id: string): Promise<string | null> {
+  let zipPath: string | null = null;
   const workspace = await sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema);
 
   if (workspace.state === 'uninitialized') {
@@ -642,11 +607,7 @@ export async function getGradedFiles(workspace_id) {
   return zipPath;
 }
 
-/**
- * @param {string} workspace_id
- * @returns {Promise<string | null>}
- */
-async function getGradedFilesFromFileSystem(workspace_id) {
+async function getGradedFilesFromFileSystem(workspace_id: string): Promise<string | null> {
   const { workspace_version, workspace_graded_files } = await sqldb.queryRow(
     sql.select_workspace_version_and_graded_files,
     { workspace_id },
@@ -658,7 +619,7 @@ async function getGradedFilesFromFileSystem(workspace_id) {
   const remoteName = `workspace-${workspace_id}-${workspace_version}`;
   const remoteDir = path.join(config.workspaceHomeDirRoot, remoteName, 'current');
 
-  let gradedFiles;
+  let gradedFiles: Entry[];
   try {
     gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
       remoteDir,
@@ -674,7 +635,7 @@ async function getGradedFilesFromFileSystem(workspace_id) {
   }
 
   // Zip files from filesystem to zip file
-  await async.eachLimit(gradedFiles, config.workspaceJobsParallelLimit, async (file) => {
+  await async.eachLimit(gradedFiles || [], config.workspaceJobsParallelLimit, async (file) => {
     try {
       const remotePath = path.join(remoteDir, file.path);
       debug(`Zipping graded file ${remotePath} into ${zipPath}`);
@@ -706,11 +667,9 @@ async function getGradedFilesFromFileSystem(workspace_id) {
   return zipPath;
 }
 
-/**
- * @param {Error & {data?: any; cause?: Error}} err
- * @returns
- */
-function serializeError(err) {
+function serializeError(
+  err: (Error & { data?: any; cause?: Error }) | null,
+): (Error & { data?: any; cause?: Error }) | null {
   if (err == null) return err;
   return {
     ...err,
