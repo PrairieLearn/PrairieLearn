@@ -16,7 +16,7 @@ const middleware = asyncHandler(async (req, res, next) => {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if (result.rowCount ?? 0 === 0) throw error.make(403, 'Access denied');
+  if ((result.rowCount ?? 0) === 0) throw error.make(403, 'Access denied');
 
   Object.assign(res.locals, result.rows[0]);
   if (res.locals.assessment.group_work) {
