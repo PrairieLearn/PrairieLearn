@@ -174,7 +174,8 @@ SELECT
 FROM
   group_users gu
   JOIN users u ON gu.user_id = u.user_id
-  JOIN group_user_roles gur ON gu.group_id = gur.group_id AND gu.user_id = gur.user_id
+  JOIN group_user_roles gur ON gu.group_id = gur.group_id
+  AND gu.user_id = gur.user_id
   JOIN group_roles gr ON gur.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
