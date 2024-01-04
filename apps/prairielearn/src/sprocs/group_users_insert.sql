@@ -9,18 +9,21 @@ CREATE FUNCTION
 AS $$
 DECLARE
     cur_group_id bigint;
+    cur_group_config_id bigint;
+    new_group_user_id bigint;
     cur_size bigint;
     max_size bigint;
     has_roles boolean;
     default_group_role_id bigint;
     min_roles_to_fill bigint;
-    new_group_user_id bigint;
 BEGIN
     -- find group id
     SELECT 
-        g.id
+        g.id,
+        g.group_config_id
     INTO 
-        cur_group_id
+        cur_group_id,
+        cur_group_config_id
     FROM 
         groups AS g
         JOIN group_configs AS gc ON g.group_config_id = gc.id
@@ -112,16 +115,16 @@ BEGIN
     END IF;
 
     -- join the group
-    INSERT INTO group_users (user_id, group_id)
-    VALUES (arg_user_id, cur_group_id)
+    INSERT INTO group_users (user_id, group_id, group_config_id)
+    VALUES (arg_user_id, cur_group_id, cur_group_config_id)
     RETURNING id INTO new_group_user_id;
 
     -- assign the role, if appropriate
     IF has_roles THEN
         INSERT INTO group_user_roles
-            (group_user_id, user_id, group_id, group_role_id)
+            (user_id, group_id, group_user_id, group_role_id)
         VALUES
-            (new_group_user_id, arg_user_id, cur_group_id, default_group_role_id);
+            (arg_user_id, cur_group_id, new_group_user_id, default_group_role_id);
     END IF;
 
     -- log the join

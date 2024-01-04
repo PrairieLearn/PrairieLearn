@@ -23,7 +23,8 @@ WITH
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id
+      id,
+      group_config_id
   ),
   create_log AS (
     INSERT INTO
@@ -53,10 +54,11 @@ WITH
   ),
   join_group AS (
     INSERT INTO
-      group_users AS gu (user_id, group_id)
+      group_users AS gu (user_id, group_id, group_config_id)
     SELECT
       $user_id,
-      cg.id
+      cg.id,
+      cg.group_config_id
     FROM
       create_group AS cg
     RETURNING
@@ -64,11 +66,11 @@ WITH
   ),
   assign_role AS (
     INSERT INTO
-      group_user_roles (group_user_id, user_id, group_id, group_role_id)
+      group_user_roles (user_id, group_id, group_user_id, group_role_id)
     SELECT
-      jg.id,
       jg.user_id,
       jg.group_id,
+      jg.id,
       gr.role_id
     FROM
       join_group AS jg,
@@ -141,11 +143,12 @@ SELECT
   bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
   bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
-  group_roles as gr
-  JOIN group_user_roles as gur ON (gr.id = gur.group_role_id)
+  group_configs as gc
+  JOIN groups as g ON (gc.id = g.group_config_id)
+  JOIN group_user_roles as gur ON (gur.group_id = g.id)
+  JOIN group_roles AS gr ON (gr.id = gur.group_role_id)
 WHERE
-  gr.assessment_id = $assessment_id
-  -- TODO probably a good idea to add a join with groups before doing this check?
+  gc.assessment_id = $assessment_id
   AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
@@ -198,9 +201,9 @@ VALUES
 WITH
   json_roles AS (
     SELECT
-      gu.id AS group_user_id,
       gu.user_id,
       gu.group_id,
+      gu.id AS group_user_id,
       (role_assignment ->> 'group_role_id')::bigint AS group_role_id
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
@@ -209,11 +212,11 @@ WITH
   ),
   assign_new_group_roles AS (
     INSERT INTO
-      group_user_roles (group_user_id, group_id, user_id, group_role_id)
+      group_user_roles (group_id, user_id, group_user_id, group_role_id)
     SELECT
-      jr.group_user_id,
       jr.group_id,
       jr.user_id,
+      jr.group_user_id,
       jr.group_role_id
     FROM
       json_roles jr

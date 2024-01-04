@@ -67,8 +67,8 @@ BEGIN
         FROM groups
         WHERE name = group_user[1] AND group_config_id = arg_group_config_id AND deleted_at IS NULL;
         -- insert group_user
-        INSERT INTO group_users (group_id, user_id)
-        VALUES (arg_group_id, arg_user_id);
+        INSERT INTO group_users (group_id, user_id, group_config_id)
+        VALUES (arg_group_id, arg_user_id, arg_group_config_id);
 
         INSERT INTO group_logs 
             (authn_user_id, user_id, group_id, action)
