@@ -34,12 +34,13 @@ export const InstanceLogSchema = z.object({
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
+  client_fingerprint_number: z.number().nullable(),
   formatted_date: z.string(),
   date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema> & { client_fingerprint_number?: number };
+type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id

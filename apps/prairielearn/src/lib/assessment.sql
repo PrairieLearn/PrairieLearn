@@ -767,6 +767,7 @@ SELECT
   el.submission_id,
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
+  NULL AS client_fingerprint_number,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
