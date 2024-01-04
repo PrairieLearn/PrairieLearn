@@ -90,7 +90,7 @@ router.post('/', function (req, res, next) {
     res.clearCookie('pl_requested_course_instance_role');
     res.clearCookie('pl_requested_mode');
     res.clearCookie('pl_requested_date');
-    res.cookie('pl_requested_data_changed', null);
+    res.cookie('pl_requested_data_changed', 'true');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {
     res.cookie('pl_requested_uid', req.body.pl_requested_uid, {
