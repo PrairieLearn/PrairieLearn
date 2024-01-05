@@ -184,6 +184,10 @@ async function getRolesInfo(groupId: string, groupMembers: GroupMember[]): Promi
   };
 }
 
+/**
+ * This function assumes that the group has roles, so any caller must ensure
+ * that it is only called in that scenario
+ */
 export async function getQuestionGroupPermissions(
   instance_question_id: string,
   group_id: string,
@@ -451,6 +455,12 @@ export async function updateGroupRoles(
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
+        throw error.make(403, `User ${userId} is not a member of this group`);
+      }
+      if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
+        throw error.make(403, `Role ${roleId} does not exist for this assessment`);
+      }
       return {
         group_id: groupId,
         user_id: userId,
