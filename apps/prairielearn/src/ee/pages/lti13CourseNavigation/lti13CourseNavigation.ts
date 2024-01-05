@@ -29,7 +29,7 @@ router.get(
       return;
     }
 
-    console.log(req);
+    console.log(req.session.lti13_claims);
 
     // TODO Validate LTI claim info or error
 

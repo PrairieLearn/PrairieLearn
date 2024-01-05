@@ -1,23 +1,46 @@
-<div id="navbarDeveloper" style="display:none;background-color:pink;" class="p-2">
-<strong>Developer:</strong> URL: <a id='develUrl' target='_blank'></a>
-<a href="#" onClick="location.reload();event.preventDefault();">Reload</a>
-<br/>
-<a href="/pl/lti13_instance/1/course_navigation">Course Nav</a>
+<nav class="navbar navbar-dark bg-secondary" id="navbarDeveloper" style="display: none">
+  <span class="navbar-text"
+    >Developer: <a id="navbarDeveloperUrl" target="_blank" title="Open in new tab"></a>
+    <button
+      class="btn btn-sm btn-outline-primary"
+      type="button"
+      onClick="location.reload();"
+      title="Reload page"
+    >
+      <i class="fa-solid fa-rotate-right"></i>
+    </button>
+  </span>
+  <span class="navbar-text">
+    <button
+      class="btn btn-sm btn-outline-light"
+      type="button"
+      onClick="window.parent.postMessage({subject: 'toggleCourseNavigationMenu'}, '*')"
+    >
+      <i class="fa-solid fa-angle-left"></i> <i class="fa-solid fa-bars"></i> Toggle course nav
+    </button>
+    <button
+      class="btn btn-sm btn-outline-light"
+      type="button"
+      onclick="var i=document.getElementById('navbarDeveloper');i.style.display='none';"
+    >
+      <i class="fa-solid fa-angle-up"></i>
+    </button>
+    <button
+      class="btn btn-sm btn-outline-light"
+      type="button"
+      onClick="window.parent.postMessage({subject: 'lti.hideRightSideWrapper'}, '*');style.display='none'"
+    >
+      <i class="fa-solid fa-angle-right"></i>
+    </button>
+  </span>
+</nav>
 
-<button type="button" class="btn btn-primary btn-sm" onclick="window.parent.postMessage(
-    {
-      subject: 'lti.hideRightSideWrapper',
-    },
-    '*'
-)">Hide right side wrapper</button>
-
-</div>
-
-<script>
-    if (window.self !== window.top) {
-        document.getElementById('navbarDeveloper').style.display = 'block';
-        var u = document.getElementById('develUrl');
-        u.innerHTML = window.location.href;
-        u.href = window.location.href;
-    }
+<script type="text/javascript">
+  // Only display helper bar when in iframe
+  if (window.self !== window.top) {
+    document.getElementById('navbarDeveloper').style.display = 'block';
+    var u = document.getElementById('navbarDeveloperUrl');
+    u.innerHTML = window.location.pathname;
+    u.href = window.location.pathname;
+  }
 </script>
