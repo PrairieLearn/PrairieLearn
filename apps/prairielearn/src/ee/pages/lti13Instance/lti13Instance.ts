@@ -39,7 +39,7 @@ const ltiConfig = {
             placement: 'course_navigation',
             default: 'disabled',
             message_type: 'LtiResourceLinkRequest',
-            target_link_url: 'replace',
+            target_link_uri: 'replace',
           },
         ],
       },
@@ -73,7 +73,7 @@ router.get(
     lmsConfig.target_link_uri = `${url.href}pl/lti13_instance/${lti13_instance.id}/auth/callback`;
 
     lmsConfig.extensions[0].domain = url.hostname || '';
-    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/course_navigation`;
+    lmsConfig.extensions[0].settings.placements[0].target_link_uri = `${url.href}pl/lti13_instance/${lti13_instance.id}/course_navigation`;
 
     lmsConfig.public_jwk_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/jwks`;
     lmsConfig.custom_fields = lti13_instance.custom_fields;
