@@ -17,7 +17,7 @@ import { Lti13Test } from './lti13Auth.html';
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-const StateTest = "-StateTest";
+const StateTest = '-StateTest';
 
 //
 // Express routes
@@ -101,11 +101,13 @@ router.post(
     };
 
     if (req.body.state.endsWith(StateTest)) {
-      res.end(Lti13Test({
-        lti13_claims,
-        resLocals: res.locals,
-        userInfo,
-      }));
+      res.end(
+        Lti13Test({
+          lti13_claims,
+          resLocals: res.locals,
+          userInfo,
+        }),
+      );
       return;
     }
 

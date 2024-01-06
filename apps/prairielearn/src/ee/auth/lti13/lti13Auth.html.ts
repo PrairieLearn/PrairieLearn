@@ -1,11 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-export const Lti13Test = ({
-  resLocals,
-  lti13_claims,
-  userInfo,
-}) => {
+export const Lti13Test = ({ resLocals, lti13_claims, userInfo }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
