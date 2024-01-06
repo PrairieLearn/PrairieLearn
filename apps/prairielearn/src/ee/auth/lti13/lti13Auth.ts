@@ -5,15 +5,19 @@ import * as passport from 'passport';
 import { z } from 'zod';
 import { get as _get } from 'lodash';
 import { callbackify } from 'util';
+import * as crypto from 'crypto';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
+import { Lti13Test } from './lti13Auth.html';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
+
+const StateTest = "-StateTest";
 
 //
 // Express routes
@@ -95,6 +99,15 @@ router.post(
       provider: 'LTI 1.3',
       institution_id: lti13_instance.institution_id,
     };
+
+    if (req.body.state.endsWith(StateTest)) {
+      res.end(Lti13Test({
+        lti13_claims,
+        resLocals: res.locals,
+        userInfo,
+      }));
+      return;
+    }
 
     // AUTHENTICATE
     await authnLib.loadUser(req, res, userInfo);
@@ -245,6 +258,12 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
 
   const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
 
+  // Generate our own OIDC state, use it to toggle if testing is happening
+  let state = crypto.randomBytes(28).toString('hex');
+  if (parameters?.RelayState === 'test') {
+    state = state.concat(StateTest);
+  }
+
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   myPassport.authenticate('lti13', {
     response_type: 'id_token',
@@ -253,6 +272,7 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
     prompt: 'none',
     response_mode: 'form_post',
     failWithError: true,
+    state,
   } as passport.AuthenticateOptions)(req, res, next);
 }
 

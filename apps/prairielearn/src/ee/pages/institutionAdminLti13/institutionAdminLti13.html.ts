@@ -339,6 +339,13 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
       </form>
 
       <hr />
+      <p>
+        For testing, have the LMS admin configure their OpenID Connect Initiation Url to
+        <a href="/pl/lti13_instance/${instance.id}/auth/login?RelayState=test">
+          /pl/lti13_instance/${instance.id}/auth/login?RelayState=test
+        </a>
+      </p>
+
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="remove_instance" />
