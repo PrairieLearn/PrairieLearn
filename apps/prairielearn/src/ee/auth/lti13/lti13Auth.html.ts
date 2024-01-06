@@ -18,7 +18,7 @@ export const Lti13Test = ({ resLocals, lti13_claims, userInfo }) => {
           </p>
           <pre><code>${JSON.stringify(userInfo, null, 2)}</code></pre>
 
-          <p>One you're satisfied, remove <code>?RelayState=test</code> from your <tt>...auth/login</tt> OpenID Connection Initiation Url.
+          <p>Once you're satisfied, remove <code>?RelayState=test</code> from your <tt>...auth/login</tt> OpenID Connection Initiation Url.
           </p>
           <h2 class="h4">All LTI 1.3 claims</h1>
           <pre><code>${JSON.stringify(lti13_claims, null, 2)}</code></pre>
