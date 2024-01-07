@@ -106,6 +106,7 @@ router.post(
           lti13_claims,
           resLocals: res.locals,
           userInfo,
+          lti13_instance,
         }),
       );
       return;
