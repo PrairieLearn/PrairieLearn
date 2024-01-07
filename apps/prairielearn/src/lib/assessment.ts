@@ -6,8 +6,7 @@ import { z } from 'zod';
 import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import { gradeVariant } from './grading';
-import * as externalGrader from './externalGrader';
+import { gradeVariantAsync } from './grading';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { createServerJob } from './server-jobs';
@@ -35,12 +34,13 @@ export const InstanceLogSchema = z.object({
   submission_id: z.string().nullable(),
   data: z.record(z.any()).nullable(),
   client_fingerprint: ClientFingerprintSchema.nullable(),
+  client_fingerprint_number: z.number().nullable(),
   formatted_date: z.string(),
   date_iso8601: z.string(),
   student_question_number: z.string().nullable(),
   instructor_question_number: z.string().nullable(),
 });
-type InstanceLogEntry = z.infer<typeof InstanceLogSchema> & { client_fingerprint_number?: number };
+type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id
@@ -183,10 +183,6 @@ export async function gradeAssessmentInstanceAsync(
   debug('gradeAssessmentInstance()');
   overrideGradeRate = close || overrideGradeRate;
 
-  // We may have to submit grading jobs to the external grader after this
-  // grading transaction has been accepted; collect those job ids here.
-  const externalGradingJobIds: string[] = [];
-
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
       await sqldb.callAsync('assessment_instances_lock', [assessment_instance_id]);
@@ -213,7 +209,7 @@ export async function gradeAssessmentInstanceAsync(
   await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
     const check_submission_id = null;
-    const gradingJobId = await promisify(gradeVariant)(
+    await gradeVariantAsync(
       row.variant,
       check_submission_id,
       row.question,
@@ -221,14 +217,7 @@ export async function gradeAssessmentInstanceAsync(
       authn_user_id,
       overrideGradeRate,
     );
-    if (gradingJobId !== undefined) {
-      externalGradingJobIds.push(gradingJobId);
-    }
   });
-  if (externalGradingJobIds.length > 0) {
-    // We need to submit these grading jobs to be graded
-    await externalGrader.beginGradingJobs(externalGradingJobIds);
-  }
   // The `grading_needed` flag was set by the closing query above. Once we've
   // successfully graded every part of the assessment instance, set the flag to
   // false so that we don't try to grade it again in the future.

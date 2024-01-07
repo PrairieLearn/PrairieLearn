@@ -5,10 +5,10 @@ import fetch from 'node-fetch';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../lib/config';
 import { makeAwsClientConfig } from '../lib/aws';
-import * as workspaceHelper from '../lib/workspace';
 import * as workspaceHostUtils from '../lib/workspaceHost';
 
 const sql = loadSqlEquiv(__filename);
@@ -81,7 +81,7 @@ async function checkDBConsistency() {
       Array.from(hostsNotInEc2),
     );
     stoppedWorkspaces.forEach((workspace) => {
-      workspaceHelper.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
+      workspaceUtils.emitMessageForWorkspace(workspace.workspace_id, 'change:state', {
         workspace_id: workspace.workspace_id,
         state: workspace.state,
         message: workspace.message,

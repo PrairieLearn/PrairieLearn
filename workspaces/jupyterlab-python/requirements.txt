@@ -7,14 +7,14 @@ folium==0.15.1
 ipython==8.19.0
 jupyter-collaboration==2.0.1
 matplotlib==3.8.2
-nbconvert==7.13.1
+nbconvert==7.14.0
 nbformat==5.9.2
 networkx==3.2.1
 nltk==3.8.1
 numpy==1.26.2
 openpyxl==3.1.2
 pandas==2.1.4
-Pillow==10.1.0
+Pillow==10.2.0
 PuLP==2.7.0
 Pygments==2.17.2
 pygraphviz==1.11
