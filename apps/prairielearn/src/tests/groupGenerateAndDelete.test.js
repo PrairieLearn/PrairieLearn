@@ -5,7 +5,7 @@ const { step } = require('mocha-steps');
 
 const helperServer = require('./helperServer');
 const { deleteAllGroups } = require('../lib/groups');
-const groupUpdate = require('../lib/group-update');
+const { autoGroups } = require('../lib/group-update');
 const { TEST_COURSE_PATH } = require('../lib/paths');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -33,7 +33,7 @@ describe('test auto group and delete groups', function () {
     const authn_user_id = '1';
     const max_group_size = 10;
     const min_group_size = 10;
-    const job_sequence_id = await groupUpdate.autoGroups(
+    const job_sequence_id = await autoGroups(
       locals.assessment_id,
       user_id,
       authn_user_id,

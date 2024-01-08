@@ -12,7 +12,7 @@ const { html } = require('@prairielearn/html');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const groups = require('../../lib/groups');
-const groupUpdate = require('../../lib/group-update');
+const { uploadInstanceGroups, autoGroups } = require('../../lib/group-update');
 const { GroupConfigSchema, IdSchema } = require('../../lib/db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -93,7 +93,7 @@ router.post(
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
-      const job_sequence_id = await groupUpdate.uploadInstanceGroups(
+      const job_sequence_id = await uploadInstanceGroups(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
@@ -101,7 +101,7 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'auto_assessment_groups') {
-      const job_sequence_id = await groupUpdate.autoGroups(
+      const job_sequence_id = await autoGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
