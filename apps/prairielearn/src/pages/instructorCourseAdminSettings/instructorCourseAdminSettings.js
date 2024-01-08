@@ -1,14 +1,15 @@
-const express = require('express');
-const router = express.Router();
-
-const path = require('path');
+//@ts-check
+import * as express from 'express';
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const fs = require('fs-extra');
-const async = require('async');
+import * as fs from 'fs-extra';
+import * as async from 'async';
 const ERR = require('async-stacktrace');
-const { CourseInfoEditor } = require('../../lib/editors');
-const { logger } = require('@prairielearn/logger');
-const error = require('@prairielearn/error');
+import { CourseInfoEditor } from '../../lib/editors';
+import { logger } from '@prairielearn/logger';
+import * as error from '@prairielearn/error';
+
+const router = express.Router();
 
 router.get('/', function (req, res, next) {
   debug('GET /');
@@ -81,4 +82,4 @@ router.post('/', (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

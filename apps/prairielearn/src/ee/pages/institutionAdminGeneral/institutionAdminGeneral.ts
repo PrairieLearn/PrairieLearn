@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import {
@@ -16,6 +16,7 @@ import {
 import { InstitutionSchema } from '../../../lib/db-types';
 import { insertAuditLog } from '../../../models/audit-log';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
+import { getAvailableTimezones } from '../../../lib/timezones';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -24,6 +25,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
+    const availableTimezones = await getAvailableTimezones();
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },
@@ -33,6 +35,7 @@ router.get(
     res.send(
       InstitutionAdminGeneral({
         institution,
+        availableTimezones,
         statistics,
         planGrants,
         resLocals: res.locals,
@@ -48,9 +51,13 @@ router.post(
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
         const updatedInstitution = await queryRow(
-          sql.update_enrollment_limits,
+          sql.update_institution,
           {
             institution_id: req.params.institution_id,
+            short_name: req.body.short_name,
+            long_name: req.body.long_name,
+            display_timezone: req.body.display_timezone,
+            uid_regexp: req.body.uid_regexp,
             yearly_enrollment_limit: req.body.yearly_enrollment_limit,
             course_instance_enrollment_limit: req.body.course_instance_enrollment_limit,
           },

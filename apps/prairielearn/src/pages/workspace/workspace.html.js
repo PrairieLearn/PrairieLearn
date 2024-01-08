@@ -3,7 +3,14 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 
 const { compiledScriptTag } = require('../../lib/assets');
 
-function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
+function Workspace({
+  navTitle,
+  showLogs,
+  heartbeatIntervalSec,
+  visibilityTimeoutSec,
+  socketToken,
+  resLocals,
+}) {
   return html`
     <!doctype html>
     <html lang="en" class="h-100">
@@ -15,6 +22,7 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
       <body
         class="d-flex flex-column h-100"
+        data-socket-token="${socketToken}"
         data-workspace-id="${resLocals.workspace_id}"
         data-heartbeat-interval-sec="${heartbeatIntervalSec}"
         data-visibility-timeout-sec="${visibilityTimeoutSec}"

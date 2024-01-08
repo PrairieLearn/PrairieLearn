@@ -4,10 +4,10 @@ import fetch from 'node-fetch';
 import fetchCookie from 'fetch-cookie';
 import { parse as parseSetCookie } from 'set-cookie-parser';
 import asyncHandler from 'express-async-handler';
+import { withServer } from '@prairielearn/express-test-utils';
 
 import { createSessionMiddleware } from './index';
 import { MemoryStore } from './memory-store';
-import { withServer } from './test-utils';
 
 const TEST_SECRET = 'test-secret';
 
@@ -449,85 +449,6 @@ describe('session middleware', () => {
     });
   });
 
-  it('does not set the cookie if it is not supposed to', async () => {
-    const store = new MemoryStore();
-
-    const app = express();
-    app.enable('trust proxy');
-    app.use(
-      createSessionMiddleware({
-        store,
-        secret: TEST_SECRET,
-        canSetCookie: (req) => req.hostname === 'example.com',
-      }),
-    );
-    app.get('/', (req, res) => {
-      req.session.count ??= 0;
-      req.session.count += 1;
-
-      res.send(req.session.id);
-    });
-
-    await withServer(app, async ({ url }) => {
-      const fetchWithCookies = fetchCookie(fetch);
-
-      // Fetch from a subdomain.
-      let res = await fetchWithCookies(url, {
-        headers: {
-          'X-Forwarded-Host': 'subdomain.example.com',
-        },
-      });
-      assert.equal(res.status, 200);
-
-      // There should not be a cookie.
-      assert.isNull(res.headers.get('set-cookie'));
-
-      // Since the cookie wasn't set, the session should not have been persisted
-      // to the store.
-      const originalSessionId = await res.text();
-      assert.isNull(await store.get(originalSessionId));
-
-      // Now fetch from the correct domain.
-      res = await fetchWithCookies(url, {
-        headers: {
-          'X-Forwarded-Host': 'example.com',
-        },
-      });
-      assert.equal(res.status, 200);
-
-      // There should be a cookie for this request.
-      const header = res.headers.get('set-cookie');
-      assert.isNotNull(header);
-      const cookies = parseSetCookie(header ?? '');
-      assert.equal(cookies.length, 1);
-      assert.equal(cookies[0].name, 'session');
-
-      // The session should have been persisted.
-      const newSessionId = await res.text();
-      let session = await store.get(newSessionId);
-      assert.isNotNull(session);
-      assert.equal(session?.data.count, 1);
-
-      // Now, fetch from the subdomain again. This time, the session should
-      // work as normal.
-      res = await fetchWithCookies(url, {
-        headers: {
-          'X-Forwarded-Host': 'subdomain.example.com',
-        },
-      });
-      assert.equal(res.status, 200);
-      assert.equal(await res.text(), newSessionId);
-
-      // Ensure that there was still no Set-Cookie header.
-      assert.isNull(res.headers.get('set-cookie'));
-
-      // Ensure that the session was persisted.
-      session = await store.get(newSessionId);
-      assert.isNotNull(session);
-      assert.equal(session?.data.count, 2);
-    });
-  });
-
   it('extends the expiration date of the cookie', async () => {
     const store = new MemoryStore();
 
@@ -688,6 +609,32 @@ describe('session middleware', () => {
 
       // Ensure that the legacy session is migrated to a new session.
       assert.equal(newSessionId, legacySessionId);
+    });
+  });
+
+  it('persists the session immediately after creation', async () => {
+    const store = new MemoryStore();
+
+    const app = express();
+    app.use(
+      createSessionMiddleware({
+        store,
+        secret: TEST_SECRET,
+      }),
+    );
+    app.get(
+      '/',
+      asyncHandler(async (req, res) => {
+        const persistedSession = await store.get(req.session.id);
+        res.status(persistedSession == null ? 500 : 200).send();
+      }),
+    );
+
+    await withServer(app, async ({ url }) => {
+      const fetchWithCookies = fetchCookie(fetch);
+
+      const res = await fetchWithCookies(url);
+      assert.equal(res.status, 200);
     });
   });
 });

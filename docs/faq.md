@@ -8,7 +8,7 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
 
 2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](accessControl.md) with their UID.
 
@@ -16,7 +16,7 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
 
 ```json
 "allowAccess": [
@@ -388,3 +388,16 @@ For example:
 ```
 
 For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+
+## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
+
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+
+To fix student scores without requiring them to answer another question you can:
+
+1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
+2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
+3. Rename the "Score (%)" column to "score_perc" and delete all columns except "uid", "instance", and "score_perc".
+4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
+
+Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.

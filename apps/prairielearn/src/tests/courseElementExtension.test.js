@@ -1,17 +1,19 @@
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const fs = require('fs-extra');
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as fs from 'fs-extra';
+import { config } from '../lib/config';
+import * as sqldb from '@prairielearn/postgres';
 const _ = require('lodash');
-const path = require('path');
-const freeform = require('../question-servers/freeform.js');
-const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
-const { promisify } = require('util');
+import * as path from 'path';
+import * as freeform from '../question-servers/freeform.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
+import { promisify } from 'util';
 
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Course element extensions', function () {
   this.timeout(60000);
@@ -91,6 +93,8 @@ describe('Course element extensions', function () {
 
     const incJs = 'extendable-element/extension-cssjs/extension-cssjs.js';
     const incCss = 'extendable-element/extension-cssjs/extension-cssjs.css';
+    const incDynamicJs = 'd3/dist/d3.min.js';
+    const incDynamicJsKey = 'd3';
     const incImg =
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
@@ -108,9 +112,29 @@ describe('Course element extensions', function () {
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
-      const html = response.$.html();
-      assert.isTrue(html.includes(incJs), 'page did not load extension javascript');
-      assert.isTrue(html.includes(incCss), 'page did not load extension css');
+      const page$ = response.$;
+      assert.lengthOf(
+        page$(`script[src$="${incJs}"]`),
+        1,
+        'page did not load extension javascript',
+      );
+      assert.lengthOf(
+        page$(`link[rel="stylesheet"][href$="${incCss}"]`),
+        1,
+        'page did not load extension css',
+      );
+
+      const importMap = page$('script[type="importmap"]').html();
+      const importMapData = JSON.parse(importMap ?? '');
+      assert.property(
+        importMapData.imports,
+        incDynamicJsKey,
+        'importmap did not include dynamic extension js',
+      );
+      assert.equal(
+        importMapData.imports[incDynamicJsKey].slice(-incDynamicJs.length),
+        incDynamicJs,
+      );
     });
     step('check the question page for a client-side image', async () => {
       let questionUrl =

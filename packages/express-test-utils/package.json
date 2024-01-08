@@ -1,0 +1,17 @@
+{
+  "name": "@prairielearn/express-test-utils",
+  "version": "1.0.1",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/express-test-utils"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.21"
+  }
+}

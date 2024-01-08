@@ -1,15 +1,16 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-const { assert } = require('chai');
-const fetch = require('node-fetch').default;
-var cheerio = require('cheerio');
+// @ts-check
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+import { assert } from 'chai';
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config';
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const locals = {};
 

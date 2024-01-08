@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import type Stripe from 'stripe';
 import { z } from 'zod';
-import error = require('@prairielearn/error');
+import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import {

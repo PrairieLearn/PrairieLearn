@@ -1,17 +1,17 @@
 // @ts-check
-const { Upload } = require('@aws-sdk/lib-storage');
-const { S3 } = require('@aws-sdk/client-s3');
-const fs = require('fs-extra');
-const util = require('util');
-const async = require('async');
-const path = require('path');
-const { fromNodeProviderChain } = require('@aws-sdk/credential-providers');
+import { Upload } from '@aws-sdk/lib-storage';
+import { S3 } from '@aws-sdk/client-s3';
+import * as fs from 'fs-extra';
+import * as util from 'util';
+import * as async from 'async';
+import * as path from 'path';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { pipeline } = require('node:stream/promises');
-const { makeAwsConfigProvider } = require('@prairielearn/aws');
+import { pipeline } from 'node:stream/promises';
+import { makeAwsConfigProvider } from '@prairielearn/aws';
 
-const { logger } = require('@prairielearn/logger');
-const { config } = require('./config');
+import { logger } from '@prairielearn/logger';
+import { config } from './config';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
@@ -37,27 +37,28 @@ const awsConfigProvider = makeAwsConfigProvider({
   },
 });
 
-module.exports.makeS3ClientConfig = awsConfigProvider.makeS3ClientConfig;
+export const makeS3ClientConfig = awsConfigProvider.makeS3ClientConfig;
 
-module.exports.makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
+export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
 
 /**
  * Upload a local file or directory to S3.
  *
  * @param {string} s3Bucket - The S3 bucket name.
  * @param {string} s3Path - The S3 destination path.
- * @param {string} localPath - The local source path.
+ * @param {string | null} localPath - The local source path.
  * @param {boolean=} isDirectory - Whether the upload source is a directory (defaults to false).
  * @param {Buffer | null} buffer - A file buffer if local source path falsy.
+ * @returns {Promise<import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput>}
  */
-module.exports.uploadToS3Async = async function (
+export async function uploadToS3Async(
   s3Bucket,
   s3Path,
   localPath,
   isDirectory = false,
   buffer = null,
 ) {
-  const s3 = new S3(module.exports.makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig());
 
   let body;
   if (isDirectory) {
@@ -87,8 +88,8 @@ module.exports.uploadToS3Async = async function (
     logger.verbose(`Uploaded buffer to s3://${s3Bucket}/${s3Path}`);
   }
   return res;
-};
-module.exports.uploadToS3 = util.callbackify(module.exports.uploadToS3Async);
+}
+export const uploadToS3 = util.callbackify(uploadToS3Async);
 
 /**
  * Recursively upload a directory to a path in S3, including empty
@@ -100,13 +101,13 @@ module.exports.uploadToS3 = util.callbackify(module.exports.uploadToS3Async);
  * @param {string} localPath Local path to upload.
  * @param {string[]} ignoreList List of files to ignore. These should be paths relative to localPath.
  */
-module.exports.uploadDirectoryToS3Async = async function (
+export const uploadDirectoryToS3Async = async function (
   s3Bucket,
   s3Path,
   localPath,
   ignoreList = [],
 ) {
-  const s3 = new S3(module.exports.makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig());
   const ignoreSet = new Set(ignoreList);
 
   async function walkDirectory(subDir) {
@@ -158,7 +159,7 @@ module.exports.uploadDirectoryToS3Async = async function (
 
   await walkDirectory('');
 };
-module.exports.uploadDirectoryToS3 = util.callbackify(module.exports.uploadDirectoryToS3Async);
+export const uploadDirectoryToS3 = util.callbackify(uploadDirectoryToS3Async);
 
 /**
  * Download a file or directory from S3.
@@ -168,7 +169,7 @@ module.exports.uploadDirectoryToS3 = util.callbackify(module.exports.uploadDirec
  * @param {string} localPath - The local target path.
  * @param {object?} options - Optional parameters, including owner and group (optional, defaults to {}).
  */
-module.exports.downloadFromS3Async = async function (s3Bucket, s3Path, localPath, options = {}) {
+export async function downloadFromS3Async(s3Bucket, s3Path, localPath, options = {}) {
   if (localPath.endsWith('/')) {
     debug(`downloadFromS3: bypassing S3 and creating directory localPath=${localPath}`);
     await fs.promises.mkdir(localPath, { recursive: true });
@@ -184,7 +185,7 @@ module.exports.downloadFromS3Async = async function (s3Bucket, s3Path, localPath
     await fs.promises.chown(path.dirname(localPath), options.owner, options.group);
   }
 
-  const s3 = new S3(module.exports.makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig());
   const res = await s3.getObject({
     Bucket: s3Bucket,
     Key: s3Path,
@@ -197,8 +198,8 @@ module.exports.downloadFromS3Async = async function (s3Bucket, s3Path, localPath
   if (options.owner != null && options.group != null) {
     await fs.chown(localPath, options.owner, options.group);
   }
-};
-module.exports.downloadFromS3 = util.callbackify(module.exports.downloadFromS3Async);
+}
+export const downloadFromS3 = util.callbackify(downloadFromS3Async);
 
 /**
  * Delete a file or directory from S3.
@@ -207,8 +208,8 @@ module.exports.downloadFromS3 = util.callbackify(module.exports.downloadFromS3As
  * @param {string} s3Path - The S3 target path.
  * @param {boolean=} isDirectory - Whether the deletion target is a directory (defaults to false).
  */
-module.exports.deleteFromS3Async = async function (s3Bucket, s3Path, isDirectory = false) {
-  const s3 = new S3(module.exports.makeS3ClientConfig());
+export async function deleteFromS3Async(s3Bucket, s3Path, isDirectory = false) {
+  const s3 = new S3(makeS3ClientConfig());
 
   if (isDirectory) {
     s3Path += s3Path.endsWith('/') ? '' : '/';
@@ -218,8 +219,8 @@ module.exports.deleteFromS3Async = async function (s3Bucket, s3Path, isDirectory
     Key: s3Path,
   });
   debug(`Deleted s3://${s3Bucket}/${s3Path}`);
-};
-module.exports.deleteFromS3 = util.callbackify(module.exports.deleteFromS3Async);
+}
+export const deleteFromS3 = util.callbackify(deleteFromS3Async);
 
 /**
  * Get a file from S3.
@@ -229,8 +230,8 @@ module.exports.deleteFromS3 = util.callbackify(module.exports.deleteFromS3Async)
  * @param {boolean} buffer - Defaults to true to return buffer.
  * @return {Promise<Buffer | import('@aws-sdk/client-s3').GetObjectOutput['Body']>} Buffer or ReadableStream type from S3 file contents.
  */
-module.exports.getFromS3Async = async function (bucket, key, buffer = true) {
-  const s3 = new S3(module.exports.makeS3ClientConfig());
+export async function getFromS3Async(bucket, key, buffer = true) {
+  const s3 = new S3(makeS3ClientConfig());
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');
   logger.verbose(`Fetched data from s3://${bucket}/${key}`);
@@ -240,4 +241,4 @@ module.exports.getFromS3Async = async function (bucket, key, buffer = true) {
   } else {
     return res.Body;
   }
-};
+}

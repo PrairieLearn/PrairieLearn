@@ -1,6 +1,7 @@
-const { assert } = require('chai');
-const util = require('./util');
-const helperDb = require('../helperDb');
+// @ts-check
+import { assert } from 'chai';
+import * as util from './util';
+import * as helperDb from '../helperDb';
 
 describe('Initial Sync', () => {
   before('set up testing database', helperDb.before);
@@ -24,12 +25,12 @@ describe('Initial Sync', () => {
       const question = courseData.questions[qid];
       const syncedQuestion = questions.find((q) => q.qid === qid);
       assert.isOk(syncedQuestion);
-      assert.equal(syncedQuestion.uuid, question.uuid);
-      assert.equal(syncedQuestion.qid, qid);
-      assert.equal(syncedQuestion.directory, qid);
+      assert.equal(syncedQuestion?.uuid, question.uuid);
+      assert.equal(syncedQuestion?.qid, qid);
+      assert.equal(syncedQuestion?.directory, qid);
       const expectedType = question.type === 'v3' ? 'Freeform' : question.type;
-      assert.equal(syncedQuestion.type, expectedType);
-      assert.equal(syncedQuestion.title, question.title);
+      assert.equal(syncedQuestion?.type, expectedType);
+      assert.equal(syncedQuestion?.title, question.title);
     }
 
     const topics = await util.dumpTable('topics');
@@ -39,9 +40,9 @@ describe('Initial Sync', () => {
     for (const topic of courseData.course.topics) {
       const syncedTopic = topics.find((t) => t.name === topic.name);
       assert.isOk(syncedTopic);
-      assert.equal(syncedTopic.name, topic.name);
-      assert.equal(syncedTopic.color, topic.color);
-      assert.equal(syncedTopic.description, topic.description);
+      assert.equal(syncedTopic?.name, topic.name);
+      assert.equal(syncedTopic?.color, topic.color);
+      assert.equal(syncedTopic?.description, topic.description);
     }
 
     const tags = await util.dumpTable('tags');
@@ -50,9 +51,9 @@ describe('Initial Sync', () => {
     for (const tag of courseData.course.tags) {
       const syncedTag = tags.find((t) => t.name === tag.name);
       assert.isOk(syncedTag);
-      assert.equal(syncedTag.name, tag.name);
-      assert.equal(syncedTag.color, tag.color);
-      assert.equal(syncedTag.description, tag.description);
+      assert.equal(syncedTag?.name, tag.name);
+      assert.equal(syncedTag?.color, tag.color);
+      assert.equal(syncedTag?.description, tag.description);
     }
   });
 

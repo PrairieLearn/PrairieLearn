@@ -23,7 +23,8 @@ WITH
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id
+      id,
+      group_config_id
   ),
   create_log AS (
     INSERT INTO
@@ -53,22 +54,25 @@ WITH
   ),
   join_group AS (
     INSERT INTO
-      group_users (user_id, group_id)
+      group_users AS gu (user_id, group_id, group_config_id)
     SELECT
       $user_id,
-      cg.id
+      cg.id,
+      cg.group_config_id
     FROM
       create_group AS cg
+    RETURNING
+      gu.*
   ),
   assign_role AS (
     INSERT INTO
-      group_user_roles (user_id, group_role_id, group_id)
+      group_user_roles (user_id, group_id, group_role_id)
     SELECT
-      $user_id,
-      gr.role_id,
-      cg.id
+      jg.user_id,
+      jg.group_id,
+      gr.role_id
     FROM
-      create_group AS cg,
+      join_group AS jg,
       get_role as gr
   )
 INSERT INTO
@@ -104,11 +108,22 @@ WITH
       JOIN groups AS g ON g.group_config_id = gc.id
     WHERE
       g.id = $group_id
+  ),
+  count_group_user_per_role AS (
+    SELECT
+      gur.group_role_id,
+      COUNT(gur.id) AS count
+    FROM
+      group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+    GROUP BY
+      gur.group_role_id
   )
 SELECT
   gr.id,
   gr.role_name,
-  COUNT(gur.user_id) AS count,
+  COALESCE(gur.count, 0) AS count,
   gr.maximum,
   gr.minimum,
   gr.can_assign_roles_at_start,
@@ -118,21 +133,7 @@ FROM
   JOIN group_roles AS gr ON (
     gr.assessment_id = get_assessment_id.assessment_id
   )
-  LEFT JOIN (
-    SELECT
-      *
-    FROM
-      group_user_roles
-    WHERE
-      group_id = $group_id
-  ) AS gur ON gur.group_role_id = gr.id
-GROUP BY
-  gr.id,
-  gr.role_name,
-  maximum,
-  minimum,
-  can_assign_roles_at_start,
-  can_assign_roles_during_assessment
+  LEFT JOIN count_group_user_per_role AS gur ON gur.group_role_id = gr.id
 ORDER BY
   minimum DESC;
 
@@ -141,11 +142,13 @@ SELECT
   bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start,
   bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
-  group_roles as gr
-  JOIN group_user_roles as gu ON gr.id = gu.group_role_id
+  group_configs as gc
+  JOIN groups as g ON (gc.id = g.group_config_id)
+  JOIN group_user_roles as gur ON (gur.group_id = g.id)
+  JOIN group_roles AS gr ON (gr.id = gur.group_role_id)
 WHERE
-  gr.assessment_id = $assessment_id
-  AND gu.user_id = $user_id;
+  gc.assessment_id = $assessment_id
+  AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
 SELECT
@@ -169,32 +172,21 @@ FROM
   JOIN group_users AS gu ON gu.group_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
-  AND gu.user_id = $user_id;
+  AND gu.user_id = $user_id
+  AND g.deleted_at IS NULL;
 
 -- BLOCK delete_non_required_roles
-DELETE FROM group_user_roles gur
+DELETE FROM group_user_roles gur USING group_roles AS gr
 WHERE
-  group_id = $group_id
-  AND group_role_id IN (
-    SELECT
-      id
-    FROM
-      group_roles
-    WHERE
-      assessment_id = $assessment_id
-      AND minimum = 0
-  );
+  gur.group_id = $group_id
+  AND gur.group_role_id = gr.id
+  AND gr.assessment_id = $assessment_id
+  AND gr.minimum = 0;
 
 -- BLOCK delete_group_users
 WITH
   deleted_group_users AS (
     DELETE FROM group_users
-    WHERE
-      user_id = $user_id
-      AND group_id = $group_id
-  ),
-  deleted_group_user_roles AS (
-    DELETE FROM group_user_roles
     WHERE
       user_id = $user_id
       AND group_id = $group_id
@@ -204,53 +196,42 @@ INSERT INTO
 VALUES
   ($authn_user_id, $user_id, $group_id, 'leave');
 
--- BLOCK reassign_group_roles_after_leave
+-- BLOCK update_group_roles
 WITH
-  deleted_group_users_roles AS (
-    DELETE FROM group_user_roles
-    WHERE
-      group_id = $group_id
-  ),
   json_roles AS (
     SELECT
-      (role_assignment ->> 'user_id')::bigint AS user_id,
+      gu.user_id,
+      gu.group_id,
       (role_assignment ->> 'group_role_id')::bigint AS group_role_id
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
-  )
-INSERT INTO
-  group_user_roles (group_id, user_id, group_role_id)
-SELECT
-  $group_id AS group_id,
-  user_id,
-  group_role_id
-FROM
-  json_roles
-ON CONFLICT (group_id, user_id, group_role_id) DO
-UPDATE
-SET
-  group_role_id = EXCLUDED.group_role_id;
-
--- BLOCK update_group_roles
-WITH
-  deleted_group_users_roles AS (
-    DELETE FROM group_user_roles
-    WHERE
-      group_id = $group_id
+      JOIN group_users AS gu ON gu.group_id = $group_id
+      AND gu.user_id = (role_assignment ->> 'user_id')::bigint
   ),
   assign_new_group_roles AS (
     INSERT INTO
       group_user_roles (group_id, user_id, group_role_id)
     SELECT
-      (role_assignment ->> 'group_id')::bigint,
-      (role_assignment ->> 'user_id')::bigint,
-      (role_assignment ->> 'group_role_id')::bigint
+      jr.group_id,
+      jr.user_id,
+      jr.group_role_id
     FROM
-      JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
-    ON CONFLICT (group_id, user_id, group_role_id) DO
-    UPDATE
-    SET
-      group_role_id = EXCLUDED.group_role_id
+      json_roles jr
+    ON CONFLICT DO NOTHING
+  ),
+  deleted_group_users_roles AS (
+    DELETE FROM group_user_roles AS gur
+    WHERE
+      gur.group_id = $group_id
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          json_roles jr
+        WHERE
+          gur.user_id = jr.user_id
+          AND gur.group_role_id = jr.group_role_id
+      )
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)

@@ -28,6 +28,7 @@ FROM
   ) AS lgu ON (TRUE)
   JOIN users AS u ON (u.user_id = lgu.user_id)
   JOIN assessment_instances_insert (a.id, u.user_id, a.group_work, u.user_id, $mode) AS aii ON TRUE
+  LEFT JOIN assessment_instances_update (aii.assessment_instance_id, u.user_id) AS aiu ON (a.type = 'Homework')
 WHERE
   a.id = $assessment_id
   AND g.deleted_at IS NULL

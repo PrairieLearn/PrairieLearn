@@ -1,12 +1,12 @@
 // @ts-check
-const assert = require('chai').assert;
-const sqldb = require('@prairielearn/postgres');
-const { step } = require('mocha-steps');
+import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
+import { step } from 'mocha-steps';
 
-const helperServer = require('./helperServer');
-const { deleteAllGroups } = require('../lib/groups');
-const { autoGroups } = require('../lib/group-update');
-const { TEST_COURSE_PATH } = require('../lib/paths');
+import * as helperServer from './helperServer';
+import { deleteAllGroups } from '../lib/groups';
+import * as groupUpdate from '../lib/group-update';
+import { TEST_COURSE_PATH } from '../lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const locals = {};
@@ -33,7 +33,7 @@ describe('test auto group and delete groups', function () {
     const authn_user_id = '1';
     const max_group_size = 10;
     const min_group_size = 10;
-    const job_sequence_id = await autoGroups(
+    const job_sequence_id = await groupUpdate.autoGroups(
       locals.assessment_id,
       user_id,
       authn_user_id,

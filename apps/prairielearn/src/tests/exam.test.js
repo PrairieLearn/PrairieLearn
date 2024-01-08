@@ -1,16 +1,16 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const assert = require('chai').assert;
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import { assert } from 'chai';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
+
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
+import * as helperAttachFiles from './helperAttachFiles';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
-const helperAttachFiles = require('./helperAttachFiles');
 
 const locals = {};
 
@@ -54,20 +54,46 @@ const partialCreditTests = [
   [
     // answer questions correctly on the second try
     { qid: 'partialCredit1', action: 'store', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 19 },
     {
       qid: 'partialCredit1',
-      action: 'grade-stored-fail',
-      score: 0,
-      sub_points: 0,
+      action: 'grade',
+      score: 100,
+      sub_points: 19,
+      stats: {
+        first_submission_score: 1,
+        last_submission_score: 1,
+        submission_score_array: [1],
+        incremental_submission_score_array: [1],
+        incremental_submission_points_array: [19],
+      },
     },
+    { qid: 'partialCredit1', action: 'grade-stored-fail', score: 0, sub_points: 0 },
     { qid: 'partialCredit2', action: 'store', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 37, sub_points: 9 * 0.37 },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 37,
+      sub_points: 9 * 0.37,
+      stats: {
+        first_submission_score: 0.37,
+        last_submission_score: 0.37,
+        submission_score_array: [0.37],
+        incremental_submission_score_array: [0.37],
+        incremental_submission_points_array: [9 * 0.37],
+      },
+    },
     {
       qid: 'partialCredit2',
       action: 'grade',
       score: 100,
       sub_points: 7 * (1 - 0.37),
+      stats: {
+        first_submission_score: 0.37,
+        last_submission_score: 1,
+        submission_score_array: [0.37, 1],
+        incremental_submission_score_array: [0.37, 1 - 0.37],
+        incremental_submission_points_array: [9 * 0.37, 7 * (1 - 0.37)],
+      },
     },
     {
       qid: 'partialCredit2',
@@ -100,13 +126,32 @@ const partialCreditTests = [
   ],
   [
     // use all the attempts for each question
-    { qid: 'partialCredit1', action: 'save', score: 100, sub_points: 0 },
+    {
+      qid: 'partialCredit1',
+      action: 'save',
+      score: 100,
+      sub_points: 0,
+      stats: {
+        first_submission_score: null,
+        last_submission_score: null,
+        submission_score_array: [null],
+        incremental_submission_score_array: [null],
+        incremental_submission_points_array: [null],
+      },
+    },
     { qid: 'partialCredit1', action: 'store', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit1',
       action: 'grade',
       score: 24,
       sub_points: 19 * 0.24,
+      stats: {
+        first_submission_score: 0.24,
+        last_submission_score: 0.24,
+        submission_score_array: [null, 0.24],
+        incremental_submission_score_array: [null, 0.24],
+        incremental_submission_points_array: [null, 19 * 0.24],
+      },
     },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
     {
@@ -115,17 +160,84 @@ const partialCreditTests = [
       score: 0,
       sub_points: 0,
     },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'save', score: 97, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 14, sub_points: 7 * 0.14 },
-    { qid: 'partialCredit2', action: 'grade', score: 8, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'save', score: 0, sub_points: 0 },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 0,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0,
+        submission_score_array: [0],
+        incremental_submission_score_array: [0],
+        incremental_submission_points_array: [0],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'save',
+      score: 97,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0,
+        submission_score_array: [0, null],
+        incremental_submission_score_array: [0, null],
+        incremental_submission_points_array: [0, null],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 14,
+      sub_points: 7 * 0.14,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.14,
+        submission_score_array: [0, null, 0.14],
+        incremental_submission_score_array: [0, null, 0.14],
+        incremental_submission_points_array: [0, null, 7 * 0.14],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 8,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.08,
+        submission_score_array: [0, null, 0.14, 0.08],
+        incremental_submission_score_array: [0, null, 0.14, 0],
+        incremental_submission_points_array: [0, null, 7 * 0.14, 0],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'save',
+      score: 0,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.08,
+        submission_score_array: [0, null, 0.14, 0.08, null],
+        incremental_submission_score_array: [0, null, 0.14, 0, null],
+        incremental_submission_points_array: [0, null, 7 * 0.14, 0, null],
+      },
+    },
     { qid: 'partialCredit2', action: 'store', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit2',
       action: 'grade',
       score: 27,
       sub_points: 3 * (0.27 - 0.14),
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.27,
+        submission_score_array: [0, null, 0.14, 0.08, null, 0.27],
+        incremental_submission_score_array: [0, null, 0.14, 0, null, 0.27 - 0.14],
+        incremental_submission_points_array: [0, null, 7 * 0.14, 0, null, 3 * (0.27 - 0.14)],
+      },
     },
     { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
     {
@@ -134,28 +246,105 @@ const partialCreditTests = [
       score: 0,
       sub_points: 0,
     },
-    { qid: 'partialCredit3', action: 'save', score: 100, sub_points: 0 },
+    {
+      qid: 'partialCredit3',
+      action: 'save',
+      score: 100,
+      sub_points: 0,
+      stats: {
+        first_submission_score: null,
+        last_submission_score: null,
+        submission_score_array: [null],
+        incremental_submission_score_array: [null],
+        incremental_submission_points_array: [null],
+      },
+    },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 63,
       sub_points: 13 * 0.63,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [null, 0.63],
+        incremental_submission_score_array: [null, 0.63],
+        incremental_submission_points_array: [null, 13 * 0.63],
+      },
     },
-    { qid: 'partialCredit3', action: 'grade', score: 63, sub_points: 0 },
+    {
+      qid: 'partialCredit3',
+      action: 'grade',
+      score: 63,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [null, 0.63, 0.63],
+        incremental_submission_score_array: [null, 0.63, 0],
+        incremental_submission_points_array: [null, 13 * 0.63, 0],
+      },
+    },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 64,
       sub_points: 8 * (0.64 - 0.63),
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.64,
+        submission_score_array: [null, 0.63, 0.63, 0.64],
+        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63],
+        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63)],
+      },
     },
-    { qid: 'partialCredit3', action: 'save', score: 72, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 7, sub_points: 0 },
+    {
+      qid: 'partialCredit3',
+      action: 'save',
+      score: 72,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.64,
+        submission_score_array: [null, 0.63, 0.63, 0.64, null],
+        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null],
+        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63), null],
+      },
+    },
+    {
+      qid: 'partialCredit3',
+      action: 'grade',
+      score: 7,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.07,
+        submission_score_array: [null, 0.63, 0.63, 0.64, null, 0.07],
+        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null, 0],
+        incremental_submission_points_array: [null, 13 * 0.63, 0, 8 * (0.64 - 0.63), null, 0],
+      },
+    },
     { qid: 'partialCredit3', action: 'store', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 97,
       sub_points: 0.1 * (0.97 - 0.64),
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.97,
+        submission_score_array: [null, 0.63, 0.63, 0.64, null, 0.07, 0.97],
+        incremental_submission_score_array: [null, 0.63, 0, 0.64 - 0.63, null, 0, 0.97 - 0.64],
+        incremental_submission_points_array: [
+          null,
+          13 * 0.63,
+          0,
+          8 * (0.64 - 0.63),
+          null,
+          0,
+          0.1 * (0.97 - 0.64),
+        ],
+      },
     },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
     {
@@ -167,55 +356,218 @@ const partialCreditTests = [
   ],
   [
     // same as above, but in an interspersed order
-    { qid: 'partialCredit2', action: 'save', score: 97, sub_points: 0 },
+    {
+      qid: 'partialCredit2',
+      action: 'save',
+      score: 97,
+      sub_points: 0,
+      stats: {
+        first_submission_score: null,
+        last_submission_score: null,
+        submission_score_array: [null],
+        incremental_submission_score_array: [null],
+        incremental_submission_points_array: [null],
+      },
+    },
     { qid: 'partialCredit2', action: 'store', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 63,
       sub_points: 13 * 0.63,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [0.63],
+        incremental_submission_score_array: [0.63],
+        incremental_submission_points_array: [13 * 0.63],
+      },
     },
     { qid: 'partialCredit1', action: 'store', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'save', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'save', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 63, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 14, sub_points: 7 * 0.14 },
-    { qid: 'partialCredit2', action: 'save', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'save', score: 72, sub_points: 0 },
+    {
+      qid: 'partialCredit3',
+      action: 'save',
+      score: 100,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [0.63, null],
+        incremental_submission_score_array: [0.63, null],
+        incremental_submission_points_array: [13 * 0.63, null],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 0,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0,
+        submission_score_array: [null, 0],
+        incremental_submission_score_array: [null, 0],
+        incremental_submission_points_array: [null, 0],
+      },
+    },
+    {
+      qid: 'partialCredit1',
+      action: 'save',
+      score: 100,
+      sub_points: 0,
+      stats: {
+        first_submission_score: null,
+        last_submission_score: null,
+        submission_score_array: [null],
+        incremental_submission_score_array: [null],
+        incremental_submission_points_array: [null],
+      },
+    },
+    {
+      qid: 'partialCredit3',
+      action: 'grade',
+      score: 63,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [0.63, null, 0.63],
+        incremental_submission_score_array: [0.63, null, 0],
+        incremental_submission_points_array: [13 * 0.63, null, 0],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 14,
+      sub_points: 7 * 0.14,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.14,
+        submission_score_array: [null, 0, 0.14],
+        incremental_submission_score_array: [null, 0, 0.14],
+        incremental_submission_points_array: [null, 0, 7 * 0.14],
+      },
+    },
+    {
+      qid: 'partialCredit2',
+      action: 'save',
+      score: 0,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.14,
+        submission_score_array: [null, 0, 0.14, null],
+        incremental_submission_score_array: [null, 0, 0.14, null],
+        incremental_submission_points_array: [null, 0, 7 * 0.14, null],
+      },
+    },
+    {
+      qid: 'partialCredit3',
+      action: 'save',
+      score: 72,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.63,
+        submission_score_array: [0.63, null, 0.63, null],
+        incremental_submission_score_array: [0.63, null, 0, null],
+        incremental_submission_points_array: [13 * 0.63, null, 0, null],
+      },
+    },
     {
       qid: 'partialCredit1',
       action: 'grade',
       score: 24,
       sub_points: 19 * 0.24,
+      stats: {
+        first_submission_score: 0.24,
+        last_submission_score: 0.24,
+        submission_score_array: [null, 0.24],
+        incremental_submission_score_array: [null, 0.24],
+        incremental_submission_points_array: [null, 19 * 0.24],
+      },
     },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 64,
       sub_points: 8 * (0.64 - 0.63),
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.64,
+        submission_score_array: [0.63, null, 0.63, null, 0.64],
+        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63],
+        incremental_submission_points_array: [13 * 0.63, null, 0, null, 8 * (0.64 - 0.63)],
+      },
     },
     { qid: 'partialCredit3', action: 'store', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 7, sub_points: 0 },
+    {
+      qid: 'partialCredit3',
+      action: 'grade',
+      score: 7,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.07,
+        submission_score_array: [0.63, null, 0.63, null, 0.64, 0.07],
+        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63, 0],
+        incremental_submission_points_array: [13 * 0.63, null, 0, null, 8 * (0.64 - 0.63), 0],
+      },
+    },
     {
       qid: 'partialCredit1',
       action: 'save-stored-fail',
       score: 0,
       sub_points: 0,
     },
-    { qid: 'partialCredit2', action: 'grade', score: 8, sub_points: 0 },
+    {
+      qid: 'partialCredit2',
+      action: 'grade',
+      score: 8,
+      sub_points: 0,
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.08,
+        submission_score_array: [null, 0, 0.14, null, 0.08],
+        incremental_submission_score_array: [null, 0, 0.14, null, 0],
+        incremental_submission_points_array: [null, 0, 7 * 0.14, null, 0],
+      },
+    },
     { qid: 'partialCredit1', action: 'check-closed', score: 0, sub_points: 0 },
     {
       qid: 'partialCredit3',
       action: 'grade',
       score: 97,
       sub_points: 0.1 * (0.97 - 0.64),
+      stats: {
+        first_submission_score: 0.63,
+        last_submission_score: 0.97,
+        submission_score_array: [0.63, null, 0.63, null, 0.64, 0.07, 0.97],
+        incremental_submission_score_array: [0.63, null, 0, null, 0.64 - 0.63, 0, 0.97 - 0.64],
+        incremental_submission_points_array: [
+          13 * 0.63,
+          null,
+          0,
+          null,
+          8 * (0.64 - 0.63),
+          0,
+          0.1 * (0.97 - 0.64),
+        ],
+      },
     },
     {
       qid: 'partialCredit2',
       action: 'grade',
       score: 27,
       sub_points: 3 * (0.27 - 0.14),
+      stats: {
+        first_submission_score: 0,
+        last_submission_score: 0.27,
+        submission_score_array: [null, 0, 0.14, null, 0.08, 0.27],
+        incremental_submission_score_array: [null, 0, 0.14, null, 0, 0.27 - 0.14],
+        incremental_submission_points_array: [null, 0, 7 * 0.14, null, 0, 3 * (0.27 - 0.14)],
+      },
     },
     { qid: 'partialCredit3', action: 'check-closed', score: 0, sub_points: 0 },
     {
@@ -925,14 +1277,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1172,14 +1525,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1308,14 +1662,15 @@ describe('Exam assessment', function () {
           qid: helperExam.questions.addNumbers.qid,
         };
         const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        const rowCount = result.rowCount ?? 0;
         // make sure we've got lots of submissions to make the later checks work
-        assert.isAtLeast(result.rowCount, 4);
+        assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
         locals.submission_id_for_feedback = result.rows[2].id;
         // all the the other submissions should not be modified
         locals.submission_id_preserve0 = result.rows[0].id;
         locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1441,16 +1796,12 @@ describe('Exam assessment', function () {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          debug('partial credit test: server shutting down');
           // pass "this" explicitly to enable this.timeout() calls
           await helperServer.after.call(this);
-          debug('partial credit test: server shutdown complete');
         });
         it('should start up', async function () {
-          debug('partial credit test: server starting up');
           // pass "this" explicitly to enable this.timeout() calls
           await helperServer.before().call(this);
-          debug('partial credit test: server startup complete');
         });
       });
 
@@ -1483,6 +1834,7 @@ describe('Exam assessment', function () {
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc:
                   (locals.totalPoints / helperExam.assessmentMaxPoints) * 100,
+                instance_question_stats: questionTest.stats,
               };
               locals.getSubmittedAnswer = function (_variant) {
                 return {
@@ -1523,6 +1875,7 @@ describe('Exam assessment', function () {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);
+            helperQuestion.checkQuestionStats(locals);
             helperQuestion.checkAssessmentScore(locals);
           } else {
             throw Error('unknown action: ' + questionTest.action);
