@@ -10,6 +10,13 @@ const { createServerJob } = require('./server-jobs');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
+ * @param {string} assessment_id
+ */
+function groupUpdateLockName(assessment_id) {
+  return `assessment:${assessment_id}:groups`;
+}
+
+/**
  * Update groups from a CSV file.
  *
  * @param {string} assessment_id - The assessment to update.
@@ -38,64 +45,77 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.verbose('Uploading group settings for ' + assessmentLabel);
-    job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    job.verbose(`----------------------------------------`);
-    job.verbose(`Processing group updates...`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvConverter = csvtojson({
-      colParser: {
-        groupname: 'string',
-        groupName: 'string',
-        uid: 'string',
-        UID: 'string',
-        Uid: 'string',
+    const lockName = groupUpdateLockName(assessment_id);
+    job.verbose(`Trying lock ${lockName}`);
+    await namedLocks.doWithLock(
+      lockName,
+      {
+        timeout: 10000,
+        onNotAcquired: () => {
+          job.fail('Another user is already updating the groups for this assessment.');
+        },
       },
-      maxRowLength: 10000,
-    });
-    const updateList = [];
-    await csvConverter.fromStream(csvStream).subscribe((json) => {
-      let groupName = json.groupName || json.groupname || null;
-      let uid = json.uid || json.UID || json.Uid || null;
-      updateList.push([groupName, uid]);
-    });
-    const result = await sqldb.callAsync('assessment_groups_update', [
-      assessment_id,
-      updateList,
-      authn_user_id,
-    ]);
-    let errorCount = 0;
+      async () => {
+        job.verbose('Uploading group settings for ' + assessmentLabel);
+        job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+        job.verbose(`----------------------------------------`);
+        job.verbose(`Processing group updates...`);
+        const csvStream = streamifier.createReadStream(csvFile.buffer, {
+          encoding: 'utf8',
+        });
+        const csvConverter = csvtojson({
+          colParser: {
+            groupname: 'string',
+            groupName: 'string',
+            uid: 'string',
+            UID: 'string',
+            Uid: 'string',
+          },
+          maxRowLength: 10000,
+        });
+        const updateList = [];
+        await csvConverter.fromStream(csvStream).subscribe((json) => {
+          let groupName = json.groupName || json.groupname || null;
+          let uid = json.uid || json.UID || json.Uid || null;
+          updateList.push([groupName, uid]);
+        });
+        const result = await sqldb.callAsync('assessment_groups_update', [
+          assessment_id,
+          updateList,
+          authn_user_id,
+        ]);
+        let errorCount = 0;
 
-    const notExist = result.rows[0].not_exist_user;
-    if (notExist) {
-      job.verbose(`----------------------------------------`);
-      job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
-      notExist.forEach((user) => {
-        job.verbose(user);
-      });
-      errorCount += notExist.length;
-    }
+        const notExist = result.rows[0].not_exist_user;
+        if (notExist) {
+          job.verbose(`----------------------------------------`);
+          job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
+          notExist.forEach((user) => {
+            job.verbose(user);
+          });
+          errorCount += notExist.length;
+        }
 
-    const inGroup = result.rows[0].already_in_group;
-    if (inGroup) {
-      job.verbose(`----------------------------------------`);
-      job.verbose(`ERROR: The following users are already in a group.`);
-      inGroup.forEach((user) => {
-        job.verbose(user);
-      });
-      errorCount += inGroup.length;
-    }
+        const inGroup = result.rows[0].already_in_group;
+        if (inGroup) {
+          job.verbose(`----------------------------------------`);
+          job.verbose(`ERROR: The following users are already in a group.`);
+          inGroup.forEach((user) => {
+            job.verbose(user);
+          });
+          errorCount += inGroup.length;
+        }
 
-    const successCount = updateList.length - errorCount;
-    job.verbose(`----------------------------------------`);
-    if (errorCount === 0) {
-      job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
-    } else {
-      job.verbose(`Successfully updated groups for ${successCount} students`);
-      job.fail(`Error updating ${errorCount} students`);
-    }
+        const successCount = updateList.length - errorCount;
+        job.verbose(`----------------------------------------`);
+        if (errorCount === 0) {
+          job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
+        } else {
+          job.verbose(`Successfully updated groups for ${successCount} students`);
+          job.fail(`Error updating ${errorCount} students`);
+        }
+      },
+    );
   });
 
   return serverJob.jobSequenceId;
@@ -137,7 +157,7 @@ export async function autoGroups(
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = 'grouping assessment_id ' + assessment_id;
+    const lockName = groupUpdateLockName(assessment_id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
