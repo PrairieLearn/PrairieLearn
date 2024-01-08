@@ -152,19 +152,11 @@ export async function autoGroups(
         job.verbose('Auto generate group settings for ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
-        const resultList = await sqldb.queryAsync(sql.select_enrollments, { assessment_id });
-        const students = resultList.rows.map((row) => row.user_list);
+        const enrollments = await sqldb.queryAsync(sql.select_enrollments, { assessment_id });
+        const students = enrollments.rows.map((row) => row.user_list);
         _.shuffle(students);
-        const numStudents = resultList.rowCount ?? 0;
-        const notAssigned = [];
-        const resultList2 = await sqldb.queryAsync(sql.select_not_assigned, { assessment_id });
-        resultList2.rows.forEach((element) => {
-          notAssigned.push(element.user_list);
-        });
-        _.shuffle(notAssigned);
-        const numNotAssigned = resultList2.rowCount ?? 0;
+        const numStudents = enrollments.rowCount ?? 0;
         job.verbose(`There are ` + numStudents + ' students enrolled in ' + assessmentLabel);
-        job.verbose(numNotAssigned + ' of them have not been in a group');
         job.verbose(`----------------------------------------`);
         job.verbose(
           `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size,
