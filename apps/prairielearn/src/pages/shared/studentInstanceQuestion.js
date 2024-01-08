@@ -1,10 +1,10 @@
 const _ = require('lodash');
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
+import * as sqldb from '@prairielearn/postgres';
+import * as error from '@prairielearn/error';
 
 import { uploadFile, deleteFile } from '../../lib/file-store';
-const { idsEqual } = require('../../lib/id');
-const issues = require('../../lib/issues');
+import { idsEqual } from '../../lib/id';
+import * as issues from '../../lib/issues';
 
 /*
  * Get a validated variant_id from a request, or throw an exception.

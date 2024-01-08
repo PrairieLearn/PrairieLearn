@@ -61,7 +61,7 @@ export function uploadInstanceGroups(assessment_id, csvFile, user_id, authn_user
           serverJobs.failJobSequence(job_sequence_id);
           return;
         }
-        //create a lock to prevent two instructors from changing the same group assessement at the same time
+        //create a lock to prevent two instructors from changing the same group assessment at the same time
         const lockName = 'grouping assessment_id ' + assessment_id;
         job.verbose(`Trying lock ${lockName}`);
         namedLocks.tryLock(lockName, (err, lock) => {
@@ -246,7 +246,7 @@ export function autoGroups(
               students.push(element.user_list);
             });
             _.shuffle(students);
-            var numStudents = resultList.rowCount;
+            var numStudents = resultList.rowCount ?? 0;
             var notAssigned = [];
             const resultList2 = await sqldb.queryAsync(sql.select_not_assigned, aid);
             resultList2.rows.forEach((element) => {

@@ -1,17 +1,19 @@
-const assert = require('chai').assert;
-const { step } = require('mocha-steps');
-const fs = require('fs-extra');
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+// @ts-check
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
+import * as fs from 'fs-extra';
+import { config } from '../lib/config';
+import * as sqldb from '@prairielearn/postgres';
 const _ = require('lodash');
-const path = require('path');
-const freeform = require('../question-servers/freeform.js');
-const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
-const { promisify } = require('util');
+import * as path from 'path';
+import * as freeform from '../question-servers/freeform.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
+import { promisify } from 'util';
 
-const helperServer = require('./helperServer');
-const helperClient = require('./helperClient');
+import * as helperServer from './helperServer';
+import * as helperClient from './helperClient';
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 describe('Course element extensions', function () {
   this.timeout(60000);
@@ -123,7 +125,7 @@ describe('Course element extensions', function () {
       );
 
       const importMap = page$('script[type="importmap"]').html();
-      const importMapData = JSON.parse(importMap);
+      const importMapData = JSON.parse(importMap ?? '');
       assert.property(
         importMapData.imports,
         incDynamicJsKey,

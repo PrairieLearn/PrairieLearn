@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^18.18.8",
-    "typescript": "^5.2.2"
+    "@types/node": "^18.19.4",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@smithy/property-provider": "^2.0.13",
-    "@smithy/types": "^2.4.0"
+    "@smithy/property-provider": "^2.0.17",
+    "@smithy/types": "^2.8.0"
   }
 }

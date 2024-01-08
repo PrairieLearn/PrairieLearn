@@ -1,5 +1,3 @@
-import { selectCoursesWithEditAccess } from '../../models/course';
-
 // @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
@@ -28,6 +26,7 @@ const { flash } = require('@prairielearn/flash');
 const { features } = require('../../lib/features/index');
 const { getCanonicalHost } = require('../../lib/url');
 const { isEnterprise } = require('../../lib/license');
+const { selectCoursesWithEditAccess } = require('../../models/course');
 
 router.post(
   '/test',

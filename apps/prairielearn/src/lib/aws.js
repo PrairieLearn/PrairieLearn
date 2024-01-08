@@ -1,7 +1,7 @@
 // @ts-check
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 import * as util from 'util';
 import * as async from 'async';
 import * as path from 'path';
@@ -49,6 +49,7 @@ export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
  * @param {string | null} localPath - The local source path.
  * @param {boolean=} isDirectory - Whether the upload source is a directory (defaults to false).
  * @param {Buffer | null} buffer - A file buffer if local source path falsy.
+ * @returns {Promise<import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput>}
  */
 export async function uploadToS3Async(
   s3Bucket,
@@ -86,10 +87,7 @@ export async function uploadToS3Async(
   } else {
     logger.verbose(`Uploaded buffer to s3://${s3Bucket}/${s3Path}`);
   }
-  // TODO: remove type case once the following are addressed:
-  // https://github.com/aws/aws-sdk-js-v3/issues/5513
-  // https://github.com/aws/aws-sdk-js-v3/pull/5512
-  return /** @type {import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput} */ (res);
+  return res;
 }
 export const uploadToS3 = util.callbackify(uploadToS3Async);
 

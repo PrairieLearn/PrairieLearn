@@ -36,6 +36,7 @@ SELECT
     WHERE
       qt.question_id = q.id
   ) AS tags,
+  q.shared_publicly,
   (
     SELECT
       jsonb_agg(to_jsonb(ss))

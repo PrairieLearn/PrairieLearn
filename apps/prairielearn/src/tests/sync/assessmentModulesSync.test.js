@@ -1,8 +1,8 @@
 // @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const helperDb = require('../helperDb');
-const util = require('./util');
+import * as helperDb from '../helperDb';
+import * as util from './util';
 
 /**
  * Checks that the assessment set present in the database matches the data

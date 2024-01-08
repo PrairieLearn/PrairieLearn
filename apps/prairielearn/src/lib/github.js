@@ -11,8 +11,8 @@ import { syncDiskToSqlAsync } from '../sync/syncFromDisk';
 import { sendCourseRequestMessage } from './opsbot';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
 import { createServerJob } from './server-jobs';
+import * as sqldb from '@prairielearn/postgres';
 
-const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 /*
@@ -50,25 +50,30 @@ async function createRepoFromTemplateAsync(client, repo, template) {
 
   // The above call will complete before the repo itself is actually ready to use,
   // so poll for a bit until all the files are finally copied in.
-  let repo_up = false;
-  const poll_time_ms = 100;
-  while (!repo_up) {
+  //
+  // We'll try for up to 30 seconds, polling every second.
+  for (let i = 0; i < 30; i++) {
     try {
       // If the repo is not ready yet, this will fail with "repo is empty"
       await client.repos.getContent({
         owner: config.githubCourseOwner,
         repo: repo,
-        path: '/',
+        path: 'infoCourse.json',
       });
-      repo_up = true;
+      return;
     } catch (err) {
-      logger.debug(`${repo} is not ready yet, polling again in ${poll_time_ms} ms`);
-    }
+      // We'll get a 404 if the repo is not ready yet. If we get any other
+      // error, then something unexpected happened and we should bail out.
+      if (err.status !== 404) {
+        throw err;
+      }
 
-    if (!repo_up) {
-      await sleep(poll_time_ms);
+      await sleep(1000);
     }
   }
+
+  // If we get here, the repo didn't become ready in time.
+  throw new Error('Repository contents were not ready after 30 seconds.');
 }
 
 /**
@@ -202,7 +207,7 @@ export async function createCourseRepoJob(options, authn_user) {
     job.info(`Main branch for new repository: "${branch}"`);
 
     // Update the infoCourse.json file by grabbing the original and JSON editing it.
-    logger.info('Updating infoCourse.json');
+    job.info('Updating infoCourse.json');
     let { sha: sha, contents } = await getFileFromRepoAsync(
       client,
       options.repo_short_name,
@@ -224,14 +229,14 @@ export async function createCourseRepoJob(options, authn_user) {
     job.info('Uploaded new infoCourse.json file');
 
     // Add machine and instructor to the repo
-    logger.info('Adding machine team to repo');
+    job.info('Adding machine team to repo');
     await addTeamToRepoAsync(client, options.repo_short_name, config.githubMachineTeam, 'admin');
     job.info(
       `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
     );
 
     if (options.github_user) {
-      logger.info('Adding instructor to repo');
+      job.info('Adding instructor to repo');
       try {
         await addUserToRepoAsync(client, options.repo_short_name, options.github_user, 'admin');
         job.info(
@@ -243,7 +248,7 @@ export async function createCourseRepoJob(options, authn_user) {
     }
 
     // Insert the course into the courses table
-    logger.info('Adding course to database');
+    job.info('Adding course to database');
     const inserted_course = (
       await sqldb.callAsync('courses_insert', [
         options.institution_id,
@@ -260,7 +265,7 @@ export async function createCourseRepoJob(options, authn_user) {
     job.verbose(JSON.stringify(inserted_course, null, 4));
 
     // Give the owner required permissions
-    logger.info('Giving user owner permission');
+    job.info('Giving user owner permission');
     await sqldb.queryOneRowAsync(sql.set_course_owner_permission, {
       course_id: inserted_course.id,
       course_request_id: options.course_request_id,
@@ -273,19 +278,19 @@ export async function createCourseRepoJob(options, authn_user) {
       git_env.GIT_SSH_COMMAND = config.gitSshCommand;
     }
 
-    logger.info('Clone from remote git repository');
+    job.info('Clone from remote git repository');
     await job.exec('git', ['clone', inserted_course.repository, inserted_course.path], {
       // Executed in the root directory, but this shouldn't really matter.
       cwd: '/',
       env: git_env,
     });
 
-    logger.info('Sync git repository to database');
+    job.info('Sync git repository to database');
     const sync_result = await syncDiskToSqlAsync(inserted_course.path, inserted_course.id, job);
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {
-      logger.info('Create course chunks');
+      job.info('Create course chunks');
       const chunkChanges = await updateChunksForCourse({
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
@@ -294,7 +299,7 @@ export async function createCourseRepoJob(options, authn_user) {
       logChunkChangesToJob(chunkChanges, job);
     }
 
-    logger.info('Update course commit hash');
+    job.info('Update course commit hash');
     await updateCourseCommitHash(inserted_course);
   };
 
@@ -331,6 +336,9 @@ export async function createCourseRepoJob(options, authn_user) {
         logger.error('Error sending course request message to Slack', err);
         Sentry.captureException(err);
       }
+
+      // Throw the error again so that the server job will be marked as failed.
+      throw err;
     }
   });
 
