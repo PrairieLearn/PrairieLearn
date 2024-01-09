@@ -27,8 +27,7 @@ VALUES
     $context_label,
     $context_title,
     $course_instance_id
-  )
-ON CONFLICT DO NOTHING;
+  );
 
 -- BLOCK upsert_lci
 UPDATE lti13_course_instances
