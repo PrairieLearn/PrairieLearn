@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { get as _get } from 'lodash';
 import { callbackify } from 'util';
 import * as crypto from 'crypto';
+import { URL } from 'url';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -13,6 +14,7 @@ import * as authnLib from '../../../lib/authn';
 import { selectLti13Instance } from '../../models/lti13Instance';
 import { get as cacheGet, set as cacheSet } from '../../../lib/cache';
 import { Lti13Test } from './lti13Auth.html';
+import { getCanonicalHost } from '../../../lib/url';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -107,6 +109,7 @@ router.post(
           resLocals: res.locals,
           userInfo,
           lti13_instance,
+          url: new URL(getCanonicalHost(req)),
         }),
       );
       return;
@@ -263,7 +266,7 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
 
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
-  if (parameters?.RelayState === 'test') {
+  if ('test' in parameters) {
     state = state.concat(StateTest);
   }
 
