@@ -7,11 +7,10 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 import { logger } from '@prairielearn/logger';
 import {
   createJob,
-  createJobAsync,
   createJobSequence,
-  createJobSequenceAsync,
   failJobSequence,
 } from './server-jobs-legacy';
+import { createServerJob } from './server-jobs';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
 import { z } from 'zod';
@@ -44,54 +43,40 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
   const course_id = assessmentInstance.course_id;
 
   var options = {
-    course_id: course_id,
-    course_instance_id: course_instance_id,
-    assessment_id: assessment_id,
-    user_id: user_id,
-    authn_user_id: authn_user_id,
+    courseId: course_id,
+    courseInstanceId: course_instance_id,
+    assessmentId: assessment_id,
+    userId: user_id,
+    authnUserId: authn_user_id,
     type: 'regrade_assessment_instance',
     description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
   };
-  const job_sequence_id = await createJobSequenceAsync(options);
+  const serverJob = await createServerJob(options);
 
   // We've now triggered the callback to our caller, but we
   // continue executing below to launch the jobs themselves.
 
-  var jobOptions = {
-    course_id: course_id,
-    course_instance_id: course_instance_id,
-    assessment_id: assessment_id,
-    user_id: user_id,
-    authn_user_id: authn_user_id,
-    type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
-    job_sequence_id: job_sequence_id,
-    last_in_sequence: true,
-  };
-  const job = await createJobAsync(jobOptions);
-  job.verbose('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-  var params = [assessment_instance_id, authn_user_id];
-  const jobResult = await sqldb.callAsync('assessment_instances_regrade', params);
-  if (jobResult.rowCount !== 1) {
-    job.fail(new Error('Incorrect rowCount: ' + jobResult.rowCount));
-  }
-  job.verbose('Regrading complete');
-  var regrade = jobResult.rows[0];
-  if (regrade.updated) {
-    job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
-    job.verbose(
-      'New score: ' +
-        Math.floor(regrade.new_score_perc) +
-        '% (was ' +
-        Math.floor(regrade.old_score_perc) +
-        '%)',
-    );
-  } else {
-    job.verbose('No changes made');
-  }
-  ltiOutcomes.updateScoreAsync(assessment_instance_id);
-  job.succeed();
-  return job_sequence_id;
+  await serverJob.executeInBackground(async (job) => {
+    job.verbose('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
+    var params = [assessment_instance_id, authn_user_id];
+    const jobResult = await sqldb.callAsync('assessment_instances_regrade', params);
+    job.verbose('Regrading complete');
+    var regrade = jobResult.rows[0];
+    if (regrade.updated) {
+      job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
+      job.verbose(
+        'New score: ' +
+          Math.floor(regrade.new_score_perc) +
+          '% (was ' +
+          Math.floor(regrade.old_score_perc) +
+          '%)',
+      );
+    } else {
+      job.verbose('No changes made');
+    }
+    await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+  })
+  return serverJob.jobSequenceId;
 }
 
 export function regradeAllAssessmentInstances(assessment_id, user_id, authn_user_id, callback) {
