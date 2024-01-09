@@ -5,11 +5,7 @@ import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 import { logger } from '@prairielearn/logger';
-import {
-  createJob,
-  createJobSequence,
-  failJobSequence,
-} from './server-jobs-legacy';
+import { createJob, createJobSequence, failJobSequence } from './server-jobs-legacy';
 import { createServerJob } from './server-jobs';
 import * as sqldb from '@prairielearn/postgres';
 import * as ltiOutcomes from './ltiOutcomes';
@@ -75,7 +71,7 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
       job.verbose('No changes made');
     }
     await ltiOutcomes.updateScoreAsync(assessment_instance_id);
-  })
+  });
   return serverJob.jobSequenceId;
 }
 

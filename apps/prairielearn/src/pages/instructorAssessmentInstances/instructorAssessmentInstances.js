@@ -144,7 +144,7 @@ router.post(
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
       );
-      console.log(job_sequence_id)
+      console.log(job_sequence_id);
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'set_time_limit') {
       const params = {
