@@ -3,6 +3,7 @@
   <head>
     <%- include('../partials/head'); %>
     <%- compiled_script_tag('question.ts') %>
+    <% if (assessment.type === 'Exam') { %>
     <%- compiled_script_tag('examTimeLimitCountdown.ts') %>
     <%- encoded_data({
           serverRemainingMS: assessment_instance_remaining_ms,
@@ -12,6 +13,7 @@
           canTriggerFinish: authz_result.authorized_edit,
           csrfToken: __csrf_token,
         }, 'time-limit-data') %>
+    <% } %>
     <script defer src="<%= node_modules_asset_path('mathjax/es5/startup.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -37,11 +39,12 @@
     <main id="content" class="container">
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          <%- include('../partials/question', {question_context: 'student_exam'}); %>
+          <%- include('../partials/question', {question_context: assessment.type === 'Exam' ? 'student_exam' : 'student_homework'}); %>
         </div>
 
         <div class="col-lg-3 col-sm-12">
 
+          <% if (assessment.type === 'Exam') { %>
           <div class="card mb-4">
             <div class="card-header bg-secondary"><a class="text-white" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></div>
 
@@ -60,6 +63,9 @@
               <% } %>
             </div>
           </div>
+          <% } else { %>
+          <%- include('../partials/assessmentScorePanel') %>
+          <% } %>
 
           <%- include('../partials/questionScorePanel') %>
 
