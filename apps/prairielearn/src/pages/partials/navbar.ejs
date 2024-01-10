@@ -9,7 +9,7 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
-<% if (devMode) { %>
+<% if (config.navbarDeveloper) { %>
   <%- include('navbarDeveloper') %>
 <% } %>
 

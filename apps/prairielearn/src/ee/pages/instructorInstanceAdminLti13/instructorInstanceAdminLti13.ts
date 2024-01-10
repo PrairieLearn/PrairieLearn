@@ -33,7 +33,7 @@ router.get(
     );
 
     if (!lti13Instance) {
-      throw new Error(`LTI 1.3 instance not found.`);
+      throw error.make(404, 'LTI 1.3 instance not found.');
     }
 
     const lti13CourseInstance = await queryRow(
@@ -65,16 +65,10 @@ router.post(
         lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
 
-      try {
-        await selectLti13InstancesByCourseInstance(res.locals.course_instance.id);
-      } catch (err) {
-        res.redirect(
-          // Redirect away so they don't get an error page
-          `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
-        );
-        return;
-      }
-      res.redirect(req.originalUrl);
+      // Redirect away so they don't get an error page
+      res.redirect(
+        `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
+      );
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }
