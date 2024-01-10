@@ -49,12 +49,16 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
 
   serverJob.executeInBackground(async (job) => {
     job.info('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-    const jobResult = await sqldb.callRow('assessment_instances_regrade', [assessment_instance_id, authn_user_id], z.object({
-      updated: z.boolean(),
-      updated_question_names: z.array(z.string()),
-      new_score_perc: z.number(),
-      old_score_perc: z.number(),
-    }));
+    const jobResult = await sqldb.callRow(
+      'assessment_instances_regrade',
+      [assessment_instance_id, authn_user_id],
+      z.object({
+        updated: z.boolean(),
+        updated_question_names: z.array(z.string()),
+        new_score_perc: z.number(),
+        old_score_perc: z.number(),
+      }),
+    );
     job.info('Regrading complete');
     var regrade = jobResult;
     if (regrade.updated) {
