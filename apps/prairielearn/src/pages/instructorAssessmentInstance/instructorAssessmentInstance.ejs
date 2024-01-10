@@ -335,7 +335,7 @@
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
               <% if (row.client_fingerprint) { %>
-              <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %>"
+              <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %> color-hover"
                 role="button"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
