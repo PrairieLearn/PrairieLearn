@@ -3,11 +3,24 @@ const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
-const sqldb = require('@prairielearn/postgres');
+const { loadSqlEquiv, queryRow, queryRows, callRow } = require('@prairielearn/postgres');
+const { z } = require('zod');
 
+const { IdSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
+
+const AssessmentInfoSchema = z.object({
+  assessment_label: z.string(),
+  course_instance_id: IdSchema,
+  course_id: IdSchema,
+});
+
+const AssessmentGroupsUpdateResultSchema = z.object({
+  not_exist_user: z.array(z.string()).nullable(),
+  already_in_group: z.array(z.string()).nullable(),
+});
 
 /**
  * @param {string} assessment_id
@@ -29,10 +42,14 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
     throw new Error('No CSV file uploaded');
   }
 
-  const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, { assessment_id });
-  const assessmentLabel = result.rows[0].assessment_label;
-  const course_instance_id = result.rows[0].course_instance_id;
-  const course_id = result.rows[0].course_id;
+  const assessmentInfo = await queryRow(
+    sql.select_assessment_info,
+    { assessment_id },
+    AssessmentInfoSchema,
+  );
+  const assessmentLabel = assessmentInfo.assessment_label;
+  const course_instance_id = assessmentInfo.course_instance_id;
+  const course_id = assessmentInfo.course_id;
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -79,14 +96,14 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
           let uid = json.uid || json.UID || json.Uid || null;
           updateList.push([groupName, uid]);
         });
-        const result = await sqldb.callAsync('assessment_groups_update', [
-          assessment_id,
-          updateList,
-          authn_user_id,
-        ]);
+        const result = await callRow(
+          'assessment_groups_update',
+          [assessment_id, updateList, authn_user_id],
+          AssessmentGroupsUpdateResultSchema,
+        );
         let errorCount = 0;
 
-        const notExist = result.rows[0].not_exist_user;
+        const notExist = result.not_exist_user;
         if (notExist) {
           job.verbose(`----------------------------------------`);
           job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
@@ -96,7 +113,7 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
           errorCount += notExist.length;
         }
 
-        const inGroup = result.rows[0].already_in_group;
+        const inGroup = result.already_in_group;
         if (inGroup) {
           job.verbose(`----------------------------------------`);
           job.verbose(`ERROR: The following users are already in a group.`);
@@ -141,10 +158,14 @@ export async function autoGroups(
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const result = await sqldb.queryOneRowAsync(sql.select_assessment_info, { assessment_id });
-  const assessmentLabel = result.rows[0].assessment_label;
-  const course_instance_id = result.rows[0].course_instance_id;
-  const course_id = result.rows[0].course_id;
+  const assessmentInfo = await queryRow(
+    sql.select_assessment_info,
+    { assessment_id },
+    AssessmentInfoSchema,
+  );
+  const assessmentLabel = assessmentInfo.assessment_label;
+  const course_instance_id = assessmentInfo.course_instance_id;
+  const course_id = assessmentInfo.course_id;
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -172,10 +193,9 @@ export async function autoGroups(
         job.verbose('Auto generate group settings for ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
-        const enrollments = await sqldb.queryAsync(sql.select_enrollments, { assessment_id });
-        const students = enrollments.rows.map((row) => row.user_list);
-        _.shuffle(students);
-        const numStudents = enrollments.rowCount ?? 0;
+        const enrollments = await queryRows(sql.select_enrollments, { assessment_id }, z.string());
+        _.shuffle(enrollments);
+        const numStudents = enrollments.length;
         job.verbose(`There are ` + numStudents + ' students enrolled in ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(
@@ -187,20 +207,20 @@ export async function autoGroups(
         for (let i = 0; i < numGroup; i++) {
           let groupName = 'group' + i;
           for (let j = 0; j < max_group_size; j++) {
-            if (students.length > 0) {
-              let uid = students.pop();
+            if (enrollments.length > 0) {
+              let uid = enrollments.pop();
               updateList.push([groupName, uid]);
             }
           }
         }
-        const result = await sqldb.callAsync('assessment_groups_update', [
-          assessment_id,
-          updateList,
-          authn_user_id,
-        ]);
+        const result = await callRow(
+          'assessment_groups_update',
+          [assessment_id, updateList, authn_user_id],
+          AssessmentGroupsUpdateResultSchema,
+        );
         let errorCount = 0;
 
-        const notExist = result.rows[0].not_exist_user;
+        const notExist = result.not_exist_user;
         if (notExist) {
           job.verbose(`----------------------------------------`);
           job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
@@ -208,7 +228,7 @@ export async function autoGroups(
           errorCount += notExist.length;
         }
 
-        const inGroup = result.rows[0].already_in_group;
+        const inGroup = result.already_in_group;
         if (inGroup) {
           job.verbose(`----------------------------------------`);
           job.verbose(`ERROR: The following users are already in a group.`);
