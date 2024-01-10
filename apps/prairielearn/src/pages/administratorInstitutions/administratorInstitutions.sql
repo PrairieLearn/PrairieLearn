@@ -21,3 +21,19 @@ FROM
   institutions AS i
 ORDER BY
   i.id ASC;
+
+-- BLOCK insert_institution
+INSERT INTO
+  institutions (
+    long_name,
+    short_name,
+    display_timezone,
+    uid_regexp
+  )
+VALUES
+  (
+    $long_name,
+    $short_name,
+    $display_timezone,
+    $uid_regexp
+  );
