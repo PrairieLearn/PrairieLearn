@@ -1,3 +1,4 @@
+//@ts-check
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
@@ -99,6 +100,9 @@ router.post(
       const result = await async.reduce(
         [...uids],
         { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
+        /**
+         * @param {{ given_cp: string[], not_given_cp: string[], not_given_cip: string[], errors: string[] }} memo
+         */
         async (memo, uid) => {
           let result;
           try {
@@ -140,6 +144,9 @@ router.post(
       );
 
       if (result.errors.length > 0) {
+        /**
+         * @type {Error & { info?: string }}
+         */
         const err = error.make(409, 'Failed to grant access to some users');
         err.info = '';
         const given_cp_and_cip = result.given_cp.filter(

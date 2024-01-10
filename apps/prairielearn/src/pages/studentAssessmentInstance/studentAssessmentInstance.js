@@ -9,14 +9,26 @@ const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const sqldb = require('@prairielearn/postgres');
-var groupAssessmentHelper = require('../../lib/groups');
+const groupAssessmentHelper = require('../../lib/groups');
+const { AssessmentInstanceSchema } = require('../../lib/db-types');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+async function ensureUpToDate(locals) {
+  const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
+  if (updated) {
+    // we updated the assessment_instance, so reload it
+    locals.assessment_instance = await sqldb.queryRow(
+      sql.select_assessment_instance,
+      { assessment_instance_id: locals.assessment_instance.id },
+      AssessmentInstanceSchema,
+    );
+  }
+}
 
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
-    if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) {
       throw error.make(403, 'Not authorized', res.locals);
     }
@@ -103,9 +115,10 @@ router.post(
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
-    if (res.locals.assessment.type !== 'Exam') return next();
-
+  asyncHandler(async (req, res, _next) => {
+    if (res.locals.assessment.type === 'Homework') {
+      await ensureUpToDate(res.locals);
+    }
     const params = {
       assessment_instance_id: res.locals.assessment_instance.id,
       user_id: res.locals.user.user_id,
@@ -162,6 +175,14 @@ router.get(
         res.locals.start = groupInfo.start;
         res.locals.rolesInfo = groupInfo.rolesInfo;
         res.locals.used_join_code = req.body.used_join_code;
+
+        if (groupConfig.has_roles) {
+          const result = await groupAssessmentHelper.getAssessmentPermissions(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+          );
+          res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+        }
       }
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
