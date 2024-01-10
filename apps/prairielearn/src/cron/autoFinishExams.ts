@@ -34,13 +34,15 @@ export function run(callback: (err?: Error | null) => void): void {
         const requireOpen = false;
         // Override any submission or grading rate limits.
         const overrideGradeRate = true;
+        // We don't have a client fingerprint ID, so pass null.
+        const client_fingerprint_id = null;
         assessment.gradeAssessmentInstance(
           examItem.assessment_instance_id,
           authn_user_id,
           requireOpen,
           examItem.close_assessment,
           overrideGradeRate,
-          null, //client_fingerprint_id
+          client_fingerprint_id,
           function (err) {
             if (ERR(err, () => {})) {
               logger.error('Error finishing exam', error.addData(err, { examItem }));
