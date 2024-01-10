@@ -122,7 +122,10 @@ function LTI13Instance(
       </div>
 
       <p>
-        <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/config">LTI 1.3 config for instance</a> |
+        <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/config"
+          >LTI 1.3 config for instance</a
+        >
+        |
         <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
         (${instance.keystore?.keys ? instance.keystore.keys.length : 0}
         key${instance.keystore?.keys?.length === 1 ? '' : 's'})
