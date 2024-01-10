@@ -34,33 +34,32 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
   } else {
     jobInfo = 'group name ' + assessmentInstance.group_name;
   }
-  const assessment_id = assessmentInstance.assessment_id;
-  const course_instance_id = assessmentInstance.course_instance_id;
-  const course_id = assessmentInstance.course_id;
-
-  var options = {
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
+  const serverJob = await createServerJob({
+    courseId: assessmentInstance.course_id,
+    courseInstanceId: assessmentInstance.course_instance_id,
+    assessmentId: assessmentInstance.assessment_id,
     userId: user_id,
     authnUserId: authn_user_id,
     type: 'regrade_assessment_instance',
     description: 'Regrade ' + assessment_instance_label + ' for ' + jobInfo,
-  };
-  const serverJob = await createServerJob(options);
+  });
 
   // We've now triggered the callback to our caller, but we
   // continue executing below to launch the jobs themselves.
 
-  await serverJob.executeInBackground(async (job) => {
-    job.verbose('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-    var params = [assessment_instance_id, authn_user_id];
-    const jobResult = await sqldb.callAsync('assessment_instances_regrade', params);
-    job.verbose('Regrading complete');
-    var regrade = jobResult.rows[0];
+  serverJob.executeInBackground(async (job) => {
+    job.info('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
+    const jobResult = await sqldb.callRow('assessment_instances_regrade', [assessment_instance_id, authn_user_id], z.object({
+      updated: z.boolean(),
+      updated_question_names: z.array(z.string()),
+      new_score_perc: z.number(),
+      old_score_perc: z.number(),
+    }));
+    job.info('Regrading complete');
+    var regrade = jobResult;
     if (regrade.updated) {
-      job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
-      job.verbose(
+      job.info('Questions updated: ' + regrade.updated_question_names.join(', '));
+      job.info(
         'New score: ' +
           Math.floor(regrade.new_score_perc) +
           '% (was ' +
@@ -68,7 +67,7 @@ export async function regradeAssessmentInstance(assessment_instance_id, user_id,
           '%)',
       );
     } else {
-      job.verbose('No changes made');
+      job.info('No changes made');
     }
     await ltiOutcomes.updateScoreAsync(assessment_instance_id);
   });
