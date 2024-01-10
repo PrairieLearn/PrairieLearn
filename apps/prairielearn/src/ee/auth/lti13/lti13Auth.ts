@@ -109,7 +109,7 @@ router.post(
           resLocals: res.locals,
           userInfo,
           lti13_instance,
-          url: new URL(getCanonicalHost(req)),
+          url: new URL(`/pl/lti13_instance/${lti13_instance.id}/auth/login`, getCanonicalHost(req)),
         }),
       );
       return;

@@ -340,9 +340,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
 
       <hr />
       <p>
-        For testing, have the LMS admin configure their OpenID Connect Initiation Url to
-        <a href="/pl/lti13_instance/${instance.id}/auth/login?RelayState=test">
-          /pl/lti13_instance/${instance.id}/auth/login?RelayState=test
+        For testing, have the LMS admin configure their OpenID Connect Initiation URL to
+        <a href="/pl/lti13_instance/${instance.id}/auth/login?test">
+          /pl/lti13_instance/${instance.id}/auth/login?test
         </a>
       </p>
 

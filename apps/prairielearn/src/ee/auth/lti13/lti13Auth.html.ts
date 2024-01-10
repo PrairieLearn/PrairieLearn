@@ -30,9 +30,7 @@ export const Lti13Test = ({
           <h1>LTI 1.3 authentication testing</h1>
           <p>
             Once you're satisfied, remove <code>?test</code> from the end of your configured
-            <a href="${url.href}pl/lti13_instance/${
-              lti13_instance.id
-            }/auth">OpenID Connection Initiation URL</a>
+            <a href="${url.href}">OpenID Connection Initiation URL</a>
             to bypass this debugging report and continue to authentication.
           </p>
           <h2>Mapped LTI 1.3 claims</h2>
