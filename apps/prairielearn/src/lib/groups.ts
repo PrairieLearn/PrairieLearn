@@ -243,6 +243,7 @@ export async function addUserToGroup(
     await sqldb.queryAsync(sql.insert_group_user, {
       group_id: group.id,
       user_id: user_id,
+      group_config_id: group.group_config_id,
       authn_user_id: authn_user_id,
       group_role_id: groupRoleId,
     });
@@ -431,11 +432,11 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-
-        await sqldb.queryAsync(sql.reassign_group_roles_after_leave, {
-          assessment_id: assessmentId,
+        await sqldb.queryAsync(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
+          user_id: userId,
+          authn_user_id: authnUserId,
         });
 
         // Groups with low enough size should only use required roles

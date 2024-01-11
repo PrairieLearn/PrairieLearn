@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import * as path from 'path';
@@ -76,35 +75,28 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw error.make(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'upload_assessment_groups') {
-      uploadInstanceGroups(
+      const job_sequence_id = await uploadInstanceGroups(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, job_sequence_id) {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        },
       );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'auto_assessment_groups') {
-      autoGroups(
+      const job_sequence_id = await autoGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
         req.body.max_group_size,
         req.body.min_group_size,
-        req.body.optradio,
-        function (err, job_sequence_id) {
-          if (ERR(err, next)) return;
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        },
       );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
       await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
       res.redirect(req.originalUrl);
