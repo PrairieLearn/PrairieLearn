@@ -27,7 +27,3 @@ BEGIN
   END IF;
 END;
 $$;
-
-ALTER TABLE groups
-ALTER COLUMN group_config_id
-SET NOT NULL;
