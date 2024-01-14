@@ -40,6 +40,7 @@ const ltiConfig = {
             default: 'disabled',
             message_type: 'LtiResourceLinkRequest',
             target_link_uri: 'PLACEHOLDER--will be replaced later',
+            windowTarget: '_blank',
           },
         ],
       },
