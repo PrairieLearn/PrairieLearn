@@ -180,7 +180,7 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
+  // browser detection - data format is https://github.com/bowser-js/bowser/blob/master/docs/global.html#L2063
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
       res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
