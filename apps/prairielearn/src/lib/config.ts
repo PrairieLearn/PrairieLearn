@@ -513,7 +513,6 @@ const ConfigSchema = z.object({
    * versions of PrairieLearn can still function with the new cookie names.
    */
   rewriteCookies: z.boolean().default(false),
-  navbarDeveloper: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

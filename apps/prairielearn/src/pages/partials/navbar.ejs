@@ -9,10 +9,6 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
-<% if (config.navbarDeveloper) { %>
-  <%- include('navbarDeveloper') %>
-<% } %>
-
 <% if (config.announcementHtml) { %>
   <div class="alert alert-<%= config.announcementColor ?? 'primary' %> mb-0 rounded-0 text-center">
     <%- config.announcementHtml %>
