@@ -235,7 +235,7 @@ VALUES
     $explanation,
     $grader_note,
     CASE
-      WHEN $number > 10 THEN NULL
+      WHEN $number >= 10 THEN NULL
       ELSE MOD($number + 1, 10)
     END,
     $always_show_to_students
