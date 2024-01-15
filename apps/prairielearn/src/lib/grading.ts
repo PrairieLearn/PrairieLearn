@@ -122,7 +122,6 @@ export async function saveSubmissionAsync(
       hasFatalIssue,
       data.true_answer,
       data.feedback,
-      false, // regradable
       submission.credit,
       submission.mode,
       submission.variant_id,
