@@ -92,6 +92,7 @@ router.get(
         instance: paramInstance ?? null,
         resLocals: res.locals,
         platform_defaults,
+        canonicalHost: getCanonicalHost(req),
       }),
     );
   }),
