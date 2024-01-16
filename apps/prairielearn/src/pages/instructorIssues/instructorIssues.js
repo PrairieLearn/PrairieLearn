@@ -1,17 +1,17 @@
 //@ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
-const { parseISO, formatDistance } = require('date-fns');
-const express = require('express');
+import { parseISO, formatDistance } from 'date-fns';
+import * as express from 'express';
+import * as SearchString from 'search-string';
+
+import * as error from '@prairielearn/error';
+import * as paginate from '../../lib/paginate';
+import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from '../../lib/id';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+
 const router = express.Router();
-const SearchString = require('search-string');
-
-const error = require('@prairielearn/error');
-const paginate = require('../../lib/paginate');
-const sqldb = require('@prairielearn/postgres');
-const { idsEqual } = require('../../lib/id');
-const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
-
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const PAGE_SIZE = 100;
@@ -270,4 +270,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;
