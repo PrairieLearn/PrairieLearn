@@ -130,7 +130,7 @@
 
   // Helper for collection methods to determine whether a collection
   // should be iterated as an array or as an object
-  // Related: https://web.archive.org/web/20140209091220/http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
+  // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
   // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
   var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
   var getLength = property('length');
