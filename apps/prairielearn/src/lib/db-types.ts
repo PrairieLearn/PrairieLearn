@@ -786,7 +786,7 @@ export const GroupSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  group_config_id: IdSchema.nullable(),
+  group_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
@@ -794,6 +794,7 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const GroupUserSchema = z.object({
+  group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });

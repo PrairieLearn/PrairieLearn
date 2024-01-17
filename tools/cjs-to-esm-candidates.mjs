@@ -11,6 +11,7 @@ const CJS_ONLY_MODULES = new Set([
   'assert',
   'async-stacktrace',
   'axe-core',
+  'body-parser',
   'byline',
   'cookie-parser',
   'crypto-js/sha256',
