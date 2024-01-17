@@ -17,7 +17,7 @@
 <% } %>
 <% } else {%>
   <%- include('./groupWorkInfoContainer.ejs'); %>
-  <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
+  <% if (start && locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
     <div class="card card-secondary mb-4 test-class-honor-code">
       <ul class="list-group list-group-flush">
         <li class="list-group-item py-2">I certify that I am <%= user.name %> and our group is allowed to take this assessment.</li>
@@ -33,17 +33,11 @@
     </div>
 
   <% } %>
-  <% if (start) { %>
   <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
     <input type="hidden" name="__action" value="new_instance">
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-    <button id="start-assessment" type="submit" class="btn btn-primary"<% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %> disabled<% } %>>Start assessment</button>
+    <button id="start-assessment" type="submit" class="btn btn-primary"<% if ((locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) || !start) { %> disabled<% } %>>Start assessment</button>
   </form>
-  <% } else { %>
-  <form id="confirm-form" name="confirm-form" method="POST" class="my-4 d-flex justify-content-center">
-    <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
-  </form>
-  <% } %>
   <% if (groupConfig.minimum - groupSize > 0) { %>
   <p class="text-center">
     * Minimum group size is <%= groupConfig.minimum %>. You need at least <%= groupConfig.minimum - groupSize %> more group member(s) to start.
