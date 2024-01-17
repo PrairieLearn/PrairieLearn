@@ -17,9 +17,6 @@
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupMembers: groupMembers, groupName: groupName}); %>
-  <% if (groupConfig.has_roles) { %>
-    <%- include('./groupRoleTable.ejs'); %>
-  <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
     <div class="card card-secondary mb-4 test-class-honor-code">
       <ul class="list-group list-group-flush">

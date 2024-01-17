@@ -62,6 +62,9 @@
     </div>
   </div>
 </div>
+<% if (groupConfig.has_roles) { %>
+  <%- include('../partials/groupRoleTable.ejs'); %>
+<% } %>
 <script>
   $(function () {
     $('[data-toggle="popover"]').popover({ sanitize: false })
