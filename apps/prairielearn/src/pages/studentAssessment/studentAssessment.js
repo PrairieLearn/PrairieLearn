@@ -147,6 +147,24 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
+      if (res.locals.assessment.group_work) {
+        const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+        const groupId = await groupAssessmentHelper.getGroupId(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+        );
+        if (groupId === null) {
+          throw error.make(403, 'Cannot create a new instance while not in a group.');
+        }
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        if (!groupInfo.start) {
+          throw error.make(
+            403,
+            'Group has invalid composition or role assignment. Cannot start assessment.',
+          );
+        }
+      }
+
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const assessment_instance_id = await assessment.makeAssessmentInstance(
