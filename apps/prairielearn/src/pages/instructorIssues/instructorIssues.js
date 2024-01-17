@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 import { parseISO, formatDistance } from 'date-fns';
 import * as express from 'express';
-import * as SearchString from 'search-string';
+const SearchString = require('search-string');
 
 import * as error from '@prairielearn/error';
 import * as paginate from '../../lib/paginate';
