@@ -424,7 +424,7 @@ export async function getAssessmentPermissions(
 }
 
 /**
- * Updates the role assignments of users in a group, given the output from groupRoleSelectTable.ejs.
+ * Updates the role assignments of users in a group, given the output from groupRoleTable.ejs.
  */
 export async function updateGroupRoles(
   requestBody: Record<string, any>,

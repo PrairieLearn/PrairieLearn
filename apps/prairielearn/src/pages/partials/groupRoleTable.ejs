@@ -45,7 +45,7 @@
       <% if (canViewRoleTable) { %>
         <h6>Assign group roles</h6>
         <p>Use this table to view the role assignments of the current group members and reassign roles as needed. If the current group role configuration is invalid, errors will be shown.</p>
-        <%- include('../shared/groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+        <%- include('./groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
         <form id="role-select-form" name="role-select-form" method="POST">
           <table class="table table-bordered table-striped my-3 px-3">
             <thead>
@@ -90,7 +90,7 @@
       <% } else { %>
         <% if (!rolesInfo.validRoleConfig) { %>
           <p>Your role configuration is invalid and contains the following errors. Notify the student with the assigner role to correct your group's role configuration.</p>
-          <%- include('../shared/groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
+          <%- include('./groupRoleErrors.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
         <% } %>
       <% } %>
     </div>
