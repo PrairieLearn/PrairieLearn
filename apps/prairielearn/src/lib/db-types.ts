@@ -794,6 +794,7 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const GroupUserSchema = z.object({
+  group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });
