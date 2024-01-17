@@ -22,7 +22,6 @@ export const GradingJobQueryResultSchema = z.object({
   formatted_graded_at: z.string().nullable(),
   question_qid: z.string(),
   user_uid: z.string(),
-  course_instance_short_name: z.string(),
 });
 type GradingJobQueryResult = z.infer<typeof GradingJobQueryResultSchema>;
 

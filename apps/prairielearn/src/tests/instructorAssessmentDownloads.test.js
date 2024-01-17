@@ -1,12 +1,13 @@
+// @ts-check
 const _ = require('lodash');
-const assert = require('chai').assert;
+import { assert } from 'chai';
 const request = require('request');
-const cheerio = require('cheerio');
-const { parse: csvParse } = require('csv-parse/sync');
+import * as cheerio from 'cheerio';
+import { parse as csvParse } from 'csv-parse/sync';
 
-const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
-const helperExam = require('./helperExam');
+import * as helperServer from './helperServer';
+import * as helperQuestion from './helperQuestion';
+import * as helperExam from './helperExam';
 
 const locals = {};
 
@@ -188,7 +189,7 @@ describe('Instructor Assessment Downloads', function () {
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@illinois.edu');
-      assert.equal(data[0][('Username', 'dev')]);
+      assert.equal(data[0]['Username'], 'dev');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
       assert.approximately(data[0]['Points'], locals.assessment_instance.points, 1e-6);

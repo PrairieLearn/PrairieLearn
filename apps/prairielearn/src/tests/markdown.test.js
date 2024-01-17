@@ -1,5 +1,6 @@
-const markdown = require('../lib/markdown');
-const assert = require('chai').assert;
+// @ts-check
+import * as markdown from '../lib/markdown';
+import { assert } from 'chai';
 
 const testMarkdownQuestion = (question, expected) => {
   const actual = markdown.processQuestion(question);
@@ -8,7 +9,7 @@ const testMarkdownQuestion = (question, expected) => {
 
 const testMarkdown = async (original, expected, testQuestion) => {
   const actual = await markdown.processContent(original);
-  assert.equal(actual?.trim(), expected);
+  assert.equal(actual.toString().trim(), expected);
   if (testQuestion) {
     testMarkdownQuestion(`<markdown>\n${original}\n</markdown>`, expected);
   }
@@ -105,7 +106,7 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected, true);
   });
 
-  it('handles block latex with asterisks and surrouding text', async () => {
+  it('handles block latex with asterisks and surrounding text', async () => {
     const question = 'testing\n$$\na **b** c\n$$\ntesting';
     const expected = '<p>testing</p>\n$$\na **b** c\n$$\n<p>testing</p>';
     await testMarkdown(question, expected, true);

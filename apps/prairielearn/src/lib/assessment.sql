@@ -161,6 +161,46 @@ FROM
 WHERE
   a.id = $assessment_id;
 
+-- BLOCK select_and_lock_assessment_instance_max_points
+SELECT
+  ai.max_points
+FROM
+  assessment_instances AS ai
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK update_assessment_instance_score
+WITH
+  updated_assessment_instances AS (
+    UPDATE assessment_instances AS ai
+    SET
+      points = $points,
+      score_perc = $score_perc,
+      modified_at = now()
+    WHERE
+      ai.id = $assessment_instance_id
+    RETURNING
+      ai.*
+  )
+INSERT INTO
+  assessment_score_logs (
+    assessment_instance_id,
+    auth_user_id,
+    max_points,
+    points,
+    score_perc
+  )
+SELECT
+  ai.id,
+  $authn_user_id,
+  ai.max_points,
+  ai.points,
+  ai.score_perc
+FROM
+  updated_assessment_instances AS ai;
+
 -- BLOCK assessment_instance_log
 WITH
   ai_group_users AS (
@@ -700,11 +740,6 @@ WITH
       WHERE
         ai.id = $assessment_instance_id
     )
-    ORDER BY
-      date,
-      event_order,
-      log_id,
-      question_id
   ),
   question_data AS (
     SELECT
@@ -732,6 +767,7 @@ SELECT
   el.submission_id,
   el.data,
   to_jsonb(cf.*) AS client_fingerprint,
+  NULL AS client_fingerprint_number,
   format_date_full_compact (el.date, ci.display_timezone) AS formatted_date,
   format_date_iso8601 (el.date, ci.display_timezone) AS date_iso8601,
   qd.student_question_number,
@@ -744,4 +780,9 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  ai.id = $assessment_instance_id;
+  ai.id = $assessment_instance_id
+ORDER BY
+  el.date,
+  el.event_order,
+  el.log_id,
+  el.question_id;

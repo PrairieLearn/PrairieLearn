@@ -1,13 +1,15 @@
-const assert = require('chai').assert;
-const fetch = require('node-fetch').default;
-const cheerio = require('cheerio');
+// @ts-check
+import { assert } from 'chai';
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import * as sqldb from '@prairielearn/postgres';
 
-const news_items = require('../news_items');
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import * as news_items from '../news_items';
+import { config } from '../lib/config';
+
+import * as helperServer from './helperServer';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-const helperServer = require('./helperServer');
 
 const locals = {};
 

@@ -1,14 +1,15 @@
-const assert = require('chai').assert;
-const fetch = require('node-fetch').default;
+// @ts-check
+import { assert } from 'chai';
+import fetch from 'node-fetch';
 const FormData = require('form-data');
-const cheerio = require('cheerio');
+import * as cheerio from 'cheerio';
 
-const sqldb = require('@prairielearn/postgres');
+import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 let elemList;
 
-module.exports.attachFile = (locals, textFile) => {
+export function attachFile(locals, textFile) {
   describe('attachFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       const res = await fetch(locals.attachFilesUrl);
@@ -87,9 +88,9 @@ module.exports.attachFile = (locals, textFile) => {
       assert.equal(locals.file.assessment_instance_id, 1);
     });
   });
-};
+}
 
-module.exports.downloadAttachedFile = (locals) => {
+export function downloadAttachedFile(locals) {
   describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       const res = await fetch(locals.attachFilesUrl);
@@ -113,9 +114,9 @@ module.exports.downloadAttachedFile = (locals) => {
       assert.equal(contents, 'This is the test text');
     });
   });
-};
+}
 
-module.exports.deleteAttachedFile = (locals) => {
+export function deleteAttachedFile(locals) {
   describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       const res = await fetch(locals.attachFilesUrl);
@@ -185,9 +186,9 @@ module.exports.deleteAttachedFile = (locals) => {
       assert.equal(result.rowCount, 0);
     });
   });
-};
+}
 
-module.exports.checkNoAttachedFiles = (locals) => {
+export function checkNoAttachedFiles(locals) {
   describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       const res = await fetch(locals.attachFilesUrl);
@@ -199,4 +200,4 @@ module.exports.checkNoAttachedFiles = (locals) => {
       assert.lengthOf(elemList, 0);
     });
   });
-};
+}

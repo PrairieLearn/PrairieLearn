@@ -1,7 +1,7 @@
 const _ = require('lodash');
 
 import { uploadFile, deleteFile } from '../../lib/file-store';
-const { idsEqual } = require('../../lib/id');
+import { idsEqual } from '../../lib/id';
 
 module.exports.processFileUpload = async (req, res) => {
   if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);

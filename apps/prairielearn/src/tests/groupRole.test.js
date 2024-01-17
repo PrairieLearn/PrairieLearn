@@ -1,20 +1,21 @@
-const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const fetch = require('node-fetch').default;
-const fs = require('fs-extra');
-const path = require('path');
-const { step } = require('mocha-steps');
-const tmp = require('tmp-promise');
+// @ts-check
+import { assert } from 'chai';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { step } from 'mocha-steps';
+import * as tmp from 'tmp-promise';
+import * as sqldb from '@prairielearn/postgres';
 
-const { config } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
+import { syncCourseData } from './sync/util';
+
+import * as helperServer from './helperServer';
+import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups';
+import { TEST_COURSE_PATH } from '../lib/paths';
+
 const sql = sqldb.loadSqlEquiv(__filename);
-const { syncCourseData } = require('./sync/util');
-
-const helperServer = require('./helperServer');
-const { URLSearchParams } = require('url');
-const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
-const { TEST_COURSE_PATH } = require('../lib/paths');
 
 let elemList;
 const locals = {};
@@ -38,7 +39,6 @@ const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, 
   config.authUid = studentUser.uid;
   config.authName = studentUser.name;
   config.authUin = authUin;
-  config.userId = studentUser.user_id;
 
   // Load assessment
   const res = await fetch(assessmentUrl);
@@ -92,16 +92,18 @@ const leaveGroup = async (assessmentUrl) => {
  * @param {Array} roleAssignments
  * @param {String} assessmentId
  */
-const verifyRoleAssignmentsInDatabase = async (roleAssignments, assessmentId) => {
-  const expected = roleAssignments.map(({ roleId, groupUserId }) => ({
-    user_id: groupUserId,
-    group_role_id: roleId,
-  }));
+async function verifyRoleAssignmentsInDatabase(roleAssignments, assessmentId) {
+  const expected = roleAssignments
+    .map(({ roleId, groupUserId }) => ({
+      user_id: groupUserId,
+      group_role_id: roleId,
+    }))
+    .sort((a, b) => a.user_id - b.user_id || a.group_role_id - b.group_role_id);
   const result = await sqldb.queryAsync(sql.select_group_user_roles, {
     assessment_id: assessmentId,
   });
   assert.sameDeepMembers(result.rows, expected);
-};
+}
 
 /**
  * Asserts that role table contains checked roles corresponding to role assignments.
@@ -770,7 +772,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('first user should see five roles checked in the table', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
-    verifyRoleAssignmentsInDatabase(locals.roleUpdates);
+    await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
   });
 
   step(
@@ -1046,7 +1048,7 @@ describe('Test group based assessments with custom group roles from student side
 
 /**
  * @param {string} courseDir
- * @param {GroupRole[]} groupRoles
+ * @param {Partial<import('../sync/course-db').GroupRole>[]} groupRoles
  */
 const changeGroupRolesConfig = async (courseDir, groupRoles) => {
   const infoAssessmentPath = path.join(
@@ -1067,7 +1069,7 @@ const changeGroupRolesConfig = async (courseDir, groupRoles) => {
 describe('Test group role reassignments with role of minimum > 1', function () {
   /** @type {tmp.DirectoryResult} */
   let tempTestCourseDir;
-  /** @type {tmp.DirectoryResult} */
+  /** @type {string} */
   let assessmentId;
   let assessmentUrl;
 
@@ -1846,7 +1848,7 @@ describe('Test group role reassignment logic when user leaves', function () {
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment?.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );

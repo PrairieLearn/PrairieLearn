@@ -1,19 +1,27 @@
-var ERR = require('async-stacktrace');
-var assert = require('chai').assert;
+// @ts-check
+import { assert } from 'chai';
+import * as sqldb from '@prairielearn/postgres';
 
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
-var helperDb = require('../helperDb');
+import * as helperDb from '../helperDb';
 
-var caa_reservation_tests = function (
+const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * @param {string | number} assessment_id
+ * @param {string | number} exam_id
+ * @param { string | number} second_assessment_id
+ * @param {boolean} [expectWideOpen]
+ * @param {boolean} [seeOtherExams]
+ */
+function reservationTests(
   assessment_id,
   exam_id,
   second_assessment_id,
   expectWideOpen = false,
   seeOtherExams = false,
 ) {
-  var expectedWord = 'fail';
-  var expectedBool = false;
+  let expectedWord = 'fail';
+  let expectedBool = false;
 
   // Handle the special case without any linking
   if (expectWideOpen) {
@@ -21,8 +29,8 @@ var caa_reservation_tests = function (
     expectedBool = true;
   }
 
-  it(`${expectedWord} for student inside start_date/end_date, no reservation, assessment ${assessment_id}`, function (callback) {
-    var params = [
+  it(`${expectedWord} for student inside start_date/end_date, no reservation, assessment ${assessment_id}`, async () => {
+    const result = await sqldb.callAsync(`check_assessment_access`, [
       assessment_id,
       'Exam',
       'None',
@@ -31,25 +39,18 @@ var caa_reservation_tests = function (
       'instructor@school.edu',
       '2010-07-07 06:06:06-00',
       'US/Central',
-    ];
+    ]);
 
-    sqldb.call(`check_assessment_access`, params, (err, result) => {
-      if (ERR(err, result)) return;
-      assert.strictEqual(result.rows[0].authorized, expectedBool);
-      callback();
-    });
+    assert.strictEqual(result.rows[0].authorized, expectedBool);
   });
 
   describe(`with checked-in reservation for student for exam ${exam_id}`, () => {
-    before(`create checked-in reservation for student for exam ${exam_id}`, function (callback) {
-      sqldb.query(sql.insert_ps_reservation, { exam_id }, (err, _result) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    before(`create checked-in reservation for student for exam ${exam_id}`, async () => {
+      await sqldb.queryAsync(sql.insert_ps_reservation, { exam_id });
     });
 
-    it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', function (callback) {
-      var params = [
+    it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', async () => {
+      const result = await sqldb.callAsync(`check_assessment_access`, [
         assessment_id,
         'Exam',
         'None',
@@ -58,39 +59,27 @@ var caa_reservation_tests = function (
         'student@school.edu',
         '2010-07-07 06:06:06-00',
         'US/Central',
-      ];
+      ]);
 
-      sqldb.call(`check_assessment_access`, params, (err, result) => {
-        if (ERR(err, result)) return;
-        assert.strictEqual(result.rows[0].authorized, true);
-        callback(null);
-      });
+      assert.strictEqual(result.rows[0].authorized, true);
     });
 
-    it(
-      expectedWord +
-        ' for student inside start_date/end_date, checked-in reservation, after access_start/end',
-      function (callback) {
-        var params = [
-          assessment_id,
-          'Exam',
-          'None',
-          'None',
-          1000,
-          'student@school.edu',
-          '2010-08-07 06:06:06-00',
-          'US/Central',
-        ];
+    it(`${expectedWord} for student inside start_date/end_date, checked-in reservation, after access_start/end`, async () => {
+      const result = await sqldb.callAsync(`check_assessment_access`, [
+        assessment_id,
+        'Exam',
+        'None',
+        'None',
+        1000,
+        'student@school.edu',
+        '2010-08-07 06:06:06-00',
+        'US/Central',
+      ]);
 
-        sqldb.call(`check_assessment_access`, params, (err, result) => {
-          if (ERR(err, callback)) return;
-          assert.strictEqual(result.rows[0].authorized, expectedBool);
-          callback(null);
-        });
-      },
-    );
+      assert.strictEqual(result.rows[0].authorized, expectedBool);
+    });
 
-    var otherExams = {
+    let otherExams = {
       word: 'fail',
       bool: false,
     };
@@ -99,8 +88,8 @@ var caa_reservation_tests = function (
       otherExams.bool = true;
     }
 
-    it(`${otherExams.word} for access to PL course other assessment (${second_assessment_id}) when checked-in to exam ${exam_id}`, function (callback) {
-      var params = [
+    it(`${otherExams.word} for access to PL course other assessment (${second_assessment_id}) when checked-in to exam ${exam_id}`, async () => {
+      const result = await sqldb.callAsync(`check_assessment_access`, [
         second_assessment_id,
         'Exam',
         'None',
@@ -109,62 +98,55 @@ var caa_reservation_tests = function (
         'student@school.edu',
         '2010-07-07 06:06:06-00',
         'US/Central',
-      ];
+      ]);
 
-      sqldb.call(`check_assessment_access`, params, (err, result) => {
-        if (ERR(err, callback)) return;
-        assert.strictEqual(result.rows[0].authorized, otherExams.bool);
-        callback(null);
-      });
+      assert.strictEqual(result.rows[0].authorized, otherExams.bool);
     });
   });
-};
+}
 
 describe('sproc check_assessment_access* tests', function () {
   describe('check_assessment_access scheduler tests', function () {
     before('set up testing server', helperDb.before);
     after('tear down testing database', helperDb.after);
 
-    before('setup sample environment', function (callback) {
-      sqldb.query(sql.setup_caa_scheduler_tests, {}, (err, _result) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+    before('setup sample environment', async () => {
+      await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
     });
 
     describe('PL course not linked anywhere', () => {
       describe('Unlinked exam', () => {
-        caa_reservation_tests(10, 1, 13, true, true);
+        reservationTests(10, 1, 13, true, true);
       });
       describe('Linked exam', () => {
-        caa_reservation_tests(11, 1, 13, false, true);
+        reservationTests(11, 1, 13, false, true);
       });
       describe('Linked exam in different PS course', () => {
-        caa_reservation_tests(12, 5, 13, false, true);
+        reservationTests(12, 5, 13, false, true);
       });
     });
 
     describe('PL course linked to 1 PS course', () => {
       describe('Unlinked exam', () => {
-        caa_reservation_tests(20, 2, 23, false, true);
+        reservationTests(20, 2, 23, false, true);
       });
       describe('Linked exam', () => {
-        caa_reservation_tests(21, 2, 23, false, true);
+        reservationTests(21, 2, 23, false, true);
       });
       describe('Linked exam in different PS course', () => {
-        caa_reservation_tests(22, 5, 23, false, false);
+        reservationTests(22, 5, 23, false, false);
       });
     });
 
     describe('PL course linked to >1 PS course', () => {
       describe('Unlinked exam', () => {
-        caa_reservation_tests(40, 4, 43, false, true);
+        reservationTests(40, 4, 43, false, true);
       });
       describe('Linked exam', () => {
-        caa_reservation_tests(41, 4, 43, false, true);
+        reservationTests(41, 4, 43, false, true);
       });
       describe('Linked exam in different PS course', () => {
-        caa_reservation_tests(42, 5, 43, false, false);
+        reservationTests(42, 5, 43, false, false);
       });
     });
   });

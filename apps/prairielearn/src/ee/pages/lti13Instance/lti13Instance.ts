@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import jose = require('node-jose');
+import * as jose from 'node-jose';
 import { getCanonicalHost } from '../../../lib/url';
 import { URL } from 'url';
 import { selectLti13Instance } from '../../models/lti13Instance';
@@ -23,8 +23,8 @@ router.get(
 const ltiConfig = {
   title: 'PrairieLearn',
   description: 'The best platform for online assessments',
-  oidc_initiation_url: 'replace',
-  target_link_uri: 'replace',
+  oidc_initiation_url: 'PLACEHOLDER--will be replaced later',
+  target_link_uri: 'PLACEHOLDER--will be replaced later',
   extensions: [
     {
       domain: 'replace',
@@ -39,14 +39,15 @@ const ltiConfig = {
             placement: 'course_navigation',
             default: 'disabled',
             message_type: 'LtiResourceLinkRequest',
-            target_link_url: 'replace',
+            target_link_uri: 'PLACEHOLDER--will be replaced later',
+            windowTarget: '_blank',
           },
         ],
       },
     },
   ],
   custom_fields: {},
-  public_jwk_url: 'replace',
+  public_jwk_url: 'PLACEHOLDER--will be replaced later',
   scopes: [
     'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
     'https://purl.imsglobal.org/spec/lti-ags/scope/score',
@@ -67,15 +68,17 @@ router.get(
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     const lmsConfig = cloneDeep(ltiConfig);
-    const url = new URL(getCanonicalHost(req));
+    const host = getCanonicalHost(req);
+    const url = new URL(host);
 
-    lmsConfig.oidc_initiation_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/auth/login`;
-    lmsConfig.target_link_uri = `${url.href}pl/lti13_instance/${lti13_instance.id}/auth/callback`;
+    lmsConfig.oidc_initiation_url = `${host}/pl/lti13_instance/${lti13_instance.id}/auth/login`;
+    lmsConfig.target_link_uri = `${host}/pl/lti13_instance/${lti13_instance.id}/auth/callback`;
 
+    // Use URL to extract just the hostname
     lmsConfig.extensions[0].domain = url.hostname || '';
-    lmsConfig.extensions[0].settings.placements[0].target_link_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/course_navigation`;
+    lmsConfig.extensions[0].settings.placements[0].target_link_uri = `${host}/pl/lti13_instance/${lti13_instance.id}/course_navigation`;
 
-    lmsConfig.public_jwk_url = `${url.href}pl/lti13_instance/${lti13_instance.id}/jwks`;
+    lmsConfig.public_jwk_url = `${host}/pl/lti13_instance/${lti13_instance.id}/jwks`;
     lmsConfig.custom_fields = lti13_instance.custom_fields;
 
     res.setHeader('Content-Type', 'application/json');

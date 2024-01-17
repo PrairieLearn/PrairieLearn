@@ -15,112 +15,112 @@
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasUuid = function (infoFile) {
+export function hasUuid(infoFile) {
   return !!infoFile.uuid;
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasErrors = function (infoFile) {
+export function hasErrors(infoFile) {
   return infoFile.errors.length > 0;
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasWarnings = function (infoFile) {
+export function hasWarnings(infoFile) {
   return infoFile.warnings.length > 0;
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasErrorsOrWarnings = function (infoFile) {
-  return module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile);
-};
+export function hasErrorsOrWarnings(infoFile) {
+  return hasErrors(infoFile) || hasWarnings(infoFile);
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  */
-module.exports.stringifyErrors = function (infoFile) {
+export function stringifyErrors(infoFile) {
   return infoFile.errors.join('\n');
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  */
-module.exports.stringifyWarnings = function (infoFile) {
+export function stringifyWarnings(infoFile) {
   return infoFile.warnings.join('\n');
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @param {string} error
  */
-module.exports.addError = function (infoFile, error) {
+export function addError(infoFile, error) {
   infoFile.errors.push(error);
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @param {string[]} errors
  */
-module.exports.addErrors = function (infoFile, errors) {
+export function addErrors(infoFile, errors) {
   infoFile.errors = infoFile.errors.concat(errors);
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @param {string} warning
  */
-module.exports.addWarning = function (infoFile, warning) {
+export function addWarning(infoFile, warning) {
   infoFile.warnings.push(warning);
-};
+}
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  * @param {string[]} warnings
  */
-module.exports.addWarnings = function (infoFile, warnings) {
+export function addWarnings(infoFile, warnings) {
   infoFile.warnings = infoFile.warnings.concat(warnings);
-};
+}
 
 /**
  * @template T
  * @param {Partial<Pick<InfoFile<T>, 'uuid' | 'data'>>} infoFile
  * @returns {InfoFile<T>}
  */
-module.exports.makeInfoFile = function (infoFile = {}) {
+export function makeInfoFile(infoFile = {}) {
   return { ...infoFile, errors: [], warnings: [] };
-};
+}
 
 /**
  * @template T
  * @param {string} error
  * @returns {InfoFile<T>}
  */
-module.exports.makeError = function (error) {
+export function makeError(error) {
   return { errors: [error], warnings: [] };
-};
+}
 
 /**
  * @template T
  * @param {string} warning
  * @returns {InfoFile<T>}
  */
-module.exports.makeWarning = function (warning) {
+export function makeWarning(warning) {
   return { warnings: [warning], errors: [] };
-};
+}

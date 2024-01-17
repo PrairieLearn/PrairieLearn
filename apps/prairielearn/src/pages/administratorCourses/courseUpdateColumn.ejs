@@ -1,5 +1,9 @@
 <td class="align-middle">
-  <%= course[column_name] %>
+  <% if (typeof href !== 'undefined' && href) { %>
+    <a href="<%= href %>"><%= course[column_name] %></a>
+  <% } else { %>
+    <%= course[column_name] %>
+  <% } %>
   <button type="button" class="btn btn-xs btn-secondary"
      id="courseButton<%= column_name %><%= i %>" tabindex="0"
      data-toggle="popover" data-container="body"
