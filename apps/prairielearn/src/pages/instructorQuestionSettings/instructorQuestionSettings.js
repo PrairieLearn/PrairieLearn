@@ -9,11 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 import { logger } from '@prairielearn/logger';
-import {
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
-  QuestionCopyEditor,
-} from '../../lib/editors';
+import { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } from '../../lib/editors';
 import { config } from '../../lib/config';
 import { encodePath } from '../../lib/uri-util';
 import { idsEqual } from '../../lib/id';

@@ -4,7 +4,7 @@ const _ = require('lodash');
 import * as express from 'express';
 
 import { getCourseOwners } from '../../lib/course';
-import* as error from '@prairielearn/error';
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 const router = express.Router();
