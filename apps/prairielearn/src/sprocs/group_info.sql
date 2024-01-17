@@ -19,6 +19,7 @@ BEGIN
             array_agg(users_get_displayed_role(u.user_id, a.course_instance_id)) as user_roles_list
         FROM
             group_configs AS gc
+            JOIN assessments AS a ON (a.id = gc.assessment_id)
             JOIN groups AS g ON (g.group_config_id = gc.id)
             JOIN group_users AS gu ON (gu.group_id = g.id)
             JOIN users AS u ON (u.user_id = gu.user_id)
@@ -42,8 +43,6 @@ BEGIN
     WHERE
         gc.assessment_id = group_info.assessment_id
         AND gc.deleted_at IS NULL
-        AND g.deleted_at IS NULL
-    GROUP BY
-        g.id;
+        AND g.deleted_at IS NULL;
 END
 $$ LANGUAGE plpgsql STABLE;
