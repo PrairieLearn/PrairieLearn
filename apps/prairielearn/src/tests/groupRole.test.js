@@ -367,7 +367,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('first user sees group role select table with two rows', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
 
     elemList = locals.$('#role-select-form').find('tr');
     // Header row and two user rows
@@ -1306,7 +1306,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   step('first user can see group role table with four users', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
     elemList = locals.$('#role-select-form').find('tr');
     // Header row and four user rows
