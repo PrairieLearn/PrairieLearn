@@ -314,7 +314,7 @@ async function prepareGroup() {
   };
 }
 
-describe('Assessment instance with group roles & permissions', function () {
+describe('Assessment instance with group roles & permissions - Homework', function () {
   describe('valid group role configuration tests', function () {
     this.timeout(20000);
 
