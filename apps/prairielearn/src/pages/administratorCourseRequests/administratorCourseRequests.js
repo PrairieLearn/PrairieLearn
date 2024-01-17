@@ -11,7 +11,12 @@ import { z } from 'zod';
 import { createCourseRepoJob } from '../../lib/github';
 import { config } from '../../lib/config';
 import { sendCourseRequestMessage } from '../../lib/opsbot';
-import { CourseRequestSchema, DateFromISOString, IdSchema, InstitutionSchema } from '../../lib/db-types';
+import {
+  CourseRequestSchema,
+  DateFromISOString,
+  IdSchema,
+  InstitutionSchema,
+} from '../../lib/db-types';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -20,24 +25,34 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    const result = await sqldb.queryRow(sql.get_requests, [], z.object({
-      institutions: z.array(InstitutionSchema),
-      course_requests: z.array(CourseRequestSchema.extend({ 
-        user_name: z.string(), 
-        created_at: DateFromISOString.optional(),
-        approved_by: z.string().optional(),
-        approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']).optional(),
-        user_id: z.string().optional(),
-        jobs: z.object({
-          start_date: DateFromISOString.optional(),
-          finish_date: DateFromISOString.optional(),
-          authn_user_id: IdSchema.optional(),
-          status: z.string().optional(),
-          id: IdSchema.optional(),
-          number: z.number().optional(),
-        }).optional(),
-      })),
-    }));
+    const result = await sqldb.queryRow(
+      sql.get_requests,
+      [],
+      z.object({
+        institutions: z.array(InstitutionSchema),
+        course_requests: z.array(
+          CourseRequestSchema.extend({
+            user_name: z.string(),
+            created_at: DateFromISOString.optional(),
+            approved_by: z.string().optional(),
+            approved_status: z
+              .enum(['pending', 'approved', 'denied', 'creating', 'failed'])
+              .optional(),
+            user_id: z.string().optional(),
+            jobs: z
+              .object({
+                start_date: DateFromISOString.optional(),
+                finish_date: DateFromISOString.optional(),
+                authn_user_id: IdSchema.optional(),
+                status: z.string().optional(),
+                id: IdSchema.optional(),
+                number: z.number().optional(),
+              })
+              .optional(),
+          }),
+        ),
+      }),
+    );
     _.assign(res.locals, result);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
