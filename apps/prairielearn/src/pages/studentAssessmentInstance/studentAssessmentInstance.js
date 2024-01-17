@@ -1,9 +1,6 @@
-const util = require('util');
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
 
 const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
@@ -34,20 +31,14 @@ router.post(
     }
 
     if (req.body.__action === 'attach_file') {
-      util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processFileUpload(req, res);
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'attach_text') {
-      util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processTextUpload(req, res);
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_file') {
-      util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processDeleteFile(req, res);
+      res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
       const overrideGradeRate = false;
       var closeExam;
@@ -65,29 +56,24 @@ router.post(
         }
         closeExam = true;
       } else {
-        next(
-          error.make(400, 'unknown __action', {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
+        throw error.make(400, 'unknown __action', {
+          locals: res.locals,
+          body: req.body,
+        });
       }
       const requireOpen = true;
-      assessment.gradeAssessmentInstance(
+      await assessment.gradeAssessmentInstanceAsync(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,
         overrideGradeRate,
-        function (err) {
-          if (ERR(err, next)) return;
-          if (req.body.__action === 'timeLimitFinish') {
-            res.redirect(req.originalUrl + '?timeLimitExpired=true');
-          } else {
-            res.redirect(req.originalUrl);
-          }
-        },
       );
+      if (req.body.__action === 'timeLimitFinish') {
+        res.redirect(req.originalUrl + '?timeLimitExpired=true');
+      } else {
+        res.redirect(req.originalUrl);
+      }
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
@@ -101,6 +87,14 @@ router.post(
           '/assessment/' +
           res.locals.assessment.id,
       );
+    } else if (req.body.__action === 'update_group_roles') {
+      await groupAssessmentHelper.updateGroupRoles(
+        req.body,
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id,
+      );
+      res.redirect(req.originalUrl);
     } else {
       next(
         error.make(400, 'unknown __action', {
@@ -125,12 +119,10 @@ router.get(
     const result = await sqldb.queryAsync(sql.select_instance_questions, params);
     res.locals.instance_questions = result.rows;
 
-    res.locals.has_manual_grading_question = _.some(
-      res.locals.instance_questions,
+    res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = _.some(
-      res.locals.instance_questions,
+    res.locals.has_auto_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
