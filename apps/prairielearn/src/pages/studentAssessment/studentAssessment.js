@@ -177,10 +177,20 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
+      // Check whether the user is currently in a group
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+      );
+      if (groupId == null) {
+        throw error.make(403, 'Cannot change group roles while not in a group.');
+      }
       await groupAssessmentHelper.updateGroupRoles(
         req.body,
         res.locals.assessment.id,
+        groupId,
         res.locals.user.user_id,
+        res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);

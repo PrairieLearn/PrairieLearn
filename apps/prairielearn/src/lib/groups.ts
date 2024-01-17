@@ -429,23 +429,20 @@ export async function getAssessmentPermissions(
 export async function updateGroupRoles(
   requestBody: Record<string, any>,
   assessmentId: string,
+  groupId: string,
   userId: string,
+  hasStaffPermission: boolean,
   authnUserId: string,
 ) {
   await sqldb.runInTransactionAsync(async () => {
-    const groupId = await getGroupId(assessmentId, userId);
-    if (groupId === null) {
-      throw new Error(
-        "Couldn't access the user's group ID with the provided assessment and user IDs",
-      );
-    }
-
-    const permissions = await getAssessmentPermissions(assessmentId, userId);
-    if (!permissions.can_assign_roles_at_start) {
-      throw error.make(
-        403,
-        'User does not have permission to assign roles at the start of this assessment',
-      );
+    if (!hasStaffPermission) {
+      const permissions = await getAssessmentPermissions(assessmentId, userId);
+      if (!permissions.can_assign_roles_at_start) {
+        throw error.make(
+          403,
+          'User does not have permission to assign roles at the start of this assessment',
+        );
+      }
     }
 
     const groupConfig = await getGroupConfig(assessmentId);
@@ -477,6 +474,10 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
+      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+        // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
+        userId = groupInfo.groupMembers[0].user_id;
+      }
       roleAssignments.push({
         group_id: groupId,
         user_id: userId,
@@ -487,7 +488,6 @@ export async function updateGroupRoles(
     await sqldb.queryAsync(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
-      user_id: userId,
       authn_user_id: authnUserId,
     });
   });

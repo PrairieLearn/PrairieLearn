@@ -26,7 +26,10 @@ async function ensureUpToDate(locals) {
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
-    if (!res.locals.authz_result.authorized_edit) {
+    if (
+      !res.locals.authz_result.authorized_edit &&
+      !res.locals.authz_result.has_course_instance_permission_edit
+    ) {
       throw error.make(403, 'Not authorized', res.locals);
     }
 
@@ -91,7 +94,9 @@ router.post(
       await groupAssessmentHelper.updateGroupRoles(
         req.body,
         res.locals.assessment.id,
+        res.locals.assessment_instance.group_id,
         res.locals.user.user_id,
+        res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);

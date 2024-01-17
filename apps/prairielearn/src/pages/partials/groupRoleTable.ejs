@@ -1,12 +1,12 @@
 <% const roleConfigProblems = (rolesInfo.validationErrors?.length ?? 0) + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) + (rolesInfo.rolesAreBalanced ? 0 : 1); %>
 <% if (roleConfigProblems > 0) { %>
   <div class="alert alert-danger mt-2" role="alert">
-    Your group's role configuration is currently invalid. Please review the role requirements and <%= userCanAssignRoles || authz_data.has_course_instance_permission_view ? 'assign a valid role configuration' : 'ask a user with an assigner role to update the role configuration' %>. Question submissions are disabled until the role configuration is valid.
+    Your group's role configuration is currently invalid. Please review the role requirements and <%= userCanAssignRoles || authz_data.has_course_instance_permission_edit ? 'assign a valid role configuration' : 'ask a user with an assigner role to update the role configuration' %>. Question submissions are disabled until the role configuration is valid.
   </div>
 <% } %>
 <details class="card mb-2">
   <summary class="card-header bg-secondary text-light">
-    <%= userCanAssignRoles || authz_data.has_course_instance_permission_view ? 'Manage group roles' : 'View group roles' %> 
+    <%= userCanAssignRoles || authz_data.has_course_instance_permission_edit ? 'Manage group roles' : 'View group roles' %> 
     <% if (roleConfigProblems > 0) { %>
       <span class="badge badge-pill badge-danger"><%= roleConfigProblems %></span>
     <% } %>
@@ -36,7 +36,7 @@
                     type="checkbox"
                     id="user_role_<%= role.id %>-<%= user.user_id %>" <%# Used for tests %>
                     name="user_role_<%= role.id %>-<%= user.user_id %>"
-                    <%= (rolesInfo.disabledRoles.includes(role.role_name) || (!userCanAssignRoles && !authz_data.has_course_instance_permission_view)) ? 'disabled' : '' %>
+                    <%= (rolesInfo.disabledRoles.includes(role.role_name) || (!userCanAssignRoles && !authz_data.has_course_instance_permission_edit)) ? 'disabled' : '' %>
                     <%= rolesInfo.roleAssignments[user.uid]?.some((a) => a.group_role_id == role.id) ? 'checked' : '' %>
                   >
                   <%= role.role_name %>
@@ -47,7 +47,7 @@
           <% }) %>
         </tbody>
       </table>
-      <% if (userCanAssignRoles || authz_data.has_course_instance_permission_view) { %>
+      <% if (userCanAssignRoles || authz_data.has_course_instance_permission_edit) { %>
         <div class="d-flex justify-content-center">
           <input type="hidden" name="__action" value="update_group_roles" />
           <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />

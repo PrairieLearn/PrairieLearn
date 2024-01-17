@@ -253,11 +253,10 @@ WITH
       )
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  group_logs (authn_user_id, group_id, action)
 VALUES
   (
     $authn_user_id,
-    $user_id,
     $group_id,
     'update roles'
   );
