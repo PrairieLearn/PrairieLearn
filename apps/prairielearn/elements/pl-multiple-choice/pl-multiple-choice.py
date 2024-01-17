@@ -34,7 +34,7 @@ class SortType(Enum):
 
 
 class AnswerTuple(NamedTuple):
-    index: int
+    idx: int
     correct: bool
     html: str
     feedback: Optional[str]
@@ -314,7 +314,7 @@ def prepare_answers_to_display(
 
     # 3. Sort sampled choices based on user preference.
     if sort_type is SortType.FIXED:
-        sampled_answers.sort(key=lambda a: a.index)
+        sampled_answers.sort(key=lambda a: a.idx)
     elif sort_type is SortType.DESCEND:
         sampled_answers.sort(key=lambda a: a.html, reverse=True)
     elif sort_type is SortType.ASCEND:
