@@ -279,7 +279,7 @@ describe('Test group based assessments with custom group roles from student side
     elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
     assert.lengthOf(elemList, 1);
 
-    elemList = elemList.next();
+    elemList = elemList.parent('label');
     assert.equal(elemList.text().trim(), locals.manager.role_name);
   });
 
@@ -289,16 +289,20 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too few recorders/reflectors', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Recorder.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Recorder")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
   step('cannot select the contributor role', function () {
     elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
     assert.lengthOf(elemList, 1);
-    elemList = elemList.next();
+    elemList = elemList.parent('label');
     assert.equal(elemList.text().trim(), locals.contributor.role_name);
   });
 
@@ -350,13 +354,15 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('does not render the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('does not enable the group role table for non-assigner', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
   step('displays error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
@@ -467,9 +473,9 @@ describe('Test group based assessments with custom group roles from student side
   );
 
   step('displays errors for incorrect number of role assignments', function () {
-    elemList = locals.$('.alert:contains(less person needs to be assigned)');
+    elemList = locals.$('.alert:contains(less student needs to be assigned)');
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(more person needs to be assigned)');
+    elemList = locals.$('.alert:contains(more student needs to be assigned)');
     assert.lengthOf(elemList, 2);
   });
 
@@ -508,15 +514,19 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('does not render the group role table as non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('does not enable the group role table as non-assigner', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
   step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
+    elemList = locals.$(
+      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
@@ -540,14 +550,18 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
+    elemList = locals.$(
+      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
-  step('should not render the group role table', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('should not enable the group role table', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
@@ -659,7 +673,9 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
+    elemList = locals.$(
+      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
@@ -1201,15 +1217,19 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
   });
 
-  step('should not render the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('should not enable the group role table for non-assigner', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
   step('should display correct errors for too few role assignments', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
@@ -1223,13 +1243,15 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('should not render the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('should not enable the group role table for non-assigner', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
   step('displays error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
@@ -1258,14 +1280,18 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   step('displays error for too few reflectors and too many recorders', function () {
-    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
+    elemList = locals.$(
+      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
+    );
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
+    elemList = locals.$(
+      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+    );
     assert.lengthOf(elemList, 1);
   });
 
-  step('should not render the group role table for non-assigner', function () {
-    elemList = locals.$('#role-select-form').find('tr');
+  step('should not enable the group role table for non-assigner', function () {
+    elemList = locals.$('#role-select-form').find('input:not([disabled])');
     assert.lengthOf(elemList, 0);
   });
 
@@ -1290,7 +1316,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   step('first user should not be able to select the contributor role', function () {
     elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
     assert.lengthOf(elemList, 1);
-    elemList = elemList.next();
+    elemList = elemList.parent('label');
     assert.equal(elemList.text().trim(), locals.contributor.role_name);
   });
 
@@ -1348,7 +1374,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     step('first user should not be able to select the contributor role', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 1);
-      elemList = elemList.next();
+      elemList = elemList.parent('label');
       assert.equal(elemList.text().trim(), locals.contributor.role_name);
     });
 
@@ -1436,9 +1462,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have correct errors displayed', function () {
-      elemList = locals.$(
-        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 5)',
-      );
+      elemList = locals.$('.alert:contains(student has too many roles)');
       assert.lengthOf(elemList, 1);
     });
 
@@ -1487,7 +1511,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
     step('should have correct errors displayed', function () {
       elemList = locals.$(
-        '.alert:contains(1 more person needs to be assigned Recorder. (Found 1, expected exactly 2).)',
+        '.alert:contains(1 more student needs to be assigned to the role "Recorder" (Found 1, expected exactly 2).)',
       );
       assert.lengthOf(elemList, 0);
       elemList = locals.$(
@@ -1532,7 +1556,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have correct errors displayed', function () {
-      elemList = locals.$('.alert:contains(to be assigned Recorder.)');
+      elemList = locals.$('.alert:contains(to be assigned to the role "Recorder")');
       assert.lengthOf(elemList, 0);
 
       elemList = locals.$(
@@ -1540,9 +1564,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       );
       assert.lengthOf(elemList, 1);
 
-      elemList = locals.$(
-        '.alert:contains(A user has too many roles. Every student should be assigned to exactly one role with group size 4)',
-      );
+      elemList = locals.$('.alert:contains(student has too many roles)');
       assert.lengthOf(elemList, 1);
     });
 
@@ -1583,7 +1605,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     step('first user should not be able to select the contributor role', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 1);
-      elemList = elemList.next();
+      elemList = elemList.parent('label');
       assert.equal(elemList.text().trim(), locals.contributor.role_name);
     });
 

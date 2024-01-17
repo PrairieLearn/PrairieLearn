@@ -7,9 +7,9 @@
   <% rolesInfo.validationErrors.forEach(function ({ role_id, role_name, count, minimum, maximum }) { %>
     <div class="alert alert-danger" role="alert">
     <% if (count < minimum) { %>
-        <%= minimum - count %> more <%= minimum - count === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>".
+        <%= minimum - count %> more <%= minimum - count === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>"
     <% } else if (count > maximum) { %>
-        <%= count - maximum %> less <%= count - maximum === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>".
+        <%= count - maximum %> less <%= count - maximum === 1 ? 'student needs' : 'students need' %> to be assigned to the role "<%= role_name %>"
     <% } %>
     <% if (maximum === minimum) { %>
         (<%= count %> assigned, <%= minimum %> expected).

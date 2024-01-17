@@ -217,7 +217,6 @@ VALUES
 WITH
   json_roles AS (
     SELECT
-      gu.id,
       gu.user_id,
       gu.group_id,
       (role_assignment ->> 'group_role_id')::bigint AS group_role_id
@@ -228,9 +227,8 @@ WITH
   ),
   assign_new_group_roles AS (
     INSERT INTO
-      group_user_roles (group_user_id, group_id, user_id, group_role_id)
+      group_user_roles (group_id, user_id, group_role_id)
     SELECT
-      jr.id,
       jr.group_id,
       jr.user_id,
       jr.group_role_id
