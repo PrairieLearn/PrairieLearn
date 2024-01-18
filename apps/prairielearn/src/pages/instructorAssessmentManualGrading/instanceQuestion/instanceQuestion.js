@@ -1,78 +1,89 @@
-const express = require('express');
-const router = express.Router();
+// @ts-check
+import * as express from 'express';
 const asyncHandler = require('express-async-handler');
-const util = require('util');
-const qs = require('qs');
-const ejs = require('ejs');
-const path = require('path');
+import * as util from 'util';
+import * as qs from 'qs';
+import { z } from 'zod';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
-const { getAndRenderVariant, renderPanelsForSubmission } = require('../../../lib/question-render');
-const manualGrading = require('../../../lib/manualGrading');
-const { features } = require('../../../lib/features/index');
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render';
+import * as manualGrading from '../../../lib/manualGrading';
+import { features } from '../../../lib/features/index';
+import { IdSchema, UserSchema } from '../../../lib/db-types';
+import { GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
+import { GradingPanel } from './gradingPanel.html';
+import { RubricSettingsModal } from './rubricSettingsModal.html';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-async function prepareLocalsForRender(req, res) {
+/**
+ *
+ * @param {Record<string, any>} query
+ * @param {Record<string, any>} resLocals
+ */
+async function prepareLocalsForRender(query, resLocals) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behaviour, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
-  const params = { instance_question_id: res.locals.instance_question.id };
-  const variant_with_submission = (
-    await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
-  ).rows[0];
-
-  if (variant_with_submission) {
-    res.locals.manualGradingInterface = true;
-    await util.promisify(getAndRenderVariant)(variant_with_submission.variant_id, null, res.locals);
-  }
-
-  res.locals.rubric_settings_visible = await features.enabledFromLocals(
-    'manual-grading-rubrics',
-    res.locals,
+  const variant_with_submission_id = await sqldb.queryOptionalRow(
+    sql.select_variant_with_last_submission,
+    { instance_question_id: resLocals.instance_question.id },
+    IdSchema,
   );
 
   // If student never loaded question or never submitted anything (submission is null)
-  if (!res.locals.submission) {
+  if (variant_with_submission_id == null) {
     throw error.make(404, 'Instance question does not have a gradable submission.');
   }
+  resLocals.manualGradingInterface = true;
+  await util.promisify(getAndRenderVariant)(variant_with_submission_id, null, resLocals);
 
-  res.locals.conflict_grading_job = null;
-  if (req.query.conflict_grading_job_id) {
-    const params = {
-      grading_job_id: req.query.conflict_grading_job_id,
-      instance_question_id: res.locals.instance_question.id, // for authz
-    };
-    res.locals.conflict_grading_job = (
-      await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
-    ).rows[0];
-    await manualGrading.populateManualGradingData(res.locals.conflict_grading_job);
+  const rubric_settings_visible = await features.enabledFromLocals(
+    'manual-grading-rubrics',
+    resLocals,
+  );
+
+  /** @type {import('./instanceQuestion.html').GradingJobData | null} */
+  let conflict_grading_job = null;
+  if (query.conflict_grading_job_id) {
+    conflict_grading_job = await sqldb.queryOptionalRow(
+      sql.select_grading_job_data,
+      {
+        grading_job_id: IdSchema.parse(query.conflict_grading_job_id),
+        instance_question_id: resLocals.instance_question.id, // for authz
+      },
+      GradingJobDataSchema,
+    );
+    if (conflict_grading_job != null) {
+      await manualGrading.populateManualGradingData(conflict_grading_job);
+    }
   }
 
-  const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
-    course_instance_id: res.locals.course_instance.id,
-  });
-  res.locals.graders = graders_result.rows[0]?.graders;
+  const graders = await sqldb.queryOptionalRow(
+    sql.select_graders,
+    { course_instance_id: resLocals.course_instance.id },
+    UserSchema.array().nullable(),
+  );
+  return { resLocals, rubric_settings_visible, conflict_grading_job, graders };
 }
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+      throw error.make(403, 'Access denied (must be a student data viewer)');
     }
 
-    await prepareLocalsForRender(req, res);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(InstanceQuestion(await prepareLocalsForRender(req.query, res.locals)));
   }),
 );
 
 router.get(
   '/variant/:variant_id/submission/:submission_id',
-  asyncHandler(async (req, res, _next) => {
+  asyncHandler(async (req, res) => {
     const results = await util.promisify(renderPanelsForSubmission)(
       req.params.submission_id,
       res.locals.question.id,
@@ -90,19 +101,11 @@ router.get(
 
 router.get(
   '/grading_rubric_panels',
-  asyncHandler(async (req, res, _next) => {
+  asyncHandler(async (req, res) => {
     try {
-      await prepareLocalsForRender(req, res);
-      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-      // latter would require all includes in EJS to be translated to await recursively.
-      const gradingPanel = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'gradingPanel.ejs'),
-        { context: 'main', ...res.locals },
-      );
-      const rubricSettings = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'rubricSettingsModal.ejs'),
-        res.locals,
-      );
+      const locals = await prepareLocalsForRender({}, res.locals);
+      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
       res.send({ err: String(err) });
@@ -110,46 +113,99 @@ router.get(
   }),
 );
 
+const PostBodySchema = z.union([
+  z.object({
+    __action: z.literal('add_manual_grade'),
+    submission_id: IdSchema,
+    modified_at: z.string(),
+    rubric_item_selected_manual: IdSchema.or(IdSchema.array())
+      .nullish()
+      .transform((val) => (val == null ? [] : Array.isArray(val) ? val : [val])),
+    score_manual_adjust_points: z.coerce.number().nullish(),
+    use_score_perc: z.literal('on').optional(),
+    score_manual_points: z.coerce.number().nullish(),
+    score_manual_percent: z.coerce.number().nullish(),
+    score_auto_points: z.coerce.number().nullish(),
+    score_auto_percent: z.coerce.number().nullish(),
+    submission_note: z.string().nullish(),
+  }),
+  z.object({
+    __action: z.literal('modify_rubric_settings'),
+    use_rubric: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((val) => val === 'true'),
+    replace_auto_points: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((val) => val === 'true'),
+    starting_points: z.coerce.number(),
+    min_points: z.coerce.number(),
+    max_extra_points: z.coerce.number(),
+    tag_for_manual_grading: z
+      .literal('true')
+      .optional()
+      .transform((val) => val === 'true'),
+    rubric_item: z.record(
+      z.string(),
+      z.object({
+        id: z.string().optional(),
+        order: z.coerce.number(),
+        points: z.coerce.number(),
+        description: z.string(),
+        explanation: z.string().optional(),
+        grader_note: z.string().optional(),
+        always_show_to_students: z.string().transform((val) => val === 'true'),
+      }),
+    ),
+  }),
+  z.object({
+    /** @type {z.ZodType<`reassign_${string}`>} */
+    __action: z.custom((val) => typeof val === 'string' && val.startsWith('reassign_')),
+  }),
+]);
+
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      return next(error.make(403, 'Access denied (must be a student data editor)'));
+      throw error.make(403, 'Access denied (must be a student data editor)');
     }
-    if (req.body.__action === 'add_manual_grade') {
-      let manual_rubric_data = null;
-      if (res.locals.assessment_question.manual_rubric_id) {
-        let manual_rubric_items = req.body.rubric_item_selected_manual || [];
-        if (!Array.isArray(manual_rubric_items)) {
-          manual_rubric_items = [manual_rubric_items];
-        }
-        manual_rubric_data = {
-          rubric_id: res.locals.assessment_question.manual_rubric_id,
-          applied_rubric_items: manual_rubric_items.map((id) => ({ rubric_item_id: id })),
-          adjust_points: req.body.score_manual_adjust_points || null,
-        };
-      }
+    const body = PostBodySchema.parse(
+      // Parse using qs, which allows deep objects to be created based on parameter names
+      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+      qs.parse(qs.stringify(req.body)),
+    );
+    if (body.__action === 'add_manual_grade') {
+      const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
+        ? {
+            rubric_id: res.locals.assessment_question.manual_rubric_id,
+            applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: body.score_manual_adjust_points || null,
+          }
+        : undefined;
 
-      const update_result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment.id,
-        res.locals.instance_question.id,
-        req.body.submission_id,
-        req.body.modified_at,
-        {
-          manual_score_perc: req.body.use_score_perc ? req.body.score_manual_percent : null,
-          manual_points: req.body.use_score_perc ? null : req.body.score_manual_points,
-          auto_score_perc: req.body.use_score_perc ? req.body.score_auto_percent || null : null,
-          auto_points: req.body.use_score_perc ? null : req.body.score_auto_points || null,
-          feedback: { manual: req.body.submission_note },
-          manual_rubric_data,
-        },
-        res.locals.authn_user.user_id,
-      );
-
-      if (update_result.modified_at_conflict) {
-        return res.redirect(
-          req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`,
+      const { modified_at_conflict, grading_job_id } =
+        await manualGrading.updateInstanceQuestionScore(
+          res.locals.assessment.id,
+          res.locals.instance_question.id,
+          body.submission_id,
+          body.modified_at,
+          {
+            manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
+            manual_points: body.use_score_perc ? null : body.score_manual_points,
+            auto_score_perc: body.use_score_perc ? body.score_auto_percent : null,
+            auto_points: body.use_score_perc ? null : body.score_auto_points,
+            feedback: { manual: body.submission_note },
+            manual_rubric_data,
+          },
+          res.locals.authn_user.user_id,
         );
+
+      if (modified_at_conflict) {
+        return res.redirect(req.baseUrl + `?conflict_grading_job_id=${grading_job_id}`);
       }
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
@@ -160,40 +216,32 @@ router.post(
           res.locals.instance_question.id,
         ),
       );
-    } else if (req.body.__action === 'modify_rubric_settings') {
-      // Parse using qs, which allows deep objects to be created based on parameter names
-      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {}).map(
-        (item) => ({ ...item, always_show_to_students: item.always_show_to_students === 'true' }),
-      );
-      manualGrading
-        .updateAssessmentQuestionRubric(
+    } else if (body.__action === 'modify_rubric_settings') {
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
-          req.body.use_rubric === 'true',
-          req.body.replace_auto_points === 'true',
-          req.body.starting_points,
-          req.body.min_points,
-          req.body.max_extra_points,
-          rubric_items,
-          !!req.body.tag_for_manual_grading,
+          body.use_rubric,
+          body.replace_auto_points,
+          body.starting_points,
+          body.min_points,
+          body.max_extra_points,
+          Object.values(body.rubric_item || {}), // rubric items
+          body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
-        )
-        .then(() => {
-          res.redirect(req.baseUrl + '/grading_rubric_panels');
-        })
-        .catch((err) => {
-          res.status(500).send({ err: String(err) });
-        });
-    } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
-      const assigned_grader = req.body.__action.substring(9);
-      const params = {
+        );
+        res.redirect(req.baseUrl + '/grading_rubric_panels');
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
+    } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
+      const assigned_grader = body.__action.substring(9);
+      await sqldb.queryAsync(sql.update_assigned_grader, {
         course_instance_id: res.locals.course_instance.id,
         assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
         assigned_grader: ['nobody', 'graded'].includes(assigned_grader) ? null : assigned_grader,
         requires_manual_grading: assigned_grader !== 'graded',
-      };
-      await sqldb.queryAsync(sql.update_assigned_grader, params);
+      });
 
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
@@ -205,13 +253,12 @@ router.post(
         ),
       );
     } else {
-      return next(
-        error.make(400, 'unknown __action', {
-          locals: res.locals,
-          body: req.body,
-        }),
-      );
+      throw error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body,
+      });
     }
   }),
 );
-module.exports = router;
+
+export default router;
