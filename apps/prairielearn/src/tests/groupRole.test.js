@@ -412,7 +412,7 @@ describe('Test group based assessments with custom group roles from student side
   step('can switch to second user and load assessment without error', async function () {
     // By loading assessment as second user, we verify that an assessment can be loaded
     // by a user with no role assignments
-    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 1);
+    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
   });
 
   step('second user cannot update roles as non-assigner', async function () {
@@ -442,7 +442,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('first user can edit role table to make both users manager', async function () {
     // Switch to first user
-    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
 
     locals.roleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
@@ -463,7 +463,7 @@ describe('Test group based assessments with custom group roles from student side
         locals.studentUsers[1],
         locals.assessmentUrl,
         '00000002',
-        2,
+        3,
       );
 
       elemList = locals.$('#role-select-form').find('tr');
@@ -578,7 +578,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('first user should see group role table with four users', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
 
     elemList = locals.$('#role-select-form').find('tr');
     // Header row and four user rows
@@ -721,7 +721,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('fourth user can leave group', async function () {
-    await switchUserAndLoadAssessment(locals.studentUsers[3], locals.assessmentUrl, '00000004', 1);
+    await switchUserAndLoadAssessment(locals.studentUsers[3], locals.assessmentUrl, '00000004', 2);
     await leaveGroup(locals.assessmentUrl);
   });
 
@@ -1014,7 +1014,7 @@ describe('Test group based assessments with custom group roles from student side
     await leaveGroup(locals.assessmentUrl);
 
     // Switch to second user
-    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
+    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 3);
 
     locals.roleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
@@ -1473,7 +1473,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
     step('should be able to leave as fifth user', async function () {
       // Switch to fifth user
-      await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 1);
+      await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 2);
 
       // Leave as fifth user
       await leaveGroup(assessmentUrl);
@@ -1576,7 +1576,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
   describe('test correct role config where group size falls below minimum required role count', function () {
     step('should be able to leave as fourth user', async function () {
-      await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 1);
+      await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 2);
 
       // Leave as fourth user
       await leaveGroup(assessmentUrl);

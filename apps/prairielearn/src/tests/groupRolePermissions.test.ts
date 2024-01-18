@@ -348,16 +348,16 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       let $ = $assessmentInstanceFirstUserPage;
 
       // The second and third questions should not be viewable
-      const lockedRows = $('tr.pl-sequence-locked');
+      const lockedRows = $('tr [data-test-id="locked-instance-question-row"]');
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
-        const rowLabelText = $(element).find('span.text-muted, a').text();
+        const rowLabelText = $(element).parent('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
-        const popoverText = $(element).find('[data-toggle="popover"]').attr('data-content');
+        const popoverText = $(element).attr('data-content');
         assert.strictEqual(
           popoverText,
-          'Your current role configuration (Manager) does not have permission to view this question.',
+          'Your current group role (Manager) restricts access to this question.',
         );
       });
 
@@ -380,17 +380,17 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
       $ = $questionOneThirdUserPage;
 
-      // The "next question" button skips unviewable questions
+      // The "next question" button is disabled for unviewable questions
       const nextQuestionLink = $('#question-nav-next').attr('href');
-      assert.strictEqual(siteUrl + nextQuestionLink, questionThreeUrl + '/');
+      assert.isUndefined(nextQuestionLink);
 
       const res = await fetch(questionThreeUrl);
       assert.isOk(res.ok);
       $ = cheerio.load(await res.text());
 
-      // The "previous question" button skips unviewable questions
+      // The "previous question" button is disabled for unviewable questions
       const prevQuestionLink = $('#question-nav-prev').attr('href');
-      assert.strictEqual(siteUrl + prevQuestionLink, questionOneUrl + '/');
+      assert.isUndefined(prevQuestionLink);
 
       // Save and grade button is not disabled with correct permission
       const { $: $questionOneSecondUserPage } = await switchUserAndLoadAssessment(
@@ -415,12 +415,12 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       // Save and grade button should be disabled without correct permission
       const firstUserSubmitButton = $('.question-grade');
       assert.isTrue(firstUserSubmitButton.is(':disabled'));
-      const popover = $('.btn[aria-label="Locked"]');
+      const popover = $('.btn[aria-label="Submission blocked"]');
       assert.lengthOf(popover, 1);
       const popoverContent = popover.data('content');
       assert.strictEqual(
         popoverContent,
-        'Your current role configuration (Manager) does not have permission to submit this question.',
+        'Your group role (Manager) is not allowed to submit this question.',
       );
 
       // Save button should be disabled without correct permission
@@ -518,60 +518,20 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Assert the correct errors show up on screen
-      let invalidRoleConfigError = $('.alert:contains(Invalid role configuration)');
+      let invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
       assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       let errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      let tooManyRolesError = $('.alert:contains(A user has too many roles.)');
+      let tooManyRolesError = $('.alert:contains(too many roles)');
       assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      let lessRecordersError = $('.alert:contains(1 less person needs to be assigned Recorder.)');
+      let lessRecordersError = $(
+        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+      );
       assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
 
       // Enter question one
       const res = await fetch(questionOneUrl);
-      assert.isOk(res.ok);
-      $ = cheerio.load(await res.text());
-
-      // Check that the submit & grade button is disabled
-      const button = $('.question-grade');
-      assert.isTrue(button.is(':disabled'));
-      const popover = $('.btn[aria-label="Locked"]');
-      assert.lengthOf(popover, 1);
-      const popoverContent = popover.data('content');
-      assert.strictEqual(
-        popoverContent,
-        "Your group's role configuration is invalid. Question submissions are disabled until your role configuration is correct.",
-      );
-
-      // Ensure that submissions are disabled when role config is invalid
-      // Get CSRF token
-      const csrfTokenForm = $('form input[name="__csrf_token"]');
-      assert.nestedProperty(csrfTokenForm[0], 'attribs.value');
-      const questionCsrfToken = csrfTokenForm.first().attr('value');
-      assert.isString(questionCsrfToken);
-
-      // Get question variant
-      const questionForm = $('.question-form input[name="__variant_id"]');
-      assert.lengthOf(questionForm, 1);
-      assert.nestedProperty(questionForm[0], 'attribs.value');
-      const variantId = questionForm.first().attr('value');
-      assert.isDefined(variantId);
-
-      // Send request to save & grade question
-      const form = {
-        __action: 'grade',
-        __csrf_token: questionCsrfToken as string,
-        __variant_id: variantId as string,
-      };
-      const questionSubmissionWithInvalidConfigResponse = await fetch(questionOneUrl, {
-        method: 'POST',
-        body: new URLSearchParams(form),
-      });
-      assert.equal(
-        questionSubmissionWithInvalidConfigResponse.status,
-        403,
-        'status should be forbidden',
-      );
+      assert.isNotOk(res.ok);
 
       // Switch back to second user and load assessment instance
       const { $: assessmentInstanceSecondUserPage } = await switchUserAndLoadAssessment(
@@ -582,13 +542,15 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      invalidRoleConfigError = $('.alert:contains(Invalid role configuration)');
+      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
       assert.lengthOf(invalidRoleConfigError, 1, 'alert shows there is an invalid role config');
       errorNotification = $('span.badge-danger:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
-      tooManyRolesError = $('.alert:contains(A user has too many roles.)');
+      tooManyRolesError = $('.alert:contains(too many roles)');
       assert.lengthOf(tooManyRolesError, 1, 'role config should have error for too many roles');
-      lessRecordersError = $('.alert:contains(1 less person needs to be assigned Recorder.)');
+      lessRecordersError = $(
+        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+      );
       assert.lengthOf(lessRecordersError, 1, 'role config should have error for too many roles');
 
       // Switch back to first user and assign a valid role config
@@ -608,13 +570,15 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       );
 
       // Check that the errors no longer show
-      invalidRoleConfigError = $('.alert:contains(Invalid role configuration)');
+      invalidRoleConfigError = $('.alert:contains(role configuration is currently invalid)');
       assert.lengthOf(invalidRoleConfigError, 0, 'no invalid role config error should show');
       errorNotification = $('span.badge-danger');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
-      tooManyRolesError = $('.alert:contains(A user has too many roles.)');
+      tooManyRolesError = $('.alert:contains(too many roles)');
       assert.lengthOf(tooManyRolesError, 0, 'role config should be valid and show no errors');
-      lessRecordersError = $('.alert:contains(1 less person needs to be assigned Recorder.)');
+      lessRecordersError = $(
+        '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
+      );
       assert.lengthOf(lessRecordersError, 0, 'role config should be valid and show no errors');
     });
   });
