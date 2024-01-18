@@ -47,7 +47,7 @@ const DateDurationResultSchema = z.object({
 });
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  instructor_question_number: z.string().nullable(),
+  instructor_question_number: z.string(),
   manual_rubric_id: IdSchema.nullable(),
   max_auto_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
@@ -55,9 +55,9 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
-  question_number: z.string().nullable(),
+  question_number: z.string(),
   question_title: z.string().nullable(),
-  row_order: z.number().nullable(),
+  row_order: z.number(),
   start_new_zone: z.boolean(),
   zone_best_questions: z.number().nullable(),
   zone_has_best_questions: z.boolean(),
