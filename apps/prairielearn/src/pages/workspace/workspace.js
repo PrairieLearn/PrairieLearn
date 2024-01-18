@@ -5,9 +5,9 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const sqldb = require('@prairielearn/postgres');
 const workspaceUtils = require('@prairielearn/workspace-utils');
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 const { config } = require('../../lib/config');
+const { generateSignedToken } = require('@prairielearn/signed-token');
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('@prairielearn/error');

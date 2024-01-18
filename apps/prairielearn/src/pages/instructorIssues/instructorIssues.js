@@ -1,5 +1,4 @@
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
-
+//@ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const { parseISO, formatDistance } = require('date-fns');
@@ -11,6 +10,7 @@ const error = require('@prairielearn/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
+const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -35,6 +35,9 @@ function formatForLikeClause(str) {
 
 function parseRawQuery(str) {
   const parsedQuery = SearchString.parse(str);
+  /**
+   * @type {{filter_is_open: boolean | null, filter_is_closed: boolean | null, filter_manually_reported: boolean | null, filter_automatically_reported: boolean | null, filter_qids: string[] | null, filter_not_qids: string[] | null, filter_query_text: string | null, filter_users: string[] | null, filter_not_users: string[] | null}}
+   */
   const filters = {
     filter_is_open: null,
     filter_is_closed: null,
@@ -215,7 +218,7 @@ router.get(
     res.locals.rows = issues.rows;
 
     res.locals.filterQuery = req.query.q;
-    res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
+    res.locals.encodedFilterQuery = encodeURIComponent((req.query.q ?? '').toString());
     res.locals.filters = filters;
 
     res.locals.commonQueries = {};

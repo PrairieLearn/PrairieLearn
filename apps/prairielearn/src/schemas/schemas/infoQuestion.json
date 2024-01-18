@@ -17,15 +17,7 @@
     },
     "type": {
       "description": "Type of the question.",
-      "enum": [
-        "Calculation",
-        "ShortAnswer",
-        "MultipleChoice",
-        "Checkbox",
-        "File",
-        "MultipleTrueFalse",
-        "v3"
-      ]
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
     },
     "title": {
       "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",

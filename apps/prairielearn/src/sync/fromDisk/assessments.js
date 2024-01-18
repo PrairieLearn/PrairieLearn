@@ -122,8 +122,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  let assessmentCanView = assessment?.canView ?? [];
-  let assessmentCanSubmit = assessment?.canSubmit ?? [];
+  let allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
+  let assessmentCanView = assessment?.canView ?? allRoleNames;
+  let assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   assessmentParams.alternativeGroups = zones.map((zone) => {
     let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
       ? zone.gradeRateMinutes

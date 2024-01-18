@@ -1,16 +1,16 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
-const express = require('express');
+import * as express from 'express';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { logger } = require('@prairielearn/logger');
-const Sentry = require('@prairielearn/sentry');
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
-const { config } = require('../../lib/config');
-const github = require('../../lib/github');
-const opsbot = require('../../lib/opsbot');
+import { config } from '../../lib/config';
+import { createCourseRepoJob } from '../../lib/github';
+import { sendCourseRequestMessage } from '../../lib/opsbot';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -106,13 +106,13 @@ router.post(
         course_request_id: id,
       };
 
-      const jobSequenceId = await github.createCourseRepoJob(repo_options, res.locals.authn_user);
+      const jobSequenceId = await createCourseRepoJob(repo_options, res.locals.authn_user);
 
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
 
       // Do this in the background once we've redirected the response.
       try {
-        await opsbot.sendCourseRequestMessage(
+        await sendCourseRequestMessage(
           `*Creating course*\n` +
             `Course rubric: ${repo_options.short_name}\n` +
             `Course title: ${repo_options.title}\n` +
@@ -131,4 +131,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

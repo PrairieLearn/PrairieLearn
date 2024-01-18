@@ -1,28 +1,34 @@
 // @ts-check
-const express = require('express');
 const asyncHandler = require('express-async-handler');
-const path = require('path');
+import * as express from 'express';
+import * as path from 'path';
+import { z } from 'zod';
 
-const { flash } = require('@prairielearn/flash');
-const sqldb = require('@prairielearn/postgres');
-const { logger } = require('@prairielearn/logger');
-const Sentry = require('@prairielearn/sentry');
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
-const opsbot = require('../../lib/opsbot');
-const github = require('../../lib/github');
-const { config } = require('../../lib/config');
+import * as opsbot from '../../lib/opsbot';
+import * as github from '../../lib/github';
+import { config } from '../../lib/config';
+import { CourseRequestSchema, IdSchema } from '../../lib/db-types';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryAsync(sql.get_requests, {
-      user_id: res.locals.authn_user.user_id,
-    });
+    res.locals.navPage = 'request_course';
+    res.locals.course_requests = await queryRows(
+      sql.get_requests,
+      {
+        user_id: res.locals.authn_user.user_id,
+      },
+      CourseRequestSchema,
+    );
 
-    res.locals.course_requests = result.rows;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -68,16 +74,17 @@ router.post(
       error = true;
     }
 
-    const existingCourseRequestsResult = await sqldb.queryOneRowAsync(
+    const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
       {
         user_id: res.locals.authn_user.user_id,
         short_name,
         title,
       },
+      z.boolean(),
     );
 
-    if (existingCourseRequestsResult.rows[0].has_existing_request) {
+    if (hasExistingCourseRequest) {
       flash('error', 'You already have a request for this course.');
       error = true;
     }
@@ -88,36 +95,46 @@ router.post(
     }
 
     // Otherwise, insert the course request and send a Slack message.
-    const insertRequestResult = await sqldb.queryOneRowAsync(sql.insert_course_request, {
-      short_name,
-      title,
-      user_id: res.locals.authn_user.user_id,
-      github_user,
-      first_name,
-      last_name,
-      work_email,
-      institution,
-    });
-    const creq_id = insertRequestResult.rows[0].course_request_id;
+    const creq_id = await queryRow(
+      sql.insert_course_request,
+      {
+        short_name,
+        title,
+        user_id: res.locals.authn_user.user_id,
+        github_user,
+        first_name,
+        last_name,
+        work_email,
+        institution,
+      },
+      IdSchema,
+    );
 
     // Check if we can automatically approve and create the course.
-    const canAutoCreateResult = await sqldb.queryOneRowAsync(sql.can_auto_create_course, {
-      user_id: res.locals.authn_user.user_id,
-    });
-    const canAutoCreateCourse = canAutoCreateResult.rows[0].can_auto_create_course;
+    const canAutoCreateCourse = await queryRow(
+      sql.can_auto_create_course,
+      {
+        user_id: res.locals.authn_user.user_id,
+      },
+      z.boolean(),
+    );
 
     if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
       // Automatically fill in institution ID and display timezone from the user's other courses.
-      const existingSettingsResult = await sqldb.queryOneRowAsync(
+      const existingSettingsResult = await queryRow(
         sql.get_existing_owner_course_settings,
         { user_id: res.locals.authn_user.user_id },
+        z.object({
+          institution_id: IdSchema,
+          display_timezone: z.string(),
+        }),
       );
       const repo_short_name = github.reponameFromShortname(short_name);
       const repo_options = {
         short_name: short_name,
         title: title,
-        institution_id: existingSettingsResult.rows[0].institution_id,
-        display_timezone: existingSettingsResult.rows[0].display_timezone,
+        institution_id: existingSettingsResult.institution_id,
+        display_timezone: existingSettingsResult.display_timezone,
         path: path.join(config.coursesRoot, repo_short_name),
         repo_short_name: repo_short_name,
         github_user,
@@ -165,4 +182,4 @@ router.post(
   }),
 );
 
-module.exports = router;
+export default router;

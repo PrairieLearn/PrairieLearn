@@ -57,11 +57,6 @@ BEGIN
         RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id USING ERRCODE = 'ST400';
     END IF;
 
-    -- mark submission as regradable
-    UPDATE submissions AS s
-    SET regradable = TRUE
-    WHERE s.id = submission.id;
-
     -- does the most recent submission actually need grading?
     IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded
     IF submission.grading_requested_at IS NOT NULL THEN RETURN; END IF; -- grading is in progress

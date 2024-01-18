@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
-const fs = require('node:fs/promises');
-const path = require('node:path');
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config';

@@ -2,7 +2,7 @@
 import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-const path = require('path');
+import * as path from 'path';
 import * as sqldb from '@prairielearn/postgres';
 const stringify = require('json-stable-stringify');
 import { assert } from 'chai';
@@ -200,7 +200,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk';
 /**
  * @typedef {Object} Question
  * @property {string} uuid
- * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+ * @property {"Calculation" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
  * @property {string} title
  * @property {string} topic
  * @property {string[]} [tags]

@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from 'chai';
 import * as fs from 'fs-extra';
-const path = require('path');
+import * as path from 'path';
 import { config } from '../../lib/config';
 import { features } from '../../lib/features/index';
 import * as sqldb from '@prairielearn/postgres';
