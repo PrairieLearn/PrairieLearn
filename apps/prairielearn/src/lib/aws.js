@@ -1,7 +1,7 @@
 // @ts-check
 import { Upload } from '@aws-sdk/lib-storage';
 import { S3 } from '@aws-sdk/client-s3';
-const fs = require('fs-extra');
+import * as fs from 'fs-extra';
 import * as util from 'util';
 import * as async from 'async';
 import * as path from 'path';

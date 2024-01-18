@@ -1,5 +1,5 @@
 // @ts-check
-const path = require('path');
+import * as path from 'path';
 const _ = require('lodash');
 import * as fs from 'fs-extra';
 import * as async from 'async';
@@ -395,7 +395,7 @@ const FILE_UUID_REGEX =
  * @property {any} id
  * @property {string} qid
  * @property {string} uuid
- * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+ * @property {"Calculation" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
  * @property {string} title
  * @property {string} topic
  * @property {string[]} tags
@@ -1030,10 +1030,10 @@ async function validateQuestion(question) {
 
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
-      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
       warnings.push(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
+      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
     }
   }
 

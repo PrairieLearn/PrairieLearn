@@ -1,4 +1,4 @@
-import detectMocha from 'detect-mocha';
+import detectMocha = require('detect-mocha');
 
 import * as error from '@prairielearn/error';
 import { config } from './config';

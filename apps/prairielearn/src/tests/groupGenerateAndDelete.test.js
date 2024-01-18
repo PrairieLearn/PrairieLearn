@@ -1,6 +1,5 @@
 // @ts-check
 import { assert } from 'chai';
-const util = require('node:util');
 import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 
@@ -30,18 +29,16 @@ describe('test auto group and delete groups', function () {
   });
 
   step('auto assign groups', async () => {
-    const user_id = 1;
-    const authn_user_id = 1;
+    const user_id = '1';
+    const authn_user_id = '1';
     const max_group_size = 10;
     const min_group_size = 10;
-    const option = 1;
-    const job_sequence_id = await util.promisify(groupUpdate.autoGroups)(
+    const job_sequence_id = await groupUpdate.autoGroups(
       locals.assessment_id,
       user_id,
       authn_user_id,
       max_group_size,
       min_group_size,
-      option,
     );
     await helperServer.waitForJobSequenceAsync(job_sequence_id);
   });

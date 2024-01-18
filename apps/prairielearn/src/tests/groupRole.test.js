@@ -3,7 +3,7 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import * as fs from 'fs-extra';
-const path = require('path');
+import * as path from 'path';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
 import * as sqldb from '@prairielearn/postgres';
@@ -92,16 +92,18 @@ const leaveGroup = async (assessmentUrl) => {
  * @param {Array} roleAssignments
  * @param {String} assessmentId
  */
-const verifyRoleAssignmentsInDatabase = async (roleAssignments, assessmentId) => {
-  const expected = roleAssignments.map(({ roleId, groupUserId }) => ({
-    user_id: groupUserId,
-    group_role_id: roleId,
-  }));
+async function verifyRoleAssignmentsInDatabase(roleAssignments, assessmentId) {
+  const expected = roleAssignments
+    .map(({ roleId, groupUserId }) => ({
+      user_id: groupUserId,
+      group_role_id: roleId,
+    }))
+    .sort((a, b) => a.user_id - b.user_id || a.group_role_id - b.group_role_id);
   const result = await sqldb.queryAsync(sql.select_group_user_roles, {
     assessment_id: assessmentId,
   });
   assert.sameDeepMembers(result.rows, expected);
-};
+}
 
 /**
  * Asserts that role table contains checked roles corresponding to role assignments.
@@ -770,7 +772,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('first user should see five roles checked in the table', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
-    verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
+    await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
   });
 
   step(

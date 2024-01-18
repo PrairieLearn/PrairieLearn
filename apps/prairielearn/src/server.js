@@ -180,7 +180,6 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
       res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
@@ -589,13 +588,10 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
-  app.use('/pl/request_course', [
-    function (req, res, next) {
-      res.locals.navPage = 'request_course';
-      next();
-    },
-    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
-  ]);
+  app.use(
+    '/pl/request_course',
+    require('./pages/instructorRequestCourse/instructorRequestCourse').default,
+  );
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The
   // route handler will only ever display courses for which the user has staff
@@ -1430,8 +1426,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
-    require('./pages/studentAssessmentExam/studentAssessmentExam'),
+    require('./pages/studentAssessment/studentAssessment'),
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file',
@@ -1456,8 +1451,7 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
-    require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
-    require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
+    require('./pages/studentAssessmentInstance/studentAssessmentInstance'),
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
@@ -1466,8 +1460,7 @@ module.exports.initExpress = function () {
     require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     enterpriseOnlyMiddleware(() => require('./ee/middlewares/checkPlanGrantsForQuestion').default),
-    require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
-    require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
+    require('./pages/studentInstanceQuestion/studentInstanceQuestion'),
   ]);
   if (config.devMode) {
     app.use(
@@ -1868,7 +1861,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courses',
-    require('./pages/administratorCourses/administratorCourses'),
+    require('./pages/administratorCourses/administratorCourses').default,
   );
   app.use(
     '/pl/administrator/networks',
@@ -1896,7 +1889,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/courseRequests/',
-    require('./pages/administratorCourseRequests/administratorCourseRequests'),
+    require('./pages/administratorCourseRequests/administratorCourseRequests').default,
   );
   app.use(
     '/pl/administrator/batchedMigrations',

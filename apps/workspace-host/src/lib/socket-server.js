@@ -1,17 +1,20 @@
 // @ts-check
-const { Emitter } = require('@socket.io/redis-emitter');
-const { Redis } = require('ioredis');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import { Emitter } from '@socket.io/redis-emitter';
+import { Redis } from 'ioredis';
 
-const { config } = require('./config');
+import { config } from './config';
 
-module.exports.init = async function () {
-  debug('init(): creating socket emitter');
-  module.exports.client = new Redis(config.redisUrl);
-  module.exports.io = new Emitter(module.exports.client);
-};
+/** @type {Emitter} */
+export let io;
 
-module.exports.close = async function () {
-  await module.exports.client?.quit();
-};
+/** @type {Redis} */
+let client;
+
+export function init() {
+  client = new Redis(config.redisUrl);
+  io = new Emitter(client);
+}
+
+export async function close() {
+  await client?.quit();
+}

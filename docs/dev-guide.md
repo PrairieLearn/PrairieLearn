@@ -818,7 +818,7 @@ WHERE
   });
   ```
 
-- To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) inside the POST data.
+- To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) inside the POST data.
 
 - All data modifying requests should come from `form` elements like:
 
@@ -857,7 +857,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The core files involved in question rendering are [lib/question-render.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.js), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/pages/partials/question.ejs).
 
-- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question-render.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
+- The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question-render.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
 
 - For example, the exact control-flow for `pages/instructorQuestion` is:
 
