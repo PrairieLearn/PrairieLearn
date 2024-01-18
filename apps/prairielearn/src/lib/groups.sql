@@ -152,8 +152,8 @@ WHERE
 
 -- BLOCK select_question_permissions
 SELECT
-  BOOL_OR(aqrp.can_view) AS can_view,
-  BOOL_OR(aqrp.can_submit) AS can_submit
+  COALESCE(BOOL_OR(aqrp.can_view), FALSE) AS can_view,
+  COALESCE(BOOL_OR(aqrp.can_submit), FALSE) AS can_submit
 FROM
   instance_questions AS iq
   JOIN assessment_question_role_permissions AS aqrp ON (

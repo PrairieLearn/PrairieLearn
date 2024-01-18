@@ -266,7 +266,10 @@ router.get('/', function (req, res, next) {
       },
       async () => await setQuestionCopyTargets(res),
       async () => {
-        if (res.locals.assessment.group_config?.has_roles) {
+        if (
+          res.locals.assessment.group_config?.has_roles &&
+          !res.locals.authz_data.has_course_instance_permission_view
+        ) {
           if (res.locals.instance_question_info.prev_instance_question.id != null) {
             res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
               res.locals.instance_question_info.prev_instance_question.id,
