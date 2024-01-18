@@ -9,6 +9,9 @@ router.all('/*', function (req, res, next) {
   // an iframe.
   res.header('Content-Security-Policy', "frame-ancestors: 'none';");
 
+  // Added for backwards compatibility with older browsers.
+  res.header('X-Frame-Options', 'DENY');
+
   next();
 });
 
