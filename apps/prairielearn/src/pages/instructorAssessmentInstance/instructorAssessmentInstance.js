@@ -62,7 +62,7 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_best_questions: z.number().nullable(),
   zone_has_best_questions: z.boolean(),
   zone_has_max_points: z.boolean(),
-  zone_id: IdSchema.nullable(),
+  zone_id: IdSchema,
   zone_max_points: z.number().nullable(),
   zone_title: z.string().nullable(),
 });
