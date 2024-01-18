@@ -373,7 +373,13 @@
             <% log.forEach(function(row, index) { %>
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
-              <td><%= row.auth_user_uid %></td>
+              <td>
+                <% if (row.auth_user_uid) { %>
+                  <%= row.auth_user_uid %>
+                <% } else { %>
+                  &mdash;
+                <% } %>
+              </td>
               <% if (row.client_fingerprint) { %>
               <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %> color-hover"
                 role="button"
