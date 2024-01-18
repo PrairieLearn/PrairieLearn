@@ -585,7 +585,6 @@ export const SubmissionSchema = z.object({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
-  regradable: z.boolean().nullable(),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -787,7 +786,7 @@ export const GroupSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
-  group_config_id: IdSchema.nullable(),
+  group_config_id: IdSchema,
   id: IdSchema,
   join_code: z.string(),
   name: z.string(),
@@ -795,6 +794,7 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const GroupUserSchema = z.object({
+  group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });
