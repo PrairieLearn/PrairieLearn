@@ -49,7 +49,7 @@ const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
     )
     .nullable(),
   title: z.string().nullable(),
-  zone_best_questions: z.string().nullable(),
+  zone_best_questions: z.number().nullable(),
   zone_has_best_questions: z.boolean().nullable(),
   zone_has_max_points: z.boolean().nullable(),
   zone_max_points: z.number().nullable(),

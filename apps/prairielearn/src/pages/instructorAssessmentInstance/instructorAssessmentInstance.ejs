@@ -369,12 +369,14 @@
             </tr>
           </thead>
           <tbody>
+            <%const fingerprint_colors = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2']; %>
             <% log.forEach(function(row, index) { %>
             <tr>
               <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
               <% if (row.client_fingerprint) { %>
-              <td><a tabindex="0" class="btn btn-xs btn-secondary"
+              <td><a tabindex="0" class="badge color-<%= fingerprint_colors[row.client_fingerprint_number % 6] %> color-hover"
+                role="button"
                 id="fingerprintPopover<%= row.client_fingerprint?.id %>"
                 data-toggle="popover" data-container="body"
                 data-html="true" data-placement="auto" title="Fingerprint <%= row.client_fingerprint_number%>"

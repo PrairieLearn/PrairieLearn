@@ -3248,6 +3248,7 @@ __metadata:
     "@types/passport-azure-ad": ^4.3.5
     "@types/pem": ^1.14.4
     "@types/pg": ^8.10.9
+    "@types/qrcode-svg": ^1.1.4
     "@types/request": ^2.48.12
     "@types/streamifier": ^0.1.2
     "@types/tar": ^6.1.10
@@ -5183,6 +5184,13 @@ __metadata:
     pg-protocol: "*"
     pg-types: ^2.2.0
   checksum: a44710ff06e70f57685ddb88edbb93d4b46e03fed90619f09853ed3868ab28541c4da03eccf6b0b444a7566a0b3c56028543ced43554d51168ca3f8ae15e194f
+  languageName: node
+  linkType: hard
+
+"@types/qrcode-svg@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@types/qrcode-svg@npm:1.1.4"
+  checksum: e055dd730db972b3ccf7a47bbedfbba38173c16d3fe457a91fffe88baf1d8c36e83f3ac37127de2609ca79c8e696ad6f0fef8027d682fea7988e6aac5c646c34
   languageName: node
   linkType: hard
 
@@ -9408,12 +9416,12 @@ __metadata:
   linkType: hard
 
 "follow-redirects@npm:^1.0.0":
-  version: 1.15.2
-  resolution: "follow-redirects@npm:1.15.2"
+  version: 1.15.4
+  resolution: "follow-redirects@npm:1.15.4"
   peerDependenciesMeta:
     debug:
       optional: true
-  checksum: faa66059b66358ba65c234c2f2a37fcec029dc22775f35d9ad6abac56003268baf41e55f9ee645957b32c7d9f62baf1f0b906e68267276f54ec4b4c597c2b190
+  checksum: e178d1deff8b23d5d24ec3f7a94cde6e47d74d0dc649c35fc9857041267c12ec5d44650a0c5597ef83056ada9ea6ca0c30e7c4f97dbf07d035086be9e6a5b7b6
   languageName: node
   linkType: hard
 

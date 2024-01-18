@@ -36,6 +36,7 @@
                 <th>Timezone</th>
                 <th>Path</th>
                 <th>Repository</th>
+                <th>Branch</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -48,6 +49,7 @@
                 <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
+                <%- include('courseUpdateColumn', {column_name: 'branch',           label: 'branch',     course: course, i: i}) %>
                 <td class="align-middle">
                   <button type="button" class="btn btn-sm btn-danger float-right"
                      id="courseDeleteButton<%= i %>" tabindex="0"

@@ -75,7 +75,6 @@ function createTestSubmission(
           // sproc.
           variant.true_answer,
           null, // feedback
-          true, // regradable
           null, // credit
           null, // mode
           variant.id,
