@@ -32,6 +32,14 @@ router.post(
     ) {
       throw error.make(403, 'Not authorized', res.locals);
     }
+    if (
+      !res.locals.authz_result.authorized_edit &&
+      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_group'].includes(
+        req.body.__action,
+      )
+    ) {
+      throw error.make(403, 'Action is only permitted to students, not staff', res.locals);
+    }
 
     if (req.body.__action === 'attach_file') {
       await studentAssessmentInstance.processFileUpload(req, res);
