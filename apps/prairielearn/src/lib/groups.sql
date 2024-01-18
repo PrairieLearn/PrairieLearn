@@ -34,7 +34,9 @@ SELECT
   cg.id,
   'create'
 FROM
-  create_group AS cg;
+  create_group AS cg
+RETURNING
+  group_id;
 
 -- BLOCK get_group_members
 SELECT DISTINCT
