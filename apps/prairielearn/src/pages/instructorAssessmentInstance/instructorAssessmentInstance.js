@@ -47,9 +47,24 @@ const DateDurationResultSchema = z.object({
 });
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+  instructor_question_number: z.string().nullable(),
+  manual_rubric_id: IdSchema.nullable(),
+  max_auto_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_points: z.number().nullable(),
   modified_at: z.string(),
   qid: z.string().nullable(),
+  question_id: IdSchema,
   question_number: z.string().nullable(),
+  question_title: z.string().nullable(),
+  row_order: z.number().nullable(),
+  start_new_zone: z.boolean(),
+  zone_best_questions: z.number().nullable(),
+  zone_has_best_questions: z.boolean(),
+  zone_has_max_points: z.boolean(),
+  zone_id: IdSchema.nullable(), 
+  zone_max_points: z.number().nullable(),
+  zone_title: z.string().nullable(),
 });
 
 const logCsvFilename = (locals) => {
@@ -101,7 +116,7 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
-
+    
     res.locals.log = await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
