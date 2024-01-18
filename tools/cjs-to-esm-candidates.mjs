@@ -16,7 +16,6 @@ const CJS_ONLY_MODULES = new Set([
   'cookie-parser',
   'crypto-js/sha256',
   'csvtojson',
-  'detect-mocha',
   'dockerode',
   'events',
   'execa',
