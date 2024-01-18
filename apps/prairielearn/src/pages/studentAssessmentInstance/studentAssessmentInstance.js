@@ -28,7 +28,7 @@ router.post(
   asyncHandler(async function (req, res, next) {
     if (
       !res.locals.authz_result.authorized_edit &&
-      !res.locals.authz_result.has_course_instance_permission_edit
+      !res.locals.authz_data.has_course_instance_permission_edit
     ) {
       throw error.make(403, 'Not authorized', res.locals);
     }
