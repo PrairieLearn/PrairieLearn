@@ -3248,6 +3248,7 @@ __metadata:
     "@types/passport-azure-ad": ^4.3.5
     "@types/pem": ^1.14.4
     "@types/pg": ^8.10.9
+    "@types/qrcode-svg": ^1.1.4
     "@types/request": ^2.48.12
     "@types/streamifier": ^0.1.2
     "@types/tar": ^6.1.10
@@ -5183,6 +5184,13 @@ __metadata:
     pg-protocol: "*"
     pg-types: ^2.2.0
   checksum: a44710ff06e70f57685ddb88edbb93d4b46e03fed90619f09853ed3868ab28541c4da03eccf6b0b444a7566a0b3c56028543ced43554d51168ca3f8ae15e194f
+  languageName: node
+  linkType: hard
+
+"@types/qrcode-svg@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@types/qrcode-svg@npm:1.1.4"
+  checksum: e055dd730db972b3ccf7a47bbedfbba38173c16d3fe457a91fffe88baf1d8c36e83f3ac37127de2609ca79c8e696ad6f0fef8027d682fea7988e6aac5c646c34
   languageName: node
   linkType: hard
 
