@@ -985,7 +985,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion')
         .default,
     ],
@@ -997,7 +997,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/clientFilesQuestion/clientFilesQuestion')(),
     ],
   );
@@ -1005,7 +1005,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/generatedFilesQuestion/generatedFilesQuestion')(),
     ],
   );
@@ -1013,14 +1013,14 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ],
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/legacyQuestionText/legacyQuestionText'),
     ],
   );
@@ -1029,7 +1029,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstanceQuestion').default,
       require('./pages/submissionFile/submissionFile')(),
     ],
   );
@@ -1455,7 +1455,7 @@ module.exports.initExpress = function () {
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/selectAndAuthzInstanceQuestion').default,
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/clientFingerprint').default,
     // don't use logPageView here, we load it inside the page so it can get the variant_id
