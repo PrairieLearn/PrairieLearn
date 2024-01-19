@@ -13,15 +13,23 @@ import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
 import { GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
 import { promisify } from 'util';
+import { z } from 'zod';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * @typedef TestResultStats
+ * @property {number} generateDuration
+ * @property {number} renderDuration
+ * @property {number | undefined} gradeDuration
+ */
 
 /**
  * @typedef TestQuestionResults
  * @property {import('./db-types').Variant} variant
  * @property {import('./db-types').Submission | null} expected_submission
  * @property {import('./db-types').Submission | null} test_submission
- * @property {{generateDuration: number; renderDuration: number; gradeDuration: number | undefined}} stats
+ * @property {TestResultStats} stats
  */
 
 /**
@@ -290,6 +298,7 @@ async function testQuestion(
  * @param {Object} course - The course for the variant.
  * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
+ * @returns {Promise<{success: boolean; stats: TestResultStats}>}
  */
 async function runTest(
   logger,
@@ -301,69 +310,59 @@ async function runTest(
   test_type,
   authn_user_id,
 ) {
-  let variant,
-    expected_submission,
-    test_submission,
-    stats,
-    success = true;
-  await async.series([
-    async () => {
-      logger.verbose('Testing ' + question.qid);
-      ({ variant, expected_submission, test_submission, stats } = await testQuestion(
-        question,
-        group_work,
-        course_instance,
-        course,
-        test_type,
-        authn_user_id,
-      ));
-    },
-    (callback) => {
-      if (!showDetails) return callback(null);
-      const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
-      const submissionKeys = [
-        'broken',
-        'correct',
-        'feedback',
-        'format_errors',
-        'gradable',
-        'grading_method',
-        'partial_scores',
-        'raw_submitted_answer',
-        'score',
-        'submitted_answer',
-        'true_answer',
-      ];
-      logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
-      if (_.isObject(expected_submission)) {
-        logger.verbose(
-          'expected_submission:\n' +
-            jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
-        );
-      }
-      if (_.isObject(test_submission)) {
-        logger.verbose(
-          'test_submission:\n' +
-            jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
-        );
-      }
-      callback(null);
-    },
-    async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_issue_count_for_variant, {
-        variant_id: variant.id,
-      });
+  logger.verbose('Testing ' + question.qid);
+  const { variant, expected_submission, test_submission, stats } = await testQuestion(
+    question,
+    group_work,
+    course_instance,
+    course,
+    test_type,
+    authn_user_id,
+  );
 
-      if (result.rows[0].count > 0) {
-        success = false;
-        logger.verbose(`ERROR: ${result.rows[0].count} issues encountered during test.`);
-      } else {
-        logger.verbose('Success: no issues during test');
-      }
-    },
-  ]);
+  if (showDetails) {
+    const variantKeys = ['broken', 'options', 'params', 'true_answer', 'variant_seed'];
+    const submissionKeys = [
+      'broken',
+      'correct',
+      'feedback',
+      'format_errors',
+      'gradable',
+      'grading_method',
+      'partial_scores',
+      'raw_submitted_answer',
+      'score',
+      'submitted_answer',
+      'true_answer',
+    ];
+    logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
+    if (_.isObject(expected_submission)) {
+      logger.verbose(
+        'expected_submission:\n' +
+          jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
+      );
+    }
+    if (_.isObject(test_submission)) {
+      logger.verbose(
+        'test_submission:\n' +
+          jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
+      );
+    }
+  }
 
-  return { success, stats };
+  const issueCount = await sqldb.queryRow(
+    sql.select_issue_count_for_variant,
+    { variant_id: variant.id },
+    z.number(),
+  );
+
+  if (issueCount > 0) {
+    logger.verbose(`ERROR: ${issueCount} issues encountered during test.`);
+  } else {
+    logger.verbose('Success: no issues during test');
+  }
+
+  return { success: issueCount === 0, stats };
 }
 
 /**
