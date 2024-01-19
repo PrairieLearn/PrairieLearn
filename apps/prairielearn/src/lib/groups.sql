@@ -172,11 +172,13 @@ SELECT
   gr.role_name,
   gr.id as group_role_id
 FROM
-  group_users gu
-  JOIN users u ON gu.user_id = u.user_id
-  JOIN group_user_roles gur ON gu.group_id = gur.group_id
-  AND gu.user_id = gur.user_id
-  JOIN group_roles gr ON gur.group_role_id = gr.id
+  group_users AS gu
+  JOIN users u ON (gu.user_id = u.user_id)
+  JOIN group_user_roles gur ON (
+    gu.group_id = gur.group_id
+    AND gu.user_id = gur.user_id
+  )
+  JOIN group_roles gr ON (gur.group_role_id = gr.id)
 WHERE
   gu.group_id = $group_id;
 
