@@ -8,7 +8,11 @@ import { z } from 'zod';
 
 import { config } from '../../lib/config';
 import { InstitutionSchema, CourseSchema } from '../../lib/db-types';
-import { createCourseFromRequest, getCourseRequests, updateCourseRequest } from '../../models/course-request';
+import {
+  createCourseFromRequest,
+  getCourseRequests,
+  updateCourseRequest,
+} from '../../models/course-request';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);

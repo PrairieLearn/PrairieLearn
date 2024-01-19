@@ -70,8 +70,11 @@ WITH
       LEFT JOIN users AS ua on ua.user_id = r.approved_by
       LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
     WHERE
-      ($show_all != 'true' AND r.approved_status NOT IN ('approved', 'denied'))
-      OR ($show_all = 'true' )
+      (
+        $show_all != 'true'
+        AND r.approved_status NOT IN ('approved', 'denied')
+      )
+      OR ($show_all = 'true')
   ),
   select_institutions_with_authn_providers AS (
     SELECT

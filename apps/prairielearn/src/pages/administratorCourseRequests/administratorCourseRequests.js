@@ -4,7 +4,11 @@ import * as express from 'express';
 import * as error from '@prairielearn/error';
 
 import { config } from '../../lib/config';
-import { createCourseFromRequest, getCourseRequests, updateCourseRequest } from '../../models/course-request';
+import {
+  createCourseFromRequest,
+  getCourseRequests,
+  updateCourseRequest,
+} from '../../models/course-request';
 
 const router = express.Router();
 
@@ -12,9 +16,9 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    const {institutions, course_requests} = await getCourseRequests(true);
-    res.locals.institutions = institutions
-    res.locals.course_requests = course_requests
+    const { institutions, course_requests } = await getCourseRequests(true);
+    res.locals.institutions = institutions;
+    res.locals.course_requests = course_requests;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
