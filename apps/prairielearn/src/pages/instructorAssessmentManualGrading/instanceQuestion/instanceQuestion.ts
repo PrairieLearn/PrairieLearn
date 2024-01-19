@@ -1,6 +1,5 @@
-// @ts-check
 import * as express from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler = require('express-async-handler');
 import * as util from 'util';
 import * as qs from 'qs';
 import { z } from 'zod';
@@ -11,19 +10,14 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import * as manualGrading from '../../../lib/manualGrading';
 import { features } from '../../../lib/features/index';
 import { IdSchema, UserSchema } from '../../../lib/db-types';
-import { GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
+import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html';
 import { GradingPanel } from './gradingPanel.html';
 import { RubricSettingsModal } from './rubricSettingsModal.html';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- *
- * @param {Record<string, any>} query
- * @param {Record<string, any>} resLocals
- */
-async function prepareLocalsForRender(query, resLocals) {
+async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behaviour, so we select the last
@@ -46,8 +40,7 @@ async function prepareLocalsForRender(query, resLocals) {
     resLocals,
   );
 
-  /** @type {import('./instanceQuestion.html').GradingJobData | null} */
-  let conflict_grading_job = null;
+  let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
     conflict_grading_job = await sqldb.queryOptionalRow(
       sql.select_grading_job_data,
@@ -160,8 +153,9 @@ const PostBodySchema = z.union([
     ),
   }),
   z.object({
-    /** @type {z.ZodType<`reassign_${string}`>} */
-    __action: z.custom((val) => typeof val === 'string' && val.startsWith('reassign_')),
+    __action: z.custom<`reassign_${string}`>(
+      (val) => typeof val === 'string' && val.startsWith('reassign_'),
+    ),
   }),
 ]);
 
