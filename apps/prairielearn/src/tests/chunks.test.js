@@ -43,7 +43,7 @@ const COURSE = {
 };
 
 function getAllChunksForCourse(course_id) {
-  return sqldb.queryValidatedRows(
+  return sqldb.queryRows(
     sql.select_all_chunks,
     {
       course_id,

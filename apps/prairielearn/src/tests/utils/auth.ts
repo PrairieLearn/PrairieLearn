@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { callValidatedOneRow, queryRow } from '@prairielearn/postgres';
+import { callRow, queryRow } from '@prairielearn/postgres';
 import { config } from '../../lib/config';
 import { IdSchema, User, UserSchema } from '../../lib/db-types';
 
@@ -40,7 +40,7 @@ export async function getConfiguredUser(): Promise<User> {
 }
 
 export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
-  const user = await callValidatedOneRow(
+  const user = await callRow(
     'users_select_or_insert',
     [authUser.uid, authUser.name, authUser.uin, 'dev'],
     z.object({ user_id: IdSchema }),
