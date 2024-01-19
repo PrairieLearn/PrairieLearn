@@ -8,12 +8,11 @@ const jsonStringifySafe = require('json-stringify-safe');
 import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers';
 import { createServerJob } from './server-jobs';
-import { saveSubmission, gradeVariant } from './grading';
+import { saveSubmissionAsync, gradeVariantAsync } from './grading';
 import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
-import { SubmissionSchema } from './db-types';
-import { ok as assert } from 'node:assert';
+import { GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -26,104 +25,76 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {Object} variant_course - The course for the variant.
  * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
- * @param {function} callback - A callback(err, submission_id) function.
+ * @returns {Promise<string>} The submission ID.
  */
-function createTestSubmission(
-  variant,
-  question,
-  variant_course,
-  test_type,
-  authn_user_id,
-  callback,
-) {
-  if (question.type !== 'Freeform') return callback(new Error('question.type must be Freeform'));
-  /** @type {questionServers.QuestionServer} */
-  let questionModule;
-  let question_course, courseIssues, data, submission_id, grading_job;
-  async.series(
-    [
-      async () => {
-        questionModule = questionServers.getModule(question.type);
-        question_course = await getQuestionCourse(question, variant_course);
-        assert(questionModule.test, 'questionModule.test must be defined');
-        ({ courseIssues, data } = await questionModule.test(
-          variant,
-          question,
-          question_course,
-          test_type,
-        ));
-        const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-        data = { ...data, broken: hasFatalIssue };
+async function createTestSubmission(variant, question, variant_course, test_type, authn_user_id) {
+  const questionModule = questionServers.getModule(question.type);
+  if (!questionModule.test) {
+    throw new Error('Question type does not support testing, must be Freeform');
+  }
 
-        const studentMessage = 'Error creating test submission';
-        const courseData = { variant, question, course: variant_course };
-        await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
-      },
-      (callback) => {
-        const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
-        if (hasFatalIssue) data.gradable = false;
-
-        const params = [
-          {}, // submitted_answer
-          data.raw_submitted_answer,
-          data.format_errors,
-          data.gradable,
-          data.broken,
-          // The `test` phase is not allowed to mutate `correct_answers`
-          // (aliased here to `true_answer`), so we just pick the original
-          // `true_answer` so we can use our standard `submissions_insert`
-          // sproc.
-          variant.true_answer,
-          null, // feedback
-          null, // credit
-          null, // mode
-          variant.id,
-          authn_user_id,
-          null, // client_fingerprint_id
-        ];
-        sqldb.callOneRow('submissions_insert', params, (err, result) => {
-          if (ERR(err, callback)) return;
-          submission_id = result.rows[0].submission_id;
-          callback(null);
-        });
-      },
-      (callback) => {
-        const params = [submission_id, authn_user_id];
-        sqldb.callOneRow('grading_jobs_insert', params, (err, result) => {
-          if (ERR(err, callback)) return;
-          grading_job = result.rows[0];
-          callback(null);
-        });
-      },
-      (callback) => {
-        const params = [
-          grading_job.id,
-          null, // received_time
-          null, // start_time
-          null, // finish_tim
-          {}, // submitted_answer
-          data.format_errors,
-          data.gradable,
-          data.broken,
-          data.params,
-          data.true_answer,
-          data.feedback,
-          data.partial_scores,
-          data.score,
-          null, // v2_score
-        ];
-        sqldb.callOneRow('grading_jobs_update_after_grading', params, (err, result) => {
-          if (ERR(err, callback)) return;
-          grading_job = result.rows[0];
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, submission_id);
-    },
+  const question_course = await getQuestionCourse(question, variant_course);
+  const { courseIssues, data } = await questionModule.test(
+    variant,
+    question,
+    question_course,
+    test_type,
   );
+  const hasFatalIssue = _.some(_.map(courseIssues, 'fatal'));
+
+  const studentMessage = 'Error creating test submission';
+  const courseData = { variant, question, course: variant_course };
+  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+
+  if (hasFatalIssue) data.gradable = false;
+
+  const submission_id = await sqldb.callRow(
+    'submissions_insert',
+    [
+      {}, // submitted_answer
+      data.raw_submitted_answer,
+      data.format_errors,
+      data.gradable,
+      hasFatalIssue,
+      // The `test` phase is not allowed to mutate `correct_answers`
+      // (aliased here to `true_answer`), so we just pick the original
+      // `true_answer` so we can use our standard `submissions_insert`
+      // sproc.
+      variant.true_answer,
+      null, // feedback
+      null, // credit
+      null, // mode
+      variant.id,
+      authn_user_id,
+      null, // client_fingerprint_id
+    ],
+    IdSchema,
+  );
+
+  const grading_job = await sqldb.callRow(
+    'grading_jobs_insert',
+    [submission_id, authn_user_id],
+    GradingJobSchema,
+  );
+
+  await sqldb.callAsync('grading_jobs_update_after_grading', [
+    grading_job.id,
+    null, // received_time
+    null, // start_time
+    null, // finish_tim
+    {}, // submitted_answer
+    data.format_errors,
+    data.gradable,
+    hasFatalIssue,
+    data.params,
+    data.true_answer,
+    {}, // data.feedback
+    data.partial_scores,
+    data.score,
+    null, // v2_score
+  ]);
+
+  return submission_id;
 }
 
 /**
@@ -178,68 +149,38 @@ function compareSubmissions(expected_submission, test_submission) {
  * @param {Object} course - The course for the variant.
  * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
  * @param {string} authn_user_id - The currently authenticated user.
- * @param {function} callback - A callback(err) function.
+ * @returns {Promise<{expected_submission: import('./db-types').Submission; test_submission: import('./db-types').Submission}>}
  */
-function testVariant(variant, question, course, test_type, authn_user_id, callback) {
-  let expected_submission_id, expected_submission, test_submission_id, test_submission;
-  async.series(
-    [
-      (callback) => {
-        createTestSubmission(
-          variant,
-          question,
-          course,
-          test_type,
-          authn_user_id,
-          (err, ret_submission_id) => {
-            if (ERR(err, callback)) return;
-            expected_submission_id = ret_submission_id;
-            callback(null);
-          },
-        );
-      },
-      async () => {
-        expected_submission = await selectSubmission(expected_submission_id);
-      },
-      (callback) => {
-        const submission = {
-          variant_id: variant.id,
-          auth_user_id: authn_user_id,
-          submitted_answer: expected_submission.raw_submitted_answer,
-        };
-        saveSubmission(submission, variant, question, course, (err, ret_submission_id) => {
-          if (ERR(err, callback)) return;
-          test_submission_id = ret_submission_id;
-          callback(null);
-        });
-      },
-      (callback) => {
-        gradeVariant(variant, test_submission_id, question, course, authn_user_id, true, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => {
-        test_submission = await selectSubmission(test_submission_id);
-      },
-      async () => {
-        const courseIssues = compareSubmissions(expected_submission, test_submission);
-        const studentMessage = 'Question test failure';
-        const courseData = {
-          variant,
-          question,
-          course,
-          expected_submission,
-          test_submission,
-        };
-        await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, expected_submission, test_submission);
-    },
+async function testVariant(variant, question, course, test_type, authn_user_id) {
+  const expected_submission_id = await createTestSubmission(
+    variant,
+    question,
+    course,
+    test_type,
+    authn_user_id,
   );
+  const expected_submission = await selectSubmission(expected_submission_id);
+
+  const submission_data = {
+    variant_id: variant.id,
+    auth_user_id: authn_user_id,
+    submitted_answer: expected_submission.raw_submitted_answer || {},
+  };
+  const test_submission_id = await saveSubmissionAsync(submission_data, variant, question, course);
+  await gradeVariantAsync(variant, test_submission_id, question, course, authn_user_id, true);
+  const test_submission = await selectSubmission(test_submission_id);
+
+  const courseIssues = compareSubmissions(expected_submission, test_submission);
+  const studentMessage = 'Question test failure';
+  const courseData = {
+    variant,
+    question,
+    course,
+    expected_submission,
+    test_submission,
+  };
+  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  return { expected_submission, test_submission };
 }
 
 /**
@@ -319,24 +260,21 @@ function testQuestion(
           },
         );
       },
-      (callback) => {
+      async () => {
         if (variant.broken) return callback(null);
         const gradeStart = Date.now();
-        testVariant(
-          variant,
-          question,
-          variant_course,
-          test_type,
-          authn_user_id,
-          (err, ret_expected_submission, ret_test_submission) => {
-            const gradeEnd = Date.now();
-            gradeDuration = gradeEnd - gradeStart;
-            if (ERR(err, callback)) return;
-            expected_submission = ret_expected_submission;
-            test_submission = ret_test_submission;
-            callback(null);
-          },
-        );
+        try {
+          ({ expected_submission, test_submission } = await testVariant(
+            variant,
+            question,
+            variant_course,
+            test_type,
+            authn_user_id,
+          ));
+        } finally {
+          const gradeEnd = Date.now();
+          gradeDuration = gradeEnd - gradeStart;
+        }
       },
     ],
     (err) => {
