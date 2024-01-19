@@ -39,7 +39,8 @@ const middleware = asyncHandler(async (req, res, next) => {
       )
         .map((role) => role.role_name)
         .join(', ');
-      // Get the role permissions. If the authorized user is a staff member, then they have all permissions.
+      // Get the role permissions. If the authorized user has course instance
+      // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
         res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question.id,

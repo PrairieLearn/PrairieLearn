@@ -185,7 +185,8 @@ router.get(
           groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
             ?.map((role) => role.role_name)
             ?.join(', ') || 'None';
-        // Get the role permissions. If the authorized user is a staff member, then they have all permissions.
+        // Get the role permissions. If the authorized user has course instance
+        // permission, then role restrictions don't apply.
         if (!res.locals.authz_data.has_course_instance_permission_view) {
           for (const question of res.locals.instance_questions) {
             question.group_role_permissions =
