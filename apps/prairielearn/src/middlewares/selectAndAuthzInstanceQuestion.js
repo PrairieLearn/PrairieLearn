@@ -39,19 +39,19 @@ const middleware = asyncHandler(async (req, res, next) => {
       )
         .map((role) => role.role_name)
         .join(', ');
-      // Get the role permissions. If the authorized user is a staff member, then they have all permissions.
-      if (!res.locals.authz_data.has_course_instance_permission_view) {
-        res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
-          res.locals.instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
-        );
-        if (!res.locals.instance_question.group_role_permissions.can_view) {
-          throw error.make(
-            400,
-            'Your current group role does not give you permission to see this question.',
+      res.locals.instance_question.group_role_permissions = res.locals.authz_data
+        .has_course_instance_permission_view
+        ? { can_view: true, can_submit: false }
+        : await getQuestionGroupPermissions(
+            res.locals.instance_question.id,
+            res.locals.assessment_instance.group_id,
+            res.locals.authz_data.user.user_id,
           );
-        }
+      if (!res.locals.instance_question.group_role_permissions.can_view) {
+        throw error.make(
+          400,
+          'Your current group role does not give you permission to see this question.',
+        );
       }
     }
   }
