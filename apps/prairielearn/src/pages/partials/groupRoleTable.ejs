@@ -1,4 +1,4 @@
-<% const roleConfigProblems = (rolesInfo.validationErrors?.length ?? 0) + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) + (rolesInfo.rolesAreBalanced ? 0 : 1); %>
+<% const roleConfigProblems = rolesInfo.validationErrors.length + (rolesInfo.usersWithoutRoles.length > 0 ? 1 : 0) + (rolesInfo.rolesAreBalanced ? 0 : 1); %>
 <% if (roleConfigProblems > 0) { %>
   <div class="alert alert-danger mt-2" role="alert">
     Your group's role configuration is currently invalid. Please review the role requirements and <%= userCanAssignRoles || authz_data.has_course_instance_permission_edit ? 'assign a valid role configuration' : 'ask a user with an assigner role to update the role configuration' %>. Question submissions are disabled until the role configuration is valid.
