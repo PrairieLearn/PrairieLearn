@@ -98,10 +98,9 @@ SELECT DISTINCT
   u.*
 FROM
   group_users AS gu
-  JOIN users as u ON u.user_id = gu.user_id
-  JOIN groups as g ON gu.group_id = g.id
+  JOIN users as u ON (u.user_id = gu.user_id)
 WHERE
-  g.id = $group_id;
+  gu.group_id = $group_id;
 
 -- BLOCK get_group_roles
 WITH
