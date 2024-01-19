@@ -1,24 +1,14 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
 import * as express from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { logger } from '@prairielearn/logger';
-import * as Sentry from '@prairielearn/sentry';
 import { z } from 'zod';
 
 import { config } from '../../lib/config';
-import { createCourseRepoJob } from '../../lib/github';
-import { sendCourseRequestMessage } from '../../lib/opsbot';
-import {
-  CourseRequestSchema,
-  DateFromISOString,
-  IdSchema,
-  InstitutionSchema,
-  CourseSchema,
-} from '../../lib/db-types';
+import { InstitutionSchema, CourseSchema } from '../../lib/db-types';
+import { createCourseFromRequest, getCourseRequests, updateCourseRequest } from '../../models/course-request';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -27,41 +17,18 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    const result = await sqldb.queryRow(
+    const { institutions, course_requests } = await getCourseRequests(false);
+    const courses = await sqldb.queryRow(
       sql.select,
-      [],
-      z.object({
-        institutions: z.array(InstitutionSchema),
-        courses: z.array(
-          CourseSchema.extend({
-            institution: InstitutionSchema,
-          }),
-        ),
-        course_requests: z.array(
-          CourseRequestSchema.extend({
-            user_name: z.string(),
-            created_at: DateFromISOString.optional(),
-            approved_by: z.string().optional(),
-            approved_status: z
-              .enum(['pending', 'approved', 'denied', 'creating', 'failed'])
-              .optional(),
-            user_id: z.string().optional(),
-            jobs: z
-              .object({
-                start_date: DateFromISOString.optional(),
-                finish_date: DateFromISOString.optional(),
-                authn_user_id: IdSchema.optional(),
-                status: z.string().optional(),
-                id: IdSchema.optional(),
-                number: z.number().optional(),
-              })
-              .optional(),
-          }),
-        ),
-      }),
+      z.array(
+        CourseSchema.extend({
+          institution: InstitutionSchema,
+        }),
+      ),
     );
-    console.log(result);
-    _.assign(res.locals, result);
+    res.locals.courses = courses;
+    res.locals.institutions = institutions;
+    res.locals.course_requests = course_requests;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );
@@ -111,58 +78,9 @@ router.post(
       await sqldb.callAsync('courses_delete', [req.body.course_id, res.locals.authn_user.user_id]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {
-      const id = req.body.request_id;
-      const user_id = res.locals.authn_user.user_id;
-      let action = req.body.approve_deny_action;
-
-      if (action === 'deny') {
-        action = 'denied';
-      } else {
-        throw new Error(`Unknown course request action "${action}"`);
-      }
-      await sqldb.queryOneRowAsync(sql.update_course_request, {
-        id,
-        user_id,
-        action,
-      });
-      res.redirect(req.originalUrl);
+      updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {
-      const id = req.body.request_id;
-      const user_id = res.locals.authn_user.user_id;
-      await sqldb.queryOneRowAsync(sql.update_course_request, {
-        id,
-        user_id,
-        action: 'creating',
-      });
-
-      // Create the course in the background
-      const repo_options = {
-        short_name: req.body.short_name,
-        title: req.body.title,
-        institution_id: req.body.institution_id,
-        display_timezone: req.body.display_timezone,
-        path: req.body.path,
-        repo_short_name: req.body.repository_short_name,
-        github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
-        course_request_id: id,
-      };
-
-      const jobSequenceId = await createCourseRepoJob(repo_options, res.locals.authn_user);
-
-      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
-
-      // Do this in the background once we've redirected the response.
-      try {
-        await sendCourseRequestMessage(
-          `*Creating course*\n` +
-            `Course rubric: ${repo_options.short_name}\n` +
-            `Course title: ${repo_options.title}\n` +
-            `Approved by: ${res.locals.authn_user.name}`,
-        );
-      } catch (err) {
-        logger.error('Error sending course request message to Slack', err);
-        Sentry.captureException(err);
-      }
+      createCourseFromRequest(req, res);
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,
