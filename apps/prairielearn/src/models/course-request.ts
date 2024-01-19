@@ -1,7 +1,7 @@
 import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
-import * as Sentry from '@sentry/node';
+import * as Sentry from '@prairielearn/sentry';
 
 import { InstitutionSchema, DateFromISOString, IdSchema } from '../lib/db-types';
 import { createCourseRepoJob } from '../lib/github';
