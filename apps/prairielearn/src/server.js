@@ -623,14 +623,14 @@ module.exports.initExpress = function () {
         res.locals.navPage = 'load_from_disk';
         next();
       },
-      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk').default,
     ]);
     app.use('/pl/jobSequence', [
       function (req, res, next) {
         res.locals.navPage = 'job_sequence';
         next();
       },
-      require('./pages/instructorJobSequence/instructorJobSequence'),
+      require('./pages/instructorJobSequence/instructorJobSequence').default,
     ]);
   }
 
@@ -698,7 +698,7 @@ module.exports.initExpress = function () {
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id/effectiveUser', [
     require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'),
-    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
   ]);
 
   // All course instance instructor pages require the authn user to have permissions
@@ -718,7 +718,7 @@ module.exports.initExpress = function () {
   // Some course instance instructor pages only require the authn user to have permissions (already checked)
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/effectiveUser',
-    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/news_items',
@@ -964,7 +964,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
 
   app.use(
@@ -986,7 +986,8 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion')
+        .default,
     ],
   );
   app.use(
@@ -1082,7 +1083,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorQuestionSettings/instructorQuestionSettings'),
+    require('./pages/instructorQuestionSettings/instructorQuestionSettings').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview', [
     function (req, res, next) {
@@ -1099,7 +1100,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
-    require('./pages/instructorQuestionStatistics/instructorQuestionStatistics'),
+    require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_edit', [
     function (req, res, next) {
@@ -1117,7 +1118,7 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
 
   app.use(
@@ -1126,11 +1127,11 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/jobSequence',
-    require('./pages/instructorJobSequence/instructorJobSequence'),
+    require('./pages/instructorJobSequence/instructorJobSequence').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
-    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk').default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/edit_error',
@@ -1167,7 +1168,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'staff';
       next();
     },
-    require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff'),
+    require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', [
     function (req, res, next) {
@@ -1188,7 +1189,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'issues';
       next();
     },
-    require('./pages/instructorIssues/instructorIssues'),
+    require('./pages/instructorIssues/instructorIssues').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/questions', [
     function (req, res, next) {
@@ -1209,14 +1210,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'topics';
       next();
     },
-    require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
+    require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/tags', [
     function (req, res, next) {
       res.locals.navSubPage = 'tags';
       next();
     },
-    require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
+    require('./pages/instructorCourseAdminTags/instructorCourseAdminTags').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_edit', [
     function (req, res, next) {
@@ -1234,7 +1235,7 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/course_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
 
   // course instance - instance admin pages
@@ -1263,14 +1264,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings'),
+    require('./pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/access', [
     function (req, res, next) {
       res.locals.navSubPage = 'access';
       next();
     },
-    require('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess'),
+    require('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/assessments', [
     function (req, res, next) {
@@ -1291,7 +1292,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'lti';
       next();
     },
-    require('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti'),
+    require('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti').default,
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_edit', [
     function (req, res, next) {
@@ -1309,7 +1310,7 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
   if (isEnterprise()) {
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/billing', [
@@ -1464,11 +1465,11 @@ module.exports.initExpress = function () {
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
-      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk').default,
     );
     app.use(
       '/pl/course_instance/:course_instance_id/jobSequence',
-      require('./pages/instructorJobSequence/instructorJobSequence'),
+      require('./pages/instructorJobSequence/instructorJobSequence').default,
     );
   }
 
@@ -1549,7 +1550,7 @@ module.exports.initExpress = function () {
   // Some course pages only require the authn user to have permission (aleady checked)
   app.use(
     '/pl/course/:course_id/effectiveUser',
-    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser').default,
   );
   app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
   app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
@@ -1581,7 +1582,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'settings';
       next();
     },
-    require('./pages/instructorQuestionSettings/instructorQuestionSettings'),
+    require('./pages/instructorQuestionSettings/instructorQuestionSettings').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/preview', [
     function (req, res, next) {
@@ -1598,7 +1599,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
-    require('./pages/instructorQuestionStatistics/instructorQuestionStatistics'),
+    require('./pages/instructorQuestionStatistics/instructorQuestionStatistics').default,
   ]);
   app.use('/pl/course/:course_id/question/:question_id/file_edit', [
     function (req, res, next) {
@@ -1616,11 +1617,11 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course/:course_id/question/:question_id/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
 
   app.use('/pl/course/:course_id/file_transfer', [
-    require('./pages/instructorFileTransfer/instructorFileTransfer'),
+    require('./pages/instructorFileTransfer/instructorFileTransfer').default,
   ]);
 
   app.use('/pl/course/:course_id/edit_error', require('./pages/editError/editError'));
@@ -1651,7 +1652,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'staff';
       next();
     },
-    require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff'),
+    require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/sets', [
     function (req, res, next) {
@@ -1672,7 +1673,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'issues';
       next();
     },
-    require('./pages/instructorIssues/instructorIssues'),
+    require('./pages/instructorIssues/instructorIssues').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/questions', [
     function (req, res, next) {
@@ -1693,14 +1694,14 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'topics';
       next();
     },
-    require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
+    require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/tags', [
     function (req, res, next) {
       res.locals.navSubPage = 'tags';
       next();
     },
-    require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
+    require('./pages/instructorCourseAdminTags/instructorCourseAdminTags').default,
   ]);
   app.use('/pl/course/:course_id/course_admin/file_edit', [
     function (req, res, next) {
@@ -1718,16 +1719,16 @@ module.exports.initExpress = function () {
   ]);
   app.use(
     '/pl/course/:course_id/course_admin/file_download',
-    require('./pages/instructorFileDownload/instructorFileDownload'),
+    require('./pages/instructorFileDownload/instructorFileDownload').default,
   );
 
   app.use(
     '/pl/course/:course_id/loadFromDisk',
-    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+    require('./pages/instructorLoadFromDisk/instructorLoadFromDisk').default,
   );
   app.use(
     '/pl/course/:course_id/jobSequence',
-    require('./pages/instructorJobSequence/instructorJobSequence'),
+    require('./pages/instructorJobSequence/instructorJobSequence').default,
   );
   app.use(
     '/pl/course/:course_id/grading_job',
