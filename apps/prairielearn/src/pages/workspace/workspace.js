@@ -18,9 +18,9 @@ const { Workspace } = require('./workspace.html');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 async function getNavTitleHref(res) {
-  if (res.locals.assessment == null) {
-    const variant_id = await selectVariantIdForWorkspace(res.locals.workspace_id);
+  const variant_id = await selectVariantIdForWorkspace(res.locals.workspace_id);
 
+  if (res.locals.assessment == null) {
     // Instructor preview. This could be a preview at either the course or course
     // instance level. Generate a link appropriately.
     if (res.locals.course_instance_id) {
@@ -29,14 +29,16 @@ async function getNavTitleHref(res) {
       return `/pl/course/${res.locals.course_id}/question/${res.locals.question_id}/preview?variant_id=${variant_id}`;
     }
   } else {
-    // Student assessment.
-    return `/pl/course_instance/${res.locals.course_instance_id}/instance_question/${res.locals.instance_question_id}`;
+    // Student assessment. If it's a homework, we'll include the variant ID in the URL
+    // in case this workspace is for a non-current variant.
+    const query = res.locals.assessment.type === 'Homework' ? `?variant_id=${variant_id}` : '';
+    return `/pl/course_instance/${res.locals.course_instance_id}/instance_question/${res.locals.instance_question_id}${query}`;
   }
 }
 
 router.get(
   '/',
-  asyncHandler(async (_req, res, _next) => {
+  asyncHandler(async (req, res) => {
     let navTitle;
     if (res.locals.assessment == null) {
       // instructor preview
