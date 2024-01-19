@@ -351,7 +351,6 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     WorkspaceDataSchema,
   );
 
-  assert(course.path, `Workspace ${workspace_id} is part of a course that has no directory`);
   assert(question.qid, `Workspace ${workspace_id} is part of a question that has no directory`);
 
   const course_path = chunks.getRuntimeDirectoryForCourse({ id: course.id, path: course.path });
