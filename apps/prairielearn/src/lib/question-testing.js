@@ -1,6 +1,5 @@
 // @ts-check
 
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 import * as async from 'async';
 const jsonStringifySafe = require('json-stringify-safe');
@@ -13,8 +12,17 @@ import { getQuestionCourse, ensureVariant } from './question-variant';
 import { getAndRenderVariant } from './question-render';
 import { writeCourseIssues } from './issues';
 import { GradingJobSchema, IdSchema, SubmissionSchema } from './db-types';
+import { promisify } from 'util';
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/**
+ * @typedef TestQuestionResults
+ * @property {import('./db-types').Variant} variant
+ * @property {import('./db-types').Submission | null} expected_submission
+ * @property {import('./db-types').Submission | null} test_submission
+ * @property {{generateDuration: number; renderDuration: number; gradeDuration: number | undefined}} stats
+ */
 
 /**
  * Internal worker for testVariant(). Do not call directly.
@@ -191,98 +199,83 @@ async function testVariant(variant, question, course, test_type, authn_user_id) 
  * @param {Object} variant_course - The course for the variant.
  * @param {string} authn_user_id - The currently authenticated user.
  * @param {'correct' | 'incorrect' | 'invalid'} test_type - The type of test to run.
- * @param {function} callback - A callback(err, variant) function.
+ * @returns {Promise<TestQuestionResults>}
  */
-function testQuestion(
+async function testQuestion(
   question,
   group_work,
   course_instance,
   variant_course,
   test_type,
   authn_user_id,
-  callback,
 ) {
   let generateDuration;
   let renderDuration;
   let gradeDuration;
 
-  let variant,
-    question_course,
-    expected_submission = null,
-    test_submission = null;
-  async.series(
-    [
-      async () => {
-        question_course = await getQuestionCourse(question, variant_course);
-      },
-      async () => {
-        const instance_question_id = null;
-        const course_instance_id = (course_instance && course_instance.id) || null;
-        const options = {};
-        const require_open = true;
-        const client_fingerprint_id = null;
-        const generateStart = Date.now();
-        try {
-          variant = await ensureVariant(
-            question.id,
-            instance_question_id,
-            authn_user_id,
-            authn_user_id,
-            group_work,
-            course_instance_id,
-            variant_course,
-            question_course,
-            options,
-            require_open,
-            client_fingerprint_id,
-          );
-        } finally {
-          const generateEnd = Date.now();
-          generateDuration = generateEnd - generateStart;
-        }
-      },
-      (callback) => {
-        const renderStart = Date.now();
-        getAndRenderVariant(
-          variant.id,
-          null,
-          {
-            question,
-            course: variant_course,
-            urlPrefix: `/pl/course/${variant_course.id}`,
-            authz_data: {},
-          },
-          (err) => {
-            const renderEnd = Date.now();
-            renderDuration = renderEnd - renderStart;
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      async () => {
-        if (variant.broken) return callback(null);
-        const gradeStart = Date.now();
-        try {
-          ({ expected_submission, test_submission } = await testVariant(
-            variant,
-            question,
-            variant_course,
-            test_type,
-            authn_user_id,
-          ));
-        } finally {
-          const gradeEnd = Date.now();
-          gradeDuration = gradeEnd - gradeStart;
-        }
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      const stats = { generateDuration, renderDuration, gradeDuration };
-      callback(null, variant, expected_submission, test_submission, stats);
-    },
-  );
+  let variant;
+  /** @type {import('./db-types').Submission | null} */
+  let expected_submission = null;
+  /** @type {import('./db-types').Submission | null} */
+  let test_submission = null;
+
+  const question_course = await getQuestionCourse(question, variant_course);
+  const instance_question_id = null;
+  const course_instance_id = (course_instance && course_instance.id) || null;
+  const options = {};
+  const require_open = true;
+  const client_fingerprint_id = null;
+  const generateStart = Date.now();
+  try {
+    variant = await ensureVariant(
+      question.id,
+      instance_question_id,
+      authn_user_id,
+      authn_user_id,
+      group_work,
+      course_instance_id,
+      variant_course,
+      question_course,
+      options,
+      require_open,
+      client_fingerprint_id,
+    );
+  } finally {
+    const generateEnd = Date.now();
+    generateDuration = generateEnd - generateStart;
+  }
+
+  const renderStart = Date.now();
+  try {
+    await promisify(getAndRenderVariant)(variant.id, null, {
+      question,
+      course: variant_course,
+      urlPrefix: `/pl/course/${variant_course.id}`,
+      authz_data: {},
+    });
+  } finally {
+    const renderEnd = Date.now();
+    renderDuration = renderEnd - renderStart;
+  }
+
+  if (!variant.broken) {
+    const gradeStart = Date.now();
+    try {
+      ({ expected_submission, test_submission } = await testVariant(
+        variant,
+        question,
+        variant_course,
+        test_type,
+        authn_user_id,
+      ));
+    } finally {
+      const gradeEnd = Date.now();
+      gradeDuration = gradeEnd - gradeStart;
+    }
+  }
+
+  const stats = { generateDuration, renderDuration, gradeDuration };
+  return { variant, expected_submission, test_submission, stats };
 }
 
 /**
@@ -314,24 +307,16 @@ async function runTest(
     stats,
     success = true;
   await async.series([
-    (callback) => {
+    async () => {
       logger.verbose('Testing ' + question.qid);
-      testQuestion(
+      ({ variant, expected_submission, test_submission, stats } = await testQuestion(
         question,
         group_work,
         course_instance,
         course,
         test_type,
         authn_user_id,
-        (err, ret_variant, ret_expected_submission, ret_test_submission, ret_stats) => {
-          if (ERR(err, callback)) return;
-          variant = ret_variant;
-          expected_submission = ret_expected_submission;
-          test_submission = ret_test_submission;
-          stats = ret_stats;
-          callback(null);
-        },
-      );
+      ));
     },
     (callback) => {
       if (!showDetails) return callback(null);
