@@ -1,17 +1,13 @@
 <%
 let classes = ['btn', 'text-white', 'mb-3'];
 let show_lock = false;
-if (question.id && !question.sequence_locked && (locals.group_role_permissions?.can_view ?? true)) {
+if (!question.id) {
+  classes.push('btn-primary', 'disabled');
+} else if (!question.sequence_locked && (locals.group_role_permissions?.can_view ?? true)) {
   classes.push('btn-primary');
-}
-else {
-  if (question.id) {
-    classes.push('btn-secondary', 'pl-sequence-locked');
-    show_lock = true;
-  }
-  else {
-    classes.push('btn-primary', 'disabled');
-  }
+} else {
+  classes.push('btn-secondary', 'pl-sequence-locked');
+  show_lock = true;
 }
 let classes_str = classes.join(' ');
 %>
