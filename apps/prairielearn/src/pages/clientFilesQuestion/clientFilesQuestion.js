@@ -35,7 +35,15 @@ module.exports = function (options = { publicEndpoint: false }) {
       }
 
       const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
-      const coursePath = chunks.getRuntimeDirectoryForCourse(question_course);
+      if (question_course.path == null) {
+        // This is unlikely to happen in real scenarios, but it's tested because
+        // path is required by the following function call.
+        throw error.make(404, 'Not Found');
+      }
+      const coursePath = chunks.getRuntimeDirectoryForCourse({
+        id: question_course.id,
+        path: question_course.path,
+      });
 
       await chunks.ensureChunksForCourseAsync(question_course.id, {
         type: 'question',
