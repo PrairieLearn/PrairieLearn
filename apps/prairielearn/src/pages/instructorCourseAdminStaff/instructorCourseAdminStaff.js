@@ -1,20 +1,20 @@
 //@ts-check
 const asyncHandler = require('express-async-handler');
-const express = require('express');
-const router = express.Router();
+import * as express from 'express';
 const async = require('async');
 
-const { html } = require('@prairielearn/html');
-const { logger } = require('@prairielearn/logger');
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { idsEqual } = require('../../lib/id');
-const { selectCourseInstancesWithStaffAccess } = require('../../models/course-instances');
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { idsEqual } from '../../lib/id';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
 
-const path = require('path');
+import * as path from 'path';
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
 
 router.get(
   '/',
@@ -387,4 +387,4 @@ ${given_cp_and_cip.join(',\n')}
   }),
 );
 
-module.exports = router;
+export default router;
