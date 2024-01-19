@@ -94,7 +94,7 @@ WHERE
   id = $group_id;
 
 -- BLOCK select_group_members
-SELECT DISTINCT
+SELECT
   u.*
 FROM
   group_users AS gu
