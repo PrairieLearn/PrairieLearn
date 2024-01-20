@@ -5,7 +5,7 @@ import _ = require('lodash');
 
 import * as sqldb from '@prairielearn/postgres';
 import { idsEqual } from './id';
-import { IdSchema } from './db-types';
+import { GroupSchema, IdSchema, User, UserSchema } from './db-types';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const GroupConfigSchema = z.object({
@@ -23,14 +23,6 @@ const GroupConfigSchema = z.object({
   student_authz_leave: z.boolean().nullable(),
 });
 type GroupConfig = z.infer<typeof GroupConfigSchema>;
-
-const GroupMemberSchema = z.object({
-  uid: z.string(),
-  user_id: z.string(),
-  group_name: z.string(),
-  join_code: z.string(),
-});
-type GroupMember = z.infer<typeof GroupMemberSchema>;
 
 const RoleAssignmentSchema = z.object({
   user_id: z.string(),
@@ -63,11 +55,11 @@ interface RolesInfo {
   validationErrors: GroupRole[];
   disabledRoles: string[];
   rolesAreBalanced: boolean;
-  usersWithoutRoles: GroupMember[];
+  usersWithoutRoles: User[];
 }
 
 interface GroupInfo {
-  groupMembers: GroupMember[];
+  groupMembers: User[];
   groupSize: number;
   groupName: string;
   joinCode: string;
@@ -103,23 +95,21 @@ export async function getGroupId(assessmentId: string, userId: string): Promise<
   );
 }
 
-export async function getGroupInfo(groupId: string, groupConfig: GroupConfig): Promise<GroupInfo> {
-  const result = await sqldb.queryRows(
-    sql.get_group_members,
-    { group_id: groupId },
-    GroupMemberSchema,
-  );
-  const needSize = (groupConfig.minimum ?? 0) - result.length;
+export async function getGroupInfo(group_id: string, groupConfig: GroupConfig): Promise<GroupInfo> {
+  const group = await sqldb.queryRow(sql.select_group, { group_id }, GroupSchema);
+  const groupMembers = await sqldb.queryRows(sql.select_group_members, { group_id }, UserSchema);
+
+  const needSize = (groupConfig.minimum ?? 0) - groupMembers.length;
   const groupInfo: GroupInfo = {
-    groupMembers: result,
-    groupSize: result.length,
-    groupName: result[0].group_name,
-    joinCode: result[0].group_name + '-' + result[0].join_code,
+    groupMembers,
+    groupSize: groupMembers.length,
+    groupName: group.name,
+    joinCode: group.name + '-' + group.join_code,
     start: needSize <= 0,
   };
 
   if (groupConfig.has_roles) {
-    const rolesInfo = await getRolesInfo(groupId, groupInfo.groupMembers);
+    const rolesInfo = await getRolesInfo(group_id, groupInfo.groupMembers);
     groupInfo.start =
       groupInfo.start &&
       rolesInfo.rolesAreBalanced &&
@@ -135,7 +125,7 @@ export async function getGroupInfo(groupId: string, groupConfig: GroupConfig): P
  * A helper function to getGroupInfo that returns a data structure containing info about an
  * assessment's group roles.
  */
-async function getRolesInfo(groupId: string, groupMembers: GroupMember[]): Promise<RolesInfo> {
+async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<RolesInfo> {
   // Get the current role assignments of the group
   const result = await sqldb.queryRows(
     sql.get_role_assignments,

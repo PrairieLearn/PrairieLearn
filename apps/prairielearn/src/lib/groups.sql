@@ -85,18 +85,22 @@ SELECT
 FROM
   create_group AS cg;
 
--- BLOCK get_group_members
-SELECT DISTINCT
-  u.uid,
-  u.user_id,
-  g.name AS group_name,
-  g.join_code
+-- BLOCK select_group
+SELECT
+  *
+FROM
+  groups
+WHERE
+  id = $group_id;
+
+-- BLOCK select_group_members
+SELECT
+  u.*
 FROM
   group_users AS gu
-  JOIN users as u ON u.user_id = gu.user_id
-  JOIN groups as g ON gu.group_id = g.id
+  JOIN users as u ON (u.user_id = gu.user_id)
 WHERE
-  g.id = $group_id;
+  gu.group_id = $group_id;
 
 -- BLOCK get_group_roles
 WITH
