@@ -1,3 +1,4 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 import * as express from 'express';
 import { z } from 'zod';
