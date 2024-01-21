@@ -13,7 +13,7 @@ WHERE
 
 -- BLOCK select_enrollments
 SELECT
-  u.uid
+  u.user_id
 FROM
   assessments AS a
   JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id

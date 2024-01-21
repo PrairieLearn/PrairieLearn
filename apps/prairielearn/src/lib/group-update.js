@@ -8,6 +8,7 @@ const { z } = require('zod');
 
 const { IdSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
+import { createGroup } from './groups';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -193,7 +194,7 @@ export async function autoGroups(
         job.verbose('Auto generate group settings for ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
-        const enrollments = await queryRows(sql.select_enrollments, { assessment_id }, z.string());
+        const enrollments = await queryRows(sql.select_enrollments, { assessment_id }, IdSchema);
         _.shuffle(enrollments);
         const numStudents = enrollments.length;
         job.verbose(`There are ` + numStudents + ' students enrolled in ' + assessmentLabel);
@@ -201,42 +202,20 @@ export async function autoGroups(
         job.verbose(
           `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size,
         );
-        let numGroup = Math.ceil(numStudents / max_group_size);
-        let updateList = [];
-        // fill in the updateList with groupname and uid
-        for (let i = 0; i < numGroup; i++) {
-          let groupName = 'group' + i;
-          for (let j = 0; j < max_group_size; j++) {
-            if (enrollments.length > 0) {
-              let uid = enrollments.pop();
-              updateList.push([groupName, uid]);
-            }
-          }
+
+        // Create groups using the maximum size as much as possible
+        for (let i = 0; enrollments.length > 0; i++) {
+          const groupName = `group${i}`;
+          const users = enrollments.splice(0, max_group_size);
+          await createGroup(groupName, assessment_id, users, authn_user_id).catch((err) =>
+            job.error(err.message),
+          );
+          // TODO Handle individual errors properly
         }
-        const result = await callRow(
-          'assessment_groups_update',
-          [assessment_id, updateList, authn_user_id],
-          AssessmentGroupsUpdateResultSchema,
-        );
         let errorCount = 0;
+        // TODO Check how many students were not assigned to a group
 
-        const notExist = result.not_exist_user;
-        if (notExist) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
-          notExist.forEach((user) => job.verbose(user));
-          errorCount += notExist.length;
-        }
-
-        const inGroup = result.already_in_group;
-        if (inGroup) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users are already in a group.`);
-          inGroup.forEach((user) => job.verbose(user));
-          errorCount += inGroup.length;
-        }
-
-        const successCount = updateList.length - errorCount;
+        const successCount = numStudents - errorCount;
         job.verbose(`----------------------------------------`);
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);

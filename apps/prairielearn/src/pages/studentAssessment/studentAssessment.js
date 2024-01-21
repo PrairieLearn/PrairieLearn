@@ -1,3 +1,5 @@
+import { flash } from '@prairielearn/flash';
+
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
@@ -161,20 +163,24 @@ router.post(
       );
       res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
     } else if (req.body.__action === 'join_group') {
-      await groupAssessmentHelper.joinGroup(
-        req.body.join_code,
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      await groupAssessmentHelper
+        .joinGroup(
+          req.body.join_code,
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+          res.locals.authn_user.user_id,
+        )
+        .catch((err) => flash('error', err.message));
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
-      await groupAssessmentHelper.createGroup(
-        req.body.groupName,
-        res.locals.assessment.id,
-        [res.locals.user.user_id],
-        res.locals.authn_user.user_id,
-      );
+      await groupAssessmentHelper
+        .createGroup(
+          req.body.groupName,
+          res.locals.assessment.id,
+          [res.locals.user.user_id],
+          res.locals.authn_user.user_id,
+        )
+        .catch((err) => flash('error', err.message));
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       await groupAssessmentHelper.updateGroupRoles(

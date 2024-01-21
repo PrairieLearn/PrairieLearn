@@ -1,5 +1,4 @@
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { z } from 'zod';
 import _ = require('lodash');
 
@@ -259,7 +258,7 @@ export async function joinGroup(
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
-    flash('error', 'The join code has an incorrect format');
+    throw new Error('The join code has an incorrect format');
     return;
   }
 
@@ -279,7 +278,7 @@ export async function joinGroup(
       await addUserToGroup(assessmentId, groupId, userId, authnUserId, true);
     });
   } catch (err) {
-    flash('error', `Cannot join group "${fullJoinCode}": ${err.message}`);
+    throw new Error(`Cannot join group "${fullJoinCode}": ${err.message}`);
   }
 }
 
@@ -290,20 +289,16 @@ export async function createGroup(
   authnUserId: string,
 ): Promise<void> {
   if (groupName.length > 30) {
-    flash('error', 'The group name is too long. Use at most 30 alphanumerical characters.');
-    return;
+    throw new Error('The group name is too long. Use at most 30 alphanumerical characters.');
   }
   if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
-    flash(
-      'error',
+    throw new Error(
       'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
     );
-    return;
   }
 
   if (userIds.length === 0) {
-    flash('error', 'There must be at least one user in the group.');
-    return;
+    throw new Error('There must be at least one user in the group.');
   }
 
   try {
@@ -327,8 +322,7 @@ export async function createGroup(
       }
     });
   } catch (err) {
-    flash('error', `Failed to create the group ${groupName}. ${err.message}`);
-    return;
+    throw new Error(`Failed to create the group ${groupName}. ${err.message}`);
   }
 }
 

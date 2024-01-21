@@ -124,7 +124,12 @@ router.post(
             <strong>${notExist.toString()}</strong>`,
         );
       } else {
-        await createGroup(group_name, assessment_id, userIdList, res.locals.authn_user.user_id);
+        await createGroup(
+          group_name,
+          assessment_id,
+          userIdList,
+          res.locals.authn_user.user_id,
+        ).catch((err) => flash('error', err.message));
       }
 
       res.redirect(req.originalUrl);
