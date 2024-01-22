@@ -1,9 +1,6 @@
-const util = require('util');
-const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
 
 const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
@@ -29,25 +26,30 @@ async function ensureUpToDate(locals) {
 router.post(
   '/',
   asyncHandler(async function (req, res, next) {
-    if (!res.locals.authz_result.authorized_edit) {
+    if (
+      !res.locals.authz_result.authorized_edit &&
+      !res.locals.authz_data.has_course_instance_permission_edit
+    ) {
       throw error.make(403, 'Not authorized', res.locals);
+    }
+    if (
+      !res.locals.authz_result.authorized_edit &&
+      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_group'].includes(
+        req.body.__action,
+      )
+    ) {
+      throw error.make(403, 'Action is only permitted to students, not staff', res.locals);
     }
 
     if (req.body.__action === 'attach_file') {
-      util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processFileUpload(req, res);
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'attach_text') {
-      util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processTextUpload(req, res);
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_file') {
-      util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      });
+      await studentAssessmentInstance.processDeleteFile(req, res);
+      res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
       const overrideGradeRate = false;
       var closeExam;
@@ -65,29 +67,24 @@ router.post(
         }
         closeExam = true;
       } else {
-        next(
-          error.make(400, 'unknown __action', {
-            locals: res.locals,
-            body: req.body,
-          }),
-        );
+        throw error.make(400, 'unknown __action', {
+          locals: res.locals,
+          body: req.body,
+        });
       }
       const requireOpen = true;
-      assessment.gradeAssessmentInstance(
+      await assessment.gradeAssessmentInstanceAsync(
         res.locals.assessment_instance.id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,
         overrideGradeRate,
-        function (err) {
-          if (ERR(err, next)) return;
-          if (req.body.__action === 'timeLimitFinish') {
-            res.redirect(req.originalUrl + '?timeLimitExpired=true');
-          } else {
-            res.redirect(req.originalUrl);
-          }
-        },
       );
+      if (req.body.__action === 'timeLimitFinish') {
+        res.redirect(req.originalUrl + '?timeLimitExpired=true');
+      } else {
+        res.redirect(req.originalUrl);
+      }
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
@@ -101,6 +98,16 @@ router.post(
           '/assessment/' +
           res.locals.assessment.id,
       );
+    } else if (req.body.__action === 'update_group_roles') {
+      await groupAssessmentHelper.updateGroupRoles(
+        req.body,
+        res.locals.assessment.id,
+        res.locals.assessment_instance.group_id,
+        res.locals.user.user_id,
+        res.locals.authz_data.has_course_instance_permission_edit,
+        res.locals.authn_user.user_id,
+      );
+      res.redirect(req.originalUrl);
     } else {
       next(
         error.make(400, 'unknown __action', {
@@ -125,12 +132,10 @@ router.get(
     const result = await sqldb.queryAsync(sql.select_instance_questions, params);
     res.locals.instance_questions = result.rows;
 
-    res.locals.has_manual_grading_question = _.some(
-      res.locals.instance_questions,
+    res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = _.some(
-      res.locals.instance_questions,
+    res.locals.has_auto_grading_question = res.locals.instance_questions?.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
@@ -156,31 +161,41 @@ router.get(
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       res.locals.groupConfig = groupConfig;
 
-      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-      const groupId = await groupAssessmentHelper.getGroupId(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
+      res.locals.notInGroup = false;
+      const groupInfo = await groupAssessmentHelper.getGroupInfo(
+        res.locals.assessment_instance.group_id,
+        groupConfig,
       );
+      res.locals.groupSize = groupInfo.groupSize;
+      res.locals.groupMembers = groupInfo.groupMembers;
+      res.locals.joinCode = groupInfo.joinCode;
+      res.locals.groupName = groupInfo.groupName;
+      res.locals.start = groupInfo.start;
+      res.locals.rolesInfo = groupInfo.rolesInfo;
+      res.locals.used_join_code = req.body.used_join_code;
 
-      if (groupId === null) {
-        throw error.make(403, 'Not a group member', res.locals);
-      } else {
-        res.locals.notInGroup = false;
-        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
-        res.locals.groupSize = groupInfo.groupSize;
-        res.locals.groupMembers = groupInfo.groupMembers;
-        res.locals.joinCode = groupInfo.joinCode;
-        res.locals.groupName = groupInfo.groupName;
-        res.locals.start = groupInfo.start;
-        res.locals.rolesInfo = groupInfo.rolesInfo;
-        res.locals.used_join_code = req.body.used_join_code;
+      if (groupConfig.has_roles) {
+        const result = await groupAssessmentHelper.getAssessmentPermissions(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+        );
+        res.locals.userCanAssignRoles = result.can_assign_roles_at_start;
 
-        if (groupConfig.has_roles) {
-          const result = await groupAssessmentHelper.getAssessmentPermissions(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-          );
-          res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+        res.locals.user_group_roles =
+          groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
+            ?.map((role) => role.role_name)
+            ?.join(', ') || 'None';
+        // Get the role permissions. If the authorized user has course instance
+        // permission, then role restrictions don't apply.
+        if (!res.locals.authz_data.has_course_instance_permission_view) {
+          for (const question of res.locals.instance_questions) {
+            question.group_role_permissions =
+              await groupAssessmentHelper.getQuestionGroupPermissions(
+                question.id,
+                res.locals.assessment_instance.group_id,
+                res.locals.authz_data.user.user_id,
+              );
+          }
         }
       }
     }

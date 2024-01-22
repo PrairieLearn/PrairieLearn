@@ -1,3 +1,5 @@
+import { getQuestionGroupPermissions } from '../../lib/groups';
+
 const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
@@ -23,6 +25,17 @@ function processSubmission(req, res, callback) {
   }
   if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
+  }
+  if (
+    res.locals.assessment.group_config?.has_roles &&
+    !res.locals.instance_question.group_role_permissions.can_submit
+  ) {
+    return callback(
+      error.make(
+        403,
+        'Your current group role does not give you permission to submit to this question.',
+      ),
+    );
   }
   let variant_id, submitted_answer;
   if (res.locals.question.type === 'Freeform') {
@@ -252,6 +265,27 @@ router.get('/', function (req, res, next) {
         });
       },
       async () => await setQuestionCopyTargets(res),
+      async () => {
+        if (
+          res.locals.assessment.group_config?.has_roles &&
+          !res.locals.authz_data.has_course_instance_permission_view
+        ) {
+          if (res.locals.instance_question_info.prev_instance_question.id != null) {
+            res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.prev_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+          if (res.locals.instance_question_info.next_instance_question.id) {
+            res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+              res.locals.instance_question_info.next_instance_question.id,
+              res.locals.assessment_instance.group_id,
+              res.locals.authz_data.user.user_id,
+            );
+          }
+        }
+      },
     ],
     (err) => {
       if (ERR(err, next)) return;

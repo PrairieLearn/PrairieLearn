@@ -3288,7 +3288,6 @@ __metadata:
     date-fns: ^2.30.0
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
-    detect-mocha: ^0.1.0
     dockerode: ^3.3.5
     dompurify: ^3.0.6
     dropzone: ^5.9.3
@@ -8101,15 +8100,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"detect-mocha@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "detect-mocha@npm:0.1.0"
-  dependencies:
-    global-var: ^0.1.0
-  checksum: b168469df32ea72ba5f98da8e4fc15639883684a00712895259494612eae7ff08669923fbaf24328f36a778222947bf114225f3f033910c56c38701e904db046
-  languageName: node
-  linkType: hard
-
 "dicer@npm:0.3.0":
   version: 0.3.0
   resolution: "dicer@npm:0.3.0"
@@ -9892,13 +9882,6 @@ __metadata:
   dependencies:
     ini: 2.0.0
   checksum: 70147b80261601fd40ac02a104581432325c1c47329706acd773f3a6ce99bb36d1d996038c85ccacd482ad22258ec233c586b6a91535b1a116b89663d49d6438
-  languageName: node
-  linkType: hard
-
-"global-var@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "global-var@npm:0.1.0"
-  checksum: f5c88a46fcf141ab5888cc75377e2477a6a06e53f48657cd9b9f5f81e9c9280ebe1315b239ae35c68f74290c274efd4006806d0e04eab5ebc4c499114559f644
   languageName: node
   linkType: hard
 

@@ -94,7 +94,7 @@ export const CourseSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   options: z.any(),
-  path: z.string().nullable(),
+  path: z.string(),
   repository: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
