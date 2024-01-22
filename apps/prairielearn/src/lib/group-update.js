@@ -6,7 +6,7 @@ const namedLocks = require('@prairielearn/named-locks');
 const { loadSqlEquiv, queryRow, queryRows, callRow } = require('@prairielearn/postgres');
 const { z } = require('zod');
 
-const { IdSchema } = require('./db-types');
+const { IdSchema, UserSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
 import { createGroup } from './groups';
 
@@ -194,34 +194,52 @@ export async function autoGroups(
         job.verbose('Auto generate group settings for ' + assessmentLabel);
         job.verbose(`----------------------------------------`);
         job.verbose(`Fetching the enrollment lists...`);
-        const enrollments = await queryRows(sql.select_enrollments, { assessment_id }, IdSchema);
-        _.shuffle(enrollments);
-        const numStudents = enrollments.length;
-        job.verbose(`There are ` + numStudents + ' students enrolled in ' + assessmentLabel);
-        job.verbose(`----------------------------------------`);
-        job.verbose(
-          `Processing creating groups - max of ` + max_group_size + ' and min of ' + min_group_size,
+        const studentsToGroup = await queryRows(
+          sql.select_enrolled_students_without_group,
+          { assessment_id },
+          UserSchema,
         );
+        _.shuffle(studentsToGroup);
+        const numStudents = studentsToGroup.length;
+        job.verbose(
+          `There are ${numStudents} students enrolled in ${assessmentLabel} without a group`,
+        );
+        job.verbose(`----------------------------------------`);
+        job.verbose(`Processing creating groups - max of ${max_group_size}`);
 
-        // Create groups using the maximum size as much as possible
-        for (let i = 0; enrollments.length > 0; i++) {
+        // Find a group name of the format `groupNNN` that is not used
+        const groupNumber = await queryRow(
+          sql.select_unused_group_name,
+          { assessment_id },
+          z.number(),
+        );
+        let groupsCreated = 0;
+        // Create groups using the groups of maximum size where possible
+        for (let i = groupNumber; studentsToGroup.length > 0; i++) {
           const groupName = `group${i}`;
-          const users = enrollments.splice(0, max_group_size);
-          await createGroup(groupName, assessment_id, users, authn_user_id).catch((err) =>
-            job.error(err.message),
+          const users = studentsToGroup.splice(0, max_group_size).map((user) => user.user_id);
+          await createGroup(groupName, assessment_id, users, authn_user_id).then(
+            () => groupsCreated++,
+            (err) => job.error(err.message),
           );
-          // TODO Handle individual errors properly
         }
-        let errorCount = 0;
-        // TODO Check how many students were not assigned to a group
-
+        const ungroupedStudentsAfterUpdate = await queryRows(
+          sql.select_enrolled_students_without_group,
+          { assessment_id },
+          UserSchema,
+        );
+        const errorCount = ungroupedStudentsAfterUpdate.length;
         const successCount = numStudents - errorCount;
         job.verbose(`----------------------------------------`);
-        if (errorCount === 0) {
-          job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
-        } else {
-          job.verbose(`Successfully updated groups for ${successCount} students`);
-          job.fail(`Error updating ${errorCount} students`);
+        if (successCount !== 0) {
+          job.verbose(`Successfully grouped ${successCount} students into ${groupsCreated} groups`);
+        }
+        if (errorCount !== 0) {
+          job.fail(
+            `Error adding the following ${errorCount} students to groups: ${ungroupedStudentsAfterUpdate
+              .map((user) => user.uid)
+              .join(', ')}`,
+          );
         }
       },
     );
