@@ -9,16 +9,15 @@ import { sendCourseRequestMessage } from '../lib/opsbot';
 
 const sql = loadSqlEquiv(__filename);
 
-const JobsRowSchema = z
-  .object({
-    authn_user_id: IdSchema.nullable(),
-    authn_user_name: z.string().nullable(),
-    finish_date: DateFromISOString.nullable(),
-    id: IdSchema,
-    number: z.number(),
-    start_date: DateFromISOString,
-    status: z.string(),
-  });
+const JobsRowSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  authn_user_name: z.string().nullable(),
+  finish_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  number: z.number(),
+  start_date: DateFromISOString,
+  status: z.string(),
+});
 
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
