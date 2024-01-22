@@ -124,9 +124,9 @@ describe('Instructor force-breaking variants', () => {
     const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __action: 'break_variants',
+        __action: 'reset_question_variants',
         __csrf_token: csrfToken,
-        assessment_question_id: partialCredit1AssessmentQuestionId,
+        unsafe_assessment_question_id: partialCredit1AssessmentQuestionId,
       }),
     });
     assert.equal(breakVariantsResponse.status, 200);
@@ -147,9 +147,9 @@ describe('Instructor force-breaking variants', () => {
     const breakVariantsResponse = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
-        __action: 'break_variants',
+        __action: 'reset_question_variants',
         __csrf_token: csrfToken,
-        instance_question_id: instanceQuestion,
+        unsafe_instance_question_id: instanceQuestion,
       }),
     });
     assert.equal(breakVariantsResponse.status, 200);
