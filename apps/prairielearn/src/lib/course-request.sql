@@ -42,7 +42,7 @@ WITH
             r.title,
             'user_name',
             u.name,
-            'user_id',
+            'user_uid',
             u.uid,
             'github_user',
             r.github_user,

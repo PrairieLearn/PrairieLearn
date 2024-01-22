@@ -32,7 +32,7 @@ const CourseRequestRowSchema = z.object({
   short_name: z.string().nullable(),
   status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   title: z.string().nullable(),
-  user_id: z.string().nullable(),
+  user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
   work_email: z.string().nullable(),
 });

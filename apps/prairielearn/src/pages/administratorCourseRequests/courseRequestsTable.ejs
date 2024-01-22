@@ -38,7 +38,7 @@
                         <td class="align-middle"><%= req.first_name + ' ' + req.last_name %></td>
                         <td class="align-middle"><%= req.institution %></td>
                         <td class="align-middle"><%= req.work_email %></td>
-                        <td class="align-middle"><%= req.user_id %></td>
+                        <td class="align-middle"><%= req.user_uid %></td>
                         <td class="align-middle"><%= req.github_user %></td>
                         <td class="align-middle"><%- include('courseRequestStatusIcon', { status: req.status }) %></td>
                         <% if (locals.show_all) { %> <td class="align-middle"><%= (req.approved_by_name || 'Automatically Approved') %> </td> <% } %>
