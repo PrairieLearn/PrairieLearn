@@ -15,20 +15,13 @@ WITH
       qo.question_number,
       qo.sequence_locked
     FROM
-      assessment_instances AS ai
+      instance_questions AS this_iq
+      JOIN assessment_instances AS ai ON (ai.id = this_iq.assessment_instance_id)
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
-      ai.id IN (
-        SELECT
-          assessment_instance_id
-        FROM
-          instance_questions
-        WHERE
-          id = $instance_question_id
-      )
+      this_iq.id = $instance_question_id
     WINDOW
       w AS (
         ORDER BY
@@ -63,9 +56,7 @@ SELECT
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz
       ) * 1000
     )
   END AS assessment_instance_remaining_ms,
@@ -73,9 +64,7 @@ SELECT
     WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(
       DATE_PART(
         'epoch',
-        (
-          LEAST(aai.exam_access_end, ai.date_limit) - ai.date
-        )
+        LEAST(aai.exam_access_end, ai.date_limit) - ai.date
       ) * 1000
     )
   END AS assessment_instance_time_limit_ms,
