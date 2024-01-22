@@ -1452,7 +1452,7 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./middlewares/clientFingerprint').default,
     require('./middlewares/logPageView')('studentAssessmentInstance'),
-    require('./pages/studentAssessmentInstance/studentAssessmentInstance'),
+    require('./pages/studentAssessmentInstance/studentAssessmentInstance').default,
   ]);
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
