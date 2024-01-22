@@ -489,10 +489,7 @@ module.exports.initExpress = function () {
 
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
-
-  if (config.hasShib) {
-    app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  }
+  app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
 
   if (isEnterprise()) {
     if (config.hasAzure) {
