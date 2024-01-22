@@ -5,9 +5,10 @@ import AnsiUp from 'ansi_up';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { queryAsync, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { AssessmentQuestionSchema, IdSchema, TopicSchema } from '../../lib/db-types';
+import { resetVariantsForAssessmentQuestion } from '../../models/variant';
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
@@ -81,10 +82,10 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'break_variants') {
-      await queryAsync(sql.mark_all_variants_broken, {
+    if (req.body.__action === 'reset_question_variants') {
+      await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
-        assessment_question_id: req.body.assessment_question_id,
+        unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
         authn_user_id: res.locals.authn_user.user_id,
       });
       res.redirect(req.originalUrl);
