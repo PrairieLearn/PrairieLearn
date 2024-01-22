@@ -59,7 +59,7 @@ WITH
             'approved_by_name',
             ua.name,
             'jobs',
-            coalesce(j.jobs, '{}'::jsonb)
+            coalesce(j.jobs, '[]'::jsonb)
           )
         ),
         '[]'::jsonb

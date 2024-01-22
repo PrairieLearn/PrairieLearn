@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { config } from '../../lib/config';
 import {
   createCourseFromRequest,
-  getCourseRequests,
+  selectAllCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request';
 import { selectAllInstitutions } from '../../models/institution';
@@ -17,7 +17,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    res.locals.course_requests = await getCourseRequests(true);
+    res.locals.course_requests = await selectAllCourseRequests();
     res.locals.institutions = await selectAllInstitutions();
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),

@@ -9,14 +9,17 @@ import { sendCourseRequestMessage } from '../lib/opsbot';
 
 const sql = loadSqlEquiv(__filename);
 
-const JobsRowSchema = z.object({
-  authn_user_id: IdSchema.optional(),
-  finish_date: DateFromISOString.optional(),
-  id: IdSchema.optional(),
-  number: z.number().optional(),
-  start_date: DateFromISOString.optional(),
-  status: z.string().optional(),
-});
+const JobsRowSchema = z
+  .object({
+    authn_user_id: IdSchema.nullable(),
+    authn_user_name: z.string().nullable(),
+    finish_date: DateFromISOString.nullable(),
+    id: IdSchema,
+    number: z.number(),
+    start_date: DateFromISOString,
+    status: z.string(),
+  })
+  .optional();
 
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
@@ -24,7 +27,7 @@ const CourseRequestRowSchema = z.object({
   github_user: z.string().nullable(),
   id: IdSchema,
   institution: z.string().nullable(),
-  jobs: JobsRowSchema,
+  jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
   short_name: z.string().nullable(),
   status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
@@ -34,8 +37,17 @@ const CourseRequestRowSchema = z.object({
   work_email: z.string().nullable(),
 });
 
-export async function getCourseRequests(show_all: boolean) {
+async function selectCourseRequests(show_all: boolean) {
+  // return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
   return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
+}
+
+export async function selectAllCourseRequests() {
+  return await selectCourseRequests(true);
+}
+
+export async function selectPendingCourseRequests() {
+  return await selectCourseRequests(false);
 }
 
 export async function updateCourseRequest(req, res) {
@@ -45,6 +57,7 @@ export async function updateCourseRequest(req, res) {
   } else {
     throw new Error(`Unknown course request action "${action}"`);
   }
+
   await queryAsync(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,
@@ -54,6 +67,7 @@ export async function updateCourseRequest(req, res) {
 }
 
 export async function createCourseFromRequest(req, res) {
+  console.log(res.locals.authn_user.user_id);
   await queryAsync(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,
@@ -61,17 +75,6 @@ export async function createCourseFromRequest(req, res) {
   });
 
   // Create the course in the background
-  const repo_options = {
-    short_name: req.body.short_name,
-    title: req.body.title,
-    institution_id: req.body.institution_id,
-    display_timezone: req.body.display_timezone,
-    path: req.body.path,
-    repo_short_name: req.body.repository_short_name,
-    github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
-    course_request_id: req.body.request_id,
-  };
-
   const jobSequenceId = await createCourseRepoJob(
     {
       short_name: req.body.short_name,
@@ -83,7 +86,7 @@ export async function createCourseFromRequest(req, res) {
       github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
       course_request_id: req.body.request_id,
     },
-    res.locals.authn_user.user,
+    res.locals.authn_user,
   );
 
   res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
@@ -93,8 +96,8 @@ export async function createCourseFromRequest(req, res) {
   try {
     await sendCourseRequestMessage(
       `*Creating course*\n` +
-        `Course rubric: ${repo_options.short_name}\n` +
-        `Course title: ${repo_options.title}\n` +
+        `Course rubric: ${req.body.repository_short_name}\n` +
+        `Course title: ${req.body.title}\n` +
         `Approved by: ${res.locals.authn_user.name}`,
     );
   } catch (err) {

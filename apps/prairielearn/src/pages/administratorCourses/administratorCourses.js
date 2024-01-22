@@ -9,7 +9,7 @@ import { config } from '../../lib/config';
 import { InstitutionSchema, CourseSchema } from '../../lib/db-types';
 import {
   createCourseFromRequest,
-  getCourseRequests,
+  selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request';
 import { selectAllInstitutions } from '../../models/institution';
@@ -21,7 +21,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    res.locals.course_requests = await getCourseRequests(false);
+    res.locals.course_requests = await selectPendingCourseRequests();
     res.locals.institutions = await selectAllInstitutions();
     res.locals.courses = await sqldb.queryRows(
       sql.select_courses,
