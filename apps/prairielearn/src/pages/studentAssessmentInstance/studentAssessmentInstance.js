@@ -30,7 +30,7 @@ const sql = loadSqlEquiv(__filename);
 const InstanceQuestionDataSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
-  zone_title: z.string(),
+  zone_title: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
