@@ -79,7 +79,7 @@ VALUES
         user_id
       FROM
         users
-      WHERE 
+      WHERE
         uid = $created_by
     ),
     $credit,
@@ -166,6 +166,4 @@ WITH
         )
       )
       AND assessment_id = $assessment_id
-    
   )
-  

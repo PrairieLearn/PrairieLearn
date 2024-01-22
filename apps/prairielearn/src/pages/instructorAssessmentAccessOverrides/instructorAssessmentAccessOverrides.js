@@ -23,8 +23,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'add_new_override') {      const params = {
-        assessment_id: res.locals.assessment.id, 
+    if (req.body.__action === 'add_new_override') {
+      const params = {
+        assessment_id: res.locals.assessment.id,
         created_by: res.locals.user.uid,
         credit: req.body.credit,
         end_date: new Date(req.body.end_date),
