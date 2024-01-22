@@ -18,8 +18,7 @@ const JobsRowSchema = z
     number: z.number(),
     start_date: DateFromISOString,
     status: z.string(),
-  })
-  .optional();
+  });
 
 const CourseRequestRowSchema = z.object({
   approved_by_name: z.string().nullable(),
@@ -38,7 +37,6 @@ const CourseRequestRowSchema = z.object({
 });
 
 async function selectCourseRequests(show_all: boolean) {
-  // return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
   return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
 }
 
@@ -67,7 +65,6 @@ export async function updateCourseRequest(req, res) {
 }
 
 export async function createCourseFromRequest(req, res) {
-  console.log(res.locals.authn_user.user_id);
   await queryAsync(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,
