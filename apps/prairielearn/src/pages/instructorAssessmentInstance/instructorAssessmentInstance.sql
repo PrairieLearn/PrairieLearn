@@ -88,17 +88,3 @@ WINDOW
   )
 ORDER BY
   qo.row_order;
-
--- BLOCK mark_variant_broken
-UPDATE variants AS v
-SET
-  broken_at = CURRENT_TIMESTAMP,
-  broken_by = $authn_user_id
-FROM
-  instance_questions AS iq
-WHERE
-  v.instance_question_id = iq.id
-  AND v.open = true
-  AND v.broken_at IS NULL
-  AND iq.id = $instance_question_id
-  AND iq.assessment_instance_id = $assessment_instance_id;

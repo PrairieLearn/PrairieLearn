@@ -220,8 +220,7 @@
                     <div class="dropdown-menu">
                       <% if (authz_data.has_course_instance_permission_edit) { %>
                         <button
-                          id="row<%= iRow %>PopoverBreakButton"
-                          class="dropdown-item js-reset-question-variants"
+                          class="dropdown-item"
                           data-toggle="modal"
                           data-target="#resetQuestionVariantsModal"
                           data-assessment-question-id="<%= question.id %>"
