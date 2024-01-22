@@ -27,7 +27,7 @@ import { idsEqual } from '../../lib/id';
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
 
-const InstanceQuestionDataSchema = InstanceQuestionSchema.extend({
+const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
   zone_title: z.string().nullable(),
@@ -221,7 +221,7 @@ router.get(
         assessment_instance_id: res.locals.assessment_instance.id,
         user_id: res.locals.user.user_id,
       },
-      InstanceQuestionDataSchema,
+      InstanceQuestionRowSchema,
     );
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
