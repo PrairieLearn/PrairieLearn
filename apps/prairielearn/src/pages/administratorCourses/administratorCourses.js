@@ -78,9 +78,9 @@ router.post(
       await sqldb.callAsync('courses_delete', [req.body.course_id, res.locals.authn_user.user_id]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {
-      updateCourseRequest(req, res);
+      await updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {
-      createCourseFromRequest(req, res);
+      await createCourseFromRequest(req, res);
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,

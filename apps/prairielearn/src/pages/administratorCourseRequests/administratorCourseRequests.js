@@ -29,9 +29,9 @@ router.post(
     if (!res.locals.is_administrator) throw error.make(403, 'Insufficient permissions');
 
     if (req.body.__action === 'approve_deny_course_request') {
-      updateCourseRequest(req, res);
+      await updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {
-      createCourseFromRequest(req, res);
+      await createCourseFromRequest(req, res);
     } else {
       throw error.make(400, 'unknown __action', {
         locals: res.locals,
