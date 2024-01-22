@@ -4,7 +4,6 @@ import * as express from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { config } from '../../lib/config';
 import { InstitutionSchema, CourseSchema } from '../../lib/db-types';
@@ -12,7 +11,8 @@ import {
   createCourseFromRequest,
   getCourseRequests,
   updateCourseRequest,
-} from '../../models/course-request';
+} from '../../lib/course-request';
+import { selectAllInstitutions } from '../../models/institution';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -21,18 +21,14 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    const { institutions, course_requests } = await getCourseRequests(false);
-    const courses = await sqldb.queryRow(
-      sql.select,
-      z.array(
-        CourseSchema.extend({
-          institution: InstitutionSchema,
-        }),
-      ),
+    res.locals.course_requests = await getCourseRequests(false);
+    res.locals.institutions = await selectAllInstitutions();
+    res.locals.courses = await sqldb.queryRows(
+      sql.select_courses,
+      CourseSchema.extend({
+        institution: InstitutionSchema,
+      }),
     );
-    res.locals.courses = courses;
-    res.locals.institutions = institutions;
-    res.locals.course_requests = course_requests;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );

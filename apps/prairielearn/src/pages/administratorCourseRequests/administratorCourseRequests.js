@@ -8,7 +8,8 @@ import {
   createCourseFromRequest,
   getCourseRequests,
   updateCourseRequest,
-} from '../../models/course-request';
+} from '../../lib/course-request';
+import { selectAllInstitutions } from '../../models/institution';
 
 const router = express.Router();
 
@@ -16,9 +17,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.coursesRoot = config.coursesRoot;
-    const { institutions, course_requests } = await getCourseRequests(true);
-    res.locals.institutions = institutions;
-    res.locals.course_requests = course_requests;
+    res.locals.course_requests = await getCourseRequests(true);
+    res.locals.institutions = await selectAllInstitutions();
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   }),
 );

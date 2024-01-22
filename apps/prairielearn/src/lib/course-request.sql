@@ -70,48 +70,12 @@ WITH
       LEFT JOIN users AS ua on ua.user_id = r.approved_by
       LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
     WHERE
-      (
-        $show_all != 'true'
-        AND r.approved_status NOT IN ('approved', 'denied')
-      )
-      OR ($show_all = 'true')
-  ),
-  select_institutions_with_authn_providers AS (
-    SELECT
-      i.*,
-      coalesce(
-        jsonb_agg(
-          ap.name
-          ORDER BY
-            ap.name
-        ),
-        '[]'::jsonb
-      ) AS authn_providers
-    FROM
-      institutions AS i
-      LEFT JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
-      LEFT JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
-    GROUP BY
-      i.id
-  ),
-  select_institutions AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          i
-          ORDER BY
-            i.short_name
-        ),
-        '[]'::jsonb
-      ) AS institutions
-    FROM
-      select_institutions_with_authn_providers AS i
+      $show_all = 'true'
+      OR r.approved_status NOT IN ('approved', 'denied')
   )
 SELECT
-  institutions,
   course_requests
 FROM
-  select_institutions,
   select_course_requests;
 
 -- BLOCK update_course_request

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import { InstitutionSchema, DateFromISOString, IdSchema } from '../lib/db-types';
+import { DateFromISOString, IdSchema } from '../lib/db-types';
 import { createCourseRepoJob } from '../lib/github';
 import { sendCourseRequestMessage } from '../lib/opsbot';
 
@@ -29,20 +29,13 @@ const CourseRequestRowSchema = z.object({
   short_name: z.string().nullable(),
   status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   title: z.string().nullable(),
-  user_id: IdSchema.nullable(),
+  user_id: z.string().nullable(),
   user_name: z.string().nullable(),
   work_email: z.string().nullable(),
 });
 
 export async function getCourseRequests(show_all: boolean) {
-  return await queryRow(
-    sql.get_requests,
-    { show_all },
-    z.object({
-      institutions: z.array(InstitutionSchema),
-      course_requests: z.array(CourseRequestRowSchema),
-    }),
-  );
+  return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
 }
 
 export async function updateCourseRequest(req, res) {
@@ -79,7 +72,19 @@ export async function createCourseFromRequest(req, res) {
     course_request_id: req.body.request_id,
   };
 
-  const jobSequenceId = await createCourseRepoJob(repo_options, res.locals.authn_user.user);
+  const jobSequenceId = await createCourseRepoJob(
+    {
+      short_name: req.body.short_name,
+      title: req.body.title,
+      institution_id: req.body.institution_id,
+      display_timezone: req.body.display_timezone,
+      path: req.body.path,
+      repo_short_name: req.body.repository_short_name,
+      github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
+      course_request_id: req.body.request_id,
+    },
+    res.locals.authn_user.user,
+  );
 
   res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
 
