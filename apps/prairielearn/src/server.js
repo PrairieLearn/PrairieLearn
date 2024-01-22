@@ -483,6 +483,7 @@ module.exports.initExpress = function () {
   });
   app.use(require('./middlewares/logResponse')); // defers to end of response
   app.use(require('./middlewares/cors'));
+  app.use(require('./middlewares/content-security-policy').default);
   app.use(require('./middlewares/date'));
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
