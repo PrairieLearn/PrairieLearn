@@ -50,6 +50,7 @@ FROM
 WHERE
   gc.assessment_id = $assessment_id
   AND g.name ~ '^group[0-9]+$'
+  AND g.deleted_at IS NULL
 ORDER BY
   group_number DESC
 LIMIT
