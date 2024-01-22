@@ -8,7 +8,6 @@ const { z } = require('zod');
 
 const { IdSchema, UserSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
 import { selectUserByUid } from '../models/user';
 import { createGroup, createOrAddToGroup } from './groups';
 
@@ -78,22 +77,13 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
-        const csvConverter = csvtojson({
-          colParser: {
-            groupname: 'string',
-            groupName: 'string',
-            uid: 'string',
-            UID: 'string',
-            Uid: 'string',
-          },
-          maxRowLength: 10000,
-        });
+        const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
         let totalRows = 0,
           successCount = 0;
-        await csvConverter.fromStream(csvStream).subscribe(async (json) => {
-          json = _.mapKeys(json, (_v, k) => k.toLowerCase());
-          const groupName = json.groupname || null;
-          const uid = json.uid || null;
+        await csvConverter.fromStream(csvStream).subscribe(async (row) => {
+          row = _.mapKeys(row, (_v, k) => k.toLowerCase());
+          const groupName = row.groupname || null;
+          const uid = row.uid || null;
           // Ignore rows without a group name and uid (blank lines)
           if (!uid && !groupName) return;
 
@@ -103,18 +93,10 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
             job.error(`User with uid ${uid} does not exist`);
             return;
           }
-          const enrollment = await getEnrollmentForUserInCourseInstance({
-            user_id: user.user_id,
-            course_instance_id,
-          });
-          if (!enrollment) {
-            job.error(`User ${user.uid} is not enrolled in this course instance`);
-            return;
-          }
 
-          createOrAddToGroup(groupName, assessment_id, [user.user_id], authn_user_id).then(
+          await createOrAddToGroup(groupName, assessment_id, [user.user_id], authn_user_id).then(
             () => successCount++,
-            (err) => job.error(err.message),
+            (err) => job.error(`Error adding ${uid} to group ${groupName}: ${err.message}`),
           );
         });
 
