@@ -43,6 +43,7 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   const user = await callRow(
     'users_select_or_insert',
     [authUser.uid, authUser.name, authUser.uin, 'dev'],
+    // The sproc returns multiple columns, but we only use the ID.
     z.object({ user_id: IdSchema }),
   );
   return await queryRow(

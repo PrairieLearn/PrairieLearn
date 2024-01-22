@@ -113,5 +113,5 @@ export async function updateBatchedMigrationStatus(
 }
 
 export async function retryFailedBatchedMigrationJobs(project: string, id: string): Promise<void> {
-  await await queryAsync(sql.retry_failed_jobs, { project, id });
+  await queryAsync(sql.retry_failed_jobs, { project, id });
 }
