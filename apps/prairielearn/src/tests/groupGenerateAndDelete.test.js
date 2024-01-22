@@ -40,7 +40,7 @@ describe('test auto group and delete groups', function () {
       max_group_size,
       min_group_size,
     );
-    await helperServer.waitForJobSequenceAsync(job_sequence_id);
+    await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
   });
 
   step('check groups and users', async () => {

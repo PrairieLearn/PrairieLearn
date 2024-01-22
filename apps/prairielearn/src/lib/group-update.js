@@ -3,7 +3,7 @@ const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
-const { loadSqlEquiv, queryRow, queryRows } = require('@prairielearn/postgres');
+const { loadSqlEquiv, queryRow, queryRows, queryOptionalRow } = require('@prairielearn/postgres');
 const { z } = require('zod');
 
 const { IdSchema, UserSchema } = require('./db-types');
@@ -202,14 +202,14 @@ export async function autoGroups(
         job.verbose(`Processing creating groups - max of ${max_group_size}`);
 
         // Find a group name of the format `groupNNN` that is not used
-        const groupNumber = await queryRow(
+        const groupNumber = await queryOptionalRow(
           sql.select_unused_group_name,
           { assessment_id },
           z.number(),
         );
         let groupsCreated = 0;
         // Create groups using the groups of maximum size where possible
-        for (let i = groupNumber; studentsToGroup.length > 0; i++) {
+        for (let i = groupNumber ?? 1; studentsToGroup.length > 0; i++) {
           const groupName = `group${i}`;
           const users = studentsToGroup.splice(0, max_group_size).map((user) => user.user_id);
           await createGroup(groupName, assessment_id, users, authn_user_id).then(
