@@ -274,15 +274,15 @@ export async function joinGroup(
 
   try {
     await sqldb.runInTransactionAsync(async () => {
-      const groupId = await sqldb.queryOptionalRow(
+      const group = await sqldb.queryOptionalRow(
         sql.select_group_by_name,
-        { group_name: groupName, join_code: joinCode, assessment_id: assessmentId },
-        IdSchema,
+        { group_name: groupName, assessment_id: assessmentId },
+        GroupSchema,
       );
-      if (groupId == null) {
+      if (group == null || group.join_code !== joinCode) {
         throw new Error('Group does not exist.');
       }
-      await addUserToGroup(assessmentId, groupId, userId, authnUserId, true);
+      await addUserToGroup(assessmentId, group.id, userId, authnUserId, true);
     });
   } catch (err) {
     throw new Error(`Cannot join group "${fullJoinCode}": ${err.message}`);
@@ -331,6 +331,28 @@ export async function createGroup(
   } catch (err) {
     throw new Error(`Failed to create the group ${groupName}. ${err.message}`);
   }
+}
+
+export async function createOrAddToGroup(
+  groupName: string,
+  assessmentId: string,
+  userIds: string[],
+  authnUserId: string,
+): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const group = await sqldb.queryOptionalRow(
+      sql.select_group_by_name,
+      { group_name: groupName, assessment_id: assessmentId },
+      GroupSchema,
+    );
+    if (group == null) {
+      return createGroup(groupName, assessmentId, userIds, authnUserId);
+    } else {
+      for (const userId of userIds) {
+        await addUserToGroup(assessmentId, group.id, userId, authnUserId, false);
+      }
+    }
+  });
 }
 
 /**

@@ -153,13 +153,12 @@ WHERE
 
 -- BLOCK select_group_by_name
 SELECT
-  g.id
+  g.*
 FROM
   groups AS g
   JOIN group_configs AS gc ON g.group_config_id = gc.id
 WHERE
   g.name = $group_name
-  AND g.join_code = $join_code
   AND gc.assessment_id = $assessment_id
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL

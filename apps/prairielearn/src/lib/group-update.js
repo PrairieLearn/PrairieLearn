@@ -3,12 +3,14 @@ const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
-const { loadSqlEquiv, queryRow, queryRows, callRow } = require('@prairielearn/postgres');
+const { loadSqlEquiv, queryRow, queryRows } = require('@prairielearn/postgres');
 const { z } = require('zod');
 
 const { IdSchema, UserSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
-import { createGroup } from './groups';
+import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
+import { selectUserByUid } from '../models/user';
+import { createGroup, createOrAddToGroup } from './groups';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -16,11 +18,6 @@ const AssessmentInfoSchema = z.object({
   assessment_label: z.string(),
   course_instance_id: IdSchema,
   course_id: IdSchema,
-});
-
-const AssessmentGroupsUpdateResultSchema = z.object({
-  not_exist_user: z.array(z.string()).nullable(),
-  already_in_group: z.array(z.string()).nullable(),
 });
 
 /**
@@ -91,40 +88,37 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
           },
           maxRowLength: 10000,
         });
-        const updateList = [];
-        await csvConverter.fromStream(csvStream).subscribe((json) => {
-          let groupName = json.groupName || json.groupname || null;
-          let uid = json.uid || json.UID || json.Uid || null;
-          updateList.push([groupName, uid]);
+        let totalRows = 0,
+          successCount = 0;
+        await csvConverter.fromStream(csvStream).subscribe(async (json) => {
+          json = _.mapKeys(json, (_v, k) => k.toLowerCase());
+          const groupName = json.groupname || null;
+          const uid = json.uid || null;
+          // Ignore rows without a group name and uid (blank lines)
+          if (!uid && !groupName) return;
+
+          totalRows++;
+          const user = await selectUserByUid(uid);
+          if (!user) {
+            job.error(`User with uid ${uid} does not exist`);
+            return;
+          }
+          const enrollment = await getEnrollmentForUserInCourseInstance({
+            user_id: user.user_id,
+            course_instance_id,
+          });
+          if (!enrollment) {
+            job.error(`User ${user.uid} is not enrolled in this course instance`);
+            return;
+          }
+
+          createOrAddToGroup(groupName, assessment_id, [user.user_id], authn_user_id).then(
+            () => successCount++,
+            (err) => job.error(err.message),
+          );
         });
-        const result = await callRow(
-          'assessment_groups_update',
-          [assessment_id, updateList, authn_user_id],
-          AssessmentGroupsUpdateResultSchema,
-        );
-        let errorCount = 0;
 
-        const notExist = result.not_exist_user;
-        if (notExist) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users do not exist. Please check their uids first.`);
-          notExist.forEach((user) => {
-            job.verbose(user);
-          });
-          errorCount += notExist.length;
-        }
-
-        const inGroup = result.already_in_group;
-        if (inGroup) {
-          job.verbose(`----------------------------------------`);
-          job.verbose(`ERROR: The following users are already in a group.`);
-          inGroup.forEach((user) => {
-            job.verbose(user);
-          });
-          errorCount += inGroup.length;
-        }
-
-        const successCount = updateList.length - errorCount;
+        const errorCount = totalRows - successCount;
         job.verbose(`----------------------------------------`);
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
