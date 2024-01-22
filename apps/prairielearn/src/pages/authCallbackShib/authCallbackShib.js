@@ -2,16 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const error = require('@prairielearn/error');
 
 const authnLib = require('../../lib/authn');
-const { config } = require('../../lib/config');
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.hasShib) throw error.make(404, 'Shibboleth login is not enabled');
-
     var uid = req.get('x-trust-auth-uid') ?? null;
     var name = req.get('x-trust-auth-name') ?? null;
     var uin = req.get('x-trust-auth-uin') ?? null;
