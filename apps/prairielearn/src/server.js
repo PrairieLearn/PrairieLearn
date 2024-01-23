@@ -486,6 +486,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/content-security-policy').default);
   app.use(require('./middlewares/date'));
   app.use(require('./middlewares/effectiveRequestChanged'));
+
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
