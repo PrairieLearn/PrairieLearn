@@ -1,5 +1,5 @@
 ---
-"@prairielearn/sentry": minor
+'@prairielearn/sentry': minor
 ---
 
 Export `getCurrentScope` function
