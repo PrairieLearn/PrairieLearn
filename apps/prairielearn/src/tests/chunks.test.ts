@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as tmp from 'tmp-promise';
 import * as fs from 'fs-extra';
@@ -17,8 +16,7 @@ import { makeInfoFile } from '../sync/infofile';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/** @type {import('../sync/course-db').CourseData} */
-const COURSE = {
+const COURSE: courseDB.CourseData = {
   course: makeInfoFile(),
   questions: {
     'simple-question': makeInfoFile(),
@@ -262,11 +260,9 @@ describe('chunks', () => {
   describe('ensureChunksForCourse', function () {
     this.timeout(60000);
 
-    /** @type {tmp.DirectoryResult} */
-    let tempTestCourseDir;
-    /** @type {tmp.DirectoryResult} */
-    let tempChunksDir;
-    let originalChunksConsumerDirectory = config.chunksConsumerDirectory;
+    let tempTestCourseDir: tmp.DirectoryResult;
+    let tempChunksDir: tmp.DirectoryResult;
+    const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
     let courseId;
     let courseInstanceId;
     let assessmentId;
@@ -354,8 +350,7 @@ describe('chunks', () => {
         courseData: await courseDB.loadFullCourse(courseDir),
       });
 
-      /** @type {import('../lib/chunks').Chunk[]} */
-      const chunksToLoad = [{ type: 'question', questionId }];
+      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId }];
 
       // Load the question's chunk.
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
@@ -397,8 +392,7 @@ describe('chunks', () => {
         path: courseDir,
       });
 
-      /** @type {import('../lib/chunks').Chunk[]} */
-      const chunksToLoad = [
+      const chunksToLoad: chunksLib.Chunk[] = [
         {
           type: 'elements',
         },

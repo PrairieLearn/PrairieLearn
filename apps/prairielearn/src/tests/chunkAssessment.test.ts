@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp-promise';
@@ -16,15 +15,14 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Generate chunks and use them for a student homework', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
 
-  /** @type {tmp.DirectoryResult} */
-  let tempChunksDir;
-  let originalChunksConsumerDirectory = config.chunksConsumerDirectory;
+  let tempChunksDir: tmp.DirectoryResult;
+  const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
 
   before('set up testing server', async () => {
     tempChunksDir = await tmp.dir({ unsafeCleanup: true });

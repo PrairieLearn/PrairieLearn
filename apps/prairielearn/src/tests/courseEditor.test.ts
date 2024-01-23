@@ -1,5 +1,4 @@
-// @ts-check
-const ERR = require('async-stacktrace');
+import ERR = require('async-stacktrace');
 import { assert } from 'chai';
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -7,7 +6,7 @@ import * as async from 'async';
 import * as cheerio from 'cheerio';
 import { exec } from 'child_process';
 import fetch from 'node-fetch';
-const klaw = require('klaw');
+import klaw = require('klaw');
 import * as tmp from 'tmp';
 
 import { config } from '../lib/config';
@@ -16,7 +15,7 @@ import * as helperServer from './helperServer';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
 
@@ -324,7 +323,7 @@ describe('test course editor', function () {
 
     describe('the locals object', function () {
       it('should be cleared', function () {
-        for (var prop in locals) {
+        for (const prop in locals) {
           delete locals[prop];
         }
       });
@@ -338,9 +337,8 @@ describe('test course editor', function () {
   });
 });
 
-async function getFiles(options) {
-  /** @type {Set<string>} */
-  let files = new Set();
+async function getFiles(options): Promise<Set<string>> {
+  const files = new Set<string>();
 
   const ignoreHidden = (item) => {
     const basename = path.basename(item);
@@ -399,7 +397,7 @@ function testEdit(params) {
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        let elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        const elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -558,8 +556,8 @@ function waitForJobSequence(locals, expectedResult) {
       });
     });
     it('should complete', function (callback) {
-      var checkComplete = function () {
-        var params = { job_sequence_id: locals.job_sequence_id };
+      const checkComplete = function () {
+        const params = { job_sequence_id: locals.job_sequence_id };
         sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
           if (ERR(err, callback)) return;
           locals.job_sequence_status = result.rows[0].status;
