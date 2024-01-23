@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -6,17 +5,10 @@ import * as helperDb from '../helperDb';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-/**
- * @param {string | number} assessment_id
- * @param {string | number} exam_id
- * @param { string | number} second_assessment_id
- * @param {boolean} [expectWideOpen]
- * @param {boolean} [seeOtherExams]
- */
 function reservationTests(
-  assessment_id,
-  exam_id,
-  second_assessment_id,
+  assessment_id: string | number,
+  exam_id: string | number,
+  second_assessment_id: string | number,
   expectWideOpen = false,
   seeOtherExams = false,
 ) {
@@ -79,7 +71,7 @@ function reservationTests(
       assert.strictEqual(result.rows[0].authorized, expectedBool);
     });
 
-    let otherExams = {
+    const otherExams = {
       word: 'fail',
       bool: false,
     };

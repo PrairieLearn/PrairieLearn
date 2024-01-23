@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';
 
