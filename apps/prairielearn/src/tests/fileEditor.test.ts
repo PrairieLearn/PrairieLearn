@@ -1,6 +1,5 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const request = require('request');
+import ERR = require('async-stacktrace');
+import request = require('request');
 import { assert } from 'chai';
 import { readFileSync } from 'node:fs';
 import * as fs from 'fs-extra';
@@ -9,7 +8,7 @@ import * as async from 'async';
 import * as cheerio from 'cheerio';
 import * as tmp from 'tmp';
 import fetch from 'node-fetch';
-const FormData = require('form-data');
+import FormData = require('form-data');
 
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
@@ -21,7 +20,7 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 let page, elemList;
 
 // Uses course within tests/testFileEditor
@@ -47,11 +46,11 @@ const questionPythonPath = path.join(questionPath, 'server.py');
 const infoCourseJsonA = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
-let infoCourseJsonB = JSON.parse(
+const infoCourseJsonB = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
 infoCourseJsonB.title = 'Test Course (Renamed)';
-let infoCourseJsonC = JSON.parse(
+const infoCourseJsonC = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
 );
 infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
@@ -59,11 +58,11 @@ infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
 const infoCourseInstanceJsonA = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
-let infoCourseInstanceJsonB = JSON.parse(
+const infoCourseInstanceJsonB = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
 infoCourseInstanceJsonB.longName = 'Fall 2019';
-let infoCourseInstanceJsonC = JSON.parse(
+const infoCourseInstanceJsonC = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'),
 );
 infoCourseInstanceJsonC.longName = 'Spring 2020';
@@ -71,11 +70,11 @@ infoCourseInstanceJsonC.longName = 'Spring 2020';
 const infoAssessmentJsonA = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
-let infoAssessmentJsonB = JSON.parse(
+const infoAssessmentJsonB = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
 infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
-let infoAssessmentJsonC = JSON.parse(
+const infoAssessmentJsonC = JSON.parse(
   readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
 );
 infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Again)';
@@ -83,11 +82,11 @@ infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Again)';
 const questionJsonA = JSON.parse(
   readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
-let questionJsonB = JSON.parse(
+const questionJsonB = JSON.parse(
   readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
 questionJsonB.title = 'Test question (Renamed)';
-let questionJsonC = JSON.parse(
+const questionJsonC = JSON.parse(
   readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
 );
 questionJsonC.title = 'Test question (Renamed Yet Again)';
@@ -286,7 +285,7 @@ describe('test file editor', function () {
 
     describe('the locals object', function () {
       it('should be cleared', function () {
-        for (var prop in locals) {
+        for (const prop in locals) {
           delete locals[prop];
         }
       });
@@ -347,7 +346,7 @@ function badGet(url) {
 function badPost(action, fileEditContents, url) {
   describe(`POST to edit url with action ${action} and with bad path`, function () {
     it('should not load successfully', function (callback) {
-      let form = {
+      const form = {
         __action: action,
         __csrf_token: locals.__csrf_token,
         file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
@@ -500,7 +499,7 @@ function editPost(
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', function (callback) {
-      let form = {
+      const form = {
         __action: action,
         __csrf_token: locals.__csrf_token,
         file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
@@ -622,11 +621,11 @@ function verifyEdit(
     assert.isString(locals.file_edit_orig_hash);
   });
   it('should have a script with draft file contents', function (callback) {
-    for (const elem of Array.from(locals.$('script'))) {
+    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
       if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
-          if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
-            let match = elem.children[0].data.match(
+          if ('data' in elem.children[0]) {
+            const match = elem.children[0].data.match(
               /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms,
             );
             if (match != null) {
@@ -651,11 +650,11 @@ function verifyEdit(
     }
   });
   it(`should have a script with disk file contents - ${expectedToFindChoice}`, function (callback) {
-    for (const elem of Array.from(locals.$('script'))) {
+    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
       if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
-          if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
-            let match = elem.children[0].data.match(
+          if ('data' in elem.children[0]) {
+            const match = elem.children[0].data.match(
               /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms,
             );
             if (match != null) {
@@ -983,8 +982,8 @@ function waitForJobSequence(locals, expectedResult) {
       });
     });
     it('should complete', function (callback) {
-      var checkComplete = function () {
-        var params = { job_sequence_id: locals.job_sequence_id };
+      const checkComplete = function () {
+        const params = { job_sequence_id: locals.job_sequence_id };
         sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
           if (ERR(err, callback)) return;
           locals.job_sequence_status = result.rows[0].status;

@@ -1,11 +1,10 @@
-// @ts-check
 import { config } from '../lib/config';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths';
 
 import * as helperServer from './helperServer';
 import * as helperQuestion from './helperQuestion';
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
@@ -80,7 +79,7 @@ describe('Auto-test questions in exampleCourse with process-questions-in-worker 
   before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
   after('shut down testing server', helperServer.after);
 
-  let originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
+  const originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
   before('enable process-questions-in-worker', () => {
     config.features['process-questions-in-worker'] = true;
   });

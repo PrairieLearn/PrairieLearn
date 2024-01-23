@@ -1,6 +1,5 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import ERR = require('async-stacktrace');
+import _ = require('lodash');
 import { assert } from 'chai';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +11,7 @@ import * as helperAttachFiles from './helperAttachFiles';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -592,7 +591,7 @@ describe('Exam assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var elemList;
+  let elemList;
 
   helperExam.startExam(locals);
 
@@ -851,7 +850,7 @@ describe('Exam assessment', function () {
         locals.question = helperExam.questions.brokenGeneration;
       });
       it('should result in no variants', function (callback) {
-        let params = {
+        const params = {
           qid: locals.question.qid,
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
@@ -871,7 +870,7 @@ describe('Exam assessment', function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created one variant', function (callback) {
-        let params = {
+        const params = {
           qid: locals.question.qid,
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
@@ -891,7 +890,7 @@ describe('Exam assessment', function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created two variants', function (callback) {
-        let params = {
+        const params = {
           qid: locals.question.qid,
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {

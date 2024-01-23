@@ -1,10 +1,9 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as fs from 'fs-extra';
 import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
-const _ = require('lodash');
+import _ = require('lodash');
 import * as path from 'path';
 import * as freeform from '../question-servers/freeform.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths';
@@ -81,7 +80,7 @@ describe('Course element extensions', function () {
     before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
-    const locals = {};
+    const locals: Record<string, any> = {};
     locals.siteUrl = 'http://localhost:' + config.serverPort;
     locals.baseUrl = locals.siteUrl + '/pl';
     locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
@@ -99,7 +98,7 @@ describe('Course element extensions', function () {
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
     step('find the example question in the database', async () => {
-      let results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {
+      const results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {
         qid: testQid,
       });
       assert(results.rowCount === 1, `could not find question ${testQid}`);
@@ -107,7 +106,7 @@ describe('Course element extensions', function () {
       locals.question = results.rows[0];
     });
     step('check the question page for extension css and js files', async () => {
-      let questionUrl =
+      const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
@@ -137,7 +136,7 @@ describe('Course element extensions', function () {
       );
     });
     step('check the question page for a client-side image', async () => {
-      let questionUrl =
+      const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');

@@ -1,5 +1,4 @@
-// @ts-check
-const _ = require('lodash');
+import _ = require('lodash');
 import * as cron from '../cron';
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';

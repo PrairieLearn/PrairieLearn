@@ -1,5 +1,4 @@
-// @ts-check
-const _ = require('lodash');
+import _ = require('lodash');
 import * as path from 'node:path';
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
@@ -7,12 +6,12 @@ import { REPOSITORY_ROOT_PATH } from '../lib/paths';
 import * as helperDb from './helperDb';
 
 // Custom error type so we can display our own message and omit a stacktrace
-function DatabaseError(message) {
-  this.name = 'DatabaseError';
-  this.message = message;
+class DatabaseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
 }
-DatabaseError.prototype = Object.create(Error.prototype);
-DatabaseError.prototype.constructor = DatabaseError;
 
 describe('database', function () {
   this.timeout(20000);
