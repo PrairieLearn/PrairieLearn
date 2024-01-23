@@ -40,7 +40,7 @@
                         <td class="align-middle"><%= req.work_email %></td>
                         <td class="align-middle"><%= req.user_uid %></td>
                         <td class="align-middle"><%= req.github_user %></td>
-                        <td class="align-middle"><%- include('courseRequestStatusIcon', { status: req.status }) %></td>
+                        <td class="align-middle"><%- include('courseRequestStatusIcon', { status: req.approved_status }) %></td>
                         <% if (locals.show_all) { %> <td class="align-middle"><%= (req.approved_by_name || 'Automatically Approved') %> </td> <% } %>
                         <td class="align-middle">
                             <% if (req.status !== 'approved') { %>

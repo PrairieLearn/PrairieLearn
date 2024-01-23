@@ -1,4 +1,4 @@
--- BLOCK get_requests
+-- BLOCK select_course_requests
 WITH
   select_course_request_jobs AS (
     SELECT
@@ -28,55 +28,29 @@ WITH
       LEFT JOIN users AS u ON js.authn_user_id = u.user_id
     GROUP BY
       cr.id
-  ),
-  select_course_requests AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id',
-            r.id,
-            'short_name',
-            r.short_name,
-            'title',
-            r.title,
-            'user_name',
-            u.name,
-            'user_uid',
-            u.uid,
-            'github_user',
-            r.github_user,
-            'first_name',
-            r.first_name,
-            'last_name',
-            r.last_name,
-            'work_email',
-            r.work_email,
-            'institution',
-            r.institution,
-            'status',
-            r.approved_status,
-            'approved_by_name',
-            ua.name,
-            'jobs',
-            coalesce(j.jobs, '[]'::jsonb)
-          )
-        ),
-        '[]'::jsonb
-      ) AS course_requests
-    FROM
-      course_requests AS r
-      INNER JOIN users AS u ON u.user_id = r.user_id
-      LEFT JOIN users AS ua on ua.user_id = r.approved_by
-      LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
-    WHERE
-      $show_all = 'true'
-      OR r.approved_status NOT IN ('approved', 'denied')
   )
 SELECT
-  course_requests
+  r.id,
+  r.short_name,
+  r.title,
+  u.name AS user_name,
+  u.uid AS user_uid,
+  r.github_user,
+  r.first_name,
+  r.last_name,
+  r.work_email,
+  r.institution,
+  r.approved_status,
+  ua.name AS approved_by_name,
+  coalesce(j.jobs, '[]'::jsonb) AS jobs
 FROM
-  select_course_requests;
+  course_requests AS r
+  INNER JOIN users AS u ON u.user_id = r.user_id
+  LEFT JOIN users AS ua on ua.user_id = r.approved_by
+  LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
+WHERE
+  $show_all = 'true'
+  OR r.approved_status NOT IN ('approved', 'denied')
 
 -- BLOCK update_course_request
 UPDATE course_requests

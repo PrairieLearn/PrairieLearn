@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryAsync } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
@@ -28,7 +28,7 @@ const CourseRequestRowSchema = z.object({
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
   short_name: z.string().nullable(),
-  status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
+  approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   title: z.string().nullable(),
   user_uid: z.string().nullable(),
   user_name: z.string().nullable(),
@@ -36,7 +36,7 @@ const CourseRequestRowSchema = z.object({
 });
 
 async function selectCourseRequests(show_all: boolean) {
-  return await queryRow(sql.get_requests, { show_all }, z.array(CourseRequestRowSchema));
+  return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
 }
 
 export async function selectAllCourseRequests() {
