@@ -3,7 +3,13 @@ const _ = require('lodash');
 const streamifier = require('streamifier');
 const csvtojson = require('csvtojson');
 const namedLocks = require('@prairielearn/named-locks');
-const { loadSqlEquiv, queryRow, queryRows, queryOptionalRow } = require('@prairielearn/postgres');
+const {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryOptionalRow,
+  runInTransactionAsync,
+} = require('@prairielearn/postgres');
 const { z } = require('zod');
 
 const { IdSchema, UserSchema } = require('./db-types');
@@ -180,34 +186,36 @@ export async function autoGroups(
           `There are ${numStudents} students enrolled in ${assessmentLabel} without a group`,
         );
         job.verbose(`----------------------------------------`);
-        job.verbose(`Processing creating groups - max of ${max_group_size}`);
+        job.verbose(`Creating groups with a max size of ${max_group_size}`);
 
-        // Find a group name of the format `groupNNN` that is not used
-        const unusedGroupNameSuffix = await queryOptionalRow(
-          sql.select_unused_group_name_suffix,
-          { assessment_id },
-          z.number(),
-        );
         let groupsCreated = 0,
           studentsGrouped = 0;
-        // Create groups using the groups of maximum size where possible
-        for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
-          const groupName = `group${i}`;
-          const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
-          await createGroup(groupName, assessment_id, users, authn_user_id).then(
-            () => {
-              groupsCreated++;
-              studentsGrouped += users.length;
-            },
-            (err) => {
-              if (err instanceof GroupOperationError) {
-                job.error(err.message);
-              } else {
-                throw err;
-              }
-            },
+        await runInTransactionAsync(async () => {
+          // Find a group name of the format `groupNNN` that is not used
+          const unusedGroupNameSuffix = await queryOptionalRow(
+            sql.select_unused_group_name_suffix,
+            { assessment_id },
+            z.number(),
           );
-        }
+          // Create groups using the groups of maximum size where possible
+          for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
+            const groupName = `group${i}`;
+            const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
+            await createGroup(groupName, assessment_id, users, authn_user_id).then(
+              () => {
+                groupsCreated++;
+                studentsGrouped += users.length;
+              },
+              (err) => {
+                if (err instanceof GroupOperationError) {
+                  job.error(err.message);
+                } else {
+                  throw err;
+                }
+              },
+            );
+          }
+        });
         const errorCount = numStudents - studentsGrouped;
         job.verbose(`----------------------------------------`);
         if (studentsGrouped !== 0) {
