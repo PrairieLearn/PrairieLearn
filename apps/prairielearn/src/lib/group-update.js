@@ -83,29 +83,26 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
           encoding: 'utf8',
         });
         const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
-        let totalRows = 0,
-          successCount = 0;
-        await csvConverter.fromStream(csvStream).subscribe(async (row) => {
-          row = _.mapKeys(row, (_v, k) => k.toLowerCase());
-          const groupName = row.groupname || null;
-          const uid = row.uid || null;
-          // Ignore rows without a group name and uid (blank lines)
-          if (!uid && !groupName) return;
-
-          totalRows++;
-          await createOrAddToGroup(groupName, assessment_id, [uid], authn_user_id).then(
-            () => successCount++,
-            (err) => {
-              if (err instanceof GroupOperationError) {
-                job.error(`Error adding ${uid} to group ${groupName}: ${err.message}`);
-              } else {
-                throw err;
-              }
-            },
-          );
+        let successCount = 0;
+        const groupAssignments = (await csvConverter.fromStream(csvStream))
+          .map((row) => _.mapKeys(row, (_v, k) => k.toLowerCase()))
+          .filter((row) => row.uid && row.groupname);
+        await runInTransactionAsync(async () => {
+          for (const { uid, groupname } of groupAssignments) {
+            await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
+              () => successCount++,
+              (err) => {
+                if (err instanceof GroupOperationError) {
+                  job.error(`Error adding ${uid} to group ${groupname}: ${err.message}`);
+                } else {
+                  throw err;
+                }
+              },
+            );
+          }
         });
 
-        const errorCount = totalRows - successCount;
+        const errorCount = groupAssignments.length - successCount;
         job.verbose(`----------------------------------------`);
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
