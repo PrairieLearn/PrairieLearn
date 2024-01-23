@@ -27,10 +27,9 @@ WITH
       group_config_id
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  group_logs (authn_user_id, group_id, action)
 SELECT
   $authn_user_id,
-  NULL,
   cg.id,
   'create'
 FROM
