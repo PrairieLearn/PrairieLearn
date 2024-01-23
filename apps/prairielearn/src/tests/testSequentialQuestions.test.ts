@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +11,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Assessment that forces students to complete questions in-order', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;

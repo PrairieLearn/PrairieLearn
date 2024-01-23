@@ -1,6 +1,5 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import ERR = require('async-stacktrace');
+import _ = require('lodash');
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
@@ -12,9 +11,28 @@ import * as helperQuestion from './helperQuestion';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 
-const questionsArray = [
+interface TestQuestion {
+  qid: string;
+  type: string;
+  maxPoints: number;
+  points?: number;
+  id?: number | string;
+  url?: string;
+  submission_score?: number;
+}
+
+interface TestZone {
+  qid: string;
+  action: string;
+  score: number;
+  sub_points: number;
+  sub_total_points: number;
+  submission_score?: number;
+}
+
+const questionsArray: TestQuestion[] = [
   { qid: 'partialCredit1', type: 'Freeform', maxPoints: 10 },
   { qid: 'partialCredit2', type: 'Freeform', maxPoints: 10 },
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 15 },
@@ -25,11 +43,11 @@ const questions = _.keyBy(questionsArray, 'qid');
 
 const assessmentMaxPoints = 20;
 
-//     action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
-//     score: value to submit, will be the percentage score for the submission
-//     sub_points: additional awarded points for this submission
-//     sub_total_points: additional total points for this submission
-const zoneGradingTests = [
+// action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
+// score: value to submit, will be the percentage score for the submission
+// sub_points: additional awarded points for this submission
+// sub_total_points: additional total points for this submission
+const zoneGradingTests: TestZone[][] = [
   [
     {
       qid: 'partialCredit1',
@@ -110,10 +128,10 @@ describe('Zone grading exam assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var startAssessment = function () {
+  function startAssessment() {
     describe('startExam-1. the locals object', function () {
       it('should be cleared', function () {
-        for (var prop in locals) {
+        for (const prop in locals) {
           delete locals[prop];
         }
       });
@@ -134,7 +152,7 @@ describe('Zone grading exam assessment', function () {
     describe('startExam-2. the questions', function () {
       it('should have cleared data', function () {
         questionsArray.forEach(function (question) {
-          for (var prop in question) {
+          for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
               delete question[prop];
             }
@@ -270,7 +288,7 @@ describe('Zone grading exam assessment', function () {
         });
       });
     });
-  };
+  }
 
   zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {

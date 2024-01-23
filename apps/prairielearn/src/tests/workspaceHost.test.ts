@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -33,7 +32,7 @@ const WorkspaceLogsSchema = z.object({
   message: z.string().nullable(),
 });
 
-async function insertWorkspaceHost(id, state = 'launching') {
+async function insertWorkspaceHost(id: string | number, state = 'launching') {
   return sqldb.queryRow(
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
     {
@@ -45,11 +44,10 @@ async function insertWorkspaceHost(id, state = 'launching') {
   );
 }
 
-/**
- * @param {string | number} id
- * @param {string | number | null | undefined} hostId
- */
-async function insertWorkspace(id, hostId = null) {
+async function insertWorkspace(
+  id: string | number,
+  hostId: string | number | null | undefined = null,
+) {
   return sqldb.queryRow(
     'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
     {
@@ -75,10 +73,8 @@ async function selectWorkspace(id) {
 
 /**
  * Returns the workspace host logs for the given host.
- *
- * @param {string | number} id
  */
-async function getWorkspaceHostLogs(id) {
+async function getWorkspaceHostLogs(id: string | number) {
   return sqldb.queryRows(
     'SELECT * FROM workspace_host_logs WHERE workspace_host_id = $id;',
     { id },
@@ -86,7 +82,7 @@ async function getWorkspaceHostLogs(id) {
   );
 }
 
-async function getWorkspaceLogs(id) {
+async function getWorkspaceLogs(id: string | number) {
   return sqldb.queryRows(
     'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
     { id },

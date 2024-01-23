@@ -1,10 +1,9 @@
-// @ts-check
 import { config } from '../lib/config';
 
 import * as helperServer from './helperServer';
 import * as helperQuestion from './helperQuestion';
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
