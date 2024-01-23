@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
@@ -26,7 +25,7 @@ describe('Issues', function () {
   doTest(courseIssuesUrl, 'course instance');
 });
 
-function doTest(issuesUrl, label) {
+function doTest(issuesUrl: string, label: string) {
   describe(`Report issue with question and close all issues in ${label}`, () => {
     let questionUrl;
 

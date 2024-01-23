@@ -1,8 +1,7 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import ERR = require('async-stacktrace');
+import _ = require('lodash');
 import { assert } from 'chai';
-const request = require('request');
+import request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -50,7 +49,7 @@ describe('Instructor questions', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var page, elemList, questionData;
+  let page, elemList, questionData;
 
   describe('the database', function () {
     let questions;

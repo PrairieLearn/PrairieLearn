@@ -1,14 +1,13 @@
-// @ts-check
 import { assert } from 'chai';
-const request = require('request');
+import request = require('request');
 import * as cheerio from 'cheerio';
-const _ = require('lodash');
+import _ = require('lodash');
 
 import * as helperServer from './helperServer';
 import * as helperQuestion from './helperQuestion';
 import * as helperExam from './helperExam';
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
@@ -19,7 +18,7 @@ describe('Instructor assessment editing', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var page, elemList;
+  let page, elemList;
 
   helperExam.startExam(locals);
 

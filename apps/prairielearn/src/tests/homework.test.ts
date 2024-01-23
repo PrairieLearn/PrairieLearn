@@ -1,8 +1,7 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import ERR = require('async-stacktrace');
+import _ = require('lodash');
 import { assert } from 'chai';
-const request = require('request');
+import request = require('request');
 import * as cheerio from 'cheerio';
 
 import { config } from '../lib/config';
@@ -14,9 +13,18 @@ import * as helperAttachFiles from './helperAttachFiles';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 
-const questionsArray = [
+interface TestQuestion {
+  qid: string;
+  type: string;
+  maxPoints: number;
+  points?: number;
+  id?: number | string;
+  url?: string;
+}
+
+const questionsArray: TestQuestion[] = [
   { qid: 'addNumbers', type: 'Freeform', maxPoints: 5 },
   { qid: 'addVectors', type: 'Calculation', maxPoints: 11 },
   { qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 14 },
@@ -210,12 +218,12 @@ describe('Homework assessment', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var res, page, elemList;
+  let res, page, elemList;
 
-  var startAssessment = function () {
+  const startAssessment = function () {
     describe('the locals object', function () {
       it('should be cleared', function () {
-        for (var prop in locals) {
+        for (const prop in locals) {
           delete locals[prop];
         }
       });
@@ -233,7 +241,7 @@ describe('Homework assessment', function () {
     describe('the questions', function () {
       it('should have cleared data', function () {
         questionsArray.forEach(function (question) {
-          for (var prop in question) {
+          for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
               delete question[prop];
             }
