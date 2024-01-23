@@ -172,8 +172,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
-        res.locals.client_fingerprint_id,
-        },
+        res.locals.client_fingerprint_id
       );
       if (req.body.__action === 'timeLimitFinish') {
         res.redirect(req.originalUrl + '?timeLimitExpired=true');
