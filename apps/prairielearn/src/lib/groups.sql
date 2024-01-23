@@ -151,7 +151,7 @@ WHERE
   AND gu.user_id = $user_id
   AND g.deleted_at IS NULL;
 
--- BLOCK select_group_by_name
+-- BLOCK select_and_lock_group_by_name
 SELECT
   g.*
 FROM
@@ -165,7 +165,7 @@ WHERE
 FOR NO KEY UPDATE of
   g;
 
--- BLOCK select_group_for_update
+-- BLOCK select_and_lock_group
 SELECT
   g.*,
   (
@@ -205,12 +205,16 @@ WITH
   suitable_group_roles AS (
     SELECT
       gr.id,
-      gr.can_assign_roles_at_start
-      AND COALESCE($cur_size::INT, 0) = 0 AS assigner_role_needed,
-      upgr.user_count IS NULL
-      AND gr.minimum > 0 AS mandatory_with_no_user,
+      (
+        gr.can_assign_roles_at_start
+        AND COALESCE($cur_size::INT, 0) = 0
+      ) AS assigner_role_needed,
+      (
+        upgr.user_count IS NULL
+        AND gr.minimum > 0
+      ) AS mandatory_with_no_user,
       GREATEST(0, gr.minimum - COALESCE(upgr.user_count, 0)) AS needed_users,
-      gr.maximum - COALESCE(upgr.user_count, 0) AS remaining
+      (gr.maximum - COALESCE(upgr.user_count, 0)) AS remaining
     FROM
       group_roles AS gr
       LEFT JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)

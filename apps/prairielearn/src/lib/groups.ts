@@ -209,7 +209,7 @@ export async function addUserToGroup(
 ) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
-      sql.select_group_for_update,
+      sql.select_and_lock_group,
       { group_id, assessment_id },
       GroupForUpdateSchema,
     );
@@ -281,7 +281,7 @@ export async function joinGroup(
   try {
     await sqldb.runInTransactionAsync(async () => {
       const group = await sqldb.queryOptionalRow(
-        sql.select_group_by_name,
+        sql.select_and_lock_group_by_name,
         { group_name: groupName, assessment_id: assessmentId },
         GroupSchema,
       );
@@ -356,12 +356,12 @@ export async function createOrAddToGroup(
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
-      sql.select_group_by_name,
+      sql.select_and_lock_group_by_name,
       { group_name: groupName, assessment_id: assessmentId },
       GroupSchema,
     );
     if (group == null) {
-      return createGroup(groupName, assessmentId, uids, authnUserId);
+      await createGroup(groupName, assessmentId, uids, authnUserId);
     } else {
       for (const uid of uids) {
         await addUserToGroup(assessmentId, group.id, uid, authnUserId, false);
