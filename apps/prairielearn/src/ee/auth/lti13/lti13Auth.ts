@@ -7,6 +7,7 @@ import { get as _get } from 'lodash';
 import { callbackify } from 'util';
 import * as crypto from 'crypto';
 import { URL } from 'url';
+import { Lti13ClaimType, Lti13ClaimSchema } from '../../lib/lti13';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
@@ -36,6 +37,7 @@ router.post(
     const lti13_claims = await authenticate(req, res);
     // If we get here, auth succeeded and lti13_claims is populated
 
+    // TODO: Poll this data from the lib/lti13.ts
     let uid: string;
     let uin: string | null;
     let name: string | null;
@@ -157,77 +159,6 @@ const OIDCLaunchFlowSchema = z.object({
   // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
 });
 
-// Validate LTI 1.3
-// https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-const LTI13Schema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
-  'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
-  'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-    id: z.string(),
-    description: z.string().nullish(),
-    title: z.string().nullish(),
-  }),
-  // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
-  // https://www.imsglobal.org/spec/security/v1p0/#id-token
-  iss: z.string(),
-  aud: z.string(),
-  sub: z.string(),
-  exp: z.number(),
-  iat: z.number(),
-  azp: z.string().optional(),
-  nonce: z.string(),
-
-  given_name: z.string().optional(),
-  family_name: z.string().optional(),
-  name: z.string().optional(),
-  email: z.string().optional(),
-  locale: z.string().optional(),
-  // Could be more from OIDC Standard Claims
-  'https://purl.imsglobal.org/spec/lti/claim/roles': z.string().array(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/context': z
-    .object({
-      id: z.string(),
-      type: z.string().array().nullish(),
-      label: z.string().nullish(),
-      title: z.string().nullish(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/tool_platform': z
-    .object({
-      guid: z.string().max(255),
-      name: z.string().optional(),
-      contact_email: z.string().optional(),
-      description: z.string().optional(),
-      url: z.string().optional(),
-      product_family_code: z.string().optional(),
-      version: z.string().optional(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/role_scope_mentor': z.string().array().nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/launch_presentation': z
-    .object({
-      document_target: z.string().optional(),
-      height: z.number().optional(),
-      width: z.number().optional(),
-      return_url: z.string().optional(),
-      locale: z.string().optional(),
-    })
-    .nullish(),
-
-  'https://purl.imsglobal.org/spec/lti/claim/lis': z.any().nullish(),
-  'https://purl.imsglobal.org/spec/lti/claim/custom': z.any().nullish(),
-
-  // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
-  // My development Canvas sends their own named extension as a top level property
-  // "https://www.instructure.com/placement": "course_navigation"
-});
-
 //
 // Helper functions
 //
@@ -308,7 +239,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = LTI13Schema.passthrough().parse(tokenSet.claims());
+  const lti13_claims: Lti13ClaimType = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;

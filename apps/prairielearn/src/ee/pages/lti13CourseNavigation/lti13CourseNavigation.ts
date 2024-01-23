@@ -13,6 +13,7 @@ import {
   Lti13CourseNavigationNotReady,
   Lti13CourseNavigationDone,
 } from './lti13CourseNavigation.html';
+import { Lti13Claim } from '../../lib/lti13';
 
 const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -30,9 +31,9 @@ router.get(
       return;
     }
 
-    const lti13_claims = validate_lti13_claims(req);
-    const courseName = `${lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label}: ${lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title}`;
-    let role_instructor = is_role_instructor_lti13(lti13_claims);
+    const LTI = new Lti13Claim(req);
+    const courseName = `${LTI.context?.label}: ${LTI.context?.title}`;
+    let role_instructor = LTI.isRoleInstructor();
 
     // FIXME
     if ('student' in req.query) {
@@ -44,8 +45,8 @@ router.get(
       sql.get_course_instance,
       {
         lti13_instance_id: req.params.lti13_instance_id,
-        deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-        context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
+        deployment_id: LTI.deployment_id,
+        context_id: LTI.context?.id,
       },
       Lti13CourseInstanceSchema,
     );
@@ -56,14 +57,17 @@ router.get(
         await queryAsync(sql.upsert_lci, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lci.course_instance_id,
-          deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-          context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
-          context_label: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label,
-          context_title: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title,
+          deployment_id: LTI.deployment_id,
+          context_id: LTI.context?.id,
+          context_label: LTI.context?.label,
+          context_title: LTI.context?.title,
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?
       }
+
+      // LTI claims not used after this page so remove them from the session
+      LTI.remove();
 
       // Redirect to linked course instance
       res.redirect(
@@ -127,7 +131,7 @@ router.post(
     const unsafe_course_instance_id = req.body.ci_id;
     const unsafe_lti13_instance_id = req.params.lti13_instance_id;
 
-    const lti13_claims = validate_lti13_claims(req);
+    const LTI = new Lti13Claim(req);
     const authn_lti13_instance_id = req.session.authn_lti13_instance_id;
 
     // Validate user login matches this lti13_instance
@@ -136,7 +140,6 @@ router.post(
     }
 
     // Mapping of lti13_instance to institution to course instance?
-    const lti_role_instructor = is_role_instructor_lti13(lti13_claims);
 
     const ci_role_instructor = await callRow(
       'users_is_instructor_in_course_instance',
@@ -144,16 +147,16 @@ router.post(
       z.boolean(),
     );
 
-    if (!lti_role_instructor || !ci_role_instructor) {
+    if (!LTI.isRoleInstructor() || !ci_role_instructor) {
       throw error.make(403, 'Permission denied');
     }
 
     await queryAsync(sql.insert_lci, {
       lti13_instance_id: req.params.lti13_instance_id,
-      deployment_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-      context_id: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].id,
-      context_label: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label,
-      context_title: lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title,
+      deployment_id: LTI.deployment_id,
+      context_id: LTI.context?.id,
+      context_label: LTI.context?.label,
+      context_title: LTI.context?.title,
       course_instance_id: unsafe_course_instance_id,
     });
 
@@ -162,73 +165,3 @@ router.post(
 );
 
 export default router;
-
-function is_role_instructor_lti13(claims, ta_is_instructor = false) {
-  /*
-
-     TA roles from Canvas development system
-     [
-      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
-      'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
-      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
-    ]
-    */
-
-  // Get roles of LTI user
-  // Scoped to just this context
-  // https://www.imsglobal.org/spec/lti/v1p3#lis-vocabulary-for-context-roles
-
-  const roles = claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [];
-
-  let role_instructor = roles.some((val: string) =>
-    ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val),
-  );
-
-  if (
-    !ta_is_instructor &&
-    roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant')
-  ) {
-    role_instructor = false;
-  }
-
-  //console.log(roles, role_instructor);
-  return role_instructor;
-}
-
-const LTI13ClaimSchema = z.object({
-  exp: z.number(),
-});
-
-const LTI13ClaimContextSchema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/context': z.object({
-    id: z.string(),
-    label: z.string(),
-    title: z.string(),
-  }),
-});
-
-function validate_lti13_claims(req: Request) {
-  try {
-    LTI13ClaimSchema.passthrough().parse(req.session.lti13_claims);
-
-    if (Math.floor(Date.now() / 1000) > req.session.lti13_claims.exp) {
-      throw new Error();
-    }
-  } catch {
-    delete req.session.lti13_claims;
-    throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
-  }
-
-  try {
-    LTI13ClaimContextSchema.passthrough().parse(req.session.lti13_claims);
-  } catch {
-    throw error.make(403, 'LTI context claims missing or invalid.');
-  }
-
-  console.log(req.session.lti13_claims);
-
-  return req.session.lti13_claims;
-}
