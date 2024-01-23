@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
@@ -12,16 +11,15 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Exam and homework assessment with active access restriction', function () {
   this.timeout(60000);
 
-  const storedConfig = {};
-  const context = {};
+  const storedConfig: Record<string, any> = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
   context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
-  /** @type {Record<string, string>} */
-  const headers = {};
+  const headers: Record<string, string> = {};
 
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;

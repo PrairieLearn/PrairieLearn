@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -13,13 +12,11 @@ import * as helperServer from './helperServer';
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');
 
-/** @type {Record<string, any> | null} */
-let cachedElementsInfo = null;
+let cachedElementsInfo: Record<string, any> | null = null;
 
 async function getOrLoadElementsInfo() {
   if (!cachedElementsInfo) {
-    /** @type {Record<string, any>} */
-    const elementsInfo = {};
+    const elementsInfo: Record<string, any> = {};
 
     const elements = await fs.readdir(ELEMENTS_PATH);
 
@@ -42,7 +39,7 @@ describe('Static assets', () => {
     const elementsInfo = await getOrLoadElementsInfo();
 
     // Get all unique node_modules assets.
-    const elementAssets = new Set();
+    const elementAssets = new Set<string>();
     for (const elementName of Object.keys(elementsInfo)) {
       const elementInfo = elementsInfo[elementName];
       const nodeModulesScripts = elementInfo.dependencies?.nodeModulesScripts ?? [];
@@ -67,7 +64,7 @@ describe('Static assets', () => {
     const elementsInfo = await getOrLoadElementsInfo();
 
     // Get all unique element assets.
-    const elementAssets = new Set();
+    const elementAssets = new Set<string>();
     for (const elementName of Object.keys(elementsInfo)) {
       const elementInfo = elementsInfo[elementName];
       const elementScripts = elementInfo.dependencies?.elementScripts ?? [];

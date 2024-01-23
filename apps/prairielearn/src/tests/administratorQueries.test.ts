@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
@@ -10,7 +9,7 @@ import * as helperClient from './helperClient';
 describe('AdministratorQuery page', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.queriesUrl = `${context.baseUrl}/administrator/queries`;

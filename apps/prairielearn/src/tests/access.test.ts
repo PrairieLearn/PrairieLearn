@@ -1,7 +1,6 @@
-// @ts-check
-const ERR = require('async-stacktrace');
+import ERR = require('async-stacktrace');
 import { assert } from 'chai';
-const request = require('request');
+import request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -44,62 +43,62 @@ describe('Access control', function () {
       2450 after course_instance
      */
 
-  var cookiesStudent = function () {
-    var cookies = request.jar();
+  function cookiesStudent() {
+    const cookies = request.jar();
     cookies.setCookie('pl_test_user=test_student', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExam = function () {
-    var cookies = cookiesStudent();
+  function cookiesStudentExam() {
+    const cookies = cookiesStudent();
     cookies.setCookie('pl_test_mode=Exam', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamBeforeCourseInstance = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamBeforeCourseInstance() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamBeforeAssessment = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamBeforeAssessment() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamBeforeReservation = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamBeforeReservation() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=1950-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamAfterReservation = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamAfterReservation() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=2250-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamAfterAssessment = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamAfterAssessment() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var cookiesStudentExamAfterCourseInstance = function () {
-    var cookies = cookiesStudentExam();
+  function cookiesStudentExamAfterCourseInstance() {
+    const cookies = cookiesStudentExam();
     cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
-  };
+  }
 
-  var user, page, $, elemList;
-  var assessment_id;
-  var __csrf_token;
-  var assessmentUrl, q1Url, questionData, variant, instance_question;
+  let user, page, $, elemList;
+  let assessment_id;
+  let __csrf_token;
+  let assessmentUrl, q1Url, questionData, variant, instance_question;
 
   /**********************************************************************/
 
-  var getPl = function (cookies, shouldContainQA101, callback) {
+  const getPl = function (cookies, shouldContainQA101, callback) {
     request({ url: siteUrl, jar: cookies }, function (error, response, body) {
       if (error) {
         return callback(error);
@@ -167,7 +166,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var getAssessments = function (cookies, shouldContainE1, callback) {
+  const getAssessments = function (cookies, shouldContainE1, callback) {
     request({ url: assessmentsUrl, jar: cookies }, function (error, response, body) {
       if (error) {
         return callback(error);
@@ -209,7 +208,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var getAssessment = function (cookies, expectedStatusCode, callback) {
+  const getAssessment = function (cookies, expectedStatusCode, callback) {
     request({ url: assessmentUrl, jar: cookies }, function (error, response, body) {
       if (error) {
         return callback(error);
@@ -249,8 +248,8 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
-    var form = {
+  const postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
+    const form: Record<string, any> = {
       __action: 'new_instance',
       __csrf_token: __csrf_token,
     };
@@ -297,7 +296,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var getAssessmentInstance = function (cookies, expectedStatusCode, callback) {
+  const getAssessmentInstance = function (cookies, expectedStatusCode, callback) {
     request({ url: assessmentInstanceUrl, jar: cookies }, function (error, response, body) {
       if (error) {
         return callback(error);
@@ -350,7 +349,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var getInstanceQuestion = function (cookies, expectedStatusCode, callback) {
+  const getInstanceQuestion = function (cookies, expectedStatusCode, callback) {
     request({ url: q1Url, jar: cookies }, function (error, response, body) {
       if (error) {
         return callback(error);
@@ -408,12 +407,12 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var postInstanceQuestion = function (cookies, expectedStatusCode, callback) {
-    var submittedAnswer = {
+  const postInstanceQuestion = function (cookies, expectedStatusCode, callback) {
+    const submittedAnswer = {
       wx: 0,
       wy: 0,
     };
-    var form = {
+    const form = {
       __action: 'save',
       __csrf_token: __csrf_token,
       postData: JSON.stringify({ variant, submittedAnswer }),
@@ -463,7 +462,7 @@ describe('Access control', function () {
 
   describe('14. Insert PrairieSchedule reservation', function () {
     it('should succeed', function (callback) {
-      var params = { user_id: user.user_id };
+      const params = { user_id: user.user_id };
       sqldb.query(sql.insert_ps_reservation, params, function (err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
@@ -550,7 +549,7 @@ describe('Access control', function () {
 
   describe('20. insert PrairieSchedule reservation', function () {
     it('should succeed', function (callback) {
-      var params = { user_id: user.user_id };
+      const params = { user_id: user.user_id };
       sqldb.query(sql.insert_ps_reservation, params, function (err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
