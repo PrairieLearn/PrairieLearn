@@ -9,7 +9,12 @@ import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
 import { selectUserByUid } from '../models/user';
 const sql = sqldb.loadSqlEquiv(__filename);
 
-export class GroupOperationError extends Error {}
+export class GroupOperationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'GroupOperationError';
+  }
+}
 
 const GroupConfigSchema = z.object({
   assessment_id: z.string().nullable(),
