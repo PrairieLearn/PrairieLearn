@@ -139,6 +139,9 @@ export async function pullAndUpdateCourse({
           job.info('Fetch from remote git repository');
           await job.exec('git', ['fetch'], gitOptions);
 
+          job.info('Restore staged and unstaged changes');
+          await job.exec('git', ['restore', '--staged', '--worktree'], gitOptions);
+
           job.info('Clean local files not in remote git repository');
           await job.exec('git', ['clean', '-fdx'], gitOptions);
 
