@@ -1,7 +1,7 @@
 // @ts-check
-const ERR = require('async-stacktrace');
+import ERR = require('async-stacktrace');
 import fetch from 'node-fetch';
-const fetchCookie = require('fetch-cookie');
+import fetchCookie = require('fetch-cookie');
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config';
@@ -15,13 +15,13 @@ import { fetchCheerio } from './helperClient';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 
-const storedConfig = {};
+const storedConfig: Record<string, any> = {};
 
 describe('Group based homework assess control on student side', function () {
   this.timeout(20000);
@@ -78,13 +78,13 @@ describe('Group based homework assess control on student side', function () {
 
   describe('3. Check if the config is correct', function () {
     it('should create the correct group configuration', function (callback) {
-      var params = {
+      const params = {
         assessment_id: locals.assessment_id,
       };
       sqldb.queryOneRow(sql.select_group_config, params, function (err, result) {
         if (ERR(err, callback)) return;
-        var min = result.rows[0]['minimum'];
-        var max = result.rows[0]['maximum'];
+        const min = result.rows[0]['minimum'];
+        const max = result.rows[0]['maximum'];
         assert.equal(min, 3);
         assert.equal(max, 3);
         callback(null);
@@ -110,13 +110,13 @@ describe('Group based homework assess control on student side', function () {
 
   describe('5. Check if the config is correct', function () {
     it('should create the correct group configuration', function (callback) {
-      var params = {
+      const params = {
         assessment_id: locals.assessment_id_2,
       };
       sqldb.queryOneRow(sql.select_group_config, params, function (err, result) {
         if (ERR(err, callback)) return;
-        var min = result.rows[0]['minimum'];
-        var max = result.rows[0]['maximum'];
+        const min = result.rows[0]['minimum'];
+        const max = result.rows[0]['maximum'];
         assert.equal(min, 2);
         assert.equal(max, 5);
         callback(null);
@@ -208,7 +208,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('9. the second user can join the group using code', function () {
     it('should be able to switch user', function () {
-      var student = locals.studentUsers[1];
+      const student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
@@ -262,7 +262,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('11. the third user can join the group using code', function () {
     it('should be able to switch user', function () {
-      var student = locals.studentUsers[2];
+      const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
@@ -314,7 +314,7 @@ describe('Group based homework assess control on student side', function () {
   });
   describe('13. the fourth user can not join the already full group', function () {
     it('should be able to switch to the ungrouped student', function () {
-      var student = locals.studentUserNotGrouped;
+      const student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -353,7 +353,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('13.5. The fourth user can create another group', () => {
     it('should be able to switch to the ungrouped student', function () {
-      var student = locals.studentUserNotGrouped;
+      const student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -394,7 +394,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('13.75. The first user cannot join the second group', () => {
     it('should be able to switch user', function () {
-      var student = locals.studentUsers[0];
+      const student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
@@ -430,7 +430,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('14. start assessment as the third user', function () {
     it('should be able to switch user', function () {
-      var student = locals.studentUsers[2];
+      const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
@@ -494,7 +494,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should be able to switch to 2nd group member', function () {
-      var student = locals.studentUsers[1];
+      const student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
@@ -506,7 +506,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should be able to switch to 3rd group member', function () {
-      var student = locals.studentUsers[0];
+      const student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
@@ -572,7 +572,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('18. access control of student who are not in any group', function () {
     it('should be able to switch to the ungrouped student', function () {
-      var student = locals.studentUserNotGrouped;
+      const student = locals.studentUserNotGrouped;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -585,7 +585,7 @@ describe('Group based homework assess control on student side', function () {
 
   describe('19. access control of student who are in a different group', function () {
     it('should be able to switch to the student in the different group', function () {
-      var student = locals.studentUserInDiffGroup;
+      const student = locals.studentUserInDiffGroup;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000005';

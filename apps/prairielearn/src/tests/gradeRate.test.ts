@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,7 +12,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Exam assessment with grade rate set', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
@@ -61,7 +60,7 @@ describe('Exam assessment with grade rate set', function () {
     const response = await helperClient.fetchCheerio(context.question1Url);
     assert.isTrue(response.ok);
 
-    let elemList = response.$('button[name="__action"][value="grade"]');
+    const elemList = response.$('button[name="__action"][value="grade"]');
     assert.lengthOf(elemList, 1);
     assert.isFalse(elemList.is(':disabled'));
 
@@ -88,7 +87,7 @@ describe('Exam assessment with grade rate set', function () {
     const response = await helperClient.fetchCheerio(context.question1Url);
     assert.isTrue(response.ok);
 
-    let elemList = response.$('button[name="__action"][value="grade"]');
+    const elemList = response.$('button[name="__action"][value="grade"]');
     assert.lengthOf(elemList, 1);
     assert.isTrue(elemList.is(':disabled'));
   });
@@ -97,7 +96,7 @@ describe('Exam assessment with grade rate set', function () {
     const response = await helperClient.fetchCheerio(context.question2Url);
     assert.isTrue(response.ok);
 
-    let elemList = response.$('button[name="__action"][value="grade"]');
+    const elemList = response.$('button[name="__action"][value="grade"]');
     assert.lengthOf(elemList, 1);
     assert.isFalse(elemList.is(':disabled'));
   });

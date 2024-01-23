@@ -1,8 +1,7 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+import ERR = require('async-stacktrace');
+import _ = require('lodash');
 import { assert } from 'chai';
-const request = require('request');
+import request = require('request');
 import * as cheerio from 'cheerio';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -12,7 +11,7 @@ import * as helperServer from './helperServer';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
@@ -26,7 +25,7 @@ const questions = _.keyBy(question, 'qid');
 describe('assessment instance group synchronization test', function () {
   this.timeout(10000);
 
-  const storedConfig = {};
+  const storedConfig: Record<string, any> = {};
   before('store authenticated user', () => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -89,7 +88,7 @@ describe('assessment instance group synchronization test', function () {
       });
     });
     it('put 3 users in a group', function (callback) {
-      var form = {
+      const form = {
         __action: 'add_group',
         __csrf_token: locals.__csrf_token,
         group_name: 'test_group',
@@ -116,7 +115,7 @@ describe('assessment instance group synchronization test', function () {
       );
     });
     it('should create the correct group configuration', function (callback) {
-      var params = {
+      const params = {
         assessment_id: locals.assessment_id,
         group_name: 'test_group',
       };
@@ -130,7 +129,7 @@ describe('assessment instance group synchronization test', function () {
 
   describe('4. assessment_instance initialization', function () {
     it('should be able to switch user we generated', function (callback) {
-      var student = locals.studentUsers[1];
+      const student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
@@ -157,7 +156,7 @@ describe('assessment instance group synchronization test', function () {
     });
 
     it('should be able to start the assessment', function (callback) {
-      var form = {
+      const form = {
         __action: 'new_instance',
         __csrf_token: locals.__csrf_token,
       };
@@ -219,7 +218,7 @@ describe('assessment instance group synchronization test', function () {
       locals.variant_id = Number.parseInt(locals.variant_id);
     });
     it('should have the variant in the DB if has grade or save button', function (callback) {
-      var params = {
+      const params = {
         variant_id: locals.variant_id,
       };
       sqldb.query(sql.select_variant, params, function (err, result) {
@@ -278,7 +277,7 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('6. check Score for current student', function () {
     it('should have the submission', function (callback) {
-      var params = {
+      const params = {
         variant_id: locals.variant.id,
       };
       sqldb.query(sql.select_last_submission_for_variants, params, function (err, result) {
@@ -294,7 +293,7 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', function (callback) {
-      var params = {
+      const params = {
         assessment_instance_id: locals.assessment_instance_id,
       };
       sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
@@ -306,7 +305,7 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('7. check Score for another student', function () {
     it('should be able to switch user we generated', function (callback) {
-      var student = locals.studentUsers[2];
+      const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';

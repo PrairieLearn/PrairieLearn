@@ -1,7 +1,6 @@
-// @ts-check
 import { assert } from 'chai';
 import fetch from 'node-fetch';
-const FormData = require('form-data');
+import FormData = require('form-data');
 import * as cheerio from 'cheerio';
 
 import * as sqldb from '@prairielearn/postgres';

@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 
@@ -69,15 +68,14 @@ const waitForExternalGrader = async ($questionsPage) => {
 const loadHomeworkPage = async (user) => {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
-  let hm9InternalExternalManualUrl = null;
   const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
   const $courseInstancePage = cheerio.load(courseInstanceBody);
-  hm9InternalExternalManualUrl =
+  const hm9InternalExternalManualUrl =
     siteUrl +
     $courseInstancePage(
       'a:contains("Homework for Internal, External, Manual grading methods")',
     ).attr('href');
-  let res = await fetch(hm9InternalExternalManualUrl);
+  const res = await fetch(hm9InternalExternalManualUrl);
   assert.equal(res.ok, true);
   return res.text();
 };
@@ -95,12 +93,12 @@ function getLatestSubmissionStatus($) {
 describe('Grading method(s)', function () {
   this.timeout(80000);
 
-  let $hm1Body = null;
-  let iqUrl = null;
-  let gradeRes = null;
-  let iqId = null;
-  let questionsPage = null;
-  let $questionsPage = null;
+  let $hm1Body;
+  let iqUrl;
+  let gradeRes;
+  let iqId;
+  let questionsPage;
+  let $questionsPage;
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);

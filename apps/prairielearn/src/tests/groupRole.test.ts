@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
@@ -18,14 +17,14 @@ import { TEST_COURSE_PATH } from '../lib/paths';
 const sql = sqldb.loadSqlEquiv(__filename);
 
 let elemList;
-const locals = {};
+const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 locals.courseDir = TEST_COURSE_PATH;
 
-const storedConfig = {};
+const storedConfig: Record<string, any> = {};
 
 /**
  * Switches `config` to new user, loads assessment page, and changes local CSRF token

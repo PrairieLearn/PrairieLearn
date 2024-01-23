@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import * as sqldb from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
@@ -9,7 +8,7 @@ import * as groupUpdate from '../lib/group-update';
 import { TEST_COURSE_PATH } from '../lib/paths';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-const locals = {};
+const locals: Record<string, any> = {};
 
 describe('test auto group and delete groups', function () {
   this.timeout(20000);
