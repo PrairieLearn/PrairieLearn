@@ -1,6 +1,7 @@
 
 # PrairieLearn RStudio workspace template
-# 20210831 Eric Huber
+# 20210831 Eric Huber - Initial version
+# 20240123 Eric Huber - Modify service file to provide server-user argument
 
 FROM rocker/rstudio
 
@@ -48,6 +49,9 @@ COPY rstudio-nginx.conf /etc/nginx/nginx.conf
 # at startup.
 RUN mkdir -p /var/pl-var && \
     chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var /etc/nginx/nginx.conf
+# Make sure that rstudio-server runs as our normal user to prevent startup
+# errors
+RUN sed -i 's/^\(exec.*rstudio-server.*\)$/\1 --server-user rstudio/g' /etc/services.d/rstudio/run
 
 # The proxy uses 3939 and the internal RStudio session uses 8787.
 # We only need to expose 3939 here.
