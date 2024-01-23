@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -14,7 +14,7 @@ let memoizedAvailableTimezones: Timezone[] | null = null;
 let memoizedAvailableTimezonesByName: Map<string, Timezone> | null = null;
 
 async function getAvailableTimezonesFromDB(): Promise<Timezone[]> {
-  const availableTimezones = await queryValidatedRows(sql.select_timezones, [], TimezoneCodec);
+  const availableTimezones = await queryRows(sql.select_timezones, [], TimezoneCodec);
   return availableTimezones;
 }
 
