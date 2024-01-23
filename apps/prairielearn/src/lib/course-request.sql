@@ -51,8 +51,7 @@ FROM
 WHERE
   $show_all = 'true'
   OR r.approved_status NOT IN ('approved', 'denied')
-
--- BLOCK update_course_request
+  -- BLOCK update_course_request
 UPDATE course_requests
 SET
   approved_by = $user_id,
