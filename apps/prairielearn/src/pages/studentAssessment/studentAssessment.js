@@ -16,6 +16,7 @@ import {
   getAssessmentPermissions,
   updateGroupRoles,
   leaveGroup,
+  GroupOperationError,
 } from '../../lib/groups';
 
 const router = express.Router();
@@ -184,17 +185,29 @@ router.post(
       await joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
-        res.locals.user.user_id,
+        res.locals.user.uid,
         res.locals.authn_user.user_id,
-      ).catch((err) => flash('error', err.message));
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
       await createGroup(
         req.body.groupName,
         res.locals.assessment.id,
-        [res.locals.user.user_id],
+        [res.locals.user.uid],
         res.locals.authn_user.user_id,
-      ).catch((err) => flash('error', err.message));
+      ).catch((err) => {
+        if (err instanceof GroupOperationError) {
+          flash('error', err.message);
+        } else {
+          throw err;
+        }
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       // Check whether the user is currently in a group

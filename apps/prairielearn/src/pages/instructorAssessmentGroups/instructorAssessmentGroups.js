@@ -7,13 +7,16 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
-import { html } from '@prairielearn/html';
 
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
-import { addUserToGroup, createGroup, deleteAllGroups } from '../../lib/groups';
+import {
+  GroupOperationError,
+  addUserToGroup,
+  createGroup,
+  deleteAllGroups,
+} from '../../lib/groups';
 import { uploadInstanceGroups, autoGroups } from '../../lib/group-update';
 import { GroupConfigSchema, IdSchema } from '../../lib/db-types';
-import { selectUserByUid } from '../../models/user';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -106,31 +109,15 @@ router.post(
 
       const uids = req.body.uids;
       const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
-      const userIdList = [];
-      const notExist = [];
-      for (const uid of uidlist) {
-        const user = await selectUserByUid(uid);
-        if (user == null) {
-          notExist.push(uid);
-        } else {
-          userIdList.push(user.user_id);
-        }
-      }
-
-      if (notExist.length > 0) {
-        flash(
-          'error',
-          html`Could not create group. The following users do not exist:
-            <strong>${notExist.toString()}</strong>`,
-        );
-      } else {
-        await createGroup(
-          group_name,
-          assessment_id,
-          userIdList,
-          res.locals.authn_user.user_id,
-        ).catch((err) => flash('error', err.message));
-      }
+      await createGroup(group_name, assessment_id, uidlist, res.locals.authn_user.user_id).catch(
+        (err) => {
+          if (err instanceof GroupOperationError) {
+            flash('error', err.message);
+          } else {
+            throw err;
+          }
+        },
+      );
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
@@ -139,22 +126,20 @@ router.post(
       const uids = req.body.add_member_uids;
       const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
       for (const uid of uidlist) {
-        const user = await selectUserByUid(uid);
-        if (!user) {
-          flash('error', `Failed to add the user ${uid}: User does not exist.`);
-          continue;
-        }
-
         try {
           await addUserToGroup(
             assessment_id,
             group_id,
-            user.user_id,
+            uid,
             res.locals.authn_user.user_id,
             false, // Enforce group size limits (instructors can override limits)
           );
         } catch (err) {
-          flash('error', `Failed to add the user ${uid}: ${err.message}`);
+          if (err instanceof GroupOperationError) {
+            flash('error', `Failed to add the user ${uid}: ${err.message}`);
+          } else {
+            throw err;
+          }
         }
       }
       res.redirect(req.originalUrl);

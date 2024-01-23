@@ -8,8 +8,7 @@ const { z } = require('zod');
 
 const { IdSchema, UserSchema } = require('./db-types');
 const { createServerJob } = require('./server-jobs');
-import { selectUserByUid } from '../models/user';
-import { createGroup, createOrAddToGroup } from './groups';
+import { GroupOperationError, createGroup, createOrAddToGroup } from './groups';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -88,15 +87,15 @@ export async function uploadInstanceGroups(assessment_id, csvFile, user_id, auth
           if (!uid && !groupName) return;
 
           totalRows++;
-          const user = await selectUserByUid(uid);
-          if (!user) {
-            job.error(`User with uid ${uid} does not exist`);
-            return;
-          }
-
-          await createOrAddToGroup(groupName, assessment_id, [user.user_id], authn_user_id).then(
+          await createOrAddToGroup(groupName, assessment_id, [uid], authn_user_id).then(
             () => successCount++,
-            (err) => job.error(`Error adding ${uid} to group ${groupName}: ${err.message}`),
+            (err) => {
+              if (err instanceof GroupOperationError) {
+                job.error(`Error adding ${uid} to group ${groupName}: ${err.message}`);
+              } else {
+                throw err;
+              }
+            },
           );
         });
 
@@ -189,33 +188,35 @@ export async function autoGroups(
           { assessment_id },
           z.number(),
         );
-        let groupsCreated = 0;
+        let groupsCreated = 0,
+          studentsGrouped = 0;
         // Create groups using the groups of maximum size where possible
         for (let i = groupNumber ?? 1; studentsToGroup.length > 0; i++) {
           const groupName = `group${i}`;
-          const users = studentsToGroup.splice(0, max_group_size).map((user) => user.user_id);
+          const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
           await createGroup(groupName, assessment_id, users, authn_user_id).then(
-            () => groupsCreated++,
-            (err) => job.error(err.message),
+            () => {
+              groupsCreated++;
+              studentsGrouped += users.length;
+            },
+            (err) => {
+              if (err instanceof GroupOperationError) {
+                job.error(err.message);
+              } else {
+                throw err;
+              }
+            },
           );
         }
-        const ungroupedStudentsAfterUpdate = await queryRows(
-          sql.select_enrolled_students_without_group,
-          { assessment_id },
-          UserSchema,
-        );
-        const errorCount = ungroupedStudentsAfterUpdate.length;
-        const successCount = numStudents - errorCount;
+        const errorCount = numStudents - studentsGrouped;
         job.verbose(`----------------------------------------`);
-        if (successCount !== 0) {
-          job.verbose(`Successfully grouped ${successCount} students into ${groupsCreated} groups`);
+        if (studentsGrouped !== 0) {
+          job.verbose(
+            `Successfully grouped ${studentsGrouped} students into ${groupsCreated} groups`,
+          );
         }
         if (errorCount !== 0) {
-          job.fail(
-            `Error adding the following ${errorCount} students to groups: ${ungroupedStudentsAfterUpdate
-              .map((user) => user.uid)
-              .join(', ')}`,
-          );
+          job.fail(`Error adding ${errorCount} students to groups.`);
         }
       },
     );
