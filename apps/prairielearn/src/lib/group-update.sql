@@ -37,7 +37,7 @@ WHERE
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
   AND sig.group_id IS NULL;
 
--- BLOCK select_unused_group_name
+-- BLOCK select_unused_group_name_suffix
 SELECT
   SUBSTRING(
     g.name

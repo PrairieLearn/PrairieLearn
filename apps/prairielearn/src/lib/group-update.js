@@ -183,15 +183,15 @@ export async function autoGroups(
         job.verbose(`Processing creating groups - max of ${max_group_size}`);
 
         // Find a group name of the format `groupNNN` that is not used
-        const groupNumber = await queryOptionalRow(
-          sql.select_unused_group_name,
+        const unusedGroupNameSuffix = await queryOptionalRow(
+          sql.select_unused_group_name_suffix,
           { assessment_id },
           z.number(),
         );
         let groupsCreated = 0,
           studentsGrouped = 0;
         // Create groups using the groups of maximum size where possible
-        for (let i = groupNumber ?? 1; studentsToGroup.length > 0; i++) {
+        for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
           const groupName = `group${i}`;
           const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
           await createGroup(groupName, assessment_id, users, authn_user_id).then(
