@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import { z } from 'zod';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
@@ -91,7 +91,7 @@ export class FeatureManager<FeatureName extends string> {
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const featureIsEnabled = await queryValidatedSingleColumnOneRow(
+    const featureIsEnabled = await queryRow(
       sql.is_feature_enabled,
       {
         name,

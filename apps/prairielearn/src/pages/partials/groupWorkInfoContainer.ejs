@@ -9,7 +9,7 @@
       <p>
         <% if (groupConfig.minimum > 1) { %>
         This is a group assessment. Use your join code to invite others to join the group.
-        A group must have <% if (groupConfig.maximum) { %>between <%= groupConfig.minimum %> and <%= groupConfig.maximum %><% } else { %>at least <%= groupConfig.minimum %><% } %> students.
+        A group must have <% if (groupConfig.minimum === groupConfig.maximum) { %><%= groupConfig.minimum %><% } else if (groupConfig.maximum) { %>between <%= groupConfig.minimum %> and <%= groupConfig.maximum %><% } else { %>at least <%= groupConfig.minimum %><% } %> students.
         <% } else { %>
         This assessment can be done individually or in groups. Use your join code if you wish to invite others to join the group.
         <% if (groupConfig.maximum) { %>A group must have no more than <%= groupConfig.maximum %> students.<% } %>
@@ -62,6 +62,9 @@
     </div>
   </div>
 </div>
+<% if (groupConfig.has_roles) { %>
+  <%- include('../partials/groupRoleTable.ejs'); %>
+<% } %>
 <script>
   $(function () {
     $('[data-toggle="popover"]').popover({ sanitize: false })
