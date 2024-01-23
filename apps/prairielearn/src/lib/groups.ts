@@ -200,13 +200,19 @@ export async function getQuestionGroupPermissions(
   return userPermissions ?? { can_submit: false, can_view: false };
 }
 
-export async function addUserToGroup(
-  assessment_id: string,
-  group_id: string,
-  uid: string,
-  authn_user_id: string,
-  enforceGroupSize: boolean,
-) {
+export async function addUserToGroup({
+  assessment_id,
+  group_id,
+  uid,
+  authn_user_id,
+  enforceGroupSize,
+}: {
+  assessment_id: string;
+  group_id: string;
+  uid: string;
+  authn_user_id: string;
+  enforceGroupSize: boolean;
+}) {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
       sql.select_and_lock_group,
@@ -264,9 +270,9 @@ export async function addUserToGroup(
 
 export async function joinGroup(
   fullJoinCode: string,
-  assessmentId: string,
+  assessment_id: string,
   uid: string,
-  authnUserId: string,
+  authn_user_id: string,
 ): Promise<void> {
   const splitJoinCode = fullJoinCode.split('-');
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
@@ -275,20 +281,26 @@ export async function joinGroup(
     return;
   }
 
-  const groupName = splitJoinCode[0];
-  const joinCode = splitJoinCode[1].toUpperCase();
+  const group_name = splitJoinCode[0];
+  const join_code = splitJoinCode[1].toUpperCase();
 
   try {
     await sqldb.runInTransactionAsync(async () => {
       const group = await sqldb.queryOptionalRow(
         sql.select_and_lock_group_by_name,
-        { group_name: groupName, assessment_id: assessmentId },
+        { group_name, assessment_id },
         GroupSchema,
       );
-      if (group == null || group.join_code !== joinCode) {
+      if (group == null || group.join_code !== join_code) {
         throw new GroupOperationError('Group does not exist.');
       }
-      await addUserToGroup(assessmentId, group.id, uid, authnUserId, true);
+      await addUserToGroup({
+        assessment_id,
+        group_id: group.id,
+        uid,
+        authn_user_id,
+        enforceGroupSize: true,
+      });
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
@@ -299,17 +311,17 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  groupName: string,
-  assessmentId: string,
+  group_name: string,
+  assessment_id: string,
   uids: string[],
-  authnUserId: string,
+  authn_user_id: string,
 ): Promise<void> {
-  if (groupName.length > 30) {
+  if (group_name.length > 30) {
     throw new GroupOperationError(
       'The group name is too long. Use at most 30 alphanumerical characters.',
     );
   }
-  if (!groupName.match(/^[0-9a-zA-Z]+$/)) {
+  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
     throw new GroupOperationError(
       'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
     );
@@ -321,15 +333,11 @@ export async function createGroup(
 
   try {
     await sqldb.runInTransactionAsync(async () => {
-      let groupId;
+      let group_id;
       try {
-        groupId = await sqldb.queryRow(
+        group_id = await sqldb.queryRow(
           sql.create_group,
-          {
-            assessment_id: assessmentId,
-            authn_user_id: authnUserId,
-            group_name: groupName,
-          },
+          { assessment_id, authn_user_id, group_name },
           IdSchema,
         );
       } catch (err) {
@@ -337,34 +345,46 @@ export async function createGroup(
         throw new GroupOperationError('Group name is already taken.');
       }
       for (const uid of uids) {
-        await addUserToGroup(assessmentId, groupId, uid, authnUserId, false);
+        await addUserToGroup({
+          assessment_id,
+          group_id,
+          uid,
+          authn_user_id,
+          enforceGroupSize: false,
+        });
       }
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${groupName}. ${err.message}`);
+      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
     }
     throw err;
   }
 }
 
 export async function createOrAddToGroup(
-  groupName: string,
-  assessmentId: string,
+  group_name: string,
+  assessment_id: string,
   uids: string[],
-  authnUserId: string,
+  authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     const group = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
-      { group_name: groupName, assessment_id: assessmentId },
+      { group_name, assessment_id },
       GroupSchema,
     );
     if (group == null) {
-      await createGroup(groupName, assessmentId, uids, authnUserId);
+      await createGroup(group_name, assessment_id, uids, authn_user_id);
     } else {
       for (const uid of uids) {
-        await addUserToGroup(assessmentId, group.id, uid, authnUserId, false);
+        await addUserToGroup({
+          assessment_id,
+          group_id: group.id,
+          uid,
+          authn_user_id,
+          enforceGroupSize: false,
+        });
       }
     }
   });

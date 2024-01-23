@@ -127,13 +127,13 @@ router.post(
       const uidlist = uids.split(/[ ,]+/).filter((uid) => !!uid);
       for (const uid of uidlist) {
         try {
-          await addUserToGroup(
+          await addUserToGroup({
             assessment_id,
             group_id,
             uid,
-            res.locals.authn_user.user_id,
-            false, // Enforce group size limits (instructors can override limits)
-          );
+            authn_user_id: res.locals.authn_user.user_id,
+            enforceGroupSize: false, // Enforce group size limits (instructors can override limits)
+          });
         } catch (err) {
           if (err instanceof GroupOperationError) {
             flash('error', `Failed to add the user ${uid}: ${err.message}`);
