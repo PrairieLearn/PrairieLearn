@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
-import { callValidatedRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import * as helperServer from './helperServer';
 import { extractAndSaveCSRFToken, fetchCheerio, getCSRFToken } from './helperClient';
@@ -30,7 +30,7 @@ describe('Instructor group controls', () => {
   });
 
   step('enroll random users', async () => {
-    users = await callValidatedRows(
+    users = await callRows(
       'users_randomly_generate',
       [
         // Generate 5 users

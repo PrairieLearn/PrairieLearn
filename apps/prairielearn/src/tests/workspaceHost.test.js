@@ -34,7 +34,7 @@ const WorkspaceLogsSchema = z.object({
 });
 
 async function insertWorkspaceHost(id, state = 'launching') {
-  return sqldb.queryValidatedOneRow(
+  return sqldb.queryRow(
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
     {
       id,
@@ -50,7 +50,7 @@ async function insertWorkspaceHost(id, state = 'launching') {
  * @param {string | number | null | undefined} hostId
  */
 async function insertWorkspace(id, hostId = null) {
-  return sqldb.queryValidatedOneRow(
+  return sqldb.queryRow(
     'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
     {
       id,
@@ -62,7 +62,7 @@ async function insertWorkspace(id, hostId = null) {
 }
 
 async function selectWorkspaceHost(id) {
-  return sqldb.queryValidatedOneRow(
+  return sqldb.queryRow(
     'SELECT * FROM workspace_hosts WHERE id = $id;',
     { id },
     WorkspaceHostSchema,
@@ -70,11 +70,7 @@ async function selectWorkspaceHost(id) {
 }
 
 async function selectWorkspace(id) {
-  return sqldb.queryValidatedOneRow(
-    'SELECT * FROM workspaces WHERE id = $id;',
-    { id },
-    WorkspaceSchema,
-  );
+  return sqldb.queryRow('SELECT * FROM workspaces WHERE id = $id;', { id }, WorkspaceSchema);
 }
 
 /**
@@ -83,7 +79,7 @@ async function selectWorkspace(id) {
  * @param {string | number} id
  */
 async function getWorkspaceHostLogs(id) {
-  return sqldb.queryValidatedRows(
+  return sqldb.queryRows(
     'SELECT * FROM workspace_host_logs WHERE workspace_host_id = $id;',
     { id },
     WorkspaceHostLogsSchema,
@@ -91,7 +87,7 @@ async function getWorkspaceHostLogs(id) {
 }
 
 async function getWorkspaceLogs(id) {
-  return sqldb.queryValidatedRows(
+  return sqldb.queryRows(
     'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
     { id },
     WorkspaceLogsSchema,
