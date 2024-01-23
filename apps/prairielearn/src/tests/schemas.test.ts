@@ -1,4 +1,3 @@
-// @ts-check
 import Ajv from 'ajv';
 import { assert } from 'chai';
 import * as schemas from '../schemas';
@@ -13,7 +12,7 @@ const validateRequired = (obj) => {
 
 const validateRequiredRecursive = (obj, path = '') => {
   if (!isObject(obj)) return [];
-  let errors = [];
+  let errors: string[] = [];
   if ('properties' in obj && 'required' in obj) {
     assert.isArray(obj.required);
     for (const requiredName of obj.required) {

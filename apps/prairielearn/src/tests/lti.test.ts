@@ -1,14 +1,14 @@
-// @ts-check
 import fetch from 'node-fetch';
-const oauthSignature = require('oauth-signature');
+import oauthSignature = require('oauth-signature');
 import { assert } from 'chai';
 
 import { config } from '../lib/config';
 import * as helperServer from './helperServer';
 import * as sqldb from '@prairielearn/postgres';
-const locals = {};
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+const locals: Record<string, any> = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
@@ -22,7 +22,7 @@ describe('LTI', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  const body = {
+  const body: Record<string, string> = {
     lti_message_type: 'basic-lti-launch-request',
     lti_version: 'LTI-1p0',
     resource_link_id: 'somethingsomething',

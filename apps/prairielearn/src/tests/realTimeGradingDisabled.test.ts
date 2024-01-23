@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import * as sqldb from '@prairielearn/postgres';
@@ -13,7 +12,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Exam assessment with real-time grading disabled', function () {
   this.timeout(60000);
 
-  const context = {};
+  const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;

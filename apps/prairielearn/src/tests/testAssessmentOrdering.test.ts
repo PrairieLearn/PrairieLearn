@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
@@ -20,9 +19,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
 describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);
 
-  let courseDir = null;
+  let courseDir;
   let courseInstanceId = null;
-  let assessmentBadges = [];
+  let assessmentBadges;
 
   const course = getCourseData();
   course.course.assessmentSets = [
@@ -95,13 +94,13 @@ describe('Course with assessments grouped by Set vs Module', function () {
     const headings = response.$('table th[data-testid="assessment-group-heading"]');
     assert.lengthOf(headings, assessmentHeadings.length);
     headings.each((i, heading) => {
-      let headingText = response.$(heading).text();
+      const headingText = response.$(heading).text();
       assert.equal(headingText.trim(), assessmentHeadings[i]);
     });
   }
 
   function extractAssessmentSetBadgeText(response) {
-    const badgeText = [];
+    const badgeText: string[] = [];
     response.$('table [data-testid="assessment-set-badge"]').each((i, badge) => {
       badgeText.push(response.$(badge).text().trim());
     });

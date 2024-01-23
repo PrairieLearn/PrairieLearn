@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
@@ -11,7 +10,7 @@ import * as helperServer from './helperServer';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const locals = {};
+const locals: Record<string, any> = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
