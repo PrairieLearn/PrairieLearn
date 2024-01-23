@@ -50,7 +50,8 @@ FROM
   LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
 WHERE
   $show_all = 'true'
-  OR r.approved_status NOT IN ('approved', 'denied')
+  OR r.approved_status NOT IN ('approved', 'denied');
+
   -- BLOCK update_course_request
 UPDATE course_requests
 SET
