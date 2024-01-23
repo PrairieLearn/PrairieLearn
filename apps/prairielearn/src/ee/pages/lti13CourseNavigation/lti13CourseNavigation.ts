@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 import { loadSqlEquiv, queryOptionalRow, queryAsync, callRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
-import type { Request } from 'express';
 import { z } from 'zod';
 
 import { CourseInstance, Lti13CourseInstanceSchema } from '../../../lib/db-types';

@@ -1,5 +1,6 @@
 import type { Request } from 'express';
 import { z } from 'zod';
+import { get as _get } from 'lodash';
 import * as error from '@prairielearn/error';
 
 // Validate LTI 1.3
@@ -73,15 +74,12 @@ export const Lti13ClaimSchema = z.object({
 });
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
-
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
   private valid = false;
 
   constructor(req: Request) {
-    console.log(req.session.lti13_claims);
-
     this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
     this.req = req;
 
@@ -106,6 +104,11 @@ export class Lti13Claim {
     return this.claims['https://purl.imsglobal.org/spec/lti/claim/deployment_id'];
   }
 
+  get target_link_uri() {
+    this.isValid();
+    return this.claims['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'];
+  }
+
   // Functions
 
   isValid() {
@@ -117,6 +120,11 @@ export class Lti13Claim {
       delete this.req.session['lti13_claims'];
       throw error.make(403, 'LTI session invalid or timed out, please try logging in again.');
     }
+  }
+
+  isRoleTestUser() {
+    this.isValid();
+    return this.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser');
   }
 
   isRoleInstructor(taIsInstructor = false) {
@@ -148,9 +156,14 @@ export class Lti13Claim {
     return role_instructor;
   }
 
+  get(property: string): any {
+    this.isValid();
+    // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+    return _get(this.claims, property);
+  }
+
   // Invalidate the object and remove the claims from the session
   remove() {
-
     this.valid = false;
     delete this.req.session['lti13_claims'];
     //delete this.req.session['authn_lti13_instance_id'];
