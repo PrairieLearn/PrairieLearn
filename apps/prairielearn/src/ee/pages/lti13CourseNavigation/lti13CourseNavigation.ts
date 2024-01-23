@@ -32,12 +32,7 @@ router.get(
 
     const LTI = new Lti13Claim(req);
     const courseName = `${LTI.context?.label}: ${LTI.context?.title}`;
-    let role_instructor = LTI.isRoleInstructor();
-
-    // FIXME
-    if ('student' in req.query) {
-      role_instructor = false;
-    }
+    const role_instructor = LTI.isRoleInstructor();
 
     // Get lti13_course_instance info, if present
     const lci = await queryOptionalRow(
@@ -50,7 +45,7 @@ router.get(
       Lti13CourseInstanceSchema,
     );
 
-    if (lci && !('noredir' in req.query)) {
+    if (lci) {
       if (role_instructor) {
         // Update lti13_course_instance on instructor login, helpful as LMS updates or we add features
         await queryAsync(sql.upsert_lci, {
@@ -88,15 +83,10 @@ router.get(
 
     // Instructor so lookup their existing information in PL
 
-    let courses = await selectCoursesWithEditAccess({
+    const courses = await selectCoursesWithEditAccess({
       user_id: res.locals.authn_user.user_id,
       is_administrator: res.locals.authn_is_administrator,
     });
-
-    // FIXME
-    if ('nocourse' in req.query) {
-      courses = [];
-    }
 
     let course_instances: CourseInstance[] = [];
 

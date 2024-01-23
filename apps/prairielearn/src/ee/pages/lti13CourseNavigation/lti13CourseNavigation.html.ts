@@ -2,9 +2,6 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { Course, CourseInstance } from '../../../lib/db-types';
 
-//import { EncodedData } from '@prairielearn/browser-utils';
-//import { compiledScriptTag } from '../../../lib/assets';
-
 export function Lti13CourseNavigationInstructor({
   courseName,
   resLocals,
@@ -77,11 +74,10 @@ export function Lti13CourseNavigationInstructor({
         </div>
 
         <main class="container mb-4">
-          ${devHeader()}
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
           <p>
-            To finish the LTI setup for your course, we need to connect
+            To finish the integration for your course, we need to connect
             <code>${courseName}</code> with a PrairieLearn course instance.
             <button
               type="button"
@@ -160,18 +156,6 @@ export function Lti13CourseNavigationInstructor({
   `.toString();
 }
 
-function devHeader() {
-  return html`
-    <p style="background-color:lightpink;" class="p-2">
-      Developer:
-      <a href="?">Default</a>
-      <a href="?student">Student</a>
-      <a href="?nocourse">No courses</a>
-      <a href="?done">Done</a>
-      <a href="?noredir">No redirect</a>
-    </p>
-  `;
-}
 export function Lti13CourseNavigationNotReady({
   courseName,
   resLocals,
@@ -195,7 +179,6 @@ export function Lti13CourseNavigationNotReady({
           navPage: 'lti13_course_navigation',
         })}
         <main class="container mb-4">
-          ${devHeader()}
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
 
@@ -230,7 +213,6 @@ export function Lti13CourseNavigationDone({
           navPage: 'lti13_course_navigation',
         })}
         <main class="container mb-4">
-          ${devHeader()}
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
           <p>
